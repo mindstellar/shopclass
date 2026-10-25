@@ -16,6 +16,7 @@ use mindstellar\admin\DatabaseTools;
 use mindstellar\admin\SystemChecks;
 use mindstellar\database\Connection;
 use mindstellar\database\Db;
+use mindstellar\install\ShopSetup;
 use mindstellar\language\LanguageService;
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
@@ -403,6 +404,9 @@ class Cli
         if (!install_seed_site($siteType, $sampleData)) {
             $this->err("Starter categories or sample data could not be fully added; see the error log.\n");
         }
+        if ($siteType === 'shop') {
+            $this->installShop();
+        }
 
         // Finalize: writes the osclass_installed sentinel LAST.
         finish_installation($adminPassword);
@@ -415,6 +419,43 @@ class Cli
         }
 
         return 0;
+    }
+
+    /**
+     * Install Aisle and the shop plugins ticked by default, then turn on shop mode. Any failure
+     * leaves the site a classifieds site or a plugin off, and is reported.
+     *
+     * @return void
+     */
+    private function installShop(): void
+    {
+        install_load_app_helpers();
+        $setup = ShopSetup::probe();
+        $offer = $setup->offer();
+        if (!$offer['available']) {
+            $this->err("The Aisle shop theme is not available (no internet, not in the market yet, or package installs are off). The site stays a classifieds site.\n");
+
+            return;
+        }
+        $this->out("Installing the Aisle theme\n");
+        $theme = $setup->installTheme();
+        if (!$theme['ok']) {
+            $this->err('Aisle could not be installed: ' . $theme['message'] . " The site stays a classifieds site.\n");
+
+            return;
+        }
+        foreach ($offer['plugins'] as $plugin) {
+            if (!$plugin['checked']) {
+                continue;
+            }
+            $this->out(sprintf("Installing the %s plugin\n", $plugin['name']));
+            $result = $setup->installPlugin($plugin['slug']);
+            if (!$result['ok']) {
+                $this->err(sprintf("%s could not be installed: %s\n", $plugin['name'], $result['message']));
+            }
+        }
+        $live = $setup->activate();
+        $live['ok'] ? $this->out($live['message'] . "\n") : $this->err($live['message'] . "\n");
     }
 
     /**

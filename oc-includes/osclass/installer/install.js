@@ -398,7 +398,7 @@
             errorPanel.hidden = false;
         }
 
-        function submitStepFour(emailStatus, password, locationError) {
+        function submitFinish(emailStatus, password, locationError) {
             var nextForm = document.createElement('form');
             nextForm.method = 'POST';
             nextForm.action = 'install.php';
@@ -413,6 +413,60 @@
             addHiddenField(nextForm, 'install_nonce', nonceField ? nonceField.value : '');
             document.body.appendChild(nextForm);
             nextForm.submit();
+        }
+
+        var queue = [];
+        try {
+            queue = JSON.parse(form.getAttribute('data-shop-queue') || '[]');
+        } catch (e) {
+            queue = [];
+        }
+        var overlayText = document.getElementById('ins-overlay-text');
+
+        function shopRequest(fields) {
+            var params = new URLSearchParams(fields);
+            var nonceField = form.elements.install_nonce;
+            params.set('install_nonce', nonceField ? nonceField.value : '');
+            return fetch('install-location.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString(),
+            }).then(
+                function (response) {
+                    return response.json();
+                },
+                function () {
+                    return null;
+                }
+            ).catch(function () {
+                return null;
+            });
+        }
+
+        // One package per request so no single request runs into a shared host's time limit.
+        // A failure does not stop the queue; the server keeps it for the finish page.
+        function runQueue(index, done) {
+            if (index >= queue.length) {
+                if (!queue.length) {
+                    done();
+                    return;
+                }
+                if (overlayText) {
+                    overlayText.textContent = text('shopMode', 'Turning on shop mode…');
+                }
+                shopRequest({ action: 'activate_theme' }).then(done);
+                return;
+            }
+            var item = queue[index];
+            if (overlayText) {
+                overlayText.textContent = text('installing', 'Installing %1$s… (%2$s of %3$s)')
+                    .replace('%1$s', item.name)
+                    .replace('%2$s', String(index + 1))
+                    .replace('%3$s', String(queue.length));
+            }
+            shopRequest({ action: 'install_package', type: item.type, slug: item.slug }).then(function () {
+                runQueue(index + 1, done);
+            });
         }
 
         form.addEventListener('submit', function (event) {
@@ -448,7 +502,9 @@
                 })
                 .then(function (data) {
                     if (data && data.status) {
-                        submitStepFour(data.email_status, data.password, data.location_error);
+                        runQueue(0, function () {
+                            submitFinish(data.email_status, data.password, data.location_error);
+                        });
                         return;
                     }
                     hideOverlay();

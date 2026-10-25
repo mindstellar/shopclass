@@ -15,6 +15,10 @@ namespace mindstellar\install;
 
 use mindstellar\market\Catalog;
 use mindstellar\market\Compatibility;
+use mindstellar\market\Installer;
+use mindstellar\market\PackageIndex;
+use mindstellar\market\PluginDependencies;
+use mindstellar\site\SiteMode;
 
 /**
  * What the installer can offer for a shop site: the Aisle theme and the shop plugins,
@@ -49,18 +53,48 @@ final class ShopSetup
     /** @var array<string, array<string,mixed>> */
     private array $pluginIndex;
 
+    /** @var callable(string, string, array<string,mixed>): array<string,mixed> */
+    private $fetcher;
+
+    /** @var callable(): ?array */
+    private $requirements;
+
+    /** @var callable(string): ?string|null */
+    private $switcher;
+
+    /** @var array<string, array<string,mixed>>|null */
+    private ?array $installed;
+
     /**
      * @param array<string, array<int, array<string,mixed>>> $themeVersions  Catalog::forThemes()->updates()
      * @param array<string, array<string,mixed>>             $themeIndex     Catalog::forThemes()->index()
      * @param array<string, array<int, array<string,mixed>>> $pluginVersions Catalog::forPlugins()->updates()
      * @param array<string, array<string,mixed>>             $pluginIndex    Catalog::forPlugins()->index()
+     * @param callable|null $fetcher      (type, slug, version entry) => Installer result; type is theme or plugin
+     * @param callable|null $requirements () => Aisle's plugin list, null while Aisle is not on disk
+     * @param callable|null $switcher     (slug) => null when the plugin is on, else an error message
+     * @param array<string, array<string,mixed>>|null $installed plugins on disk; read from the site when null
      */
-    public function __construct(array $themeVersions, array $themeIndex, array $pluginVersions, array $pluginIndex)
-    {
+    public function __construct(
+        array $themeVersions,
+        array $themeIndex,
+        array $pluginVersions,
+        array $pluginIndex,
+        ?callable $fetcher = null,
+        ?callable $requirements = null,
+        ?callable $switcher = null,
+        ?array $installed = null
+    ) {
         $this->themeVersions  = $themeVersions;
         $this->themeIndex     = $themeIndex;
         $this->pluginVersions = $pluginVersions;
         $this->pluginIndex    = $pluginIndex;
+        $this->fetcher        = $fetcher ?? static function (string $type, string $slug, array $entry): array {
+            return ($type === 'theme' ? Installer::forThemes() : Installer::forPlugins())->install($slug, $entry);
+        };
+        $this->requirements = $requirements ?? static fn (): ?array => PluginDependencies::themeRequirements(self::THEME);
+        $this->switcher     = $switcher;
+        $this->installed    = $installed;
     }
 
     /**
@@ -122,6 +156,86 @@ final class ShopSetup
         }
 
         return ['available' => true, 'reason' => '', 'plugins' => $plugins];
+    }
+
+    /**
+     * Download Aisle, unless it is on disk already.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    public function installTheme(): array
+    {
+        if (osc_market_changes_blocked()) {
+            return self::answer(false, __('Package installs are disabled on this deployment.'));
+        }
+        if (($this->requirements)() !== null) {
+            return self::answer(true, __('Theme installed.'));
+        }
+        $entry = $this->themeEntry();
+        if ($entry === null) {
+            return self::answer(false, __('No release of this theme runs on this version of Shopclass.'));
+        }
+        $result = ($this->fetcher)('theme', self::THEME, $entry);
+
+        return self::answer(!empty($result['ok']), (string) ($result['message'] ?? ''));
+    }
+
+    /**
+     * Download and switch on one shop plugin. Needs Aisle on disk, since its manifest says which
+     * releases fit.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    public function installPlugin(string $slug): array
+    {
+        if (!isset(self::PLUGINS[$slug])) {
+            return self::answer(false, __('The theme does not ask for this plugin.'));
+        }
+        $requires = ($this->requirements)();
+        if ($requires === null) {
+            return self::answer(false, __('Skipped, because the Aisle theme is not installed.'));
+        }
+        $fetcher = $this->fetcher;
+        $deps    = new PluginDependencies(
+            $this->installed ?? PackageIndex::forPlugins()->installed(),
+            $this->pluginVersions,
+            $this->pluginIndex,
+            null,
+            null,
+            static fn (string $mode, string $plugin, array $entry): array => $fetcher('plugin', $plugin, $entry),
+            $this->switcher
+        );
+        $result = $deps->ensure($requires, $slug);
+
+        return self::answer($result['ok'], $result['message']);
+    }
+
+    /**
+     * Make Aisle the site's theme and only then turn the site into a shop.
+     *
+     * @return array{ok:bool, message:string}
+     */
+    public function activate(): array
+    {
+        $requires = ($this->requirements)();
+        if ($requires === null) {
+            return self::answer(false, __('The Aisle theme is not installed, so the site stays a classifieds site.'));
+        }
+        $deps = new PluginDependencies($this->installed ?? PackageIndex::forPlugins()->installed(), [], []);
+        if ($deps->activateTheme(self::THEME, $requires, true) !== 'live') {
+            return self::answer(false, __('A plugin the Aisle theme needs is missing, so the site stays a classifieds site.'));
+        }
+        osc_set_preference('site_mode', SiteMode::SHOP);
+
+        return self::answer(true, __('Shop mode is on.'));
+    }
+
+    /**
+     * @return array{ok:bool, message:string}
+     */
+    private static function answer(bool $ok, string $message): array
+    {
+        return ['ok' => $ok, 'message' => $message];
     }
 
     /**

@@ -1584,6 +1584,80 @@ function install_save_site_choice(array $offer): void
 }
 
 /**
+ * Load every helper a normal request has and the core services; plugin install code expects them.
+ *
+ * @return void
+ */
+function install_load_app_helpers(): void
+{
+    foreach (\mindstellar\boot\Boot::HELPERS as $helper) {
+        require_once LIB_PATH . $helper;
+    }
+    \mindstellar\boot\Boot::services();
+}
+
+/**
+ * Whether a state-changing installer request may run: it carries the session's nonce and the
+ * database step is done.
+ *
+ * @return bool
+ */
+function install_ajax_allowed(): bool
+{
+    return install_nonce_check() && (bool) Session::getInstance()->_get('install_db_done');
+}
+
+/**
+ * One step of a shop install, one package per request: install_package (type theme or plugin)
+ * or activate_theme. Only Aisle and the plugins ticked on the site-type step are accepted.
+ *
+ * @param string                              $action install_package or activate_theme
+ * @param string                              $type   theme or plugin
+ * @param string                              $slug
+ * @param \mindstellar\install\ShopSetup|null $setup  the cached catalogue when null
+ *
+ * @return array{ok:bool, message:string}
+ */
+function install_shop_step(string $action, string $type, string $slug, ?\mindstellar\install\ShopSetup $setup = null): array
+{
+    $choice = install_site_choice();
+    $theme  = \mindstellar\install\ShopSetup::THEME;
+    if ($action === 'install_package' && $type === 'theme' && $slug === $theme) {
+        $allowed = true;
+    } elseif ($action === 'install_package' && $type === 'plugin') {
+        $allowed = in_array($slug, (array) $choice['plugins'], true);
+    } else {
+        $allowed = $action === 'activate_theme';
+        $slug    = $theme;
+    }
+    if ($choice['type'] !== 'shop' || !$allowed) {
+        return array('ok' => false, 'message' => __('This package was not chosen for this site.'));
+    }
+
+    try {
+        $setup ??= \mindstellar\install\ShopSetup::fromCache();
+        if ($action === 'activate_theme') {
+            $result = $setup->activate();
+        } else {
+            $result = $type === 'theme' ? $setup->installTheme() : $setup->installPlugin($slug);
+        }
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: setting up ' . $slug . ' failed: ' . $e->getMessage());
+        $result = array('ok' => false, 'message' => __('Something went wrong while setting this up.'));
+    }
+
+    $session = Session::getInstance();
+    $failed  = (array) ($session->_get('install_shop_failed') ?: array());
+    unset($failed[$slug]);
+    if (!$result['ok']) {
+        $failed[$slug] = array('type' => $type === 'plugin' ? 'plugin' : 'theme', 'message' => $result['message']);
+    }
+    $session->_set('install_shop_failed', $failed);
+
+    return $result;
+}
+
+/**
  * Render the installer's target-directory step.
  *
  * @return void

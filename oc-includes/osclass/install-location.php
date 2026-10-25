@@ -55,11 +55,20 @@ header('Content-Type: application/json; charset=utf-8');
 
 // State-changing request: require the installer nonce (osc_csrf_check() cannot
 // work yet — no preferences exist).
-if (!install_nonce_check() || !Session::getInstance()->_get('install_db_done')) {
+if (!install_ajax_allowed()) {
     echo json_encode(array(
         'status' => false,
         'error'  => __('Your session expired. Reload the page and start again.'),
     ));
+    exit;
+}
+
+// Shop set-up, one package per request.
+$shopAction = Params::getParamString('action');
+if ($shopAction === 'install_package' || $shopAction === 'activate_theme') {
+    install_load_app_helpers();
+    $shopResult = install_shop_step($shopAction, Params::getParamString('type'), Params::getParamString('slug'));
+    echo json_encode(array('status' => $shopResult['ok'], 'message' => $shopResult['message']));
     exit;
 }
 

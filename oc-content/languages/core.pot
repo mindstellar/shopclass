@@ -1058,6 +1058,12 @@ msgid ""
 "city centre."
 msgstr ""
 
+#: oc-includes/osclass/classes/install/ShopSetup.php
+msgid ""
+"A plugin the Aisle theme needs is missing, so the site stays a classifieds "
+"site."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "A price of 0 makes extra slots free."
 msgstr ""
@@ -6619,6 +6625,14 @@ msgstr ""
 msgid "Install failed: %s"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid "Install it later under Appearance."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid "Install it later under Plugins."
+msgstr ""
+
 #: oc-admin/themes/modern/plugins/index.php
 msgid ""
 "Install or uninstall the plugins available in your installation. In some "
@@ -6652,6 +6666,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
 msgid "Installed: %s"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Installing %1$s… (%2$s of %3$s)"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
@@ -9030,6 +9048,10 @@ msgid ""
 "Shopclass or PHP."
 msgstr ""
 
+#: oc-includes/osclass/classes/install/ShopSetup.php
+msgid "No release of this theme runs on this version of Shopclass."
+msgstr ""
+
 #: oc-admin/themes/modern/messages/index.php
 msgid "No reported conversations"
 msgstr ""
@@ -9827,6 +9849,7 @@ msgid "Package installs are disabled in demo mode."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
+#: oc-includes/osclass/classes/install/ShopSetup.php
 #: oc-includes/osclass/classes/market/Installer.php
 #: oc-includes/osclass/classes/market/PluginDependencies.php
 msgid "Package installs are disabled on this deployment."
@@ -12261,6 +12284,14 @@ msgstr ""
 msgid "Shop Fittings"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid "Shop mode is on, with the Aisle theme."
+msgstr ""
+
+#: oc-includes/osclass/classes/install/ShopSetup.php
+msgid "Shop mode is on."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-site-type.php
 msgid "Shop plugins to add"
 msgstr ""
@@ -12626,6 +12657,10 @@ msgstr ""
 msgid "Skip the posting wait"
 msgstr ""
 
+#: oc-includes/osclass/classes/install/ShopSetup.php
+msgid "Skipped, because the Aisle theme is not installed."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Slot price in credits"
 msgstr ""
@@ -12690,6 +12725,10 @@ msgid "Some of the selected locations no longer exist"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
+msgid "Some packages were not installed."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-finish.php
 msgid "Some sample content couldn't be added. Your site will still work fine."
 msgstr ""
 
@@ -12697,6 +12736,10 @@ msgstr ""
 msgid ""
 "Someone typed your correct password on %1$s, then several wrong codes, from "
 "the address %2$s. They did not get in."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "Something went wrong while setting this up."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -13209,6 +13252,17 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 msgid "The API is served at %s."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid ""
+"The Aisle theme could not be installed, so the site is a classifieds site "
+"for now. Install Aisle under Appearance, then switch to shop mode in "
+"Settings, General."
+msgstr ""
+
+#: oc-includes/osclass/classes/install/ShopSetup.php
+msgid "The Aisle theme is not installed, so the site stays a classifieds site."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
@@ -13802,6 +13856,7 @@ msgstr ""
 msgid "The table prefix can only contain letters, numbers and underscores."
 msgstr ""
 
+#: oc-includes/osclass/classes/install/ShopSetup.php
 #: oc-includes/osclass/classes/market/PluginDependencies.php
 msgid "The theme does not ask for this plugin."
 msgstr ""
@@ -13870,6 +13925,7 @@ msgstr ""
 msgid "The work they were going to do will never happen. This can't be undone."
 msgstr ""
 
+#: oc-includes/osclass/classes/install/ShopSetup.php
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "Theme installed."
 msgstr ""
@@ -14179,6 +14235,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
 msgid "This package is not installed; use Install instead."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "This package was not chosen for this site."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/Billing.php
@@ -14666,6 +14726,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Turning it off later keeps every order and balance."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Turning on shop mode…"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php

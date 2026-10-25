@@ -54,6 +54,9 @@ $ins_i18n = array(
     'showPassword' => __('Show password'),
     'hidePassword' => __('Hide password'),
     'networkError' => __('Something went wrong. Check your connection and try again.'),
+    /* translators: 1: a theme or plugin name, 2: its place in the queue, 3: how many there are */
+    'installing'   => __('Installing %1$s… (%2$s of %3$s)'),
+    'shopMode'     => __('Turning on shop mode…'),
 );
 ?>
 <!doctype html>

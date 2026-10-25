@@ -44,6 +44,17 @@ if (preg_match(
 if ($country_list === array()) {
     $internet_error = true;
 }
+
+// The packages the shop set-up installs after the form is sent, one request each.
+$ins_queue  = array();
+$ins_choice = install_site_choice();
+if ($ins_choice['type'] === 'shop') {
+    $ins_queue[] = array('type' => 'theme', 'slug' => mindstellar\install\ShopSetup::THEME, 'name' => 'Aisle');
+    $ins_names   = array_column(mindstellar\install\ShopSetup::fromCache()->offer()['plugins'], 'name', 'slug');
+    foreach ((array) $ins_choice['plugins'] as $ins_slug) {
+        $ins_queue[] = array('type' => 'plugin', 'slug' => $ins_slug, 'name' => (string) ($ins_names[$ins_slug] ?? $ins_slug));
+    }
+}
 ?>
 <h1 class="ins-headline"><?php _e('Set up your site'); ?></h1>
 
@@ -54,7 +65,7 @@ if ($country_list === array()) {
 </noscript>
 
 <div id="ins-target-wrap" class="ins-target-wrap">
-    <form id="ins-target-form" action="#" method="post">
+    <form id="ins-target-form" action="#" method="post" data-shop-queue="<?php echo osc_esc_html((string) json_encode($ins_queue)); ?>">
         <input type="hidden" name="install_nonce" value="<?php echo osc_esc_html($install_nonce); ?>" />
 
         <div id="ins-target-error" class="ins-panel ins-panel-danger" role="alert" hidden></div>
@@ -117,6 +128,6 @@ if ($country_list === array()) {
 
     <div id="ins-setup-overlay" class="ins-overlay" role="status" aria-live="polite" hidden>
         <span class="ins-overlay-spinner" aria-hidden="true"></span>
-        <p><?php _e("Setting up your site… this can take a minute on shared hosting — don't close this tab."); ?></p>
+        <p id="ins-overlay-text"><?php _e("Setting up your site… this can take a minute on shared hosting — don't close this tab."); ?></p>
     </div>
 </div>
