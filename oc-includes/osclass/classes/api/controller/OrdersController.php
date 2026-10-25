@@ -14,6 +14,7 @@ namespace mindstellar\api\controller;
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
+use mindstellar\api\Problem;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
 use mindstellar\api\read\Pager;
@@ -112,8 +113,22 @@ final class OrdersController
      */
     public function create(ApiCall $call): Response
     {
-        $userId = $call->userId();
-        $input  = $call->input();
+        $userId  = $call->userId();
+        $input   = $call->input();
+        $address = (array) ($input['address'] ?? array());
+        // A saved address is read from the address book, and Save writes to it.
+        $needs = array();
+        if (isset($address['id']) && $address['id'] !== '') {
+            $needs[] = 'addresses:read';
+        }
+        if (($address['save'] ?? false) === true) {
+            $needs[] = 'addresses:write';
+        }
+        foreach ($needs as $scope) {
+            if (!$call->credential()->has($scope)) {
+                throw ProblemException::from(Problem::insufficientScope($scope));
+            }
+        }
         // A refused placement does not spend the hour: check the bucket first, count once the order is written.
         $bucket = $this->api->ratePolicy()->checkout($userId);
         $this->api->limiter()->refuseIfFull($bucket, 'Too many orders placed in an hour. Try again later.');
@@ -121,7 +136,7 @@ final class OrdersController
         $placed = $this->checkout->place(
             $userId,
             array_values((array) ($input['lines'] ?? array())),
-            (array) ($input['address'] ?? array()),
+            $address,
             (string) ($input['shipping_method'] ?? ''),
             (string) ($input['gateway'] ?? ''),
             (string) ($input['note'] ?? ''),

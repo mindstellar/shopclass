@@ -239,6 +239,16 @@ pin('an id not in the book is /address/id', [422, ['/address/id unknown']], [$r-
 $tomBook = (new AddressBook())->add($tom, $work);
 pin('nor is another user\'s', '/address/id', $order(['id' => $tomBook['id']])->body()['errors'][0]['pointer'] ?? null);
 
+$ordersOnly = $key($sue, ['orders:write']);
+$placeWith  = static fn (array $address): \mindstellar\api\Response => $call('POST', 'account/orders', ['lines' => [['variant' => $mugV, 'qty' => 1]], 'address' => $address, 'shipping_method' => 'standard', 'gateway' => 'fake'], $ordersOnly);
+$before     = (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_order")->fetch_row()[0];
+pin('a key without addresses:read cannot order to a saved address', '403 insufficient_scope', api_admin_code($placeWith(['id' => $homeId])));
+pin('nor save one without addresses:write', ['403 insufficient_scope', 1], [api_admin_code($placeWith($typed + ['save' => true])), count($book->all($sue))]);
+pin('and neither wrote an order', $before, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_order")->fetch_row()[0]);
+$r = $placeWith($typed);
+pin('a typed address needs no address scope', 201, $r->status());
+OrderStore::cancel((int) $r->body()['data']['id']);
+
 $r = $order($typed);
 pin('a typed address without save is not kept', [201, 1], [$r->status(), count($book->all($sue))]);
 OrderStore::cancel((int) $r->body()['data']['id']);
