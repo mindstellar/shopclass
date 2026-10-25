@@ -55,7 +55,7 @@ if (!defined('ABS_PATH')) {
 
     <?php if (osc_users_enabled() && osc_user_registration_enabled()) { ?>
         <p class="oe-muted"><?php echo osc_esc_html(_m('No account yet?')); ?>
-            <a href="<?php echo osc_esc_html(osc_register_account_url()); ?>"><?php
+            <a href="<?php echo osc_esc_html(osc_register_account_url(osc_login_return_path())); ?>"><?php
                 echo osc_esc_html(_m('Create one')); ?></a></p>
     <?php } ?>
 </div>

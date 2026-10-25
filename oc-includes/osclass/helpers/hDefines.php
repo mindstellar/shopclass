@@ -466,21 +466,105 @@ function osc_user_logout_url()
 /**
  * Create automatically the login url
  *
+ * @param string $return where to send the visitor after sign-in: a page on this site, as a URL
+ *                       or a path; anything else is dropped (see osc_login_return_url())
+ *
  * @return string
  */
-function osc_user_login_url()
+function osc_user_login_url($return = '')
 {
-    return osc_core_url('user_login');
+    return osc_login_return_arg(osc_core_url('user_login'), (string) $return);
 }
 
 /**
  * Create automatically the url to register an account
  *
+ * @param string $return where to send the visitor once signed in, as for osc_user_login_url()
+ *
  * @return string
  */
-function osc_register_account_url()
+function osc_register_account_url($return = '')
 {
-    return osc_core_url('user_register');
+    return osc_login_return_arg(osc_core_url('user_register'), (string) $return);
+}
+
+/**
+ * A sign-in `return` path as a full URL on this site, or '' when it is not one.
+ *
+ * Only a path is taken: one leading slash, no backslash, no space or control character, and
+ * under the site's base URL once joined to its host. A full URL, `//host` or a scheme is refused.
+ *
+ * @param mixed $return
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_login_return_url($return): string
+{
+    if (!is_string($return) || $return === '' || strlen($return) > 2000 || $return[0] !== '/'
+        || str_starts_with($return, '//') || str_contains($return, '\\')
+        || preg_match('/[\x00-\x20\x7f]/', $return)
+    ) {
+        return '';
+    }
+    $base   = osc_base_url();
+    $origin = (string) preg_replace('#^(https?://[^/?\#]+).*$#is', '$1', $base);
+    $url    = $origin . $return;
+    if (!\mindstellar\utility\Utils::isLocalUrl($url) || strpos($url, $base) !== 0 || strpos($url, 'page=login') !== false) {
+        return '';
+    }
+
+    return $url;
+}
+
+/**
+ * The request's `return` path when it is a valid one (see osc_login_return_url()), else ''.
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_login_return_path(): string
+{
+    $return = Params::getParamString('return', false, false, false);
+
+    return osc_login_return_url($return) !== '' ? $return : '';
+}
+
+/**
+ * $url with a `return` query argument for $return, a page on this site given as a URL or a path.
+ * $url comes back unchanged when $return is empty or not on this site.
+ *
+ * @param string $url
+ * @param string $return
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_login_return_arg(string $url, string $return): string
+{
+    if ($return !== '' && \mindstellar\utility\Utils::isLocalUrl($return)) {
+        $query  = (string) parse_url($return, PHP_URL_QUERY);
+        $return = (string) parse_url($return, PHP_URL_PATH) . ($query !== '' ? '?' . $query : '');
+    }
+    if (osc_login_return_url($return) === '') {
+        return $url;
+    }
+
+    return $url . (str_contains($url, '?') ? '&' : '?') . 'return=' . rawurlencode($return);
+}
+
+/**
+ * Prints the hidden `return` field on the sign-in and register forms, when the request has one.
+ *
+ * @return void
+ * @since 7.1.0
+ */
+function osc_login_return_field(): void
+{
+    $return = osc_login_return_path();
+    if ($return !== '') {
+        echo '<input type="hidden" name="return" value="' . osc_esc_html($return) . '" />';
+    }
 }
 
 /**

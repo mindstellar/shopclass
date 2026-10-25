@@ -1322,3 +1322,7 @@ function osc_shopper_user_menu($options)
 // Priority 20, so core's billing and API entries are already in the list; entries added after it
 // are not filtered. Plugins::addHook() because this file loads before hPlugins.php.
 Plugins::addHook('user_menu_filter', 'osc_shopper_user_menu', 20);
+
+// The sign-in and register forms carry the page to return to.
+Plugins::addHook('user_login_form', 'osc_login_return_field');
+Plugins::addHook('user_register_form', 'osc_login_return_field');

@@ -184,6 +184,20 @@ if (!osc_gui_account_view('user-login.php')) {
 
 Controllers call it; a plugin serving its own account route can too.
 
+## Sending a visitor back after sign-in
+
+`osc_user_login_url($return)` and `osc_register_account_url($return)` take a page on this site,
+as a URL or a path, and add it as `return`. After signing in or registering the visitor lands
+there. Only a path under the site's base URL is kept; another host, `//host`, a scheme or a
+backslash is dropped. A theme with its own sign-in or register form fires `user_login_form` or
+`user_register_form` inside the form, which prints the hidden `return` field.
+
+```php
+<a href="<?php echo osc_esc_html(osc_user_login_url(osc_route_url('my-checkout'))); ?>">Sign in</a>
+```
+
+With e-mail validation on, a new account lands on the home page after it is validated.
+
 ## What core's pages do not do
 
 - **Almost no JavaScript.** The profile form calls

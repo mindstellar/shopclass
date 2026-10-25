@@ -97,6 +97,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - A mail template with no text now uses the bundled English text instead of stopping the request.
 - Checkbox filters use the `s_value` index.
 - The buy-credits page lists only the payment methods that take the billing currency.
+- Signing in or registering from a page that needs it, such as the checkout, returns to that page: `osc_user_login_url()` and `osc_register_account_url()` take an optional same-site `return` path, and no cookie is set for it.
 
 ## Shopclass 7.0.5
 
