@@ -184,6 +184,7 @@ switch ($step) {
         $password = Params::getParam('password', false, false);
         if (install_nonce_check() && Session::getInstance()->_get('install_db_done')) {
             install_discard_sample_photos();
+            install_record_lost_steps(Params::getParamArray('lost'));
         }
         break;
     default:

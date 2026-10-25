@@ -281,6 +281,11 @@ class Cli
         $siteType   = (string) $opt('site-type', $env('OSC_SITE_TYPE'), 'classifieds');
         $sampleData = array_key_exists('sample-data', $args) || $env('OSC_SAMPLE_DATA') === '1';
         $photosZip  = $opt('sample-photos', null);
+        if (array_key_exists('sample-photos', $args) && $photosZip === null) {
+            $this->err("--sample-photos needs a path: --sample-photos=/path/to/sample-photos.zip\n");
+
+            return 2;
+        }
         $plugins    = ShopSetup::defaultPlugins();
         if (array_key_exists('plugins', $args)) {
             $plugins = is_string($args['plugins']) ? array_values(array_filter(array_map('trim', explode(',', $args['plugins'])))) : array();

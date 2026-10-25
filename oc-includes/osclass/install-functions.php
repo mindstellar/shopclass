@@ -1669,7 +1669,12 @@ function install_shop_step(string $action, string $type, string $slug, ?\mindste
     }
 
     $session = Session::getInstance();
-    $failed  = (array) ($session->_get('install_shop_failed') ?: array());
+    if ($step['action'] === 'activate_theme') {
+        $session->_set('install_shop_activate_error', $result['ok'] ? '' : $result['message']);
+
+        return $result;
+    }
+    $failed = (array) ($session->_get('install_shop_failed') ?: array());
     unset($failed[$step['slug']]);
     if (!$result['ok']) {
         $failed[$step['slug']] = array('type' => $step['type'], 'message' => $result['message']);
@@ -1677,6 +1682,76 @@ function install_shop_step(string $action, string $type, string $slug, ?\mindste
     $session->_set('install_shop_failed', $failed);
 
     return $result;
+}
+
+/**
+ * Record the steps whose request the browser got no answer to, so the finish page lists them.
+ * Only steps this install chose are kept.
+ *
+ * @param array<int, mixed> $tokens sample_photos, sample_batch, activate, theme:aisle or plugin:<slug>
+ *
+ * @return void
+ */
+function install_record_lost_steps(array $tokens): void
+{
+    $choice  = install_site_choice();
+    $session = Session::getInstance();
+    $failed  = (array) ($session->_get('install_shop_failed') ?: array());
+    $message = __('The server did not answer in time, or the connection dropped.');
+    $chosen  = array_merge(array('theme:' . \mindstellar\install\ShopSetup::THEME), array_map(
+        static fn (string $slug): string => 'plugin:' . $slug,
+        (array) $choice['plugins']
+    ));
+    foreach (array_filter($tokens, 'is_string') as $token) {
+        if ($choice['sample'] && $token === 'sample_photos') {
+            $session->_set('install_sample_photos_failed', 1);
+        } elseif ($choice['sample'] && $token === 'sample_batch') {
+            $session->_set('install_sample_warning', 1);
+        } elseif ($choice['type'] !== SiteMode::SHOP) {
+            continue;
+        } elseif ($token === 'activate') {
+            $session->_set('install_shop_activate_error', $message);
+        } elseif (in_array($token, $chosen, true)) {
+            [$type, $slug] = explode(':', $token, 2);
+            $failed[$slug] = array('type' => $type, 'message' => $message);
+        }
+    }
+    $session->_set('install_shop_failed', $failed);
+}
+
+/**
+ * What the finish page says about a shop install, or null on a classifieds install.
+ *
+ * @param string $siteMode the site mode now
+ *
+ * @return array{ok:bool, text:string}|null
+ */
+function install_shop_notice(string $siteMode): ?array
+{
+    if (install_site_choice()['type'] !== SiteMode::SHOP) {
+        return null;
+    }
+    if ($siteMode === SiteMode::SHOP) {
+        return array('ok' => true, 'text' => __('Shop mode is on, with the Aisle theme.'));
+    }
+    $session = Session::getInstance();
+    $failed  = (array) ($session->_get('install_shop_failed') ?: array());
+    $later   = __('The site stays a classifieds site with the shop categories. Install Aisle under Appearance, then switch to shop mode in Settings, General.');
+    if (isset($failed[\mindstellar\install\ShopSetup::THEME])) {
+        return array('ok' => false, 'text' => sprintf(
+            /* translators: 1: why the theme failed, 2: what happens next */
+            __('The Aisle theme could not be installed: %1$s %2$s'),
+            (string) $failed[\mindstellar\install\ShopSetup::THEME]['message'],
+            $later
+        ));
+    }
+
+    return array('ok' => false, 'text' => sprintf(
+        /* translators: 1: why shop mode is off, 2: what happens next */
+        __('The Aisle theme was installed, but shop mode could not be turned on: %1$s %2$s'),
+        (string) ($session->_get('install_shop_activate_error') ?: __('the last step did not finish.')),
+        __('The site stays a classifieds site with the shop categories. Switch to shop mode in Settings, General once the problem is fixed.')
+    ));
 }
 
 /**

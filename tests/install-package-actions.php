@@ -67,7 +67,7 @@ $release = static fn (string $version, string $requires = '7.0.0'): array => arr
  *
  * @return array{0: ShopSetup, 1: ArrayObject}
  */
-$make = static function (bool $themeOk = true) use ($release): array {
+$make = static function (bool $themeOk = true, array $required = array()) use ($release): array {
     $log  = new ArrayObject(array('fetched' => array(), 'switched' => array(), 'aisle' => false));
     $setup = new ShopSetup(
         array('aisle' => array($release('1.0.0'), $release('9.0.0', '99.0.0'))),
@@ -82,7 +82,7 @@ $make = static function (bool $themeOk = true) use ($release): array {
 
             return array('ok' => $type !== 'theme' || $themeOk, 'message' => 'fake');
         },
-        static fn (): ?array => $log['aisle'] ? array('required' => array(), 'recommended' => array('shipping' => '^0.1.0', 'razorpay' => '^0.1.0')) : null,
+        static fn (): ?array => $log['aisle'] ? array('required' => $required, 'recommended' => array('shipping' => '^0.1.0', 'razorpay' => '^0.1.0')) : null,
         static function (string $slug) use ($log): ?string {
             $log['switched'] = array_merge($log['switched'], array($slug));
 
@@ -152,6 +152,34 @@ check('site_mode stays classifieds', $prefSet('site_mode') === array());
 check('the theme is not changed', $prefSet('theme') === array());
 $failed = $session->_get('install_shop_failed');
 check('the finish page gets both failures', isset($failed['aisle'], $failed['shipping']) && $failed['shipping']['type'] === 'plugin');
+$notice = install_shop_notice('classifieds');
+check('the finish page says Aisle could not be installed', $notice['ok'] === false && strpos($notice['text'], 'could not be installed') !== false);
+check('and that the site stays classifieds with shop categories', strpos($notice['text'], 'classifieds site with the shop categories') !== false);
+
+harness_section('Aisle installs but shop mode cannot turn on');
+[$setup, $log] = $make(true, array('stripe' => '>=1.0.0'));
+$choose('shop', array());
+$GLOBALS['prefs'] = array();
+check('the theme installs', install_shop_step('install_package', 'theme', 'aisle', $setup)['ok'] === true);
+check('turning shop mode on fails', install_shop_step('activate_theme', '', '', $setup)['ok'] === false);
+check('site_mode stays classifieds', $prefSet('site_mode') === array());
+$notice = install_shop_notice('classifieds');
+check('the finish page does not say Aisle failed to install', strpos($notice['text'], 'could not be installed') === false);
+check('it says shop mode could not be turned on, and why', strpos($notice['text'], 'shop mode could not be turned on: A plugin the Aisle theme needs') !== false);
+check('the theme is not listed as a failed package', !isset($session->_get('install_shop_failed')['aisle']));
+
+harness_section('requests the browser got no answer to');
+$choose('shop', array('shipping'));
+$session->_set('install_sample_data', 1);
+install_record_lost_steps(array('plugin:shipping', 'plugin:razorpay', 'theme:storefront', 'activate', 'sample_photos', 'sample_batch', array('x')));
+$failed = (array) $session->_get('install_shop_failed');
+check('a chosen plugin is listed as failed', isset($failed['shipping']) && $failed['shipping']['type'] === 'plugin');
+check('a plugin that was not chosen is ignored', !isset($failed['razorpay']) && !isset($failed['storefront']));
+check('shop mode is reported off', (string) $session->_get('install_shop_activate_error') !== '');
+check('the photos are reported missing', (bool) $session->_get('install_sample_photos_failed'));
+check('the sample warning is raised', (bool) $session->_get('install_sample_warning'));
+$choose('classifieds', array());
+check('a classifieds install gets no shop notice', install_shop_notice('classifieds') === null);
 
 harness_section('the shop installs');
 [$setup, $log] = $make();

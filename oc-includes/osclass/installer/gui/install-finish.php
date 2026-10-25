@@ -52,30 +52,23 @@ $ins_email_failed = !empty($error) || empty($data['s_email']);
 <?php } ?>
 
 <?php
-$ins_choice = install_site_choice();
+$ins_notice = install_shop_notice(osc_site_mode());
 $ins_failed = (array) (Session::getInstance()->_get('install_shop_failed') ?: array());
-if ($ins_choice['type'] === 'shop') {
-    if (osc_site_mode() === 'shop') { ?>
-        <div class="ins-panel ins-panel-success">
-            <div class="ins-panel-body"><?php _e('Shop mode is on, with the Aisle theme.'); ?></div>
-        </div>
-    <?php } else { ?>
-        <div class="ins-panel ins-panel-warning">
-            <div class="ins-panel-body"><?php _e('The Aisle theme could not be installed, so the site is a classifieds site for now. Install Aisle under Appearance, then switch to shop mode in Settings, General.'); ?></div>
-        </div>
-    <?php }
-    if ($ins_failed !== array()) { ?>
+unset($ins_failed[mindstellar\install\ShopSetup::THEME]);
+if ($ins_notice !== null) { ?>
+    <div class="ins-panel <?php echo $ins_notice['ok'] ? 'ins-panel-success' : 'ins-panel-warning'; ?>">
+        <div class="ins-panel-body"><?php echo osc_esc_html($ins_notice['text']); ?></div>
+    </div>
+    <?php if ($ins_failed !== array()) { ?>
         <div class="ins-panel ins-panel-warning">
             <div class="ins-panel-body">
-                <strong><?php _e('Some packages were not installed.'); ?></strong>
+                <strong><?php _e('Some plugins were not installed.'); ?></strong>
                 <ul class="ins-failed-list">
                     <?php foreach ($ins_failed as $ins_slug => $ins_fail) { ?>
                         <li>
                             <strong><?php echo osc_esc_html((string) $ins_slug); ?></strong>:
                             <?php echo osc_esc_html((string) ($ins_fail['message'] ?? '')); ?>
-                            <?php echo ($ins_fail['type'] ?? '') === 'plugin'
-                                ? osc_esc_html(__('Install it later under Plugins.'))
-                                : osc_esc_html(__('Install it later under Appearance.')); ?>
+                            <?php _e('Install it later under Plugins.'); ?>
                         </li>
                     <?php } ?>
                 </ul>

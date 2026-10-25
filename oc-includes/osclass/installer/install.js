@@ -398,6 +398,9 @@
             errorPanel.hidden = false;
         }
 
+        // Steps whose request got no answer (network error, time limit, not JSON); the finish page lists them.
+        var lost = [];
+
         function submitFinish(emailStatus, password, locationError) {
             var nextForm = document.createElement('form');
             nextForm.method = 'POST';
@@ -409,6 +412,9 @@
             if (locationError) {
                 addHiddenField(nextForm, 'error_location', '1');
             }
+            lost.forEach(function (token) {
+                addHiddenField(nextForm, 'lost[]', token);
+            });
             var nonceField = form.elements.install_nonce;
             addHiddenField(nextForm, 'install_nonce', nonceField ? nonceField.value : '');
             document.body.appendChild(nextForm);
@@ -448,11 +454,12 @@
         function buildSteps(sampleBatches) {
             var steps = [];
             if (sampleBatches > 0) {
-                steps.push({ fields: { action: 'sample_photos' }, label: text('samplePhotos', 'Downloading sample photos…') });
+                steps.push({ fields: { action: 'sample_photos' }, lost: 'sample_photos', label: text('samplePhotos', 'Downloading sample photos…') });
             }
             for (var b = 0; b < sampleBatches; b++) {
                 steps.push({
                     fields: { action: 'sample_batch', batch: String(b) },
+                    lost: 'sample_batch',
                     label: text('sampleBatch', 'Adding sample listings… (%1$s of %2$s)')
                         .replace('%1$s', String(b + 1))
                         .replace('%2$s', String(sampleBatches)),
@@ -469,7 +476,11 @@
                         .replace('%2$s', String(packages.indexOf(item) + 1))
                         .replace('%3$s', String(packages.length));
                 }
-                steps.push({ fields: { action: item.action, type: item.type, slug: item.slug }, label: label });
+                steps.push({
+                    fields: { action: item.action, type: item.type, slug: item.slug },
+                    lost: item.action === 'install_package' ? item.type + ':' + item.slug : 'activate',
+                    label: label,
+                });
             });
             return steps;
         }
@@ -482,7 +493,10 @@
             if (overlayText) {
                 overlayText.textContent = steps[index].label;
             }
-            shopRequest(steps[index].fields).then(function () {
+            shopRequest(steps[index].fields).then(function (data) {
+                if (!data && lost.indexOf(steps[index].lost) === -1) {
+                    lost.push(steps[index].lost);
+                }
                 runSteps(steps, index + 1, done);
             });
         }
