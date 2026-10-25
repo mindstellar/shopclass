@@ -632,6 +632,14 @@ class AdminMenu
             $actual_url = 'page=' . $actual_page;
         }
 
+        // A declared page with no menu entry sits in no Settings group; the prefix match would light General.
+        if (Params::getParam('page') === 'settings' && Params::getParam('action') === 'custom') {
+            $declared = osc_settings_page(Params::getParamString('id'));
+            if ($declared !== null && $declared['menu'] === '') {
+                return array('settings', '');
+            }
+        }
+
         return self::current(
             $this->get_array_menu(),
             $actual_url,

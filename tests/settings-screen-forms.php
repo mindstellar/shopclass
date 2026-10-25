@@ -2495,4 +2495,23 @@ $sysRow = $tabRow('np-sys');
 check('a page in the System group draws the System row', strpos($sysRow, 'Storage') !== false && strpos($sysRow, 'General') === false, $sysRow);
 check('...with itself active', (bool)preg_match('~is-active"[^>]*>Sys<~', $sysRow), $sysRow);
 
+harness_section('sidebar highlight on a declared page');
+
+$litFor = static function (string $id): array {
+    $_GET                    = array('page' => 'settings', 'action' => 'custom', 'id' => $id);
+    $_POST                   = array();
+    $_SERVER['QUERY_STRING'] = 'page=settings&action=custom&id=' . $id;
+    Params::init();
+
+    return AdminMenu::getInstance()->currentIds();
+};
+osc_register_settings_page('np-lit-bare', array('title' => 'Lit bare', 'menu' => '', 'fields' => $field));
+osc_register_settings_page('np-lit-bill', array('title' => 'Lit bill', 'menu' => 'billing', 'fields' => $field));
+$litMenu = AdminMenu::getInstance();
+$litMenu->init();
+$litMenu->add_menu('Billing', osc_admin_base_url(true) . '?page=billing', 'billing', 'administrator');
+$litMenu->add_submenu('billing', 'Lit bill', osc_settings_page_url('np-lit-bill'), 'settings-page-np-lit-bill', 'administrator');
+check('a page with no menu entry lights no Settings sub-item', $litFor('np-lit-bare')[1] === '', json_encode($litFor('np-lit-bare')));
+check('a page in Billing lights Billing and its own entry', $litFor('np-lit-bill') === array('billing', 'settings-page-np-lit-bill'), json_encode($litFor('np-lit-bill')));
+
 exit(harness_result());
