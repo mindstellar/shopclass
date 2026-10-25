@@ -956,6 +956,12 @@ msgstr ""
 msgid "A card for any amount the recipient likes. Delivered by email."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"A card order keeps its stock this long while the buyer pays. Still unpaid "
+"then, it is cancelled and the stock goes back on sale. 5 to 120."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "A checked view of your site: what needs doing, background jobs, security, "
@@ -2517,12 +2523,6 @@ msgstr ""
 msgid "Bank transfer"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid ""
-"Bank transfer and cash on delivery orders keep their stock until they are "
-"paid."
-msgstr ""
-
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Barista, full-time"
 msgstr ""
@@ -2914,6 +2914,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Cancel this order"
+msgstr ""
+
+#: oc-includes/osclass/classes/billing/Billing.php
+msgid "Cancel unpaid card orders"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -5441,6 +5445,13 @@ msgstr ""
 msgid "Every new listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"Every order takes its stock when placed. A card order keeps it for the "
+"minutes below; bank transfer and cash on delivery orders until paid or "
+"cancelled."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php
 msgid "Every payment taken on this site, whichever payment plugin handled it. "
 msgstr ""
@@ -6258,6 +6269,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Hold new listings for admin moderation"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Hold stock for card payments (minutes)"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php

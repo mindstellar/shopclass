@@ -15,8 +15,8 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
    orders and payment plugins too.
 2. **Settings → Billing**: switch **Enable billing** on and set your currency.
 3. **Settings → Billing → Shop**: set the delivery charge, the amount that makes delivery free,
-   cash on delivery and its fee, how long unpaid orders wait before they are cancelled, and the
-   order number prefix.
+   cash on delivery and its fee, how long unpaid orders wait before they are cancelled, how long a
+   card payment holds the stock, and the order number prefix.
 4. **Appearance**: activate the shop theme. If it asks for plugins, one screen installs and turns
    them on for you.
 5. Install a payment method (see below), or use the built-in bank transfer and cash on delivery.
@@ -32,8 +32,9 @@ the options on the product page.
 
 - **Stock** is counted per row. At 0 the row is out of stock. Leave it blank to not count.
 - **Weight** and **Shipping class** are for the Shipping plugin.
-- A card payment takes the stock when it comes in. Bank transfer and cash on delivery hold it from
-  the moment the order is placed.
+- Every order takes the stock when it is placed. A shopper cannot order the last unit someone else
+  holds. A card order still unpaid after **Hold stock for card payments (minutes)** is cancelled
+  and its stock goes back on sale.
 
 ## 3. Orders
 
@@ -51,8 +52,7 @@ A number beside **Billing** and **Orders** counts the orders waiting to ship, an
 | **Refunded** | The money went back. The stock goes back on sale. |
 | **Failed** | A card payment failed or never came. The order is closed. |
 
-If two shoppers pay for the last unit at the same moment, the second order is still paid and is
-marked **Oversold** so you can sort it out.
+A card payment that arrives after its order was cancelled is refunded by the payment plugin.
 
 Unpaid bank transfer and cash on delivery orders are cancelled after **Cancel unpaid orders after (days)**. A
 shopper may hold at most the number of open unpaid orders you allow.

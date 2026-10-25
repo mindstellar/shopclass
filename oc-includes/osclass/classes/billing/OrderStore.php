@@ -176,6 +176,7 @@ final class OrderStore extends Model
      * Guarded by default on the current status being pending, so a replayed webhook
      * cannot re-settle an order that already settled -- the update matches no row and
      * returns false. The caller treats that as "already handled", not as an error.
+     * A move to failed gives back the stock the order holds.
      *
      * @param int      $id
      * @param string   $status      One of the Order::STATUS_* constants
@@ -206,17 +207,25 @@ final class OrderStore extends Model
             $data['dt_paid_date'] = date('Y-m-d H:i:s');
         }
 
-        try {
-            $changed = self::table()
-                ->where('pk_i_id', $id)
-                ->whereIn('s_status', $from)
-                ->update($data);
-        } catch (DbException $e) {
-            // uq_gateway_ref: this external reference is already attached to another
-            // order, which means the callback is being replayed against the wrong
-            // record. Refuse rather than overwrite.
-            return false;
-        }
+        $write = static function () use ($id, $from, $data, $status): int {
+            try {
+                $changed = self::table()
+                    ->where('pk_i_id', $id)
+                    ->whereIn('s_status', $from)
+                    ->update($data);
+            } catch (DbException $e) {
+                // uq_gateway_ref: this external reference is already attached to another
+                // order, which means the callback is being replayed against the wrong
+                // record. Refuse rather than overwrite.
+                return 0;
+            }
+            if ($changed === 1 && $status === Order::STATUS_FAILED) {
+                OrderStock::release($id);
+            }
+
+            return $changed;
+        };
+        $changed = $status === Order::STATUS_FAILED ? Db::transaction($write) : $write();
 
         if ($changed === 1) {
             self::forgetToShip();

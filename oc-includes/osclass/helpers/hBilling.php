@@ -234,6 +234,16 @@ function osc_billing_hold_days(): int
 }
 
 /**
+ * Minutes an unpaid card order keeps its stock before it is cancelled, 5 to 120.
+ *
+ * @return int
+ */
+function osc_billing_card_hold_minutes(): int
+{
+    return min(120, osc_get_int_preference('billing_card_hold_minutes', 15, 5));
+}
+
+/**
  * Most unpaid bank transfer and cash on delivery orders one buyer may hold at once. 0 means no limit.
  *
  * @return int

@@ -544,6 +544,7 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_cod_enabled` | `0` | Whether cash on delivery is offered at checkout |
 | `billing_cod_fee` | `0` | Fee added to a cash on delivery order, micros |
 | `billing_hold_days` | `7` | Days an unpaid bank transfer or cash on delivery order holds its stock |
+| `billing_card_hold_minutes` | `15` | Minutes an unpaid card goods order holds its stock before `billing.card_hold_expire` cancels it; 5 to 120 |
 | `billing_open_hold_orders` | `3` | Most pending `offline` + `cod` orders one buyer may hold; 0 = no limit. Past it `place()` refuses `/gateway` `too_many_open` |
 | `billing_order_prefix` | *(empty)* | Printed before the id in an order number (`osc_billing_order_number()`) |
 
@@ -653,8 +654,13 @@ than adding a second (`osc_expire_premium_items()` in `oc-includes/osclass/funct
 The daily tick queues `billing.release_stock` while billing is on. It cancels pending goods
 orders placed more than `billing_hold_days` ago, 100 per run; each fires
 `billing_order_cancelled`. Orders of `Billing::HOLDS_STOCK` (`offline`, `cod`) give their stock
-back. Card orders hold no stock; they are closed so whatever they reserved (a coupon use) is
-given back. A payment that arrives later is logged as "paid after close".
+back. Card orders are closed too, so whatever they reserved (a coupon use) is given back.
+
+`GoodsCheckout::place()` also queues `billing.card_hold_expire` for a card order, delayed
+`billing_card_hold_minutes`. If the order is still pending then, `Billing::expireCardHold()`
+cancels it and gives its stock back, with no cancel mail. A payment that arrives later is
+logged as "paid after close", takes no stock, and the gateway refunds it. On shared hosting the
+queue runs on page visits, so the cancel may come a little after the minutes are up.
 
 `GoodsCheckout::place()` counts a buyer's pending `HOLDS_STOCK` orders (one count on
 `idx_user_status`, both gateways together) and refuses a new one at `billing_open_hold_orders`.
@@ -666,10 +672,10 @@ refused placement does not spend the hour.
 A goods order takes its stock once and gives it back once, keyed on the `_stock_taken`
 meta flag under the order's row lock (`OrderStore::withMeta()`). `Billing::markPaid()`
 takes it inside its transaction; a replayed callback finds `settle()` false and takes
-nothing. Bank transfer and cash on delivery take it at placement instead, and placement is
-refused when a line is short. A paid line that cannot be taken is not an error: it is
-recorded under `_short` (line id => qty) for the admin. `Billing::refund()` and
-`OrderStore::cancel()` give the stock back. Variants that do not track stock are never
+nothing. Every goods order takes it at placement, so that take finds the flag and takes
+nothing; placement is refused when a line is short. A paid line that cannot be taken is not an error: it is
+recorded under `_short` (line id => qty) for the admin. `Billing::refund()`,
+`OrderStore::cancel()` and a move to failed give the stock back. Variants that do not track stock are never
 touched.
 
 ## 9. Hooks

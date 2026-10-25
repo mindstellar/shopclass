@@ -345,7 +345,7 @@ final class BillingSettingsScreen
     }
 
     /**
-     * Selling goods: delivery charges, cash on delivery, how long unpaid offline orders hold
+     * Selling goods: delivery charges, cash on delivery, how long unpaid orders hold
      * stock, and the order number prefix. Amounts are typed as money and stored as micros.
      *
      * @return string the page id
@@ -375,7 +375,7 @@ final class BillingSettingsScreen
             ->field(self::money('billing_cod_fee', __('Cash on delivery fee'), __('Added to the order total. 0 means no fee.'), osc_get_int_preference('billing_cod_fee', 0, 0)))
             ->group(
                 __('Orders'),
-                __('Bank transfer and cash on delivery orders keep their stock until they are paid.')
+                __('Every order takes its stock when placed. A card order keeps it for the minutes below; bank transfer and cash on delivery orders until paid or cancelled.')
             )
             ->number(
                 'billing_hold_days',
@@ -384,6 +384,15 @@ final class BillingSettingsScreen
             )
                 ->clampMin(1)
                 ->default(7)
+            ->number(
+                'billing_card_hold_minutes',
+                __('Hold stock for card payments (minutes)'),
+                __('A card order keeps its stock this long while the buyer pays. Still unpaid then, it is cancelled and the stock goes back on sale. 5 to 120.')
+            )
+                ->set('min', 5)
+                ->set('max', 120)
+                ->sanitize(static fn ($value): int => max(5, min(120, (int) $value)))
+                ->default(15)
             ->number(
                 'billing_open_hold_orders',
                 __('Open unpaid orders per buyer'),

@@ -9,11 +9,12 @@
  */
 
 /**
- * Goods stock: a paid order takes its stock once, however often the callback comes; a refund
- * or a cancel gives it back; bank transfer and cash on delivery orders take it at placement,
- * refuse when short, and the daily job cancels them once unpaid past the hold; two callbacks
- * racing for the last unit leave one order oversold and the stock at zero; untracked stock is
- * never touched; the cash on delivery gateway and its fee line.
+ * Goods stock: every order takes its stock once at placement and refuses when short, however
+ * often the paid callback comes; a refund, a cancel or a failed payment gives it back; a card
+ * order still unpaid when its hold ends is cancelled, and a payment after that oversells nothing;
+ * the daily job cancels bank transfer and cash on delivery orders once unpaid past the hold; two
+ * callbacks racing for the last unit of orders that hold no stock leave one oversold and the
+ * stock at zero; untracked stock is never touched; the cash on delivery gateway and its fee line.
  * Usage: php tests/billing-stock.php
  */
 
@@ -129,12 +130,11 @@ $refused  = static function (callable $fn): array {
 };
 $callback = static fn (Order $order): CallbackResult => Billing::handleCallback('card', ['order' => $order->getId(), 'ref' => 'pay-' . $order->getId(), 'amount' => $order->getAmount()]);
 
-harness_section('a card order takes its stock when paid, once');
-$order = $place([['variant' => $a, 'qty' => 2]], 'card');
-pin('placing takes nothing', ['5', null], [$stock($a), OrderStore::find($order->getId())->meta(OrderStock::TAKEN)]);
-pin('the paid callback takes it', [CallbackResult::OUTCOME_PAID, '3'], [$callback($order)->getOutcome(), $stock($a)]);
+harness_section('a card order takes its stock when placed, once');
+$order  = $place([['variant' => $a, 'qty' => 2]], 'card');
 $lineId = OrderLineStore::itemLines($order->getId())[0]['id'];
-pin('and records what it took', [$lineId => 2], OrderStore::find($order->getId())->meta(OrderStock::TAKEN));
+pin('placing takes it and records what it took', ['3', [$lineId => 2]], [$stock($a), OrderStore::find($order->getId())->meta(OrderStock::TAKEN)]);
+pin('the paid callback takes nothing more', [CallbackResult::OUTCOME_PAID, '3'], [$callback($order)->getOutcome(), $stock($a)]);
 $callback($order);
 pin('the same callback again takes nothing more', '3', $stock($a));
 pin('neither does marking it paid by hand', [false, '3'], [Billing::markPaid(OrderStore::find($order->getId())), $stock($a)]);
@@ -175,9 +175,16 @@ osc_remove_hook('cart_checkout_before', $snatch);
 pin('and writes nothing: no order, no lines, no stock taken', [$before, '5', '0'], [[$orders(), $lineRows()], $stock($a), $stock($r)]);
 $setStock($r, 1);
 
+// An order placed before card orders took their stock at placement holds none.
+$noStock = static function (Order $order): Order {
+    OrderStock::release($order->getId());
+
+    return $order;
+};
+
 harness_section('two callbacks for the last unit');
-$first  = $place([['variant' => $r, 'qty' => 1]], 'card');
-$second = $place([['variant' => $r, 'qty' => 1]], 'card');
+$first  = $noStock($place([['variant' => $r, 'qty' => 1]], 'card'));
+$second = $noStock($place([['variant' => $r, 'qty' => 1]], 'card'));
 $dbName = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
 $child  = __DIR__ . '/lib/order-pay-child.php';
 [$waiting, $out] = race($admin, "SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id = $r FOR UPDATE", $dbName, [[$child, [$first->getId()]], [$child, [$second->getId()]]], "%{$p}t_item_variant%");
@@ -240,8 +247,8 @@ $setStock($a, 5);
 
 harness_section('two orders taking the same two variants in opposite order');
 $setStock($r, 5);
-$ar = $place([['variant' => $a, 'qty' => 1], ['variant' => $r, 'qty' => 1]], 'card');
-$ra = $place([['variant' => $r, 'qty' => 1], ['variant' => $a, 'qty' => 1]], 'card');
+$ar = $noStock($place([['variant' => $a, 'qty' => 1], ['variant' => $r, 'qty' => 1]], 'card'));
+$ra = $noStock($place([['variant' => $r, 'qty' => 1], ['variant' => $a, 'qty' => 1]], 'card'));
 $lockBoth = "SELECT i_stock FROM {$p}t_item_variant WHERE pk_i_id IN ($a, $r) FOR UPDATE";
 [$waiting, $out] = race($admin, $lockBoth, $dbName, [[$child, [$ar->getId(), 'pay']], [$child, [$ra->getId(), 'pay']]], "%{$p}t_item_variant%");
 $printed = implode('', $out);
@@ -285,6 +292,56 @@ Billing::handleCallback('card', ['order' => $declined->getId(), 'failed' => 1]);
 Billing::handleCallback('card', ['order' => $declined->getId(), 'failed' => 1]);
 osc_remove_hook('billing_order_failed', $onFail);
 pin('the order fails and billing_order_failed fires once with its buyer', ['failed', [[$declined->getId(), $declined->getUserId()]]], [OrderStore::find($declined->getId())->getStatus(), $failed]);
+pin('and its stock is back', ['5', null], [$stock($a), OrderStore::find($declined->getId())->meta(OrderStock::TAKEN)]);
+
+harness_section('a card order holds its stock for a short time');
+$setStock($r, 1);
+$placeAs = static fn (int $user, string $gateway) => $checkout->place($user, [['variant' => $r, 'qty' => 1]], $address, 'standard', $gateway)['order'];
+$mine    = $placeAs($tom, 'card');
+pin('the last unit is taken by the first card order', '0', $stock($r));
+pin('a second buyer is refused at placement, before paying', ['/lines/0 out_of_stock'], $refused(static fn () => $placeAs($kim, 'card')));
+pin('and with another gateway too', ['/lines/0 out_of_stock'], $refused(static fn () => $placeAs($kim, 'offline')));
+$holdJob = static fn (Order $o): ?array => Db::selectOne("SELECT s_payload, TIMESTAMPDIFF(SECOND, NOW(), dt_next_run) AS i_in FROM {$p}t_job_queue WHERE s_type = ? AND s_unique = ?", [Billing::JOB_CARD_HOLD, (string) $o->getId()]);
+$job     = $holdJob($mine);
+pin('placing queues its hold end, 15 minutes out by default', [['order' => $mine->getId()], true], [json_decode((string) ($job['s_payload'] ?? ''), true), abs((int) ($job['i_in'] ?? 0) - 900) <= 5]);
+$bank = $checkout->place($kim, [['variant' => $a, 'qty' => 1]], $address, 'standard', 'offline')['order'];
+pin('a bank transfer order queues none', null, $holdJob($bank));
+OrderStore::cancel($bank->getId());
+$setStock($r, 0);
+$cancelled = [];
+$onCancel  = static function ($orderId) use (&$cancelled): void {
+    $cancelled[] = (int) $orderId;
+};
+osc_add_hook('billing_order_cancelled', $onCancel);
+osc_run_hook('register_jobs');
+check('the hold job has a handler', osc_job_has_handler(Billing::JOB_CARD_HOLD));
+pin('when the hold ends unpaid, the order is cancelled and its stock is back', [true, 'cancelled', '1'], [Billing::expireCardHold($mine->getId()), OrderStore::find($mine->getId())->getStatus(), $stock($r)]);
+pin('announced once, with no cancel mail to the buyer', [[$mine->getId()], true], [$cancelled, OrderStore::find($mine->getId())->meta('_mail_cancelled') !== null]);
+pin('a second run changes nothing', [false, '1'], [Billing::expireCardHold($mine->getId()), $stock($r)]);
+$kims = $placeAs($kim, 'card');
+pin('the unit goes to the next buyer', '0', $stock($r));
+$late     = $callback(OrderStore::find($mine->getId()));
+$logged   = static fn (string $action, int $orderId): int => (int) $admin->query("SELECT COUNT(*) FROM {$p}t_log WHERE s_section = 'billing' AND s_action = '$action' AND fk_i_id = $orderId")->fetch_row()[0];
+pin('a payment after the hold leaves the order cancelled and takes nothing', ['cancelled', '0', null], [OrderStore::find($mine->getId())->getStatus(), $stock($r), OrderStore::find($mine->getId())->meta(OrderStock::TAKEN)]);
+pin('it is logged for a refund, never as oversold', [1, 0], [$logged('paid after close', $mine->getId()), $logged('oversold', $mine->getId())]);
+$callback($kims);
+pin('a paid order is left alone when its hold ends', [false, 'paid', '0'], [Billing::expireCardHold($kims->getId()), OrderStore::find($kims->getId())->getStatus(), $stock($r)]);
+osc_remove_hook('billing_order_cancelled', $onCancel);
+$cardHold = static function (string $minutes): int {
+    Preference::getInstance()->set('billing_card_hold_minutes', $minutes);
+    scratchdb_forget_cache();
+    osc_reset_preferences();
+
+    return osc_billing_card_hold_minutes();
+};
+pin('the hold is 5 to 120 minutes, 15 when unset', [5, 120, 30, 15], [$cardHold('1'), $cardHold('500'), $cardHold('30'), $cardHold('')]);
+$cardHold('30');
+$setStock($r, 1);
+$thirty = $placeAs($tom, 'card');
+pin('the job waits the set minutes', true, abs((int) ($holdJob($thirty)['i_in'] ?? 0) - 1800) <= 5);
+OrderStore::cancel($thirty->getId());
+$cardHold('');
+$setStock($r, 1);
 
 harness_section('the release job');
 $age = static function (Order $order, int $days) use ($admin, $p): void {
@@ -302,7 +359,7 @@ foreach ([$oldBank, $oldCod, $oldCard, $oldPaid, $oldCredit] as $o) {
     $age($o, 8);
 }
 $age($newBank, 6);
-pin('the held orders took 4 of 5', '1', $stock($a));
+pin('the orders took all 5', '0', $stock($a));
 $cancelled = [];
 $onCancel  = static function ($orderId) use (&$cancelled): void {
     $cancelled[] = (int) $orderId;

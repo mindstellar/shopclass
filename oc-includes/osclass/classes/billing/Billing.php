@@ -37,11 +37,14 @@ final class Billing
     /** Master switch. Off on every existing install, so an upgrade changes nothing. */
     public const PREF_ENABLED = 'billing_enabled';
 
-    /** Gateways paid outside the site: their goods orders hold stock from placement. */
+    /** Gateways paid outside the site: their unpaid goods orders keep stock for billing_hold_days. */
     public const HOLDS_STOCK = array('offline', 'cod');
 
     /** Daily job that cancels goods orders left unpaid past billing_hold_days. */
     public const JOB_RELEASE = 'billing.release_stock';
+
+    /** Job queued at placement that cancels a card goods order still unpaid after billing_card_hold_minutes. */
+    public const JOB_CARD_HOLD = 'billing.card_hold_expire';
 
     /** Held orders the release job cancels per run. */
     private const RELEASE_BATCH = 100;
@@ -200,7 +203,8 @@ final class Billing
                 return false;
             }
 
-            // settle() holds the order row, so a replayed callback stops above and takes nothing.
+            // Goods orders took their stock at placement, so this takes nothing; it is for an order
+            // reopened from failed by hand. settle() holds the row, so a replayed callback stops above.
             if ($order->isGoods() && OrderStock::take($order->getId()) !== array()) {
                 self::log('oversold', $order, $externalRef);
             }
@@ -611,6 +615,45 @@ final class Billing
             }
         });
         osc_job_describe(self::JOB_RELEASE, __('Cancel unpaid shop orders'));
+        osc_job_register_handler(self::JOB_CARD_HOLD, static function (\mindstellar\job\Job $job): void {
+            self::expireCardHold((int) $job->get('order', 0));
+        });
+        osc_job_describe(self::JOB_CARD_HOLD, __('Cancel unpaid card orders'));
+    }
+
+    /**
+     * Queue the end of a card order's stock hold. Call it in the placement's own transaction.
+     */
+    public static function queueCardHold(int $orderId): void
+    {
+        $delay = osc_billing_card_hold_minutes() * 60;
+        if (osc_job_enqueue(self::JOB_CARD_HOLD, array('order' => $orderId), array('delay' => $delay, 'unique_key' => (string) $orderId)) === 0) {
+            // The daily release job still cancels it after billing_hold_days.
+            error_log('Billing: the card hold of order #' . $orderId . ' was not queued.');
+        }
+    }
+
+    /**
+     * Cancel a card goods order still unpaid when its hold ends, and give its stock back. The
+     * buyer left the payment page, so no cancel mail goes. A payment that comes later finds the
+     * order closed, and the gateway refunds it.
+     *
+     * @return bool whether the order was cancelled
+     * @throws \mindstellar\database\DbException
+     */
+    public static function expireCardHold(int $orderId): bool
+    {
+        $order = OrderStore::find($orderId);
+        if ($order === null || !$order->isGoods() || !$order->isPending() || in_array($order->getGateway(), self::HOLDS_STOCK, true)) {
+            return false;
+        }
+        OrderStore::markMailSent($orderId, Receipts::MAIL_CANCELLED);
+        if (!OrderStore::cancel($orderId)) {
+            return false;
+        }
+        self::log('hold expired', $order, $order->getExternalRef());
+
+        return true;
     }
 
     /**

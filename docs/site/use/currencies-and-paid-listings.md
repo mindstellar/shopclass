@@ -63,14 +63,17 @@ The **Shop** tab holds the settings a goods checkout needs:
 - **Cancel unpaid orders after (days)**: bank transfer and cash on delivery orders keep
   their stock from the moment they are placed. Left unpaid this long (7 days by default),
   they are cancelled once a day and the stock goes back on sale.
+- **Hold stock for card payments (minutes)**: a card order keeps its stock this long while
+  the buyer pays (15 by default, 5 to 120). Still unpaid then, it is cancelled with no mail
+  to the buyer and the stock goes back on sale. On shared hosting the job queue runs on page
+  visits, so the cancel may come a little late.
 - **Open unpaid orders per buyer**: the most bank transfer and cash on delivery orders one
   buyer may hold unpaid at once (3 by default, 0 for no limit). Past it, checkout asks them to
   pay for or cancel an open order first.
 - **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`.
 
-A card payment takes the stock when the payment comes in. If two buyers pay for the last
-one at the same moment, the second order is still paid and is marked oversold for you to
-sort out.
+Every order takes its stock when placed, so two buyers cannot both order the last one. A
+card payment that arrives after its order was cancelled is refunded by the payment plugin.
 
 **Test Payments** is a bundled plugin for trying the flow out. Its checkout page
 lets you choose **Pay**, **Decline**, **Leave pending** or **Fail**, and each one

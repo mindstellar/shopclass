@@ -25,8 +25,9 @@ use mindstellar\user\UserStore;
  * Turns a cart into a pending goods order and asks its gateway how to pay. The web and API
  * controllers both place through here. The cart is priced again on the server, so nothing
  * the browser sent reaches an amount. The order and its lines are one transaction; a gateway
- * that gives no checkout leaves the order cancelled, never pending. A bank transfer or cash on
- * delivery order takes its stock at placement (Billing::HOLDS_STOCK); any other takes it when paid.
+ * that gives no checkout leaves the order cancelled, never pending. Every order takes its stock at
+ * placement, so a short line is refused before the buyer pays. A card order still unpaid after
+ * billing_card_hold_minutes is cancelled by a queued job; Billing::HOLDS_STOCK orders wait billing_hold_days.
  *
  * Fires `cart_checkout_before` ($cart) before the write and `billing_order_placed`
  * ($orderId, $userId) once the gateway has answered.
@@ -145,8 +146,9 @@ final class GoodsCheckout
         $order = Db::transaction(static function () use ($userId, $gatewayId, $quote, $meta): Order {
             $order = OrderStore::create($userId, $gatewayId, $quote->total(), $quote->currency(), 0, $meta);
             OrderLineStore::add($order->getId(), self::lines($quote));
-            if (in_array($gatewayId, Billing::HOLDS_STOCK, true)) {
-                self::hold($order->getId(), $quote);
+            self::hold($order->getId(), $quote);
+            if (!in_array($gatewayId, Billing::HOLDS_STOCK, true)) {
+                Billing::queueCardHold($order->getId());
             }
 
             return $order;
@@ -194,8 +196,8 @@ final class GoodsCheckout
     }
 
     /**
-     * Take the stock of an order paid outside the site. A short line refuses the order, and the
-     * caller's transaction rolls everything back.
+     * Take the order's stock. A short line refuses the order, and the caller's transaction rolls
+     * everything back.
      *
      * @throws InvalidException with `/lines/n` out_of_stock
      * @throws \mindstellar\database\DbException

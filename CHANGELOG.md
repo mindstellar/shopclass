@@ -77,6 +77,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Mails, receipts, bank transfer references and the API show an order number with its prefix.
 - `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
 - A listing waiting for payment takes no slot.
+- Card orders take their stock at placement and are cancelled if still unpaid after **Hold stock for card payments (minutes)** (Settings → Billing → Shop, 15 by default).
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.
