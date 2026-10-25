@@ -101,6 +101,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Checkbox filters use the `s_value` index.
 - The buy-credits page lists only the payment methods that take the billing currency.
 - Signing in or registering from a page that needs it, such as the checkout, returns to that page: `osc_user_login_url()` and `osc_register_account_url()` take an optional same-site `return` path, and no cookie is set for it.
+- A title or description with "&", "<" or ">" is no longer refused as too long when it fits the form: lengths count the text as typed, not as stored.
 
 ## Shopclass 7.0.5
 

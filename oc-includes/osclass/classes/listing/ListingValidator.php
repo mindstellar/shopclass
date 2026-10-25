@@ -64,6 +64,30 @@ final class ListingValidator
     }
 
     /**
+     * The length of a title or description as the poster typed it. Params::purifyText()
+     * stores "&" as "&amp;" and "<" as "&lt;", so counting the stored text refused a title
+     * the form's own maxlength had let through.
+     *
+     * @param mixed $value the purified text
+     */
+    public static function typedLength($value): int
+    {
+        return mb_strlen(html_entity_decode((string) $value, ENT_QUOTES | ENT_HTML5, 'UTF-8'), 'UTF-8');
+    }
+
+    /**
+     * Whether a purified title fits the title setting as typed and the column as stored.
+     * Item::fitTitle() cuts at the column width, which would split an "&amp;".
+     *
+     * @param mixed $value the purified title
+     */
+    public static function fitsTitle($value, int $max): bool
+    {
+        return self::typedLength($value) <= $max
+            && mb_strlen((string) $value, 'UTF-8') <= \Item::TITLE_WIDTH;
+    }
+
+    /**
      * Validate common inputs while editing/publishing
      *
      * Photo checks add their own notice to $notices too, as the form shows both.
@@ -89,7 +113,7 @@ final class ListingValidator
         $tooShort = array();
         $hasTitle = false;
         foreach ($aItem['title'] as $key => $value) {
-            if (!osc_validate_max($value, $maxTitle)) {
+            if (!self::fitsTitle($value, $maxTitle)) {
                 $tooLong[] = self::entry('/title', 'too_long', sprintf(_m('Title too long (%s).'), $key));
             } elseif (osc_validate_text($value)) {
                 $hasTitle = true;
@@ -99,16 +123,18 @@ final class ListingValidator
         }
         $errors = array_merge($errors, $hasTitle || $tooLong !== array() ? array() : $tooShort, $tooLong);
 
-        $descErrors = array();
+        $maxDescription = osc_max_characters_per_description();
+        $descErrors     = array();
         foreach ($aItem['description'] as $key => $value) {
-            if (osc_validate_text($value, 3) && osc_validate_max($value, osc_max_characters_per_description())) {
+            $fits = self::typedLength($value) <= $maxDescription;
+            if (osc_validate_text($value, 3) && $fits) {
                 $descErrors = array();
                 break;
             }
             if (!osc_validate_text($value, 3)) {
                 $descErrors[] = self::entry('/description', 'too_short', sprintf(_m('Description too short (%s).'), $key));
             }
-            if (!osc_validate_max($value, osc_max_characters_per_description())) {
+            if (!$fits) {
                 $descErrors[] = self::entry('/description', 'too_long', sprintf(_m('Description too long (%s).'), $key));
             }
         }
