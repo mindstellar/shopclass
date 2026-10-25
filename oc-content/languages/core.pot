@@ -767,6 +767,26 @@ msgstr ""
 msgid "100 is solid. Lower lets the photo show through the mark."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "2018 Ford Focus, one owner"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "40"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "41"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "42"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "43"
+msgstr ""
+
 #: oc-includes/osclass/install-functions.php
 msgid "<code>config-sample.php</code> file exists"
 msgstr ""
@@ -926,10 +946,18 @@ msgstr ""
 msgid "A captcha is set up, so there is no limit per account."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "A card for any amount the recipient likes. Delivered by email."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "A checked view of your site: what needs doing, background jobs, security, "
 "the cache, the database, and the server it runs on."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "A clear guide to light, framing and editing. Read it on any device."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
@@ -1121,6 +1149,14 @@ msgid ""
 "you get an e-mail."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "A5"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "A6"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "AM"
 msgstr ""
@@ -1185,6 +1221,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
 msgid "Accounts never activated from the confirmation email."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Acoustic guitar with case"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/LogsDataTable.php
@@ -1527,6 +1567,10 @@ msgid ""
 "left alone."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Adjustable dumbbells, pair"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid "Admin"
@@ -1638,6 +1682,10 @@ msgid ""
 "or account is blocked for a while."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Age"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "Ajax error, please try again."
 msgstr ""
@@ -1737,6 +1785,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "All the checks below pass."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Allergens"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -1995,6 +2047,10 @@ msgstr ""
 msgid "Apply"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Apply by"
+msgstr ""
+
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/users/index.php
 msgid "Apply filters"
@@ -2186,6 +2242,7 @@ msgid "Author, e-mail or text"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
+#: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Automatic"
 msgstr ""
 
@@ -2219,6 +2276,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/group_iframe.php
 msgid "Available as a block (place this form on pages and layouts)"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Available from"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -2434,6 +2495,14 @@ msgid ""
 "paid."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Barista, full-time"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Bathrooms"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Beauty & Health"
 msgstr ""
@@ -2447,6 +2516,10 @@ msgstr ""
 msgid "Bedding & Bath"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Bedrooms"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/dependencies.php
 msgid "Before %s goes live"
 msgstr ""
@@ -2457,6 +2530,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Before we begin, let's make sure your server has everything it needs."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Beige"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -2479,6 +2556,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Billing settings"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Black"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
@@ -2546,6 +2627,10 @@ msgstr ""
 msgid "Blocks"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Blue"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Boats"
 msgstr ""
@@ -2583,8 +2668,19 @@ msgstr ""
 msgid "Bottom Right"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Brand"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "Break comments into pages with"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Bright flat on the second floor, five minutes from the station. Furnished, "
+"with a shared garden."
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
@@ -2601,6 +2697,10 @@ msgstr ""
 msgid ""
 "Broader and riskier — leave unchecked unless you specifically need to catch "
 "a fragment inside longer words."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Brown"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -2805,6 +2905,14 @@ msgstr ""
 msgid "Cannot run with \"%1$s\": both declare %2$s."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Canvas backpack"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Canvas sneakers"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Captcha"
@@ -2820,6 +2928,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Caravans & Campers"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Care"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -2844,6 +2956,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Cash on delivery fee"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Cat tree, three levels"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/MarketAjax.php
@@ -2918,6 +3034,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Centre"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Ceramic mug"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -3340,6 +3460,11 @@ msgstr ""
 msgid "Collectibles & Art"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Colour"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid "Column differs in whether it can be empty"
 msgstr ""
@@ -3414,12 +3539,24 @@ msgstr ""
 msgid "Comments visitors leave on listings appear here for approval."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Commercial"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Commercial Property"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Commercial coffee machine, two group"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Community"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Compact speaker with room-filling sound and a built-in assistant."
 msgstr ""
 
 #: oc-includes/osclass/classes/search/FacetJobs.php
@@ -3427,6 +3564,7 @@ msgid "Compact the listing filter index"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/UserForm.php
+#: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Company"
 msgstr ""
 
@@ -3452,6 +3590,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Computers"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Condition"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -3573,6 +3715,10 @@ msgstr ""
 msgid "Continue counting"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Contract"
+msgstr ""
+
 #: oc-admin/themes/modern/messages/thread.php
 msgid "Conversation"
 msgstr ""
@@ -3613,8 +3759,20 @@ msgstr ""
 msgid "Copying files: %1$s of %2$s (%3$s)"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Cordless drill set with case"
+msgstr ""
+
 #: oc-admin/themes/modern/emails/frm.php
 msgid "Core finds the template by this name, so it cannot change."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Cotton bath towel set"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Cotton t-shirt"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
@@ -3761,6 +3919,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
 msgid "Crawlers are most of the traffic on a busy site and inflate the numbers."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Cream"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -3974,6 +4136,10 @@ msgstr ""
 msgid "Daily"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Dark chocolate gift box"
+msgstr ""
+
 #: oc-admin/themes/modern/main/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/Breadcrumb.php
@@ -4038,6 +4204,7 @@ msgstr ""
 #: oc-includes/osclass/classes/datatables/LogsDataTable.php
 #: oc-includes/osclass/classes/datatables/MediaDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
+#: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Date"
 msgstr ""
 
@@ -4532,8 +4699,16 @@ msgstr ""
 msgid "Details: %s"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Diesel"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Digital Goods"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Digital file"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/frm.php
@@ -4618,6 +4793,10 @@ msgstr ""
 #: oc-admin/themes/modern/tools/system-info/database.php
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Done"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Dotted notebook"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
@@ -4779,6 +4958,10 @@ msgstr ""
 msgid "E-mail user whenever"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "EPUB"
+msgstr ""
+
 #: oc-includes/osclass/classes/Dependencies.php
 msgid "ERROR: Some dependencies could not be loaded (%s)"
 msgstr ""
@@ -4791,6 +4974,10 @@ msgstr ""
 msgid ""
 "Each image still on local disk is queued for upload to the active remote "
 "backend. "
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Each one adjusts from 2 to 20 kg. Space saving and easy to change."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -4925,6 +5112,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid "Editing this field changes it in every form that uses it."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Eight months old and good with children. Looking for a family with a garden."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Electric"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -5144,6 +5339,10 @@ msgstr ""
 msgid "Event"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Event details"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Events"
@@ -5203,6 +5402,10 @@ msgstr ""
 msgid "Every published theme is already installed"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Everyday sneakers with a cushioned sole. True to size."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/backup/BackupJobs.php
 #: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
@@ -5251,6 +5454,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/basic_data.php
 msgid "Example region"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "Example seller"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -5317,6 +5524,10 @@ msgstr ""
 msgid "Extra slots"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Face serum"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
@@ -5342,6 +5553,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Failures per account"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Family house with a garden"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -5384,6 +5599,10 @@ msgstr ""
 msgid "Feeding & Nursery"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Female"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "Field"
 msgstr ""
@@ -5396,6 +5615,10 @@ msgstr ""
 msgid "Fields"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Fifty natural wood blocks in a cotton bag. Smooth edges and safe finishes."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/database.php
 #: oc-includes/osclass/classes/datatables/MediaDataTable.php
 msgid "File"
@@ -5403,6 +5626,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
 msgid "File #%d"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "File format"
 msgstr ""
 
 #: oc-includes/AjaxUploader.php
@@ -5511,8 +5738,17 @@ msgstr ""
 msgid "Fix it"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Flat"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Flats for Sale"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Floor area (m²)"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -5525,6 +5761,18 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Folder <code>oc-content/uploads</code> exists"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Folding pram"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Folding walking frame"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Folds flat with one hand and fits in a small boot. Comes with a rain cover."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
@@ -5550,6 +5798,10 @@ msgstr ""
 msgid ""
 "For new photos only. WebP is about a third smaller than JPEG and keeps "
 "transparency."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "For parts"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
@@ -5597,6 +5849,10 @@ msgstr ""
 msgid "Forms"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Forty pieces of track and four carriages. Safe paint and no loose parts."
+msgstr ""
+
 #: oc-admin/themes/modern/functions.php
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Forums"
@@ -5623,12 +5879,20 @@ msgstr ""
 msgid "Free disk space"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Free entry"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Free listings per seller"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Free space"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Free: about 30 moving boxes"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -5670,6 +5934,10 @@ msgstr ""
 msgid "Friendly URLs use words instead of question marks and numbers."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Friendly young Labrador needs a home"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/FieldForm.php
 #: oc-includes/osclass/helpers/hItems.php
 msgid "From"
@@ -5694,8 +5962,18 @@ msgstr ""
 msgid "From the Cloudflare dashboard &raquo; Turnstile."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Fuel"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Full-time"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Furnished"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -5721,6 +5999,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Garden & Outdoor"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Garden tidy-up and hedge trimming"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -5756,6 +6038,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Gift Cards"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Gift card"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
@@ -5796,6 +6082,10 @@ msgstr ""
 msgid "Google reCAPTCHA"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Green"
+msgstr ""
+
 #: oc-admin/themes/modern/media/index.php
 msgid "Grid"
 msgstr ""
@@ -5827,12 +6117,24 @@ msgstr ""
 msgid "Hair Care"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Hand glazed stoneware mug that holds 350 ml. Dishwasher safe."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Handmade shea body butter"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Health & Beauty"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Healthcare & Care"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Heavy duty bench with a lower shelf. Easy to clean and very stable."
 msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
@@ -5969,6 +6271,11 @@ msgstr ""
 msgid "Hourly"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "House"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Houses & Flats to Rent"
 msgstr ""
@@ -6024,6 +6331,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "How to set up cron"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Hybrid"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Hybrid commuter bike, size M"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -6263,6 +6578,14 @@ msgstr ""
 msgid "Index has different columns"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Ingredients"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Ingredients and allergens"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/ui/Field.php
 msgid "Insert from media library"
 msgstr ""
@@ -6353,6 +6676,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
 msgid "Internal name"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Internship"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -6488,6 +6815,10 @@ msgstr ""
 msgid "Item ID"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Item details"
+msgstr ""
+
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Item expiration date"
 msgstr ""
@@ -6530,6 +6861,14 @@ msgstr ""
 msgid "Job"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Job details"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Job type"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Jobs"
@@ -6537,6 +6876,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Jobs have been waiting for %s although cron runs."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Join a small studio building websites for local shops. You work from home "
+"and meet the team once a month."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -6553,6 +6898,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "June"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Junior web developer, remote"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -6680,6 +7029,10 @@ msgstr ""
 msgid "Kitchen & Dining"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "L"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/menus.php
 msgid "Label"
 msgstr ""
@@ -6690,6 +7043,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/page-block-form.php
 msgid "Label (for your reference)"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Land"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -6713,6 +7070,10 @@ msgstr ""
 #: oc-admin/themes/modern/languages/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Languages"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Laptop, 14 inch, 16 GB memory"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -6827,6 +7188,18 @@ msgstr ""
 msgid "Latest users on the web"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Lawns, hedges and borders tidied by an experienced gardener. Free quotes."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Lay-flat binding and thick paper that takes ink well."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Leather jacket, size M"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Leave blank and we'll generate a strong one for you."
 msgstr ""
@@ -6900,6 +7273,29 @@ msgstr ""
 msgid "Library"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Light aluminium frame with adjustable height. Folds flat for the car."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Light aluminium frame with mudguards and a rear rack. Ridden to work for "
+"two summers."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Light and airy, with pockets. Cut to fall just below the knee."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Light daily serum with vitamin C. Suitable for most skin types."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Like new"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -6910,6 +7306,10 @@ msgstr ""
 msgid ""
 "Limits for the forms that send e-mail: contact, contact the seller, contact "
 "a user and share a listing."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Linen summer dress"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -7237,6 +7637,12 @@ msgstr ""
 msgid "Local disk"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Local growers, bakers and makers every Saturday from 9 am. Everyone is "
+"welcome."
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -7347,12 +7753,20 @@ msgid ""
 "menu. At most %d menus."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "M"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "MB"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Machinery & Tools"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Made in small batches with shea butter and almond oil. No added perfume."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/mailserver.php
@@ -7410,6 +7824,10 @@ msgstr ""
 msgid "Maintenance mode is: <strong>%s</strong>"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Make"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/backup/BackupJobs.php
@@ -7446,6 +7864,11 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Making a backup: %1$s, %2$s."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Male"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
@@ -7539,12 +7962,21 @@ msgstr ""
 msgid "Manage your listings"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Manual"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/add.php
 msgid "Manually add Shopclass themes in .zip format. If you prefer, "
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/add.php
 msgid "Manually upload Shopclass plugins in .zip format. If you prefer, "
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Manufacturer"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -7638,6 +8070,14 @@ msgstr ""
 msgid "Matching now"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Material"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Maths tutoring, all school ages"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Max length"
 msgstr ""
@@ -7682,6 +8122,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Medical & Mobility"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Medium roast with notes of cocoa and orange. 250 g bag, roasted weekly."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -7791,6 +8235,10 @@ msgstr ""
 msgid "Migration failed: %s"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Mileage"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Miles"
 msgstr ""
@@ -7829,6 +8277,11 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Mobile Phones"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Model"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
@@ -8086,6 +8539,15 @@ msgstr ""
 msgid "Names starting with"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Natural"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Navy"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "Nearest first"
 msgstr ""
@@ -8163,6 +8625,8 @@ msgid "Never expires"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "New"
 msgstr ""
 
@@ -8658,6 +9122,10 @@ msgstr ""
 msgid "Non-Existent Category"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Non-slip mat, 6 mm thick, with a carry strap."
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -8935,6 +9403,14 @@ msgstr ""
 msgid "OPcache is off, so PHP recompiles every file on every request."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Oak"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Oak dining table with four chairs"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Oct"
 msgstr ""
@@ -9198,6 +9674,10 @@ msgstr ""
 msgid "Options are required."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Orange"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
@@ -9285,6 +9765,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 msgid "Owner gone"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "PDF"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -9458,6 +9943,7 @@ msgid "Parking & Storage"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
+#: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Part-time"
 msgstr ""
 
@@ -9509,6 +9995,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Paths"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Patient one-to-one lessons at your home or online. Exam preparation is a "
+"speciality."
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
@@ -9608,6 +10100,15 @@ msgstr ""
 msgid "Pet Supplies"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Pet details"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Petrol"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Pets"
 msgstr ""
@@ -9661,6 +10162,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Photo uploads from guests"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Photography handbook, e-book"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -9942,6 +10447,10 @@ msgstr ""
 msgid "Product alerts"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Product details"
+msgstr ""
+
 #: oc-admin/themes/modern/users/frm.php
 msgid "Profile"
 msgstr ""
@@ -9952,6 +10461,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Property"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Property details"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Property type"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -10074,6 +10591,10 @@ msgid ""
 "with jobs still waiting."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Quick and quiet, with a solid state drive. Battery lasts a full working day."
+msgstr ""
+
 #: oc-admin/themes/modern/stats/items.php
 msgid ""
 "Quickly find out how many new listings have been published on your site and "
@@ -10094,6 +10615,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "Raise memory without touching php.ini"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Rate"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -10416,6 +10941,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingHoldJobs.php
 msgid "Remind to pay for listing"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Remote"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -10762,8 +11291,16 @@ msgstr ""
 msgid "Rollback failed; the backup could not be restored."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Room"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Rooms & Flatshares"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Roomy day pack with a padded laptop pocket. Washed and ready to go."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -10835,6 +11372,10 @@ msgid ""
 "above."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "S"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "S3 bucket \"%s\""
 msgstr ""
@@ -10865,6 +11406,10 @@ msgstr ""
 msgid "Safety copy"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Salary"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/ui/Picker.php
 msgid "Same as parent"
 msgstr ""
@@ -10880,6 +11425,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Saturday"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Saturday morning market in the park"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
@@ -11050,6 +11599,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
 msgid "Scam"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Scented candle"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -11559,6 +12112,14 @@ msgstr ""
 msgid "Server type"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Service area"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Service details"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Services"
 msgstr ""
@@ -11652,6 +12213,10 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Setup couldn't save the site language. The database user may not be able to "
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Sex"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
@@ -11979,6 +12544,14 @@ msgstr ""
 msgid "Signed URLs"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Silver"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Single-origin coffee beans"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Site"
 msgstr ""
@@ -12013,6 +12586,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
+#: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Size"
 msgstr ""
 
@@ -12064,12 +12638,34 @@ msgstr ""
 msgid "Smart Home & Wearables"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Smart speaker"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Smartphone, 128 GB, like new"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Snacks"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Soft 100 percent cotton tee with a relaxed fit. Machine washable."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Soft brown leather jacket with a zip front. Worn a handful of times."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Software updates"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Solid oak table that seats four to six. A few light marks on the top, "
+"otherwise in good shape."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/LocationAjax.php
@@ -12125,6 +12721,10 @@ msgstr ""
 msgid "Source id"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Soy wax candle in a reusable glass jar. Burns for about 40 hours."
+msgstr ""
+
 #: oc-admin/themes/modern/fields/submissions.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/messages/index.php
@@ -12142,6 +12742,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/Cleanup.php
 msgid "Spam listings"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Specs"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -12171,6 +12775,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Stable, release candidates and betas"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Stainless steel workbench"
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
@@ -12299,6 +12907,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Strict SQL mode"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Strong cardboard boxes in several sizes. Collect from the ground floor."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Sturdy scratching posts and two cosy beds. Easy to clean."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -13696,6 +14312,16 @@ msgstr ""
 msgid "Thousands separator: this field is required"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Three bedrooms, a new kitchen and a south-facing garden. Close to schools "
+"and parks."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Three thick towels in a set. Gets softer with every wash."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "Throw all away…"
 msgstr ""
@@ -13938,6 +14564,10 @@ msgstr ""
 msgid "Trades & Construction"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Transmission"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "Tries"
@@ -14042,6 +14672,14 @@ msgstr ""
 msgid "Tutoring & Classes"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Twelve hand made dark chocolates in a keepsake box."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Two batteries, a charger and a set of bits. Hardly used."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid ""
 "Two files hold these settings. PHP's own limits live in %1$s%2$s; "
@@ -14051,8 +14689,16 @@ msgid ""
 "takes effect on the next request."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Two group espresso machine with a steam wand. Serviced last month."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "Two letters, as in IN, DE or MT."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Two-bedroom flat near the station"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
@@ -14231,6 +14877,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Up to date"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Up to eight hours of play time and a pocket charging case."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/configuration.php
@@ -14467,6 +15117,17 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/Receipts.php
 msgid "Use your credits"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Used"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Used for six months with a case and screen protector. Comes with the box "
+"and charger."
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
@@ -14710,6 +15371,10 @@ msgid ""
 "host:port."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Vaccinated"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Value"
 msgstr ""
@@ -14718,8 +15383,20 @@ msgstr ""
 msgid "Vans & Commercial"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Vehicle condition"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Vehicle details"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Vehicles"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Venue"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -14863,8 +15540,16 @@ msgstr ""
 msgid "Waiting to start"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Warm tone and easy to play, good for a beginner. A hard case is included."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Warn about expiration"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "Warranty months"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -14897,6 +15582,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Watermark type"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"We are looking for a friendly barista for our busy corner cafe. Training is "
+"given, and the hours are early."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
@@ -14966,6 +15657,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/system-info/security.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
+#: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Website"
 msgstr ""
 
@@ -15011,6 +15703,12 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Welcome to Shopclass"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid ""
+"Well kept five-door hatchback with full service history. New tyres and a "
+"fresh MOT."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
@@ -15119,6 +15817,10 @@ msgid ""
 "public site is blocked."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "White"
+msgstr ""
+
 #: oc-includes/osclass/classes/datatables/LogsDataTable.php
 msgid "Who"
 msgstr ""
@@ -15153,6 +15855,10 @@ msgstr ""
 msgid "Will install %s"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Wireless earbuds"
+msgstr ""
+
 #: oc-admin/themes/modern/pages/index.php
 msgid ""
 "With Shopclass you can create static pages on which information can be "
@@ -15173,6 +15879,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Women's Clothing"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Wooden building blocks"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Wooden toy train set"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
@@ -15203,6 +15917,10 @@ msgstr ""
 msgid "Writes, per key or user"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/fields-classifieds.php
+msgid "Year"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/sitemap.php
 msgid "Yearly"
 msgstr ""
@@ -15211,6 +15929,10 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 #: oc-includes/osclass/helpers/hItems.php
 msgid "Yes"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Yoga mat"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
@@ -15529,6 +16251,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
 msgid "Your theme shows this menu in: %1$s (%2$s)."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/fields-shop.php
+msgid "ZIP"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Picker.php

@@ -1025,6 +1025,127 @@ function install_seed_categories(string $type): int
 }
 
 /**
+ * Add the sample custom fields and listings for a site type, and record their ids so they can be removed.
+ * Each step is non-fatal; what went wrong comes back in 'errors'.
+ *
+ * @param string      $type     'classifieds' or 'shop'
+ * @param string|null $imageDir folder of photos named like the sample's 'image' keys; the bundled pack when null
+ *
+ * @return array{listings: int, fields: int, errors: string[]}
+ * @throws \InvalidArgumentException when the type is unknown
+ * @throws \RuntimeException when sample data is already installed
+ */
+function install_seed_sample(string $type, ?string $imageDir = null): array
+{
+    if (!in_array($type, array('classifieds', 'shop'), true)) {
+        throw new \InvalidArgumentException('Unknown site type: ' . $type);
+    }
+    require_once LIB_PATH . 'osclass/helpers/hKv.php';
+    if (osc_kv_get('sample', 'items') !== null) {
+        throw new \RuntimeException('Sample data is already installed.');
+    }
+
+    $locale  = osc_current_admin_locale();
+    $errors  = array();
+    $fieldId   = array();
+    $fieldType = array();
+    $fieldIds  = array();
+    $groupIds  = array();
+    $itemIds   = array();
+
+    $groupModel = FieldGroup::getInstance();
+    $service    = \mindstellar\fields\FieldService::make($locale);
+    foreach (require LIB_PATH . 'osclass/installer/data/fields-' . $type . '.php' as $position => $group) {
+        try {
+            $groupId = $groupModel->insertGroup($group['name'], '', $position);
+            if (!$groupId) {
+                throw new \RuntimeException('group');
+            }
+            $groupIds[] = (int) $groupId;
+            $groupModel->insertCategories($groupId, $group['categories']);
+            foreach ($group['fields'] as $field) {
+                $id = $service->create(array(
+                    'name'       => $field['name'],
+                    'type'       => $field['type'],
+                    'searchable' => $field['searchable'],
+                    'options'    => $field['options'] ?? array(),
+                ));
+                $groupModel->setFieldSingleGroup($id, $groupId);
+                $fieldId[$field['key']]   = $id;
+                $fieldIds[]               = $id;
+                $fieldType[$field['key']] = $field['type'];
+            }
+        } catch (\Throwable $e) {
+            $errors[] = 'fields: ' . $e->getMessage();
+        }
+    }
+
+    $service = new \mindstellar\listing\ListingService();
+    $actor   = \mindstellar\auth\Actor::admin(1, '127.0.0.1');
+    $imgDir  = $imageDir ?? LIB_PATH . 'osclass/installer/sample/img/';
+    foreach (require LIB_PATH . 'osclass/installer/data/sample-' . $type . '.php' as $row) {
+        $copy = null;
+        try {
+            $meta = array();
+            foreach ($row['fields'] as $key => $value) {
+                if (isset($fieldId[$key])) {
+                    $meta[$fieldId[$key]] = $fieldType[$key] === 'DATE' ? strtotime((string) $value) : $value;
+                }
+            }
+            $form = array(
+                'catId'        => $row['category'],
+                'title'        => array($locale => $row['title']),
+                'description'  => array($locale => $row['description']),
+                'price'        => $row['price'],
+                'contactName'  => __('Example seller'),
+                'contactEmail' => 'seller@example.com',
+                'meta'         => $meta,
+            );
+            if (isset($row['variants'])) {
+                $form['product'] = array('sell' => 1, 'hasOptions' => 1, 'variants' => $row['variants']);
+            } elseif (isset($row['stock'])) {
+                $form['product'] = array('sell' => 1, 'stock' => $row['stock']);
+            }
+            // A photo is moved into the listing and deleted from where it was, so give it a copy.
+            $source = $imgDir . $row['image'] . '.webp';
+            if (is_file($source)) {
+                $copy = tempnam(sys_get_temp_dir(), 'sample');
+                copy($source, $copy);
+                $form['photos'] = array($copy);
+            }
+            $save = static fn (array $form) => $service->create(
+                \mindstellar\listing\ListingInput::fromArray($form, $actor, true),
+                $actor,
+                true
+            );
+            try {
+                $saved = $save($form);
+            } catch (\Throwable $e) {
+                // A photo the server refuses must not cost the listing.
+                if (!isset($form['photos'])) {
+                    throw $e;
+                }
+                $errors[] = $row['image'] . ': ' . $e->getMessage();
+                unset($form['photos']);
+                $saved = $save($form);
+            }
+            $itemIds[] = $saved->id();
+        } catch (\Throwable $e) {
+            $errors[] = $row['category'] . ': ' . $e->getMessage();
+        }
+        if ($copy !== null && is_file($copy)) {
+            unlink($copy);
+        }
+    }
+
+    osc_kv_set('sample', 'items', $itemIds);
+    osc_kv_set('sample', 'fields', $fieldIds);
+    osc_kv_set('sample', 'groups', $groupIds);
+
+    return array('listings' => count($itemIds), 'fields' => count($fieldIds), 'errors' => $errors);
+}
+
+/**
  * Insert the example data (categories and emails) on all available locales
  *
  * @return void
