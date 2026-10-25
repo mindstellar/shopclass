@@ -40,6 +40,8 @@ $mode('both');
 pin('a stored both reads classifieds', 'classifieds', osc_site_mode());
 pin('the modes are classifieds and shop', ['classifieds', 'shop'], SiteMode::ALL);
 pin('both needs classifieds', ['classifieds'], SiteMode::needed('both'));
+pin('shop is a valid mode', true, SiteMode::isValid('shop'));
+pin('both is not a valid mode', false, SiteMode::isValid('both'));
 $mode('nonsense');
 pin('an unknown value reads classifieds', 'classifieds', osc_site_mode());
 

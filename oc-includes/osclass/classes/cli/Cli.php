@@ -26,6 +26,7 @@ use mindstellar\market\PackageIndex;
 use mindstellar\market\PackageReconciler;
 use mindstellar\market\PluginDependencies;
 use mindstellar\security\Demo;
+use mindstellar\site\SiteMode;
 use mindstellar\upgrade\BuildInfo;
 use mindstellar\upgrade\Osclass;
 use mindstellar\upgrade\Upgrade;
@@ -298,7 +299,7 @@ class Cli
 
             return 2;
         }
-        if (!in_array($siteType, ['classifieds', 'shop'], true)) {
+        if (!SiteMode::isValid($siteType)) {
             $this->err("Invalid --site-type. Use classifieds or shop.\n");
 
             return 2;
@@ -410,7 +411,7 @@ class Cli
         if ($photos->missing()) {
             $this->err("Sample photos could not be downloaded, so the sample listings have no photos.\n");
         }
-        if ($siteType === 'shop') {
+        if ($siteType === SiteMode::SHOP) {
             $this->installShop();
         }
 

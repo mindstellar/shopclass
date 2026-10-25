@@ -36,7 +36,15 @@ final class SiteMode
      */
     public static function normalize(string $value): string
     {
-        return in_array($value, self::ALL, true) ? $value : self::CLASSIFIEDS;
+        return self::isValid($value) ? $value : self::CLASSIFIEDS;
+    }
+
+    /**
+     * Whether a value is one of the known modes.
+     */
+    public static function isValid(string $value): bool
+    {
+        return in_array($value, self::ALL, true);
     }
 
     /**

@@ -12,6 +12,7 @@
  */
 
 use mindstellar\admin\SystemChecks;
+use mindstellar\site\SiteMode;
 use PHPMailer\PHPMailer\PHPMailer;
 
 /**
@@ -970,7 +971,7 @@ function oc_install()
  */
 function install_seed_categories(string $type): int
 {
-    if (!in_array($type, array('classifieds', 'shop'), true)) {
+    if (!SiteMode::isValid($type)) {
         throw new \InvalidArgumentException('Unknown site type: ' . $type);
     }
     require_once LIB_PATH . 'osclass/formatting.php';
@@ -1025,7 +1026,7 @@ function install_seed_categories(string $type): int
  */
 function install_seed_sample(string $type, ?string $imageDir = null): array
 {
-    if (!in_array($type, array('classifieds', 'shop'), true)) {
+    if (!SiteMode::isValid($type)) {
         throw new \InvalidArgumentException('Unknown site type: ' . $type);
     }
     require_once LIB_PATH . 'osclass/helpers/hKv.php';
@@ -1584,7 +1585,7 @@ function install_site_choice(): array
     $plugins = $session->_get('install_shop_plugins');
 
     return array(
-        'type'    => $session->_get('install_site_type') === 'shop' ? 'shop' : 'classifieds',
+        'type'    => SiteMode::normalize((string) $session->_get('install_site_type')),
         'sample'  => (bool) $session->_get('install_sample_data'),
         'plugins' => is_array($plugins) ? array_values(array_map('strval', $plugins)) : null,
     );
@@ -1600,13 +1601,13 @@ function install_site_choice(): array
  */
 function install_save_site_choice(array $offer): void
 {
-    $shop    = Params::getParamString('site_type') === 'shop' && $offer['available'];
+    $shop    = Params::getParamString('site_type') === SiteMode::SHOP && $offer['available'];
     $offered = array_column($offer['plugins'], 'slug');
     $posted  = Params::getParamArray('shop_plugins');
     $plugins = $shop ? array_values(array_intersect($offered, array_filter($posted, 'is_string'))) : array();
 
     $session = Session::getInstance();
-    $session->_set('install_site_type', $shop ? 'shop' : 'classifieds');
+    $session->_set('install_site_type', $shop ? SiteMode::SHOP : SiteMode::CLASSIFIEDS);
     $session->_set('install_sample_data', Params::getParamString('sample_data') === '1' ? 1 : 0);
     $session->_set('install_shop_plugins', $plugins);
 }
@@ -1658,7 +1659,7 @@ function install_shop_step(string $action, string $type, string $slug, ?\mindste
         $allowed = $action === 'activate_theme';
         $slug    = $theme;
     }
-    if ($choice['type'] !== 'shop' || !$allowed) {
+    if ($choice['type'] !== SiteMode::SHOP || !$allowed) {
         return array('ok' => false, 'message' => __('This package was not chosen for this site.'));
     }
 

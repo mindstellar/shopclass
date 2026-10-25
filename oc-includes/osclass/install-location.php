@@ -124,13 +124,10 @@ if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $l
 
 // Starter categories and, if chosen, sample data. A failure only raises the finish-page notice.
 $session = Session::getInstance();
+$choice  = install_site_choice();
 install_load_seed_helpers();
 $photos  = new \mindstellar\install\SamplePhotos();
-install_seed_site(
-    (string) $session->_get('install_site_type') === 'shop' ? 'shop' : 'classifieds',
-    (bool) $session->_get('install_sample_data'),
-    $photos
-);
+install_seed_site($choice['type'], $choice['sample'], $photos);
 if ($photos->missing()) {
     $session->_set('install_sample_photos_failed', 1);
 }
