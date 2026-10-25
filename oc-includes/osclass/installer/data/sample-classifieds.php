@@ -52,7 +52,7 @@ return [
         'description' => __('We are looking for a friendly barista for our busy corner cafe. Training is given, and the hours are early.'),
         'price'       => null,
         'image'       => 'cafe-barista',
-        'fields'      => ['company' => 'Corner Roast Cafe', 'jtype' => __('Full-time'), 'salary' => '12 per hour', 'remote' => 0, 'applyby' => '+21 days'],
+        'fields'      => ['company' => 'Corner Roast Cafe', 'jtype' => __('Full-time'), 'salary' => __('12 per hour'), 'remote' => 0, 'applyby' => '+21 days'],
     ],
     [
         'category'    => 121,
@@ -60,7 +60,7 @@ return [
         'description' => __('Join a small studio building websites for local shops. You work from home and meet the team once a month.'),
         'price'       => null,
         'image'       => 'laptop-desk',
-        'fields'      => ['company' => 'Northwind Studio', 'jtype' => __('Full-time'), 'salary' => 'Based on experience', 'remote' => 1, 'applyby' => '+28 days'],
+        'fields'      => ['company' => 'Northwind Studio', 'jtype' => __('Full-time'), 'salary' => __('Based on experience'), 'remote' => 1, 'applyby' => '+28 days'],
     ],
     [
         'category'    => 123,

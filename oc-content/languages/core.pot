@@ -773,6 +773,14 @@ msgstr ""
 msgid "100 is solid. Lower lets the photo show through the mark."
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "100 percent Arabica coffee beans"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "12 per hour"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "2018 Ford Focus, one owner"
 msgstr ""
@@ -1551,6 +1559,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Added to the order total. 0 means no fee."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Adding sample listings… (%1$s of %2$s)"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -2515,6 +2527,10 @@ msgstr ""
 msgid "Barista, full-time"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-classifieds.php
+msgid "Based on experience"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Bathrooms"
 msgstr ""
@@ -2919,6 +2935,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "Cannot run with \"%1$s\": both declare %2$s."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Canvas"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -3441,6 +3461,10 @@ msgstr ""
 msgid "Cloudflare Turnstile"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Cocoa mass, sugar, cocoa butter, vanilla"
+msgstr ""
+
 #: oc-admin/gui/two_factor.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -3786,6 +3810,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
 msgid "Core finds the template by this name, so it cannot change."
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Cotton"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -4773,6 +4801,10 @@ msgstr ""
 msgid "Discard your changes?"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Dishwasher safe"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/helpers/hMessages.php
 #: oc-includes/osclass/installer/gui/install-finish.php
@@ -4857,6 +4889,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Downloading it from the bucket: %1$s of %2$s"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Downloading sample photos…"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -5455,7 +5491,7 @@ msgstr ""
 msgid "Example page title"
 msgstr ""
 
-#: oc-includes/osclass/install-functions.php
+#: oc-includes/osclass/classes/install/SampleData.php
 msgid "Example seller"
 msgstr ""
 
@@ -6632,10 +6668,6 @@ msgid "Install failed: %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
-msgid "Install it later under Appearance."
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install-finish.php
 msgid "Install it later under Plugins."
 msgstr ""
 
@@ -7324,6 +7356,10 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Linen"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Linen summer dress"
 msgstr ""
 
@@ -7780,6 +7816,14 @@ msgstr ""
 msgid "MB"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Machine wash at 30 C"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Machine wash at 40 C"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Machinery & Tools"
 msgstr ""
@@ -8119,6 +8163,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "May"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "May contain nuts and milk"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
@@ -8560,6 +8608,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Natural"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Natural rubber"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -9160,6 +9212,7 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+#: oc-includes/osclass/installer/data/sample-shop.php
 msgid "None"
 msgstr ""
 
@@ -11457,6 +11510,10 @@ msgstr ""
 msgid "Same as parent (%s)"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "Sample fields from the installer are on this site."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid ""
 "Sample photos could not be downloaded, so the sample listings have no "
@@ -12300,7 +12357,7 @@ msgstr ""
 msgid "Shop Fittings"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-finish.php
+#: oc-includes/osclass/install-functions.php
 msgid "Shop mode is on, with the Aisle theme."
 msgstr ""
 
@@ -12741,7 +12798,7 @@ msgid "Some of the selected locations no longer exist"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
-msgid "Some packages were not installed."
+msgid "Some plugins were not installed."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
@@ -12794,6 +12851,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "Source id"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Soy wax"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -12942,6 +13003,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Stock ran out after this order was paid. Short:"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Stoneware"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
@@ -13270,15 +13335,18 @@ msgstr ""
 msgid "The API is served at %s."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-finish.php
-msgid ""
-"The Aisle theme could not be installed, so the site is a classifieds site "
-"for now. Install Aisle under Appearance, then switch to shop mode in "
-"Settings, General."
+#: oc-includes/osclass/install-functions.php
+msgid "The Aisle theme could not be installed: %1$s %2$s"
 msgstr ""
 
 #: oc-includes/osclass/classes/install/ShopSetup.php
 msgid "The Aisle theme is not installed, so the site stays a classifieds site."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"The Aisle theme was installed, but shop mode could not be turned on: %1$s "
+"%2$s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
@@ -13804,6 +13872,10 @@ msgid ""
 "work. You can lift it under Settings → Security → Ban rules."
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "The server did not answer in time, or the connection dropped."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "The server meets what Shopclass needs."
 msgstr ""
@@ -13832,6 +13904,18 @@ msgstr ""
 msgid ""
 "The site falls back to the default language for any content that relied on "
 "this one."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"The site stays a classifieds site with the shop categories. Install Aisle "
+"under Appearance, then switch to shop mode in Settings, General."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"The site stays a classifieds site with the shop categories. Switch to shop "
+"mode in Settings, General once the problem is fixed."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/sitemap.php
@@ -14663,6 +14747,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "Tries"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Trim the wick"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
@@ -15656,6 +15744,10 @@ msgstr ""
 msgid "Was price (blank for none)"
 msgstr ""
 
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Wash cold, line dry"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Watches & Jewellery"
 msgstr ""
@@ -15953,6 +16045,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
 msgid "Will install %s"
+msgstr ""
+
+#: oc-includes/osclass/installer/data/sample-shop.php
+msgid "Wipe clean"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -16953,6 +17049,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "the file owner"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "the last step did not finish."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php

@@ -20,7 +20,7 @@ return [
         'description' => __('Soft 100 percent cotton tee with a relaxed fit. Machine washable.'),
         'price'       => '19',
         'image'       => 'tshirt',
-        'fields'      => ['brand' => 'Fieldhouse', 'material' => 'Cotton', 'care' => 'Machine wash at 30 C'],
+        'fields'      => ['brand' => 'Fieldhouse', 'material' => __('Cotton'), 'care' => __('Machine wash at 30 C')],
         'variants'    => [
             ['options' => [__('Size') => __('S'), __('Colour') => __('Navy')], 'stock' => 12],
             ['options' => [__('Size') => __('M'), __('Colour') => __('Navy')], 'stock' => 20],
@@ -36,7 +36,7 @@ return [
         'description' => __('Light and airy, with pockets. Cut to fall just below the knee.'),
         'price'       => '59',
         'image'       => 'dress',
-        'fields'      => ['brand' => 'Fieldhouse', 'material' => 'Linen', 'care' => 'Wash cold, line dry'],
+        'fields'      => ['brand' => 'Fieldhouse', 'material' => __('Linen'), 'care' => __('Wash cold, line dry')],
         'stock'       => 14,
     ],
     [
@@ -45,7 +45,7 @@ return [
         'description' => __('Everyday sneakers with a cushioned sole. True to size.'),
         'price'       => '49',
         'image'       => 'sneakers',
-        'fields'      => ['brand' => 'Fieldhouse', 'material' => 'Canvas', 'care' => 'Wipe clean'],
+        'fields'      => ['brand' => 'Fieldhouse', 'material' => __('Canvas'), 'care' => __('Wipe clean')],
         'variants'    => [
             ['options' => [__('Size') => __('40')], 'stock' => 8],
             ['options' => [__('Size') => __('41')], 'stock' => 10],
@@ -77,7 +77,7 @@ return [
         'description' => __('Hand glazed stoneware mug that holds 350 ml. Dishwasher safe.'),
         'price'       => '14',
         'image'       => 'mug',
-        'fields'      => ['brand' => 'Hearth', 'material' => 'Stoneware', 'care' => 'Dishwasher safe'],
+        'fields'      => ['brand' => 'Hearth', 'material' => __('Stoneware'), 'care' => __('Dishwasher safe')],
         'variants'    => [
             ['options' => [__('Colour') => __('Blue')], 'stock' => 25],
             ['options' => [__('Colour') => __('Green')], 'stock' => 18],
@@ -90,7 +90,7 @@ return [
         'description' => __('Three thick towels in a set. Gets softer with every wash.'),
         'price'       => '29',
         'image'       => 'towels',
-        'fields'      => ['brand' => 'Hearth', 'material' => 'Cotton', 'care' => 'Machine wash at 40 C'],
+        'fields'      => ['brand' => 'Hearth', 'material' => __('Cotton'), 'care' => __('Machine wash at 40 C')],
         'stock'       => 22,
     ],
     [
@@ -99,7 +99,7 @@ return [
         'description' => __('Soy wax candle in a reusable glass jar. Burns for about 40 hours.'),
         'price'       => '16',
         'image'       => 'candle',
-        'fields'      => ['brand' => 'Hearth', 'material' => 'Soy wax', 'care' => 'Trim the wick'],
+        'fields'      => ['brand' => 'Hearth', 'material' => __('Soy wax'), 'care' => __('Trim the wick')],
         'stock'       => 40,
     ],
     [
@@ -117,7 +117,7 @@ return [
         'description' => __('Non-slip mat, 6 mm thick, with a carry strap.'),
         'price'       => '28',
         'image'       => 'yogamat',
-        'fields'      => ['brand' => 'Fieldhouse', 'material' => 'Natural rubber', 'care' => 'Wipe clean'],
+        'fields'      => ['brand' => 'Fieldhouse', 'material' => __('Natural rubber'), 'care' => __('Wipe clean')],
         'stock'       => 16,
     ],
     [
@@ -135,7 +135,7 @@ return [
         'description' => __('Medium roast with notes of cocoa and orange. 250 g bag, roasted weekly.'),
         'price'       => '12',
         'image'       => 'coffee-beans',
-        'fields'      => ['ingredients' => '100 percent Arabica coffee beans', 'allergens' => 'None'],
+        'fields'      => ['ingredients' => __('100 percent Arabica coffee beans'), 'allergens' => __('None')],
         'stock'       => 50,
     ],
     [
@@ -144,7 +144,7 @@ return [
         'description' => __('Twelve hand made dark chocolates in a keepsake box.'),
         'price'       => '25',
         'image'       => 'chocolate-box',
-        'fields'      => ['ingredients' => 'Cocoa mass, sugar, cocoa butter, vanilla', 'allergens' => 'May contain nuts and milk'],
+        'fields'      => ['ingredients' => __('Cocoa mass, sugar, cocoa butter, vanilla'), 'allergens' => __('May contain nuts and milk')],
         'stock'       => 24,
     ],
     [
