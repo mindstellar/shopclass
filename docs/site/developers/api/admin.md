@@ -96,9 +96,11 @@ curl "$API/admin/listings?status=pending&limit=50" -H "Authorization: Bearer $KE
 ### Selling a listing
 
 `product` on `PATCH /admin/listings/{id}` makes a listing buyable. An object sets its default
-variant with the members sent: `sku` (up to 64 characters), `price` (a decimal such as `"12.50"`;
-`null` sells at the listing price), `stock` (`null` does not track it), `weight` in grams and
-`shipping_class` (up to 40 characters). A member left out keeps its value. `product: null` stops
+variant with the members sent: `sku` (up to 64 characters), `price`, `stock` (`null` does not
+track it), `weight` in grams and `shipping_class` (up to 40 characters). A member left out keeps
+its value. A product with no options sells at the listing price, so `product.price` (a decimal
+such as `"12.50"`) sets the listing price; a top-level `price` sent too wins, and `null` changes
+nothing. The default variant always reads back `price: null`. `product: null` stops
 selling and removes the row.
 
 Only an admin writes `product`. A user's `POST` or `PATCH` that sends it is a `422`. The admin view
@@ -113,7 +115,7 @@ curl -X PATCH $API/admin/listings/412 -H "Authorization: Bearer $KEY" \
 
 For options such as Colour and Size, send `product.variants`: one row per combination, each with
 `options` (name => value) and the same members as above plus `photo_id` (one of the listing's
-photos). The rows replace every row the listing has; a row whose options match a stored one keeps
+photos). A row's `price` is its own; `null` sells it at the listing price. The rows replace every row the listing has; a row whose options match a stored one keeps
 its id. Limits: 3 option names of up to 30 characters, 30 values of up to 40 characters per name,
 100 rows, every row names every option, and no combination twice. Sending the default members
 without `variants` turns the listing back into one default row.

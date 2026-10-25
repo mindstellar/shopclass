@@ -20,7 +20,7 @@ $prefix = DB_TABLE_PREFIX;             // in raw SQL
 |---|---|
 | `t_item` | Listings: price, dates, contact, coordinates, flags. |
 | `t_item_description` | Title and description, one row per language. Carries the full-text index. |
-| `t_item_variant` | What makes a listing buyable: `s_sku`, `i_price` (same units as `t_item.i_price`; NULL uses the listing price), `i_stock` (NULL does not track), `i_weight` (grams), `s_shipping_class`, `s_options` (NULL for the default row). A listing with a row is for sale. Rows go with their listing. Write it with `mindstellar\listing\VariantStore`; change stock only with `VariantStore::adjustStock()`, which refuses to go below zero. |
+| `t_item_variant` | What makes a listing buyable: `s_sku`, `i_price` (same units as `t_item.i_price`; NULL uses the listing price, and always NULL on the default row), `i_stock` (NULL does not track), `i_weight` (grams), `s_shipping_class`, `s_options` (NULL for the default row). A listing with a row is for sale. Rows go with their listing. Write it with `mindstellar\listing\VariantStore`; change stock only with `VariantStore::adjustStock()`, which refuses to go below zero. |
 | `t_resource` | Uploaded files: listing photos (owner type `item`), avatars, page and settings images. Read listing photos with the `osc_*resource*` helpers. |
 | `t_category` / `t_category_description` | The category tree and its translations. |
 | `t_country`, `t_region`, `t_city` | [Location data](/docs/configure/locations/). |

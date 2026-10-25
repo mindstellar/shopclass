@@ -52453,7 +52453,7 @@
                                                 "string",
                                                 "null"
                                             ],
-                                            "description": "A decimal such as \"12.50\"; null uses the listing price."
+                                            "description": "An option row's own price, a decimal such as \"12.50\"; null sells at the listing price. Always null for a product with no options."
                                         },
                                         "compare_at": {
                                             "type": [
@@ -55855,7 +55855,7 @@
                                 ],
                                 "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
                                 "minimum": 0,
-                                "description": "A decimal such as \"12.50\"; null sells at the listing price."
+                                "description": "A decimal such as \"12.50\". It sets the listing price, unless `price` is sent too; a product with no options sells at that. null changes nothing."
                             },
                             "compare_at": {
                                 "type": [
@@ -55924,7 +55924,8 @@
                                                 "null"
                                             ],
                                             "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
-                                            "minimum": 0
+                                            "minimum": 0,
+                                            "description": "A decimal such as \"12.50\"; null sells at the listing price."
                                         },
                                         "compare_at": {
                                             "type": [

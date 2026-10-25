@@ -1116,6 +1116,10 @@ msgid_plural "Required PHP extensions are missing: %s."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "A row with no price sells at the listing price."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "A safety copy of today's database is saved first."
 msgstr ""
@@ -10485,10 +10489,6 @@ msgstr ""
 msgid "Price"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Price (blank uses the listing price)"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Price (credits)"
 msgstr ""
@@ -13639,6 +13639,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "The installation directory is not writable."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "The item sells at the listing price."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php

@@ -163,6 +163,12 @@ final class ListingBody
         $form = PlaceBody::apply($form, $body);
         if (array_key_exists('product', $body)) {
             $form['product'] = $this->product($body['product']);
+            // A product with no options sells at the listing price, so its price sets that one.
+            $price = $form['product']['price'] ?? '';
+            unset($form['product']['price']);
+            if ($price !== '' && !isset($form['product']['variants']) && !array_key_exists('price', $body)) {
+                $form['price'] = $price;
+            }
         }
         if (array_key_exists('show_email', $body)) {
             $form['showEmail'] = $body['show_email'] === true ? '1' : '0';
@@ -184,6 +190,7 @@ final class ListingBody
     /**
      * The "Sell this item" members of an admin's edit: null stops selling, an object sets the
      * default variant with the members sent, and `variants` replaces the option rows instead.
+     * The default variant's `price` is the listing price, which apply() sets.
      * ListingInput drops it for anyone but an admin.
      *
      * @return array<string,mixed>

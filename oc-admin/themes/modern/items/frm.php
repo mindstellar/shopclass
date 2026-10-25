@@ -352,10 +352,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     echo '</div>';
 
     echo '<div data-variant-default' . ($sellValues['hasOptions'] ? ' hidden' : '') . '>';
+    echo '<p class="form-text">' . osc_esc_html(__('The item sells at the listing price.')) . '</p>';
     foreach (
         array(
             'sku'           => array(__('SKU'), 'text', 64, ''),
-            'price'         => array(__('Price (blank uses the listing price)'), 'text', 0, 'decimal'),
             'compareAt'     => array(__('Was price (blank for none)'), 'text', 0, 'decimal'),
             'stock'         => array(__('Stock (blank does not track)'), 'text', 0, 'numeric'),
             'weight'        => array(__('Weight in grams'), 'text', 0, 'numeric'),
@@ -429,6 +429,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     echo '<button type="button" class="btn btn-dim btn-sm" data-generate>' . osc_esc_html(__('Generate combinations')) . '</button>';
     echo '</div>';
     echo '<p class="form-text" data-variant-note>' . osc_esc_html(__('One row per combination. Generating again keeps the rows you filled in.'))
+        . ' ' . osc_esc_html(__('A row with no price sells at the listing price.'))
         . ($sellValues['photos'] === array() ? ' ' . osc_esc_html(__('Save the listing with photos to pick a photo per row.')) : '') . '</p>';
 
     echo '<div class="table-responsive"><table class="table osc-variant-table">';

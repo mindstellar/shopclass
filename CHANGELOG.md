@@ -19,8 +19,8 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - **Settings → General → Site is a** sets classifieds or shop; in shop mode only admins post. `osc_site_mode()` reads it.
 - Activating a theme that needs plugins opens one screen that installs and activates them, and Appearance warns if one is later removed.
 - The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
-- Listings have a `product` member with variants (SKU, price, stock, weight, shipping class), set by an admin.
-- A listing can have option rows (Colour x Size and so on), each with its own SKU, price and stock, set in the admin item form or by an admin through the API. `GET /listings` takes `option[name][]=value` and `ids`.
+- Listings have a `product` member with variants (SKU, stock, weight, shipping class), set by an admin; a product with no options sells at the listing price.
+- A listing can have option rows (Colour x Size and so on), each with its own SKU, price (blank uses the listing price) and stock, set in the admin item form or by an admin through the API. `GET /listings` takes `option[name][]=value` and `ids`.
 - **Goods orders**: a cart is priced on the server and placed as an order, paid by a card plugin, bank transfer or cash on delivery. Stock is taken once when the order is paid (bank transfer and cash on delivery hold it from placement) and given back on refund or cancel; a line paid after the last one sold is marked oversold.
 - **Billing → Orders** shows a goods order's items, address, buyer and oversold lines, and can mark it shipped (carrier, tracking number, https link), delivered or cancelled. **To ship** lists paid orders not yet sent.
 - **Settings → Billing → Shop** sets the delivery charge, free delivery from, cash on delivery and its fee, hold days, open unpaid orders per buyer and the order number prefix.

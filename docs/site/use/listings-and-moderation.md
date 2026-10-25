@@ -61,10 +61,14 @@ item to a cart**, then set:
 | Field | What it does |
 |---|---|
 | **SKU** | Your stock code, up to 64 characters. |
-| **Price** | What the item sells for. Blank sells it at the listing price. |
+| **Was price** | The old price, shown crossed out. Blank for none. |
 | **Stock** | How many you have. Each sale takes one; at 0 it is out of stock. Blank does not count stock. |
 | **Weight in grams** | For shipping. |
 | **Shipping class** | A name your shipping plugin groups items by, such as `bulky`. |
+
+The item sells at the listing price; change that price to change what buyers pay. Turn on
+**This item comes in options** for option rows (Colour x Size and so on): each row has its own
+SKU, price and stock, and a row with no price sells at the listing price.
 
 Untick it to stop selling. Only admins see this section. When **Settings → General → Site is a**
 is set to shop, only admins can add listings at all.
