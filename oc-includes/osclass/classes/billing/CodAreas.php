@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\billing;
 
+use mindstellar\location\LocationImporter;
 use mindstellar\location\LocationQuery;
 
 /**
@@ -184,8 +185,9 @@ final class CodAreas
         return is_string($value) ? trim($value) : '';
     }
 
+    /** A place name in the form the location importer compares names in. */
     private static function fold(string $name): string
     {
-        return mb_strtolower(trim((string) preg_replace('/\s+/u', ' ', remove_accents($name))), 'UTF-8');
+        return LocationImporter::normalizeKey($name);
     }
 }

@@ -96,6 +96,7 @@ pin('another region, another country, or no state is not offered', [false, false
 harness_section('a city');
 $setAreas([['type' => 'city', 'id' => (string) $ludh], ['type' => 'city', 'id' => (string) $munich]]);
 pin('inside by city name in its region', [true, true], [$offered(['country' => 'IN', 'state' => 'Punjab', 'city' => 'ludhiana']), $offered(['country' => 'DE', 'state' => 'bayern', 'city' => 'Munchen'])]);
+pin('spacing and punctuation are ignored as the location importer ignores them', [true, true], [$offered(['country' => 'IN', 'state' => 'Punjab.', 'city' => 'Ludhiana,']), $offered(['country' => 'IN', 'state' => '(Punjab)', 'city' => 'ludhiana'])]);
 pin('another city, the wrong region, or no city is not offered', [false, false, false], [$offered(['country' => 'IN', 'state' => 'Punjab', 'city' => 'Amritsar']), $offered(['country' => 'IN', 'state' => 'Delhi', 'city' => 'Ludhiana']), $offered(['country' => 'IN', 'state' => 'Punjab'])]);
 
 harness_section('placing');
