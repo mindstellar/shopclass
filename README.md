@@ -86,7 +86,7 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 1. Download the latest package from the [**Releases**](https://github.com/mindstellar/shopclass/releases) page and unpack it into your web root (e.g. `public_html`).
 2. Open your site in a browser (`https://example.com/`) and the installer starts automatically (or go straight to `oc-includes/osclass/install.php`).
-3. Follow the four steps below.
+3. Follow the five steps below.
 4. Sign in at `https://example.com/oc-admin/` with the admin password shown on the final screen.
 
 ### The installer, step by step
@@ -99,13 +99,17 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 <img src="docs/site/images/install/2-connect-database.png" width="640" alt="Installer step 2: connect the database with a test-connection check">
 
-**3 · Your site**: pick an admin username (leave the password blank and a strong one is generated for you), your site title, contact e-mail and country.
+**3 · Site type**: pick **Classifieds** or **Shop**, each with its own starter categories, and tick **Install sample data** for example listings you can remove later.
 
-<img src="docs/site/images/install/3-your-site.png" width="640" alt="Installer step 3: admin account and site details">
+<img src="docs/site/images/install/3-site-type.png" width="640" alt="Installer step 3: classifieds or shop, and sample data">
 
-**4 · Done**: copy your admin password (it's also e-mailed to you) and open the admin panel.
+**4 · Your site**: pick an admin username (leave the password blank and a strong one is generated for you), your site title, contact e-mail and country.
 
-<img src="docs/site/images/install/4-done.png" width="640" alt="Installer step 4: finished, with admin credentials">
+<img src="docs/site/images/install/4-your-site.png" width="640" alt="Installer step 4: admin account and site details">
+
+**5 · Done**: copy your admin password (it's also e-mailed to you) and open the admin panel.
+
+<img src="docs/site/images/install/5-done.png" width="640" alt="Installer step 5: finished, with admin credentials">
 
 The installer runs once; if the site is already set up it shows a short notice instead of re-running.
 

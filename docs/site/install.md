@@ -89,24 +89,33 @@ install later.
 
 Tick **Install sample data** to start with example listings (or products) and custom
 fields. Sample photos are downloaded when the site is online; with no internet the
-listings install without photos. Remove it all later under **Listings → Remove sample
-data**. Categories stay.
+listings install without photos.
 
-Either way the site starts with a ready category tree. Edit it under
-**Listings → Categories**.
+While sample data is on the site, the top of **Listings** shows a line with a
+**Remove sample data** button. It removes the sample listings, their photos, fields
+and groups; categories stay. The line goes once they are removed.
+
+Either way the site starts with a ready category tree. Classifieds gets Vehicles,
+Property, Jobs, Electronics, Home & Garden, Fashion, Baby & Kids, Sports & Hobbies,
+Pets, Services, Business & Industrial, Health & Beauty and Community. Shop gets
+Clothing, Electronics, Home & Kitchen, Beauty & Health, Sports & Outdoors, Toys & Baby,
+Food & Drink, Books & Stationery, Digital Goods and Gifts. Each has subcategories.
+Edit them under **Listings → Categories**.
+
+![The installer's site type step: Classifieds and Shop cards and an Install sample data box.](images/install/3-site-type.png)
 
 ### Step 4 · Your site
 
 Pick an admin username, your site title, a contact e-mail and your country.
 Leave the password field blank and a strong one is generated for you.
 
-![The installer's site step: admin username and password, site title, contact e-mail and country.](images/install/3-your-site.png)
+![The installer's site step: admin username and password, site title, contact e-mail and country.](images/install/4-your-site.png)
 
 ### Step 5 · Done
 
 Copy the admin password (it is also e-mailed to you) and open the admin panel.
 
-![The installer's final step, showing the generated admin username and password with a link to the admin panel.](images/install/4-done.png)
+![The installer's final step, showing the generated admin username and password with a link to the admin panel.](images/install/5-done.png)
 
 ## 5. Sign in
 
