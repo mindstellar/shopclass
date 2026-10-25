@@ -99,7 +99,6 @@ check('the temp folder is gone', $empty());
 harness_section('unsafe or empty packs');
 $packs = array(
     'a ../ path'       => $zip('up.zip', array('car-hatchback.webp' => $webp, '../evil.webp' => $webp)),
-    'a sub folder'     => $zip('sub.zip', array('car-hatchback.webp' => $webp, 'img/bike-trek.webp' => $webp)),
     'no webp files'    => $zip('txt.zip', array('car-hatchback.jpg' => $webp, 'notes.txt' => 'x')),
     'a fake webp'      => $zip('fake.zip', array('car-hatchback.webp' => '<?php echo 1;')),
     'an oversize file' => $zip('big.zip', array('car-hatchback.webp' => $webp . random_bytes(2200000))),
@@ -111,6 +110,17 @@ foreach ($packs as $label => $path) {
     check($label . ' leaves no temp files', $empty());
 }
 check('nothing was written beside the work folder', !is_file($root . 'evil.webp'));
+
+harness_section('only root webp files are written');
+$path   = $zip('mixed.zip', array('car-hatchback.webp' => $webp, 'img/bike-trek.webp' => $webp, '__MACOSX/._car-hatchback.webp' => 'x', 'notes.txt' => 'x'));
+$pack   = new SamplePhotos($path, (string) hash_file('sha256', $path), SamplePhotos::URL, $work);
+$folder = (string) $pack->fetch();
+check('the pack is used', $folder !== '' && is_file($folder . 'car-hatchback.webp'));
+check('a file in a sub folder is skipped', !is_dir($folder . 'img'));
+check('__MACOSX is skipped', !is_dir($folder . '__MACOSX'));
+check('a text file is skipped', !is_file($folder . 'notes.txt'));
+$pack->clean();
+check('clean() leaves no temp files', $empty());
 
 harness_section('downloads');
 // A local plain-http server holds the good zip, so only the https check stops the download.

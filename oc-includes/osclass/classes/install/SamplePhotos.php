@@ -15,9 +15,7 @@ namespace mindstellar\install;
 
 use mindstellar\upgrade\Upgrade;
 use mindstellar\utility\FileSystem;
-use mindstellar\utility\Validate;
 use mindstellar\utility\Zip;
-use ZipArchive;
 
 /**
  * The photo pack for the sample listings. It is not shipped with core: it is downloaded once,
@@ -29,7 +27,7 @@ final class SamplePhotos
 {
     public const URL = 'https://github.com/mindstellar/shopclass-sample-data/releases/download/v1.0.0/sample-photos.zip';
 
-    public const SHA256 = 'b5040098aea616aabf32278a123008d2ea9fbbb4252f87afda2450ebd762b260';
+    public const SHA256 = 'be0ceeeda9d6a16552cc083a377b994e4dcaead17a6caf38d5bc0e54c70cbaf4';
 
     private const MAX_FILES = 200;
 
@@ -95,7 +93,7 @@ final class SamplePhotos
      */
     private function unpack(): ?string
     {
-        if (osc_package_installs_disabled() || !class_exists(ZipArchive::class) || !Upgrade::downloadsReady($this->workPath)) {
+        if (osc_package_installs_disabled() || !Upgrade::downloadsReady($this->workPath)) {
             return null;
         }
         $fs = new FileSystem();
@@ -103,24 +101,28 @@ final class SamplePhotos
             $id  = $fs->generateUniqueId('sample_');
             $zip = $this->localZip;
             if ($zip === null) {
-                if (!Validate::httpUrl($this->url) || !FileSystem::isAllowedPackageHost($this->url)) {
+                if (!FileSystem::isPackageDownloadUrl($this->url)) {
                     return null;
                 }
+                // downloadFile() checks the sha256.
                 $this->zipFile = $this->workPath . $id . '.zip';
                 $zip           = $fs->downloadFile($this->url, $this->zipFile, null, true, $this->sha256);
                 if (!is_string($zip)) {
                     return null;
                 }
-            }
-            $hash = is_file($zip) ? hash_file('sha256', $zip) : false;
-            if ($hash === false || !hash_equals($this->sha256, $hash)) {
+            } elseif (!is_file($zip) || !hash_equals($this->sha256, (string) hash_file('sha256', $zip))) {
                 return null;
             }
             $this->folder = $this->workPath . $id;
+            if ($this->unzip($zip, $this->folder)) {
+                return $this->folder . '/';
+            }
+            $this->clean();
 
-            return $this->unzip($zip, $this->folder) ? $this->folder . '/' : null;
+            return null;
         } catch (\Throwable $e) {
             error_log('Shopclass install: sample photos could not be fetched: ' . $e->getMessage());
+            $this->clean();
 
             return null;
         } finally {
@@ -175,7 +177,8 @@ final class SamplePhotos
     }
 
     /**
-     * Write the root *.webp entries to $to. An entry in a folder, a symlink or one over the limits rejects the pack.
+     * Write the root *.webp files to $to and drop any that is not a real webp. An unsafe entry
+     * or one over the limits rejects the pack.
      *
      * @param string $zipFile
      * @param string $to
@@ -184,49 +187,22 @@ final class SamplePhotos
      */
     private function unzip(string $zipFile, string $to): bool
     {
-        $zip = new ZipArchive();
-        if ($zip->open($zipFile, ZipArchive::CHECKCONS) !== true) {
+        $zip = (new Zip())
+            ->limit(self::MAX_FILES, self::MAX_FILE_BYTES, self::MAX_TOTAL_BYTES)
+            ->onlyRootFiles('/^[a-z0-9][a-z0-9-]*\.webp$/');
+        if ($zip->unzipFile($zipFile, $to) !== 1) {
             return false;
         }
-        try {
-            if ($zip->numFiles === 0 || $zip->numFiles > self::MAX_FILES) {
-                return false;
+        $photos = glob($to . '/*.webp') ?: array();
+        foreach ($photos as $i => $photo) {
+            // A webp file starts "RIFF" .... "WEBP".
+            $head = (string) file_get_contents($photo, false, null, 0, 12);
+            if (strncmp($head, 'RIFF', 4) !== 0 || substr($head, 8, 4) !== 'WEBP') {
+                unlink($photo);
+                unset($photos[$i]);
             }
-            $photos = array();
-            $total  = 0;
-            for ($i = 0; $i < $zip->numFiles; $i++) {
-                $stat = $zip->statIndex($i);
-                if ($stat === false) {
-                    return false;
-                }
-                $name = (string) $stat['name'];
-                if (
-                    $name === '' || strpbrk($name, "/\\:\0") !== false || str_contains($name, '..')
-                    || Zip::isZipArchiveEntrySymlink($zip, $i)
-                    || !Zip::entryWithinLimits((int) $stat['size'], (int) $stat['comp_size'], $total, self::MAX_FILE_BYTES, self::MAX_TOTAL_BYTES)
-                ) {
-                    return false;
-                }
-                $total += (int) $stat['size'];
-                if (preg_match('/^[a-z0-9][a-z0-9-]*\.webp$/', $name) === 1) {
-                    $photos[$i] = $name;
-                }
-            }
-            if ($photos === array()) {
-                return false;
-            }
-            (new FileSystem())->mkdir($to, 0755);
-            foreach ($photos as $i => $name) {
-                $data = $zip->getFromIndex($i);
-                // A webp file starts "RIFF" .... "WEBP".
-                if (is_string($data) && strncmp($data, 'RIFF', 4) === 0 && substr($data, 8, 4) === 'WEBP') {
-                    file_put_contents($to . '/' . $name, $data);
-                }
-            }
-
-            return (glob($to . '/*.webp') ?: array()) !== array();
-        } finally {
-            $zip->close();
         }
+
+        return $photos !== array();
     }
 }

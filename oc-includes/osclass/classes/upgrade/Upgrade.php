@@ -74,7 +74,7 @@ class Upgrade
         // as it always has, so existing self-hosted update setups keep working.
         if ($this->packageInfoValid
             && $this->objPackage->getSha256() !== null
-            && !FileSystem::isAllowedPackageHost($this->objPackage->getSourceUrl())
+            && !FileSystem::isPackageDownloadUrl($this->objPackage->getSourceUrl())
         ) {
             throw new RuntimeException(
                 __('Package source host is not on the allowed list for verified downloads.')

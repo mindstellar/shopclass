@@ -54,12 +54,62 @@ class Zip
      */
     private $FileSystem;
 
+    private int $maxEntries = self::MAX_ENTRIES;
+
+    private int $maxEntryBytes = self::MAX_ENTRY_UNCOMPRESSED_BYTES;
+
+    private int $maxTotalBytes = self::MAX_TOTAL_UNCOMPRESSED_BYTES;
+
+    private ?string $rootPattern = null;
+
     /**
      * Builds the filesystem helper used to create and permission the destination.
      */
     public function __construct()
     {
         $this->FileSystem = new FileSystem();
+    }
+
+    /**
+     * Use tighter caps than the package defaults for the next unzip.
+     *
+     * @param int $entries    most entries in the archive
+     * @param int $entryBytes largest entry, uncompressed
+     * @param int $totalBytes largest archive, uncompressed
+     *
+     * @return self
+     */
+    public function limit(int $entries, int $entryBytes, int $totalBytes): self
+    {
+        $this->maxEntries    = $entries;
+        $this->maxEntryBytes = $entryBytes;
+        $this->maxTotalBytes = $totalBytes;
+
+        return $this;
+    }
+
+    /**
+     * Write only the files at the root of the archive whose name matches $pattern; other
+     * entries are still checked but skipped.
+     *
+     * @param string $pattern a preg pattern for the file name
+     *
+     * @return self
+     */
+    public function onlyRootFiles(string $pattern): self
+    {
+        $this->rootPattern = $pattern;
+
+        return $this;
+    }
+
+    /**
+     * Whether an entry is written under the onlyRootFiles() filter.
+     */
+    private function wanted(string $name): bool
+    {
+        return $this->rootPattern === null
+            || (strpbrk($name, '/\\') === false && preg_match($this->rootPattern, $name) === 1);
     }
 
     /**
@@ -272,12 +322,12 @@ class Zip
             return 2;
         }
 
-        if ($zip->numFiles > self::MAX_ENTRIES) {
+        if ($zip->numFiles > $this->maxEntries) {
             error_log(sprintf(
                 'Zip::unzipFile rejected "%s": %d entries exceeds the %d cap.',
                 $zipFile,
                 $zip->numFiles,
-                self::MAX_ENTRIES
+                $this->maxEntries
             ));
             $zip->close();
 
@@ -310,7 +360,7 @@ class Zip
                 return 2;
             }
 
-            if (!self::entryWithinLimits((int) $stat['size'], (int) $stat['comp_size'], $totalUncompressed)) {
+            if (!self::entryWithinLimits((int) $stat['size'], (int) $stat['comp_size'], $totalUncompressed, $this->maxEntryBytes, $this->maxTotalBytes)) {
                 error_log(sprintf(
                     'Zip::unzipFile rejected "%s": entry "%s" exceeds the size/ratio limits.',
                     $zipFile,
@@ -334,7 +384,9 @@ class Zip
             }
 
             $totalUncompressed += (int) $stat['size'];
-            $targets[$i]       = [$target, substr($stat['name'], -1) === '/'];
+            if ($this->wanted($stat['name'])) {
+                $targets[$i] = [$target, substr($stat['name'], -1) === '/'];
+            }
         }
 
         // Pass 2: every entry passed validation, now it's safe to read content and write it.
@@ -387,12 +439,12 @@ class Zip
             return 2;
         }
 
-        if (count($listing) > self::MAX_ENTRIES) {
+        if (count($listing) > $this->maxEntries) {
             error_log(sprintf(
                 'Zip::unzipFile rejected "%s": %d entries exceeds the %d cap.',
                 $zip_file,
                 count($listing),
-                self::MAX_ENTRIES
+                $this->maxEntries
             ));
 
             return 2;
@@ -408,7 +460,7 @@ class Zip
                 continue;
             }
 
-            if (!self::entryWithinLimits((int) $entry['size'], (int) $entry['compressed_size'], $totalUncompressed)) {
+            if (!self::entryWithinLimits((int) $entry['size'], (int) $entry['compressed_size'], $totalUncompressed, $this->maxEntryBytes, $this->maxTotalBytes)) {
                 error_log(sprintf(
                     'Zip::unzipFile rejected "%s": entry "%s" exceeds the size/ratio limits.',
                     $zip_file,
@@ -438,7 +490,7 @@ class Zip
         }
 
         foreach ($files as $file) {
-            if (strpos($file['filename'], '__MACOSX/') === 0) {
+            if (strpos($file['filename'], '__MACOSX/') === 0 || !$this->wanted($file['filename'])) {
                 continue;
             }
 
