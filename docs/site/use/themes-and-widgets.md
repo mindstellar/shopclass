@@ -121,17 +121,19 @@ Admins only; moderators cannot edit menus.
   their own name unless you give them a label.
 - **Arrange.** Drag the handle, or focus it and use the arrow keys: up and down
   move the item, right puts it under the item above, left moves it out. Items nest
-  up to three levels. A category you switch off, or a page you delete, drops out
-  of the menu with the items under it.
+  up to three levels, and a menu holds at most 200 items. A category you switch off,
+  or a page you delete, drops out of the menu with the items under it.
 - **Labels in each language.** With more than one language, the pencil opens a
   label field for each.
 - **Save menu** stores the whole menu. **Use the automatic menu** throws your main
   or footer list away and goes back to the automatic one.
 - **Other menus.** **New menu** makes another one, up to 20, with a name and an id
-  such as `top-bar`. Show it with a **Menu** widget, or ask your theme's developer
-  to use its id. **Delete menu** removes it.
+  such as `top-bar`. The id starts with a letter and has at most 32 lowercase letters,
+  digits, `-` or `_`; it cannot be changed, and an id already in use is refused. Show
+  the menu with a **Menu** widget, or ask your theme's developer to use its id.
+  **Delete menu** removes it.
 
-How much of a menu shows depends on the theme. If your theme names where it shows a menu, the editor says so and warns when items are nested deeper than the theme shows.
+How much of a menu shows depends on the theme. If your theme names where it shows a menu, the editor says so and warns when items are nested deeper than the theme shows. If it names none, the editor says to add a **Menu** widget to a section to show one.
 
 ## Customise your theme
 

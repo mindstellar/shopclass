@@ -144,6 +144,11 @@ A `secret` field must say whether the admin can read it back (an API key) or
 must never see it again (a password). The type alone does not say which, so
 `write_only` is required on it: registration fails without it.
 
+A saved secret never reaches the page. Its box is drawn empty, with dots (`••••••••`) as
+the placeholder while a value is saved and no placeholder when none is. To keep the saved
+value when the box is sent blank, give the field a `persist` callable that returns null
+for an empty value.
+
 ## Images
 
 An `image` field uploads a picture, such as a logo:
