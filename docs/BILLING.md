@@ -261,7 +261,7 @@ All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
 | `PaymentGateway` | The interface plugins implement |
 | `PaymentGatewayRegistry` | `getInstance()` / `register()` / `get()` / `all()` / `available()` |
 | `CheckoutIntent` | `redirect(url)` or `html(markup)` |
-| `CallbackResult` | `paid()` / `failed()` / `refunded()` / `ignored()` |
+| `CallbackResult` | `paid()` / `failed()` / `refunded()` / `refundPending()` / `ignored()` |
 | `Order` | Immutable payment intent |
 | `OrderStore` | Persistence for `t_billing_order` |
 | `Wallet` | `balance()` / `credit()` / `debit()` / `reverse()` / `history()` |

@@ -416,6 +416,14 @@ class CAdminBilling extends AdminSecBaseModel
                 sprintf(_m('Order #%d is refunded and the credits have been taken back'), $order->getId()),
                 'admin'
             );
+        } elseif ($result->getOutcome() === CallbackResult::OUTCOME_PENDING) {
+            $note = $result->getMessage() !== ''
+                ? $result->getMessage()
+                : _m('The order changes to refunded when the payment provider finishes it.');
+            osc_add_flash_info_message(
+                sprintf(_m('The refund was sent. %s'), osc_esc_html($note)),
+                'admin'
+            );
         } elseif ($accepted) {
             osc_add_flash_warning_message(osc_esc_html($result->getMessage()), 'admin');
         } else {

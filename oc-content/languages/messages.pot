@@ -3362,6 +3362,10 @@ msgstr ""
 msgid "The operation hasn't been completed. You're trying to remove yourself!"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "The order changes to refunded when the payment provider finishes it."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-conversation-content.php
 msgid "The other person blocked this conversation."
 msgstr ""
@@ -3437,6 +3441,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "The refund was not made: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "The refund was sent. %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php
