@@ -366,6 +366,8 @@ origin, so they can read each other's pages. Give each its own host.
 | Comment, delete own comment | no | no | yes | with `comments:write` | yes |
 | Saved searches (`/account/alerts`) | no | no | yes | with `alerts:read` / `alerts:write` | yes |
 | Conversations (`/account/conversations`) | no | no | yes | with `conversations:read` / `conversations:write` | yes |
+| Orders and saved cart (`/account/orders`, `/account/cart`) | no | no | yes | with `orders:*` / `cart:*` | yes |
+| Address book (`/account/addresses`) | no | no | yes | with `addresses:read` / `addresses:write` | yes |
 | Read the account, own listings in any status, and sessions | no | no | yes | with `account:read` | yes |
 | Edit the account, change password, manage keys | no | no | yes | no | no |
 | `POST /auth/token`, `POST /users` | no credential needed | | | | |
@@ -390,6 +392,14 @@ also grants `listings:read`, and `account:write` also grants `account:read`.
 | `comments:write` | Users | Post comments, delete own comments. |
 | `alerts:read` | Users | List own saved searches. `alerts:write` includes it. |
 | `alerts:write` | Users | Make and stop own saved searches. |
+| `wishlist:read` | Users | Read own wishlist. `wishlist:write` includes it. |
+| `wishlist:write` | Users | Add to and remove from own wishlist. |
+| `orders:read` | Users | Read own orders. `orders:write` includes it. |
+| `orders:write` | Users | Place, pay again and cancel own orders. |
+| `cart:read` | Users | Read own saved cart. `cart:write` includes it. |
+| `cart:write` | Users | Save own cart. |
+| `addresses:read` | Users | Read own address book, and order to a saved address. `addresses:write` includes it. |
+| `addresses:write` | Users | Add, edit, delete and make default own addresses, and save one while ordering. |
 | `conversations:read` | Users | Read own conversations and messages. `conversations:write` includes it. |
 | `conversations:write` | Users | Send messages, mark read, block and report. |
 | `account:read` | Users | Read the own account, the own listings in any status, and the list of sign-ins and keys. |

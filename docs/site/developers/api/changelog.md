@@ -91,6 +91,14 @@ Added to v1 on 2026-10-23.
 - New warning `message_held`.
 - New webhook events `message.created` and `conversation.reported`; they carry ids only.
 
+### v1: address book
+
+Added to v1 on 2026-10-25.
+
+- `GET /account/addresses`, `POST /account/addresses`, `PUT /account/addresses/{id}`, `DELETE /account/addresses/{id}` and `POST /account/addresses/{id}/default`, with the scopes `addresses:read` and `addresses:write`.
+- `POST /account/orders` takes `address.id` (a saved address; needs `addresses:read`) and `address.save` (keep the typed one; needs `addresses:write`).
+- `GET /cart/quote` takes `city`.
+
 ### v1: capped search count
 
 Added to v1 on 2026-10-22.

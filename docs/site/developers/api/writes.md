@@ -45,6 +45,11 @@ TOKEN=sca_…        # an access token, or a personal key
 | `POST /account/orders/{id}/cancel` | `orders:write` | Cancel a pending bank transfer or cash on delivery order. |
 | `GET /account/cart` | `cart:read` | Your saved cart: variant ids and quantities, never prices. |
 | `PUT /account/cart` | `cart:write` | Replace your saved cart. A variant that cannot be bought is dropped. Up to 50 lines, 20 of each. `204`. |
+| `GET /account/addresses` | `addresses:read` | Your saved delivery addresses, the default first. |
+| `POST /account/addresses` | `addresses:write` | Save an address; the first one, or one sent with `default: true`, becomes the default. `201`. At most 10. |
+| `PUT /account/addresses/{id}` | `addresses:write` | Replace one saved address. |
+| `DELETE /account/addresses/{id}` | `addresses:write` | Delete one; deleting the default makes the next one the default. `204`. |
+| `POST /account/addresses/{id}/default` | `addresses:write` | Make one the default: it becomes the account's own address. |
 | `POST /users` | none | Sign up, when the site allows it. `201`. The password needs at least 5 characters. |
 
 A write that is not allowed gets `403`. A user who is not the owner of a live listing gets
@@ -516,8 +521,10 @@ curl -i -X POST $API/account/orders \
   -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
   -d '{ "lines": [{ "variant": 12, "qty": 2 }], "shipping_method": "standard", "gateway": "offline",
         "coupon": "WELCOME10",
-        "address": { "name": "Tom Lee", "phone": "5550100", "line1": "1 Main St", "city": "Austin", "state": "TX", "postcode": "73301", "country": "US" } }'
+        "address": { "name": "Tom Lee", "phone": "5550100", "line1": "1 Main St", "city": "Austin", "state": "TX", "postcode": "73301", "country": "US", "save": true } }'
 ```
+
+To deliver to a saved address, send only its id: `"address": { "id": "k3v9x2aa" }`.
 
 The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redirect", "payload": "<url>" }` to send the buyer to, or `{ "kind": "html", "payload": "<markup>" }`, the gateway's own page to print as it is.
 
@@ -526,6 +533,7 @@ The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redire
 | Who | A signed-in user. A guest page token can price a cart but not place one. |
 | Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`, `too_many_open`), `/address/<field>` (`required`, `maxLength`). A plugin's problem (a bad coupon, a postcode outside every delivery zone) is `rejected` at its pointer, with its message. Nothing is written. |
 | `coupon` | Optional, the same rule as on the quote. |
+| `address` | Typed fields within the address book's lengths (`line1` 100, `postcode` 15, `country` two letters). `address.id` orders to a saved address and needs `addresses:read`; an id not in your book is `422` on `/address/id`. `address.save: true` also adds the typed address to the book, and needs `addresses:write`; it must pass the book's checks. A key without the scope gets `403 insufficient_scope`. |
 | Included tax | A tax line already in the prices is stored with `amount` 0, `unit` the tax and `included` true, so the lines still add up to `total`. |
 | Retry | Send an `Idempotency-Key`: a repeat gets the first order back and does not ask the gateway again. |
 | Limit | 20 orders an hour per user: `429 rate_limited`. A refused request (`422`) is not counted. |
