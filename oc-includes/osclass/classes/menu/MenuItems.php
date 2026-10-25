@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\menu;
 
+use mindstellar\utility\Utils;
 use mindstellar\widgets\WidgetConfig;
 
 /**
@@ -77,8 +78,7 @@ final class MenuItems
             return '';
         }
         $text = strip_tags($value);
-        $text = (string) preg_replace('/[\x00-\x1F\x7F]+/u', ' ', $text);
-        $text = trim((string) preg_replace('/\s+/u', ' ', $text));
+        $text = trim((string) preg_replace('/\s+/u', ' ', Utils::oneLine($text)));
 
         return mb_substr($text, 0, self::MAX_LABEL);
     }

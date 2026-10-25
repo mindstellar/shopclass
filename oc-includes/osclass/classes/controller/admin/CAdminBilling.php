@@ -24,6 +24,7 @@ use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
 use mindstellar\currency\Money;
+use mindstellar\utility\Utils;
 
 /**
  * The billing section: payment orders and user credit balances.
@@ -273,8 +274,7 @@ class CAdminBilling extends AdminSecBaseModel
             return;
         }
         $back = $this->orderUrl($order);
-        $clean = static fn (string $v): string => trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $v) ?? '');
-        $url   = $clean(Params::getParamString('trackingUrl'));
+        $url = Utils::oneLine(Params::getParamString('trackingUrl'));
         if ($url !== '' && Receipts::httpsUrl($url) === '') {
             osc_add_flash_error_message(_m('The tracking link has to be a full https:// address'), 'admin');
             $this->redirectTo($back);
@@ -282,7 +282,7 @@ class CAdminBilling extends AdminSecBaseModel
             return;
         }
 
-        if (OrderStore::ship($order->getId(), $clean(Params::getParamString('carrier')), $clean(Params::getParamString('tracking')), $url)) {
+        if (OrderStore::ship($order->getId(), Utils::oneLine(Params::getParamString('carrier')), Utils::oneLine(Params::getParamString('tracking')), $url)) {
             osc_add_flash_ok_message(sprintf(_m('Order #%d is marked shipped'), $order->getId()), 'admin');
         } else {
             osc_add_flash_warning_message(_m('Only a paid order, or an unpaid cash on delivery one, can be marked shipped'), 'admin');

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\billing\event;
 
 use mindstellar\event\Bridged;
+use mindstellar\utility\Utils;
 
 /**
  * Reasons the cart cannot be ordered yet. Old filter: `cart_problems`.
@@ -81,7 +82,7 @@ final class CartProblems extends CartEvent implements Bridged
             }
             $code    = $problem['code'] ?? null;
             $pointer = $problem['pointer'] ?? null;
-            $message = is_string($problem['message'] ?? null) ? trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $problem['message']) ?? '') : '';
+            $message = is_string($problem['message'] ?? null) ? Utils::oneLine($problem['message']) : '';
             if (!is_string($code) || preg_match('/^[a-z_]{1,32}$/', $code) !== 1 || !in_array($pointer, self::POINTERS, true)
                 || $message === '' || mb_strlen($message, 'UTF-8') > self::MAX_TEXT) {
                 continue;

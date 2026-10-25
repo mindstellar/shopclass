@@ -39788,7 +39788,7 @@
                         "name": "postcode",
                         "in": "query",
                         "required": false,
-                        "description": "The delivery postcode, up to 20 characters; a longer one is ignored.",
+                        "description": "The delivery postcode, up to 15 characters; a longer one is ignored.",
                         "schema": {
                             "type": "string",
                             "maxLength": 200
@@ -59929,12 +59929,12 @@
                     "line1": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 200
+                        "maxLength": 100
                     },
                     "line2": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 200
+                        "maxLength": 100
                     },
                     "city": {
                         "type": "string",
@@ -59949,12 +59949,12 @@
                     "postcode": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 20
+                        "maxLength": 15
                     },
                     "country": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 100
+                        "maxLength": 2
                     }
                 },
                 "required": [
@@ -59984,12 +59984,12 @@
                     "line1": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 200
+                        "maxLength": 100
                     },
                     "line2": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 200
+                        "maxLength": 100
                     },
                     "city": {
                         "type": "string",
@@ -60004,12 +60004,12 @@
                     "postcode": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 20
+                        "maxLength": 15
                     },
                     "country": {
                         "type": "string",
                         "minLength": 0,
-                        "maxLength": 100
+                        "maxLength": 2
                     },
                     "id": {
                         "type": "string",
@@ -60299,12 +60299,12 @@
                                     "line1": {
                                         "type": "string",
                                         "minLength": 0,
-                                        "maxLength": 200
+                                        "maxLength": 100
                                     },
                                     "line2": {
                                         "type": "string",
                                         "minLength": 0,
-                                        "maxLength": 200
+                                        "maxLength": 100
                                     },
                                     "city": {
                                         "type": "string",
@@ -60319,12 +60319,12 @@
                                     "postcode": {
                                         "type": "string",
                                         "minLength": 0,
-                                        "maxLength": 20
+                                        "maxLength": 15
                                     },
                                     "country": {
                                         "type": "string",
                                         "minLength": 0,
-                                        "maxLength": 100
+                                        "maxLength": 2
                                     }
                                 },
                                 "required": [

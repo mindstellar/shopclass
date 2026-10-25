@@ -35,17 +35,8 @@ use mindstellar\user\UserStore;
  */
 final class GoodsCheckout
 {
-    /** Address fields an order takes, with their longest length. line2 may be empty. */
-    public const ADDRESS = array(
-        'name'     => 100,
-        'phone'    => 40,
-        'line1'    => 200,
-        'line2'    => 200,
-        'city'     => 100,
-        'state'    => 100,
-        'postcode' => 20,
-        'country'  => 100,
-    );
+    /** Address fields an order takes, with their longest length: the address book's. line2 may be empty. */
+    public const ADDRESS = AddressBook::ADDRESS;
 
     private CartPricer $pricer;
 
@@ -284,12 +275,10 @@ final class GoodsCheckout
         $out    = array();
         $errors = array();
         foreach (self::ADDRESS as $field => $max) {
-            $value = $address[$field] ?? '';
-            $value = is_string($value) ? trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $value) ?? '') : '';
-            if ($value === '' && $field !== 'line2' && $required) {
-                $errors[] = array('pointer' => '/address/' . $field, 'code' => 'required', 'message' => _m('This field is needed.'));
-            } elseif (mb_strlen($value, 'UTF-8') > $max) {
-                $errors[] = array('pointer' => '/address/' . $field, 'code' => 'maxLength', 'message' => sprintf(_m('Keep this under %d characters.'), $max + 1));
+            $value   = AddressBook::clean($field, $address[$field] ?? '');
+            $problem = AddressBook::problem($field, $value, $max, $required && $field !== 'line2');
+            if ($problem !== null) {
+                $errors[] = array('pointer' => '/address/' . $field, 'code' => $problem[0], 'message' => $problem[1]);
             }
             $out[$field] = $value;
         }

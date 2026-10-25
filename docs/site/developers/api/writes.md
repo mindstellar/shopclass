@@ -501,7 +501,7 @@ curl "$API/cart/quote?lines=12:2,15:1&gateway=offline"
 
 `lines` is `variant:qty` pairs, at most 50, a quantity of 1 to 20. A variant that is gone, hidden or out of stock does not fail the call: it is listed in `problems` (`not_buyable`, `out_of_stock`, `qty`) with its position in `lines`, and an out-of-stock line stays out of the totals. `shipping` picks a delivery method from `shipping_methods`; `gateway` adds that payment method's fee. Every amount is `{amount, currency, formatted}`. A quote is never cached.
 
-Before checkout a shopper may add `country` (two letters), `state` and `city` (up to 100 characters), `postcode` (up to 20) and `coupon` (letters, digits and `-`, up to 40, read in upper case). Delivery, tax and discount plugins use them; a value that does not fit is left out, not refused.
+Before checkout a shopper may add `country` (two letters), `state` and `city` (up to 100 characters), `postcode` (up to 15) and `coupon` (letters, digits and `-`, up to 40, read in upper case). Delivery, tax and discount plugins use them; a value that does not fit is left out, not refused.
 
 | Field | Detail |
 |---|---|

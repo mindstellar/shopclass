@@ -568,4 +568,13 @@ class Utils
             && is_string($host) && is_string($baseHost)
             && strcasecmp($host, $baseHost) === 0;
     }
+
+    /**
+     * Typed text on one line: each run of control characters (newlines too) becomes a space,
+     * and the ends are trimmed.
+     */
+    public static function oneLine(string $value): string
+    {
+        return trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $value));
+    }
 }

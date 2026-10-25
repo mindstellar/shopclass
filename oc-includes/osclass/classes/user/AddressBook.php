@@ -17,6 +17,7 @@ use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
+use mindstellar\utility\Utils;
 
 /**
  * A shopper's delivery addresses, at most MAX. The default one is the account's own address
@@ -30,16 +31,31 @@ final class AddressBook
     /** Most addresses one account keeps, the default among them. */
     public const MAX = 10;
 
-    /** Each field and its longest length; they fit the account's address columns. label may be empty. */
-    public const FIELDS = array(
-        'label'    => 40,
+    /**
+     * Every delivery address field and its longest length, for the book and for an order alike.
+     * They fit the account's address columns, where the default lives; line2 is an order's only.
+     */
+    public const ADDRESS = array(
         'name'     => 100,
         'phone'    => 40,
         'line1'    => 100,
+        'line2'    => 100,
         'city'     => 100,
         'state'    => 100,
         'postcode' => 15,
         'country'  => 2,
+    );
+
+    /** The book's fields: a label, which may be empty, and the address without line2. */
+    public const FIELDS = array(
+        'label'    => 40,
+        'name'     => self::ADDRESS['name'],
+        'phone'    => self::ADDRESS['phone'],
+        'line1'    => self::ADDRESS['line1'],
+        'city'     => self::ADDRESS['city'],
+        'state'    => self::ADDRESS['state'],
+        'postcode' => self::ADDRESS['postcode'],
+        'country'  => self::ADDRESS['country'],
     );
 
     /** The default's id when it was never given one: an address typed on the profile page. */
@@ -250,20 +266,12 @@ final class AddressBook
         $out    = array();
         $errors = array();
         foreach (self::FIELDS as $field => $max) {
-            $value = $input[$field] ?? '';
-            $value = is_string($value) ? trim(preg_replace('/[\x00-\x1F\x7F]+/', ' ', $value) ?? '') : '';
-            if ($field === 'country') {
-                $value = strtoupper($value);
-            }
+            $value       = self::clean($field, $input[$field] ?? '');
             $out[$field] = $value;
-            $error       = null;
-            if ($value === '' && $field !== 'label') {
-                $error = array('required', _m('This field is needed.'));
-            } elseif (mb_strlen($value, 'UTF-8') > $max) {
-                $error = array('maxLength', sprintf(_m('Keep this under %d characters.'), $max + 1));
-            } elseif ($field === 'phone' && strlen((string) preg_replace('/\D+/', '', $value)) < 8) {
+            $error       = self::problem($field, $value, $max, $field !== 'label');
+            if ($error === null && $field === 'phone' && strlen((string) preg_replace('/\D+/', '', $value)) < 8) {
                 $error = array('pattern', _m('Enter a mobile number with at least 8 digits.'));
-            } elseif ($field === 'country' && (new LocationQuery())->lineage($value, 0, 0)['country'] === null) {
+            } elseif ($error === null && $field === 'country' && (new LocationQuery())->lineage($value, 0, 0)['country'] === null) {
                 $error = array('unknown', _m('Choose a country from the list.'));
             }
             if ($error !== null) {
@@ -281,16 +289,43 @@ final class AddressBook
     }
 
     /**
+     * One typed address value cleaned: on one line, trimmed, a country code upper-cased.
+     */
+    public static function clean(string $field, mixed $value): string
+    {
+        $value = is_string($value) ? Utils::oneLine($value) : '';
+
+        return $field === 'country' ? strtoupper($value) : $value;
+    }
+
+    /**
+     * What is wrong with a cleaned value's presence or length, as [code, message], or null.
+     *
+     * @return array{0:string,1:string}|null
+     */
+    public static function problem(string $field, string $value, int $max, bool $required): ?array
+    {
+        if ($value === '' && $required) {
+            return array('required', _m('This field is needed.'));
+        }
+        if (mb_strlen($value, 'UTF-8') > $max) {
+            return array('maxLength', sprintf(_m('Keep this under %d characters.'), $max + 1));
+        }
+
+        return null;
+    }
+
+    /**
      * An address in the shape an order keeps.
      *
      * @param array<string,mixed> $address
      *
-     * @return array<string,string> GoodsCheckout::ADDRESS keys
+     * @return array<string,string> ADDRESS keys
      */
     public static function forOrder(array $address): array
     {
         $out = array();
-        foreach (array('name', 'phone', 'line1', 'line2', 'city', 'state', 'postcode', 'country') as $field) {
+        foreach (array_keys(self::ADDRESS) as $field) {
             $out[$field] = (string) ($address[$field] ?? '');
         }
 

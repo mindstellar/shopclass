@@ -1343,7 +1343,6 @@ msgstr ""
 msgid "Keep me signed in"
 msgstr ""
 
-#: oc-includes/osclass/classes/billing/GoodsCheckout.php
 #: oc-includes/osclass/classes/user/AddressBook.php
 msgid "Keep this under %d characters."
 msgstr ""
@@ -3755,7 +3754,6 @@ msgstr ""
 msgid "This conversation was reported and is waiting for review."
 msgstr ""
 
-#: oc-includes/osclass/classes/billing/GoodsCheckout.php
 #: oc-includes/osclass/classes/user/AddressBook.php
 msgid "This field is needed."
 msgstr ""

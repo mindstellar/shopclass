@@ -249,6 +249,26 @@ $r = $placeWith($typed);
 pin('a typed address needs no address scope', 201, $r->status());
 OrderStore::cancel((int) $r->body()['data']['id']);
 
+$long     = ['postcode' => str_repeat('7', 16)] + $typed;
+$messages = static function (callable $fn): array {
+    try {
+        $fn();
+    } catch (InvalidException $e) {
+        return array_map(static fn (array $x): string => $x['pointer'] . ' ' . $x['message'], $e->errors());
+    }
+
+    return [];
+};
+$r = $order($long);
+pin('a postcode the book refuses is refused at checkout too, with the same message', [['/address/postcode Keep this under 16 characters.'], ['/address/postcode Keep this under 16 characters.'], 422, ['/address/postcode maxLength']], [
+    $messages(static fn () => AddressBook::check($long, '/address')),
+    $messages(static fn () => (new \mindstellar\billing\GoodsCheckout())->place($sue, [['variant' => $mugV, 'qty' => 1]], $long, 'standard', 'fake')),
+    $r->status(), array_map(static fn ($e) => $e['pointer'] . ' ' . $e['code'], $r->body()['errors'] ?? []),
+]);
+pin('and is left out of a quote', [], \mindstellar\billing\CartPricer::quoteAddress('', '', str_repeat('7', 16)));
+pin('the address fields share one table', [AddressBook::FIELDS['line1'], AddressBook::FIELDS['postcode']], [\mindstellar\billing\GoodsCheckout::ADDRESS['line1'], \mindstellar\billing\GoodsCheckout::ADDRESS['postcode']]);
+pin('text is put on one line', 'a b c', \mindstellar\utility\Utils::oneLine(" a\n\tb\x7Fc "));
+
 $r = $order($typed);
 pin('a typed address without save is not kept', [201, 1], [$r->status(), count($book->all($sue))]);
 OrderStore::cancel((int) $r->body()['data']['id']);
