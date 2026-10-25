@@ -16485,6 +16485,12 @@ msgstr ""
 msgid "Your theme and plugins say which of these they work for."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid ""
+"Your theme does not show saved menus by itself. Add the Menu widget to a "
+"section to show one."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/index.php
 msgid "Your theme needs a plugin that is missing or off: %s."
 msgid_plural "Your theme needs plugins that are missing or off: %s."

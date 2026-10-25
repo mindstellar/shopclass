@@ -134,6 +134,8 @@ $meDepth = static function (array $cat) use ($meCats): int {
                         <p class="menu-help" id="menu-place"><?php echo osc_esc_html(sprintf(__('Your theme shows this menu in: %1$s (%2$s).'), $mePlace['label'], sprintf(_n('%d level', '%d levels', $mePlace['depth']), $mePlace['depth']))); ?></p>
                         <?php $meBeyond = MenuService::itemsBeyond((array) $menuEditor['items'], $mePlace['depth']); ?>
                         <p class="menu-warn" id="menu-place-warn" role="status"<?php echo $meBeyond === 0 ? ' hidden' : ''; ?>><?php echo $meBeyond === 0 ? '' : osc_esc_html(sprintf($meBeyond === 1 ? $meState['i18n']['hidden1'] : $meState['i18n']['hiddenN'], $meBeyond)); ?></p>
+                    <?php } elseif (empty($menuEditor['places'])) { ?>
+                        <p class="menu-help" id="menu-no-places"><?php _e('Your theme does not show saved menus by itself. Add the Menu widget to a section to show one.'); ?></p>
                     <?php } ?>
                     <p class="visually-hidden" id="menu-grip-help"><?php _e('Up and down arrows move the item. Right arrow puts it under the item above, left arrow moves it out.'); ?></p>
                     <ol class="menu-items" id="menu-items" aria-label="<?php echo osc_esc_html(sprintf(__('Items in %s'), $meName)); ?>"></ol>

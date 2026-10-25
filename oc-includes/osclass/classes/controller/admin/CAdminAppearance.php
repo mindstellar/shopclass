@@ -668,6 +668,7 @@ class CAdminAppearance extends AdminSecBaseModel
             'saved'      => $saved !== null,
             'core'       => in_array($id, MenuService::CORE, true),
             'place'      => $service->themePlaces()[$id] ?? null,
+            'places'     => $service->themePlaces() !== array(),
             'items'      => $saved !== null ? $saved['items'] : $service->automaticItems($id),
             'categories' => $categories,
             'pages'      => $pages,

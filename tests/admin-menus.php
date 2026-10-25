@@ -128,6 +128,34 @@ pin('a declared unsaved menu opens', 'strip', drive('menus', array('menu' => 'st
 \mindstellar\theme\ThemeSupports::getInstance()->reset();
 pin('an unknown menu opens main', 'main', drive('menus', array('menu' => 'nope'))['view']['menuEditor']['id']);
 
+harness_section('a theme without menu places');
+foreach (array(
+    'osc_admin_page'                 => '',
+    'osc_register_script'            => '',
+    'osc_enqueue_script'             => '',
+    'osc_asset_url_versioned'        => 'return (string) func_get_arg(0);',
+    'osc_current_admin_theme_js_url' => 'return (string) func_get_arg(0);',
+    'osc_current_admin_theme_path'   => '',
+    'osc_admin_page_head'            => '',
+    'osc_admin_confirm_dialog'       => '',
+) as $fn => $body) {
+    if (!function_exists($fn)) {
+        eval('function ' . $fn . '(...$args) { ' . $body . ' }');
+    }
+}
+$screen = static function (): string {
+    $view = drive('menus')['view'];
+    View::newInstance()->_exportVariableToView('menuEditor', $view['menuEditor']);
+    ob_start();
+    require ABS_PATH . 'oc-admin/themes/modern/appearance/menus.php';
+
+    return (string) ob_get_clean();
+};
+check('the editor says how to show a menu', str_contains($screen(), 'id="menu-no-places"'));
+\mindstellar\theme\ThemeSupports::getInstance()->add('menus', array('main' => array('label' => 'Top bar')));
+check('a theme with places does not get the line', !str_contains($screen(), 'id="menu-no-places"'));
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
+
 harness_section('csrf');
 $GLOBALS['badCsrf'] = true;
 check('save checks the token before anything', drive('menu_save_post', array('menu' => 'main', 'items' => $items))['csrf']);
