@@ -181,11 +181,9 @@ pin('and matches the schema', [], api_admin_schema_errors('AddressList', $r));
 
 harness_section('who may do what');
 pin('another user sees only their own book', [], $call('GET', 'account/addresses', null, $tomKey)->body()['data'] ?? null);
-pin('and cannot edit, delete or promote this one', ['404 not_found', '404 not_found', '404 not_found'], [
-    api_admin_code($call('PUT', 'account/addresses/' . $workId, $home, $tomKey)),
-    api_admin_code($call('DELETE', 'account/addresses/' . $workId, null, $tomKey)),
-    api_admin_code($call('POST', 'account/addresses/' . $workId . '/default', null, $tomKey)),
-]);
+pin('and cannot edit this one', '404 not_found', api_admin_code($call('PUT', 'account/addresses/' . $workId, $home, $tomKey)));
+pin('nor delete it', '404 not_found', api_admin_code($call('DELETE', 'account/addresses/' . $workId, null, $tomKey)));
+pin('nor make it the default', '404 not_found', api_admin_code($call('POST', 'account/addresses/' . $workId . '/default', null, $tomKey)));
 pin('which stays as it was', [$homeId, $workId], array_column($book->all($sue), 'id'));
 pin('a read key reads', 200, $call('GET', 'account/addresses', null, $readKey)->status());
 pin('but cannot write', '403 insufficient_scope', api_admin_code($call('POST', 'account/addresses', $home, $readKey)));
