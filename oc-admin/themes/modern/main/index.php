@@ -199,10 +199,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <p class="text-muted mb-0"><?php _e('Nothing to ship.'); ?></p>
                     <?php } else { ?>
                         <ul class="dash-system">
-                            <?php foreach ($toShip['orders'] as $order) { ?>
+                            <?php foreach ($toShip['orders'] as ['order' => $order, 'buyer' => $buyer]) { ?>
                                 <li class="dash-system-row dash-ship-row">
                                     <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()); ?>"><?php echo osc_esc_html(osc_billing_order_number($order->getId())); ?></a>
-                                    <span class="dash-system-label"><?php echo osc_esc_html($toShip['buyers'][$order->getId()] ?? ''); ?></span>
+                                    <span class="dash-system-label"><?php echo osc_esc_html($buyer); ?></span>
                                     <span class="dash-system-value"><?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?></span>
                                     <span class="dash-ship-age"><?php echo osc_esc_html(osc_admin_duration(time() - (int) strtotime($order->getDate()))); ?></span>
                                 </li>

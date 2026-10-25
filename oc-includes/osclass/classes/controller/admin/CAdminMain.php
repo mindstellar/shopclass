@@ -133,23 +133,9 @@ class CAdminMain extends AdminSecBaseModel
         if (!osc_is_shop_mode() || !osc_billing_enabled() || osc_is_moderator()) {
             return;
         }
-        $waiting = \mindstellar\billing\OrderStore::oldestToShip(5);
-            $buyers  = array();
-            $rows    = $waiting === array() ? array() : \mindstellar\user\UserStore::byIds(
-                array_values(array_unique(array_map(static fn ($o) => $o->getUserId(), $waiting))),
-                array('pk_i_id', 's_username', 's_name')
-            );
-            $byId = array();
-            foreach ($rows as $row) {
-                $byId[(int) $row['pk_i_id']] = $row['s_name'] ?: $row['s_username'];
-            }
-            foreach ($waiting as $order) {
-                $buyers[$order->getId()] = (string) ($byId[$order->getUserId()] ?? '');
-            }
-            $this->_exportVariableToView('toShip', array(
-                'count'  => \mindstellar\billing\OrderStore::toShipCount(),
-                'orders' => $waiting,
-                'buyers' => $buyers,
-            ));
+        $this->_exportVariableToView('toShip', array(
+            'count'  => \mindstellar\billing\OrderStore::toShipCount(),
+            'orders' => \mindstellar\billing\OrderStore::oldestToShip(5),
+        ));
     }
 }

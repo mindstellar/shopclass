@@ -120,7 +120,6 @@ if (!function_exists('osc_is_moderator')) {
         return false;
     }
 }
-$cache = \mindstellar\cache\CacheManager::getInstance();
 
 /** The sidebar entries Billing and Orders, as the menu holds them. */
 $menu = static function (): array {
@@ -132,7 +131,6 @@ $menu = static function (): array {
 };
 
 harness_section('the count');
-$cache->delete(OrderStore::TO_SHIP_CACHE_KEY);
 pin('nothing waits at first', 0, OrderStore::toShipCount());
 $paid = $goods('offline');
 Billing::markPaid($paid, null);
@@ -146,16 +144,15 @@ OrderStore::ship($sent->getId(), 'DHL', 'JD1', '');
 $gone = $goods('cod');
 OrderStore::cancel($gone->getId());
 pin('paid goods and unpaid cash on delivery count; a pending bank order, a credit package, a shipped and a cancelled one do not', 2, OrderStore::toShipCount());
+pin('the same orders the To ship list counts', OrderStore::searchCount(OrderStore::TO_SHIP), OrderStore::toShipCount());
 
 harness_section('the cache');
-$cache->delete(OrderStore::TO_SHIP_CACHE_KEY);
 OrderStore::toShipCount();
-$found = false;
-pin('the count is kept', 2, $cache->get(OrderStore::TO_SHIP_CACHE_KEY, $found));
+$admin->query("UPDATE {$p}t_billing_order SET s_status = 'shipped' WHERE pk_i_id = " . $paid->getId());
+pin('the count is kept', 2, OrderStore::toShipCount());
+$admin->query("UPDATE {$p}t_billing_order SET s_status = 'paid' WHERE pk_i_id = " . $paid->getId());
 OrderStore::ship($paid->getId(), 'DHL', 'JD2', '');
-$cache->get(OrderStore::TO_SHIP_CACHE_KEY, $found);
-check('shipping clears it', !$found);
-pin('and the next count is fresh', 1, OrderStore::toShipCount());
+pin('shipping drops it, so the next count is fresh', 1, OrderStore::toShipCount());
 Billing::markPaid($bank, null);
 pin('paying an order adds it at once', 2, OrderStore::toShipCount());
 
@@ -192,6 +189,6 @@ foreach ([$third, $first, $second] as $i => $o) {
     Billing::markPaid($o, null);
     $admin->query("UPDATE {$p}t_billing_order SET dt_date = '2026-01-0" . ($i + 1) . " 10:00:00' WHERE pk_i_id = " . $o->getId());
 }
-pin('the oldest come first', [$third->getId(), $first->getId(), $second->getId()], array_map(static fn (Order $o): int => $o->getId(), OrderStore::oldestToShip(5)));
+pin('the oldest come first, each with its buyer', [[$third->getId(), 'tom'], [$first->getId(), 'tom'], [$second->getId(), 'tom']], array_map(static fn (array $row): array => [$row['order']->getId(), $row['buyer']], OrderStore::oldestToShip(5)));
 pin('and the list is capped', 2, count(OrderStore::oldestToShip(2)));
 exit(harness_result());

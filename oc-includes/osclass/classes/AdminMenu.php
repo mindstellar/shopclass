@@ -449,21 +449,13 @@ class AdminMenu
     }
 
     /**
-     * Orders waiting to ship, for the badge. Zero for a moderator, who cannot open Billing,
-     * and when the orders table is not there yet.
+     * Orders waiting to ship, for the badge. Zero for a moderator, who cannot open Billing.
      *
      * @return int
      */
     private function ordersToShip(): int
     {
-        if (osc_is_moderator()) {
-            return 0;
-        }
-        try {
-            return \mindstellar\billing\OrderStore::toShipCount();
-        } catch (\Throwable $e) {
-            return 0;
-        }
+        return osc_is_moderator() ? 0 : \mindstellar\billing\OrderStore::toShipCount();
     }
 
     /**

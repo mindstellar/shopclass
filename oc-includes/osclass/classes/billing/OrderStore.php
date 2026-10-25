@@ -18,6 +18,7 @@ use mindstellar\billing\event\OrderDelivered;
 use mindstellar\billing\event\OrderShipped;
 use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\boot\CoreServices;
+use mindstellar\cache\CacheGroup;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
@@ -25,6 +26,7 @@ use mindstellar\database\QueryBuilder;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\ListingStore;
 use mindstellar\model\KeyValue;
+use mindstellar\user\UserStore;
 
 /**
  * Persistence for t_billing_order.
@@ -48,9 +50,12 @@ final class OrderStore extends Model
     /** s_meta key core sets when an order was paid but its listing could not be published. */
     public const PUBLISH_FAILED = '_publish_failed';
 
-    /** Cache key and lifetime (seconds) of the "to ship" count shown in the admin menu. */
-    public const TO_SHIP_CACHE_KEY = 'osclass_orders_to_ship';
-    private const TO_SHIP_CACHE_TTL = 60;
+    /** The search() filter of orders waiting to ship: paid goods orders and unpaid cash on delivery ones. */
+    public const TO_SHIP = array('goods' => true, 'to_ship' => true);
+
+    /** Cache group and lifetime (seconds) of the "to ship" count shown in the admin menu. */
+    private const TO_SHIP_CACHE_GROUP = 'billing_order';
+    private const TO_SHIP_CACHE_TTL   = 60;
 
     /** Key-value group linking an unpaid listing to its open order. */
     private const LISTING_GROUP = 'listing_unpaid';
@@ -826,65 +831,57 @@ final class OrderStore extends Model
     }
 
     /**
-     * How many orders wait to be shipped: paid goods orders and unpaid cash on delivery
-     * ones. One indexed COUNT, kept for a minute and dropped whenever an order is written.
+     * How many orders wait to be shipped (TO_SHIP), counted as the To ship list counts them.
+     * Kept for a minute per site and dropped whenever an order is written.
      *
      * @return int
+     * @throws DbException
      */
     public static function toShipCount(): int
     {
-        $cache = \mindstellar\cache\CacheManager::getInstance();
-        $found = false;
-        $count = $cache->get(self::TO_SHIP_CACHE_KEY, $found);
-        if ($found && is_int($count)) {
-            return $count;
-        }
-
-        $count = self::table()
-            ->where('i_credits', 0)
-            ->whereRaw(
-                '(s_status = ? OR (s_status = ? AND s_gateway = ?))',
-                array(Order::STATUS_PAID, Order::STATUS_PENDING, gateway\CashOnDeliveryGateway::ID)
-            )
-            ->count();
-        $cache->set(self::TO_SHIP_CACHE_KEY, $count, self::TO_SHIP_CACHE_TTL);
-
-        return $count;
+        return (int) CacheGroup::remember(self::TO_SHIP_CACHE_GROUP, 'to_ship_count', static fn (): int => self::searchCount(self::TO_SHIP), self::TO_SHIP_CACHE_TTL);
     }
 
     /**
-     * The oldest orders still waiting to ship, oldest first.
+     * The oldest orders still waiting to ship, oldest first, each with its buyer's name (the
+     * username when no name is set; empty for a deleted account).
      *
      * @param int $limit
      *
-     * @return Order[]
+     * @return array<int,array{order:Order,buyer:string}>
+     * @throws DbException
      */
     public static function oldestToShip(int $limit): array
     {
         $limit = max(1, $limit);
         $parts = array();
         foreach (array(Order::STATUS_PAID, Order::STATUS_PENDING) as $status) {
-            $parts = array_merge($parts, self::filtered(array('status' => $status, 'goods' => true, 'to_ship' => true))
+            $parts = array_merge($parts, self::filtered(array('status' => $status) + self::TO_SHIP)
                 ->orderBy('dt_date', 'ASC')
                 ->orderBy('pk_i_id', 'ASC')
                 ->limit($limit)
                 ->get());
         }
         usort($parts, static fn (array $a, array $b): int => array($a['dt_date'], (int) $a['pk_i_id']) <=> array($b['dt_date'], (int) $b['pk_i_id']));
+        $orders = array_map(static fn (array $row): Order => Order::fromRow($row), array_slice($parts, 0, $limit));
 
-        return array_map(static fn (array $row): Order => Order::fromRow($row), array_slice($parts, 0, $limit));
+        $names = array();
+        $users = array_values(array_unique(array_map(static fn (Order $o): int => $o->getUserId(), $orders)));
+        foreach ($users === array() ? array() : UserStore::byIds($users, array('pk_i_id', 's_username', 's_name')) as $row) {
+            $names[(int) $row['pk_i_id']] = (string) ($row['s_name'] ?: $row['s_username']);
+        }
+
+        return array_map(static fn (Order $o): array => array('order' => $o, 'buyer' => $names[$o->getUserId()] ?? ''), $orders);
     }
 
     /**
-     * Drop the cached "to ship" count, once any write in flight has committed.
+     * Drop the cached "to ship" count; once more when a write in flight commits.
      *
      * @return void
      */
     public static function forgetToShip(): void
     {
-        Db::afterCommit(static function (): void {
-            \mindstellar\cache\CacheManager::getInstance()->delete(self::TO_SHIP_CACHE_KEY);
-        });
+        CacheGroup::changed(self::TO_SHIP_CACHE_GROUP);
     }
 
     /**
