@@ -261,6 +261,11 @@ if (!function_exists('osc_admin_settings_group_tabs')) {
         if ($section !== 'settings') {
             return;
         }
+        // A declared page with no menu entry is in no group; the lookup would land on General.
+        $declared = Params::getParam('action') === 'custom' ? osc_settings_page(Params::getParamString('id')) : null;
+        if ($declared !== null && $declared['menu'] === '') {
+            return;
+        }
         $tabs = $menu->settingsGroupTabs($entry, osc_is_moderator());
         if ($tabs !== array()) {
             $drawn = true;

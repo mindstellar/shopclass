@@ -2468,4 +2468,31 @@ foreach ($screens as $file) {
     check(basename($file) . ' writes no heading tag of its own: it uses osc_admin_section_heading()', $raw === array(), implode(' ', $raw));
 }
 
+harness_section('group tab row on a declared page');
+
+// The row is drawn once per request, so the page that should draw it goes last.
+$tabRow = static function (string $id): string {
+    $_GET                    = array('page' => 'settings', 'action' => 'custom', 'id' => $id);
+    $_POST                   = array();
+    $_SERVER['QUERY_STRING'] = 'page=settings&action=custom&id=' . $id;
+    Params::init();
+    ob_start();
+    osc_admin_settings_group_tabs();
+
+    return (string)ob_get_clean();
+};
+$field = array(array('name' => 'a'));
+osc_register_settings_page('np-bare', array('title' => 'Bare', 'menu' => '', 'fields' => $field));
+osc_register_settings_page('np-tabbed', array('title' => 'Tabbed', 'menu' => '', 'fields' => $field,
+    'tabs' => array(array('label' => 'Mine', 'url' => '#', 'active' => true))));
+osc_register_settings_page('np-sys', array('title' => 'Sys', 'menu' => 'settings', 'group' => 'system', 'fields' => $field));
+$groupMenu = AdminMenu::getInstance();
+$groupMenu->init();
+$groupMenu->add_submenu('settings', 'Sys', osc_settings_page_url('np-sys'), 'settings-page-np-sys', 'administrator', null, 'settings_group_system');
+check('a page with no menu entry draws no group tab row', $tabRow('np-bare') === '', $tabRow('np-bare'));
+check('...nor does one with tabs of its own, which the page draws itself', $tabRow('np-tabbed') === '');
+$sysRow = $tabRow('np-sys');
+check('a page in the System group draws the System row', strpos($sysRow, 'Storage') !== false && strpos($sysRow, 'General') === false, $sysRow);
+check('...with itself active', (bool)preg_match('~is-active"[^>]*>Sys<~', $sysRow), $sysRow);
+
 exit(harness_result());
