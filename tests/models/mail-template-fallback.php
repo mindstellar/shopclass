@@ -82,6 +82,15 @@ pin('the body carries the new user name from the bundled text', true, str_contai
 pin('the bundled text is not left unfilled', false, str_contains((string) ($GLOBALS['sent_mail'][0]['body'] ?? ''), '{USER_NAME}'));
 pin('the template helper returns the bundled title', $english['s_title'], CoreEmails::template('email_admin_new_user')['s_title'] ?? null);
 
+harness_section('every core mail has bundled text');
+preg_match_all("/template\\('([a-z0-9_]+)'/", (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/mail/CoreEmails.php'), $named);
+$named = array_values(array_unique($named[1]));
+check('core names its templates', count($named) > 10);
+pin('each one is in installer/mail.json', array(), array_values(array_diff($named, array_column($bundled, 's_internal_name'))));
+$admin->query("DELETE FROM {$p}t_pages WHERE s_internal_name = 'email_listing_unpaid_reminder'");
+$reminder = CoreEmails::template('email_listing_unpaid_reminder');
+check('the pay-to-publish reminder with no page in the database gets its bundled text', ($reminder['s_title'] ?? '') !== '' && str_contains((string) ($reminder['s_text'] ?? ''), '{PAY_URL}'));
+
 harness_section('no template at all');
 $admin->query("DELETE FROM {$p}t_pages WHERE s_internal_name = 'email_admin_new_user'");
 $GLOBALS['sent_mail'] = array();
