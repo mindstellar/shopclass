@@ -443,29 +443,46 @@
             });
         }
 
-        // One package per request so no single request runs into a shared host's time limit.
-        // A failure does not stop the queue; the server keeps it for the finish page.
-        function runQueue(index, done) {
-            if (index >= queue.length) {
-                if (!queue.length) {
-                    done();
-                    return;
-                }
-                if (overlayText) {
-                    overlayText.textContent = text('shopMode', 'Turning on shop mode…');
-                }
-                shopRequest({ action: 'activate_theme' }).then(done);
+        // One package or one batch of sample listings per request, so no request runs into a
+        // shared host's time limit. A failure does not stop the queue; the server keeps it for the finish page.
+        function buildSteps(sampleBatches) {
+            var steps = [];
+            if (sampleBatches > 0) {
+                steps.push({ fields: { action: 'sample_photos' }, label: text('samplePhotos', 'Downloading sample photos…') });
+            }
+            for (var b = 0; b < sampleBatches; b++) {
+                steps.push({
+                    fields: { action: 'sample_batch', batch: String(b) },
+                    label: text('sampleBatch', 'Adding sample listings… (%1$s of %2$s)')
+                        .replace('%1$s', String(b + 1))
+                        .replace('%2$s', String(sampleBatches)),
+                });
+            }
+            queue.forEach(function (item, index) {
+                steps.push({
+                    fields: { action: 'install_package', type: item.type, slug: item.slug },
+                    label: text('installing', 'Installing %1$s… (%2$s of %3$s)')
+                        .replace('%1$s', item.name)
+                        .replace('%2$s', String(index + 1))
+                        .replace('%3$s', String(queue.length)),
+                });
+            });
+            if (queue.length) {
+                steps.push({ fields: { action: 'activate_theme' }, label: text('shopMode', 'Turning on shop mode…') });
+            }
+            return steps;
+        }
+
+        function runSteps(steps, index, done) {
+            if (index >= steps.length) {
+                done();
                 return;
             }
-            var item = queue[index];
             if (overlayText) {
-                overlayText.textContent = text('installing', 'Installing %1$s… (%2$s of %3$s)')
-                    .replace('%1$s', item.name)
-                    .replace('%2$s', String(index + 1))
-                    .replace('%3$s', String(queue.length));
+                overlayText.textContent = steps[index].label;
             }
-            shopRequest({ action: 'install_package', type: item.type, slug: item.slug }).then(function () {
-                runQueue(index + 1, done);
+            shopRequest(steps[index].fields).then(function () {
+                runSteps(steps, index + 1, done);
             });
         }
 
@@ -502,7 +519,7 @@
                 })
                 .then(function (data) {
                     if (data && data.status) {
-                        runQueue(0, function () {
+                        runSteps(buildSteps(parseInt(data.sample_batches, 10) || 0), 0, function () {
                             submitFinish(data.email_status, data.password, data.location_error);
                         });
                         return;

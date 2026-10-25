@@ -30,6 +30,9 @@ final class SampleData
     /** The key-value group that records what was added. */
     public const GROUP = 'sample';
 
+    /** Sample listings added per installer request. */
+    public const BATCH = 5;
+
     /** Every sample listing has this contact e-mail. */
     public const SELLER_EMAIL = 'seller@example.com';
 
@@ -62,69 +65,78 @@ final class SampleData
     }
 
     /**
-     * Add the sample custom fields and listings for a site type, and record their ids so they can be removed.
-     * Each step is non-fatal; what went wrong comes back in 'errors'.
+     * How many batches the sample listings of a site type are added in.
+     *
+     * @param string $type 'classifieds' or 'shop'
+     *
+     * @return int
+     */
+    public function batches(string $type): int
+    {
+        return (int) ceil(count(self::rows($type)) / self::BATCH);
+    }
+
+    /**
+     * Add all the sample data in one go, batch after batch. Already recorded parts are skipped.
      *
      * @param string      $type     'classifieds' or 'shop'
      * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
      *
-     * @return array{listings: int, fields: int, errors: string[]}
+     * @return array{listings: int, failed: int, errors: string[]}
      * @throws \InvalidArgumentException when the type is unknown
-     * @throws \RuntimeException when sample data is already installed
      */
     public function install(string $type, ?string $imageDir = null): array
     {
-        if (!SiteMode::isValid($type)) {
-            throw new \InvalidArgumentException('Unknown site type: ' . $type);
-        }
-        if (osc_kv_get(self::GROUP, 'items') !== null) {
-            throw new \RuntimeException('Sample data is already installed.');
+        $total = array('listings' => 0, 'failed' => 0, 'errors' => array());
+        for ($batch = 0, $count = $this->batches($type); $batch < $count; $batch++) {
+            $result             = $this->installBatch($type, $batch, $imageDir);
+            $total['listings'] += $result['listings'];
+            $total['failed']   += $result['failed'];
+            $total['errors']    = array_merge($total['errors'], $result['errors']);
         }
 
-        $locale    = osc_current_admin_locale();
-        $errors    = array();
-        $fieldId   = array();
-        $fieldType = array();
-        $fieldIds  = array();
-        $groupIds  = array();
-        $itemIds   = array();
+        return $total;
+    }
 
-        $groupModel = \FieldGroup::getInstance();
-        $fields     = FieldService::make($locale);
-        foreach (require LIB_PATH . 'osclass/installer/data/fields-' . $type . '.php' as $position => $group) {
-            try {
-                $groupId = $groupModel->insertGroup($group['name'], '', $position);
-                if (!$groupId) {
-                    throw new \RuntimeException('group');
-                }
-                $groupIds[] = (int) $groupId;
-                $groupModel->insertCategories($groupId, $group['categories']);
-                foreach ($group['fields'] as $field) {
-                    $id = $fields->create(array(
-                        'name'       => $field['name'],
-                        'type'       => $field['type'],
-                        'searchable' => $field['searchable'],
-                        'options'    => $field['options'] ?? array(),
-                    ));
-                    $groupModel->setFieldSingleGroup($id, $groupId);
-                    $fieldId[$field['key']]   = $id;
-                    $fieldIds[]               = $id;
-                    $fieldType[$field['key']] = $field['type'];
-                }
-            } catch (\Throwable $e) {
-                $errors[] = 'fields: ' . $e->getMessage();
+    /**
+     * Add the sample fields and groups not yet recorded, then one batch of listings. Each id is
+     * recorded as soon as it is made, so a request cut short resumes where it stopped.
+     * Each step is non-fatal; what went wrong comes back in 'errors', and 'failed' counts unsaved listings.
+     *
+     * @param string      $type     'classifieds' or 'shop'
+     * @param int         $batch    from 0 to batches() - 1
+     * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
+     *
+     * @return array{listings: int, failed: int, errors: string[]}
+     * @throws \InvalidArgumentException when the type is unknown
+     */
+    public function installBatch(string $type, int $batch, ?string $imageDir = null): array
+    {
+        $rows    = self::rows($type);
+        $errors  = $this->installFields($type);
+        $locale  = osc_current_admin_locale();
+        $fieldId = (array) osc_kv_get(self::GROUP, 'fields', array());
+        $types   = array();
+        foreach (require LIB_PATH . 'osclass/installer/data/fields-' . $type . '.php' as $group) {
+            foreach ($group['fields'] as $field) {
+                $types[$field['key']] = $field['type'];
             }
         }
-
+        $done    = (array) osc_kv_get(self::GROUP, 'items', array());
+        $made    = 0;
+        $failed  = 0;
         $service = new ListingService();
         $actor   = Actor::admin(1, '127.0.0.1');
-        foreach (require LIB_PATH . 'osclass/installer/data/sample-' . $type . '.php' as $row) {
+        foreach (array_slice($rows, $batch * self::BATCH, self::BATCH, true) as $index => $row) {
+            if (isset($done[$index])) {
+                continue;
+            }
             $copy = null;
             try {
                 $meta = array();
                 foreach ($row['fields'] as $key => $value) {
-                    if (isset($fieldId[$key])) {
-                        $meta[$fieldId[$key]] = $fieldType[$key] === 'DATE' ? strtotime((string) $value) : $value;
+                    if (isset($fieldId[$key], $types[$key])) {
+                        $meta[(int) $fieldId[$key]] = $types[$key] === 'DATE' ? strtotime((string) $value) : $value;
                     }
                 }
                 $form = array(
@@ -160,20 +172,79 @@ final class SampleData
                     unset($form['photos']);
                     $saved = $save($form);
                 }
-                $itemIds[] = $saved->id();
+                $done[$index] = $saved->id();
+                osc_kv_set(self::GROUP, 'items', $done);
+                $made++;
             } catch (\Throwable $e) {
                 $errors[] = $row['category'] . ': ' . $e->getMessage();
+                $failed++;
             }
             if ($copy !== null && is_file($copy)) {
                 unlink($copy);
             }
         }
 
-        osc_kv_set(self::GROUP, 'items', $itemIds);
-        osc_kv_set(self::GROUP, 'fields', $fieldIds);
-        osc_kv_set(self::GROUP, 'groups', $groupIds);
+        return array('listings' => $made, 'failed' => $failed, 'errors' => $errors);
+    }
 
-        return array('listings' => count($itemIds), 'fields' => count($fieldIds), 'errors' => $errors);
+    /**
+     * Add the sample field groups and fields that are not recorded yet, recording each id as it is made.
+     *
+     * @return string[] errors
+     */
+    private function installFields(string $type): array
+    {
+        $groups     = (array) osc_kv_get(self::GROUP, 'groups', array());
+        $fieldIds   = (array) osc_kv_get(self::GROUP, 'fields', array());
+        $errors     = array();
+        $groupModel = \FieldGroup::getInstance();
+        $service    = FieldService::make(osc_current_admin_locale());
+        foreach (require LIB_PATH . 'osclass/installer/data/fields-' . $type . '.php' as $position => $group) {
+            try {
+                if (!isset($groups[$position])) {
+                    $groupId = $groupModel->insertGroup($group['name'], '', $position);
+                    if (!$groupId) {
+                        throw new \RuntimeException('group');
+                    }
+                    $groups[$position] = (int) $groupId;
+                    osc_kv_set(self::GROUP, 'groups', $groups);
+                    $groupModel->insertCategories($groupId, $group['categories']);
+                }
+                foreach ($group['fields'] as $field) {
+                    if (isset($fieldIds[$field['key']])) {
+                        continue;
+                    }
+                    $id = $service->create(array(
+                        'name'       => $field['name'],
+                        'type'       => $field['type'],
+                        'searchable' => $field['searchable'],
+                        'options'    => $field['options'] ?? array(),
+                    ));
+                    $fieldIds[$field['key']] = $id;
+                    osc_kv_set(self::GROUP, 'fields', $fieldIds);
+                    $groupModel->setFieldSingleGroup($id, $groups[$position]);
+                }
+            } catch (\Throwable $e) {
+                $errors[] = 'fields: ' . $e->getMessage();
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * The sample listings of a site type.
+     *
+     * @return array<int, array<string, mixed>>
+     * @throws \InvalidArgumentException when the type is unknown
+     */
+    private static function rows(string $type): array
+    {
+        if (!SiteMode::isValid($type)) {
+            throw new \InvalidArgumentException('Unknown site type: ' . $type);
+        }
+
+        return require LIB_PATH . 'osclass/installer/data/sample-' . $type . '.php';
     }
 
     /**

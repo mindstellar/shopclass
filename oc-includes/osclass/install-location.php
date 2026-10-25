@@ -72,6 +72,14 @@ if ($shopAction === 'install_package' || $shopAction === 'activate_theme') {
     exit;
 }
 
+// Sample data, one batch per request.
+if ($shopAction === 'sample_photos' || $shopAction === 'sample_batch') {
+    install_load_seed_helpers();
+    $sampleResult = install_sample_step($shopAction, Params::getParamInt('batch'));
+    echo json_encode(array('status' => $sampleResult['ok']));
+    exit;
+}
+
 // Re-validate on the server. The browser validates too, but never trust it.
 $adminUser = (string)Params::getParam('s_name');
 $email     = (string)Params::getParam('email');
@@ -122,14 +130,10 @@ if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $l
     }
 }
 
-// Starter categories and, if chosen, sample data. A failure only raises the finish-page notice.
-$session = Session::getInstance();
-$choice  = install_site_choice();
+// Starter categories now; sample data follows in its own requests. A failure only raises the finish-page notice.
+$choice = install_site_choice();
 install_load_seed_helpers();
-$photos  = new \mindstellar\install\SamplePhotos();
-install_seed_site($choice['type'], $choice['sample'], $photos);
-if ($photos->missing()) {
-    $session->_set('install_sample_photos_failed', 1);
-}
+install_seed_site($choice['type'], false);
+$json_message['sample_batches'] = $choice['sample'] ? (new \mindstellar\install\SampleData())->batches($choice['type']) : 0;
 
 echo json_encode($json_message);

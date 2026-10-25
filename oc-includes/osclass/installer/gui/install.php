@@ -57,6 +57,9 @@ $ins_i18n = array(
     /* translators: 1: a theme or plugin name, 2: its place in the queue, 3: how many there are */
     'installing'   => __('Installing %1$s… (%2$s of %3$s)'),
     'shopMode'     => __('Turning on shop mode…'),
+    'samplePhotos' => __('Downloading sample photos…'),
+    /* translators: 1: the batch being added, 2: how many batches there are */
+    'sampleBatch'  => __('Adding sample listings… (%1$s of %2$s)'),
 );
 ?>
 <!doctype html>

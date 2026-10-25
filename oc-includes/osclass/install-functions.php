@@ -1014,15 +1014,13 @@ function install_seed_categories(string $type): int
 }
 
 /**
- * Add the sample custom fields and listings for a site type, and record their ids so they can be removed.
- * Each step is non-fatal; what went wrong comes back in 'errors'.
+ * Add the sample custom fields and listings for a site type; see SampleData::install().
  *
  * @param string      $type     'classifieds' or 'shop'
  * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
  *
- * @return array{listings: int, fields: int, errors: string[]}
+ * @return array{listings: int, failed: int, errors: string[]}
  * @throws \InvalidArgumentException when the type is unknown
- * @throws \RuntimeException when sample data is already installed
  */
 function install_seed_sample(string $type, ?string $imageDir = null): array
 {
@@ -1044,8 +1042,9 @@ function install_load_seed_helpers(): void
 }
 
 /**
- * Write what the Your-site step chose: the category tree, the example page and, if asked, the sample data.
- * Non-fatal: a failure is logged and flagged for the finish screen, and the site still installs.
+ * Write what the Your-site step chose: the category tree, the example page and, if asked, all the sample data.
+ * Each part is skipped when it is there already, so a second call resumes. Non-fatal: a failure is
+ * logged and flagged for the finish screen, and the site still installs.
  *
  * @param string                                  $type   'classifieds' or 'shop'
  * @param bool                                    $sample add sample custom fields and listings
@@ -1055,26 +1054,11 @@ function install_load_seed_helpers(): void
  */
 function install_seed_site(string $type, bool $sample, ?\mindstellar\install\SamplePhotos $photos = null): bool
 {
-    // The Your-site step can be sent twice; the second call finds the tree and stops.
-    if (\mindstellar\database\Db::selectOne('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_category LIMIT 1') !== null) {
-        return true;
-    }
-    $ok = true;
-    try {
-        install_seed_categories($type);
-        install_seed_page();
-    } catch (\Throwable $e) {
-        error_log('Shopclass install: starter content could not be added: ' . $e->getMessage());
-        $ok = false;
-    }
+    $ok = install_seed_starter($type);
     if ($sample && $ok) {
         $photos ??= new \mindstellar\install\SamplePhotos();
         try {
-            $result = install_seed_sample($type, $photos->fetch());
-            if ($result['errors'] !== array()) {
-                error_log('Shopclass install: sample data was added with errors: ' . implode('; ', $result['errors']));
-                $ok = $result['listings'] > 0;
-            }
+            $ok = install_sample_result((new \mindstellar\install\SampleData())->install($type, $photos->fetch()));
         } catch (\Throwable $e) {
             error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
             $ok = false;
@@ -1087,6 +1071,113 @@ function install_seed_site(string $type, bool $sample, ?\mindstellar\install\Sam
     }
 
     return $ok;
+}
+
+/**
+ * Write the category tree and the example page, unless a category exists already.
+ *
+ * @param string $type 'classifieds' or 'shop'
+ *
+ * @return bool false when they could not be written
+ */
+function install_seed_starter(string $type): bool
+{
+    if (\mindstellar\database\Db::selectOne('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_category LIMIT 1') !== null) {
+        return true;
+    }
+    try {
+        install_seed_categories($type);
+        install_seed_page();
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: starter content could not be added: ' . $e->getMessage());
+
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Log what went wrong while adding sample listings.
+ *
+ * @param array{listings: int, failed: int, errors: string[]} $result SampleData::install() or installBatch()
+ *
+ * @return bool false when a listing could not be saved
+ */
+function install_sample_result(array $result): bool
+{
+    if ($result['errors'] !== array()) {
+        error_log('Shopclass install: sample data was added with errors: ' . implode('; ', $result['errors']));
+    }
+
+    return $result['failed'] === 0;
+}
+
+/**
+ * One step of adding sample data in the browser, one request each so no request runs into a
+ * shared host's time limit: sample_photos fetches the photo pack, sample_batch adds one batch of listings.
+ * The photo folder is removed after the last batch.
+ *
+ * @param string                                  $action sample_photos or sample_batch
+ * @param int                                     $batch  from 0 to SampleData::batches() - 1
+ * @param \mindstellar\install\SamplePhotos|null $photos where the photos come from; the pinned download when null
+ *
+ * @return array{ok:bool}
+ */
+function install_sample_step(string $action, int $batch, ?\mindstellar\install\SamplePhotos $photos = null): array
+{
+    $choice  = install_site_choice();
+    $session = Session::getInstance();
+    $data    = new \mindstellar\install\SampleData();
+    if (!$choice['sample']) {
+        return array('ok' => false);
+    }
+    $photos ??= new \mindstellar\install\SamplePhotos();
+    if ($action === 'sample_photos') {
+        $folder = $photos->fetch();
+        $session->_set('install_sample_photos', (string) $folder);
+        if ($folder === null) {
+            $session->_set('install_sample_photos_failed', 1);
+        }
+
+        return array('ok' => $folder !== null);
+    }
+    $last = $data->batches($choice['type']) - 1;
+    if ($action !== 'sample_batch' || $batch < 0 || $batch > $last) {
+        return array('ok' => false);
+    }
+    $folder = (string) $session->_get('install_sample_photos');
+    try {
+        $ok = install_sample_result($data->installBatch($choice['type'], $batch, $photos->owns($folder) ? $folder : null));
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
+        $ok = false;
+    }
+    if (!$ok) {
+        $session->_set('install_sample_warning', 1);
+    }
+    if ($batch === $last) {
+        install_discard_sample_photos($photos);
+    }
+
+    return array('ok' => $ok);
+}
+
+/**
+ * Remove the photo folder the sample steps unpacked, if one is left.
+ *
+ * @param \mindstellar\install\SamplePhotos|null $photos the default work folder when null
+ *
+ * @return void
+ */
+function install_discard_sample_photos(?\mindstellar\install\SamplePhotos $photos = null): void
+{
+    $session = Session::getInstance();
+    $folder  = (string) $session->_get('install_sample_photos');
+    if ($folder !== '') {
+        ($photos ?? new \mindstellar\install\SamplePhotos())->discard($folder);
+        $session->_set('install_sample_photos', '');
+    }
 }
 
 /**

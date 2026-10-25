@@ -182,6 +182,9 @@ switch ($step) {
         break;
     case 5:
         $password = Params::getParam('password', false, false);
+        if (install_nonce_check() && Session::getInstance()->_get('install_db_done')) {
+            install_discard_sample_photos();
+        }
         break;
     default:
         break;

@@ -11,7 +11,7 @@
 /**
  * The installer's sample data: custom field groups reach child categories, every sample
  * listing is saved active with its field values, products carry stock and variants,
- * the ids are recorded, and a second run is refused.
+ * the ids are recorded as they are made, and a second run adds nothing.
  *
  * Usage:  php tests/models/install-seed-sample.php       (standalone, own scratch database)
  *         php tests/run-models.php install-seed-sample   (as part of the suite)
@@ -58,10 +58,10 @@ harness_section('classifieds sample');
 install_seed_categories('classifieds');
 $result = install_seed_sample('classifieds', $pack);
 check('no errors: ' . implode('; ', $result['errors']), $result['errors'] === array());
-check('26 listings made', $result['listings'] === 26);
+check('26 listings made', $result['listings'] === 26 && $result['failed'] === 0);
 check('26 listings active', $count("SELECT COUNT(*) FROM {$p}t_item WHERE b_active = 1 AND b_enabled = 1") === 26);
 check('the kv group holds the item ids', count(osc_kv_get('sample', 'items', array())) === 26);
-check('the kv group holds the field ids', count(osc_kv_get('sample', 'fields', array())) === $result['fields']);
+check('the kv group holds every field id', count(osc_kv_get('sample', 'fields', array())) === $count("SELECT COUNT(*) FROM {$p}t_meta_fields"));
 check('the kv group holds 7 group ids', count(osc_kv_get('sample', 'groups', array())) === 7);
 
 $cars = $count("SELECT fk_i_category_id FROM {$p}t_category_description WHERE s_name = 'Cars'");
@@ -78,14 +78,31 @@ check('the Ford has its photo', $count("SELECT COUNT(*) FROM {$p}t_resource WHER
 check('the pack file is still there', is_file($pack . 'car-hatchback.webp'));
 
 harness_section('second run');
-$threw = false;
-try {
-    install_seed_sample('classifieds');
-} catch (\RuntimeException $e) {
-    $threw = true;
-}
-check('refused while sample data exists', $threw);
-check('nothing was added', $count("SELECT COUNT(*) FROM {$p}t_item") === 26);
+$fields = $count("SELECT COUNT(*) FROM {$p}t_meta_fields");
+$again  = install_seed_sample('classifieds');
+check('reports nothing made', $again['listings'] === 0 && $again['failed'] === 0);
+check('no listing was added', $count("SELECT COUNT(*) FROM {$p}t_item") === 26);
+check('no field was added', $count("SELECT COUNT(*) FROM {$p}t_meta_fields") === $fields);
+check('no group was added', $count("SELECT COUNT(*) FROM {$p}t_meta_group") === 7);
+
+harness_section('a run cut short resumes');
+scratchdb_truncate_all($admin);
+seed_locale($admin);
+seed_currency($admin);
+scratchdb_forget_cache();
+osc_reset_preferences();
+install_seed_categories('classifieds');
+$sample = new \mindstellar\install\SampleData();
+check('26 listings come in 6 batches', $sample->batches('classifieds') === 6);
+$first = $sample->installBatch('classifieds', 0);
+check('a batch adds 5 listings', $first['listings'] === 5 && $count("SELECT COUNT(*) FROM {$p}t_item") === 5);
+check('the batch ids are recorded at once', count(osc_kv_get('sample', 'items', array())) === 5);
+check('the fields came with the first batch', $count("SELECT COUNT(*) FROM {$p}t_meta_fields") === $fields);
+check('the same batch again adds nothing', $sample->installBatch('classifieds', 0)['listings'] === 0);
+$rest = $sample->install('classifieds');
+check('the rest are added once', $rest['listings'] === 21 && $count("SELECT COUNT(*) FROM {$p}t_item") === 26);
+check('the fields are not added twice', $count("SELECT COUNT(*) FROM {$p}t_meta_fields") === $fields);
+check('all 26 ids are recorded', count(osc_kv_get('sample', 'items', array())) === 26);
 
 harness_section('shop sample');
 scratchdb_truncate_all($admin);

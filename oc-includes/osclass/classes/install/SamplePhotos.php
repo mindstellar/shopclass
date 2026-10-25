@@ -132,6 +132,36 @@ final class SamplePhotos
     }
 
     /**
+     * Whether a folder is one this class unpacked in its work folder.
+     *
+     * @param string $folder
+     *
+     * @return bool
+     */
+    public function owns(string $folder): bool
+    {
+        $real = realpath($folder);
+        $work = realpath($this->workPath);
+
+        return $real !== false && $work !== false && is_dir($real)
+            && dirname($real) === $work && str_starts_with(basename($real), 'sample_');
+    }
+
+    /**
+     * Delete a photo folder an earlier request unpacked.
+     *
+     * @param string $folder
+     *
+     * @return void
+     */
+    public function discard(string $folder): void
+    {
+        if ($this->owns($folder)) {
+            (new FileSystem())->remove($folder);
+        }
+    }
+
+    /**
      * Delete the unzipped photos.
      *
      * @return void
