@@ -16,6 +16,9 @@
  * DB-backed. Usage: php tests/admin-menus.php
  */
 
+// Buffered from the start, so the screen can still set its status code.
+ob_start();
+
 require_once __DIR__ . '/lib/scratchdb.php';
 require_once __DIR__ . '/lib/harness.php';
 
