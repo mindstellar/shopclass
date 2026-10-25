@@ -555,13 +555,13 @@ osc_register_widget('core.image', array(
         array('name' => 'link', 'label' => 'Link URL (optional)', 'type' => 'text'),
     ),
     'render'      => static function ($config) {
-        $src = \mindstellar\widgets\WidgetConfig::toAbsolute((string) ($config['image'] ?? ''));
+        $src = \mindstellar\utility\Utils::toAbsolute((string) ($config['image'] ?? ''));
         if ($src === '') {
             return;
         }
         $img  = '<img src="' . osc_esc_html($src) . '" alt="' . osc_esc_html((string) ($config['alt'] ?? ''))
             . '" loading="lazy" decoding="async" style="max-width:100%;height:auto"/>';
-        $link = \mindstellar\widgets\WidgetConfig::toAbsolute((string) ($config['link'] ?? ''));
+        $link = \mindstellar\utility\Utils::toAbsolute((string) ($config['link'] ?? ''));
         if ($link !== '' && preg_match('#^https?://#i', $link)) {
             echo '<a href="' . osc_esc_html($link) . '">' . $img . '</a>';
         } else {

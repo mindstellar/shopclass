@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1249 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1247 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -358,7 +358,7 @@ Core defines 1249 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_db_password()` | **Deprecated since 4.0.0.** Gets database password |
 | `osc_db_user()` | **Deprecated since 4.0.0.** Gets database user |
 
-### hDefines (109)
+### hDefines (107)
 
 `oc-includes/osclass/helpers/hDefines.php`
 
@@ -441,10 +441,8 @@ Core defines 1249 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_url_from_item($item, $locale = '')` | Create item url from item data without exported to view. |
 | `osc_item_url_ns($id, $locale = '')` | Create the no friendly url of the item using the id of the item |
 | `osc_lib_path()` | Gets the libraries path |
-| `osc_login_return_arg(string $url, string $return)` | $url with a `return` query argument for $return, a page on this site given as a URL or a path. $url comes back unchanged when $return is empty or not on this site. |
 | `osc_login_return_field()` | Prints the hidden `return` field on the sign-in and register forms, when the request has one. |
-| `osc_login_return_path()` | The request's `return` path when it is a valid one (see osc_login_return_url()), else ''. |
-| `osc_login_return_url($return)` | A sign-in `return` path as a full URL on this site, or '' when it is not one. |
+| `osc_login_return_path()` | The request's `return` path when it is a valid one (see SignIn::returnUrl()), else ''. |
 | `osc_plugins_path()` | Gets the plugins path |
 | `osc_premium_url($locale = '')` | Create automatically the url of the item details page |
 | `osc_recover_user_password_url()` | Gets url for recovering password |

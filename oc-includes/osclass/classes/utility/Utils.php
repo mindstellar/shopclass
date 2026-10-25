@@ -577,4 +577,48 @@ class Utils
     {
         return trim((string) preg_replace('/[\x00-\x1F\x7F]+/', ' ', $value));
     }
+
+    /**
+     * Whether a value is a path on this site: one leading slash, no "//", "/\\", backslash,
+     * space, quote, angle bracket or control character.
+     */
+    public static function isSitePath(string $value): bool
+    {
+        return preg_match('#^/(?![/\\\\])#', $value) === 1 && preg_match('/[\x00-\x20\x7f"<>\\\\]/', $value) !== 1;
+    }
+
+    /**
+     * An address under this site's base URL as a site path; any other value unchanged.
+     */
+    public static function toSitePath(string $value): string
+    {
+        if (!defined('WEB_PATH') || !function_exists('osc_base_url')) {
+            return $value;
+        }
+        $base = (string) osc_base_url();
+        if ($base === '' || stripos($value, $base) !== 0) {
+            return $value;
+        }
+        $parts = parse_url($base);
+        $path  = (string) ($parts['path'] ?? '/');
+        $path  = rtrim($path, '/') . '/' . ltrim(substr($value, strlen($base)), '/');
+
+        return self::isSitePath($path) ? $path : $value;
+    }
+
+    /**
+     * A site path as an absolute address on this site's origin; any other value unchanged.
+     */
+    public static function toAbsolute(string $value): string
+    {
+        if (!self::isSitePath($value) || !defined('WEB_PATH') || !function_exists('osc_base_url')) {
+            return $value;
+        }
+        $parts = parse_url((string) osc_base_url());
+        if (empty($parts['scheme']) || empty($parts['host'])) {
+            return $value;
+        }
+
+        return $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '') . $value;
+    }
 }

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\auth;
 
 use mindstellar\security\LoginThrottle;
+use mindstellar\utility\Utils;
 
 /**
  * The one decision on a user's sign-in with a password, for the web form and the API alike.
@@ -40,6 +41,41 @@ final class SignIn
         private int $retryAfter = 0,
         private int $banned = 0
     ) {
+    }
+
+    /**
+     * Where a `return` path sends the user once signed in, as a full URL on this site, or ''.
+     * Only a site path (Utils::isSitePath()) of at most 2000 bytes under the base URL is taken,
+     * never the sign-in page itself.
+     */
+    public static function returnUrl(mixed $return): string
+    {
+        if (!is_string($return) || strlen($return) > 2000 || !Utils::isSitePath($return)) {
+            return '';
+        }
+        $url = Utils::toAbsolute($return);
+        if ($url === $return || !Utils::isLocalUrl($url) || !str_starts_with($url, (string) osc_base_url()) || str_contains($url, 'page=login')) {
+            return '';
+        }
+
+        return $url;
+    }
+
+    /**
+     * $url with a `return` query argument for $return, a page on this site given as a URL or a
+     * path. $url comes back unchanged when $return is empty or not one returnUrl() takes.
+     */
+    public static function linkWithReturn(string $url, string $return): string
+    {
+        if ($return !== '' && Utils::isLocalUrl($return)) {
+            $query  = (string) parse_url($return, PHP_URL_QUERY);
+            $return = (string) parse_url($return, PHP_URL_PATH) . ($query !== '' ? '?' . $query : '');
+        }
+        if (self::returnUrl($return) === '') {
+            return $url;
+        }
+
+        return $url . (str_contains($url, '?') ? '&' : '?') . 'return=' . rawurlencode($return);
     }
 
     /**

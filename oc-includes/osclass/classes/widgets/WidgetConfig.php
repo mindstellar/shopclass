@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\widgets;
 
+use mindstellar\utility\Utils;
+
 /**
  * The one sanitiser for a typed widget's config: the widgets screen and the customiser both
  * build a row's s_config through it.
@@ -91,47 +93,27 @@ final class WidgetConfig
     }
 
     /**
-     * Whether a value is a path on this site: one leading slash, no "//", "/\\", backslash,
-     * space, quote, angle bracket or control character.
+     * Whether a value is a path on this site; see Utils::isSitePath().
      */
     public static function isSitePath(string $value): bool
     {
-        return preg_match('#^/(?![/\\\\])#', $value) === 1 && preg_match('/[\x00-\x20\x7f"<>\\\\]/', $value) !== 1;
+        return Utils::isSitePath($value);
     }
 
     /**
-     * An address under this site's base URL as a site path; any other value unchanged.
+     * An address under this site's base URL as a site path; see Utils::toSitePath().
      */
     public static function toSitePath(string $value): string
     {
-        if (!defined('WEB_PATH') || !function_exists('osc_base_url')) {
-            return $value;
-        }
-        $base = (string) osc_base_url();
-        if ($base === '' || stripos($value, $base) !== 0) {
-            return $value;
-        }
-        $parts = parse_url($base);
-        $path  = (string) ($parts['path'] ?? '/');
-        $path  = rtrim($path, '/') . '/' . ltrim(substr($value, strlen($base)), '/');
-
-        return self::isSitePath($path) ? $path : $value;
+        return Utils::toSitePath($value);
     }
 
     /**
-     * A site path as an absolute address on this site's origin; any other value unchanged.
+     * A site path as an absolute address on this site's origin; see Utils::toAbsolute().
      */
     public static function toAbsolute(string $value): string
     {
-        if (!self::isSitePath($value) || !defined('WEB_PATH') || !function_exists('osc_base_url')) {
-            return $value;
-        }
-        $parts = parse_url((string) osc_base_url());
-        if (empty($parts['scheme']) || empty($parts['host'])) {
-            return $value;
-        }
-
-        return $parts['scheme'] . '://' . $parts['host'] . (isset($parts['port']) ? ':' . $parts['port'] : '') . $value;
+        return Utils::toAbsolute($value);
     }
 
     /**

@@ -70,8 +70,9 @@ class CWebLogin extends BaseModel
 
         // A `return` path from the sign-in link wins over the remembered page, and every
         // bounce back to the form keeps it.
-        $return = osc_login_return_url(Params::getParamString('return', false, false, false));
-        $back   = osc_user_login_url(osc_login_return_path());
+        $path   = osc_login_return_path();
+        $return = \mindstellar\auth\SignIn::returnUrl($path);
+        $back   = osc_user_login_url($path);
 
         // e-mail or/and password is/are empty or incorrect
         $wrongCredentials = false;

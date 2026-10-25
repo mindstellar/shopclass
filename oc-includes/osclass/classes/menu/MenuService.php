@@ -17,7 +17,7 @@ use mindstellar\category\CategoryQuery;
 use mindstellar\category\CategoryStore;
 use mindstellar\pages\PageQuery;
 use mindstellar\theme\ThemeSupports;
-use mindstellar\widgets\WidgetConfig;
+use mindstellar\utility\Utils;
 use Preference;
 
 /**
@@ -277,7 +277,7 @@ final class MenuService
             $link   = null;
             switch ($item['type'] ?? '') {
                 case 'link':
-                    $url  = WidgetConfig::toAbsolute((string) ($item['url'] ?? ''));
+                    $url  = Utils::toAbsolute((string) ($item['url'] ?? ''));
                     $link = $own !== '' && $url !== '' ? ['label' => $own, 'url' => $url] : null;
                     break;
                 case 'category':
