@@ -41,7 +41,7 @@
   "homepage": "https://github.com/mindstellar/shopclass#readme",
   "dependencies": {
     "bootstrap": "^5.3.8",
-    "bootstrap-icons": "^1.13.1",
+    "bootstrap-icons": "^1.13.2",
     "npm-font-open-sans": "^1.1.0",
     "qrcode-generator": "^2.0.4",
     "sortablejs": "^1.15.7",
