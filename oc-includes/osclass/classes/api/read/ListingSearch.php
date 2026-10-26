@@ -335,14 +335,15 @@ final class ListingSearch
     /**
      * The `bbox` query as the search page reads it, or null when none was sent.
      *
-     * @throws ProblemException 422 when distance search is off, or the box is not valid
+     * @throws ProblemException 422 when distance search is off, or the box is not valid, a list included
      */
     private static function box(Request $request): ?string
     {
-        $bbox = $request->queryString('bbox');
+        $bbox = $request->query()['bbox'] ?? '';
         if ($bbox === '') {
             return null;
         }
+        $bbox = is_scalar($bbox) ? (string) $bbox : $bbox;
         if (!osc_geo_search_enabled()) {
             throw ProblemException::field('/bbox', 'rejected', 'is not available: distance search is switched off on this site', 'query');
         }

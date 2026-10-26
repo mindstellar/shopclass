@@ -441,6 +441,8 @@ pin('switched off, a distance search is refused and names the field', array(422,
 pin('so is a distance sort', 422, $get('listings', array('sort' => 'distance'), $publicKey)->status());
 $off = $get('listings', array('bbox' => '-98,30,-97,31'), $publicKey);
 pin('switched off, a map area is refused too', array(422, '/bbox', 'rejected'), array($off->status(), $off->body()['errors'][0]['pointer'] ?? null, $off->body()['errors'][0]['code'] ?? null));
+$off = $get('listings', array('bbox' => array('-98,30,-97,31')), $publicKey);
+pin('and so is a box sent as a list', array(422, '/bbox'), array($off->status(), $off->body()['errors'][0]['pointer'] ?? null));
 Preference::getInstance()->set('geo_search', '1');
 scratchdb_forget_cache();
 osc_reset_preferences();
@@ -467,14 +469,28 @@ foreach (array('three numbers' => '-98,30,-97.5', 'south above north' => '-98,31
     pin('a bad box is 422 at bbox: ' . $label, array(422, '/bbox', 'format', 'query'), array($bad->status(), $bad->body()['errors'][0]['pointer'] ?? null, $bad->body()['errors'][0]['code'] ?? null, $bad->body()['errors'][0]['in'] ?? null));
 }
 pin('the 422 has the validation shape', array(), $schemaErrors('Problem', $get('listings', array('bbox' => '1,2,3'), $publicKey)));
-pin('a box in a long form reaches the search in its short form', '-98,30,-97.5,30.5', \mindstellar\api\read\ListingSearch::params(
-    new Request('GET', 'v1/listings', array('bbox' => '-98.0,30,-97.5,30.50')),
+$boxParams = static fn ($bbox): array => \mindstellar\api\read\ListingSearch::params(
+    new Request('GET', 'v1/listings', array('bbox' => $bbox)),
     \mindstellar\api\read\CategoryCatalog::fromSite(),
     'en_US'
-)['bbox'] ?? null);
+);
+$boxProblem = static function ($bbox) use ($boxParams): ?array {
+    try {
+        $boxParams($bbox);
+    } catch (\mindstellar\api\ProblemException $e) {
+        $error = $e->response()->body()['errors'][0] ?? array();
+
+        return array($e->response()->status(), $error['pointer'] ?? null, $error['code'] ?? null);
+    }
+
+    return null;
+};
+pin('a box in a long form reaches the search in its short form', '-98,30,-97.5,30.5', $boxParams('-98.0,30,-97.5,30.50')['bbox'] ?? null);
+pin('a box sent as a list is a bad format, not ignored', array(422, '/bbox', 'format'), $boxProblem(array('-98,30,-97.5,30.5')));
 Preference::getInstance()->set('geo_search', '0');
 scratchdb_forget_cache();
 osc_reset_preferences();
+pin('switched off, a box sent as a list is refused too', array(422, '/bbox', 'rejected'), $boxProblem(array('-98,30,-97.5,30.5')));
 
 harness_section('search_conditions');
 $calls     = array();
