@@ -119,6 +119,8 @@ if (!function_exists('osc_current_user_locale')) {
         return 'de_DE';
     }
 }
+$currentLocale = osc_current_user_locale();
+$store->set('city', $cologne, $currentLocale, 'Köln');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocation.php';
 Container::root()->set(LocationNames::class, static fn () => new LocationNames($store));
 pin('osc_location_name() gives the current locale name', 'Köln', osc_location_name('city', $cologne, 'Cologne'));
