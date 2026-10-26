@@ -193,7 +193,7 @@ class Sanitize
     {
         if ($value) {
             //remove invalid chars from url
-            $value = $this->url($value);
+            $value = is_scalar($value) ? (string) filter_var((string) $value, FILTER_SANITIZE_URL) : '';
             //remove possible xss attempts
             $value = str_replace(['<', '>', '"', '\'', '%3C', '%3E', '%22', '%27'], '', $value);
             //check if it has http:// or https://

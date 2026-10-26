@@ -104,6 +104,12 @@ function osc_esc_html($s)
 {
     return htmlspecialchars((string) $s, ENT_QUOTES);
 }
+function osc_sanitize_url($s)
+{
+    require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Sanitize.php';
+
+    return (new \mindstellar\utility\Sanitize())->url($s);
+}
 function _m($s)
 {
     return $s;
