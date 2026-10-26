@@ -58538,15 +58538,70 @@
                         "minLength": 0,
                         "maxLength": 255,
                         "description": "Made from the name when empty or taken."
+                    },
+                    "names": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 100
+                        },
+                        "description": "Locale => name in that site language. A blank name deletes it; a language left out keeps its name."
                     }
                 },
                 "additionalProperties": false
+            },
+            "AdminRegion": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "country_code": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "names": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "Locale => saved name; {} when none."
+                    }
+                },
+                "required": [
+                    "id",
+                    "country_code",
+                    "name",
+                    "slug",
+                    "names"
+                ]
             },
             "RegionDocument": {
                 "type": "object",
                 "properties": {
                     "data": {
-                        "$ref": "#/components/schemas/Region"
+                        "$ref": "#/components/schemas/AdminRegion"
                     }
                 },
                 "required": [
@@ -58585,15 +58640,76 @@
                         "minLength": 0,
                         "maxLength": 255,
                         "description": "Made from the name when empty or taken."
+                    },
+                    "names": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 100
+                        },
+                        "description": "Locale => name in that site language. A blank name deletes it; a language left out keeps its name."
                     }
                 },
                 "additionalProperties": false
+            },
+            "AdminCity": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "region_id": {
+                        "type": "integer"
+                    },
+                    "country_code": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "lat": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "lng": {
+                        "type": [
+                            "number",
+                            "null"
+                        ]
+                    },
+                    "names": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "Locale => saved name; {} when none."
+                    }
+                },
+                "required": [
+                    "id",
+                    "region_id",
+                    "name",
+                    "slug",
+                    "names"
+                ]
             },
             "CityDocument": {
                 "type": "object",
                 "properties": {
                     "data": {
-                        "$ref": "#/components/schemas/City"
+                        "$ref": "#/components/schemas/AdminCity"
                     }
                 },
                 "required": [

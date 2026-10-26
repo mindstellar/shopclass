@@ -26,6 +26,7 @@ $admin = api_admin_boot('osc_models_api_admin_taxonomy');
 
 $p        = DB_TABLE_PREFIX;
 $locale   = seed_locale($admin);
+seed_locale($admin, 'de_DE', 'Deutsch');
 seed_currency($admin);
 seed_currency($admin, 'EUR', 'Euro');
 $country  = seed_country($admin, 'US', 'United States');
@@ -202,6 +203,31 @@ pin('DELETE a region takes its cities: 204', [204, 0], [
     $call('DELETE', 'admin/regions/' . $beta, null, $boss)->status(), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_city WHERE pk_i_id = $bcity")->fetch_row()[0],
 ]);
 pin('an unknown location is 404', 404, $call('DELETE', 'admin/cities/99999', null, $boss)->status());
+
+harness_section('location names per language');
+$names = static fn (Response $r): array => (array) ($r->body()['data']['names'] ?? ['missing']);
+$r     = $call('POST', 'admin/regions', ['country' => 'US', 'name' => 'Bavaria'], $boss);
+$bav   = (int) ($r->body()['data']['id'] ?? 0);
+pin('POST returns names: {}', [201, []], [$r->status(), $names($r)]);
+pin('names is a JSON object even when empty', '{}', json_encode($r->body()['data']['names'] ?? null));
+$r = $call('PATCH', 'admin/regions/' . $bav, ['names' => ['de_DE' => 'Bayern']], $boss);
+pin('PATCH names: saved, name unchanged', [200, ['de_DE' => 'Bayern'], 'Bavaria'], [$r->status(), $names($r), $r->body()['data']['name'] ?? null]);
+pin('matches the schema with names', [], api_admin_schema_errors('RegionDocument', $r));
+pin('GET reads names back', ['de_DE' => 'Bayern'], $names($call('GET', 'admin/regions/' . $bav, null, $boss)));
+pin('PATCH a slug alone keeps names', ['de_DE' => 'Bayern'], $names($call('PATCH', 'admin/regions/' . $bav, ['slug' => 'bavaria-x'], $boss)));
+pin('a blank name deletes it', [], $names($call('PATCH', 'admin/regions/' . $bav, ['names' => ['de_DE' => '']], $boss)));
+pin('a language the site lacks is 422', [422, '/names/xx_XX'], $pointer($call('PATCH', 'admin/regions/' . $bav, ['names' => ['xx_XX' => 'x']], $boss)));
+pin('tags are cleaned out', ['de_DE' => 'Bayern'], $names($call('PATCH', 'admin/regions/' . $bav, ['names' => ['de_DE' => '<b>Bayern</b>']], $boss)));
+pin('a name over 100 characters is 422', 422, $call('PATCH', 'admin/regions/' . $bav, ['names' => ['de_DE' => str_repeat('a', 101)]], $boss)->status());
+$r   = $call('POST', 'admin/cities', ['region_id' => $bav, 'name' => 'Munich'], $boss);
+$mun = (int) ($r->body()['data']['id'] ?? 0);
+pin('a new city has names: {}', [], $names($r));
+$r = $call('PATCH', 'admin/cities/' . $mun, ['names' => ['de_DE' => 'München']], $boss);
+pin('PATCH a city\'s names', [200, ['de_DE' => 'München'], 'Munich'], [$r->status(), $names($r), $r->body()['data']['name'] ?? null]);
+pin('city matches the schema', [], api_admin_schema_errors('CityDocument', $r));
+pin('a city slug patch keeps names', ['de_DE' => 'München'], $names($call('PATCH', 'admin/cities/' . $mun, ['slug' => 'muc'], $boss)));
+pin('a city language the site lacks is 422', [422, '/names/xx_XX'], $pointer($call('PATCH', 'admin/cities/' . $mun, ['names' => ['xx_XX' => 'x']], $boss)));
+pin('the public region list still carries no names', false, array_key_exists('names', $call('GET', 'countries/US/regions', null, $boss)->body()['data'][0] ?? []));
 
 harness_section('names and texts are cleaned as the admin screens clean them');
 $text = static fn (string $sql): ?string => $admin->query($sql)->fetch_row()[0] ?? null;

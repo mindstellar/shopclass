@@ -213,6 +213,9 @@ function _n($one, $many, $n)
 function osc_run_hook($name, ...$args)
 {
     $GLOBALS['hooks'][] = array($name, $args);
+    if (!empty($GLOBALS['hookMarker'])) {
+        echo '<i data-hook="' . $name . '"></i>';
+    }
 }
 function osc_apply_filter($name, $content, ...$args)
 {
@@ -330,6 +333,49 @@ $record = array('level' => 'region', 'id' => 7, 'name' => 'Omega', 'slug' => 'om
 $x = $render('form', array('locations' => $list(), 'locationForm' => array('kind' => 'edit', 'level' => 'region', 'error' => null, 'record' => $record)));
 pin('edit fires admin_locations_drawer_fields with level and record', array(array('admin_locations_drawer_fields', array('region', $record))), $GLOBALS['hooks']);
 pin('counts left for the script are marked pending', 1, $x->query('//*[@data-loc-counts-pending]')->length);
+
+// ---- Names section -----------------------------------------------------------------
+$locales = array(
+    array('pk_c_code' => 'ar_SA', 's_name' => 'العربية', 's_direction' => 'rtl'),
+    array('pk_c_code' => 'de_DE', 's_name' => 'Deutsch', 's_direction' => 'ltr'),
+    array('pk_c_code' => 'en_US', 's_name' => 'English', 's_direction' => 'ltr'),
+);
+$fields = LocationAdminView::nameFields($locales, array('de_DE' => 'Bayern', 'xx_XX' => 'gone'), 'en_US');
+pin('names: the site default comes first, then the list order', array('en_US', 'ar_SA', 'de_DE'), array_column($fields, 'code'));
+pin('names: only the default is marked', array(true, false, false), array_column($fields, 'default'));
+pin('names: rtl from s_direction', array(false, true, false), array_column($fields, 'rtl'));
+pin('names: stored values fill their field, the rest are blank', array('', '', 'Bayern'), array_column($fields, 'value'));
+pin('names: label is the language name', 'Deutsch', $fields[2]['label']);
+pin('names: one language shows no section', array(), LocationAdminView::nameFields(array($locales[1]), array('de_DE' => 'Bayern'), 'de_DE'));
+
+$renderRaw = static function (array $form) use ($list): string {
+    $GLOBALS['viewVars'] = array('locations' => $list(), 'locationForm' => $form);
+    $GLOBALS['hooks']    = array();
+    ob_start();
+    include ABS_PATH . 'oc-admin/themes/modern/settings/locations/form.php';
+
+    return (string) ob_get_clean();
+};
+$editForm = array('kind' => 'edit', 'level' => 'region', 'error' => null, 'record' => $record);
+pin('names: an empty section renders the drawer as before', $renderRaw($editForm), $renderRaw($editForm + array('names' => array())));
+$x = $render('form', array('locations' => $list(), 'locationForm' => $editForm + array('names' => array())));
+pin('names: no section without fields', 0, $x->query('//*[contains(@class,"loc-names")]')->length);
+
+$fields[2]['value']    = 'A <b>"x"</b>';
+$GLOBALS['hookMarker'] = true;
+$x                     = $render('form', array('locations' => $list(), 'locationForm' => $editForm + array('names' => $fields)));
+$GLOBALS['hookMarker'] = false;
+pin('names: one input per language', array('names[en_US]', 'names[ar_SA]', 'names[de_DE]'), array_map(static fn ($n) => $n->getAttribute('name'), iterator_to_array($x->query('//section[contains(@class,"loc-names")]//input'))));
+pin('names: the stored value is literal text', 'A <b>"x"</b>', $x->query('//input[@name="names[de_DE]"]')->item(0)?->getAttribute('value'));
+pin('names: no markup leaks from a value', 0, $x->query('//section[contains(@class,"loc-names")]//b')->length);
+pin('names: dir=rtl only on the rtl language', array('names[ar_SA]'), array_map(static fn ($n) => $n->getAttribute('name'), iterator_to_array($x->query('//input[@dir="rtl"]'))));
+pin('names: max 100 characters', '100', $x->query('//input[@name="names[en_US]"]')->item(0)?->getAttribute('maxlength'));
+pin('names: label points at its input', 'loc-n-de_DE', $x->query('//label[@for="loc-n-de_DE"]/following-sibling::input')->item(0)?->getAttribute('id'));
+pin('names: the default is tagged', 1, $x->query('//label[@for="loc-n-en_US"]/span[@class="loc-names-default"]')->length);
+pin('names: the section sits under the slug', 1, $x->query('//section[contains(@class,"loc-names")]/preceding-sibling::div[.//input[@id="loc-f-slug"]]')->length);
+pin('names: the hook still fires once with level and record', array(array('admin_locations_drawer_fields', array('region', $record))), $GLOBALS['hooks']);
+pin('names: the hook fires after the section', 1, $x->query('//section[contains(@class,"loc-names")]/following-sibling::i[@data-hook="admin_locations_drawer_fields"]')->length);
+
 $render('form', array('locations' => $list(), 'locationForm' => array('kind' => 'add', 'level' => 'region', 'error' => null)));
 pin('add fires admin_locations_drawer_fields with no record', array(array('admin_locations_drawer_fields', array('region', null))), $GLOBALS['hooks']);
 

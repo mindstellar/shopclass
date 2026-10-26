@@ -181,6 +181,10 @@ msgstr ""
 msgid "%s is invalid."
 msgstr ""
 
+#: oc-includes/osclass/classes/location/LocationService.php
+msgid "%s is not a language of this site"
+msgstr ""
+
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
 msgid "%s is not a scope of this site"
 msgstr ""
@@ -242,6 +246,14 @@ msgid "A message can contain %d link."
 msgid_plural "A message can contain up to %d links."
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/classes/location/LocationService.php
+msgid "A name can have at most 100 characters"
+msgstr ""
+
+#: oc-includes/osclass/classes/location/LocationService.php
+msgid "A name must be text"
+msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminCategories.php
 msgid "A new category has been added"

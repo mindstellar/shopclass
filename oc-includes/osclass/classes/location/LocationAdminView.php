@@ -440,6 +440,42 @@ final class LocationAdminView
     }
 
     /**
+     * The Names fields of the edit drawer: one per site language, the site default first.
+     * Empty when the site has fewer than two languages, so the section is not shown.
+     *
+     * @param array<int,array<string,mixed>> $locales enabled languages (pk_c_code, s_name, s_direction)
+     * @param array<string,string>           $stored  locale => stored name
+     * @param string                         $default the site's default locale
+     *
+     * @return list<array{code:string,label:string,value:string,default:bool,rtl:bool}>
+     */
+    public static function nameFields(array $locales, array $stored, string $default): array
+    {
+        if (count($locales) < 2) {
+            return array();
+        }
+        $first  = array();
+        $others = array();
+        foreach ($locales as $locale) {
+            $code  = (string) ($locale['pk_c_code'] ?? '');
+            $field = array(
+                'code'    => $code,
+                'label'   => (string) ($locale['s_name'] ?? $code),
+                'value'   => (string) ($stored[$code] ?? ''),
+                'default' => $code === $default,
+                'rtl'     => ($locale['s_direction'] ?? '') === 'rtl',
+            );
+            if ($field['default']) {
+                $first[] = $field;
+            } else {
+                $others[] = $field;
+            }
+        }
+
+        return array_merge($first, $others);
+    }
+
+    /**
      * Progress of a counts recalculation from the queue left and the size it started at.
      *
      * @param int $pending locations still queued

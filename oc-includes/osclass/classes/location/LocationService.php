@@ -162,13 +162,16 @@ final class LocationService
     /**
      * Rename a country. A slug another country holds, or none, is made from the name.
      *
+     * `$names` is locale => name for the site's languages: blank deletes, a language left out is kept, null keeps all.
+     *
+     * @param array<string,mixed>|null $names
      * @throws RefusedException
      * @throws \mindstellar\database\DbException when the row could not be written
      */
-    public function editCountry(string $code, string $name, string $slug = ''): void
+    public function editCountry(string $code, string $name, string $slug = '', ?array $names = null): void
     {
         Demo::refuse();
-        DeferredMail::transaction(function () use ($code, $name, $slug): void {
+        DeferredMail::transaction(function () use ($code, $name, $slug, $names): void {
             $this->checkName($name, _m('Country name cannot be blank'));
             $country = $code === '' ? null : LocationStore::country($code);
             if ($country === null) {
@@ -176,6 +179,7 @@ final class LocationService
             }
             $code = (string) $country['pk_c_code'];
             LocationStore::renameCountry($code, $name, self::uniqueSlug(\Country::getInstance(), $code, $name, $slug, 'pk_c_code'));
+            $this->writeNames(LocationNameStore::COUNTRY, $code, $names);
         });
     }
 
@@ -208,12 +212,13 @@ final class LocationService
     /**
      * Rename a region. A slug another region holds, or none, is made from the name.
      *
+     * @param array<string,mixed>|null $names as for editCountry()
      * @throws RefusedException
      */
-    public function editRegion(int $id, string $name, string $slug = ''): void
+    public function editRegion(int $id, string $name, string $slug = '', ?array $names = null): void
     {
         Demo::refuse();
-        DeferredMail::transaction(function () use ($id, $name, $slug): void {
+        DeferredMail::transaction(function () use ($id, $name, $slug, $names): void {
             $regions = new Region();
             $region  = $id > 0 ? $regions->findByPrimaryKey($id) : false;
             if (!is_array($region)) {
@@ -226,6 +231,7 @@ final class LocationService
             }
             $regions->update(['s_name' => $name, 's_slug' => self::uniqueSlug($regions, $id, $name, $slug)], ['pk_i_id' => $id]);
             ItemLocation::getInstance()->update(['s_region' => $name], ['fk_i_region_id' => $id]);
+            $this->writeNames(LocationNameStore::REGION, $id, $names);
         });
     }
 
@@ -263,12 +269,13 @@ final class LocationService
     /**
      * Rename a city. A slug another city holds, or none, is made from the name.
      *
+     * @param array<string,mixed>|null $names as for editCountry()
      * @throws RefusedException
      */
-    public function editCity(int $id, string $name, string $slug = ''): void
+    public function editCity(int $id, string $name, string $slug = '', ?array $names = null): void
     {
         Demo::refuse();
-        DeferredMail::transaction(function () use ($id, $name, $slug): void {
+        DeferredMail::transaction(function () use ($id, $name, $slug, $names): void {
             $cities = new City();
             $city   = $id > 0 ? $cities->findByPrimaryKey($id) : false;
             if (!is_array($city)) {
@@ -281,6 +288,7 @@ final class LocationService
             }
             $cities->update(['s_name' => $name, 's_slug' => self::uniqueSlug($cities, $id, $name, $slug)], ['pk_i_id' => $id]);
             ItemLocation::getInstance()->update(['s_city' => $name], ['fk_i_city_id' => $id]);
+            $this->writeNames(LocationNameStore::CITY, $id, $names);
         });
     }
 
@@ -303,6 +311,40 @@ final class LocationService
 
             return LocationStore::addArea($cityId, $name);
         });
+    }
+
+    /**
+     * @param array<string,mixed>|null $names
+     * @throws InvalidException a language the site does not have, a value that is not text, or a name over 100 characters
+     */
+    private function writeNames(string $type, int|string $id, ?array $names): void
+    {
+        if ($names === null) {
+            return;
+        }
+        $enabled = array_column(osc_get_locales(), 'pk_c_code');
+        $clean   = [];
+        foreach ($names as $locale => $value) {
+            $locale = (string) $locale;
+            if (!in_array($locale, $enabled, true)) {
+                throw new InvalidException('/names/' . $locale, 'invalid', sprintf(_m('%s is not a language of this site'), $locale));
+            }
+            if (!is_scalar($value) && $value !== null) {
+                throw new InvalidException('/names/' . $locale, 'invalid', _m('A name must be text'));
+            }
+            $value = trim((string) $value);
+            if (mb_strlen($value) > 100) {
+                throw new InvalidException('/names/' . $locale, 'invalid', _m('A name can have at most 100 characters'));
+            }
+            $clean[$locale] = $value;
+        }
+        $store  = new LocationNameStore();
+        $stored = $store->all($type, $id);
+        foreach ($clean as $locale => $value) {
+            if ($value !== ($stored[$locale] ?? '')) {
+                $store->set($type, $id, $locale, $value);
+            }
+        }
     }
 
     /**

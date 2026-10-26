@@ -25,6 +25,7 @@ use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
 use mindstellar\location\LocationCatalog;
 use mindstellar\location\LocationImporter;
+use mindstellar\location\LocationNameStore;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 use mindstellar\security\Demo;
@@ -283,6 +284,12 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                     $form['error'] = __('This location no longer exists.');
                 }
                 $form['record'] = $record;
+                $locales        = osc_get_locales();
+                $form['names']  = $record === null || count($locales) < 2 ? array() : LocationAdminView::nameFields(
+                    $locales,
+                    (new LocationNameStore())->all($level, $record['id']),
+                    osc_language()
+                );
                 break;
             case 'delete':
                 $ids = Params::getParamArray('id', false, false, false);
@@ -394,7 +401,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $problem = _m('There were some problems editing the country');
 
         try {
-            (new LocationService())->editCountry($code, $name, $slug);
+            (new LocationService())->editCountry($code, $name, $slug, $this->postedNames());
         } catch (NotFoundException | DbException $e) {
             $this->respond('error', $problem, $back);
         } catch (RefusedException $e) {
@@ -431,8 +438,9 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
         $back = $this->listUrl(array('country' => $aRegion['fk_c_country_code']) + $this->keep());
-        $slug = Params::getParamString('e_region_slug');
-        $this->write(static fn (LocationService $editor) => $editor->editRegion($regionId, $newRegion, $slug), $back);
+        $slug  = Params::getParamString('e_region_slug');
+        $names = $this->postedNames();
+        $this->write(static fn (LocationService $editor) => $editor->editRegion($regionId, $newRegion, $slug, $names), $back);
         $this->respond('ok', sprintf(_m('%s has been edited'), $newRegion), $back);
     }
 
@@ -468,9 +476,21 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             'country' => is_array($region) ? $region['fk_c_country_code'] : '',
             'region'  => (int) $city['fk_i_region_id'],
         ) + $this->keep());
-        $slug = Params::getParamString('e_city_slug');
-        $this->write(static fn (LocationService $editor) => $editor->editCity($cityId, $newCity, $slug), $back);
+        $slug  = Params::getParamString('e_city_slug');
+        $names = $this->postedNames();
+        $this->write(static fn (LocationService $editor) => $editor->editCity($cityId, $newCity, $slug, $names), $back);
         $this->respond('ok', sprintf(_m('%s has been edited'), $newCity), $back);
+    }
+
+    /**
+     * The posted names[], or null when the form sent none, so the stored names are left alone.
+     * LocationService checks them.
+     *
+     * @return array<mixed,mixed>|null
+     */
+    private function postedNames(): ?array
+    {
+        return Params::existParam('names') ? Params::getParamArray('names') : null;
     }
 
     /**

@@ -369,6 +369,30 @@
   }
 }
 
+.loc-names {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: 1.5rem;
+  padding-block-start: 1.1rem;
+
+  .loc-facts-title + .form-text {
+    margin: -.3rem 0 .9rem;
+  }
+
+  .loc-names-field {
+    margin-block-end: .75rem;
+
+    &:last-child {
+      margin-block-end: 0;
+    }
+  }
+}
+
+.loc-names-default {
+  color: var(--osc-ink-muted);
+  font-weight: 400;
+  margin-inline-start: .25rem;
+}
+
 .loc-code-input {
   inline-size: 6rem;
   text-transform: uppercase;
