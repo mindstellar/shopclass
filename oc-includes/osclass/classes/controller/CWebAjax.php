@@ -106,7 +106,7 @@ class CWebAjax extends BaseModel
     private function regions(): void
     {
         $regions = Region::getInstance()->findByCountry(Params::getParam('countryId'));
-        AjaxResponse::shared(Container::root()->get(LocationNames::class)
+        AjaxResponse::localized(Container::root()->get(LocationNames::class)
             ->translateList($regions, LocationNameStore::REGION, 'pk_i_id', 's_name', osc_current_user_locale()));
     }
 
@@ -116,7 +116,7 @@ class CWebAjax extends BaseModel
     private function cities(): void
     {
         $cities = City::getInstance()->findByRegion(Params::getParamInt('regionId'));
-        AjaxResponse::shared(Container::root()->get(LocationNames::class)
+        AjaxResponse::localized(Container::root()->get(LocationNames::class)
             ->translateList($cities, LocationNameStore::CITY, 'pk_i_id', 's_name', osc_current_user_locale()));
     }
 
@@ -129,7 +129,7 @@ class CWebAjax extends BaseModel
         foreach ($cities as $k => $city) {
             $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
         }
-        AjaxResponse::shared($cities);
+        AjaxResponse::localized($cities);
     }
 
     /**
@@ -137,7 +137,7 @@ class CWebAjax extends BaseModel
      */
     private function locationCountries(): void
     {
-        AjaxResponse::shared(LocationAutocompleteQuery::inLocale(osc_current_user_locale())->countries(Params::getParamString('term')));
+        AjaxResponse::localized(LocationAutocompleteQuery::inLocale(osc_current_user_locale())->countries(Params::getParamString('term')));
     }
 
     /**
@@ -156,7 +156,7 @@ class CWebAjax extends BaseModel
      */
     private function locationRegions(): void
     {
-        AjaxResponse::shared(LocationAutocompleteQuery::inLocale(osc_current_user_locale())
+        AjaxResponse::localized(LocationAutocompleteQuery::inLocale(osc_current_user_locale())
             ->regions(Params::getParamString('term'), Params::getParamString('country')));
     }
 
@@ -165,7 +165,7 @@ class CWebAjax extends BaseModel
      */
     private function locationCities(): void
     {
-        AjaxResponse::shared(LocationAutocompleteQuery::inLocale(osc_current_user_locale())
+        AjaxResponse::localized(LocationAutocompleteQuery::inLocale(osc_current_user_locale())
             ->cities(Params::getParamString('term'), Params::getParamString('region')));
     }
 
