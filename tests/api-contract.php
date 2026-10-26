@@ -47,7 +47,13 @@ function api_signature(ReflectionFunctionAbstract $r): string
 
     $prefix = $r instanceof ReflectionMethod ? 'public' . ($r->isStatic() ? ' static' : '') : 'function';
 
-    return $prefix . ' ' . $r->getName() . '(' . implode(', ', $parts) . ')' . ($r->hasReturnType() ? ': ' . (string) $r->getReturnType() : '');
+    $return = $r->hasReturnType() ? (string) $r->getReturnType() : '';
+    // PHP 8.5+ prints a `self` return type as the class name; keep the older spelling.
+    if ($r instanceof ReflectionMethod) {
+        $return = preg_replace('/(?<![\\\\\w])' . preg_quote($r->getDeclaringClass()->getName(), '/') . '(?![\\\\\w])/', 'self', $return);
+    }
+
+    return $prefix . ' ' . $r->getName() . '(' . implode(', ', $parts) . ')' . ($return !== '' ? ': ' . $return : '');
 }
 
 /**
