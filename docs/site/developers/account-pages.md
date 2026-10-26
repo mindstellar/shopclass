@@ -137,11 +137,9 @@ no second name for the same thing.
 
 They carry `role="status"`, or `role="alert"` on an error, so the message
 announces itself with no JavaScript. Each message includes a dismiss link
-(`.flashmessage a.ico-close`), but core does not wire it up. Clicking it does
-nothing until your theme's own script binds click and keyboard handling to it,
-the way bender and storefront do. Core renders no dismiss behaviour of its own
-because a message is one-shot anyway: it is dropped from the session as it is
-printed, so it never returns on the next page.
+(`.flashmessage a.ico-close`). Core loads its own small script
+(`osc-flash-dismiss`) on any page that prints one, which makes the link work by
+click and keyboard, so a theme needs no script of its own for it.
 
 If your header already calls `osc_show_flash_message()`, core's own call is a
 no-op: whichever runs first prints the message, and there is no double render.
@@ -353,10 +351,29 @@ one, otherwise your file inside the theme's chrome, otherwise core's own shell.
 Your file is markup only: no `<html>`, no header, no footer.
 
 Inside it, the helpers core's own pages use print the classes above for you.
-`osc_gui_field($for, $label, $input, $hint, $error)` prints an `.oe-field` row,
-`osc_gui_panel_open($title)` and `osc_gui_panel_close()` a `.oe-panel`,
-`osc_gui_empty($message)` an `.oe-empty` line and `osc_gui_actions($buttons)` an
-`.oe-actions` row. They escape the text they print; `$input` is printed as given.
+They escape every string they are given except `$input`, which is printed as given.
+
+| Helper | Prints |
+|---|---|
+| `osc_gui_field(string $for, string $label, string\|Closure $input, string $hint = '', string $error = '', string $class = '')` | An `.oe-field` row: `<label class="oe-label" for="{for}">`, then `$input` (a string, or a `Closure` that echoes the control), then the hint as `.oe-hint#{for}-hint` and the error as `.oe-hint.oe-field-error#{for}-err` when given. `$class` adds classes to the row. |
+| `osc_gui_panel_open(string $title = '', string $class = '', string $id = '', string $tag = 'section')` | Opens an `.oe-panel`, with an `<h2 class="oe-panel__title">` when `$title` is given. `$tag` is `section`, `div` or `li`; anything else is `section`. |
+| `osc_gui_panel_close(string $tag = 'section')` | Closes it. Pass the same `$tag` you opened with. |
+| `osc_gui_empty(string $message, string $class = '')` | A `<p class="oe-empty">` line. |
+| `osc_gui_actions(array $buttons, string $class = '')` | An `.oe-actions` row. Each button: `label`; `href` (a link; without it a submit button); `style`, one of `primary`, `secondary`, `danger` or `link`, `primary` by default; `class` (extra classes); `attrs` (name => value). A `javascript:` or other non-web `href` is dropped. |
+
+Two parts take an array and print a row:
+
+```php
+$pager = array('prev' => $newerUrl, 'next' => $olderUrl, 'class' => 'my-pager'); // '' hides a link
+require ABS_PATH . 'oc-includes/osclass/gui/parts/pager.php';   // .oe-pager, Newer / Older
+
+$tabs = array(
+    'label'   => __('Orders'),                                   // for screen readers
+    'items'   => array('open' => array(__('Open'), $openUrl), 'done' => array(__('Done'), $doneUrl)),
+    'current' => 'open',                                         // gets aria-current="page"
+);
+require ABS_PATH . 'oc-includes/osclass/gui/parts/tabs.php';    // nav.oe-tabs
+```
 
 ## The API access page
 

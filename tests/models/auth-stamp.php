@@ -228,7 +228,7 @@ check('the account button checks the CSRF token, then the password', str_contain
     && strpos($case, 'osc_csrf_check();') < strpos($case, 'Reauth::verify('));
 check('and signs out through SignOut, this browser too', str_contains($case, 'SignOut::everywhereUser($userId);') && str_contains($case, '$this->logout();'));
 $view = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/account/user-signin-content.php');
-$form = substr($view, (int) strpos($view, 'id="sign-out-all"'), 1500);
+$form = substr($view, (int) strpos($view, "'sign-out-all'"), 1500);
 check('the account form asks for the password and is not exempt from the CSRF token', str_contains($form, 'name="password"') && !str_contains($form, 'nocsrf'));
 $admins = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminAdmins.php');
 $case   = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminAdmins.php', 'signOutAll');

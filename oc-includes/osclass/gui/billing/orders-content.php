@@ -60,7 +60,7 @@ $shopper = osc_is_shopper() || !osc_billing_credits_enabled();
 <?php if ($emptyMessage !== null) { ?>
     <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
     osc_gui_empty($emptyMessage, 'oe-bill-empty');
-    osc_gui_panel_close(); ?>
+    osc_gui_panel_close('div'); ?>
 <?php } else { ?>
     <?php if (!$shopper) {
         $billingTab = 'orders';
@@ -81,7 +81,7 @@ $shopper = osc_is_shopper() || !osc_billing_credits_enabled();
                 require dirname(__DIR__) . '/parts/pager.php';
             } ?>
         <?php } ?>
-    <?php osc_gui_panel_close(); ?>
+    <?php osc_gui_panel_close('div'); ?>
 
     <?php if (!$shopper) { ?>
     <p class="oe-muted oe-bill-sub">

@@ -180,4 +180,10 @@ $supports->reset();
 
 exec('rm -rf ' . escapeshellarg($scratch));
 
+harness_section('Old billing class names keep their style');
+$fallbackSheet = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/page-style.php');
+foreach (array('oe-panel' => 'oe-bill-card', 'oe-btn--primary' => 'oe-bill-btn', 'oe-empty' => 'oe-bill-empty', 'oe-pager' => 'oe-bill-pager', 'oe-num' => 'oe-bill-num') as $shared => $old) {
+    check(".{$old} sits beside .{$shared} in core's fallback sheet", preg_match('/\\.' . preg_quote($shared, '/') . '\\b[^{]*\\.' . preg_quote($old, '/') . '\\b[^{]*\\{/', $fallbackSheet) === 1);
+}
+
 exit(harness_result());

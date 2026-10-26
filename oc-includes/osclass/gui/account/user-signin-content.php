@@ -69,9 +69,7 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
             <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
                 <input type="hidden" name="page" value="user" />
                 <input type="hidden" name="action" value="change_username_post" />
-                <div class="oe-field">
-                    <label class="oe-label" for="oe-username"><?php
-                        echo osc_esc_html(_m('Username')); ?></label>
+                <?php osc_gui_field('oe-username', _m('Username'), static function () use ($signinFocus) { ?>
                     <input class="oe-input" id="oe-username" type="text" name="s_username"
                            autocomplete="username" required aria-describedby="oe-username-hint oe-username-status"
                            data-username-check="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=check_username_availability'); ?>"<?php echo $signinFocus('username'); ?> />
@@ -79,7 +77,7 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                         _m('It appears on your public profile and in the address of your listings.')
                     ); ?></span>
                     <span class="oe-hint" id="oe-username-status" role="status" aria-live="polite"></span>
-                </div>
+                <?php }); ?>
                 <?php osc_gui_actions(array(array('label' => _m('Save')))); ?>
             </form>
         <?php osc_gui_panel_close(); ?>
@@ -107,8 +105,7 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
             </form>
         <?php osc_gui_panel_close(); ?>
 
-        <section id="sign-out-all" class="oe-panel">
-            <h2 class="oe-panel__title"><?php echo osc_esc_html(_m('Sign out of all devices')); ?></h2>
+        <?php osc_gui_panel_open(_m('Sign out of all devices'), '', 'sign-out-all'); ?>
             <p class="oe-muted"><?php echo osc_esc_html(
                 _m('Ends every sign-in to this account: other browsers and phones, apps and personal API keys, and this browser too.')
             ); ?></p>
@@ -120,7 +117,7 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     . ' autocomplete="current-password" required />'); ?>
                 <?php osc_gui_actions(array(array('label' => _m('Sign out everywhere')))); ?>
             </form>
-        </section>
+        <?php osc_gui_panel_close(); ?>
 
         <?php osc_run_hook('account_page_after', 'user-signin'); ?>
     </div>

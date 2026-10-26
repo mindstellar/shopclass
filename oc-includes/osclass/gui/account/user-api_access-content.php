@@ -32,16 +32,10 @@ $apiDate      = static function ($time): string {
         <?php osc_run_hook('account_page_before', 'user-api_access'); ?>
 
         <?php if ($apiNewKey !== '') { ?>
-            <section class="oe-panel">
-                <div class="oe-field">
-                    <label class="oe-label" for="osc-api-new-key"><?php echo osc_esc_html(_m('Your new key')); ?></label>
-                    <input class="oe-input" id="osc-api-new-key" type="text" readonly value="<?php echo osc_esc_html($apiNewKey); ?>"
-                           aria-describedby="osc-api-new-key-hint" />
-                    <p class="oe-hint" id="osc-api-new-key-hint"><?php echo osc_esc_html(
-                        _m('Copy it now and keep it secret. It is not shown again.')
-                    ); ?></p>
-                </div>
-            </section>
+            <?php osc_gui_panel_open(); ?>
+                <?php osc_gui_field('osc-api-new-key', _m('Your new key'), '<input class="oe-input" id="osc-api-new-key" type="text" readonly value="'
+                    . osc_esc_html($apiNewKey) . '" aria-describedby="osc-api-new-key-hint" />', _m('Copy it now and keep it secret. It is not shown again.')); ?>
+            <?php osc_gui_panel_close(); ?>
         <?php } ?>
 
         <p class="oe-muted"><?php echo osc_esc_html(
@@ -96,12 +90,8 @@ $apiDate      = static function ($time): string {
                 <input type="hidden" name="do" value="create" />
                 <fieldset class="oe-group">
                     <legend><?php echo osc_esc_html(_m('Make a key')); ?></legend>
-                    <div class="oe-field">
-                        <label class="oe-label" for="osc-api-key-name"><?php echo osc_esc_html(_m('Name')); ?></label>
-                        <input class="oe-input" id="osc-api-key-name" type="text" name="name" maxlength="100" required
-                               aria-describedby="osc-api-key-name-hint" />
-                        <p class="oe-hint" id="osc-api-key-name-hint"><?php echo osc_esc_html(_m('So you know later what uses it.')); ?></p>
-                    </div>
+                    <?php osc_gui_field('osc-api-key-name', _m('Name'), '<input class="oe-input" id="osc-api-key-name" type="text" name="name" maxlength="100" required'
+                        . ' aria-describedby="osc-api-key-name-hint" />', _m('So you know later what uses it.')); ?>
                     <?php osc_gui_field('osc-api-key-expires', _m('Last day it works'), static function (): void { ?>
                         <input class="oe-input" id="osc-api-key-expires" type="date" name="expires" required
                                min="<?php echo osc_esc_html(date('Y-m-d', time() + 86400)); ?>"

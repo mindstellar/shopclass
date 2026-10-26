@@ -64,7 +64,7 @@ class WebThemes extends Themes
 
         $functions_path = $this->getCurrentThemePath() . 'functions.php';
         if (file_exists($functions_path)) {
-            require_once $functions_path;
+            \Plugins::includeAs('theme', $this->theme, $functions_path);
         }
 
         $info = $this->loadThemeInfo($this->theme);
@@ -80,7 +80,7 @@ class WebThemes extends Themes
                 $supports = \mindstellar\theme\ThemeSupports::getInstance();
                 $supports->beginInherited();
                 try {
-                    require_once $parent_functions_path;
+                    \Plugins::includeAs('theme', (string) $info['template'], $parent_functions_path);
                 } finally {
                     $supports->endInherited();
                 }

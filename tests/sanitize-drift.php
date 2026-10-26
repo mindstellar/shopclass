@@ -133,8 +133,13 @@ $cases    = array(
         ''      => 0,  // the helper returned ''
     )),
     'osc_sanitize_url' => array('url', array(
-        'https://a b.com/x' => 'https://ab.com/x',
-        ''                  => '',
+        'https://a b.com/x'   => 'https://ab.com/x',
+        ''                    => '',
+        '/a?b=1&c=2#d'        => '/a?b=1&c=2#d',
+        'mailto:a@b.c'        => 'mailto:a@b.c',
+        'javascript:alert(1)' => '',
+        'JavaScript :alert(1)' => '',
+        'data:text/html,x'    => '',
     )),
     'osc_sanitize_string' => array('slug', array(
         'Hello World!' => 'hello-world',

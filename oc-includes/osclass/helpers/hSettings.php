@@ -54,16 +54,7 @@ if (!function_exists('osc_register_settings_page')) {
         try {
             SettingsPageRegistry::getInstance()->register($id, $spec);
         } catch (InvalidArgumentException $e) {
-            // The caller is the first frame past this helper and the form builder.
-            $caller = '';
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-                $file = $frame['file'] ?? '';
-                if ($file !== '' && $file !== __FILE__ && basename($file) !== 'FormSpec.php') {
-                    $caller = $file;
-                    break;
-                }
-            }
-            $owner = SettingsPageRegistry::owner($caller);
+            $owner = Plugins::currentOwner();
             if ($owner === null) {
                 throw $e;
             }
@@ -1015,5 +1006,9 @@ if (!function_exists('osc_category_mode')) {
         return CategoryModes::modeFor($value, $categoryId);
     }
 }
+
+// Early on every admin page, whatever the admin theme, so the warning is queued before the
+// page prints its flash messages.
+osc_add_hook('admin_page_header', 'osc_settings_refused_notices', 1);
 
 /* file end: ./oc-includes/osclass/helpers/hSettings.php */

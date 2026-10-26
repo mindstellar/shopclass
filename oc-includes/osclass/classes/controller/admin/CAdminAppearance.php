@@ -174,7 +174,7 @@ class CAdminAppearance extends AdminSecBaseModel
             );
         } else {
             if (file_exists(osc_content_path() . 'themes/' . $theme . '/functions.php')) {
-                include osc_content_path() . 'themes/' . $theme . '/functions.php';
+                Plugins::includeAs('theme', $theme, osc_content_path() . 'themes/' . $theme . '/functions.php');
             }
             osc_run_hook('theme_delete_' . $theme);
             if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {

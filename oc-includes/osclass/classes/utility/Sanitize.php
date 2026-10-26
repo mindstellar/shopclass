@@ -193,7 +193,7 @@ class Sanitize
     {
         if ($value) {
             //remove invalid chars from url
-            $value = $this->url($value);
+            $value = is_scalar($value) ? (string) filter_var((string) $value, FILTER_SANITIZE_URL) : '';
             //remove possible xss attempts
             $value = str_replace(['<', '>', '"', '\'', '%3C', '%3E', '%22', '%27'], '', $value);
             //check if it has http:// or https://
@@ -206,7 +206,8 @@ class Sanitize
     }
 
     /**
-     * Sanitised URL
+     * Sanitised URL. A URL with a scheme other than http, https, ftp, mailto or tel
+     * (javascript:, data:) comes back as ''.
      *
      * @param mixed $value
      * @param array $options unused; kept for signature compatibility
@@ -215,7 +216,14 @@ class Sanitize
      */
     public function url($value, ...$options): string
     {
-        return is_scalar($value) ? (string) filter_var((string) $value, FILTER_SANITIZE_URL) : '';
+        $url = is_scalar($value) ? (string) filter_var((string) $value, FILTER_SANITIZE_URL) : '';
+        if (preg_match('~^([a-z][a-z0-9+.-]*):~i', $url, $m) === 1
+            && !in_array(strtolower($m[1]), array('http', 'https', 'ftp', 'mailto', 'tel'), true)
+        ) {
+            return '';
+        }
+
+        return $url;
     }
 
     /**

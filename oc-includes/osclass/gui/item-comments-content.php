@@ -85,7 +85,7 @@ $oeCommentOld   = static function ($key) {
             <div class="oe-comments-pager oe-pager"><?php echo $oeCommentPager; ?></div>
         <?php } ?>
     <?php } else { ?>
-        <p class="oe-comments-empty oe-empty"><?php echo osc_esc_html(_m('No comments yet.')); ?></p>
+        <?php osc_gui_empty(_m('No comments yet.'), 'oe-comments-empty'); ?>
     <?php } ?>
 
     <?php if ($oeCommentGated) { ?>
@@ -106,13 +106,12 @@ $oeCommentOld   = static function ($key) {
                 <input type="hidden" name="authorName" value="<?php echo osc_esc_html(osc_logged_user_name()); ?>" />
                 <input type="hidden" name="authorEmail" value="<?php echo osc_esc_html(osc_logged_user_email()); ?>" />
             <?php } else { ?>
-                <div class="oe-field">
-                    <label for="oe-comment-name"><?php echo osc_esc_html(_m('Your name')); ?></label>
+                <?php osc_gui_field('oe-comment-name', _m('Your name'), static function () use ($oeCommentOld): void { ?>
                     <input id="oe-comment-name" type="text" name="authorName" autocomplete="name" required
                            value="<?php echo $oeCommentOld('commentAuthorName'); ?>" />
-                </div>
+                <?php }); ?>
                 <div class="oe-field">
-                    <label for="oe-comment-email"><?php echo osc_esc_html(_m('Your email address')); ?>
+                    <label class="oe-label" for="oe-comment-email"><?php echo osc_esc_html(_m('Your email address')); ?>
                         <span class="oe-comment-optional">(<?php echo osc_esc_html(_m('not published')); ?>)</span></label>
                     <input id="oe-comment-email" type="email" name="authorEmail" autocomplete="email" required
                            value="<?php echo $oeCommentOld('commentAuthorEmail'); ?>" />
@@ -136,16 +135,15 @@ $oeCommentOld   = static function ($key) {
             <?php } ?>
 
             <div class="oe-field">
-                <label for="oe-comment-title"><?php echo osc_esc_html(_m('Title')); ?>
+                <label class="oe-label" for="oe-comment-title"><?php echo osc_esc_html(_m('Title')); ?>
                     <span class="oe-comment-optional">(<?php echo osc_esc_html(_m('optional')); ?>)</span></label>
                 <input id="oe-comment-title" type="text" name="title"
                        value="<?php echo $oeCommentOld('commentTitle'); ?>" />
             </div>
-            <div class="oe-field">
-                <label for="oe-comment-body"><?php echo osc_esc_html(_m('Comment')); ?></label>
+            <?php osc_gui_field('oe-comment-body', _m('Comment'), static function () use ($oeCommentOld, $oeCommentStars): void { ?>
                 <textarea id="oe-comment-body" name="body" rows="4"<?php echo $oeCommentStars ? '' : ' required'; ?>><?php
                     echo $oeCommentOld('commentBody'); ?></textarea>
-            </div>
+            <?php }); ?>
 
             <?php
             // Rendered exactly when the add_comment action will verify one, so a
@@ -157,9 +155,7 @@ $oeCommentOld   = static function ($key) {
 
             <?php osc_run_hook('comment_form'); ?>
 
-            <div class="oe-actions">
-                <button type="submit"><?php echo osc_esc_html(_m('Post comment')); ?></button>
-            </div>
+            <?php osc_gui_actions(array(array('label' => _m('Post comment'), 'style' => 'link'))); ?>
         </form>
     <?php } ?>
 

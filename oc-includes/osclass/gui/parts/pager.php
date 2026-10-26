@@ -18,8 +18,8 @@ if (!defined('ABS_PATH')) {
  */
 
 /** @var array<string, string> $pager */
-$pagerPrev  = (string) ($pager['prev'] ?? '');
-$pagerNext  = (string) ($pager['next'] ?? '');
+$pagerPrev  = osc_sanitize_url((string) ($pager['prev'] ?? ''));
+$pagerNext  = osc_sanitize_url((string) ($pager['next'] ?? ''));
 $pagerClass = (string) ($pager['class'] ?? '');
 ?>
                 <div class="oe-pager<?php echo $pagerClass !== '' ? ' ' . osc_esc_html($pagerClass) : ''; ?>">

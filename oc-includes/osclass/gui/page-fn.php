@@ -260,7 +260,7 @@ if (!function_exists('osc_gui_field')) {
 
 if (!function_exists('osc_gui_panel_open')) {
     /**
-     * Open a card, with its title when one is given. Close it with osc_gui_panel_close().
+     * Open a card, with its title when one is given. Close it with osc_gui_panel_close($tag).
      *
      * @param string $title plain text, escaped here
      * @param string $class extra classes on the card
@@ -272,7 +272,6 @@ if (!function_exists('osc_gui_panel_open')) {
     function osc_gui_panel_open(string $title = '', string $class = '', string $id = '', string $tag = 'section'): void
     {
         $tag = in_array($tag, array('section', 'div', 'li'), true) ? $tag : 'section';
-        $GLOBALS['osc_gui_panel_tags'][] = $tag;
         echo '<' . $tag . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '')
             . ' class="oe-panel' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">';
         if ($title !== '') {
@@ -284,14 +283,15 @@ if (!function_exists('osc_gui_panel_open')) {
 
 if (!function_exists('osc_gui_panel_close')) {
     /**
-     * Close the card the last osc_gui_panel_open() opened.
+     * Close a card osc_gui_panel_open() opened.
+     *
+     * @param string $tag the tag it was opened with: section, div or li
      *
      * @since 7.1.0
      */
-    function osc_gui_panel_close(): void
+    function osc_gui_panel_close(string $tag = 'section'): void
     {
-        $tag = !empty($GLOBALS['osc_gui_panel_tags']) ? array_pop($GLOBALS['osc_gui_panel_tags']) : 'section';
-        echo '</' . $tag . '>';
+        echo '</' . (in_array($tag, array('section', 'div', 'li'), true) ? $tag : 'section') . '>';
     }
 }
 
@@ -333,7 +333,7 @@ if (!function_exists('osc_gui_actions')) {
         foreach ($buttons as $button) {
             $classes = trim(($styles[$button['style'] ?? 'primary'] ?? $styles['primary']) . ' ' . (string) ($button['class'] ?? ''));
             $attrs   = $classes !== '' ? ' class="' . osc_esc_html($classes) . '"' : '';
-            $attrs  .= isset($button['href']) ? ' href="' . osc_esc_html((string) $button['href']) . '"' : ' type="submit"';
+            $attrs  .= isset($button['href']) ? ' href="' . osc_esc_html(osc_sanitize_url((string) $button['href'])) . '"' : ' type="submit"';
             foreach ((array) ($button['attrs'] ?? array()) as $name => $value) {
                 $attrs .= ' ' . osc_esc_html((string) $name) . '="' . osc_esc_html((string) $value) . '"';
             }

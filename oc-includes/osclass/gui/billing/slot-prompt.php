@@ -73,4 +73,4 @@ if (!$slotCanPay && !osc_billing_can_buy()) {
                 echo osc_esc_html(_m('Buy credits')); ?></a>
         <?php } ?>
     </div>
-<?php osc_gui_panel_close(); ?>
+<?php osc_gui_panel_close('div'); ?>

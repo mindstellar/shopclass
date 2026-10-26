@@ -270,7 +270,7 @@ check("core's Delete is a POST action", (bool) preg_match("/'delete'\\] = array\
 check('the CSRF token is posted only to this site', strpos($rowParts, 'strpos($actionUrl, $siteRoot) === 0') !== false);
 
 check('the profile contact form is a dialog the head button opens', strpos($profile, 'id="oe-contact-dialog"') !== false
-    && strpos($profile, 'data-osc-dialog-open="oe-contact-dialog"') !== false);
+    && strpos($profile, "'data-osc-dialog-open' => 'oe-contact-dialog'") !== false);
 
 // Every contact form's controller keeps the typed values and the reason through one helper.
 $hUtils = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php');

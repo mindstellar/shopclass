@@ -106,6 +106,7 @@ Keys every field takes:
 |---|---|
 | `default` | Value used until something is saved |
 | `required` | Rejected as empty on save |
+| `disabled` | Drawn disabled (`->disabled()`), a checkbox too |
 | `sanitize` | `callable(mixed $value): mixed`, run before validation |
 | `validate` | `callable(mixed $value, array $field): ?string`: the error, or null |
 | `depends` | Another field on this page. While that field is off, this one is hidden, is not required, and its posted value is **discarded** |

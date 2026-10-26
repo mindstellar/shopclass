@@ -77,7 +77,7 @@ $col = array(
 <?php if ($emptyMessage !== null) { ?>
     <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
     osc_gui_empty($emptyMessage, 'oe-bill-empty');
-    osc_gui_panel_close(); ?>
+    osc_gui_panel_close('div'); ?>
 <?php } else { ?>
     <?php $billingTab = 'wallet';
     require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
@@ -100,7 +100,7 @@ $col = array(
                 </a>
             </div>
         <?php } ?>
-    <?php osc_gui_panel_close(); ?>
+    <?php osc_gui_panel_close('div'); ?>
 
     <?php if ($offers !== array()) { ?>
         <?php osc_gui_panel_open(_m('Upgrades for your account'), 'oe-bill-card', '', 'div'); ?>
@@ -122,7 +122,7 @@ $col = array(
                     </li>
                 <?php } ?>
             </ul>
-        <?php osc_gui_panel_close(); ?>
+        <?php osc_gui_panel_close('div'); ?>
     <?php } ?>
 
     <?php osc_gui_panel_open(_m('History'), 'oe-bill-card', '', 'div'); ?>
@@ -164,7 +164,7 @@ $col = array(
                 require dirname(__DIR__) . '/parts/pager.php';
             } ?>
         <?php } ?>
-    <?php osc_gui_panel_close(); ?>
+    <?php osc_gui_panel_close('div'); ?>
 <?php } ?>
 </div>
 <?php osc_run_hook('account_page_after', 'billing-wallet'); ?>

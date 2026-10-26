@@ -54,6 +54,7 @@ if (!function_exists('osc_api_register_route')) {
      * must start with `ext/<plugin-slug>/`; other paths are refused when the table is built,
      * except a route with both `deprecated` and `sunset`, which may keep a plugin's old path
      * until its sunset day. A second route with the same method and path is refused and logged.
+     * `plugin` defaults to the plugin or theme whose code makes the call.
      *
      * @api
      *
@@ -67,15 +68,9 @@ if (!function_exists('osc_api_register_route')) {
     function osc_api_register_route(string $method, string $path, array $spec): void
     {
         $key = strtoupper($method) . ' ' . trim($path, '/');
-        if (!isset($spec['plugin']) && function_exists('osc_plugins_path')) {
-            $plugins = rtrim(str_replace('\\', '/', osc_plugins_path()), '/') . '/';
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-                $file = str_replace('\\', '/', (string) ($frame['file'] ?? ''));
-                if (str_starts_with($file, $plugins)) {
-                    $spec['plugin'] = explode('/', substr($file, strlen($plugins)), 2)[0];
-                    break;
-                }
-            }
+        $owner = Plugins::currentOwner();
+        if (!isset($spec['plugin']) && $owner !== null) {
+            $spec['plugin'] = $owner[1];
         }
         osc_add_filter('api_routes', static function ($routes) use ($key, $spec) {
             $routes = is_array($routes) ? $routes : [];

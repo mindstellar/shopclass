@@ -47,6 +47,7 @@ require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Preference
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/TableStore.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/StoreFactory.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/FormSpec.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/Plugins.php';
 
 use mindstellar\admin\ui\FormSpec;
 use mindstellar\settings\SettingsPageRegistry;

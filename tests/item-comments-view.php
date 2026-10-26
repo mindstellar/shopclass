@@ -109,9 +109,9 @@ $emitted = array_keys($emitted);
 sort($emitted);
 check('the partial emits .oe-* classes at all', $emitted !== array());
 foreach ($emitted as $class) {
-    // .oe-field and .oe-actions are shared with the core page vocabulary and are
-    // styled there; the rest are this block's own.
-    if (in_array($class, array('oe-field', 'oe-actions'), true)) {
+    // .oe-field, .oe-label and .oe-actions are shared with the core page vocabulary and
+    // are styled there; the rest are this block's own.
+    if (in_array($class, array('oe-field', 'oe-label', 'oe-actions'), true)) {
         continue;
     }
     check("the stylesheet covers .{$class}", strpos($css, '.' . $class) !== false);
