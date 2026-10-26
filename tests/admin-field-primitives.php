@@ -310,6 +310,13 @@ $html = render(static function () {
 });
 emits('labels the row separately', $html, '<div class="form-label"><label for="field-enabled">Comments</label>');
 emits('the control label sits beside the box', $html, 'class="form-label-checkbox"');
+
+$disabledHtml = render(static function () {
+    osc_admin_field(array('type' => 'checkbox', 'name' => 'on', 'label' => 'On', 'disabled' => true));
+    osc_admin_field(array('type' => 'checkbox', 'name' => 'off', 'label' => 'Off'));
+});
+emits('a disabled checkbox is drawn disabled', $disabledHtml, 'name="on" id="field-on" value="1" disabled');
+check('and an ordinary one is not', substr_count($disabledHtml, 'disabled') === 1, $disabledHtml);
 emits('is checked', $html, 'checked="checked"');
 check('the label is printed once', substr_count($html, 'Enable the thing') === 1, $html);
 // A checkbox label sometimes has to carry a link; label_html is that slot, named so the

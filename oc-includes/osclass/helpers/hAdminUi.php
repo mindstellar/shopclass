@@ -1037,6 +1037,7 @@ if (!function_exists('osc_admin_checkbox')) {
             . (!empty($opts['id']) ? ' id="' . osc_esc_html($opts['id']) . '"' : '')
             . ' value="' . osc_esc_html($opts['value'] ?? '1') . '"'
             . (!empty($opts['checked']) ? ' checked="checked"' : '')
+            . (!empty($opts['disabled']) ? ' disabled' : '')
             . osc_admin_field_attrs($opts['attrs'] ?? array()) . ' /> '
             . (!empty($opts['label_html']) ? $opts['label_html'] : osc_esc_html($opts['label'] ?? ''))
             . '</label>';
