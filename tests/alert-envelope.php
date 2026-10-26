@@ -256,6 +256,15 @@ $GLOBALS['__plugin'] = static function (array $params): array {
     return $params;
 };
 pin('a plugin cannot add a product to a search', '{"v":2,"params":{"sPattern":"kept"}}', $build(array('sPattern' => 'kept')));
+$GLOBALS['__plugin'] = static function (array $params): array {
+    $params['bbox'] = '0,0,1,1';
+
+    return $params;
+};
+pin('a plugin cannot add a box, bbox is a core key', '{"v":2,"params":{"sPattern":"kept"}}', $build(array('sPattern' => 'kept')));
+$boxOnly = $build(array('bbox' => '1,2,3,4'));
+pin('nor change one, and an alert with only a box keeps it', '{"v":2,"params":{"bbox":"1,2,3,4"}}', $boxOnly);
+pin('which validates with the plugin on', array('bbox' => '1,2,3,4'), AlertEnvelope::validate($boxOnly));
 $GLOBALS['__plugin'] = null;
 
 exit(harness_result());

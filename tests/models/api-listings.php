@@ -467,6 +467,11 @@ foreach (array('three numbers' => '-98,30,-97.5', 'south above north' => '-98,31
     pin('a bad box is 422 at bbox: ' . $label, array(422, '/bbox', 'format', 'query'), array($bad->status(), $bad->body()['errors'][0]['pointer'] ?? null, $bad->body()['errors'][0]['code'] ?? null, $bad->body()['errors'][0]['in'] ?? null));
 }
 pin('the 422 has the validation shape', array(), $schemaErrors('Problem', $get('listings', array('bbox' => '1,2,3'), $publicKey)));
+pin('a box in a long form reaches the search in its short form', '-98,30,-97.5,30.5', \mindstellar\api\read\ListingSearch::params(
+    new Request('GET', 'v1/listings', array('bbox' => '-98.0,30,-97.5,30.50')),
+    \mindstellar\api\read\CategoryCatalog::fromSite(),
+    'en_US'
+)['bbox'] ?? null);
 Preference::getInstance()->set('geo_search', '0');
 scratchdb_forget_cache();
 osc_reset_preferences();
