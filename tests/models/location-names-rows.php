@@ -171,9 +171,11 @@ $cat     = seed_category($admin, 'Cars', null, $en);
 $seller  = seed_user($admin, 'seller', 'seller@example.test');
 $adminId = seed_exec($admin, "INSERT INTO {$p}t_admin (s_name, s_username, s_password, s_email, b_moderator) VALUES ('A', 'a', ?, 'a@x.test', 0)", 's', array(str_repeat('x', 60)));
 
-$placed = static function (string $title) use ($admin, $cat, $seller, $en, $country, $region, $city, $p): int {
-    $id = seed_item($admin, $cat, $seller, $title, 10.0, 1, 1, $en, $country);
-    $admin->query("UPDATE {$p}t_item_location SET fk_i_region_id = $region, s_region = 'Rhineland', fk_i_city_id = $city, s_city = 'Cologne', s_country = 'Germany' WHERE fk_i_item_id = $id");
+$placed = static function (string $title, ?int $inRegion = null, ?int $inCity = null) use ($admin, $cat, $seller, $en, $country, $region, $city, $p): int {
+    $id       = seed_item($admin, $cat, $seller, $title, 10.0, 1, 1, $en, $country);
+    $inRegion ??= $region;
+    $inCity   ??= $city;
+    $admin->query("UPDATE {$p}t_item_location SET fk_i_region_id = $inRegion, s_region = 'Rhineland', fk_i_city_id = $inCity, s_city = 'Cologne', s_country = 'Germany' WHERE fk_i_item_id = $id");
 
     return $id;
 };
@@ -218,9 +220,14 @@ pin('en_US shows the stored names', array('Cologne', 'Rhineland', 'Germany'), ar
 pin('a free-text listing is unchanged in de_DE', 'Cologne', $pick($de_, $free)['s_city']);
 pin('a free-text listing is unchanged in en_US', 'Cologne', $pick($en_, $free)['s_city']);
 
+// Each listing sits in its own region and city, so the ids to look up grow with the row count.
 $more = array();
 for ($i = 0; $i < 8; $i++) {
-    $more[] = $placed('More ' . $i);
+    $r      = seed_region($admin, $country, 'Region ' . $i);
+    $c      = seed_city($admin, $r, 'Town ' . $i, $country);
+    $store->set('region', $r, 'de_DE', 'Region DE ' . $i);
+    $store->set('city', $c, 'de_DE', 'Stadt ' . $i);
+    $more[] = $placed('More ' . $i, $r, $c);
 }
 harness_assert_no_n_plus_1('extendRows() query count does not follow the row count', static function (int $n) use ($item, $rowsFor, $more): void {
     harness_reset_container();
