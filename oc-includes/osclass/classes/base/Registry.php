@@ -35,12 +35,13 @@ abstract class Registry
     public static function getInstance(): static
     {
         $container = Container::root();
-        if (!$container->has(static::class)) {
-            // @phpstan-ignore new.static (the constructor is protected and subclasses keep it)
-            $container->set(static::class, static fn (): static => new static());
+        $class     = static::class;
+        if (!$container->has($class)) {
+            // The class is bound, not read from static: PHP 8.6 shares one unbound closure across subclasses.
+            $container->set($class, static fn (): self => new $class());
         }
 
-        return $container->get(static::class);
+        return $container->get($class);
     }
 
     /**
