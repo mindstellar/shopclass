@@ -102,7 +102,7 @@ final class SettingsPageRegistry extends Registry
     /** @var array<string,int> ids a second registration tried to claim */
     private array $conflicts = array();
 
-    /** @var array<string,array{owner:string,kind:string,error:string}> pages left out, keyed by id */
+    /** @var array<string,array{id:string,owner:string,kind:string,error:string}> pages left out, keyed by kind:owner:id */
     private array $refused = array();
 
     /** Whether admin_menu_init has already placed the declared pages in the menu. */
