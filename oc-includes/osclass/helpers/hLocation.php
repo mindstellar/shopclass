@@ -435,3 +435,20 @@ function osc_geocode_attribution(): string
 
     return $geocoder === null ? '' : $geocoder->provider()->attribution();
 }
+
+/**
+ * The name of a country, region or city in the current language, or $fallback when none is stored.
+ *
+ * @param string     $type     'country', 'region' or 'city'
+ * @param int|string $id       region or city id, or country code
+ * @param string     $fallback returned when the place has no name in this language
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_location_name(string $type, int|string $id, string $fallback = ''): string
+{
+    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+
+    return \mindstellar\container\Container::root()->get(\mindstellar\location\LocationNames::class)->name($type, $id, $locale, $fallback);
+}

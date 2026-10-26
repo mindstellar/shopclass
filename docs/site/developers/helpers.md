@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1250 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1251 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -725,7 +725,7 @@ Core defines 1250 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_priv_count_locales()` | Private function to count locales |
 | `osc_set_current_user_locale($locale)` | Persist the visitor's chosen front-end locale in a dedicated cookie. |
 
-### hLocation (27)
+### hLocation (28)
 
 `oc-includes/osclass/helpers/hLocation.php`
 
@@ -754,6 +754,7 @@ Core defines 1250 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_has_countries()` | Iterator for countries, return null if there's no more countries |
 | `osc_has_regions($country = '%%%%')` | Iterator for regions, return null if there's no more regions |
 | `osc_install_json_locations($location = null)` | Install or update one country's locations from the published catalog. |
+| `osc_location_name(string $type, int\|string $id, string $fallback = '')` | The name of a country, region or city in the current language, or $fallback when none is stored. |
 | `osc_region()` | Gets current region |
 | `osc_region_items()` | Gets region's items |
 | `osc_region_name()` | Gets region's name |
