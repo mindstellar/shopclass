@@ -255,7 +255,7 @@ switch ($form['kind']) {
                 </div>
                 <?php if (!empty($form['names'])) { ?>
                     <section class="loc-field loc-names" aria-labelledby="loc-names-title">
-                        <h3 class="loc-facts-title" id="loc-names-title"><?php _e('Names in other languages'); ?></h3>
+                        <h3 class="loc-facts-title" id="loc-names-title"><?php _e('Names per language'); ?></h3>
                         <p class="form-text"><?php _e('Shown to visitors reading the site in that language. Blank uses the name above.'); ?></p>
                         <?php foreach ($form['names'] as $field) {
                             $fieldId = 'loc-n-' . $field['code']; ?>

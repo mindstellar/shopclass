@@ -8640,7 +8640,7 @@ msgid "Names are matched from their first letters."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
-msgid "Names in other languages"
+msgid "Names per language"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php

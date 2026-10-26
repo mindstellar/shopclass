@@ -54,9 +54,9 @@ hidden.
 | **Add** | **Add country**, **Add region** or **Add city**, depending on the level. |
 | **Bulk actions** | Tick rows, then apply one action to all of them. |
 
-#### Names in other languages
+#### Names per language
 
-Edit a country, region or city to see a **Names in other languages** section. It has one field per
+Edit a country, region or city to see a **Names per language** section. It has one field per
 enabled site language, with the site's default language first. Visitors reading
 the site in a language see that language's name. A blank field uses the stored
 name. The section is hidden when the site has only one language.
