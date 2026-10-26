@@ -30,6 +30,9 @@ use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
 use mindstellar\live\LiveChannel;
 use mindstellar\live\LivePublisher;
+use mindstellar\location\LocationAutocompleteQuery;
+use mindstellar\location\LocationNames;
+use mindstellar\location\LocationNameStore;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
 use mindstellar\push\PushSubscriptions;
@@ -103,7 +106,8 @@ class CWebAjax extends BaseModel
     private function regions(): void
     {
         $regions = Region::getInstance()->findByCountry(Params::getParam('countryId'));
-        AjaxResponse::shared($regions);
+        AjaxResponse::shared(Container::root()->get(LocationNames::class)
+            ->translateList($regions, LocationNameStore::REGION, 'pk_i_id', 's_name', osc_current_user_locale()));
     }
 
     /**
@@ -112,7 +116,8 @@ class CWebAjax extends BaseModel
     private function cities(): void
     {
         $cities = City::getInstance()->findByRegion(Params::getParamInt('regionId'));
-        AjaxResponse::shared($cities);
+        AjaxResponse::shared(Container::root()->get(LocationNames::class)
+            ->translateList($cities, LocationNameStore::CITY, 'pk_i_id', 's_name', osc_current_user_locale()));
     }
 
     /**
@@ -120,7 +125,7 @@ class CWebAjax extends BaseModel
      */
     private function location(): void
     {
-        $cities = City::getInstance()->ajax(Params::getParamString('term'));
+        $cities = LocationAutocompleteQuery::inLocale(osc_current_user_locale())->cities(Params::getParamString('term'));
         foreach ($cities as $k => $city) {
             $cities[$k]['label'] = $city['label'] . ' (' . $city['region'] . ')';
         }
@@ -132,8 +137,7 @@ class CWebAjax extends BaseModel
      */
     private function locationCountries(): void
     {
-        $countries = Country::getInstance()->ajax(Params::getParamString('term'));
-        AjaxResponse::shared($countries);
+        AjaxResponse::shared(LocationAutocompleteQuery::inLocale(osc_current_user_locale())->countries(Params::getParamString('term')));
     }
 
     /**
@@ -152,9 +156,8 @@ class CWebAjax extends BaseModel
      */
     private function locationRegions(): void
     {
-        $regions = Region::getInstance()
-            ->ajax(Params::getParamString('term'), Params::getParamString('country'));
-        AjaxResponse::shared($regions);
+        AjaxResponse::shared(LocationAutocompleteQuery::inLocale(osc_current_user_locale())
+            ->regions(Params::getParamString('term'), Params::getParamString('country')));
     }
 
     /**
@@ -162,10 +165,8 @@ class CWebAjax extends BaseModel
      */
     private function locationCities(): void
     {
-        $cities =
-        // @phpstan-ignore argument.type (region may be an id or a name)
-            City::getInstance()->ajax(Params::getParamString('term'), Params::getParamString('region'));
-        AjaxResponse::shared($cities);
+        AjaxResponse::shared(LocationAutocompleteQuery::inLocale(osc_current_user_locale())
+            ->cities(Params::getParamString('term'), Params::getParamString('region')));
     }
 
     /**

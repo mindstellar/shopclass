@@ -16,10 +16,14 @@ namespace mindstellar\admin\ajax;
 use City;
 use Country;
 use InvalidArgumentException;
+use mindstellar\container\Container;
 use mindstellar\database\DbException;
 use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
+use mindstellar\location\LocationAutocompleteQuery;
 use mindstellar\location\LocationCatalog;
+use mindstellar\location\LocationNames;
+use mindstellar\location\LocationNameStore;
 use mindstellar\utility\AjaxResponse;
 use Params;
 use Region;
@@ -32,19 +36,31 @@ final class LocationAjax extends AjaxHandler
     /** Regions of a country. */
     public function regions(): void
     {
-        AjaxResponse::json(Region::getInstance()->findByCountry(Params::getParam('countryId')));
+        AjaxResponse::json(Container::root()->get(LocationNames::class)->translateList(
+            Region::getInstance()->findByCountry(Params::getParam('countryId')),
+            LocationNameStore::REGION,
+            'pk_i_id',
+            's_name',
+            osc_current_admin_locale()
+        ));
     }
 
     /** Cities of a region. */
     public function cities(): void
     {
-        AjaxResponse::json(City::getInstance()->findByRegion(Params::getParamInt('regionId')));
+        AjaxResponse::json(Container::root()->get(LocationNames::class)->translateList(
+            City::getInstance()->findByRegion(Params::getParamInt('regionId')),
+            LocationNameStore::CITY,
+            'pk_i_id',
+            's_name',
+            osc_current_admin_locale()
+        ));
     }
 
     /** The city autocomplete. */
     public function cityLookup(): void
     {
-        AjaxResponse::json(City::getInstance()->ajax(Params::getParam('term')));
+        AjaxResponse::json(LocationAutocompleteQuery::inLocale(osc_current_admin_locale())->cities(Params::getParamString('term')));
     }
 
     /** Countries the published catalog offers for import. */
