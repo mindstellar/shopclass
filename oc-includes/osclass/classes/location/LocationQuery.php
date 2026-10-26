@@ -228,19 +228,11 @@ final class LocationQuery
     {
         $key   = self::LEVELS[$level][1];
         $query = $query->orderBy('s_name')->orderBy($key);
-        if ($prefix !== '') {
-            $named   = $level === self::AREA ? [] : (new LocationNameStore())->idsStartingWith($level, $prefix);
-            $pattern = QueryBuilder::escapeLike($prefix) . '%';
-            if ($named === []) {
-                $query = $query->like('s_name', $prefix, 'after');
-            } else {
-                $marks = implode(',', array_fill(0, count($named), '?'));
-                $query = $query->whereGroup(
-                    static fn (QueryBuilder $q): QueryBuilder => $q
-                        ->whereRaw('s_name LIKE ?', [$pattern])
-                        ->orWhereRaw($key . ' IN (' . $marks . ')', $named)
-                );
-            }
+        if ($prefix !== '' && $level === self::AREA) {
+            $query = $query->like('s_name', $prefix, 'after');
+        } elseif ($prefix !== '') {
+            [$match, $params] = (new LocationNameStore())->matchClause($level, $key, 's_name', $prefix);
+            $query            = $query->whereRaw($match, $params);
         }
 
         return Db::stringifyRows($query->limit($limit)->offset($offset)->get());

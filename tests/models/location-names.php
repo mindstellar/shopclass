@@ -70,6 +70,7 @@ pin('idsNamed() ignores case and accents', [(string) $cologne], $store->idsNamed
 pin('idsStartingWith() finds the id', [(string) $cologne], $store->idsStartingWith('city', 'kö'));
 pin('idsStartingWith() with no match is empty', [], $store->idsStartingWith('city', 'zz'));
 pin('a percent sign in the prefix is not a wildcard', [], $store->idsStartingWith('city', '%'));
+pin('idsNamed() takes no wildcards', [], $store->idsNamed('city', '%%'));
 pin('another place type is not searched', [], $store->idsNamed('region', 'Köln'));
 
 harness_section('Resolver: memo');

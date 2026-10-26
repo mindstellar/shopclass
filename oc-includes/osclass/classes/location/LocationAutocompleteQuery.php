@@ -14,7 +14,6 @@ namespace mindstellar\location;
 
 use mindstellar\container\Container;
 use mindstellar\database\Db;
-use mindstellar\database\QueryBuilder;
 
 /**
  * The location boxes' suggestions. A place matches when its stored name or its name in any
@@ -42,9 +41,8 @@ final class LocationAutocompleteQuery
      */
     public function countries(string $term): array
     {
-        $term  = trim($term);
-        $codes = $this->store->idsStartingWith(LocationNameStore::COUNTRY, $term);
-        [$match, $params] = $this->matching('pk_c_code', $term, $codes);
+        $term             = trim($term);
+        [$match, $params] = $this->store->matchClause(LocationNameStore::COUNTRY, 'pk_c_code', 's_name', $term);
         $rows = Db::select(
             'SELECT pk_c_code AS id, s_name AS label, s_name AS value FROM ' . self::table('t_country') . ' WHERE ' . $match . ' LIMIT 5',
             $params
@@ -62,8 +60,7 @@ final class LocationAutocompleteQuery
     {
         $term    = trim($term);
         $country = trim((string) $country);
-        $ids     = $this->store->idsStartingWith(LocationNameStore::REGION, $term);
-        [$match, $params] = $this->matching('a.pk_i_id', $term, array_map('intval', $ids), 'a.s_name');
+        [$match, $params] = $this->store->matchClause(LocationNameStore::REGION, 'a.pk_i_id', 'a.s_name', $term);
 
         $sql = 'SELECT a.pk_i_id AS id, a.s_name AS label, a.s_name AS value FROM ' . self::table('t_region') . ' AS a';
         if ($country === '') {
@@ -72,10 +69,10 @@ final class LocationAutocompleteQuery
             $sql .= ' WHERE a.fk_c_country_code = ? AND ' . $match;
             array_unshift($params, strtolower($country));
         } else {
-            $codes  = $this->store->idsNamed(LocationNameStore::COUNTRY, $country);
+            [$scope, $scoped] = $this->store->matchClause(LocationNameStore::COUNTRY, 'a.fk_c_country_code', 'aux.s_name', $country, 'exact');
             $sql   .= ' LEFT JOIN ' . self::table('t_country') . ' AS aux ON aux.pk_c_code = a.fk_c_country_code WHERE '
-                . $this->scope('aux.s_name', 'a.fk_c_country_code', $codes) . ' AND ' . $match;
-            $params = array_merge(array($country), $codes, $params);
+                . $scope . ' AND ' . $match;
+            $params = array_merge($scoped, $params);
         }
         $sql     .= ' ORDER BY a.s_name = ? DESC, a.i_num_items DESC, a.s_name LIMIT 5';
         $params[] = $term;
@@ -96,8 +93,7 @@ final class LocationAutocompleteQuery
             return array();
         }
         $region = trim((string) $region);
-        $ids    = $this->store->idsStartingWith(LocationNameStore::CITY, $term);
-        [$match, $params] = $this->matching('a.pk_i_id', $term, array_map('intval', $ids), 'a.s_name');
+        [$match, $params] = $this->store->matchClause(LocationNameStore::CITY, 'a.pk_i_id', 'a.s_name', $term);
 
         $sql = 'SELECT a.pk_i_id AS id, a.s_name AS label, a.s_name AS value, aux.s_name AS region, a.fk_i_region_id AS region_id'
             . ' FROM ' . self::table('t_city') . ' AS a'
@@ -107,9 +103,9 @@ final class LocationAutocompleteQuery
             $sql     .= ' AND a.fk_i_region_id = ?';
             $params[] = (int) $region;
         } elseif ($region !== '') {
-            $named    = array_map('intval', $this->store->idsNamed(LocationNameStore::REGION, $region));
-            $sql     .= ' AND ' . $this->scope('aux.s_name', 'a.fk_i_region_id', $named);
-            $params   = array_merge($params, array($region), $named);
+            [$scope, $scoped] = $this->store->matchClause(LocationNameStore::REGION, 'a.fk_i_region_id', 'aux.s_name', $region, 'exact');
+            $sql   .= ' AND ' . $scope;
+            $params = array_merge($params, $scoped);
         }
         $sql     .= ' ORDER BY a.s_name = ? DESC, a.i_num_items DESC, a.s_name LIMIT 10';
         $params[] = $term;
@@ -127,40 +123,6 @@ final class LocationAutocompleteQuery
         }
 
         return $this->labelled($rows, LocationNameStore::CITY);
-    }
-
-    /**
-     * The name prefix match, widened to the places named so in another language.
-     *
-     * @param array<int,int|string> $ids
-     *
-     * @return array{0:string,1:array<int,mixed>}
-     */
-    private function matching(string $idColumn, string $term, array $ids, string $nameColumn = 's_name'): array
-    {
-        $params = array(QueryBuilder::escapeLike($term) . '%');
-        if ($ids === array()) {
-            return array($nameColumn . ' LIKE ?', $params);
-        }
-
-        return array(
-            '(' . $nameColumn . ' LIKE ? OR ' . $idColumn . ' IN (' . implode(', ', array_fill(0, count($ids), '?')) . '))',
-            array_merge($params, $ids),
-        );
-    }
-
-    /**
-     * A parent given by name: its stored name, or the ids of the places named so in any language.
-     *
-     * @param array<int,int|string> $ids
-     */
-    private function scope(string $nameColumn, string $idColumn, array $ids): string
-    {
-        if ($ids === array()) {
-            return $nameColumn . ' = ?';
-        }
-
-        return '(' . $nameColumn . ' = ? OR ' . $idColumn . ' IN (' . implode(', ', array_fill(0, count($ids), '?')) . '))';
     }
 
     /**

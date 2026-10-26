@@ -106,13 +106,13 @@ final class LocationNameStore
     }
 
     /**
-     * Ids of the places that have this name in any language.
+     * Ids of the places that have exactly this name in any language.
      *
      * @return string[]
      */
     public function idsNamed(string $type, string $name, int $limit = 100): array
     {
-        return $this->ids($type, $name, $limit);
+        return $this->ids($type, '= ?', $name, $limit);
     }
 
     /**
@@ -122,20 +122,52 @@ final class LocationNameStore
      */
     public function idsStartingWith(string $type, string $prefix, int $limit = 100): array
     {
-        return $this->ids($type, QueryBuilder::escapeLike($prefix) . '%', $limit);
+        return $this->ids($type, 'LIKE ?', QueryBuilder::escapeLike($prefix) . '%', $limit);
+    }
+
+    /**
+     * A WHERE clause that matches a place by its stored name or by its name in any language.
+     * $mode 'prefix' matches names that start with $term, 'exact' the whole name. Regions and
+     * cities match through a subquery, so no id list is cut short.
+     *
+     * @return array{0:string,1:array<int,mixed>} SQL and its bound values
+     */
+    public function matchClause(string $type, string $idColumn, string $nameColumn, string $term, string $mode = 'prefix'): array
+    {
+        $type          = $this->checkedType($type);
+        [$op, $value] = $mode === 'exact' ? ['= ?', $term] : ['LIKE ?', QueryBuilder::escapeLike($term) . '%'];
+        if ($term === '') {
+            return [$nameColumn . ' ' . $op, [$value]];
+        }
+        if ($type !== self::COUNTRY) {
+            return [
+                '(' . $nameColumn . ' ' . $op . ' OR ' . $idColumn . ' IN (SELECT s_place_id FROM ' . self::table() . ' WHERE e_place_type = ? AND s_name ' . $op . '))',
+                [$value, $type, $value],
+            ];
+        }
+        // Countries are few, and a code compared across tables could hit a collation mismatch.
+        $codes = $this->ids($type, $op, $value, null);
+        if ($codes === []) {
+            return [$nameColumn . ' ' . $op, [$value]];
+        }
+
+        return [
+            '(' . $nameColumn . ' ' . $op . ' OR ' . $idColumn . ' IN (' . implode(', ', array_fill(0, count($codes), '?')) . '))',
+            array_merge([$value], $codes),
+        ];
     }
 
     /**
      * @return string[]
      */
-    private function ids(string $type, string $pattern, int $limit): array
+    private function ids(string $type, string $op, string $value, ?int $limit): array
     {
-        if ($pattern === '' || $pattern === '%') {
+        if ($value === '' || $value === '%') {
             return [];
         }
         $rows = Db::select(
-            'SELECT s_place_id FROM ' . self::table() . ' WHERE e_place_type = ? AND s_name LIKE ? LIMIT ' . max(1, $limit),
-            [$this->checkedType($type), $pattern]
+            'SELECT s_place_id FROM ' . self::table() . ' WHERE e_place_type = ? AND s_name ' . $op . ($limit === null ? '' : ' LIMIT ' . max(1, $limit)),
+            [$this->checkedType($type), $value]
         );
 
         return array_values(array_unique(array_map(static fn (array $row): string => (string) $row['s_place_id'], $rows)));

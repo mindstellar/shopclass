@@ -35,6 +35,9 @@ final class LocationFilter
     /** Set once any location was asked for; the join then stays, as it always did. */
     private bool $used = false;
 
+    /** Typed names per level looked up in other languages; any more match the stored name only. */
+    private const NAMED_LOOKUPS = 10;
+
     private readonly LocationNameStore $names;
 
     public function __construct(?LocationNameStore $names = null)
@@ -93,7 +96,7 @@ final class LocationFilter
                     'by'    => 'code',
                 );
             } else {
-                $codes = $this->names->idsNamed(LocationNameStore::COUNTRY, $country);
+                $codes = $this->namedIds(LocationNameStore::COUNTRY, 'countries', $country);
                 $this->entries['countries'][] = $this->byName($column, 's_country', 'fk_c_country_code', SqlValue::bind($country), $codes);
             }
         }
@@ -206,10 +209,23 @@ final class LocationFilter
                     'by'    => 'id',
                 );
             } else {
-                $ids = $type === null ? array() : array_map('intval', $this->names->idsNamed($type, $one));
+                $ids = $type === null ? array() : array_map('intval', $this->namedIds($type, $level, $one));
                 $this->entries[$level][] = $this->byName($column, $nameColumn, $idColumn, $one, $ids);
             }
         }
+    }
+
+    /**
+     * The ids of the places with this exact name in another language, for the first few names
+     * of a level.
+     *
+     * @return string[]
+     */
+    private function namedIds(string $type, string $level, string $name): array
+    {
+        $looked = count(array_filter($this->entries[$level], static fn (array $e): bool => $e['by'] === 'name'));
+
+        return $looked < self::NAMED_LOOKUPS ? $this->names->idsNamed($type, $name) : array();
     }
 
     /**

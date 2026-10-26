@@ -155,6 +155,13 @@ pin('values() still gives the typed name', array('by' => 'name', 'value' => 'Kö
 $filter->addCountry('Deutschland');
 pin('a translated country name records its code', '( ' . $column . "s_country LIKE 'Deutschland' OR " . $column . "fk_c_country_code IN ('de') ) ", $filter->recorded('countries')[0]);
 
+pin('a LIKE wildcard does not match a name in another language', array(), $found('addCity', 'K%'));
+$many = new LocationFilter();
+$q    = harness_query_count(static function () use ($many): void {
+    $many->addCity(array_map(static fn (int $i): string => 'Name ' . $i, range(1, 30)));
+});
+pin('only the first 10 typed names per level are looked up', 10, $q);
+
 harness_section('Autocomplete');
 harness_reset_container();
 $complete = static fn (string $locale): LocationAutocompleteQuery => new LocationAutocompleteQuery($locale, $store, new LocationNames($store));
@@ -175,6 +182,13 @@ pin("regions('Rheinl', 'DE') returns the region in German", array(array('id' => 
 pin("regions('Rhine') still returns it", array((string) $region), array_column($complete('de_DE')->regions('Rhine'), 'id'));
 pin("regions('Rheinl', 'Deutschland') narrows by the German country name", array((string) $region), array_column($complete('de_DE')->regions('Rheinl', 'Deutschland'), 'id'));
 pin('a typed percent sign is not a wildcard', array(), $complete('de_DE')->cities('%'));
+for ($i = 0; $i < 150; $i++) {
+    $store->set(LocationNameStore::CITY, 900000 + $i, 'de_DE', 'Kö ' . $i);
+}
+pin('more than 100 other matches do not push the region\'s city out', array((string) $cologne), array_column($complete('de_DE')->cities('Kö', $region), 'id'));
+for ($i = 0; $i < 150; $i++) {
+    $store->forget(LocationNameStore::CITY, 900000 + $i);
+}
 $auto = $complete('de_DE');
 pin("cities('Kö') runs at most 4 queries (match, list, names of cities and regions)", true, harness_query_count(static fn () => $auto->cities('Kö')) <= 4);
 $auto = $complete('de_DE');
