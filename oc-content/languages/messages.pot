@@ -247,6 +247,10 @@ msgstr[1] ""
 msgid "A name can have at most 100 characters"
 msgstr ""
 
+#: oc-includes/osclass/classes/location/LocationService.php
+msgid "A name must be text"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminCategories.php
 msgid "A new category has been added"
 msgstr ""
