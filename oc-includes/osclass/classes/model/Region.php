@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\location\LocationNameStore;
 use mindstellar\model\SlugHistory;
 
 /**
@@ -192,6 +193,7 @@ class Region extends DAO
         if ($this->delete(array('pk_i_id' => $pk)) === false) {
             $result++;
         }
+        (new LocationNameStore())->forget(LocationNameStore::REGION, (string) $pk);
 
         if ($result === 0) {
             osc_run_hook('after_delete_region', $pk);

@@ -585,7 +585,7 @@ class ItemForm extends Form
             }
             parent::generic_select(
                 'countryId',
-                $countries,
+                _osc_location_list($countries, 'country'),
                 'pk_c_code',
                 's_name',
                 __('Select a country...'),
@@ -673,7 +673,7 @@ class ItemForm extends Form
             }
             parent::generic_select(
                 'regionId',
-                $regions,
+                _osc_location_list($regions, 'region'),
                 'pk_i_id',
                 's_name',
                 __('Select a region...'),
@@ -736,7 +736,7 @@ class ItemForm extends Form
             }
             parent::generic_select(
                 'cityId',
-                $cities,
+                _osc_location_list($cities, 'city'),
                 'pk_i_id',
                 's_name',
                 __('Select a city...'),

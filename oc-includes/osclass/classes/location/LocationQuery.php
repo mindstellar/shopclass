@@ -18,7 +18,7 @@ use mindstellar\database\QueryBuilder;
 /**
  * Location reads straight from their tables: countries, a country's active regions, a
  * region's active cities and a city's areas, by name with an optional name prefix, and one
- * place by id.
+ * place by id. A prefix also matches a name saved in any language.
  */
 final class LocationQuery
 {
@@ -226,9 +226,13 @@ final class LocationQuery
      */
     private function list(string $level, QueryBuilder $query, string $prefix, int $limit, int $offset): array
     {
-        $query = $query->orderBy('s_name')->orderBy(self::LEVELS[$level][1]);
-        if ($prefix !== '') {
+        $key   = self::LEVELS[$level][1];
+        $query = $query->orderBy('s_name')->orderBy($key);
+        if ($prefix !== '' && $level === self::AREA) {
             $query = $query->like('s_name', $prefix, 'after');
+        } elseif ($prefix !== '') {
+            [$match, $params] = (new LocationNameStore())->matchClause($level, $key, 's_name', $prefix);
+            $query            = $query->whereRaw($match, $params);
         }
 
         return Db::stringifyRows($query->limit($limit)->offset($offset)->get());

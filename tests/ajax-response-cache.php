@@ -10,7 +10,8 @@
 
 /**
  * Pins AjaxResponse's cache headers: JSON is private by default, and shared() lets a browser
- * or shared cache keep it for five minutes. Headers only exist under a web server, so this
+ * or shared cache keep it for five minutes, and localized() is private for a visitor with a chosen
+ * language. Headers only exist under a web server, so this
  * runs PHP's built-in one.
  *
  * DB-free.  Usage:  php tests/ajax-response-cache.php
@@ -23,9 +24,11 @@ if (isset($_GET['mode'])) {
     if ($_GET['mode'] === 'cookie') {
         setcookie('signed_out', '', 1);
     }
-    $_GET['mode'] === 'json'
-        ? \mindstellar\utility\AjaxResponse::json(array('ok' => 1))
-        : \mindstellar\utility\AjaxResponse::shared(array('ok' => 1));
+    match ($_GET['mode']) {
+        'json'      => \mindstellar\utility\AjaxResponse::json(array('ok' => 1)),
+        'localized' => \mindstellar\utility\AjaxResponse::localized(array('ok' => 1)),
+        default     => \mindstellar\utility\AjaxResponse::shared(array('ok' => 1)),
+    };
 
     return;
 }
@@ -36,9 +39,10 @@ $server = proc_open(
     array(array('file', '/dev/null', 'r'), array('file', '/dev/null', 'w'), array('file', '/dev/null', 'w')),
     $pipes
 );
-$cacheControl = static function (string $mode) use ($port): string {
+$cacheControl = static function (string $mode, string $cookie = '') use ($port): string {
+    $context = stream_context_create(array('http' => array('header' => $cookie === '' ? '' : 'Cookie: ' . $cookie)));
     for ($try = 0; $try < 50; $try++) {
-        $body = @file_get_contents('http://127.0.0.1:' . $port . '/?mode=' . $mode);
+        $body = @file_get_contents('http://127.0.0.1:' . $port . '/?mode=' . $mode, false, $context);
         if ($body !== false) {
             foreach ($http_response_header as $line) {
                 if (stripos($line, 'Cache-Control:') === 0) {
@@ -58,6 +62,8 @@ harness_section('AjaxResponse cache headers');
 pin('json() is private', 'private, no-store', $cacheControl('json'));
 pin('shared() may be kept five minutes by any cache', 'public, max-age=300, s-maxage=300', $cacheControl('shared'));
 pin('...unless the answer also sets a cookie', 'private, no-store', $cacheControl('cookie'));
+pin('localized() is shared but revalidated by the browser', 'public, max-age=0, s-maxage=300, must-revalidate', $cacheControl('localized'));
+pin('...and private for a visitor with a chosen language', 'private, no-store', $cacheControl('localized', 'oc_userLocale=de_DE'));
 
 proc_terminate($server);
 proc_close($server);

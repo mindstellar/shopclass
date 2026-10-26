@@ -49,6 +49,7 @@ if (defined('MODELS_RUNNER')) {
 require_once __DIR__ . '/../lib/scratchdb.php';
 
 $admin = scratchdb_session('osc_models_websearch');
+harness_reset_container();
 
 foreach (array(
     'OSC_CACHE_TTL' => 60,

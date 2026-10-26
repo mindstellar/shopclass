@@ -17,7 +17,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 8,
+    'q' => 11,
   ),
   'unfiltered, no count' =>
   array(
@@ -256,7 +256,7 @@ return array(
     array(
     ),
     'count' => 0,
-    'q' => 2,
+    'q' => 3,
   ),
   'city id' =>
   array(
@@ -678,7 +678,7 @@ return array(
     array(
     ),
     'count' => 0,
-    'q' => 2,
+    'q' => 3,
   ),
   'user id' =>
   array(
@@ -1143,7 +1143,7 @@ return array(
       0 => 'car2',
     ),
     'count' => 1,
-    'q' => 4,
+    'q' => 5,
   ),
   'addItemConditions' =>
   array(
@@ -1297,7 +1297,7 @@ return array(
       2 => 'sofa',
     ),
     'count' => 3,
-    'q' => 5,
+    'q' => 6,
   ),
   'builder: page 2' =>
   array(
@@ -1465,7 +1465,7 @@ return array(
     array(
       0 => 'bike2',
     ),
-    'q' => 3,
+    'q' => 4,
   ),
   'premiums with pattern' =>
   array(
@@ -1636,7 +1636,7 @@ return array(
   'toJson filtered' =>
   array(
     'json' => '{"price_min":100,"price_max":9000,"aCategories":[1,"2"],"city_areas":["oc_t_item_location.fk_i_city_area_id = 2 "],"cities":["oc_t_item_location.s_city LIKE \'Aville\' "],"regions":["oc_t_item_location.fk_i_region_id = 1 ","oc_t_item_location.s_region LIKE \'Be\\\\\\"ta\' "],"countries":["oc_t_item_location.fk_c_country_code = \'us\' ","oc_t_item_location.s_country LIKE \'Canada\' "],"withPattern":true,"sPattern":"o\'neil \\"red car\\"","withPicture":true,"onlyPremium":true,"locale_code":["en_US","es_ES"],"tables":["x_table"],"tables_join":{"k":["x_join","x_join.id = 1","LEFT"]},"no_catched_tables":["x_table"],"no_catched_conditions":["1 = 1"],"user_ids":["oc_t_item.fk_i_user_id = 1 ","oc_t_item.fk_i_user_id = 2 "],"order_column":"i_price","order_direction":"ASC","limit_init":10,"results_per_page":5}',
-    'q' => 2,
+    'q' => 5,
   ),
   'toJson user scalar' =>
   array(
@@ -1651,7 +1651,7 @@ return array(
   'toJson after doSearch with pattern' =>
   array(
     'json' => '{"price_min":0,"price_max":0,"aCategories":[],"city_areas":[],"cities":[],"regions":["oc_t_item_location.s_region LIKE \'Beta\' "],"countries":[],"withPattern":true,"sPattern":"bike","locale_code":[""],"tables":[],"tables_join":[],"no_catched_tables":[],"no_catched_conditions":[],"user_ids":null,"order_column":"dt_pub_date","order_direction":"DESC","limit_init":0,"results_per_page":10}',
-    'q' => 2,
+    'q' => 3,
   ),
   'setJsonAlert round trip' =>
   array(

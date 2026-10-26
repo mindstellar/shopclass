@@ -44,6 +44,8 @@ use mindstellar\live\LivePublisher;
 use mindstellar\live\LiveStatus;
 use mindstellar\live\NchanPublisher;
 use mindstellar\live\NullPublisher;
+use mindstellar\location\LocationNames;
+use mindstellar\location\LocationNameStore;
 use mindstellar\mail\CoreEmails;
 use mindstellar\mail\event\MailComposing;
 use mindstellar\messaging\ConversationStore;
@@ -92,6 +94,7 @@ final class CoreServices
         $c->set(GoodsCheckout::class, static fn (Container $c): GoodsCheckout => new GoodsCheckout($c->get(CartPricer::class), $c->get(DispatcherInterface::class)));
         $c->set(CoreEmails::class, static fn (Container $c): CoreEmails => new CoreEmails($c->get(DispatcherInterface::class)));
         $c->set(Clock::class, static fn (): Clock => new SystemClock());
+        $c->set(LocationNames::class, static fn (): LocationNames => new LocationNames(new LocationNameStore()));
         $c->set(MessageStore::class, static fn (): MessageStore => new MessageStore());
         $c->set(ConversationStore::class, static fn (Container $c): ConversationStore => new ConversationStore($c->get(MessageStore::class)));
         $c->set(MessagingService::class, static fn (Container $c): MessagingService => new MessagingService(

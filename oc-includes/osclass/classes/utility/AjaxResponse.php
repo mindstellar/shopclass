@@ -54,6 +54,26 @@ final class AjaxResponse
     }
 
     /**
+     * JSON in the visitor's language, such as translated place names. A visitor with a chosen
+     * language or a session gets a private answer; others share one that browsers revalidate.
+     *
+     * @param mixed $data
+     *
+     * @return void
+     */
+    public static function localized($data): void
+    {
+        $perVisitor = preg_grep('/^Set-Cookie:/i', headers_list()) !== array();
+        $cookies    = function_exists('osc_cache_relevant_cookies') ? osc_cache_relevant_cookies() : array('oc_userLocale', 'osclass');
+        foreach ($cookies as $name) {
+            if (isset($_COOKIE[$name]) && $_COOKIE[$name] !== '') {
+                $perVisitor = true;
+            }
+        }
+        self::send($data, 200, 0, $perVisitor ? 'private, no-store' : 'public, max-age=0, s-maxage=300, must-revalidate');
+    }
+
+    /**
      * @param mixed $data
      */
     private static function send($data, int $status, int $flags, string $cacheControl): void

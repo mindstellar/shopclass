@@ -56,7 +56,7 @@ final class ListingReader
      */
     public function one(int $id, ViewContext $context): ?array
     {
-        $item = $this->row($id);
+        $item = $this->row($id, null, $context->locale());
 
         return $item === null ? null : $this->view($item, $context);
     }
@@ -66,11 +66,13 @@ final class ListingReader
      *
      * @param (callable(array<string,mixed>): ?array<string,mixed>)|null $keep checks the bare row first; null drops it before its texts are read
      *
+     * @param string|null $locale the language of the place names and texts; null is the current site locale
+     *
      * @return array<string,mixed>|null
      */
-    public function row(int $id, ?callable $keep = null): ?array
+    public function row(int $id, ?callable $keep = null, ?string $locale = null): ?array
     {
-        return $this->rows->find($id, OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale(), $keep);
+        return $this->rows->find($id, $locale ?? (OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale()), $keep);
     }
 
     /**

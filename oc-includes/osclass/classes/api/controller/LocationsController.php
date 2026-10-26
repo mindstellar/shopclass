@@ -20,7 +20,10 @@ use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
+use mindstellar\container\Container;
 use mindstellar\location\CountryCode;
+use mindstellar\location\LocationNames;
+use mindstellar\location\LocationNameStore;
 use mindstellar\location\LocationQuery;
 
 /**
@@ -72,6 +75,25 @@ final class LocationsController
     }
 
     /**
+     * The page's names in the requested language, falling back to the stored name. The page keeps
+     * the stored-name order its cursor follows. Areas have no translations.
+     *
+     * @param array<int,array<string,mixed>> $page
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function translated(array $page, string $shape, string $locale): array
+    {
+        $idKey = ['country' => 'pk_c_code', 'region' => 'pk_i_id', 'city' => 'pk_i_id'][$shape] ?? null;
+        $type  = ['country' => LocationNameStore::COUNTRY, 'region' => LocationNameStore::REGION, 'city' => LocationNameStore::CITY][$shape] ?? null;
+        if ($idKey === null || $type === null) {
+            return $page;
+        }
+
+        return Container::root()->get(LocationNames::class)->translateList($page, $type, $idKey, 's_name', $locale, false);
+    }
+
+    /**
      * One page of a list. The parent is looked up only when the page is empty, to tell an
      * unknown parent (404) from one with nothing in it.
      *
@@ -81,7 +103,8 @@ final class LocationsController
      */
     private function page(Request $request, string $path, string $shape, ?array $parent, callable $read): Response
     {
-        $pager = Pager::fromRequest($request, $this->api->cursor(), new ListSpec(['name'], 'name', 'asc', self::DEFAULT_LIMIT, self::MAX_LIMIT, maxOffset: 100000), $path);
+        $locale = $this->api->locale($request);
+        $pager  = Pager::fromRequest($request, $this->api->cursor(), new ListSpec(['name'], 'name', 'asc', self::DEFAULT_LIMIT, self::MAX_LIMIT, maxOffset: 100000), $path);
 
         return $pager->respond(
             function () use ($request, $pager, $parent, $read): array {
@@ -93,7 +116,7 @@ final class LocationsController
                 return $rows;
             },
             null,
-            fn (array $page): array => array_map([$this->serializer, $shape], $page),
+            fn (array $page): array => array_map([$this->serializer, $shape], $this->translated($page, $shape, $locale)),
             $this->api->links()
         );
     }

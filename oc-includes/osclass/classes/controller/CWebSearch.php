@@ -12,6 +12,10 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\container\Container;
+use mindstellar\location\LocationNames;
+use mindstellar\location\LocationNameStore;
+
 /**
  * Class CWebSearch
  */
@@ -223,12 +227,15 @@ class CWebSearch extends BaseModel
         $pageSize    = $criteria->pageSize();
         $iTotalItems = $result->total();
 
+        $names  = Container::root()->get(LocationNames::class);
+        $locale = osc_current_user_locale();
+
         $p_sCountry  = implode(', ', $criteria->countries());
         $countryName = $p_sCountry;
         if (strlen($p_sCountry) == 2) {
             $c = Country::getInstance()->findByCode($p_sCountry);
             if ($c) {
-                $countryName = $c['s_name'];
+                $countryName = $names->name(LocationNameStore::COUNTRY, $c['pk_c_code'], $locale, $c['s_name']);
             }
         }
         $p_sRegion  = implode(', ', $criteria->regions());
@@ -236,7 +243,7 @@ class CWebSearch extends BaseModel
         if (is_numeric($p_sRegion)) {
             $r = Region::getInstance()->findByPrimaryKey($p_sRegion);
             if ($r) {
-                $regionName = $r['s_name'];
+                $regionName = $names->name(LocationNameStore::REGION, $r['pk_i_id'], $locale, $r['s_name']);
             }
         }
         $p_sCity  = implode(', ', $criteria->cities());
@@ -244,7 +251,7 @@ class CWebSearch extends BaseModel
         if (is_numeric($p_sCity)) {
             $c = City::getInstance()->findByPrimaryKey($p_sCity);
             if ($c) {
-                $cityName = $c['s_name'];
+                $cityName = $names->name(LocationNameStore::CITY, $c['pk_i_id'], $locale, $c['s_name']);
             }
         }
 

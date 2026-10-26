@@ -73,7 +73,8 @@ final class PublicRoutes
         $listings = self::listingFilters();
         $byUser   = array_diff_key($listings, ['user' => true]);
         $places   = [
-            'q'      => ['type' => 'string', 'maxLength' => 100, 'description' => 'Names starting with this.'],
+            'q'      => ['type' => 'string', 'maxLength' => 100, 'description' => 'Names starting with this, in any language.'],
+            'locale' => self::LOCALE,
             'limit'  => ['type' => 'integer', 'minimum' => 1, 'maximum' => LocationsController::MAX_LIMIT],
             'cursor' => self::CURSOR,
         ];
