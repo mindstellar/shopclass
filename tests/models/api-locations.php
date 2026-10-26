@@ -272,5 +272,13 @@ seed_region($admin, $at, 'Beta');
 $store->set('region', (string) $alpha, 'de_DE', 'Zulu');
 harness_reset_container();
 pin('a page keeps the stored-name order its cursor follows', array('Zulu', 'Beta'), $names($get('countries/at/regions', array('locale' => 'de_DE'), $publicKey)));
+for ($i = 0; $i < 8; $i++) {
+    $store->set('region', (string) seed_region($admin, $at, 'Gamma ' . $i), 'de_DE', 'Gamma DE ' . $i);
+}
+$get('countries/at/regions', array('locale' => 'de_DE', 'limit' => '2'), $publicKey);
+harness_assert_no_n_plus_1('the regions list query count does not follow the page size', static function (int $n) use ($get, $publicKey): void {
+    harness_reset_container();
+    $get('countries/at/regions', array('locale' => 'de_DE', 'limit' => (string) $n), $publicKey);
+}, 2, 8);
 
 exit(harness_result());

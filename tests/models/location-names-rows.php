@@ -260,6 +260,13 @@ pin('?locale=de_DE gives the German names', array(200, 'Köln', 'Rheinland'), $c
 pin('no locale gives the stored names', array(200, 'Cologne', 'Rhineland'), $cityName($get('listings/' . $inCity)));
 pin('a free-text listing keeps its city in de_DE', 'Cologne', $get('listings/' . $free, array('locale' => 'de_DE'))->body()['data']['location']['city']['name'] ?? null);
 
+$get('listings', array('locale' => 'de_DE', 'limit' => '2'));
+harness_assert_no_n_plus_1('the listings list query count does not follow the page size', static function (int $n) use ($get): void {
+    harness_reset_container();
+    scratchdb_forget_cache();
+    $get('listings', array('locale' => 'de_DE', 'limit' => (string) $n));
+}, 2, 8);
+
 harness_section('Deletes clear the names');
 $city2 = seed_city($admin, $region, 'Bonn', $country);
 $store->set('city', $city2, 'de_DE', 'Bonn DE');
