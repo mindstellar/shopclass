@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only admins post and shoppers get a buyer account. Over the limit, a seller now saves the listing and pays on the last step.
 
 ### New
+- A theme can drop core's styles for its fallback pages and the comments block with `osc_add_theme_support('core-styles', false)`.
 - A refund the payment provider accepted but is still processing now shows as sent, not as an error, and the order changes to refunded when the provider finishes it. Gateways return `CallbackResult::refundPending()`.
 - The installer asks what kind of site (classifieds or shop) and offers sample data; the CLI takes `--site-type` and `--sample-data`. Shop installs the Aisle theme and the plugins you tick; sample photos are downloaded when online.
 - New category trees for classifieds and shop sites, for new installs only. Translations of the old category names do not carry over.

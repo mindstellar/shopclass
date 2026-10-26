@@ -95,6 +95,21 @@ Text colour and typography are deliberately **not** set on that path: the page
 inherits yours, so it reads as part of your theme rather than a panel dropped
 into it.
 
+## Styling core pages yourself
+
+Core styles its fallback pages and the comments block (`osc_show_item_comments()`)
+unless your theme says it will. To style the `.oe-*` classes in your own CSS and
+drop core's sheets:
+
+```php
+osc_add_theme_support('core-styles', false);
+```
+
+Core then prints neither sheet on a page rendered inside your chrome. Core's own
+standalone page, shown when a theme has no chrome, keeps its styles either way.
+`osc_core_styles_enabled()` tells you which applies. Older cores ignore the
+declaration and keep printing their styles.
+
 ## Theme supports in general
 
 `chrome` is one feature. The registry is generic:

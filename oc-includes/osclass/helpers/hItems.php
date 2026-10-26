@@ -1494,7 +1494,7 @@ function osc_show_item_comments()
     // The core page stylesheet is scoped .oe-page and this block renders inside a
     // theme's own page, so it carries its own defaults instead.
     static $styled = false;
-    if (!$styled) {
+    if (!$styled && osc_core_styles_enabled()) {
         $styled = true;
         require ABS_PATH . 'oc-includes/osclass/gui/item-comments-style.php';
     }

@@ -110,6 +110,18 @@ final class ThemeSupports
     }
 
     /**
+     * Whether $feature was declared at all, even with false as its arguments.
+     *
+     * @param string $feature
+     *
+     * @return bool
+     */
+    public function has(string $feature): bool
+    {
+        return array_key_exists($feature, $this->features);
+    }
+
+    /**
      * Drop a declaration, leaving the feature unsupported again.
      *
      * @param string $feature

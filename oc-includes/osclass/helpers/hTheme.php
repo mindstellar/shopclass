@@ -67,6 +67,22 @@ function osc_remove_theme_support(string $feature): void
 }
 
 /**
+ * Whether core prints its own styles for its fallback pages and the comments block.
+ *
+ * True unless the theme opted out with osc_add_theme_support('core-styles', false),
+ * so a theme that declares nothing keeps core's styles. Core's standalone page,
+ * shown when the theme has no chrome, keeps its styles either way.
+ *
+ * @return bool
+ */
+function osc_core_styles_enabled(): bool
+{
+    $supports = \mindstellar\theme\ThemeSupports::getInstance();
+
+    return !$supports->has('core-styles') || $supports->get('core-styles') !== false;
+}
+
+/**
  * Every view name that is spoken for: the ones core asks any theme for, plus the
  * ones the active theme declared with
  * osc_add_theme_support('views', array('user-wishlist', 'template-promo')).
@@ -442,11 +458,16 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
         // The sheet belongs in <head>, and every bundled theme runs this hook
         // there. The call after osc_get_header() covers a theme that does not:
         // print-once makes whichever ran second a no-op.
-        osc_add_hook('header', static function () use ($tone) {
-            osc_gui_print_style($tone);
-        });
+        $styled = osc_core_styles_enabled();
+        if ($styled) {
+            osc_add_hook('header', static function () use ($tone) {
+                osc_gui_print_style($tone);
+            });
+        }
         osc_get_header();
-        osc_gui_print_style($tone);
+        if ($styled) {
+            osc_gui_print_style($tone);
+        }
         echo '<div class="oe-page"><div class="oe-doc">';
         if ($heading !== '') {
             echo '<h1 class="oe-h1">' . osc_esc_html($heading) . '</h1>';

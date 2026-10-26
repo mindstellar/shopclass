@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1247 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1281,7 +1281,7 @@ Core defines 1247 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_register_storage_adapter($adapter)` | Register a storage adapter with the storage manager. |
 | `osc_storage_register_remote()` | Register the bundled S3-compatible adapter from saved preferences, when an install has filled in all four connection settings. Idempotent and cheap — it returns immediately once the adapter is registered for this request, and register() keys by id — so it is safe to call from the `init` hook, from the upload hooks, and before the worker runs. |
 
-### hTheme (39)
+### hTheme (40)
 
 `oc-includes/osclass/helpers/hTheme.php`
 
@@ -1291,6 +1291,7 @@ Core defines 1247 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_render_theme_url($file = '')` | Gets urls for current theme administrations options |
 | `osc_body_class($class = '', bool $echo = true)` | The &lt;body&gt; class attribute: `<body <?php osc_body_class(); ?>>`. |
 | `osc_body_class_list($class = '')` | What page this is, as a list of class tokens for &lt;body&gt;. |
+| `osc_core_styles_enabled()` | Whether core prints its own styles for its fallback pages and the comments block. |
 | `osc_enqueue_script($id)` | Enqueue script |
 | `osc_enqueue_script_code($code, $dependencies = null, $id = null)` | Enqueue a block of inline JavaScript into the footer, after the file scripts. The admin/front target is detected from the current request. |
 | `osc_enqueue_style($id, $url = null)` | Add style to be loaded If style is already registered only id is needed to enqueue style |
