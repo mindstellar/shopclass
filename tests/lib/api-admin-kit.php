@@ -251,5 +251,6 @@ function api_admin_schema_errors(string $schema, Response $r): array
     static $validator = null;
     $validator ??= new Validator(Schema::components());
 
-    return $validator->check(Schema::ref($schema), $r->body());
+    // An empty `names` is a stdClass in the body; the validator reads it as decoded JSON.
+    return $validator->check(Schema::ref($schema), json_decode((string) json_encode($r->body()), true));
 }

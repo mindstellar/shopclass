@@ -243,6 +243,10 @@ msgid_plural "A message can contain up to %d links."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/location/LocationService.php
+msgid "A name can have at most 100 characters"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminCategories.php
 msgid "A new category has been added"
 msgstr ""
@@ -4682,6 +4686,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/location/LocationService.php
 msgid "is not a country of this site"
+msgstr ""
+
+#: oc-includes/osclass/classes/location/LocationService.php
+msgid "is not a language of this site"
 msgstr ""
 
 #: oc-includes/osclass/classes/location/LocationService.php

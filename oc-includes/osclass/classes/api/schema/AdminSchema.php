@@ -36,7 +36,7 @@ final class AdminSchema
         'AdminComment', 'AdminCommentPatch', 'AdminCommentPage', 'AdminCommentDocument',
         'AdminUserPatch', 'UserPage',
         'AdminCategory', 'AdminCategoryInput', 'AdminCategoryPatch', 'AdminCategoryList', 'AdminCategoryDocument',
-        'RegionInput', 'RegionPatch', 'RegionDocument', 'CityInput', 'CityPatch', 'CityDocument',
+        'RegionInput', 'RegionPatch', 'AdminRegion', 'RegionDocument', 'CityInput', 'CityPatch', 'AdminCity', 'CityDocument',
         'CityAreaInput', 'CityAreaPatch', 'CityAreaDocument', 'CurrencyInput', 'CurrencyPatch', 'CurrencyDocument',
         'AdminCustomField', 'AdminCustomFieldInput', 'AdminCustomFieldPatch', 'AdminCustomFieldDocument',
         'Settings', 'SettingsPatch', 'SettingsDocument',
@@ -64,10 +64,16 @@ final class AdminSchema
         $page   = $list;
         $id     = ['type' => 'integer', 'minimum' => 1];
         $name   = $text(100, 1);
+        $names  = [
+            'type'                 => 'object',
+            'additionalProperties' => $text(100),
+            'description'          => 'Locale => name in that site language. A blank name deletes it; a language left out keeps its name.',
+        ];
         $places = static fn (string $parent, array $parentSchema): array => [
             $input([$parent => $parentSchema, 'name' => $name], [$parent, 'name']),
-            $input(['name' => $name, 'slug' => $text(255) + ['description' => 'Made from the name when empty or taken.']]),
+            $input(['name' => $name, 'slug' => $text(255) + ['description' => 'Made from the name when empty or taken.'], 'names' => $names]),
         ];
+        $namesOut = ['names' => ['type' => 'object', 'additionalProperties' => ['type' => 'string'], 'description' => 'Locale => saved name; {} when none.']];
 
         [$regionInput, $regionPatch] = $places('country', ['type' => 'string', 'pattern' => '^[A-Za-z]{2}$']);
         [$cityInput, $cityPatch]     = $places('region_id', $id);
@@ -189,10 +195,12 @@ final class AdminSchema
             'AdminCategoryDocument' => $doc('AdminCategory'),
             'RegionInput'           => $regionInput,
             'RegionPatch'           => $regionPatch,
-            'RegionDocument'        => $doc('Region'),
+            'AdminRegion'           => Schema::object(Schema::regionMembers() + $namesOut, ['id', 'country_code', 'name', 'slug', 'names']),
+            'RegionDocument'        => Schema::object(['data' => Schema::ref('AdminRegion')], ['data']),
             'CityInput'             => $cityInput,
             'CityPatch'             => $cityPatch,
-            'CityDocument'          => $doc('City'),
+            'AdminCity'             => Schema::object(Schema::cityMembers() + $namesOut, ['id', 'region_id', 'name', 'slug', 'names']),
+            'CityDocument'          => Schema::object(['data' => Schema::ref('AdminCity')], ['data']),
             'CityAreaInput'         => $input(['city_id' => $id, 'name' => $name], ['city_id', 'name']),
             'CityAreaPatch'         => $input(['name' => $name], ['name']),
             'CityAreaDocument'      => $doc('CityArea'),

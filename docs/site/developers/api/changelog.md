@@ -75,6 +75,13 @@ None.
 
 ## Changes
 
+### v1: location names on admin routes
+
+Added to v1 on 2026-10-26.
+
+- `PATCH /admin/regions/{id}` and `/admin/cities/{id}` take `names`: locale => name in a site language. A blank name deletes it, a language left out keeps its name, a language the site lacks is `422`.
+- `GET`, `POST` and `PATCH` on `/admin/regions` and `/admin/cities` answer with `names` (`{}` when none). Countries have no admin routes yet.
+
 ### v1: location names in the asked language
 
 Added to v1 on 2026-10-26.

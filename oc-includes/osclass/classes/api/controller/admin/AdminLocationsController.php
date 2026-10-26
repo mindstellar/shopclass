@@ -19,6 +19,7 @@ use mindstellar\api\ProblemException;
 use mindstellar\api\Response;
 use mindstellar\api\serializer\LocationSerializer;
 use mindstellar\exception\NotFoundException;
+use mindstellar\location\LocationNameStore;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
 
@@ -142,7 +143,8 @@ final class AdminLocationsController
         } else {
             $name = array_key_exists('name', $input) ? AdminText::clean($input['name']) : (string) $row['s_name'];
             $slug = array_key_exists('slug', $input) ? trim((string) $input['slug']) : (string) ($row['s_slug'] ?? '');
-            $level === LocationQuery::REGION ? $this->locations->editRegion($id, $name, $slug) : $this->locations->editCity($id, $name, $slug);
+            $names = array_key_exists('names', $input) ? array_map(AdminText::clean(...), (array) $input['names']) : null;
+            $level === LocationQuery::REGION ? $this->locations->editRegion($id, $name, $slug, $names) : $this->locations->editCity($id, $name, $slug, $names);
         }
 
         return Response::ok($this->serialize($level, $this->row($level, $id)));
@@ -163,10 +165,22 @@ final class AdminLocationsController
     private function serialize(string $level, array $row): array
     {
         return match ($level) {
-            LocationQuery::REGION => $this->serializer->region($row),
-            LocationQuery::CITY   => $this->serializer->city($row),
+            LocationQuery::REGION => $this->serializer->region($row) + $this->names(LocationNameStore::REGION, $row),
+            LocationQuery::CITY   => $this->serializer->city($row) + $this->names(LocationNameStore::CITY, $row),
             default               => $this->serializer->area($row),
         };
+    }
+
+    /**
+     * The saved names of a region or city: locale => name, an empty object when none.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array{names: object}
+     */
+    private function names(string $type, array $row): array
+    {
+        return ['names' => (object) (new LocationNameStore())->all($type, (int) $row['pk_i_id'])];
     }
 
     /**
