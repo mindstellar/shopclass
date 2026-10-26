@@ -119,6 +119,7 @@ class Scripts extends Dependencies
         // Core's scripts; their styles are registered in Styles::init(). Needs the helpers loaded.
         osc_register_script('tiny_mce', osc_asset_url_versioned(osc_assets_url('tinymce/tinymce.min.js')));
         osc_register_script('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.js')));
+        osc_register_script('osc-flash-dismiss', osc_asset_url_versioned(osc_assets_url('osclass/flash-dismiss.js')));
         osc_register_script('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.js')));
     }
 
