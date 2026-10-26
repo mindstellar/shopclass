@@ -24,6 +24,7 @@ $prefix = DB_TABLE_PREFIX;             // in raw SQL
 | `t_resource` | Uploaded files: listing photos (owner type `item`), avatars, page and settings images. Read listing photos with the `osc_*resource*` helpers. |
 | `t_category` / `t_category_description` | The category tree and its translations. |
 | `t_country`, `t_region`, `t_city` | [Location data](/docs/configure/locations/). |
+| `t_location_name` | Country, region and city names per language. Write it with `mindstellar\location\LocationNameStore`; read a name with `osc_location_name()`. |
 | `t_user` | Accounts, with `t_admin` for admin users. |
 | `t_preference` | Every setting, grouped by section: the row that decides how the site behaves. After writing it with raw SQL, call `osc_reset_preferences()`. |
 | `t_pages` | Static pages. |

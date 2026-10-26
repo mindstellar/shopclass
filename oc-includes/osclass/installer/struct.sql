@@ -119,6 +119,17 @@ CREATE TABLE /*TABLE_PREFIX*/t_city_area (
         FOREIGN KEY (fk_i_city_id) REFERENCES /*TABLE_PREFIX*/t_city (pk_i_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
+CREATE TABLE /*TABLE_PREFIX*/t_location_name (
+    e_place_type ENUM('country','region','city') NOT NULL,
+    s_place_id VARCHAR(12) NOT NULL,
+    fk_c_locale_code CHAR(5) NOT NULL,
+    s_name VARCHAR(100) NOT NULL,
+
+        PRIMARY KEY (e_place_type, s_place_id, fk_c_locale_code),
+        INDEX idx_type_name (e_place_type, s_name),
+        FOREIGN KEY (fk_c_locale_code) REFERENCES /*TABLE_PREFIX*/t_locale (pk_c_code) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
 CREATE TABLE /*TABLE_PREFIX*/t_widget (
     pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
     s_description VARCHAR(40) NOT NULL,
