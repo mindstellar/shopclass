@@ -301,7 +301,7 @@ class UserForm extends Form
         if (count($countries) > 1) {
             parent::generic_select(
                 'countryId',
-                $countries,
+                _osc_location_list($countries, 'country'),
                 'pk_c_code',
                 's_name',
                 __('Select a country...'),
@@ -344,7 +344,7 @@ class UserForm extends Form
         if (count($regions) >= 1) {
             parent::generic_select(
                 'regionId',
-                $regions,
+                _osc_location_list($regions, 'region'),
                 'pk_i_id',
                 's_name',
                 __('Select a region...'),
@@ -383,7 +383,7 @@ class UserForm extends Form
         if (count($cities) >= 1) {
             parent::generic_select(
                 'cityId',
-                $cities,
+                _osc_location_list($cities, 'city'),
                 'pk_i_id',
                 's_name',
                 __('Select a city...'),

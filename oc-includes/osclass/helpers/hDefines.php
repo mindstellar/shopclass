@@ -1089,10 +1089,10 @@ function osc_route_admin_ajax_url($id, $args = array())
 function osc_get_countries()
 {
     if (View::getInstance()->_exists('countries')) {
-        return View::getInstance()->_get('countries');
+        return _osc_location_list(View::getInstance()->_get('countries'), 'country');
     }
 
-    return _osc_location_translate(Country::getInstance()->listAll(), 'country', 'pk_c_code', 's_name');
+    return _osc_location_list(Country::getInstance()->listAll(), 'country');
 }
 
 /**
@@ -1105,14 +1105,14 @@ function osc_get_countries()
 function osc_get_regions($country = '')
 {
     if (View::getInstance()->_exists('regions')) {
-        return View::getInstance()->_get('regions');
+        return _osc_location_list(View::getInstance()->_get('regions'), 'region');
     }
 
     if ($country == '') {
-        return _osc_location_translate(Region::getInstance()->listAll(), 'region', 'pk_i_id', 's_name');
+        return _osc_location_list(Region::getInstance()->listAll(), 'region');
     }
 
-    return _osc_location_translate(Region::getInstance()->findByCountry($country), 'region', 'pk_i_id', 's_name');
+    return _osc_location_list(Region::getInstance()->findByCountry($country), 'region');
 }
 
 /**
@@ -1125,14 +1125,14 @@ function osc_get_regions($country = '')
 function osc_get_cities($region = '')
 {
     if (View::getInstance()->_exists('cities')) {
-        return View::getInstance()->_get('cities');
+        return _osc_location_list(View::getInstance()->_get('cities'), 'city');
     }
 
     if ($region == '') {
-        return _osc_location_translate(City::getInstance()->listAll(), 'city', 'pk_i_id', 's_name');
+        return _osc_location_list(City::getInstance()->listAll(), 'city');
     }
 
-    return _osc_location_translate(City::getInstance()->findByRegion((int) $region), 'city', 'pk_i_id', 's_name');
+    return _osc_location_list(City::getInstance()->findByRegion((int) $region), 'city');
 }
 
 /**

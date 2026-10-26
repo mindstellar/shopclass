@@ -95,6 +95,19 @@ function _osc_location_translate(mixed $rows, string $type, string $idKey, strin
 }
 
 /**
+ * A country, region or city table list (pk_c_code or pk_i_id, s_name) in the current locale's names.
+ *
+ * @param mixed  $rows a list of place rows; anything else is returned as it is
+ * @param string $type 'country', 'region' or 'city'
+ *
+ * @return mixed
+ */
+function _osc_location_list(mixed $rows, string $type): mixed
+{
+    return _osc_location_translate($rows, $type, $type === 'country' ? 'pk_c_code' : 'pk_i_id', 's_name');
+}
+
+/**
  * Iterator for countries, return null if there's no more countries
  *
  * @return bool

@@ -89,6 +89,11 @@ $q = harness_query_count(static function () use ($alpine): void {
 });
 pin('a 20-city list costs the list query plus one name query', 2, $q);
 
+$fresh();
+View::newInstance()->_exportVariableToView('regions', $plain);
+pin('a list a controller exported is translated too', ['Aachen', 'Alpine'], $shown(osc_get_regions('US'), 's_name'));
+View::newInstance()->_erase('regions');
+
 harness_section('osc_has_*');
 $locale('de_DE');
 $fresh();
