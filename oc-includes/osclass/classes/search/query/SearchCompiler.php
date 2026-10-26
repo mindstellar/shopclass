@@ -38,7 +38,7 @@ final class SearchCompiler
         $p             = DB_TABLE_PREFIX;
         $conditionsSql = $parts->plugin->conditionsSql($count);
         $extraFields   = $parts->plugin->fieldList();
-        $withLocations = $parts->locations->used() || $parts->radius->used();
+        $withLocations = $parts->locations->used() || $parts->radius->used() || $parts->box->used();
         $s             = $parts->newStatement();
 
         if ($parts->byItemId) {
@@ -92,6 +92,7 @@ final class SearchCompiler
             self::joinLocation($s);
             $parts->locations->apply($s);
             $parts->radius->apply($s, $count);
+            $parts->box->apply($s);
         }
         if ($parts->withPicture) {
             $s->where(\mindstellar\listing\PhotoStore::hasImageSql($p . 't_item.pk_i_id'));
@@ -153,7 +154,7 @@ final class SearchCompiler
         // The filters fire here too, as they always have, though the block uses neither.
         $parts->plugin->conditionsSql();
         $parts->plugin->fieldList();
-        $withLocations = $parts->locations->used() || $parts->radius->used();
+        $withLocations = $parts->locations->used() || $parts->radius->used() || $parts->box->used();
         $sub           = null;
 
         if ($parts->pattern->active()) {
@@ -180,6 +181,7 @@ final class SearchCompiler
             self::joinLocation($s);
             $parts->locations->apply($s);
             $parts->radius->apply($s, true);
+            $parts->box->apply($s);
         }
         $parts->categories->apply($s);
         if ($sub !== null) {
