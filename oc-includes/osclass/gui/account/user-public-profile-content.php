@@ -48,18 +48,19 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
                 echo osc_esc_html(osc_user_website()); ?></a>
         <?php } ?>
     </p>
-    <div class="oe-actions">
-        <?php if ($publicOwn) { ?>
-            <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html(osc_user_profile_url()); ?>"><?php
-                echo osc_esc_html(_m('Edit your profile')); ?></a>
-        <?php } elseif ($contactOpen) { ?>
-            <a class="oe-btn oe-btn--primary oe-contact-open" href="#oe-contact-dialog" data-osc-dialog-open="oe-contact-dialog"><?php
-                printf(osc_esc_html(_m('Message %s')), osc_esc_html(osc_user_name())); ?></a>
-        <?php } else { ?>
-            <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html(osc_user_login_url()); ?>"><?php
-                echo osc_esc_html(_m('Sign in to message')); ?></a>
-        <?php } ?>
-    </div>
+    <?php if ($publicOwn) {
+        $publicAction = array('label' => _m('Edit your profile'), 'href' => osc_user_profile_url(), 'style' => 'secondary');
+    } elseif ($contactOpen) {
+        $publicAction = array(
+            'label' => sprintf(_m('Message %s'), osc_user_name()),
+            'href'  => '#oe-contact-dialog',
+            'class' => 'oe-contact-open',
+            'attrs' => array('data-osc-dialog-open' => 'oe-contact-dialog'),
+        );
+    } else {
+        $publicAction = array('label' => _m('Sign in to message'), 'href' => osc_user_login_url(), 'style' => 'secondary');
+    }
+    osc_gui_actions(array($publicAction)); ?>
 </div>
 
 <?php if ($publicInfo !== '') { ?>
@@ -67,7 +68,9 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
     // "About you" is stored exactly as the account holder typed it, so it is
     // escaped here and its line breaks put back.
     ?>
-    <div class="oe-panel"><?php echo nl2br(osc_esc_html($publicInfo)); ?></div>
+    <?php osc_gui_panel_open('', '', '', 'div');
+    echo nl2br(osc_esc_html($publicInfo));
+    osc_gui_panel_close('div'); ?>
 <?php } ?>
 
 <h2><?php echo osc_esc_html(_m('Listings')); ?></h2>

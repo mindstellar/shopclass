@@ -111,15 +111,14 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
             <fieldset class="oe-group" data-location-cascade>
                 <legend><?php echo osc_esc_html(_m('Location')); ?></legend>
                 <div class="oe-grid">
-                    <div class="oe-field">
-                        <label class="oe-label" for="countryId"><?php echo osc_esc_html(_m('Country')); ?></label>
-                        <?php UserForm::country_select(osc_get_countries(), $profileUser); ?>
+                    <?php osc_gui_field('countryId', _m('Country'), static function () use ($profileUser): void {
+                        UserForm::country_select(osc_get_countries(), $profileUser); ?>
                         <noscript>
                             <span class="oe-hint"><?php echo osc_esc_html(
                                 _m('Choose a country and save; the regions for it load on the next screen.')
                             ); ?></span>
                         </noscript>
-                    </div>
+                    <?php }); ?>
                     <?php // With no country or region chosen these helpers list every row in the table.
                     osc_gui_field(osc_user_field('fk_c_country_code') ? 'regionId' : 'region', _m('Region'), static function () use ($profileUser): void {
                         UserForm::region_select(osc_user_field('fk_c_country_code') ? osc_get_regions(osc_user_field('fk_c_country_code')) : array(), $profileUser);
