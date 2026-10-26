@@ -15,9 +15,12 @@ declare(strict_types=1);
 
 namespace mindstellar\search\query;
 
+use mindstellar\location\LocationNameStore;
+
 /**
  * City area, city, region and country filters on t_item_location. A number is an id,
- * text is matched with LIKE; a two-letter country is a country code.
+ * text is matched with LIKE; a two-letter country is a country code. A city, region or
+ * country name also matches the places that carry that name in any language.
  *
  * Each value is kept twice: as the SQL text toJson() has always shown, and as a
  * condition with the value bound.
@@ -26,11 +29,18 @@ final class LocationFilter
 {
     public const LEVELS = array('city_areas', 'cities', 'regions', 'countries');
 
-    /** @var array<string,array<int,array{text:string,sql:string,param:mixed,by:string}>> */
+    /** @var array<string,array<int,array{text:string,sql:string,param:mixed,by:string,ids?:array<int,int|string>}>> */
     private array $entries = array('city_areas' => array(), 'cities' => array(), 'regions' => array(), 'countries' => array());
 
     /** Set once any location was asked for; the join then stays, as it always did. */
     private bool $used = false;
+
+    private readonly LocationNameStore $names;
+
+    public function __construct(?LocationNameStore $names = null)
+    {
+        $this->names = $names ?? new LocationNameStore();
+    }
 
     /**
      * @param mixed $value
@@ -39,7 +49,7 @@ final class LocationFilter
      */
     public function addCityArea($value): void
     {
-        $this->addEach($value, 'city_areas', 'fk_i_city_area_id', 's_city_area');
+        $this->addEach($value, 'city_areas', 'fk_i_city_area_id', 's_city_area', null);
     }
 
     /**
@@ -49,7 +59,7 @@ final class LocationFilter
      */
     public function addCity($value): void
     {
-        $this->addEach($value, 'cities', 'fk_i_city_id', 's_city');
+        $this->addEach($value, 'cities', 'fk_i_city_id', 's_city', LocationNameStore::CITY);
     }
 
     /**
@@ -59,7 +69,7 @@ final class LocationFilter
      */
     public function addRegion($value): void
     {
-        $this->addEach($value, 'regions', 'fk_i_region_id', 's_region');
+        $this->addEach($value, 'regions', 'fk_i_region_id', 's_region', LocationNameStore::REGION);
     }
 
     /**
@@ -83,12 +93,8 @@ final class LocationFilter
                     'by'    => 'code',
                 );
             } else {
-                $this->entries['countries'][] = array(
-                    'text'  => sprintf('%ss_country LIKE %s ', $column, SqlValue::literal($country)),
-                    'sql'   => $column . 's_country LIKE ? ',
-                    'param' => SqlValue::bind($country),
-                    'by'    => 'name',
-                );
+                $codes = $this->names->idsNamed(LocationNameStore::COUNTRY, $country);
+                $this->entries['countries'][] = $this->byName($column, 's_country', 'fk_c_country_code', SqlValue::bind($country), $codes);
             }
         }
     }
@@ -161,23 +167,29 @@ final class LocationFilter
     {
         foreach (self::LEVELS as $level) {
             if ($this->entries[$level] !== array()) {
+                $params = array();
+                foreach ($this->entries[$level] as $entry) {
+                    $params[] = $entry['param'];
+                    array_push($params, ...($entry['ids'] ?? array()));
+                }
                 $statement->where(
                     '( ' . implode(' || ', array_column($this->entries[$level], 'sql')) . ' )',
-                    array_column($this->entries[$level], 'param')
+                    $params
                 );
             }
         }
     }
 
     /**
-     * @param mixed  $value    one value or a list
-     * @param string $level
-     * @param string $idColumn
-     * @param string $nameColumn
+     * @param mixed       $value      one value or a list
+     * @param string      $level
+     * @param string      $idColumn
+     * @param string      $nameColumn
+     * @param string|null $type       the place type whose names in other languages also match
      *
      * @return void
      */
-    private function addEach($value, string $level, string $idColumn, string $nameColumn): void
+    private function addEach($value, string $level, string $idColumn, string $nameColumn, ?string $type): void
     {
         $column = DB_TABLE_PREFIX . 't_item_location.';
         foreach (is_array($value) ? $value : array($value) as $one) {
@@ -194,13 +206,36 @@ final class LocationFilter
                     'by'    => 'id',
                 );
             } else {
-                $this->entries[$level][] = array(
-                    'text'  => sprintf('%s%s LIKE %s ', $column, $nameColumn, SqlValue::literal($one)),
-                    'sql'   => $column . $nameColumn . ' LIKE ? ',
-                    'param' => $one,
-                    'by'    => 'name',
-                );
+                $ids = $type === null ? array() : array_map('intval', $this->names->idsNamed($type, $one));
+                $this->entries[$level][] = $this->byName($column, $nameColumn, $idColumn, $one, $ids);
             }
         }
+    }
+
+    /**
+     * A name matched with LIKE on the stored copy, or, when places carry that name in
+     * another language, on their ids too. The ids are part of the recorded text.
+     *
+     * @param mixed                 $name
+     * @param array<int,int|string> $ids
+     *
+     * @return array{text:string,sql:string,param:mixed,by:string,ids?:array<int,int|string>}
+     */
+    private function byName(string $column, string $nameColumn, string $idColumn, $name, array $ids): array
+    {
+        $text = sprintf('%s%s LIKE %s ', $column, $nameColumn, SqlValue::literal($name));
+        $sql  = $column . $nameColumn . ' LIKE ? ';
+        if ($ids === array()) {
+            return array('text' => $text, 'sql' => $sql, 'param' => $name, 'by' => 'name');
+        }
+        $literals = implode(', ', array_map(static fn ($id) => is_int($id) ? (string) $id : (string) SqlValue::literal($id), $ids));
+
+        return array(
+            'text'  => sprintf('( %sOR %s%s IN (%s) ) ', $text, $column, $idColumn, $literals),
+            'sql'   => '( ' . $sql . 'OR ' . $column . $idColumn . ' IN (' . implode(', ', array_fill(0, count($ids), '?')) . ') ) ',
+            'param' => $name,
+            'by'    => 'name',
+            'ids'   => $ids,
+        );
     }
 }
