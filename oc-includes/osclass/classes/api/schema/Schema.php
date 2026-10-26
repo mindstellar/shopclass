@@ -21,6 +21,7 @@ use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\WishlistService;
 use mindstellar\location\CountryCode;
+use mindstellar\search\query\BoxFilter;
 use mindstellar\user\AccountService;
 use mindstellar\user\AddressBook;
 use mindstellar\user\UserStatus;
@@ -736,7 +737,7 @@ final class Schema
                 'price_max'   => ['type' => 'integer', 'minimum' => 0],
                 'with_photos' => ['type' => 'boolean'],
                 'premium'     => ['type' => 'boolean'],
-                'bbox'        => $text(100) + ['description' => 'west,south,east,north, as GET /listings takes it.'],
+                'bbox'        => $text(BoxFilter::MAX_LENGTH) + ['description' => 'west,south,east,north, as GET /listings takes it.'],
                 'custom_field' => ['type' => 'object', 'additionalProperties' => ['type' => ['string', 'integer', 'object']]],
             ]),
             'Alert'        => self::object([

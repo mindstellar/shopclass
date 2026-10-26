@@ -21,6 +21,9 @@ final class BoxFilter
     /** Decimals a box edge keeps: about 11 m. */
     public const DECIMALS = 4;
 
+    /** Longest bbox text taken, in bytes. */
+    public const MAX_LENGTH = 100;
+
     /** @var array{0:float,1:float,2:float,3:float}|null west, south, east, north */
     private ?array $box = null;
 
@@ -80,7 +83,7 @@ final class BoxFilter
      */
     public static function parse(mixed $value): ?array
     {
-        if (!is_string($value) || $value === '' || strlen($value) > 100) {
+        if (!is_string($value) || $value === '' || strlen($value) > self::MAX_LENGTH) {
             return null;
         }
         $parts = explode(',', $value);
