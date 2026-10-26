@@ -7,7 +7,9 @@ sidebar:
 
 Distance search lets visitors find listings within a distance of a city or of where they
 are. Site owners switch it on in **Settings → General**. When it is off, none of this
-shows and the fields below are ignored.
+shows and the search page ignores the fields below. The
+[REST API](/docs/developers/api/#search-listings) answers `422` instead, for a bad `bbox`
+too.
 
 ## The form fields
 
@@ -30,7 +32,7 @@ as the area a map shows. Longitudes run from -180 to 180 and latitudes from -90 
 south must not be above north. West above east means the box crosses the date line.
 Each edge is rounded to four decimals.
 
-A `bbox` that is not a valid box is ignored. With `iRadius` both apply, and so do the
+On the search page, a `bbox` that is not a valid box is ignored. With `iRadius` both apply, and so do the
 place filters. Search URLs and pagination keep it, the canonical URL drops it, and a
 saved search keeps it.
 
