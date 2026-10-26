@@ -434,7 +434,6 @@ _aux_search_find($city, 13);
 _aux_search_find($city, 13);
 pin('on the command line nothing is remembered by default', array('City:13', 'City:13'), $GLOBALS['__finds']);
 
-
 harness_section('a map area stays in the search URL');
 
 pin('plain URL', 'http://example.com/index.php?page=search&sCategory=54&bbox=72.8,18.9,73.1,19.3', searchUrl(array('sCategory' => '54', 'bbox' => '72.8,18.9,73.1,19.3')));
