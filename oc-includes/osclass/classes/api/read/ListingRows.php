@@ -13,7 +13,9 @@ declare(strict_types=1);
 namespace mindstellar\api\read;
 
 use mindstellar\cache\CacheGroup;
+use mindstellar\container\Container;
 use mindstellar\listing\ListingQuery;
+use mindstellar\location\LocationNames;
 use mindstellar\utility\Utils;
 
 /**
@@ -184,6 +186,8 @@ final class ListingRows
         foreach ($this->listings->statsAndLocations($ids) as $extra) {
             $more[(int) $extra['fk_i_item_id']] = $extra;
         }
+
+        $more = Container::root()->get(LocationNames::class)->translateRows($more, $locale);
 
         $out = [];
         foreach ($rows as $row) {
