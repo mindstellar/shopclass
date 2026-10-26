@@ -18,7 +18,7 @@ use mindstellar\database\QueryBuilder;
 /**
  * Location reads straight from their tables: countries, a country's active regions, a
  * region's active cities and a city's areas, by name with an optional name prefix, and one
- * place by id.
+ * place by id. A prefix also matches a name saved in any language.
  */
 final class LocationQuery
 {
@@ -226,9 +226,21 @@ final class LocationQuery
      */
     private function list(string $level, QueryBuilder $query, string $prefix, int $limit, int $offset): array
     {
-        $query = $query->orderBy('s_name')->orderBy(self::LEVELS[$level][1]);
+        $key   = self::LEVELS[$level][1];
+        $query = $query->orderBy('s_name')->orderBy($key);
         if ($prefix !== '') {
-            $query = $query->like('s_name', $prefix, 'after');
+            $named   = $level === self::AREA ? [] : (new LocationNameStore())->idsStartingWith($level, $prefix);
+            $pattern = QueryBuilder::escapeLike($prefix) . '%';
+            if ($named === []) {
+                $query = $query->like('s_name', $prefix, 'after');
+            } else {
+                $marks = implode(',', array_fill(0, count($named), '?'));
+                $query = $query->whereGroup(
+                    static fn (QueryBuilder $q): QueryBuilder => $q
+                        ->whereRaw('s_name LIKE ?', [$pattern])
+                        ->orWhereRaw($key . ' IN (' . $marks . ')', $named)
+                );
+            }
         }
 
         return Db::stringifyRows($query->limit($limit)->offset($offset)->get());

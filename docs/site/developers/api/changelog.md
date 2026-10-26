@@ -75,6 +75,12 @@ None.
 
 ## Changes
 
+### v1: location names in the asked language
+
+Added to v1 on 2026-10-26.
+
+- `GET /countries`, `/countries/{code}/regions`, `/regions/{id}/cities` take `locale`: `name` is in that language when one is saved, else the stored name. `q` also matches a name in any language.
+
 ### v1: map area
 
 Added to v1 on 2026-10-26.

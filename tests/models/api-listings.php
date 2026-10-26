@@ -334,6 +334,7 @@ pin('fields of a category', array('colour'), array_column($get('custom-fields', 
 pin('fields of an unknown category is 422', 422, $get('custom-fields', array('category' => 'nosuch'), $publicKey)->status());
 pin('fields= trims a category', array('id', 'slug'), array_keys($get('categories/cars', array('fields' => 'slug'), $publicKey)->body()['data']));
 
+harness_reset_container();
 harness_section('locations');
 pin('the country list has code, name and slug', array(array('code' => 'US', 'name' => 'United States', 'slug' => 'us')), $get('countries', array(), $publicKey)->body()['data']);
 pin('a country\'s regions', array('Alpha'), array_column($get('countries/us/regions', array(), $publicKey)->body()['data'], 'name'));

@@ -40784,10 +40784,19 @@
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "description": "Names starting with this.",
+                        "description": "Names starting with this, in any language.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
                         }
                     },
                     {
@@ -41798,10 +41807,19 @@
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "description": "Names starting with this.",
+                        "description": "Names starting with this, in any language.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
                         }
                     },
                     {
@@ -42121,10 +42139,19 @@
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "description": "Names starting with this.",
+                        "description": "Names starting with this, in any language.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
                         }
                     },
                     {
@@ -50074,10 +50101,19 @@
                         "name": "q",
                         "in": "query",
                         "required": false,
-                        "description": "Names starting with this.",
+                        "description": "Names starting with this, in any language.",
                         "schema": {
                             "type": "string",
                             "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
                         }
                     },
                     {
