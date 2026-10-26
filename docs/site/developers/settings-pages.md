@@ -35,6 +35,10 @@ Register it while your plugin loads. A theme registers from `functions.php` on
 the `init` hook, once translations are ready. Its menu entry is added at the
 same time.
 
+If core refuses your declaration, it leaves that page out, logs the error and
+shows the admin a notice naming your plugin or theme; the rest of the site
+keeps working.
+
 That is the whole page. It:
 
 - appears under **Plugins**

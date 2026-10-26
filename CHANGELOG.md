@@ -99,6 +99,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - One listing's rating summary and stars come from one query.
 
 ### Fixed
+- A plugin or theme settings page core refuses is left out with an admin notice and a log line, instead of taking the whole site down.
 - The API main menu no longer links a top category to a subcategory that has the same slug.
 - After-commit callbacks queued behind one that ends the request now run at shutdown.
 - Two first upgrade grants for one listing no longer deadlock and lose one.
