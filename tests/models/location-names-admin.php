@@ -101,6 +101,19 @@ pin('a 100-character name is stored', 100, mb_strlen($store->all('region', $regi
 pin('spaces around a 100-character name do not count', null, $refused(static fn () => $service->editRegion($region, 'Bayern State', '', ['de_DE' => ' ' . str_repeat('a', 100) . ' '])));
 pin('...and it is stored trimmed', str_repeat('a', 100), $store->all('region', $region)['de_DE']);
 
+$before = $store->all('region', $region);
+$admin->query("CREATE TRIGGER {$p}fail_location_name BEFORE INSERT ON {$p}t_location_name FOR EACH ROW BEGIN IF NEW.s_name = 'Fail here' THEN SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'test failure'; END IF; END");
+$failed = false;
+try {
+    $service->editRegion($region, 'Renamed', '', ['de_DE' => 'Neu', 'en_US' => 'Fail here']);
+} catch (Throwable $e) {
+    $failed = true;
+}
+$admin->query("DROP TRIGGER {$p}fail_location_name");
+pin('a write that fails after another name is saved throws', true, $failed);
+pin('...and rolls that name back', $before, $store->all('region', $region));
+pin('...and the rename', 'Bayern State', $regionName());
+
 harness_section('countries and cities');
 $service->editCountry('DE', 'Germany', '', ['de_DE' => 'Deutschland']);
 pin('a country name is stored under its lower-case code', ['de_DE' => 'Deutschland'], $store->all('country', 'de'));
