@@ -373,43 +373,6 @@ final class SettingsPageRegistry extends Registry
     }
 
     /**
-     * Which plugin or theme a file belongs to: array(kind, folder), or null for core.
-     * Core is any file inside the install but outside oc-content/; a file elsewhere (a
-     * symlinked plugin) is matched against the plugin and theme folders.
-     *
-     * @param string $file
-     *
-     * @return array{0:string,1:string}|null
-     */
-    public static function owner(string $file): ?array
-    {
-        $real = realpath($file) ?: $file;
-        $dirs = array(
-            'plugin' => defined('PLUGINS_PATH') ? PLUGINS_PATH : '',
-            'theme'  => defined('THEMES_PATH') ? THEMES_PATH : '',
-        );
-        foreach ($dirs as $kind => $dir) {
-            if ($dir === '' || !is_dir($dir)) {
-                continue;
-            }
-            foreach (glob(rtrim($dir, '/') . '/*', GLOB_ONLYDIR) ?: array() as $folder) {
-                foreach (array($folder, realpath($folder) ?: $folder) as $root) {
-                    if (str_starts_with($file, $root . '/') || str_starts_with($real, $root . '/')) {
-                        return array($kind, basename($folder));
-                    }
-                }
-            }
-        }
-
-        $abs = defined('ABS_PATH') ? rtrim(realpath(ABS_PATH) ?: ABS_PATH, '/') . '/' : '';
-        if ($abs !== '' && str_starts_with($real, $abs) && !str_starts_with($real, $abs . 'oc-content/')) {
-            return null;
-        }
-
-        return array('plugin', basename(dirname($real)));
-    }
-
-    /**
      * Pages left out because their declaration was refused, keyed by id.
      *
      * @return array<string,array{owner:string,kind:string,error:string}>

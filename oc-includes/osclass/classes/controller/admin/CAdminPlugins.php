@@ -262,7 +262,7 @@ class CAdminPlugins extends AdminSecBaseModel
         $resolved = PluginAjaxFile::resolve($file, osc_plugins_path());
         if ($resolved !== null) {
             $this->_exportVariableToView('file', $resolved);
-            $this->doView('plugins/view.php');
+            Plugins::runAs('plugin', Plugins::slug($file), fn () => $this->doView('plugins/view.php'));
         }
     }
 

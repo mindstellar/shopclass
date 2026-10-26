@@ -24,6 +24,10 @@ class Plugins
     private static $hooks;
     private static $installed;
     private static $enabled;
+    /** @var list<array{0:string,1:string}> */
+    private static array $owners = array();
+    /** @var array<string,array<int,array<int|string,array{0:string,1:string}>>> */
+    private static array $hookOwners = array();
 
     /**
      * Nothing to set up; every member of this class is static.
@@ -45,13 +49,23 @@ class Plugins
     {
         if (isset(self::$hooks[$hook])) {
             self::$used_hooks[$hook] = true;
-            foreach (self::$hooks[$hook] as $bucket) {
+            foreach (self::$hooks[$hook] as $priority => $bucket) {
                 if (!is_array($bucket)) {
                     continue;
                 }
-                foreach ($bucket as $fxName) {
+                foreach ($bucket as $k => $fxName) {
                     if (is_callable($fxName)) {
-                        $content = $fxName($content, ...$args);
+                        $owner = self::$hookOwners[$hook][$priority][$k] ?? null;
+                        if ($owner === null) {
+                            $content = $fxName($content, ...$args);
+                        } else {
+                            self::$owners[] = $owner;
+                            try {
+                                $content = $fxName($content, ...$args);
+                            } finally {
+                                array_pop(self::$owners);
+                            }
+                        }
                     } else {
                         trigger_error('Unknown filter ' . $fxName, E_USER_WARNING);
                     }
@@ -395,6 +409,10 @@ class Plugins
         }
         if (!$found_plugin) {
             self::$hooks[$hook][$priority][] = $function;
+            $owner = self::currentOwner();
+            if ($owner !== null) {
+                self::$hookOwners[$hook][$priority][array_key_last(self::$hooks[$hook][$priority])] = $owner;
+            }
             // Sorted here, once per registration, so firing a hook never sorts.
             ksort(self::$hooks[$hook], SORT_NUMERIC);
         }
@@ -423,7 +441,7 @@ class Plugins
         }
 
         try {
-            include_once PLUGINS_PATH . $path;
+            self::includeAs('plugin', self::slug($path), PLUGINS_PATH . $path);
 
             self::runHook('install_' . $path);
         } catch (Throwable $e) {
@@ -482,13 +500,23 @@ class Plugins
     {
         if (isset(self::$hooks[$hook])) {
             self::$used_hooks[$hook] = true;
-            foreach (self::$hooks[$hook] as $bucket) {
+            foreach (self::$hooks[$hook] as $priority => $bucket) {
                 if (!is_array($bucket)) {
                     continue;
                 }
-                foreach ($bucket as $fxName) {
+                foreach ($bucket as $k => $fxName) {
                     if (is_callable($fxName)) {
-                        $fxName(...$args);
+                        $owner = self::$hookOwners[$hook][$priority][$k] ?? null;
+                        if ($owner === null) {
+                            $fxName(...$args);
+                        } else {
+                            self::$owners[] = $owner;
+                            try {
+                                $fxName(...$args);
+                            } finally {
+                                array_pop(self::$owners);
+                            }
+                        }
                     } else {
                         trigger_error('Invalid callable ' . $fxName . ' on hook ' . $hook, E_USER_WARNING);
                     }
@@ -562,11 +590,55 @@ class Plugins
             foreach ($plugins_list as $plugin_name) {
                 $pluginPath = PLUGINS_PATH . $plugin_name;
                 if (file_exists($pluginPath)) {
-                    //This should include the file and adds the hooks
-                    include_once $pluginPath;
+                    self::includeAs('plugin', self::slug($plugin_name), $pluginPath);
                 }
             }
         }
+    }
+
+    /**
+     * The plugin or theme whose code is running, as array(kind, slug) with kind 'plugin' or
+     * 'theme'; null for core. Set while its entry file is included and while a hook callback it
+     * added runs, so the slug is the folder name core loaded it by, symlink or not.
+     *
+     * @return array{0:string,1:string}|null
+     */
+    public static function currentOwner(): ?array
+    {
+        return self::$owners === array() ? null : self::$owners[array_key_last(self::$owners)];
+    }
+
+    /**
+     * Run $fn as code of the plugin or theme $slug. Nests: the previous owner is back afterwards.
+     *
+     * @return mixed what $fn returns
+     */
+    public static function runAs(string $kind, string $slug, callable $fn)
+    {
+        self::$owners[] = array($kind, $slug);
+        try {
+            return $fn();
+        } finally {
+            array_pop(self::$owners);
+        }
+    }
+
+    /**
+     * include_once $file as code of the plugin or theme $slug.
+     */
+    public static function includeAs(string $kind, string $slug, string $file): void
+    {
+        self::runAs($kind, $slug, static function () use ($file): void {
+            include_once $file;
+        });
+    }
+
+    /**
+     * The plugin folder in a 'dir/index.php' path.
+     */
+    public static function slug(string $path): string
+    {
+        return explode('/', ltrim(str_replace('\\', '/', $path), '/'), 2)[0];
     }
 
     /**
@@ -669,7 +741,7 @@ class Plugins
             return false;
         }
 
-        include_once PLUGINS_PATH . $path;
+        self::includeAs('plugin', self::slug($path), PLUGINS_PATH . $path);
 
         self::deactivate($path);
         /* if( !self::deactivate($path) ) {
@@ -860,7 +932,7 @@ class Plugins
         foreach (self::$hooks[$hook] as $priority => $bucket) {
             foreach ($bucket as $k => $v) {
                 if ($v == $function) {
-                    unset(self::$hooks[$hook][$priority][$k]);
+                    unset(self::$hooks[$hook][$priority][$k], self::$hookOwners[$hook][$priority][$k]);
                 }
             }
         }
@@ -875,7 +947,7 @@ class Plugins
     public static function detach(string $hook): array
     {
         $callbacks = self::$hooks[$hook] ?? array();
-        unset(self::$hooks[$hook]);
+        unset(self::$hooks[$hook], self::$hookOwners[$hook]);
 
         return $callbacks;
     }

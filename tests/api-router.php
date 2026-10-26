@@ -367,6 +367,33 @@ osc_api_register_route('GET', '/ext/acme/hello/', $none + ['plugin' => 'acme']);
 $logged = [];
 $built  = Router::build($validator, $core, $log);
 pin('osc_api_register_route() adds through the api_routes filter', 'GET ext/acme/hello', $built->match('GET', 'ext/acme/hello')->route()->key());
+$saved = Plugins::detach('api_routes');
+$tmp   = sys_get_temp_dir() . '/osc-route-owner-' . getmypid();
+@mkdir($tmp . '/elsewhere/real-name', 0777, true);
+@mkdir($tmp . '/plugins', 0777, true);
+@mkdir($tmp . '/content', 0777, true);
+file_put_contents($tmp . '/elsewhere/real-name/index.php', "<?php osc_api_register_route('GET', 'ext/linkname/x', ['handler' => 'strlen', 'auth' => 'none']);");
+file_put_contents($tmp . '/content/stray.php', "<?php osc_api_register_route('GET', 'ext/stray/x', ['handler' => 'strlen', 'auth' => 'none']);");
+symlink($tmp . '/elsewhere/real-name', $tmp . '/plugins/linkname');
+Plugins::includeAs('plugin', 'linkname', $tmp . '/plugins/linkname/index.php');
+Plugins::runAs('theme', 'acmetheme', static fn () => osc_api_register_route('GET', 'ext/acmetheme/x', $none));
+include $tmp . '/content/stray.php';
+osc_api_register_route('GET', 'ext/coreside/x', $none);
+$tagged = osc_apply_filter('api_routes', []);
+exec('rm -rf ' . escapeshellarg($tmp));
+pin('a symlinked plugin\'s route is tagged with the folder core loaded it by', 'linkname', $tagged['GET ext/linkname/x']['plugin'] ?? null);
+pin('a theme\'s route is tagged with the theme', 'acmetheme', $tagged['GET ext/acmetheme/x']['plugin'] ?? null);
+pin('a file core did not load as a plugin tags nothing', false, isset($tagged['GET ext/stray/x']['plugin']));
+pin('a core caller tags nothing', false, isset($tagged['GET ext/coreside/x']['plugin']));
+$logged = [];
+pin('...so its ext/ route is refused', null, Router::build($validator, $core, $log)->match('GET', 'ext/coreside/x'));
+check('a tagged route is served', Router::build($validator, $core, $log)->match('GET', 'ext/linkname/x') !== null);
+Plugins::detach('api_routes');
+foreach ($saved as $priority => $callbacks) {
+    foreach ($callbacks as $callback) {
+        Plugins::addHook('api_routes', $callback, $priority);
+    }
+}
 $built = api_with_filter('api_routes', static function (array $routes): array {
     unset($routes['GET ext/acme/hello']);
 

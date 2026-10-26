@@ -54,16 +54,7 @@ if (!function_exists('osc_register_settings_page')) {
         try {
             SettingsPageRegistry::getInstance()->register($id, $spec);
         } catch (InvalidArgumentException $e) {
-            // The caller is the first frame past this helper and the form builder.
-            $caller = '';
-            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
-                $file = $frame['file'] ?? '';
-                if ($file !== '' && $file !== __FILE__ && basename($file) !== 'FormSpec.php') {
-                    $caller = $file;
-                    break;
-                }
-            }
-            $owner = SettingsPageRegistry::owner($caller);
+            $owner = Plugins::currentOwner();
             if ($owner === null) {
                 throw $e;
             }
