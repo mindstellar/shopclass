@@ -13344,10 +13344,22 @@ msgid ""
 "allowed "
 msgstr ""
 
+#: oc-includes/osclass/helpers/hSettings.php
+msgid ""
+"The %1$s plugin has a settings page Shopclass cannot load, so it is left "
+"out: %2$s. Update or deactivate the plugin."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
 "The %1$s setting is %2$d characters, but its column holds %3$d. Strict SQL "
 "mode refuses the longer values."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hSettings.php
+msgid ""
+"The %1$s theme has a settings page Shopclass cannot load, so it is left "
+"out: %2$s. Update the theme or switch to another one."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php

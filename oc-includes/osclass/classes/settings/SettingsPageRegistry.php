@@ -102,6 +102,9 @@ final class SettingsPageRegistry extends Registry
     /** @var array<string,int> ids a second registration tried to claim */
     private array $conflicts = array();
 
+    /** @var array<string,array{owner:string,kind:string,error:string}> pages left out, keyed by id */
+    private array $refused = array();
+
     /** Whether admin_menu_init has already placed the declared pages in the menu. */
     private bool $menuReady = false;
 
@@ -354,6 +357,66 @@ final class SettingsPageRegistry extends Registry
     public function conflicts(): array
     {
         return $this->conflicts;
+    }
+
+    /**
+     * Record a plugin or theme page that register() refused, so the admin can be told.
+     *
+     * @param string $id    Page id the declaration asked for.
+     * @param string $owner Plugin or theme folder name.
+     * @param string $kind  'plugin' or 'theme'.
+     * @param string $error The refusal message.
+     */
+    public function refuse(string $id, string $owner, string $kind, string $error): void
+    {
+        $this->refused[$id] = array('owner' => $owner, 'kind' => $kind, 'error' => $error);
+    }
+
+    /**
+     * Which plugin or theme a file belongs to: array(kind, folder), or null for core.
+     * Core is any file inside the install but outside oc-content/; a file elsewhere (a
+     * symlinked plugin) is matched against the plugin and theme folders.
+     *
+     * @param string $file
+     *
+     * @return array{0:string,1:string}|null
+     */
+    public static function owner(string $file): ?array
+    {
+        $real = realpath($file) ?: $file;
+        $dirs = array(
+            'plugin' => defined('PLUGINS_PATH') ? PLUGINS_PATH : '',
+            'theme'  => defined('THEMES_PATH') ? THEMES_PATH : '',
+        );
+        foreach ($dirs as $kind => $dir) {
+            if ($dir === '' || !is_dir($dir)) {
+                continue;
+            }
+            foreach (glob(rtrim($dir, '/') . '/*', GLOB_ONLYDIR) ?: array() as $folder) {
+                foreach (array($folder, realpath($folder) ?: $folder) as $root) {
+                    if (str_starts_with($file, $root . '/') || str_starts_with($real, $root . '/')) {
+                        return array($kind, basename($folder));
+                    }
+                }
+            }
+        }
+
+        $abs = defined('ABS_PATH') ? rtrim(realpath(ABS_PATH) ?: ABS_PATH, '/') . '/' : '';
+        if ($abs !== '' && str_starts_with($real, $abs) && !str_starts_with($real, $abs . 'oc-content/')) {
+            return null;
+        }
+
+        return array('plugin', basename(dirname($real)));
+    }
+
+    /**
+     * Pages left out because their declaration was refused, keyed by id.
+     *
+     * @return array<string,array{owner:string,kind:string,error:string}>
+     */
+    public function refused(): array
+    {
+        return $this->refused;
     }
 
     /**

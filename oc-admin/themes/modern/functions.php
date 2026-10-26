@@ -73,6 +73,7 @@ function admin_broken_plugin_notice()
 
 // Early, so the warning is queued before the page prints its flash messages.
 osc_add_hook('admin_page_header', 'admin_broken_plugin_notice', 1);
+osc_add_hook('admin_page_header', 'osc_settings_refused_notices', 1);
 
 // favicons
 /**

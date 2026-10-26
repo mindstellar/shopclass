@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1250 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1217,7 +1217,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_set_alert_private_key()` | Mint the install's persistent alert private key if it has none yet. |
 | `osc_verify_password($password, $hash)` | Verify an user's password |
 
-### hSettings (22)
+### hSettings (23)
 
 `oc-includes/osclass/helpers/hSettings.php`
 
@@ -1240,6 +1240,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_settings_page_conflicts()` | Page ids more than one plugin tried to register, and how many times each. Empty on a healthy install; an entry means a plugin's settings page is not the one being shown, and its saved values are under a section nothing reads. |
 | `osc_settings_page_url($id)` | The admin URL of a declared settings page. |
 | `osc_settings_pages()` | All registered settings pages, keyed by id. |
+| `osc_settings_refused_notices()` | Queue an admin warning for each plugin or theme settings page that was left out. |
 | `osc_settings_sanitize(array $field)` | The submitted value of one field, sanitised by its type. |
 | `osc_settings_save($pageId, $id = null)` | Sanitise, validate and store every field on a declared page. |
 | `osc_settings_validate(array $field, $value)` | Check one submitted value against what its field declares. Returns an error message, or null when the value is good. |

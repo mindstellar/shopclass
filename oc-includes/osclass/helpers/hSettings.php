@@ -39,19 +39,59 @@ if (!function_exists('osc_register_settings_page')) {
     /**
      * Declare a settings page. Thin wrapper over SettingsPageRegistry::register().
      *
-     * See SettingsPageRegistry::register() for the $spec shape.
+     * See SettingsPageRegistry::register() for the $spec shape. A refused declaration
+     * from a plugin or theme is logged and left out, with a notice for the admin, so the
+     * site stays up; one from core still throws.
      *
      * @param string $id   Namespaced slug, usually the plugin's own.
      * @param array  $spec Page specification.
      *
      * @return void
+     * @throws InvalidArgumentException on a refused declaration made by core.
      */
     function osc_register_settings_page($id, $spec)
     {
-        SettingsPageRegistry::getInstance()->register($id, $spec);
+        try {
+            SettingsPageRegistry::getInstance()->register($id, $spec);
+        } catch (InvalidArgumentException $e) {
+            // The caller is the first frame past this helper and the form builder.
+            $caller = '';
+            foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS) as $frame) {
+                $file = $frame['file'] ?? '';
+                if ($file !== '' && $file !== __FILE__ && basename($file) !== 'FormSpec.php') {
+                    $caller = $file;
+                    break;
+                }
+            }
+            $owner = SettingsPageRegistry::owner($caller);
+            if ($owner === null) {
+                throw $e;
+            }
+            error_log(sprintf('Shopclass: %s "%s" settings page "%s" left out: %s', $owner[0], $owner[1], $id, $e->getMessage()));
+            SettingsPageRegistry::getInstance()->refuse((string)$id, $owner[1], $owner[0], $e->getMessage());
+
+            return;
+        }
         // A theme declares its pages after admin_menu_init has run, so add the entry now.
         if (SettingsPageRegistry::getInstance()->menuReady() && function_exists('osc_settings_menu_init')) {
             osc_settings_menu_init();
+        }
+    }
+}
+
+if (!function_exists('osc_settings_refused_notices')) {
+    /**
+     * Queue an admin warning for each plugin or theme settings page that was left out.
+     *
+     * @return void
+     */
+    function osc_settings_refused_notices()
+    {
+        foreach (SettingsPageRegistry::getInstance()->refused() as $page) {
+            $text = $page['kind'] === 'theme'
+                ? __('The %1$s theme has a settings page Shopclass cannot load, so it is left out: %2$s. Update the theme or switch to another one.')
+                : __('The %1$s plugin has a settings page Shopclass cannot load, so it is left out: %2$s. Update or deactivate the plugin.');
+            osc_add_flash_warning_message(sprintf($text, osc_esc_html($page['owner']), osc_esc_html($page['error'])), 'admin');
         }
     }
 }
