@@ -12,9 +12,11 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\container\Container;
 use mindstellar\database\Db;
 use mindstellar\listing\ListingStats;
 use mindstellar\listing\ListingStatus;
+use mindstellar\location\LocationNames;
 
 /**
  * Model database for Item table
@@ -198,6 +200,7 @@ class Item extends DAO
                 }
                 $items[$k] = $aItem;
             }
+            $items = Container::root()->get(LocationNames::class)->translateRows($items, (string) $prefLocale);
         }
 
         return $items;

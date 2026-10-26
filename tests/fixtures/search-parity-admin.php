@@ -17,7 +17,7 @@ return array(
       7 => 'tv',
     ),
     'count' => 8,
-    'q' => 8,
+    'q' => 11,
   ),
   'unfiltered, no count' =>
   array(

@@ -273,6 +273,19 @@ if (!function_exists('scratchdb_drop')) {
     }
 }
 
+if (!function_exists('scratchdb_register_services')) {
+    /**
+     * Listing code reads the place-name resolver from the site container, as the booted site has it.
+     */
+    function scratchdb_register_services(): void
+    {
+        $root = \mindstellar\container\Container::root();
+        if (!$root->has(\mindstellar\location\LocationNames::class)) {
+            $root->set(\mindstellar\location\LocationNames::class, static fn () => new \mindstellar\location\LocationNames(new \mindstellar\location\LocationNameStore()));
+        }
+    }
+}
+
 if (!function_exists('scratchdb_session')) {
     /**
      * Entry point for a model test file.
@@ -289,6 +302,7 @@ if (!function_exists('scratchdb_session')) {
     {
         if (defined('MODELS_RUNNER')) {
             $admin = scratchdb_bootstrap(MODELS_RUNNER_DB);
+            scratchdb_register_services();
             $admin->select_db(MODELS_RUNNER_DB);
             scratchdb_truncate_all($admin);
 
@@ -296,6 +310,7 @@ if (!function_exists('scratchdb_session')) {
         }
 
         $admin = scratchdb_bootstrap($scratch);
+        scratchdb_register_services();
         scratchdb_create($admin, $scratch);
         register_shutdown_function(static function () use ($admin, $scratch) {
             $admin->query("DROP DATABASE IF EXISTS `$scratch`");

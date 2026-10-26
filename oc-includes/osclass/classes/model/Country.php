@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\location\LocationNameStore;
 
 /**
  * Model database for Country table
@@ -132,6 +133,7 @@ class Country extends DAO
         if (!$this->delete(array('pk_c_code' => $pk))) {
             $result++;
         }
+        (new LocationNameStore())->forget(LocationNameStore::COUNTRY, (string) $pk);
 
         // Regions and cities record their own slug history and clear it as they go,
         // so a country only has to account for what the recursion above left behind.
