@@ -181,6 +181,10 @@ msgstr ""
 msgid "%s is invalid."
 msgstr ""
 
+#: oc-includes/osclass/classes/location/LocationService.php
+msgid "%s is not a language of this site"
+msgstr ""
+
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
 msgid "%s is not a scope of this site"
 msgstr ""
@@ -4690,10 +4694,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/location/LocationService.php
 msgid "is not a country of this site"
-msgstr ""
-
-#: oc-includes/osclass/classes/location/LocationService.php
-msgid "is not a language of this site"
 msgstr ""
 
 #: oc-includes/osclass/classes/location/LocationService.php
