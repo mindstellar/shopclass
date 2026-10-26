@@ -98,6 +98,8 @@ $long = str_repeat('ü', 101);
 pin('a 101-character name is refused', '/names/de_DE', $refused(static fn () => $service->editRegion($region, 'Bayern State', '', ['de_DE' => $long])));
 $service->editRegion($region, 'Bayern State', '', ['de_DE' => mb_substr($long, 1)]);
 pin('a 100-character name is stored', 100, mb_strlen($store->all('region', $region)['de_DE']));
+pin('spaces around a 100-character name do not count', null, $refused(static fn () => $service->editRegion($region, 'Bayern State', '', ['de_DE' => ' ' . str_repeat('a', 100) . ' '])));
+pin('...and it is stored trimmed', str_repeat('a', 100), $store->all('region', $region)['de_DE']);
 
 harness_section('countries and cities');
 $service->editCountry('DE', 'Germany', '', ['de_DE' => 'Deutschland']);
