@@ -55,7 +55,7 @@ final class BoxFilter
     }
 
     /**
-     * Add the box condition. The latitude range leads, so the index on the point serves it.
+     * Add the box condition.
      */
     public function apply(Statement $statement): void
     {
@@ -63,15 +63,9 @@ final class BoxFilter
             return;
         }
         [$west, $south, $east, $north] = $this->box;
-        $column = DB_TABLE_PREFIX . 't_item_location.d_geo_';
-        $lngs   = $west <= $east ? array(array($west, $east)) : array(array($west, 180.0), array(-180.0, $east));
-        $ranges = array();
-        $bound  = array($south, $north);
-        foreach ($lngs as $range) {
-            $ranges[] = $column . 'long BETWEEN ? AND ?';
-            array_push($bound, $range[0], $range[1]);
-        }
-        $statement->where('(' . $column . 'lat BETWEEN ? AND ? AND (' . implode(' OR ', $ranges) . '))', $bound);
+        $lngs         = $west <= $east ? array(array($west, $east)) : array(array($west, 180.0), array(-180.0, $east));
+        [$sql, $bound] = RadiusFilter::withinRanges(array($south, $north), $lngs);
+        $statement->where('(' . $sql . ')', $bound);
     }
 
     /**
