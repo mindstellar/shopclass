@@ -207,6 +207,7 @@ $names = array(
 $identity = static fn ($v) => $v;
 
 pin('no params: nothing to set', array(), SearchUriResolver::decodeFriendlyParams('/', $names, '', $identity));
+pin('a map area keeps its commas', array(array('bbox', '72.8,18.9,73.1,19.3')), SearchUriResolver::decodeFriendlyParams('/bbox,72.8,18.9,73.1,19.3', $names, '', $identity));
 pin('named params map onto request names, in order', array(
     array('sRegion', '7'),
     array('sPattern', 'blue bike'),

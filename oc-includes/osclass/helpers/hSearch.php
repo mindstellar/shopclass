@@ -85,6 +85,18 @@ function osc_search_near()
 }
 
 /**
+ * The map area the current search keeps to, or null.
+ *
+ * @return array{0:float,1:float,2:float,3:float}|null west, south, east, north
+ */
+function osc_search_bbox()
+{
+    $box = View::getInstance()->_get('search_bbox');
+
+    return is_array($box) ? $box : null;
+}
+
+/**
  * The radius choices for a search form: value => label, such as 25 => 'Within 25 km'.
  *
  * @return array<int,string>

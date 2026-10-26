@@ -76,6 +76,12 @@ class SearchBuilder
             $search->near(...$near);
         }
 
+        // FILTERING BY MAP AREA
+        $box = $criteria->box();
+        if ($box !== null && osc_geo_search_enabled()) {
+            $search->inBox(...$box);
+        }
+
         // FILTERING PATTERN
         if ($criteria->hasPattern()) {
             $search->addPattern($criteria->pattern());

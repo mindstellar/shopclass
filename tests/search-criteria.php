@@ -241,6 +241,25 @@ pin("'rss' is kept", 'rss', SearchCriteria::fromRequest(array('sFeed' => 'rss'),
 pin('a plugin feed name is kept', 'atom', SearchCriteria::fromRequest(array('sFeed' => 'atom'), $site)->feed());
 pin('pageSizeForFeed() is the rss item count', 30, SearchCriteria::fromRequest(array('sFeed' => 'rss'), $site)->pageSizeForFeed());
 
+harness_section('bbox -- west,south,east,north, anything else ignored');
+
+$box = static fn ($value) => SearchCriteria::fromRequest(array('bbox' => $value))->box();
+pin('absent -> null', null, SearchCriteria::fromRequest(array())->box());
+pin('four numbers are the box', array(72.8, 18.9, 73.1, 19.3), $box('72.8,18.9,73.1,19.3'));
+pin('across the date line west is past east', array(170.0, -20.0, -170.0, 20.0), $box('170,-20,-170,20'));
+pin('rounded to four decimals', array(72.8123, 18.9, 73.1, 19.3), $box('72.81234,18.9,73.1,19.3'));
+pin('latitude out of range -> null', null, $box('72.8,-95,73.1,19.3'));
+pin('longitude out of range -> null', null, $box('72.8,18.9,190,19.3'));
+pin('south above north -> null', null, $box('72.8,19.3,73.1,18.9'));
+pin('three numbers -> null', null, $box('72.8,18.9,73.1'));
+pin('text -> null', null, $box('a,b,c,d'));
+pin('an array -> null', null, $box(array('72.8', '18.9', '73.1', '19.3')));
+pin('a box does not clear the radius', array(25, array(72.8, 18.9, 73.1, 19.3)), (static function () {
+    $c = SearchCriteria::fromRequest(array('iRadius' => '25', 'bbox' => '72.8,18.9,73.1,19.3'));
+
+    return array($c->radius(), $c->box());
+})());
+
 harness_section('limits -- missing keys fall back to the install defaults');
 
 $bare = SearchCriteria::fromRequest(array('iPagesize' => '80'));

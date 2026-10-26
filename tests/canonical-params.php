@@ -70,6 +70,7 @@ $noise = array(
     'action'     => '',
     'sParams'    => 'x',
     'sFeed'      => 'rss',
+    'bbox'       => '72.8,18.9,73.1,19.3',
 );
 foreach ($noise as $key => $value) {
     $out = canonical_params(array('sCategory' => '54', $key => $value));

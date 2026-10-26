@@ -10,6 +10,8 @@
 
 namespace mindstellar\search;
 
+use mindstellar\search\query\BoxFilter;
+
 /**
  * A listing search, normalised out of a request bag built by Params::getParamsAsArray().
  * Search::filters() gives what the built search runs, after core and plugins change it.
@@ -84,6 +86,9 @@ class SearchCriteria
 
     /** iRadius as a band in the site's unit, 0 for none. */
     private int $radius = 0;
+
+    /** @var array{0:float,1:float,2:float,3:float}|null bbox: west, south, east, north */
+    private ?array $box = null;
 
     /** Defaults for the listing options; the search page passes the site's preferences. */
     private const LIMITS = array(
@@ -225,7 +230,8 @@ class SearchCriteria
     }
 
     /**
-     * The distance search values as sent: iRadius snapped to a band, and the visitor's point.
+     * The distance search values as sent: iRadius snapped to a band, the visitor's point, and
+     * the bbox; a bbox that is not a valid box is ignored.
      * SearchBuilder decides whether the site offers distance search and where it measures from.
      *
      * @param array<string,mixed> $params
@@ -234,6 +240,7 @@ class SearchCriteria
     {
         $this->radius = Distance::band(self::scalar($params['iRadius'] ?? ''));
         $this->point  = Distance::point(self::scalar($params['sLat'] ?? ''), self::scalar($params['sLng'] ?? ''));
+        $this->box    = BoxFilter::parse($params['bbox'] ?? null);
     }
 
     /**
@@ -447,6 +454,16 @@ class SearchCriteria
     public function radius(): int
     {
         return $this->radius;
+    }
+
+    /**
+     * The box from bbox=west,south,east,north, or null. West past east crosses the date line.
+     *
+     * @return array{0:float,1:float,2:float,3:float}|null
+     */
+    public function box(): ?array
+    {
+        return $this->box;
     }
 
     /**
