@@ -166,12 +166,19 @@ jobs:
   # The same suites on the oldest supported servers and the newest MySQL. The main job above
   # runs the newest MariaDB.
   database-versions:
-    name: database (${{ matrix.db }})
+    name: database (${{ matrix.db }}, PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.experimental == true }}
     strategy:
       fail-fast: false
       matrix:
         db: ['mysql:5.7', 'mysql:8.4', 'mariadb:10.2']
+        php: ['8.3']
+        include:
+          # The next PHP release, whole suite. It reports without failing the build until it is final.
+          - db: 'mysql:8.4'
+            php: '8.6'
+            experimental: true
     services:
       db:
         image: ${{ matrix.db }}
@@ -196,7 +203,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.3'
+          php-version: ${{ matrix.php }}
           extensions: mysqli
       - name: Install PHP dependencies
         run: composer install --no-dev --no-interaction --prefer-dist
