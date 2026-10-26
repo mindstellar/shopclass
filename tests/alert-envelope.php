@@ -146,6 +146,9 @@ $refuse = array(
     'empty value kept'              => '{"v":2,"params":{"sPattern":""}}',
     'keys out of order'             => '{"v":2,"params":{"sPattern":"a","bPic":1}}',
     'escaped slash (not canonical)' => '{"v":2,"params":{"sPattern":"a\/b"}}',
+    'bbox not canonical'            => '{"v":2,"params":{"bbox":"72.80,18.9,73.1,19.3"}}',
+    'bbox out of range'             => '{"v":2,"params":{"bbox":"72.8,18.9,73.1,95"}}',
+    'bbox as a list'                => '{"v":2,"params":{"bbox":[72.8,18.9,73.1,19.3]}}',
     'oversize'                      => '{"v":2,"params":{"sPattern":"' . str_repeat('a', AlertEnvelope::MAX_BYTES) . '"}}',
 );
 foreach ($refuse as $label => $json) {
@@ -156,6 +159,17 @@ pin('isEnvelope() tells v2 from v1', array(true, false), array(
     AlertEnvelope::isEnvelope(array('v' => 2, 'held' => 'x')),
     AlertEnvelope::isEnvelope(array('price_min' => 0)),
 ));
+
+harness_section('a map area');
+
+$boxed = $build(array('sPattern' => 'bike', 'bbox' => '72.80, 18.9,73.1,19.30'));
+pin('the box is kept in its short form', '{"v":2,"params":{"bbox":"72.8,18.9,73.1,19.3","sPattern":"bike"}}', $boxed);
+pin('and validates', array('bbox' => '72.8,18.9,73.1,19.3', 'sPattern' => 'bike'), AlertEnvelope::validate($boxed));
+pin('replaying it gives the same box', array(72.8, 18.9, 73.1, 19.3), SearchCriteria::fromRequest((array) AlertEnvelope::validate($boxed))->box());
+pin('across the date line too', '{"v":2,"params":{"bbox":"170,-20,-170,20"}}', $build(array('bbox' => '170,-20,-170,20')));
+pin('with a radius both are kept', '{"v":2,"params":{"bbox":"1,2,3,4","iRadius":25}}', $build(array('bbox' => '1,2,3,4', 'iRadius' => '25')));
+pin('an invalid box is dropped', '{"v":2,"params":{}}', $build(array('bbox' => '1,5,3,4')));
+pin('fromValues() takes a box too', '{"v":2,"params":{"bbox":"1,2,3,4"}}', AlertEnvelope::fromValues(array('bbox' => '1.0,2,3,4'), array()));
 
 harness_section('plugin keys through alert_search_params');
 

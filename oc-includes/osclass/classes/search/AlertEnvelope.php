@@ -10,6 +10,8 @@
 
 namespace mindstellar\search;
 
+use mindstellar\search\query\BoxFilter;
+
 /**
  * The stored form of a saved search: the search values, never SQL.
  *
@@ -33,7 +35,7 @@ class AlertEnvelope
 
     /** Core search keys, as the search page reads them. */
     public const CORE_KEYS = array(
-        'bPic', 'bPremium', 'iRadius', 'meta', 'sCategory', 'sCity', 'sCityArea', 'sCountry',
+        'bbox', 'bPic', 'bPremium', 'iRadius', 'meta', 'sCategory', 'sCity', 'sCityArea', 'sCountry',
         'sLat', 'sLng', 'sLocale', 'sPattern', 'sPriceMax', 'sPriceMin', 'sRegion', 'sUser', 'product',
     );
 
@@ -81,6 +83,10 @@ class AlertEnvelope
             if ($point !== null) {
                 $values += array('sLat' => $point[0], 'sLng' => $point[1]);
             }
+        }
+        $box = $criteria->box();
+        if ($box !== null) {
+            $values['bbox'] = BoxFilter::format($box);
         }
 
         return self::fromValues($values, $request);
@@ -436,7 +442,7 @@ class AlertEnvelope
             'sPriceMin' => self::price($values['sPriceMin'] ?? null),
             'sPriceMax' => self::price($values['sPriceMax'] ?? null),
             'meta'      => self::meta($values['meta'] ?? array()),
-        ) + self::radius($values);
+        ) + self::radius($values) + self::box($values);
         $params = array_filter($params, static fn ($v) => $v !== '' && $v !== array() && $v !== null);
 
         $out   = $params;
@@ -500,6 +506,20 @@ class AlertEnvelope
         $point = Distance::point($values['sLat'] ?? null, $values['sLng'] ?? null);
 
         return array('iRadius' => $band) + ($point === null ? array() : array('sLat' => sprintf('%.2f', $point[0]), 'sLng' => sprintf('%.2f', $point[1])));
+    }
+
+    /**
+     * bbox as "west,south,east,north", or nothing when it is not a valid box.
+     *
+     * @param array<string,mixed> $values
+     *
+     * @return array<string,string>
+     */
+    private static function box(array $values): array
+    {
+        $box = BoxFilter::parse($values['bbox'] ?? null);
+
+        return $box === null ? array() : array('bbox' => BoxFilter::format($box));
     }
 
     /**
