@@ -29,6 +29,8 @@ use mindstellar\billing\Wallet;
  * or billing-disabled shows a calm empty state, never a warning.
  */
 
+require_once dirname(__DIR__) . '/page-fn.php';
+
 $perPage = 25;
 
 if (!osc_is_web_user_logged_in()) {
@@ -73,14 +75,14 @@ $col = array(
 
 
 <?php if ($emptyMessage !== null) { ?>
-    <div class="oe-panel oe-bill-card">
-        <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
-    </div>
+    <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
+    osc_gui_empty($emptyMessage, 'oe-bill-empty');
+    osc_gui_panel_close(); ?>
 <?php } else { ?>
     <?php $billingTab = 'wallet';
     require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
     <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php'; ?>
-    <div class="oe-panel oe-bill-card">
+    <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div'); ?>
         <p class="oe-bill-balance<?php echo $balance < 0 ? ' neg' : ''; ?>">
             <?php echo osc_esc_html(number_format($balance)); ?>
         </p>
@@ -93,16 +95,15 @@ $col = array(
         <?php } ?>
         <?php if ($canBuy) { ?>
             <div class="oe-bill-actions">
-                <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>">
+                <a class="oe-btn oe-btn--primary oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>">
                     <?php echo osc_esc_html(_m('Buy more credits')); ?>
                 </a>
             </div>
         <?php } ?>
-    </div>
+    <?php osc_gui_panel_close(); ?>
 
     <?php if ($offers !== array()) { ?>
-        <div class="oe-panel oe-bill-card">
-            <h2><?php echo osc_esc_html(_m('Upgrades for your account')); ?></h2>
+        <?php osc_gui_panel_open(_m('Upgrades for your account'), 'oe-bill-card', '', 'div'); ?>
             <ul class="oe-list">
                 <?php foreach ($offers as $offer) {
                     $rowActions = array(array(
@@ -121,16 +122,15 @@ $col = array(
                     </li>
                 <?php } ?>
             </ul>
-        </div>
+        <?php osc_gui_panel_close(); ?>
     <?php } ?>
 
-    <div class="oe-panel oe-bill-card">
-        <h2><?php echo osc_esc_html(_m('History')); ?></h2>
-        <?php if (empty($entries)) { ?>
-            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('Nothing has moved yet.')); ?></p>
-        <?php } else { ?>
+    <?php osc_gui_panel_open(_m('History'), 'oe-bill-card', '', 'div'); ?>
+        <?php if (empty($entries)) {
+            osc_gui_empty(_m('Nothing has moved yet.'), 'oe-bill-empty');
+        } else { ?>
             <div class="oe-scroll">
-            <table>
+            <table class="oe-table">
                 <thead>
                 <tr>
                     <th scope="col"><?php echo osc_esc_html($col['what']); ?></th>
@@ -155,26 +155,16 @@ $col = array(
                 </tbody>
             </table>
             </div>
-            <?php if ($total > $perPage) { ?>
-                <div class="oe-pager oe-bill-pager">
-                    <span>
-                        <?php if ($pageNum > 1) { ?>
-                            <a href="<?php echo osc_esc_html(osc_billing_wallet_url() . '&pageNum=' . ($pageNum - 1)); ?>">
-                                <?php echo osc_esc_html(_m('Newer')); ?>
-                            </a>
-                        <?php } ?>
-                    </span>
-                    <span>
-                        <?php if ($pageNum * $perPage < $total) { ?>
-                            <a href="<?php echo osc_esc_html(osc_billing_wallet_url() . '&pageNum=' . ($pageNum + 1)); ?>">
-                                <?php echo osc_esc_html(_m('Older')); ?>
-                            </a>
-                        <?php } ?>
-                    </span>
-                </div>
-            <?php } ?>
+            <?php if ($total > $perPage) {
+                $pager = array(
+                    'prev'  => $pageNum > 1 ? osc_billing_wallet_url() . '&pageNum=' . ($pageNum - 1) : '',
+                    'next'  => $pageNum * $perPage < $total ? osc_billing_wallet_url() . '&pageNum=' . ($pageNum + 1) : '',
+                    'class' => 'oe-bill-pager',
+                );
+                require dirname(__DIR__) . '/parts/pager.php';
+            } ?>
         <?php } ?>
-    </div>
+    <?php osc_gui_panel_close(); ?>
 <?php } ?>
 </div>
 <?php osc_run_hook('account_page_after', 'billing-wallet'); ?>

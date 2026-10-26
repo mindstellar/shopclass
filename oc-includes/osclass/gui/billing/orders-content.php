@@ -28,6 +28,8 @@ use mindstellar\billing\OrderStore;
  * else's orders.
  */
 
+require_once dirname(__DIR__) . '/page-fn.php';
+
 $perPage = 25;
 
 if (!osc_is_web_user_logged_in()) {
@@ -56,40 +58,30 @@ $shopper = osc_is_shopper() || !osc_billing_credits_enabled();
 
 
 <?php if ($emptyMessage !== null) { ?>
-    <div class="oe-panel oe-bill-card">
-        <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
-    </div>
+    <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
+    osc_gui_empty($emptyMessage, 'oe-bill-empty');
+    osc_gui_panel_close(); ?>
 <?php } else { ?>
     <?php if (!$shopper) {
         $billingTab = 'orders';
         require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php';
         require ABS_PATH . 'oc-includes/osclass/gui/billing/slot-prompt.php';
     } ?>
-    <div class="oe-panel oe-bill-card">
-        <?php if (empty($orders)) { ?>
-            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($shopper ? _m('You have not ordered anything yet.') : _m('You have not bought any credits yet.')); ?></p>
-        <?php } else { ?>
+    <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div'); ?>
+        <?php if (empty($orders)) {
+            osc_gui_empty($shopper ? _m('You have not ordered anything yet.') : _m('You have not bought any credits yet.'), 'oe-bill-empty');
+        } else { ?>
             <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/order-list.php'; ?>
-            <?php if ($total > $perPage) { ?>
-                <div class="oe-pager oe-bill-pager">
-                    <span>
-                        <?php if ($pageNum > 1) { ?>
-                            <a href="<?php echo osc_esc_html(osc_billing_orders_url() . '&pageNum=' . ($pageNum - 1)); ?>">
-                                <?php echo osc_esc_html(_m('Newer')); ?>
-                            </a>
-                        <?php } ?>
-                    </span>
-                    <span>
-                        <?php if ($pageNum * $perPage < $total) { ?>
-                            <a href="<?php echo osc_esc_html(osc_billing_orders_url() . '&pageNum=' . ($pageNum + 1)); ?>">
-                                <?php echo osc_esc_html(_m('Older')); ?>
-                            </a>
-                        <?php } ?>
-                    </span>
-                </div>
-            <?php } ?>
+            <?php if ($total > $perPage) {
+                $pager = array(
+                    'prev'  => $pageNum > 1 ? osc_billing_orders_url() . '&pageNum=' . ($pageNum - 1) : '',
+                    'next'  => $pageNum * $perPage < $total ? osc_billing_orders_url() . '&pageNum=' . ($pageNum + 1) : '',
+                    'class' => 'oe-bill-pager',
+                );
+                require dirname(__DIR__) . '/parts/pager.php';
+            } ?>
         <?php } ?>
-    </div>
+    <?php osc_gui_panel_close(); ?>
 
     <?php if (!$shopper) { ?>
     <p class="oe-muted oe-bill-sub">

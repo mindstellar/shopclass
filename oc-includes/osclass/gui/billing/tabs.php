@@ -15,16 +15,13 @@ if (!defined('ABS_PATH')) {
  * Tabs across the credits pages. Expects $billingTab: 'wallet', 'buy' or 'orders'.
  */
 
-$billingTabs = array('wallet' => array(_m('Credits'), osc_billing_wallet_url()));
+$tabs = array(
+    'label'   => _m('Credits'),
+    'items'   => array('wallet' => array(_m('Credits'), osc_billing_wallet_url())),
+    'current' => $billingTab ?? '',
+);
 if (osc_billing_can_buy()) {
-    $billingTabs['buy'] = array(_m('Buy credits'), osc_billing_buy_url());
+    $tabs['items']['buy'] = array(_m('Buy credits'), osc_billing_buy_url());
 }
-$billingTabs['orders'] = array(_m('Orders'), osc_billing_orders_url());
-?>
-<nav class="oe-tabs" aria-label="<?php echo osc_esc_html(_m('Credits')); ?>">
-    <?php foreach ($billingTabs as $tabKey => [$tabLabel, $tabUrl]) { ?>
-        <a href="<?php echo osc_esc_html($tabUrl); ?>"<?php
-            echo ($billingTab ?? '') === $tabKey ? ' aria-current="page"' : ''; ?>><?php
-            echo osc_esc_html($tabLabel); ?></a>
-    <?php } ?>
-</nav>
+$tabs['items']['orders'] = array(_m('Orders'), osc_billing_orders_url());
+require dirname(__DIR__) . '/parts/tabs.php';

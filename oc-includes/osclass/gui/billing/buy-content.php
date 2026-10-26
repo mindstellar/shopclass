@@ -30,6 +30,8 @@ use mindstellar\billing\Order;
  * show.
  */
 
+require_once dirname(__DIR__) . '/page-fn.php';
+
 if (!osc_is_web_user_logged_in()) {
     $emptyMessage = _m('Sign in to buy credits.');
 } elseif (!osc_billing_enabled()) {
@@ -53,37 +55,34 @@ $checkoutHtml = is_string($checkoutHtml) ? $checkoutHtml : '';
 
 
 <?php if ($emptyMessage !== null) { ?>
-    <div class="oe-panel oe-bill-card">
-        <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html($emptyMessage); ?></p>
-    </div>
+    <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
+    osc_gui_empty($emptyMessage, 'oe-bill-empty');
+    osc_gui_panel_close(); ?>
 <?php } else { ?>
     <?php $billingTab = 'buy';
     require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
     <?php if ($checkoutHtml !== '' && $order !== null) { ?>
-        <div class="oe-panel oe-bill-card">
-            <h2><?php echo osc_esc_html(sprintf(_m('Order #%d'), $order->getId())); ?></h2>
+        <?php osc_gui_panel_open(sprintf(_m('Order #%d'), $order->getId()), 'oe-bill-card', '', 'div'); ?>
             <div class="oe-bill-instructions"><?php echo $checkoutHtml; /* gateway-authored, see CheckoutIntent::html() */ ?></div>
-        </div>
+        <?php osc_gui_panel_close(); ?>
     <?php } ?>
 
     <?php if (empty($packages)) { ?>
-        <div class="oe-panel oe-bill-card">
-            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('There are no credit packages for sale right now.')); ?></p>
-        </div>
+        <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
+        osc_gui_empty(_m('There are no credit packages for sale right now.'), 'oe-bill-empty');
+        osc_gui_panel_close(); ?>
     <?php } elseif (empty($gateways)) { ?>
-        <div class="oe-panel oe-bill-card">
-            <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('No payment method is set up yet.')); ?></p>
-        </div>
+        <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
+        osc_gui_empty(_m('No payment method is set up yet.'), 'oe-bill-empty');
+        osc_gui_panel_close(); ?>
     <?php } else { ?>
-        <div class="oe-panel oe-bill-card">
-            <?php
+        <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
             $pickerPackages = $packages;
             $pickerGateways = $gateways;
             $pickerFields   = array('page' => 'billing', 'action' => 'checkout');
             $pickerSubmit   = _m('Continue');
             require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/package-picker.php';
-            ?>
-        </div>
+        osc_gui_panel_close(); ?>
     <?php } ?>
 <?php } ?>
 </div>

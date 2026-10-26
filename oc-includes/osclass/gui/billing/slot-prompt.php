@@ -17,6 +17,8 @@ if (!defined('ABS_PATH')) {
  * them one at a time. Renders nothing otherwise.
  */
 
+require_once dirname(__DIR__) . '/page-fn.php';
+
 if (!osc_is_web_user_logged_in() || !osc_billing_credits_enabled() || osc_user_can_publish()) {
     return;
 }
@@ -38,8 +40,7 @@ if (!$slotCanPay && !osc_billing_can_buy()) {
     return;
 }
 ?>
-<div class="oe-panel oe-bill-card oe-slot-prompt">
-    <h2><?php echo osc_esc_html(_m('Post another listing')); ?></h2>
+<?php osc_gui_panel_open(_m('Post another listing'), 'oe-bill-card oe-slot-prompt', '', 'div'); ?>
     <p class="oe-meta"><?php echo osc_esc_html(sprintf(
         _m('%1$s: %2$s. You have %3$s.'),
         (string) $slotOffer['label'],
@@ -58,18 +59,18 @@ if (!$slotCanPay && !osc_billing_can_buy()) {
                 <?php echo osc_csrf_token_form(); ?>
                 <?php if ($slotsNeeded === 1) { ?>
                     <input type="hidden" name="next" value="post">
-                    <button type="submit" class="oe-btn"><?php echo osc_esc_html($slotPrice > 0
+                    <button type="submit" class="oe-btn oe-btn--primary"><?php echo osc_esc_html($slotPrice > 0
                         ? sprintf(_mn('Use %d credit and post', 'Use %d credits and post', $slotPrice), $slotPrice)
                         : _m('Get it free and post')); ?></button>
                 <?php } else { ?>
-                    <button type="submit" class="oe-btn"><?php echo osc_esc_html($slotPrice > 0
+                    <button type="submit" class="oe-btn oe-btn--primary"><?php echo osc_esc_html($slotPrice > 0
                         ? sprintf(_mn('Use %d credit', 'Use %d credits', $slotPrice), $slotPrice)
                         : _m('Get it free')); ?></button>
                 <?php } ?>
             </form>
         <?php } else { ?>
-            <a class="oe-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>"><?php
+            <a class="oe-btn oe-btn--primary" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>"><?php
                 echo osc_esc_html(_m('Buy credits')); ?></a>
         <?php } ?>
     </div>
-</div>
+<?php osc_gui_panel_close(); ?>

@@ -42,7 +42,7 @@ $col = array(
 );
 ?>
 <div class="oe-scroll">
-<table>
+<table class="oe-table">
     <thead>
     <tr>
         <th scope="col"><?php echo osc_esc_html($col['date']); ?></th>

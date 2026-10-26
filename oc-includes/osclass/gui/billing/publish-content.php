@@ -56,27 +56,25 @@ if ($payReady) {
 <div class="oe-bill oe-bill-publish">
 
 <?php if (!$payReady) { ?>
-    <div class="oe-panel oe-bill-card">
-        <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('Open the listing you want to publish from your listings.')); ?></p>
+    <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
+    osc_gui_empty(_m('Open the listing you want to publish from your listings.'), 'oe-bill-empty'); ?>
         <div class="oe-bill-actions">
-            <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Your listings')); ?></a>
+            <a class="oe-btn oe-btn--primary oe-bill-btn" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Your listings')); ?></a>
         </div>
-    </div>
+    <?php osc_gui_panel_close(); ?>
 <?php } else { ?>
     <?php if ($checkoutHtml !== '' && $order !== null) { ?>
-        <div class="oe-panel oe-bill-card">
-            <h2><?php echo osc_esc_html(sprintf(_m('Order #%d'), $order->getId())); ?></h2>
+        <?php osc_gui_panel_open(sprintf(_m('Order #%d'), $order->getId()), 'oe-bill-card', '', 'div'); ?>
             <div class="oe-bill-instructions"><?php echo $checkoutHtml; /* gateway-authored, see CheckoutIntent::html() */ ?></div>
-        </div>
+        <?php osc_gui_panel_close(); ?>
     <?php } ?>
 
-    <div class="oe-panel oe-bill-card oe-bill-publish-card">
-        <h2><?php echo osc_esc_html((string) $payItem['title']); ?></h2>
+    <?php osc_gui_panel_open((string) $payItem['title'], 'oe-bill-card oe-bill-publish-card', '', 'div'); ?>
 
         <?php if ($payStep === 'published') { ?>
             <p class="oe-meta"><?php echo osc_esc_html(_m('Your listing is published.')); ?></p>
             <div class="oe-bill-actions">
-                <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html((string) $payItem['url']); ?>"><?php echo osc_esc_html(_m('View your listing')); ?></a>
+                <a class="oe-btn oe-btn--primary oe-bill-btn" href="<?php echo osc_esc_html((string) $payItem['url']); ?>"><?php echo osc_esc_html(_m('View your listing')); ?></a>
             </div>
         <?php } elseif (in_array($payStep, array('validation', 'moderation', 'closed'), true)) { ?>
             <p class="oe-meta"><?php echo osc_esc_html(match ($payStep) {
@@ -85,7 +83,7 @@ if ($payReady) {
                 default      => _m('This listing is not waiting for payment.'),
             }); ?></p>
             <div class="oe-bill-actions">
-                <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Your listings')); ?></a>
+                <a class="oe-btn oe-btn--primary oe-bill-btn" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Your listings')); ?></a>
             </div>
         <?php } else { ?>
             <?php if ($payStep === 'waiting') { ?>
@@ -114,28 +112,25 @@ if ($payReady) {
                     <?php foreach ($payFields + array('do' => 'credits') as $payName => $payValue) { ?>
                         <input type="hidden" name="<?php echo osc_esc_html((string) $payName); ?>" value="<?php echo osc_esc_html((string) $payValue); ?>"/>
                     <?php } ?>
-                    <button type="submit" class="oe-btn oe-bill-btn"><?php echo osc_esc_html($payCredits > 0
+                    <button type="submit" class="oe-btn oe-btn--primary oe-bill-btn"><?php echo osc_esc_html($payCredits > 0
                         ? sprintf(_mn('Use %d credit and publish', 'Use %d credits and publish', $payCredits), $payCredits)
                         : _m('Publish for free')); ?></button>
                 </form>
             <?php } ?>
         <?php } ?>
-    </div>
+    <?php osc_gui_panel_close(); ?>
 
     <?php if ($payHeld) { ?>
         <?php if ($payShort > 0) { ?>
-        <div class="oe-panel oe-bill-card">
-            <?php if ($payStep === 'waiting') { ?>
-                <h2><?php echo osc_esc_html(_m('Pay again')); ?></h2>
-            <?php } ?>
+        <?php osc_gui_panel_open($payStep === 'waiting' ? _m('Pay again') : '', 'oe-bill-card', '', 'div'); ?>
             <?php if ($payPackages === array()) { ?>
                 <p class="oe-meta"><?php echo osc_esc_html(sprintf(_mn('No package covers %d credit.', 'No package covers %d credits.', $payShort), $payShort)); ?></p>
                 <div class="oe-bill-actions">
-                    <a class="oe-btn oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>"><?php echo osc_esc_html(_m('Buy credits')); ?></a>
+                    <a class="oe-btn oe-btn--primary oe-bill-btn" href="<?php echo osc_esc_html(osc_billing_buy_url()); ?>"><?php echo osc_esc_html(_m('Buy credits')); ?></a>
                 </div>
-            <?php } elseif ($payGateways === array()) { ?>
-                <p class="oe-empty oe-bill-empty"><?php echo osc_esc_html(_m('No payment method is set up yet.')); ?></p>
-            <?php } else { ?>
+            <?php } elseif ($payGateways === array()) {
+                osc_gui_empty(_m('No payment method is set up yet.'), 'oe-bill-empty');
+            } else { ?>
                 <p class="oe-meta"><?php echo osc_esc_html(sprintf(_mn('You need %d more credit. Credits left over stay in your wallet.', 'You need %d more credits. Credits left over stay in your wallet.', $payShort), $payShort)); ?></p>
                 <?php
                 $pickerPackages = $payPackages;
@@ -145,7 +140,7 @@ if ($payReady) {
                 require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/package-picker.php';
                 ?>
             <?php } ?>
-        </div>
+        <?php osc_gui_panel_close(); ?>
         <?php } ?>
 
         <div class="oe-actions oe-bill-publish-more">

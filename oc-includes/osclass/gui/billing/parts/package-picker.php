@@ -68,5 +68,5 @@ use mindstellar\currency\Money;
                     } ?>
                 </fieldset>
 
-                <button type="submit" class="oe-btn oe-bill-btn"><?php echo osc_esc_html((string) $pickerSubmit); ?></button>
+                <button type="submit" class="oe-btn oe-btn--primary oe-bill-btn"><?php echo osc_esc_html((string) $pickerSubmit); ?></button>
             </form>
