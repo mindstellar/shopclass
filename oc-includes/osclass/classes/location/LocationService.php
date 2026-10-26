@@ -327,7 +327,7 @@ final class LocationService
         foreach ($names as $locale => $value) {
             $locale = (string) $locale;
             if (!in_array($locale, $enabled, true)) {
-                throw new InvalidException('/names/' . $locale, 'invalid', _m('is not a language of this site'));
+                throw new InvalidException('/names/' . $locale, 'invalid', sprintf(_m('%s is not a language of this site'), $locale));
             }
             if (!is_scalar($value) && $value !== null) {
                 throw new InvalidException('/names/' . $locale, 'invalid', _m('A name must be text'));

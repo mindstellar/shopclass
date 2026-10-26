@@ -476,30 +476,6 @@ final class LocationAdminView
     }
 
     /**
-     * The posted names[] kept to the site's languages, as locale => name. Unknown keys and
-     * non-text values are dropped, so a drawer opened before a language was removed still saves.
-     *
-     * @param array<mixed,mixed> $posted
-     * @param array<int,string>  $locales enabled locale codes
-     *
-     * @return array<string,string>
-     */
-    public static function postedNames(array $posted, array $locales): array
-    {
-        $names = array();
-        foreach ($posted as $code => $value) {
-            if (!is_string($code) || preg_match('/^[a-z]{2}_[A-Z]{2}$/', $code) !== 1
-                || !in_array($code, $locales, true) || !is_string($value)
-            ) {
-                continue;
-            }
-            $names[$code] = $value;
-        }
-
-        return $names;
-    }
-
-    /**
      * Progress of a counts recalculation from the queue left and the size it started at.
      *
      * @param int $pending locations still queued

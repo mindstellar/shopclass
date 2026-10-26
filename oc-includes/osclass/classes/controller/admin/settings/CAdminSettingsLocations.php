@@ -483,21 +483,14 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     }
 
     /**
-     * The posted names[] for the site's languages, or null when the form sent none,
-     * so the stored names are left alone.
+     * The posted names[], or null when the form sent none, so the stored names are left alone.
+     * LocationService checks them.
      *
-     * @return array<string,string>|null
+     * @return array<mixed,mixed>|null
      */
     private function postedNames(): ?array
     {
-        if (!Params::existParam('names')) {
-            return null;
-        }
-
-        return LocationAdminView::postedNames(
-            Params::getParamArray('names'),
-            array_column(osc_get_locales(), 'pk_c_code')
-        );
+        return Params::existParam('names') ? Params::getParamArray('names') : null;
     }
 
     /**

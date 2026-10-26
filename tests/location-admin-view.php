@@ -347,14 +347,6 @@ pin('names: rtl from s_direction', array(false, true, false), array_column($fiel
 pin('names: stored values fill their field, the rest are blank', array('', '', 'Bayern'), array_column($fields, 'value'));
 pin('names: label is the language name', 'Deutsch', $fields[2]['label']);
 pin('names: one language shows no section', array(), LocationAdminView::nameFields(array($locales[1]), array('de_DE' => 'Bayern'), 'de_DE'));
-pin(
-    'names: posted keys kept to the site languages and text values',
-    array('de_DE' => 'Bayern', 'en_US' => ''),
-    LocationAdminView::postedNames(
-        array('de_DE' => 'Bayern', 'en_US' => '', 'xx' => 'a', 'de-DE' => 'b', 'fr_FR' => 'c', 'ar_SA' => array('d'), 0 => 'e'),
-        array('de_DE', 'en_US', 'ar_SA')
-    )
-);
 
 $renderRaw = static function (array $form) use ($list): string {
     $GLOBALS['viewVars'] = array('locations' => $list(), 'locationForm' => $form);
