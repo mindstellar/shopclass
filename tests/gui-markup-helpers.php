@@ -56,12 +56,15 @@ $panel = $render(static function (): void {
     osc_gui_panel_open('Order <1>', 'oe-bill-card', 'p1', 'div');
     osc_gui_panel_open();
     osc_gui_panel_close();
-    osc_gui_panel_close();
+    osc_gui_panel_close('div');
 });
 check('the panel carries the id and its classes', str_starts_with($panel, '<div id="p1" class="oe-panel oe-bill-card">'));
 check('the title is an escaped .oe-panel__title', str_contains($panel, '<h2 class="oe-panel__title">Order &lt;1&gt;</h2>'));
 check('an untitled panel is a section', str_contains($panel, '<section class="oe-panel">'));
-check('each close matches its open', str_ends_with($panel, '</section></div>'));
+check('each close prints the tag it is given', str_ends_with($panel, '</section></div>'));
+pin('a close with no tag is a section', '</section>', $render(static fn () => osc_gui_panel_close()));
+pin('a close with a tag off the list is a section', '</section>', $render(static fn () => osc_gui_panel_close('script')));
+check('no global keeps the tags', !array_key_exists('osc_gui_panel_tags', $GLOBALS));
 
 harness_section('osc_gui_empty()');
 pin('the empty line', '<p class="oe-empty oe-bill-empty">None &amp; nothing</p>', $render(static fn () => osc_gui_empty('None & nothing', 'oe-bill-empty')));

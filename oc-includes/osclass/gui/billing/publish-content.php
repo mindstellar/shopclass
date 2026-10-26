@@ -61,12 +61,12 @@ if ($payReady) {
         <div class="oe-bill-actions">
             <a class="oe-btn oe-btn--primary oe-bill-btn" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Your listings')); ?></a>
         </div>
-    <?php osc_gui_panel_close(); ?>
+    <?php osc_gui_panel_close('div'); ?>
 <?php } else { ?>
     <?php if ($checkoutHtml !== '' && $order !== null) { ?>
         <?php osc_gui_panel_open(sprintf(_m('Order #%d'), $order->getId()), 'oe-bill-card', '', 'div'); ?>
             <div class="oe-bill-instructions"><?php echo $checkoutHtml; /* gateway-authored, see CheckoutIntent::html() */ ?></div>
-        <?php osc_gui_panel_close(); ?>
+        <?php osc_gui_panel_close('div'); ?>
     <?php } ?>
 
     <?php osc_gui_panel_open((string) $payItem['title'], 'oe-bill-card oe-bill-publish-card', '', 'div'); ?>
@@ -118,7 +118,7 @@ if ($payReady) {
                 </form>
             <?php } ?>
         <?php } ?>
-    <?php osc_gui_panel_close(); ?>
+    <?php osc_gui_panel_close('div'); ?>
 
     <?php if ($payHeld) { ?>
         <?php if ($payShort > 0) { ?>
@@ -140,7 +140,7 @@ if ($payReady) {
                 require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/package-picker.php';
                 ?>
             <?php } ?>
-        <?php osc_gui_panel_close(); ?>
+        <?php osc_gui_panel_close('div'); ?>
         <?php } ?>
 
         <div class="oe-actions oe-bill-publish-more">

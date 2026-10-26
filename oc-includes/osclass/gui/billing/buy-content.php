@@ -57,24 +57,24 @@ $checkoutHtml = is_string($checkoutHtml) ? $checkoutHtml : '';
 <?php if ($emptyMessage !== null) { ?>
     <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
     osc_gui_empty($emptyMessage, 'oe-bill-empty');
-    osc_gui_panel_close(); ?>
+    osc_gui_panel_close('div'); ?>
 <?php } else { ?>
     <?php $billingTab = 'buy';
     require ABS_PATH . 'oc-includes/osclass/gui/billing/tabs.php'; ?>
     <?php if ($checkoutHtml !== '' && $order !== null) { ?>
         <?php osc_gui_panel_open(sprintf(_m('Order #%d'), $order->getId()), 'oe-bill-card', '', 'div'); ?>
             <div class="oe-bill-instructions"><?php echo $checkoutHtml; /* gateway-authored, see CheckoutIntent::html() */ ?></div>
-        <?php osc_gui_panel_close(); ?>
+        <?php osc_gui_panel_close('div'); ?>
     <?php } ?>
 
     <?php if (empty($packages)) { ?>
         <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
         osc_gui_empty(_m('There are no credit packages for sale right now.'), 'oe-bill-empty');
-        osc_gui_panel_close(); ?>
+        osc_gui_panel_close('div'); ?>
     <?php } elseif (empty($gateways)) { ?>
         <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
         osc_gui_empty(_m('No payment method is set up yet.'), 'oe-bill-empty');
-        osc_gui_panel_close(); ?>
+        osc_gui_panel_close('div'); ?>
     <?php } else { ?>
         <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div');
             $pickerPackages = $packages;
@@ -82,7 +82,7 @@ $checkoutHtml = is_string($checkoutHtml) ? $checkoutHtml : '';
             $pickerFields   = array('page' => 'billing', 'action' => 'checkout');
             $pickerSubmit   = _m('Continue');
             require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/package-picker.php';
-        osc_gui_panel_close(); ?>
+        osc_gui_panel_close('div'); ?>
     <?php } ?>
 <?php } ?>
 </div>
