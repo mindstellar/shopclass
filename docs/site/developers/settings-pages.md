@@ -288,7 +288,7 @@ offers two hooks so a plugin can extend it without owning the page:
 | Hook | Kind | When |
 |---|---|---|
 | `admin_locations_row_actions` | filter | Building a row's actions cell. Receives `$actions` (array keyed by name, starting with `edit`), `$level` (`country`, `region` or `city`) and `$row` (that row's data). Return the array with your entry added; each value is raw, already-escaped HTML |
-| `admin_locations_drawer_fields` | action | Rendering the add/edit drawer, after the built-in fields. Receives `$level` and `$record` (`null` when adding, the row's data when editing) |
+| `admin_locations_drawer_fields` | action | Rendering the add/edit drawer, after the built-in fields (in the edit drawer, after the Names section when the site has more than one language). The posted names are in `names[locale]`. Receives `$level` and `$record` (`null` when adding, the row's data when editing) |
 
 A declaration gives you the CSRF check, the capability check, the escaping,
 the `depends` handling and the redirect: all written once in core. Move an
