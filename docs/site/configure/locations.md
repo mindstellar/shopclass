@@ -50,9 +50,20 @@ hidden.
 | **Search** | Type a name. Choose **This level**, or **Everywhere** to search all places. |
 | **A–Z strip** | Jump to a letter. It appears when a level has many entries. |
 | **Paging** | 50 rows a page, for example *Showing 1–50 of 17,505 cities*. |
-| **Edit** | Opens a panel beside the list. Rename, change the slug, hide or show. |
+| **Edit** | Opens a panel beside the list. Rename, change the slug, set names in other languages, hide or show. |
 | **Add** | **Add country**, **Add region** or **Add city**, depending on the level. |
 | **Bulk actions** | Tick rows, then apply one action to all of them. |
+
+#### Names in other languages
+
+Edit a country, region or city to see a **Names** section. It has one field per
+enabled site language, with the site's default language first. Visitors reading
+the site in a language see that language's name. A blank field uses the stored
+name. The section is hidden when the site has only one language.
+
+The slug does not change: a place has one slug, whatever the language. The
+lists in the admin panel keep showing the stored name. To add a language, see
+[Languages](/docs/use/languages/).
 
 ### Deleting a location
 
