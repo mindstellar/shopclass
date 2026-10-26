@@ -77,6 +77,24 @@ function osc_city_area()
 }
 
 /**
+ * Place rows shown in the current locale's names; rows with no translation keep the stored name.
+ *
+ * @param mixed $rows a list of place rows; anything else is returned as it is
+ *
+ * @return mixed
+ */
+function _osc_location_translate(mixed $rows, string $type, string $idKey, string $nameKey): mixed
+{
+    if (!is_array($rows) || $rows === []) {
+        return $rows;
+    }
+    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+
+    return \mindstellar\container\Container::root()->get(\mindstellar\location\LocationNames::class)
+        ->translateList($rows, $type, $idKey, $nameKey, $locale);
+}
+
+/**
  * Iterator for countries, return null if there's no more countries
  *
  * @return bool
@@ -84,7 +102,7 @@ function osc_city_area()
 function osc_has_countries()
 {
     if (!View::getInstance()->_exists('countries')) {
-        View::getInstance()->_exportVariableToView('countries', CountryStats::getInstance()->listCountries('>='));
+        View::getInstance()->_exportVariableToView('countries', _osc_location_translate(CountryStats::getInstance()->listCountries('>='), 'country', 'country_code', 'country_name'));
     }
 
     return View::getInstance()->_next('countries');
@@ -100,7 +118,7 @@ function osc_has_countries()
 function osc_has_regions($country = '%%%%')
 {
     if (!View::getInstance()->_exists('regions')) {
-        View::getInstance()->_exportVariableToView('regions', RegionStats::getInstance()->listRegions($country, '>='));
+        View::getInstance()->_exportVariableToView('regions', _osc_location_translate(RegionStats::getInstance()->listRegions($country, '>='), 'region', 'region_id', 'region_name'));
     }
 
     return View::getInstance()->_next('regions');
@@ -116,7 +134,7 @@ function osc_has_regions($country = '%%%%')
 function osc_has_cities($region = '%%%%')
 {
     if (!View::getInstance()->_exists('cities')) {
-        View::getInstance()->_exportVariableToView('cities', CityStats::getInstance()->listCities($region, '>='));
+        View::getInstance()->_exportVariableToView('cities', _osc_location_translate(CityStats::getInstance()->listCities($region, '>='), 'city', 'city_id', 'city_name'));
     }
     $result = View::getInstance()->_next('cities');
 
@@ -195,7 +213,7 @@ function osc_count_regions($country = '%%%%')
 function osc_count_cities($region = '%%%%')
 {
     if (!View::getInstance()->_exists('cities')) {
-        View::getInstance()->_exportVariableToView('cities', CityStats::getInstance()->listCities($region, '>='));
+        View::getInstance()->_exportVariableToView('cities', _osc_location_translate(CityStats::getInstance()->listCities($region, '>='), 'city', 'city_id', 'city_name'));
     }
 
     return View::getInstance()->_count('cities');
