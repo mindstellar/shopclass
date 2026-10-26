@@ -66,6 +66,7 @@ $bad  = "array('title' => 'Bad', 'fields' => array(array('type' => 'url', 'name'
 $good = "array('title' => 'Good', 'fields' => array(array('type' => 'url', 'name' => 'site')))";
 $files = array(
     'oc-content/plugins/bad-plugin/index.php'   => "<?php osc_register_settings_page('bad-plugin', $bad);",
+    'oc-content/plugins/other-plugin/index.php' => "<?php osc_register_settings_page('bad-plugin', $bad);",
     'oc-content/plugins/good-plugin/index.php'  => "<?php osc_register_settings_page('good-plugin', $good);",
     'oc-content/plugins/built/index.php'        => "<?php osc_admin_form('built')->title('Built')->url('site')->purify(false)->register();",
     'oc-content/plugins/later/index.php'        => "<?php osc_add_hook('init', static function () { osc_register_settings_page('later', $bad); });",
@@ -106,9 +107,7 @@ function load_plugin(string $slug): ?string
 /** The refusal recorded for $owner's page $id, or null. */
 function refusal(string $kind, string $owner, string $id): ?array
 {
-    $page = SettingsPageRegistry::getInstance()->refused()[$id] ?? null;
-
-    return $page !== null && $page['kind'] === $kind && $page['owner'] === $owner ? $page : null;
+    return SettingsPageRegistry::getInstance()->refused()[$kind . ':' . $owner . ':' . $id] ?? null;
 }
 
 $registry = SettingsPageRegistry::getInstance();
@@ -119,8 +118,9 @@ pin('the page is not registered', null, $registry->get('bad-plugin'));
 $lines = array_values(array_filter(explode("\n", (string)@file_get_contents($log))));
 pin('the log gets one line', 1, count($lines));
 check('the line names the plugin and the error', str_contains($lines[0] ?? '', 'plugin "bad-plugin"') && str_contains($lines[0] ?? '', 'purify'), $lines[0] ?? '');
-pin('it is recorded as the plugin\'s', array('owner' => 'bad-plugin', 'kind' => 'plugin'), array_slice(refusal('plugin', 'bad-plugin', 'bad-plugin') ?? array(), 0, 2));
+pin('it is recorded as the plugin\'s', array('id' => 'bad-plugin', 'owner' => 'bad-plugin', 'kind' => 'plugin'), array_slice(refusal('plugin', 'bad-plugin', 'bad-plugin') ?? array(), 0, 3));
 pin('owner is back to core after the include', null, Plugins::currentOwner());
+pin('a second plugin refusing the same id is kept too', 'other-plugin', (load_plugin('other-plugin') ?? refusal('plugin', 'other-plugin', 'bad-plugin')['owner'] ?? null));
 
 harness_section('Other callers');
 pin('a good plugin page still registers', 'Good', load_plugin('good-plugin') ?? $registry->get('good-plugin')['title'] ?? null);
@@ -158,11 +158,12 @@ $hookError = load_error(static fn () => Plugins::runHook('core_hook'));
 check('a hook callback core added (no owner) still throws', $hookError !== null && str_contains($hookError, 'purify'), describe($hookError));
 $emptyError = load_error(static fn () => call_user_func('osc_register_settings_page', 'empty-bad', array('title' => 'E', 'fields' => array(array('type' => 'url', 'name' => 'u', 'purify' => false)))));
 check('a caller with no file (an internal call) counts as core and throws', $emptyError !== null, describe($emptyError));
-pin('...and nothing is recorded for them', array(), array_intersect(array('core-bad', 'core-hook', 'empty-bad', 'stray'), array_keys($registry->refused())));
+pin('...and nothing is recorded for them', array(), array_filter(array_keys($registry->refused()), static fn ($k) => preg_match('/:(core-bad|core-hook|empty-bad|stray)$/', $k) === 1));
 
 harness_section('The admin notice');
+check('core hooks it on admin_page_header, for every admin theme', in_array('osc_settings_refused_notices', Plugins::callbacks('admin_page_header'), true));
 osc_settings_refused_notices();
-pin('one admin warning per refused page', 5, count($GLOBALS['flash']));
+pin('one admin warning per refused page', 6, count($GLOBALS['flash']));
 pin('it goes to the admin section', 'admin', $GLOBALS['flash'][0][0] ?? null);
 check('it names the plugin and the error', str_contains($GLOBALS['flash'][0][1] ?? '', 'bad-plugin plugin') && str_contains($GLOBALS['flash'][0][1] ?? '', 'purify'), $GLOBALS['flash'][0][1] ?? '');
 check('a theme gets the theme wording', (bool)array_filter($GLOBALS['flash'], static fn ($f) => str_contains($f[1], 'bad-theme theme')));

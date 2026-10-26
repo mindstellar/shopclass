@@ -1007,4 +1007,8 @@ if (!function_exists('osc_category_mode')) {
     }
 }
 
+// Early on every admin page, whatever the admin theme, so the warning is queued before the
+// page prints its flash messages.
+osc_add_hook('admin_page_header', 'osc_settings_refused_notices', 1);
+
 /* file end: ./oc-includes/osclass/helpers/hSettings.php */

@@ -369,13 +369,14 @@ final class SettingsPageRegistry extends Registry
      */
     public function refuse(string $id, string $owner, string $kind, string $error): void
     {
-        $this->refused[$id] = array('owner' => $owner, 'kind' => $kind, 'error' => $error);
+        $this->refused[$kind . ':' . $owner . ':' . $id] = array('id' => $id, 'owner' => $owner, 'kind' => $kind, 'error' => $error);
     }
 
     /**
-     * Pages left out because their declaration was refused, keyed by id.
+     * Pages left out because their declaration was refused, keyed by 'kind:owner:id', so two
+     * plugins refusing the same id are both kept.
      *
-     * @return array<string,array{owner:string,kind:string,error:string}>
+     * @return array<string,array{id:string,owner:string,kind:string,error:string}>
      */
     public function refused(): array
     {
