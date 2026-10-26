@@ -29,19 +29,15 @@ if (!defined('ABS_PATH')) {
     <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
         <input type="hidden" name="page" value="login" />
         <input type="hidden" name="action" value="recover_post" />
-        <div class="oe-field">
-            <label class="oe-label" for="s_email"><?php echo osc_esc_html(_m('Email address')); ?></label>
-            <?php UserForm::email_text(); ?>
-        </div>
+        <?php osc_gui_field('s_email', _m('Email address'), UserForm::email_text(...)); ?>
 
         <?php if (osc_captcha_enabled()) {
             osc_show_captcha('recover_password');
         } ?>
 
-        <div class="oe-actions">
-            <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send the link')); ?></button>
-            <a href="<?php echo osc_esc_html(osc_user_login_url()); ?>"><?php
-                echo osc_esc_html(_m('Back to sign in')); ?></a>
-        </div>
+        <?php osc_gui_actions(array(
+            array('label' => _m('Send the link')),
+            array('label' => _m('Back to sign in'), 'href' => osc_user_login_url(), 'style' => 'link'),
+        )); ?>
     </form>
 </div>

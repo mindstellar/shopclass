@@ -26,15 +26,8 @@ if (!defined('ABS_PATH')) {
         <input type="hidden" name="page" value="login" />
         <input type="hidden" name="action" value="login_post" />
 
-        <div class="oe-field">
-            <label class="oe-label" for="email"><?php
-                echo osc_esc_html(_m('Email address or username')); ?></label>
-            <?php UserForm::email_login_text(); ?>
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="password"><?php echo osc_esc_html(_m('Password')); ?></label>
-            <?php UserForm::password_login_text(); ?>
-        </div>
+        <?php osc_gui_field('email', _m('Email address or username'), UserForm::email_login_text(...)); ?>
+        <?php osc_gui_field('password', _m('Password'), UserForm::password_login_text(...)); ?>
         <label class="oe-check">
             <?php UserForm::rememberme_login_checkbox(); ?>
             <span><?php echo osc_esc_html(_m('Keep me signed in')); ?></span>
@@ -45,11 +38,10 @@ if (!defined('ABS_PATH')) {
         } ?>
         <?php osc_run_hook('user_login_form'); ?>
 
-        <div class="oe-actions">
-            <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Sign in')); ?></button>
-            <a href="<?php echo osc_esc_html(osc_recover_user_password_url()); ?>"><?php
-                echo osc_esc_html(_m('Forgotten your password?')); ?></a>
-        </div>
+        <?php osc_gui_actions(array(
+            array('label' => _m('Sign in')),
+            array('label' => _m('Forgotten your password?'), 'href' => osc_recover_user_password_url(), 'style' => 'link'),
+        )); ?>
     </form>
     <?php osc_run_hook('user_login_form_after'); ?>
 

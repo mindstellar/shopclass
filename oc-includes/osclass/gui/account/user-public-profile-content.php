@@ -53,7 +53,7 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
             <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html(osc_user_profile_url()); ?>"><?php
                 echo osc_esc_html(_m('Edit your profile')); ?></a>
         <?php } elseif ($contactOpen) { ?>
-            <a class="oe-btn oe-contact-open" href="#oe-contact-dialog" data-osc-dialog-open="oe-contact-dialog"><?php
+            <a class="oe-btn oe-btn--primary oe-contact-open" href="#oe-contact-dialog" data-osc-dialog-open="oe-contact-dialog"><?php
                 printf(osc_esc_html(_m('Message %s')), osc_esc_html(osc_user_name())); ?></a>
         <?php } else { ?>
             <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html(osc_user_login_url()); ?>"><?php
@@ -71,9 +71,9 @@ $contactOpen = !$publicOwn && (!osc_reg_user_can_contact() || osc_is_web_user_lo
 <?php } ?>
 
 <h2><?php echo osc_esc_html(_m('Listings')); ?></h2>
-<?php if (osc_count_items() === 0) { ?>
-    <p class="oe-empty"><?php echo osc_esc_html(_m('Nothing published.')); ?></p>
-<?php } else { ?>
+<?php if (osc_count_items() === 0) {
+    osc_gui_empty(_m('Nothing published.'));
+} else { ?>
     <?php osc_gui_listing_list('public_profile', false); ?>
     <?php osc_gui_print_pager(); ?>
 <?php } ?>

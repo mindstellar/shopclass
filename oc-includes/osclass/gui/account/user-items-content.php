@@ -35,13 +35,11 @@ $listingLimit = osc_user_listing_limit();
         <?php osc_show_flash_message(); ?>
         <?php osc_run_hook('account_page_before', 'user-items'); ?>
 
-        <nav class="oe-tabs" aria-label="<?php echo osc_esc_html(_m('Filter by status')); ?>">
-            <?php foreach ($itemsTabs as $tabType => $tabLabel) { ?>
-                <a href="<?php echo osc_esc_html(osc_user_list_items_url('', $tabType === 'all' ? '' : $tabType)); ?>"<?php
-                    echo $itemsType === $tabType ? ' aria-current="page"' : ''; ?>><?php
-                    echo osc_esc_html($tabLabel); ?></a>
-            <?php } ?>
-        </nav>
+        <?php $tabs = array('label' => _m('Filter by status'), 'items' => array(), 'current' => $itemsType);
+        foreach ($itemsTabs as $tabType => $tabLabel) {
+            $tabs['items'][$tabType] = array($tabLabel, osc_user_list_items_url('', $tabType === 'all' ? '' : $tabType));
+        }
+        require dirname(__DIR__) . '/parts/tabs.php'; ?>
 
         <?php if ($listingLimit !== -1) {
             $listingsUsed = osc_user_listings_used(); ?>
@@ -65,15 +63,12 @@ $listingLimit = osc_user_listing_limit();
             <?php }
         } ?>
 
-        <?php if (osc_count_items() === 0) { ?>
-            <p class="oe-empty"><?php echo osc_esc_html($itemsType === 'all'
+        <?php if (osc_count_items() === 0) {
+            osc_gui_empty($itemsType === 'all'
                 ? _m('You have not published anything yet.')
-                : ($itemsType === 'unpaid' ? _m('No listing is waiting for payment.') : _m('No listings with this status.'))); ?></p>
-            <div class="oe-actions">
-                <a class="oe-btn" href="<?php echo osc_esc_html(osc_item_post_url_in_category()); ?>"><?php
-                    echo osc_esc_html(_m('Publish a listing')); ?></a>
-            </div>
-        <?php } else {
+                : ($itemsType === 'unpaid' ? _m('No listing is waiting for payment.') : _m('No listings with this status.')));
+            osc_gui_actions(array(array('label' => _m('Publish a listing'), 'href' => osc_item_post_url_in_category())));
+        } else {
             osc_gui_listing_list('user_items', true);
 
             osc_gui_print_pager();

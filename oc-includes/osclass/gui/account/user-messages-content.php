@@ -30,9 +30,9 @@ $inboxOlder = View::getInstance()->_get('older');
         <div data-osc-inbox
              data-check-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check'); ?>"
              data-live-url="<?php echo osc_esc_html(osc_messaging_live_url()); ?>">
-        <?php if ($inboxRows === array()) { ?>
-            <p class="oe-empty"><?php echo osc_esc_html(_m('No messages yet.')); ?></p>
-        <?php } else { ?>
+        <?php if ($inboxRows === array()) {
+            osc_gui_empty(_m('No messages yet.'));
+        } else { ?>
             <ul class="oe-threads">
                 <?php foreach ($inboxRows as $inboxRow) {
                     $inboxState  = (string) $inboxRow['s_state'];
@@ -40,7 +40,7 @@ $inboxOlder = View::getInstance()->_get('older');
                     $inboxBlock  = (int) $inboxRow['b_buyer_blocked'] === 1 || (int) $inboxRow['b_seller_blocked'] === 1;
                     ?>
                     <li class="oe-thread oe-panel">
-                        <h2 class="oe-thread-title"><a href="<?php echo osc_esc_html((string) $inboxRow['url']); ?>"><?php
+                        <h2 class="oe-thread-title oe-panel__title"><a href="<?php echo osc_esc_html((string) $inboxRow['url']); ?>"><?php
                             echo osc_esc_html((string) $inboxRow['title']); ?></a></h2>
                         <p class="oe-meta">
                             <span><?php echo osc_esc_html((string) $inboxRow['other_name']); ?></span>
@@ -69,12 +69,9 @@ $inboxOlder = View::getInstance()->_get('older');
                     </li>
                 <?php } ?>
             </ul>
-            <?php if (!empty($inboxOlder)) { ?>
-                <div class="oe-actions">
-                    <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html((string) $inboxOlder); ?>"><?php
-                        echo osc_esc_html(_m('Older')); ?></a>
-                </div>
-            <?php }
+            <?php if (!empty($inboxOlder)) {
+                osc_gui_actions(array(array('label' => _m('Older'), 'href' => (string) $inboxOlder, 'style' => 'secondary')));
+            }
         } ?>
         </div>
         <script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/messages.js'))); ?>" defer></script>

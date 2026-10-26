@@ -27,13 +27,10 @@ if (!defined('ABS_PATH')) {
             _m('A saved search that emails you when a new listing matches it.')
         ); ?></p>
 
-        <?php if (osc_count_alerts() === 0) { ?>
-            <p class="oe-empty"><?php echo osc_esc_html(_m('You have no alerts yet.')); ?></p>
-            <div class="oe-actions">
-                <a class="oe-btn" href="<?php echo osc_esc_html(osc_search_url()); ?>"><?php
-                    echo osc_esc_html(_m('Browse listings')); ?></a>
-            </div>
-        <?php } else {
+        <?php if (osc_count_alerts() === 0) {
+            osc_gui_empty(_m('You have no alerts yet.'));
+            osc_gui_actions(array(array('label' => _m('Browse listings'), 'href' => osc_search_url())));
+        } else {
             while (osc_has_alerts()) {
                 $alertParts   = osc_alert_criteria();
                 $alertActions = array();
@@ -47,8 +44,7 @@ if (!defined('ABS_PATH')) {
                 }
                 $rowActions = (array) osc_apply_filter('alert_row_actions', $alertActions, osc_alert());
                 ?>
-                <section class="oe-panel">
-                    <h2><?php echo osc_esc_html(osc_alert_summary()); ?></h2>
+                <?php osc_gui_panel_open(osc_alert_summary()); ?>
                     <p class="oe-meta">
                         <?php if (osc_alert_is_active()) { ?>
                             <span class="oe-badge paid"><?php echo osc_esc_html(_m('Active')); ?></span>
@@ -63,12 +59,12 @@ if (!defined('ABS_PATH')) {
                     </p>
                     <?php require __DIR__ . '/parts/row-actions.php'; ?>
 
-                    <?php if (osc_count_items() === 0) { ?>
-                        <p class="oe-empty"><?php echo osc_esc_html(_m('Nothing matches it yet.')); ?></p>
-                    <?php } else { ?>
-                        <?php osc_gui_listing_list('alert', false); ?>
-                    <?php } ?>
-                </section>
+                    <?php if (osc_count_items() === 0) {
+                        osc_gui_empty(_m('Nothing matches it yet.'));
+                    } else {
+                        osc_gui_listing_list('alert', false);
+                    } ?>
+                <?php osc_gui_panel_close(); ?>
             <?php }
         } ?>
 

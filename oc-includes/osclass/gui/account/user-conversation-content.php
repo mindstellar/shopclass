@@ -77,7 +77,7 @@ $rowActions = $convoActions;
             <a href="<?php echo osc_esc_html(osc_messaging_inbox_url()); ?>"><?php
                 echo osc_esc_html(_m('All messages')); ?></a>
         </p>
-        <h2 class="oe-thread-title">
+        <h2 class="oe-thread-title oe-panel__title">
             <?php if (!empty($convoItem)) { ?>
                 <a href="<?php echo osc_esc_html((string) $convoItem); ?>"><?php echo osc_esc_html($convoTitle); ?></a>
             <?php } else { ?>
@@ -86,9 +86,9 @@ $rowActions = $convoActions;
             <?php } ?>
         </h2>
 
-        <?php if ($convoMsgs === array()) { ?>
-            <p class="oe-empty"><?php echo osc_esc_html(_m('No messages yet.')); ?></p>
-        <?php } ?>
+        <?php if ($convoMsgs === array()) {
+            osc_gui_empty(_m('No messages yet.'));
+        } ?>
         <ol class="oe-messages" data-osc-messages
             data-conversation="<?php echo (int) $convoId; ?>"
             data-last-id="<?php echo (int) $lastId; ?>"
@@ -133,15 +133,12 @@ $rowActions = $convoActions;
                 <input type="hidden" name="page" value="messages" />
                 <input type="hidden" name="action" value="send_post" />
                 <input type="hidden" name="id" value="<?php echo (int) $convoId; ?>" />
-                <div class="oe-field">
-                    <label class="oe-label" for="oe-compose-body"><?php echo osc_esc_html(_m('Your message')); ?></label>
+                <?php osc_gui_field('oe-compose-body', _m('Your message'), static function () use ($convoMax): void { ?>
                     <textarea id="oe-compose-body" name="body" rows="4" required<?php
                         echo $convoMax > 0 ? ' maxlength="' . (int) $convoMax . '"' : ''; ?>><?php
                         echo osc_esc_html(osc_gui_kept('body')); ?></textarea>
-                </div>
-                <div class="oe-actions">
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send')); ?></button>
-                </div>
+                <?php }); ?>
+                <?php osc_gui_actions(array(array('label' => _m('Send')))); ?>
             </form>
             <?php require __DIR__ . '/parts/push-optin.php'; ?>
         <?php } ?>
@@ -170,10 +167,7 @@ $rowActions = $convoActions;
                                 </label>
                             <?php } ?>
                         </fieldset>
-                        <div class="oe-actions">
-                            <button class="oe-btn oe-btn-danger" type="submit"><?php
-                                echo osc_esc_html(_m('Report conversation')); ?></button>
-                        </div>
+                        <?php osc_gui_actions(array(array('label' => _m('Report conversation'), 'style' => 'danger'))); ?>
                     </form>
                 </details>
             <?php } ?>

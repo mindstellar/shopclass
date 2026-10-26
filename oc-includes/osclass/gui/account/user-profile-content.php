@@ -34,12 +34,11 @@ foreach (osc_get_locales() as $locale) {
 // UserForm names the field s_info[<locale>] and builds its id by dropping every
 // character outside [_a-zA-Z0-9-], so each label's `for` is built the same way.
 $profileInfoField = static function (string $code, string $label) use ($profileUser): void {
-    $id = preg_replace('|([^_a-zA-Z0-9-]+)|', '', 's_info[' . $code . ']'); ?>
-    <div class="oe-field">
-        <label class="oe-label" for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
-        <?php UserForm::info_textarea('s_info', $code, (string) ($profileUser['locale'][$code]['s_info'] ?? '')); ?>
-    </div>
-<?php };
+    $id = (string) preg_replace('|([^_a-zA-Z0-9-]+)|', '', 's_info[' . $code . ']');
+    osc_gui_field($id, $label, static function () use ($code, $profileUser): void {
+        UserForm::info_textarea('s_info', $code, (string) ($profileUser['locale'][$code]['s_info'] ?? ''));
+    });
+};
 ?>
 <div class="oe-account">
     <div class="oe-account-main">
@@ -85,33 +84,28 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
             <fieldset class="oe-group">
                 <legend><?php echo osc_esc_html(_m('Your details')); ?></legend>
                 <div class="oe-grid">
-                    <div class="oe-field">
-                        <label class="oe-label" for="s_name"><?php echo osc_esc_html(_m('Name')); ?></label>
-                        <?php UserForm::name_text($profileUser); ?>
-                    </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="b_company"><?php echo osc_esc_html(_m('Account type')); ?></label>
-                        <?php UserForm::is_company_select($profileUser, _m('Private seller'), _m('Business')); ?>
-                    </div>
+                    <?php osc_gui_field('s_name', _m('Name'), static function () use ($profileUser): void {
+                        UserForm::name_text($profileUser);
+                    }); ?>
+                    <?php osc_gui_field('b_company', _m('Account type'), static function () use ($profileUser): void {
+                        UserForm::is_company_select($profileUser, _m('Private seller'), _m('Business'));
+                    }); ?>
                 </div>
             </fieldset>
 
             <fieldset class="oe-group">
                 <legend><?php echo osc_esc_html(_m('Contact')); ?></legend>
                 <div class="oe-grid">
-                    <div class="oe-field">
-                        <label class="oe-label" for="s_phone_mobile"><?php echo osc_esc_html(_m('Mobile')); ?></label>
-                        <?php UserForm::mobile_text($profileUser); ?>
-                    </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="s_phone_land"><?php echo osc_esc_html(_m('Telephone')); ?></label>
-                        <?php UserForm::phone_land_text($profileUser); ?>
-                    </div>
+                    <?php osc_gui_field('s_phone_mobile', _m('Mobile'), static function () use ($profileUser): void {
+                        UserForm::mobile_text($profileUser);
+                    }); ?>
+                    <?php osc_gui_field('s_phone_land', _m('Telephone'), static function () use ($profileUser): void {
+                        UserForm::phone_land_text($profileUser);
+                    }); ?>
                 </div>
-                <div class="oe-field">
-                    <label class="oe-label" for="s_website"><?php echo osc_esc_html(_m('Website')); ?></label>
-                    <?php UserForm::website_text($profileUser); ?>
-                </div>
+                <?php osc_gui_field('s_website', _m('Website'), static function () use ($profileUser): void {
+                    UserForm::website_text($profileUser);
+                }); ?>
             </fieldset>
 
             <fieldset class="oe-group" data-location-cascade>
@@ -126,27 +120,22 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
                             ); ?></span>
                         </noscript>
                     </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="<?php echo osc_user_field('fk_c_country_code') ? 'regionId' : 'region'; ?>"><?php echo osc_esc_html(_m('Region')); ?></label>
-                        <?php // With no country or region chosen these helpers list every row in the table.
-                        UserForm::region_select(osc_user_field('fk_c_country_code') ? osc_get_regions(osc_user_field('fk_c_country_code')) : array(), $profileUser); ?>
-                    </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="<?php echo osc_user_field('fk_i_region_id') ? 'cityId' : 'city'; ?>"><?php echo osc_esc_html(_m('City')); ?></label>
-                        <?php UserForm::city_select(osc_user_field('fk_i_region_id') ? osc_get_cities(osc_user_field('fk_i_region_id')) : array(), $profileUser); ?>
-                    </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="cityArea"><?php echo osc_esc_html(_m('Neighbourhood')); ?></label>
-                        <?php UserForm::city_area_text($profileUser); ?>
-                    </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="address"><?php echo osc_esc_html(_m('Address')); ?></label>
-                        <?php UserForm::address_text($profileUser); ?>
-                    </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="zip"><?php echo osc_esc_html(_m('Postcode')); ?></label>
-                        <?php UserForm::zip_text($profileUser); ?>
-                    </div>
+                    <?php // With no country or region chosen these helpers list every row in the table.
+                    osc_gui_field(osc_user_field('fk_c_country_code') ? 'regionId' : 'region', _m('Region'), static function () use ($profileUser): void {
+                        UserForm::region_select(osc_user_field('fk_c_country_code') ? osc_get_regions(osc_user_field('fk_c_country_code')) : array(), $profileUser);
+                    });
+                    osc_gui_field(osc_user_field('fk_i_region_id') ? 'cityId' : 'city', _m('City'), static function () use ($profileUser): void {
+                        UserForm::city_select(osc_user_field('fk_i_region_id') ? osc_get_cities(osc_user_field('fk_i_region_id')) : array(), $profileUser);
+                    }); ?>
+                    <?php osc_gui_field('cityArea', _m('Neighbourhood'), static function () use ($profileUser): void {
+                        UserForm::city_area_text($profileUser);
+                    }); ?>
+                    <?php osc_gui_field('address', _m('Address'), static function () use ($profileUser): void {
+                        UserForm::address_text($profileUser);
+                    }); ?>
+                    <?php osc_gui_field('zip', _m('Postcode'), static function () use ($profileUser): void {
+                        UserForm::zip_text($profileUser);
+                    }); ?>
                 </div>
             </fieldset>
 
@@ -166,9 +155,7 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
             <?php osc_run_hook('user_profile_form', $profileUser); ?>
             <?php osc_run_hook('user_form', $profileUser); ?>
 
-            <div class="oe-actions">
-                <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save changes')); ?></button>
-            </div>
+            <?php osc_gui_actions(array(array('label' => _m('Save changes')))); ?>
         </form>
 
         <?php
@@ -179,14 +166,13 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
 
         <?php $exportUrl = osc_user_export_url();
         if ($exportUrl !== '') { ?>
-            <section class="oe-panel">
-                <h2><?php echo osc_esc_html(_m('Your data')); ?></h2>
+            <?php osc_gui_panel_open(_m('Your data')); ?>
                 <p class="oe-muted"><?php echo osc_esc_html(
                     _m('Download a copy of the data this site holds about you.')
                 ); ?></p>
                 <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html($exportUrl); ?>"><?php
                     echo osc_esc_html(_m('Download your data')); ?></a>
-            </section>
+            <?php osc_gui_panel_close(); ?>
         <?php } ?>
 
         <?php
@@ -197,7 +183,7 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
         $deleteUrl = osc_user_delete_url();
         if ($deleteUrl !== '') { ?>
             <section class="oe-danger">
-                <h2><?php echo osc_esc_html(_m('Delete your account')); ?></h2>
+                <h2 class="oe-panel__title"><?php echo osc_esc_html(_m('Delete your account')); ?></h2>
                 <p class="oe-muted"><?php echo osc_esc_html(
                     _m('Your listings and messages are removed with it. This cannot be undone.')
                 ); ?></p>

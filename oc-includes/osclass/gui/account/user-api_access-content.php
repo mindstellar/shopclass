@@ -48,14 +48,13 @@ $apiDate      = static function ($time): string {
             _m('Apps you signed in to with this account, and keys you made for your own scripts. End any you do not recognise.')
         ); ?></p>
 
-        <?php if ($apiSessions === array()) { ?>
-            <p class="oe-empty"><?php echo osc_esc_html(_m('No app or key has access.')); ?></p>
-        <?php } else {
+        <?php if ($apiSessions === array()) {
+            osc_gui_empty(_m('No app or key has access.'));
+        } else {
             foreach ($apiSessions as $apiSession) {
                 $apiIsKey = $apiSession['type'] === 'key';
                 ?>
-                <section class="oe-panel">
-                    <h2><?php echo osc_esc_html($apiSession['label'] !== '' ? $apiSession['label'] : ($apiIsKey ? _m('Key') : _m('Signed-in app'))); ?></h2>
+                <?php osc_gui_panel_open($apiSession['label'] !== '' ? (string) $apiSession['label'] : ($apiIsKey ? _m('Key') : _m('Signed-in app'))); ?>
                     <p class="oe-meta">
                         <span class="oe-badge paid"><?php echo osc_esc_html($apiIsKey ? _m('Key') : _m('Signed in')); ?></span>
                         <?php if ($apiIsKey) { ?>
@@ -82,7 +81,7 @@ $apiDate      = static function ($time): string {
                                 echo osc_esc_html($apiIsKey ? _m('Revoke key') : _m('Sign out')); ?></button>
                         </form>
                     </div>
-                </section>
+                <?php osc_gui_panel_close(); ?>
             <?php }
             if (function_exists('osc_gui_print_confirm_script')) {
                 osc_gui_print_confirm_script();
@@ -103,26 +102,20 @@ $apiDate      = static function ($time): string {
                                aria-describedby="osc-api-key-name-hint" />
                         <p class="oe-hint" id="osc-api-key-name-hint"><?php echo osc_esc_html(_m('So you know later what uses it.')); ?></p>
                     </div>
-                    <div class="oe-field">
-                        <label class="oe-label" for="osc-api-key-expires"><?php echo osc_esc_html(_m('Last day it works')); ?></label>
+                    <?php osc_gui_field('osc-api-key-expires', _m('Last day it works'), static function (): void { ?>
                         <input class="oe-input" id="osc-api-key-expires" type="date" name="expires" required
                                min="<?php echo osc_esc_html(date('Y-m-d', time() + 86400)); ?>"
                                max="<?php echo osc_esc_html(date('Y-m-d', time() + 365 * 86400)); ?>" />
-                    </div>
+                    <?php }); ?>
                     <?php foreach ($apiKeyScopes as $apiScope => $apiScopeText) { ?>
                         <label class="oe-check">
                             <input type="checkbox" name="scopes[]" value="<?php echo osc_esc_html((string) $apiScope); ?>" />
                             <?php echo osc_esc_html($apiScopeText !== '' ? $apiScopeText : (string) $apiScope); ?>
                         </label>
                     <?php } ?>
-                    <div class="oe-field">
-                        <label class="oe-label" for="osc-api-key-password"><?php echo osc_esc_html(_m('Your password')); ?></label>
-                        <input class="oe-input" id="osc-api-key-password" type="password" name="password" autocomplete="current-password" required />
-                    </div>
+                    <?php osc_gui_field('osc-api-key-password', _m('Your password'), '<input class="oe-input" id="osc-api-key-password" type="password" name="password" autocomplete="current-password" required />'); ?>
                 </fieldset>
-                <div class="oe-actions">
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Make key')); ?></button>
-                </div>
+                <?php osc_gui_actions(array(array('label' => _m('Make key')))); ?>
             </form>
         <?php } ?>
 

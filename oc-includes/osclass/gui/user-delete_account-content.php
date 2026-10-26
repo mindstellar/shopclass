@@ -33,18 +33,12 @@ if (!defined('ABS_PATH')) {
         <form class="osc-user-delete-account" action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
             <input type="hidden" name="page" value="user" />
             <input type="hidden" name="action" value="delete_post" />
-            <div class="oe-field">
-                <label class="oe-label" for="osc-delete-account-password"><?php
-                    echo osc_esc_html(_m('Password')); ?></label>
-                <input class="oe-input" id="osc-delete-account-password" type="password" name="password"
-                       autocomplete="current-password" required />
-            </div>
-            <div class="oe-actions">
-                <button class="oe-btn oe-btn-danger" type="submit"><?php
-                    echo osc_esc_html(_m('Delete my account')); ?></button>
-                <a class="oe-muted" href="<?php echo osc_esc_html(osc_user_profile_url()); ?>"><?php
-                    echo osc_esc_html(_m('Cancel')); ?></a>
-            </div>
+            <?php osc_gui_field('osc-delete-account-password', _m('Password'), '<input class="oe-input" id="osc-delete-account-password" type="password" name="password"'
+                . ' autocomplete="current-password" required />'); ?>
+            <?php osc_gui_actions(array(
+                array('label' => _m('Delete my account'), 'style' => 'danger'),
+                array('label' => _m('Cancel'), 'href' => osc_user_profile_url(), 'style' => 'link', 'class' => 'oe-muted'),
+            )); ?>
         </form>
 
         <?php osc_run_hook('account_page_after', 'user-delete_account'); ?>

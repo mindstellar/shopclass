@@ -38,19 +38,15 @@ $addrPost = static function (string $do, string $id, string $label, string $clas
 <?php };
 $addrField = static function (string $name, string $label, string $autocomplete, int $max, bool $required = true) use ($addrForm, $addrErrors): void {
     $id    = 'oe-addr-' . $name;
-    $error = (string) ($addrErrors[$name] ?? ''); ?>
-    <div class="oe-field">
-        <label class="oe-label" for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
+    $error = (string) ($addrErrors[$name] ?? '');
+    osc_gui_field($id, $label, static function () use ($id, $name, $addrForm, $max, $autocomplete, $required, $error): void { ?>
         <input class="oe-input" id="<?php echo osc_esc_html($id); ?>" type="<?php echo $name === 'phone' ? 'tel' : 'text'; ?>"
                name="<?php echo osc_esc_html($name); ?>" value="<?php echo osc_esc_html((string) ($addrForm[$name] ?? '')); ?>"
                maxlength="<?php echo $max; ?>" autocomplete="<?php echo osc_esc_html($autocomplete); ?>"<?php
             echo $required ? ' required' : '';
             echo $error !== '' ? ' aria-invalid="true" aria-describedby="' . osc_esc_html($id) . '-err"' : ''; ?> />
-        <?php if ($error !== '') { ?>
-            <span class="oe-hint oe-field-error" id="<?php echo osc_esc_html($id); ?>-err"><?php echo osc_esc_html($error); ?></span>
-        <?php } ?>
-    </div>
-<?php };
+    <?php }, '', $error);
+};
 ?>
 <div class="oe-account">
     <div class="oe-account-main">
@@ -61,13 +57,13 @@ $addrField = static function (string $name, string $label, string $autocomplete,
             _m('Where your orders can be delivered. The default address is offered first at checkout.')
         ); ?></p>
 
-        <?php if ($addrList === array()) { ?>
-            <p class="oe-empty"><?php echo osc_esc_html(_m('You have no saved addresses yet.')); ?></p>
-        <?php }
+        <?php if ($addrList === array()) {
+            osc_gui_empty(_m('You have no saved addresses yet.'));
+        }
         foreach ($addrList as $addr) {
             $addrTitle = trim((string) $addr['label']) !== '' ? (string) $addr['label'] : (string) $addr['name']; ?>
             <section class="oe-panel oe-address" data-address-id="<?php echo osc_esc_html((string) $addr['id']); ?>">
-                <h2><?php echo osc_esc_html($addrTitle); ?>
+                <h2 class="oe-panel__title"><?php echo osc_esc_html($addrTitle); ?>
                     <?php if ($addr['default']) { ?>
                         <span class="oe-badge paid"><?php echo osc_esc_html(_m('Default')); ?></span>
                     <?php } ?>
@@ -115,9 +111,8 @@ $addrField = static function (string $name, string $label, string $autocomplete,
                         if (!isset($addrCountries[$addrCountry])) {
                             $addrCountry = (string) array_key_first($addrCountries);
                         }
-                        $addrCountryError = (string) ($addrErrors['country'] ?? ''); ?>
-                        <div class="oe-field">
-                            <label class="oe-label" for="oe-addr-country"><?php echo osc_esc_html(_m('Country')); ?></label>
+                        $addrCountryError = (string) ($addrErrors['country'] ?? '');
+                        osc_gui_field('oe-addr-country', _m('Country'), static function () use ($addrCountries, $addrCountry, $addrCountryError): void { ?>
                             <select class="oe-input" id="oe-addr-country" name="country" autocomplete="country"<?php
                                 echo $addrCountryError !== '' ? ' aria-invalid="true" aria-describedby="oe-addr-country-err"' : ''; ?>>
                                 <?php foreach ($addrCountries as $addrCode => $addrName) { ?>
@@ -125,10 +120,7 @@ $addrField = static function (string $name, string $label, string $autocomplete,
                                         echo osc_esc_html($addrName); ?></option>
                                 <?php } ?>
                             </select>
-                            <?php if ($addrCountryError !== '') { ?>
-                                <span class="oe-hint oe-field-error" id="oe-addr-country-err"><?php echo osc_esc_html($addrCountryError); ?></span>
-                            <?php } ?>
-                        </div>
+                        <?php }, '', $addrCountryError); ?>
                     </div>
                     <?php if ($addrId === '' && $addrList !== array()) { ?>
                         <label class="oe-check">
@@ -137,12 +129,11 @@ $addrField = static function (string $name, string $label, string $autocomplete,
                         </label>
                     <?php } ?>
                 </fieldset>
-                <div class="oe-actions">
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html($addrId === '' ? _m('Save address') : _m('Save changes')); ?></button>
-                    <?php if ($addrId !== '') { ?>
-                        <a class="oe-secondary" href="<?php echo osc_esc_html(osc_user_addresses_url()); ?>"><?php echo osc_esc_html(_m('Cancel')); ?></a>
-                    <?php } ?>
-                </div>
+                <?php $addrButtons = array(array('label' => $addrId === '' ? _m('Save address') : _m('Save changes')));
+                if ($addrId !== '') {
+                    $addrButtons[] = array('label' => _m('Cancel'), 'href' => osc_user_addresses_url(), 'style' => 'link', 'class' => 'oe-secondary');
+                }
+                osc_gui_actions($addrButtons); ?>
             </form>
         <?php } ?>
 

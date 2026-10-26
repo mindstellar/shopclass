@@ -28,31 +28,17 @@ if (!defined('ABS_PATH')) {
         <input type="hidden" name="page" value="register" />
         <input type="hidden" name="action" value="register_post" />
 
-        <div class="oe-field">
-            <label class="oe-label" for="s_name"><?php echo osc_esc_html(_m('Name')); ?></label>
-            <?php UserForm::name_text(); ?>
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="s_email"><?php echo osc_esc_html(_m('Email address')); ?></label>
-            <?php UserForm::email_text(); ?>
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="s_password"><?php echo osc_esc_html(_m('Password')); ?></label>
-            <?php UserForm::password_text(); ?>
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="s_password2"><?php echo osc_esc_html(_m('Repeat password')); ?></label>
-            <?php UserForm::check_password_text(); ?>
-        </div>
+        <?php osc_gui_field('s_name', _m('Name'), UserForm::name_text(...)); ?>
+        <?php osc_gui_field('s_email', _m('Email address'), UserForm::email_text(...)); ?>
+        <?php osc_gui_field('s_password', _m('Password'), UserForm::password_text(...)); ?>
+        <?php osc_gui_field('s_password2', _m('Repeat password'), UserForm::check_password_text(...)); ?>
 
         <?php if (osc_captcha_enabled()) {
             osc_show_captcha('register');
         } ?>
         <?php osc_run_hook('user_register_form'); ?>
 
-        <div class="oe-actions">
-            <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Create account')); ?></button>
-        </div>
+        <?php osc_gui_actions(array(array('label' => _m('Create account')))); ?>
     </form>
     <?php osc_run_hook('user_register_form_after'); ?>
 

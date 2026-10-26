@@ -29,26 +29,16 @@ if (!defined('ABS_PATH')) {
         <input type="hidden" name="code"
                value="<?php echo osc_esc_html(Params::getParamString('code')); ?>" />
 
-        <div class="oe-field">
-            <label class="oe-label" for="oe-new-password"><?php
-                echo osc_esc_html(_m('New password')); ?></label>
+        <?php osc_gui_field('oe-new-password', _m('New password'), static function () { ?>
             <input class="oe-input" id="oe-new-password" type="password" name="new_password"
                    autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>"
                    aria-describedby="oe-new-password-hint" />
-            <span class="oe-hint" id="oe-new-password-hint"><?php echo osc_esc_html(
-                sprintf(_m('At least %d characters.'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH)
-            ); ?></span>
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="oe-new-password2"><?php
-                echo osc_esc_html(_m('Repeat the new password')); ?></label>
+        <?php }, sprintf(_m('At least %d characters.'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH)); ?>
+        <?php osc_gui_field('oe-new-password2', _m('Repeat the new password'), static function () { ?>
             <input class="oe-input" id="oe-new-password2" type="password" name="new_password2"
                    autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>" data-match="new_password"
                    data-match-message="<?php echo osc_esc_html(_m('The two passwords do not match.')); ?>" />
-        </div>
-        <div class="oe-actions">
-            <button class="oe-btn" type="submit"><?php
-                echo osc_esc_html(_m('Save the new password')); ?></button>
-        </div>
+        <?php }); ?>
+        <?php osc_gui_actions(array(array('label' => _m('Save the new password')))); ?>
     </form>
 </div>

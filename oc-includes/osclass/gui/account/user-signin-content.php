@@ -47,8 +47,7 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
         <?php osc_show_flash_message(); ?>
         <?php osc_run_hook('account_page_before', 'user-signin'); ?>
 
-        <section id="email" class="oe-panel">
-            <h2><?php echo osc_esc_html(_m('Email address')); ?></h2>
+        <?php osc_gui_panel_open(_m('Email address'), '', 'email'); ?>
             <p class="oe-muted"><?php printf(
                 osc_esc_html(_m('You currently sign in as %s.')),
                 osc_esc_html(osc_logged_user_email())
@@ -57,23 +56,15 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
             <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
                 <input type="hidden" name="page" value="user" />
                 <input type="hidden" name="action" value="change_email_post" />
-                <div class="oe-field">
-                    <label class="oe-label" for="oe-new-email"><?php
-                        echo osc_esc_html(_m('New email address')); ?></label>
+                <?php osc_gui_field('oe-new-email', _m('New email address'), static function () use ($signinFocus) { ?>
                     <input class="oe-input" id="oe-new-email" type="email" name="new_email"
                            autocomplete="email" required aria-describedby="oe-new-email-hint"<?php echo $signinFocus('email'); ?> />
-                    <span class="oe-hint" id="oe-new-email-hint"><?php echo osc_esc_html(
-                        _m('We send a link to the new address. The change takes effect when you follow it.')
-                    ); ?></span>
-                </div>
-                <div class="oe-actions">
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>
-                </div>
+                <?php }, _m('We send a link to the new address. The change takes effect when you follow it.')); ?>
+                <?php osc_gui_actions(array(array('label' => _m('Save')))); ?>
             </form>
-        </section>
+        <?php osc_gui_panel_close(); ?>
 
-        <section id="username" class="oe-panel">
-            <h2><?php echo osc_esc_html(_m('Username')); ?></h2>
+        <?php osc_gui_panel_open(_m('Username'), '', 'username'); ?>
 
             <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
                 <input type="hidden" name="page" value="user" />
@@ -89,49 +80,35 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
                     ); ?></span>
                     <span class="oe-hint" id="oe-username-status" role="status" aria-live="polite"></span>
                 </div>
-                <div class="oe-actions">
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>
-                </div>
+                <?php osc_gui_actions(array(array('label' => _m('Save')))); ?>
             </form>
-        </section>
+        <?php osc_gui_panel_close(); ?>
 
-        <section id="password" class="oe-panel">
-            <h2><?php echo osc_esc_html(_m('Password')); ?></h2>
+        <?php osc_gui_panel_open(_m('Password'), '', 'password'); ?>
 
             <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
                 <input type="hidden" name="page" value="user" />
                 <input type="hidden" name="action" value="change_password_post" />
-                <div class="oe-field">
-                    <label class="oe-label" for="oe-password"><?php
-                        echo osc_esc_html(_m('Current password')); ?></label>
+                <?php osc_gui_field('oe-password', _m('Current password'), static function () use ($signinFocus) { ?>
                     <input class="oe-input" id="oe-password" type="password" name="password"
                            autocomplete="current-password" required<?php echo $signinFocus('password'); ?> />
-                </div>
-                <div class="oe-field">
-                    <label class="oe-label" for="oe-new-password"><?php
-                        echo osc_esc_html(_m('New password')); ?></label>
+                <?php }); ?>
+                <?php osc_gui_field('oe-new-password', _m('New password'), static function () { ?>
                     <input class="oe-input" id="oe-new-password" type="password" name="new_password"
                            autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>"
                            aria-describedby="oe-new-password-hint" />
-                    <span class="oe-hint" id="oe-new-password-hint"><?php echo osc_esc_html(
-                        sprintf(_m('At least %d characters.'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH)
-                    ); ?></span>
-                </div>
-                <div class="oe-field">
-                    <label class="oe-label" for="oe-new-password2"><?php
-                        echo osc_esc_html(_m('Repeat the new password')); ?></label>
+                <?php }, sprintf(_m('At least %d characters.'), \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH)); ?>
+                <?php osc_gui_field('oe-new-password2', _m('Repeat the new password'), static function () { ?>
                     <input class="oe-input" id="oe-new-password2" type="password" name="new_password2"
                            autocomplete="new-password" required minlength="<?php echo \mindstellar\user\AccountService::MIN_PASSWORD_LENGTH; ?>" data-match="new_password"
                            data-match-message="<?php echo osc_esc_html(_m('The two passwords do not match.')); ?>" />
-                </div>
-                <div class="oe-actions">
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Save')); ?></button>
-                </div>
+                <?php }); ?>
+                <?php osc_gui_actions(array(array('label' => _m('Save')))); ?>
             </form>
-        </section>
+        <?php osc_gui_panel_close(); ?>
 
         <section id="sign-out-all" class="oe-panel">
-            <h2><?php echo osc_esc_html(_m('Sign out of all devices')); ?></h2>
+            <h2 class="oe-panel__title"><?php echo osc_esc_html(_m('Sign out of all devices')); ?></h2>
             <p class="oe-muted"><?php echo osc_esc_html(
                 _m('Ends every sign-in to this account: other browsers and phones, apps and personal API keys, and this browser too.')
             ); ?></p>
@@ -139,15 +116,9 @@ $signinFocus = static function (string $section) use ($folioSignin): string {
             <form action="<?php echo osc_esc_html(osc_base_url(true)); ?>" method="post">
                 <input type="hidden" name="page" value="user" />
                 <input type="hidden" name="action" value="sign_out_all_post" />
-                <div class="oe-field">
-                    <label class="oe-label" for="oe-sign-out-password"><?php
-                        echo osc_esc_html(_m('Current password')); ?></label>
-                    <input class="oe-input" id="oe-sign-out-password" type="password" name="password"
-                           autocomplete="current-password" required />
-                </div>
-                <div class="oe-actions">
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Sign out everywhere')); ?></button>
-                </div>
+                <?php osc_gui_field('oe-sign-out-password', _m('Current password'), '<input class="oe-input" id="oe-sign-out-password" type="password" name="password"'
+                    . ' autocomplete="current-password" required />'); ?>
+                <?php osc_gui_actions(array(array('label' => _m('Sign out everywhere')))); ?>
             </form>
         </section>
 

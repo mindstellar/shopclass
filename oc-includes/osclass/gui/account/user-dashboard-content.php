@@ -30,10 +30,10 @@ $dashboardShopper = osc_is_shopper();
 
         <?php if ($dashboardShopper) {
             $orders = View::getInstance()->_exists('orders') ? (array) View::getInstance()->_get('orders') : array(); ?>
-            <h2 class="oe-dashboard-title"><?php echo osc_esc_html(_m('Your recent orders')); ?></h2>
-            <?php if ($orders === array()) { ?>
-                <p class="oe-empty"><?php echo osc_esc_html(_m('You have not ordered anything yet.')); ?></p>
-            <?php } else { ?>
+            <h2 class="oe-dashboard-title oe-panel__title"><?php echo osc_esc_html(_m('Your recent orders')); ?></h2>
+            <?php if ($orders === array()) {
+                osc_gui_empty(_m('You have not ordered anything yet.'));
+            } else { ?>
                 <div class="oe-bill">
                     <?php require ABS_PATH . 'oc-includes/osclass/gui/billing/parts/order-list.php'; ?>
                 </div>
@@ -43,17 +43,15 @@ $dashboardShopper = osc_is_shopper();
                 </p>
             <?php } ?>
         <?php } else { ?>
-            <div class="oe-actions oe-dashboard-actions">
-                <a class="oe-btn" href="<?php echo osc_esc_html(osc_item_post_url_in_category()); ?>"><?php
-                    echo osc_esc_html(_m('Publish a listing')); ?></a>
-                <a class="oe-btn oe-secondary" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php
-                    echo osc_esc_html(_m('Your listings')); ?></a>
-            </div>
+            <?php osc_gui_actions(array(
+                array('label' => _m('Publish a listing'), 'href' => osc_item_post_url_in_category()),
+                array('label' => _m('Your listings'), 'href' => osc_user_list_items_url(), 'style' => 'secondary'),
+            ), 'oe-dashboard-actions'); ?>
 
-            <h2 class="oe-dashboard-title"><?php echo osc_esc_html(_m('Your latest listings')); ?></h2>
-            <?php if (osc_count_items() === 0) { ?>
-                <p class="oe-empty"><?php echo osc_esc_html(_m('You have not published anything yet.')); ?></p>
-            <?php } else { ?>
+            <h2 class="oe-dashboard-title oe-panel__title"><?php echo osc_esc_html(_m('Your latest listings')); ?></h2>
+            <?php if (osc_count_items() === 0) {
+                osc_gui_empty(_m('You have not published anything yet.'));
+            } else { ?>
                 <?php osc_gui_listing_list('dashboard', true); ?>
                 <p class="oe-muted oe-dashboard-more">
                     <a href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php
