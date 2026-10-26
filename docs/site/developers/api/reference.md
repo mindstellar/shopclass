@@ -1723,7 +1723,8 @@ A city's areas
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `q` | query | string | no | Names starting with this. |
+| `q` | query | string | no | Names starting with this, in any language. |
+| `locale` | query | string | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1736,7 +1737,8 @@ Countries
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `q` | query | string | no | Names starting with this. |
+| `q` | query | string | no | Names starting with this, in any language. |
+| `locale` | query | string | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1750,7 +1752,8 @@ A country's regions
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `code` | path | string | yes |  |
-| `q` | query | string | no | Names starting with this. |
+| `q` | query | string | no | Names starting with this, in any language. |
+| `locale` | query | string | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1764,7 +1767,8 @@ A region's cities
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `q` | query | string | no | Names starting with this. |
+| `q` | query | string | no | Names starting with this, in any language. |
+| `locale` | query | string | no |  |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
