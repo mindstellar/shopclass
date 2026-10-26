@@ -13,7 +13,8 @@ if (!defined('ABS_PATH')) {
  */
 
 /**
- * Tone lookups and the print-once stylesheet emitter for core-rendered pages.
+ * Tone lookups, the print-once stylesheet emitter and the markup helpers (fields,
+ * panels, empty lines, button rows) for core-rendered pages.
  *
  * Lives beside page.php rather than in a helper because page.php also renders
  * the boot-failure screens. osc_die() runs from oc-load.php before the theme
@@ -220,5 +221,125 @@ if (!function_exists('osc_gui_print_dialog_script')) {
             . 'if(d&&d.hasAttribute("data-osc-dialog-ready")){e.preventDefault();d.showModal();}return;}'
             . 'var c=e.target.closest("[data-osc-dialog-close]");if(c&&c.closest("dialog")){c.closest("dialog").close();}});'
             . '})();</script>';
+    }
+}
+
+if (!function_exists('osc_gui_field')) {
+    /**
+     * Print a form row: label, input, then an optional hint and error. The hint gets the id
+     * "{$for}-hint" and the error "{$for}-err", so the input can point at them with aria-describedby.
+     *
+     * @param string          $for   id of the input the label is for
+     * @param string          $label plain text, escaped here
+     * @param string|\Closure $input the input's HTML, printed as given, or a closure that prints it
+     * @param string          $hint  plain text, escaped here
+     * @param string          $error plain text, escaped here
+     * @param string          $class extra classes on the row
+     *
+     * @since 7.1.0
+     */
+    function osc_gui_field(string $for, string $label, string|\Closure $input, string $hint = '', string $error = '', string $class = ''): void
+    {
+        echo '<div class="oe-field' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">' . "\n"
+            . '<label class="oe-label" for="' . osc_esc_html($for) . '">' . osc_esc_html($label) . '</label>' . "\n";
+        if ($input instanceof \Closure) {
+            $input();
+        } else {
+            echo $input;
+        }
+        echo "\n";
+        if ($hint !== '') {
+            echo '<span class="oe-hint" id="' . osc_esc_html($for) . '-hint">' . osc_esc_html($hint) . '</span>' . "\n";
+        }
+        if ($error !== '') {
+            echo '<span class="oe-hint oe-field-error" id="' . osc_esc_html($for) . '-err">' . osc_esc_html($error) . '</span>' . "\n";
+        }
+        echo '</div>';
+    }
+}
+
+if (!function_exists('osc_gui_panel_open')) {
+    /**
+     * Open a card, with its title when one is given. Close it with osc_gui_panel_close().
+     *
+     * @param string $title plain text, escaped here
+     * @param string $class extra classes on the card
+     * @param string $id
+     * @param string $tag   section, div or li
+     *
+     * @since 7.1.0
+     */
+    function osc_gui_panel_open(string $title = '', string $class = '', string $id = '', string $tag = 'section'): void
+    {
+        $tag = in_array($tag, array('section', 'div', 'li'), true) ? $tag : 'section';
+        $GLOBALS['osc_gui_panel_tags'][] = $tag;
+        echo '<' . $tag . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '')
+            . ' class="oe-panel' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">';
+        if ($title !== '') {
+            echo "\n" . '<h2 class="oe-panel__title">' . osc_esc_html($title) . '</h2>';
+        }
+        echo "\n";
+    }
+}
+
+if (!function_exists('osc_gui_panel_close')) {
+    /**
+     * Close the card the last osc_gui_panel_open() opened.
+     *
+     * @since 7.1.0
+     */
+    function osc_gui_panel_close(): void
+    {
+        $tag = !empty($GLOBALS['osc_gui_panel_tags']) ? array_pop($GLOBALS['osc_gui_panel_tags']) : 'section';
+        echo '</' . $tag . '>';
+    }
+}
+
+if (!function_exists('osc_gui_empty')) {
+    /**
+     * Print the quiet line shown where a list has nothing in it.
+     *
+     * @param string $message plain text, escaped here
+     * @param string $class   extra classes
+     *
+     * @since 7.1.0
+     */
+    function osc_gui_empty(string $message, string $class = ''): void
+    {
+        echo '<p class="oe-empty' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">' . osc_esc_html($message) . '</p>';
+    }
+}
+
+if (!function_exists('osc_gui_actions')) {
+    /**
+     * Print a row of buttons. Each entry: label, href (a link; without it a submit button),
+     * style (primary, secondary, danger or link; primary by default), class (extra classes)
+     * and attrs (name => value, escaped here).
+     *
+     * @param array<int, array<string, mixed>> $buttons
+     * @param string                           $class extra classes on the row
+     *
+     * @since 7.1.0
+     */
+    function osc_gui_actions(array $buttons, string $class = ''): void
+    {
+        $styles = array(
+            'primary'   => 'oe-btn oe-btn--primary',
+            'secondary' => 'oe-btn oe-secondary',
+            'danger'    => 'oe-btn oe-btn-danger',
+            'link'      => '',
+        );
+        echo '<div class="oe-actions' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">' . "\n";
+        foreach ($buttons as $button) {
+            $classes = trim(($styles[$button['style'] ?? 'primary'] ?? $styles['primary']) . ' ' . (string) ($button['class'] ?? ''));
+            $attrs   = $classes !== '' ? ' class="' . osc_esc_html($classes) . '"' : '';
+            $attrs  .= isset($button['href']) ? ' href="' . osc_esc_html((string) $button['href']) . '"' : ' type="submit"';
+            foreach ((array) ($button['attrs'] ?? array()) as $name => $value) {
+                $attrs .= ' ' . osc_esc_html((string) $name) . '="' . osc_esc_html((string) $value) . '"';
+            }
+            $tag = isset($button['href']) ? 'a' : 'button';
+            echo '<' . $tag . $attrs . '>' . osc_esc_html((string) $button['label']) . '</' . $tag . '>' . "\n";
+        }
+        echo '</div>';
     }
 }

@@ -94,9 +94,11 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-msg-link` | the header link to the inbox from `osc_messaging_link()` | an `<a>` outside `.oe-page`, so core ships no style for it; holds the theme's icon, an `.oe-msg-label` and an `.oe-unread` badge |
 | `.oe-msg-label` | the word "Messages" in `.oe-msg-link` | hide it visually for an icon-only link; the link keeps its `aria-label` |
 | `.oe-thread-actions` | the Block, Unblock and Report links under a conversation | holds the shared row actions and a `<details>` for the report form |
-| `.oe-pager` | the paging strip | core's paginator markup inside |
+| `.oe-pager` | the paging strip | core's paginator markup inside, or a Newer and an Older link on the credits pages |
 | `.oe-empty` | an empty state | replaces the list, never sits beside it |
-| `.oe-panel` | a bordered block grouping related content | also used by the credits pages |
+| `.oe-panel` | a bordered block grouping related content | also used by the credits pages and the checkout address picker |
+| `.oe-panel__title` | a panel's heading | an `<h2>`; also on `.oe-dashboard-title` and `.oe-thread-title` |
+| `.oe-table` | a table of records, such as orders or credit history | a `<table>`; on the credits pages it sits in `.oe-bill` and stacks on a phone |
 | `.oe-muted` | secondary prose | a paragraph, not a control |
 | `.oe-address` | one saved address on the addresses page | also carries `.oe-panel`; holds an `<h2>` (with an `.oe-badge` on the default), `.oe-address-lines` and the row actions |
 | `.oe-address-lines` | a saved address on one line | a `<p>` |
@@ -124,6 +126,7 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-check` | a checkbox and its label on one line | the `<label>` wraps the control |
 | `.oe-actions` | a form's buttons | the submit is first |
 | `.oe-btn` | a button or a link acting as one | add `.oe-secondary` for the quiet one, `.oe-btn-danger` for the destructive one |
+| `.oe-btn--primary` | the main button of a form or a block | also carries `.oe-btn` |
 | `#error_list` | the register form's client-side errors | core's own validator fills it; **empty until it has one**, so style `:not(:empty)` |
 
 ### Notices
@@ -348,6 +351,12 @@ osc_gui_view(
 Resolution is the same three steps core uses: the active theme's view if it has
 one, otherwise your file inside the theme's chrome, otherwise core's own shell.
 Your file is markup only: no `<html>`, no header, no footer.
+
+Inside it, the helpers core's own pages use print the classes above for you.
+`osc_gui_field($for, $label, $input, $hint, $error)` prints an `.oe-field` row,
+`osc_gui_panel_open($title)` and `osc_gui_panel_close()` a `.oe-panel`,
+`osc_gui_empty($message)` an `.oe-empty` line and `osc_gui_actions($buttons)` an
+`.oe-actions` row. They escape the text they print; `$input` is printed as given.
 
 ## The API access page
 
