@@ -172,23 +172,8 @@ final class Schema
                 'name' => ['type' => 'string'],
                 'slug' => self::nullable('string'),
             ], ['code', 'name', 'slug']),
-            'Region'       => self::object([
-                'id'           => ['type' => 'integer'],
-                'country_code' => ['type' => 'string'],
-                'name'         => ['type' => 'string'],
-                'slug'         => self::nullable('string'),
-                'lat'          => self::nullable('number'),
-                'lng'          => self::nullable('number'),
-            ], ['id', 'country_code', 'name', 'slug']),
-            'City'         => self::object([
-                'id'           => ['type' => 'integer'],
-                'region_id'    => ['type' => 'integer'],
-                'country_code' => self::nullable('string'),
-                'name'         => ['type' => 'string'],
-                'slug'         => self::nullable('string'),
-                'lat'          => self::nullable('number'),
-                'lng'          => self::nullable('number'),
-            ], ['id', 'region_id', 'name', 'slug']),
+            'Region'       => self::object(self::regionMembers(), ['id', 'country_code', 'name', 'slug']),
+            'City'         => self::object(self::cityMembers(), ['id', 'region_id', 'name', 'slug']),
             'CityArea'     => self::object([
                 'id'      => ['type' => 'integer'],
                 'city_id' => ['type' => 'integer'],
@@ -837,6 +822,41 @@ final class Schema
             'lat'          => ['type' => ['number', 'null'], 'minimum' => -90, 'maximum' => 90],
             'lng'          => ['type' => ['number', 'null'], 'minimum' => -180, 'maximum' => 180],
             'is_company'   => ['type' => 'boolean'],
+        ];
+    }
+
+    /**
+     * The members of a region.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    public static function regionMembers(): array
+    {
+        return [
+            'id'           => ['type' => 'integer'],
+            'country_code' => ['type' => 'string'],
+            'name'         => ['type' => 'string'],
+            'slug'         => self::nullable('string'),
+            'lat'          => self::nullable('number'),
+            'lng'          => self::nullable('number'),
+        ];
+    }
+
+    /**
+     * The members of a city.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    public static function cityMembers(): array
+    {
+        return [
+            'id'           => ['type' => 'integer'],
+            'region_id'    => ['type' => 'integer'],
+            'country_code' => self::nullable('string'),
+            'name'         => ['type' => 'string'],
+            'slug'         => self::nullable('string'),
+            'lat'          => self::nullable('number'),
+            'lng'          => self::nullable('number'),
         ];
     }
 
