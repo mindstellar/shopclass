@@ -15,9 +15,38 @@
  * DB-free. Usage:  php tests/flash-dismiss.php
  */
 
+define('ABS_PATH', dirname(__DIR__) . '/');
+
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
-define('ABS_PATH', dirname(__DIR__) . '/');
+class Preference
+{
+    public static function getInstance(): self
+    {
+        return new self();
+    }
+    public function get($key)
+    {
+        return false;
+    }
+}
+function osc_plugins_path()
+{
+    return ABS_PATH . 'oc-content/plugins/';
+}
+function osc_assets_url($file)
+{
+    return 'https://example.test/oc-includes/assets/' . $file;
+}
+function osc_asset_url_versioned($url)
+{
+    return $url;
+}
+function osc_register_script($id, $url, $dependencies = null)
+{
+    Scripts::getInstance()->registerScript($id, $url, $dependencies);
+}
 
 class Session
 {
@@ -69,6 +98,12 @@ harness_section('a message with a dismiss button');
 $html = $show(array(array('msg' => 'Saved', 'type' => 'ok')));
 pin('enqueues the dismiss script', array('osc-flash-dismiss'), array_values(array_unique($GLOBALS['enqueued'])));
 check('the button markup is unchanged', str_contains($html, '<a class="btn ico btn-mini ico-close" data-oc-close-label="Dismiss">x</a>'));
+
+harness_section('core registers the script');
+
+Scripts::init();
+pin('osc-flash-dismiss is registered after Scripts::init()', 'https://example.test/oc-includes/assets/osclass/flash-dismiss.js', Scripts::getInstance()->registered['osc-flash-dismiss']['url'] ?? null);
+check('the script file ships with core', is_file(ABS_PATH . 'oc-includes/assets/osclass/flash-dismiss.js'));
 
 harness_section('no dismiss button');
 

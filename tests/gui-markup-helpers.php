@@ -79,4 +79,46 @@ check('a plain link, href escaped', str_contains($row, '<a href="/a?b=1&amp;c=2"
 check('a danger button with its attributes', str_contains($row, '<button class="oe-btn oe-btn-danger" type="submit" name="discard" value="1">Drop</button>'));
 check('a secondary link with an extra class', str_contains($row, '<a class="oe-btn oe-secondary oe-more" href="#m">More</a>'));
 
+harness_section('every argument is escaped once');
+$x = 'a"b<c>&';
+$e = 'a&quot;b&lt;c&gt;&amp;';
+$field = $render(static fn () => osc_gui_field($x, $x, '<input>', $x, $x, $x));
+check('field class', str_starts_with($field, '<div class="oe-field ' . $e . '">'));
+check('field for and label', str_contains($field, '<label class="oe-label" for="' . $e . '">' . $e . '</label>'));
+check('hint id and text', str_contains($field, '<span class="oe-hint" id="' . $e . '-hint">' . $e . '</span>'));
+check('error id and text', str_contains($field, '<span class="oe-hint oe-field-error" id="' . $e . '-err">' . $e . '</span>'));
+$panel = $render(static fn () => osc_gui_panel_open($x, $x, $x, 'div'));
+check('panel id and class', str_starts_with($panel, '<div id="' . $e . '" class="oe-panel ' . $e . '">'));
+check('panel title', str_contains($panel, '<h2 class="oe-panel__title">' . $e . '</h2>'));
+check('a panel tag off the list opens a section', str_starts_with($render(static fn () => osc_gui_panel_open('', '', '', 'script')), '<section class="oe-panel">'));
+pin('empty class and message', '<p class="oe-empty ' . $e . '">' . $e . '</p>', $render(static fn () => osc_gui_empty($x, $x)));
+$actions = $render(static fn () => osc_gui_actions(array(
+    array('label' => $x, 'class' => $x, 'attrs' => array($x => $x)),
+    array('label' => 'Go', 'href' => 'https://x.test/?a=' . $x, 'style' => 'link'),
+), $x));
+check('actions row class', str_starts_with($actions, '<div class="oe-actions ' . $e . '">'));
+check('button class, attribute name and value, label', str_contains($actions, '<button class="oe-btn oe-btn--primary ' . $e . '" type="submit" ' . $e . '="' . $e . '">' . $e . '</button>'));
+check('href', str_contains($actions, '<a href="https://x.test/?a=' . $e . '">Go</a>'));
+
+harness_section('a javascript: href is neutralised');
+$bad = 'javascript:alert(1)';
+$link = $render(static fn () => osc_gui_actions(array(array('label' => 'X', 'href' => $bad, 'style' => 'link'))));
+check('osc_gui_actions()', str_contains($link, '<a href="">X</a>') && !str_contains($link, 'javascript'));
+$tabs = array('label' => 'T', 'items' => array('a' => array('A', $bad), 'b' => array('B', '/ok?x=1&y=2')), 'current' => 'b');
+$tabsHtml = $render(static function () use ($tabs): void {
+    include ABS_PATH . 'oc-includes/osclass/gui/parts/tabs.php';
+});
+check('parts/tabs.php', !str_contains($tabsHtml, 'javascript') && str_contains($tabsHtml, '<a href="/ok?x=1&amp;y=2" aria-current="page">B</a>'));
+if (!function_exists('_m')) {
+    function _m($text)
+    {
+        return $text;
+    }
+}
+$pager = array('prev' => $bad, 'next' => '/p?page=2');
+$pagerHtml = $render(static function () use ($pager): void {
+    include ABS_PATH . 'oc-includes/osclass/gui/parts/pager.php';
+});
+check('parts/pager.php', !str_contains($pagerHtml, 'javascript') && !str_contains($pagerHtml, 'Newer') && str_contains($pagerHtml, 'href="/p?page=2"'));
+
 exit(harness_result());
