@@ -246,6 +246,20 @@ $b = new Search();
 $b->inBox(72.7, 18.9, 73.2, 19.3);
 check('the result cache tells two boxes apart', $a->toJson() !== $b->toJson());
 
+$admin->query("UPDATE {$p}t_item SET b_premium = 1 WHERE pk_i_id IN ($exact, $inPune)");
+$premiums = static function (Search $s) use ($ids, $sorted): array {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
+
+    return $sorted($ids($s->getPremiums(10)));
+};
+$s = new Search();
+$s->inBox(72.7, 18.9, 73.1, 19.3);
+pin('the featured block keeps to the box', array($exact), $premiums($s));
+$s = new Search();
+$s->near(19.08, 72.88, 25);
+pin('and to the radius', array($exact), $premiums($s));
+$admin->query("UPDATE {$p}t_item SET b_premium = 0 WHERE pk_i_id IN ($exact, $inPune)");
+
 $setPref('geo_search', '0');
 pin('switched off, the search page ignores bbox', null, $build(array('bbox' => '72.7,18.9,73.1,19.3'))->box());
 $setPref('geo_search', '1');
