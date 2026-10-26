@@ -56,7 +56,7 @@ hidden.
 
 #### Names in other languages
 
-Edit a country, region or city to see a **Names** section. It has one field per
+Edit a country, region or city to see a **Names in other languages** section. It has one field per
 enabled site language, with the site's default language first. Visitors reading
 the site in a language see that language's name. A blank field uses the stored
 name. The section is hidden when the site has only one language.
