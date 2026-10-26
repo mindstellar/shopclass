@@ -710,6 +710,10 @@ msgstr ""
 msgid "(no values)"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/locations/form.php
+msgid "(site default)"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
 "/api/ belongs to the site's API, so these static pages or categories cannot "
@@ -8635,6 +8639,10 @@ msgstr ""
 msgid "Names are matched from their first letters."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/locations/form.php
+msgid "Names in other languages"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Names starting with"
 msgstr ""
@@ -12647,6 +12655,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Shown to the buyer as written."
+msgstr ""
+
+#: oc-admin/themes/modern/settings/locations/form.php
+msgid ""
+"Shown to visitors reading the site in that language. Blank uses the name "
+"above."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php

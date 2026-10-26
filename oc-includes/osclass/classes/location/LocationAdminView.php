@@ -440,6 +440,66 @@ final class LocationAdminView
     }
 
     /**
+     * The Names fields of the edit drawer: one per site language, the site default first.
+     * Empty when the site has fewer than two languages, so the section is not shown.
+     *
+     * @param array<int,array<string,mixed>> $locales enabled languages (pk_c_code, s_name, s_direction)
+     * @param array<string,string>           $stored  locale => stored name
+     * @param string                         $default the site's default locale
+     *
+     * @return list<array{code:string,label:string,value:string,default:bool,rtl:bool}>
+     */
+    public static function nameFields(array $locales, array $stored, string $default): array
+    {
+        if (count($locales) < 2) {
+            return array();
+        }
+        $first  = array();
+        $others = array();
+        foreach ($locales as $locale) {
+            $code  = (string) ($locale['pk_c_code'] ?? '');
+            $field = array(
+                'code'    => $code,
+                'label'   => (string) ($locale['s_name'] ?? $code),
+                'value'   => (string) ($stored[$code] ?? ''),
+                'default' => $code === $default,
+                'rtl'     => ($locale['s_direction'] ?? '') === 'rtl',
+            );
+            if ($field['default']) {
+                $first[] = $field;
+            } else {
+                $others[] = $field;
+            }
+        }
+
+        return array_merge($first, $others);
+    }
+
+    /**
+     * The posted names[] kept to the site's languages, as locale => name. Unknown keys and
+     * non-text values are dropped, so a drawer opened before a language was removed still saves.
+     *
+     * @param array<mixed,mixed> $posted
+     * @param array<int,string>  $locales enabled locale codes
+     *
+     * @return array<string,string>
+     */
+    public static function postedNames(array $posted, array $locales): array
+    {
+        $names = array();
+        foreach ($posted as $code => $value) {
+            if (!is_string($code) || preg_match('/^[a-z]{2}_[A-Z]{2}$/', $code) !== 1
+                || !in_array($code, $locales, true) || !is_string($value)
+            ) {
+                continue;
+            }
+            $names[$code] = $value;
+        }
+
+        return $names;
+    }
+
+    /**
      * Progress of a counts recalculation from the queue left and the size it started at.
      *
      * @param int $pending locations still queued
