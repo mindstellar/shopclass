@@ -10,7 +10,8 @@
 
 /**
  * The Names section of the locations edit drawer, posted to the real controller: names[] reach
- * t_location_name, a post without names keeps them, and the drawer is filled from them.
+ * t_location_name, a post without names keeps them, the drawer is filled from them, and a post
+ * that fails the CSRF check writes nothing.
  *
  * Usage:  php tests/models/location-names-controller.php
  *         php tests/run-models.php location-names-controller
@@ -32,7 +33,15 @@ class NamesRedirect extends RuntimeException
 {
 }
 
-$admin = scratchdb_session('osc_models_location_names_controller');
+// A refused CSRF check redirects and exits, so a refused post runs in a child process with its
+// own database; it reports the stored names on the way out, before that database is dropped.
+$child = ($argv[1] ?? '') === 'refused';
+if ($child) {
+    register_shutdown_function(static function () use (&$region, &$city): void {
+        echo 'stored: ', json_encode(array((new LocationNameStore())->all('region', $region), (new LocationNameStore())->all('city', $city))), "\n";
+    });
+}
+$admin = scratchdb_session('osc_models_location_names_controller' . ($child ? '_child' : ''));
 
 foreach (array('_m', '__') as $translate) {
     if (!function_exists($translate)) {
@@ -83,7 +92,7 @@ $city    = seed_city($admin, $region, 'Munich', $country);
 harness_reset_container();
 $store = new LocationNameStore();
 
-/** One request to the controller with a valid CSRF token; returns what it ended in. */
+/** One request to the controller with a valid CSRF token unless $request names one; returns what it ended in. */
 $post = static function (array $request): string {
     $csrf     = new \mindstellar\security\Csrf();
     $_GET     = array();
@@ -100,6 +109,20 @@ $post = static function (array $request): string {
     }
 
     return 'no answer';
+};
+
+if ($child) {
+    $store->set('region', $region, 'de_DE', 'Bayern');
+    $store->set('city', $city, 'de_DE', 'München');
+    $id     = $argv[2] === 'edit_region' ? array('region_id' => $region, 'e_region' => 'Bavaria') : array('city_id' => $city, 'e_city' => 'Munich');
+    $answer = $post(array('type' => $argv[2], 'names' => array('de_DE' => 'Gestohlen'), 'CSRFToken' => 'forged') + $id);
+    echo 'controller answered: ', $answer, "\n";
+    exit(0);
+}
+$refused = static function (string $type): string {
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' refused ' . $type . ' 2>&1', $out);
+
+    return implode("\n", $out);
 };
 
 harness_section('saving names');
@@ -122,6 +145,15 @@ Params::init();
 $formModel = new ReflectionMethod('CAdminSettingsLocations', 'formModel');
 $form      = $formModel->invoke((new ReflectionClass('TestLocations'))->newInstanceWithoutConstructor(), array('found' => true, 'level' => 'region'), false);
 pin('one field per language, each with its stored name', array('de_DE' => 'Bayern', 'en_US' => ''), array_column($form['names'] ?? array(), 'value', 'code'));
+
+harness_section('the CSRF check');
+$untouched = 'stored: ' . json_encode(array(array('de_DE' => 'Bayern'), array('de_DE' => 'München')));
+$out       = $refused('edit_region');
+check('a region edit with a forged token ends before the controller answers', !str_contains($out, 'controller answered'), $out);
+check('...and writes no name', str_contains($out, $untouched), $out);
+$out = $refused('edit_city');
+check('a city edit with a forged token ends before the controller answers', !str_contains($out, 'controller answered'), $out);
+check('...and writes no name', str_contains($out, $untouched), $out);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
