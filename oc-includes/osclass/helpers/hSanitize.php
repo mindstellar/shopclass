@@ -20,7 +20,7 @@
  */
 
 /**
- * Sanitize a website URL.
+ * Sanitize a website URL. A javascript:, data: or other non-web scheme gives ''.
  *
  * @param string $value value to sanitize
  *

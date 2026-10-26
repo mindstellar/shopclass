@@ -333,7 +333,7 @@ if (!function_exists('osc_gui_actions')) {
         foreach ($buttons as $button) {
             $classes = trim(($styles[$button['style'] ?? 'primary'] ?? $styles['primary']) . ' ' . (string) ($button['class'] ?? ''));
             $attrs   = $classes !== '' ? ' class="' . osc_esc_html($classes) . '"' : '';
-            $attrs  .= isset($button['href']) ? ' href="' . osc_esc_html((string) $button['href']) . '"' : ' type="submit"';
+            $attrs  .= isset($button['href']) ? ' href="' . osc_esc_html(osc_sanitize_url((string) $button['href'])) . '"' : ' type="submit"';
             foreach ((array) ($button['attrs'] ?? array()) as $name => $value) {
                 $attrs .= ' ' . osc_esc_html((string) $name) . '="' . osc_esc_html((string) $value) . '"';
             }

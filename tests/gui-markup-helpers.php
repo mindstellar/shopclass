@@ -21,12 +21,9 @@ if (!defined('ABS_PATH')) {
     define('ABS_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 }
 
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
-
-function osc_esc_html($s)
-{
-    return htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
-}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 
 require ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 
