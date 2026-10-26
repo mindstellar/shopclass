@@ -85,7 +85,7 @@ class AlertEnvelope
             }
         }
         $box = $criteria->box();
-        if ($box !== null) {
+        if ($box !== null && osc_geo_search_enabled()) {
             $values['bbox'] = BoxFilter::format($box);
         }
 

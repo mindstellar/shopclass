@@ -37,6 +37,13 @@ function osc_apply_filter($hook, $content = '', ...$args)
     return $content;
 }
 
+$GLOBALS['__geo'] = true;
+
+function osc_geo_search_enabled()
+{
+    return $GLOBALS['__geo'];
+}
+
 $build = static function (array $request): string {
     return AlertEnvelope::build(SearchCriteria::fromRequest($request), $request);
 };
@@ -169,6 +176,9 @@ pin('replaying it gives the same box', array(72.8, 18.9, 73.1, 19.3), SearchCrit
 pin('across the date line too', '{"v":2,"params":{"bbox":"170,-20,-170,20"}}', $build(array('bbox' => '170,-20,-170,20')));
 pin('with a radius both are kept', '{"v":2,"params":{"bbox":"1,2,3,4","iRadius":25}}', $build(array('bbox' => '1,2,3,4', 'iRadius' => '25')));
 pin('an invalid box is dropped', '{"v":2,"params":{}}', $build(array('bbox' => '1,5,3,4')));
+$GLOBALS['__geo'] = false;
+pin('with distance search off the box is not kept', '{"v":2,"params":{"sPattern":"bike"}}', $build(array('sPattern' => 'bike', 'bbox' => '1,2,3,4')));
+$GLOBALS['__geo'] = true;
 pin('fromValues() takes a box too', '{"v":2,"params":{"bbox":"1,2,3,4"}}', AlertEnvelope::fromValues(array('bbox' => '1.0,2,3,4'), array()));
 
 harness_section('plugin keys through alert_search_params');
