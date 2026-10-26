@@ -109,6 +109,9 @@ Themes that draw their own field remove the `osc_search_distance_field` action f
 `search_form`; see [Distance search in themes](/docs/developers/distance-search/). The API takes the same search with `lat`, `lng`, `radius` and
 `sort=distance`.
 
+The same switch lets a map plugin keep results to the area on screen, with `bbox`; see
+[A map area](/docs/developers/distance-search/#a-map-area).
+
 ## Keeping search fast as the site grows
 
 - **Cache repeated work.** Search pages rebuild the category and location lists

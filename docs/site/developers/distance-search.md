@@ -18,9 +18,25 @@ A search form sends these, as GET fields:
 | `iRadius` | 5, 10, 25, 50 or 100, in the site's unit. Other numbers snap to the nearest. |
 | `sLat`, `sLng` | The visitor's position, rounded to two decimals. |
 | `sOrder=distance` | Nearest first. |
+| `bbox` | A map area: `west,south,east,north`. See [A map area](#a-map-area). |
 
 With `iRadius` and no `sLat`/`sLng`, the radius is measured from the centre of the one
 city, or else the one region, in the search. The radius then replaces that city filter.
+
+## A map area
+
+`bbox=west,south,east,north` keeps results to listings whose point is inside the box, such
+as the area a map shows. Longitudes run from -180 to 180 and latitudes from -90 to 90, and
+south must not be above north. West above east means the box crosses the date line.
+Each edge is rounded to four decimals.
+
+A `bbox` that is not a valid box is ignored. With `iRadius` both apply, and so do the
+place filters. Search URLs and pagination keep it, the canonical URL drops it, and a
+saved search keeps it.
+
+`osc_search_bbox()` gives the box in use as `[west, south, east, north]`, or null. Plugins
+building a `Search` call `$search->inBox($west, $south, $east, $north)`; `$search->box()`
+reads it back. A search backend finds it in `SearchFilters::$box`.
 
 ## The core field
 
