@@ -113,7 +113,7 @@ $iconSvg = osc_gui_tone_icon($tone);
     <?php echo $bodyHtml ? $body : $esc($body); ?>
   </main>
 <?php } else { ?>
-  <main class="oe-card" role="<?php echo $esc($role); ?>">
+  <main class="oe-card oe-panel" role="<?php echo $esc($role); ?>">
     <div class="oe-band">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><?php echo $iconSvg; ?></svg>
       <?php if ($brandLogo) { ?>
@@ -133,7 +133,7 @@ $iconSvg = osc_gui_tone_icon($tone);
               if (empty($a['label']) || empty($a['href'])) {
                   continue;
               }
-              $cls = !empty($a['primary']) ? 'oe-primary' : 'oe-secondary';
+              $cls = !empty($a['primary']) ? 'oe-primary oe-btn--primary' : 'oe-secondary';
               ?>
             <a class="<?php echo $cls; ?>" href="<?php echo $esc($a['href']); ?>"><?php echo $esc($a['label']); ?></a>
           <?php } ?>

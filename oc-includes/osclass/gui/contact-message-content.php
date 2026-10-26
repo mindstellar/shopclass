@@ -65,16 +65,13 @@ if ($done === 'deleted') {
             <input type="hidden" name="page" value="contact" />
             <input type="hidden" name="action" value="<?php echo $isReport ? 'report_post' : 'confirm_post'; ?>" />
             <input type="hidden" name="t" value="<?php echo osc_esc_html($token); ?>" />
-            <div class="oe-actions">
-                <?php if ($isReport) { ?>
-                    <button class="oe-btn oe-btn-danger" type="submit"><?php echo osc_esc_html(_m('Report the sender')); ?></button>
-                    <a class="oe-muted" href="<?php echo osc_esc_html(osc_base_url()); ?>"><?php echo osc_esc_html(_m('Cancel')); ?></a>
-                <?php } else { ?>
-                    <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send my message')); ?></button>
-                    <button class="oe-btn oe-btn-danger" type="submit" name="discard" value="1"><?php
-                        echo osc_esc_html(_m('This was not me, delete it')); ?></button>
-                <?php } ?>
-            </div>
+            <?php osc_gui_actions($isReport ? array(
+                array('label' => _m('Report the sender'), 'style' => 'danger'),
+                array('label' => _m('Cancel'), 'href' => osc_base_url(), 'style' => 'link', 'class' => 'oe-muted'),
+            ) : array(
+                array('label' => _m('Send my message')),
+                array('label' => _m('This was not me, delete it'), 'style' => 'danger', 'attrs' => array('name' => 'discard', 'value' => '1')),
+            )); ?>
         </form>
     <?php } ?>
 </div>

@@ -24,6 +24,8 @@ if (!defined('ABS_PATH')) {
  * proxy may cache, so a per-visitor token baked into it would either leak between
  * visitors or be stale; core validates the alert on its own terms instead.
  */
+
+require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 ?>
 <?php if (function_exists('osc_search_alert_subscribed') && osc_search_alert_subscribed()) { ?>
     <p class="oe-muted"><?php echo osc_esc_html(_m('You are subscribed to this search.')); ?></p>
@@ -37,17 +39,10 @@ if (!defined('ABS_PATH')) {
         <?php if (osc_is_web_user_logged_in()) { ?>
             <?php AlertForm::email_hidden(); ?>
         <?php } else { ?>
-            <div class="oe-field">
-                <label class="oe-label" for="oe-alert-email"><?php
-                    echo osc_esc_html(_m('Email me when something new matches')); ?></label>
-                <input class="oe-input" id="oe-alert-email" type="email" name="alert_email"
-                       autocomplete="email" required />
-            </div>
+            <?php osc_gui_field('oe-alert-email', _m('Email me when something new matches'), '<input class="oe-input" id="oe-alert-email" type="email" name="alert_email"'
+                . ' autocomplete="email" required />'); ?>
         <?php } ?>
 
-        <div class="oe-actions">
-            <button class="oe-btn oe-secondary" type="submit"><?php
-                echo osc_esc_html(_m('Save this search')); ?></button>
-        </div>
+        <?php osc_gui_actions(array(array('label' => _m('Save this search'), 'style' => 'secondary'))); ?>
     </form>
 <?php } ?>

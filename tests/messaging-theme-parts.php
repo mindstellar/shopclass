@@ -185,7 +185,7 @@ foreach (array(
     'the length cap'             => 'minlength="10" maxlength="2000"',
     'the captcha'                => 'data-context="contact_seller"',
     'the item_contact_form hook' => 'item-contact-hook',
-    'the Send button'            => '<button class="oe-btn" type="submit">Send message</button>',
+    'the Send button'            => '<button class="oe-btn oe-btn--primary" type="submit">Send message</button>',
 ) as $what => $needle) {
     check("the messaging form keeps {$what}", strpos($msg, $needle) !== false);
 }

@@ -31,36 +31,18 @@ if (!defined('ABS_PATH')) {
         <input type="hidden" name="action" value="send_friend_post" />
         <input type="hidden" name="id" value="<?php echo (int) osc_item_id(); ?>" />
 
-        <div class="oe-field">
-            <label class="oe-label" for="oe-sf-your-name"><?php echo osc_esc_html(_m('Your name')); ?></label>
-            <input class="oe-input" id="oe-sf-your-name" type="text" name="yourName" autocomplete="name" required
-                   value="<?php echo osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())); ?>" />
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="oe-sf-your-email"><?php echo osc_esc_html(_m('Your email address')); ?></label>
-            <input class="oe-input" id="oe-sf-your-email" type="email" name="yourEmail" autocomplete="email" required
-                   value="<?php echo osc_esc_html(osc_gui_kept('yourEmail', osc_logged_user_email())); ?>" />
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="oe-sf-friend-name"><?php echo osc_esc_html(_m('Their name')); ?></label>
-            <input class="oe-input" id="oe-sf-friend-name" type="text" name="friendName" required
-                   value="<?php echo osc_esc_html(osc_gui_kept('friendName')); ?>" />
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="oe-sf-friend-email"><?php
-                echo osc_esc_html(_m('Their email address')); ?></label>
-            <input class="oe-input" id="oe-sf-friend-email" type="email" name="friendEmail" required
-                   value="<?php echo osc_esc_html(osc_gui_kept('friendEmail')); ?>"
-                   aria-describedby="oe-sf-friend-email-hint" />
-            <span class="oe-hint" id="oe-sf-friend-email-hint"><?php
-                echo osc_esc_html(_m('We send them a link to this listing, nothing else.')); ?></span>
-        </div>
-        <div class="oe-field">
-            <label class="oe-label" for="oe-sf-message"><?php echo osc_esc_html(_m('Message')); ?></label>
-            <textarea class="oe-input" id="oe-sf-message" name="message" rows="4"<?php
-                $sfMax = \mindstellar\security\MessageGuard::maxLength();
-                echo $sfMax > 0 ? ' maxlength="' . $sfMax . '"' : ''; ?>><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
-        </div>
+        <?php osc_gui_field('oe-sf-your-name', _m('Your name'), '<input class="oe-input" id="oe-sf-your-name" type="text" name="yourName" autocomplete="name" required'
+            . ' value="' . osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())) . '" />'); ?>
+        <?php osc_gui_field('oe-sf-your-email', _m('Your email address'), '<input class="oe-input" id="oe-sf-your-email" type="email" name="yourEmail" autocomplete="email" required'
+            . ' value="' . osc_esc_html(osc_gui_kept('yourEmail', osc_logged_user_email())) . '" />'); ?>
+        <?php osc_gui_field('oe-sf-friend-name', _m('Their name'), '<input class="oe-input" id="oe-sf-friend-name" type="text" name="friendName" required'
+            . ' value="' . osc_esc_html(osc_gui_kept('friendName')) . '" />'); ?>
+        <?php osc_gui_field('oe-sf-friend-email', _m('Their email address'), '<input class="oe-input" id="oe-sf-friend-email" type="email" name="friendEmail" required'
+            . ' value="' . osc_esc_html(osc_gui_kept('friendEmail')) . '" aria-describedby="oe-sf-friend-email-hint" />',
+            _m('We send them a link to this listing, nothing else.')); ?>
+        <?php $sfMax = \mindstellar\security\MessageGuard::maxLength();
+        osc_gui_field('oe-sf-message', _m('Message'), '<textarea class="oe-input" id="oe-sf-message" name="message" rows="4"'
+            . ($sfMax > 0 ? ' maxlength="' . $sfMax . '"' : '') . '>' . osc_esc_html(osc_gui_kept('message_body')) . '</textarea>'); ?>
 
         <?php if (osc_captcha_enabled()) { ?>
             <div class="oe-field"><?php osc_show_captcha('send_friend'); ?></div>
@@ -68,8 +50,6 @@ if (!defined('ABS_PATH')) {
         <?php osc_run_hook('contact_form'); ?>
         <?php osc_run_hook('admin_contact_form'); ?>
 
-        <div class="oe-actions">
-            <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send')); ?></button>
-        </div>
+        <?php osc_gui_actions(array(array('label' => _m('Send')))); ?>
     </form>
 </div>

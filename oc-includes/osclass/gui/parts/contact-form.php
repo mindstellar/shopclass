@@ -33,9 +33,12 @@ if (!defined('ABS_PATH')) {
  * CSRF is injected on shutdown into any form not marked nocsrf.
  */
 
+require_once dirname(__DIR__) . '/page-fn.php';
+
 /** @var array<string, mixed> $contactForm */
 $cf       = $contactForm;
-$cfPrefix = osc_esc_html((string) $cf['prefix']);
+$cfId     = (string) $cf['prefix'];
+$cfPrefix = osc_esc_html($cfId);
 $cfMax    = \mindstellar\security\MessageGuard::maxLength();
 $cfMsg    = !empty($cf['messaging']);
 if ($cfMsg) { ?>
@@ -57,54 +60,38 @@ if ($cfMsg) { ?>
     <?php } ?>
 
     <?php if (!$cfMsg) { ?>
-    <div class="oe-field">
-        <label class="oe-label" for="<?php echo $cfPrefix; ?>-name"><?php
-            echo osc_esc_html(empty($cf['optional']) ? _m('Your name') : _m('Your name (optional)')); ?></label>
-        <input class="oe-input" id="<?php echo $cfPrefix; ?>-name" type="text" name="yourName" autocomplete="name"<?php
-            echo empty($cf['optional']) ? ' required' : ''; ?>
-               value="<?php echo osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())); ?>" />
-    </div>
-    <div class="oe-field">
-        <label class="oe-label" for="<?php echo $cfPrefix; ?>-email"><?php echo osc_esc_html(_m('Your email address')); ?></label>
-        <input class="oe-input" id="<?php echo $cfPrefix; ?>-email" type="email" name="yourEmail" autocomplete="email" required
-               value="<?php echo osc_esc_html(osc_gui_kept('yourEmail', osc_logged_user_email())); ?>"<?php
-               echo !empty($cf['hint']) ? ' aria-describedby="' . $cfPrefix . '-email-hint"' : ''; ?> />
-        <?php if (!empty($cf['hint'])) { ?>
-            <span class="oe-hint" id="<?php echo $cfPrefix; ?>-email-hint"><?php echo osc_esc_html((string) $cf['hint']); ?></span>
-        <?php } ?>
-    </div>
-    <?php if (!empty($cf['phone'])) { ?>
-        <div class="oe-field">
-            <label class="oe-label" for="<?php echo $cfPrefix; ?>-phone"><?php echo osc_esc_html(_m('Phone number')); ?></label>
-            <input class="oe-input" id="<?php echo $cfPrefix; ?>-phone" type="tel" name="phoneNumber" autocomplete="tel"
-                   value="<?php echo osc_esc_html(osc_gui_kept('phoneNumber')); ?>" />
-        </div>
-    <?php }
+    <?php osc_gui_field($cfId . '-name', empty($cf['optional']) ? _m('Your name') : _m('Your name (optional)'),
+        '<input class="oe-input" id="' . $cfPrefix . '-name" type="text" name="yourName" autocomplete="name"'
+        . (empty($cf['optional']) ? ' required' : '')
+        . ' value="' . osc_esc_html(osc_gui_kept('yourName', osc_logged_user_name())) . '" />'); ?>
+    <?php osc_gui_field($cfId . '-email', _m('Your email address'),
+        '<input class="oe-input" id="' . $cfPrefix . '-email" type="email" name="yourEmail" autocomplete="email" required'
+        . ' value="' . osc_esc_html(osc_gui_kept('yourEmail', osc_logged_user_email())) . '"'
+        . (!empty($cf['hint']) ? ' aria-describedby="' . $cfPrefix . '-email-hint"' : '') . ' />',
+        (string) ($cf['hint'] ?? '')); ?>
+    <?php if (!empty($cf['phone'])) {
+        osc_gui_field($cfId . '-phone', _m('Phone number'),
+            '<input class="oe-input" id="' . $cfPrefix . '-phone" type="tel" name="phoneNumber" autocomplete="tel"'
+            . ' value="' . osc_esc_html(osc_gui_kept('phoneNumber')) . '" />');
+    }
     if (isset($cf['top'])) {
         ($cf['top'])();
     }
-    if (!empty($cf['subject'])) { ?>
-        <div class="oe-field">
-            <label class="oe-label" for="<?php echo $cfPrefix; ?>-subject"><?php
-                echo osc_esc_html(empty($cf['optional']) ? _m('Subject') : _m('Subject (optional)')); ?></label>
-            <input class="oe-input" id="<?php echo $cfPrefix; ?>-subject" type="text" name="subject"<?php
-                echo empty($cf['optional']) ? ' required' : ''; ?>
-                   value="<?php echo osc_esc_html(osc_gui_kept('subject')); ?>" />
-        </div>
+    if (!empty($cf['subject'])) {
+        osc_gui_field($cfId . '-subject', empty($cf['optional']) ? _m('Subject') : _m('Subject (optional)'),
+            '<input class="oe-input" id="' . $cfPrefix . '-subject" type="text" name="subject"'
+            . (empty($cf['optional']) ? ' required' : '')
+            . ' value="' . osc_esc_html(osc_gui_kept('subject')) . '" />');
+    } ?>
     <?php } ?>
-    <?php } ?>
-    <div class="oe-field">
-        <label class="oe-label" for="<?php echo $cfPrefix; ?>-message"><?php echo osc_esc_html(_m('Message')); ?></label>
-        <textarea class="oe-input" id="<?php echo $cfPrefix; ?>-message" name="message" rows="6" required
-                  minlength="10"<?php echo $cfMax > 0 ? ' maxlength="' . $cfMax . '"' : ''; ?>><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
-    </div>
-    <?php if (!$cfMsg && !empty($cf['attachment'])) { ?>
-        <div class="oe-field">
-            <label class="oe-label" for="<?php echo $cfPrefix; ?>-attachment"><?php echo osc_esc_html(_m('Attachment')); ?></label>
-            <input class="oe-input" id="<?php echo $cfPrefix; ?>-attachment" type="file" name="attachment"
-                   accept="<?php echo osc_esc_html('.' . implode(',.', \mindstellar\storage\UploadMimes::attachmentExtensions())); ?>" />
-        </div>
-    <?php } ?>
+    <?php osc_gui_field($cfId . '-message', _m('Message'),
+        '<textarea class="oe-input" id="' . $cfPrefix . '-message" name="message" rows="6" required minlength="10"'
+        . ($cfMax > 0 ? ' maxlength="' . $cfMax . '"' : '') . '>' . osc_esc_html(osc_gui_kept('message_body')) . '</textarea>'); ?>
+    <?php if (!$cfMsg && !empty($cf['attachment'])) {
+        osc_gui_field($cfId . '-attachment', _m('Attachment'),
+            '<input class="oe-input" id="' . $cfPrefix . '-attachment" type="file" name="attachment"'
+            . ' accept="' . osc_esc_html('.' . implode(',.', \mindstellar\storage\UploadMimes::attachmentExtensions())) . '" />');
+    } ?>
 
     <?php if (osc_captcha_enabled()) { ?>
         <div class="oe-field"><?php osc_show_captcha((string) $cf['captcha']); ?></div>
@@ -113,7 +100,5 @@ if ($cfMsg) { ?>
         ($cf['hooks'])();
     } ?>
 
-    <div class="oe-actions">
-        <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send message')); ?></button>
-    </div>
+    <?php osc_gui_actions(array(array('label' => _m('Send message')))); ?>
 </form>

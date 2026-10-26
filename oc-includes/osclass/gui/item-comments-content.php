@@ -82,10 +82,10 @@ $oeCommentOld   = static function ($key) {
             <?php } ?>
         </ol>
         <?php if (strpos($oeCommentPager, '<a ') !== false) { ?>
-            <div class="oe-comments-pager"><?php echo $oeCommentPager; ?></div>
+            <div class="oe-comments-pager oe-pager"><?php echo $oeCommentPager; ?></div>
         <?php } ?>
     <?php } else { ?>
-        <p class="oe-comments-empty"><?php echo osc_esc_html(_m('No comments yet.')); ?></p>
+        <p class="oe-comments-empty oe-empty"><?php echo osc_esc_html(_m('No comments yet.')); ?></p>
     <?php } ?>
 
     <?php if ($oeCommentGated) { ?>

@@ -24,7 +24,7 @@ if (!defined('ABS_PATH')) {
     <?php foreach ($pickerAddresses as $pickerAddress) {
         $pickerData  = array_intersect_key($pickerAddress, array_flip(array('name', 'phone', 'line1', 'city', 'state', 'postcode', 'country')));
         $pickerTitle = trim((string) $pickerAddress['label']) !== '' ? (string) $pickerAddress['label'] . ' · ' . (string) $pickerAddress['name'] : (string) $pickerAddress['name']; ?>
-        <label class="osc-address-card">
+        <label class="osc-address-card oe-panel">
             <input type="radio" name="<?php echo osc_esc_html($pickerName); ?>" value="<?php echo osc_esc_html((string) $pickerAddress['id']); ?>"
                    data-address="<?php echo osc_esc_html((string) json_encode($pickerData, JSON_UNESCAPED_UNICODE)); ?>"<?php
                 echo $pickerAddress['default'] ? ' checked' : ''; ?>>
@@ -37,7 +37,7 @@ if (!defined('ABS_PATH')) {
             <?php } ?>
         </label>
     <?php } ?>
-    <label class="osc-address-card osc-address-new">
+    <label class="osc-address-card oe-panel osc-address-new">
         <input type="radio" name="<?php echo osc_esc_html($pickerName); ?>" value="">
         <span class="osc-address-body"><b class="osc-address-name"><?php echo osc_esc_html(_m('Use a new address')); ?></b></span>
     </label>
