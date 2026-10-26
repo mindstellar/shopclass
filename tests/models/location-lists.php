@@ -57,6 +57,7 @@ pin('the three list getters were found', 3, count($getters[0]));
 eval(implode("\n", $getters[0]));
 
 harness_reset_container();
+View::newInstance()->_erase('locales'); // an earlier model file may have cached an empty locale list
 $store = new LocationNameStore();
 $store->set('region', $zurich, 'de_DE', 'Aachen');
 $store->set('country', 'US', 'de_DE', 'Vereinigte Staaten');
