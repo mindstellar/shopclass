@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mindstellar\boot;
 
 use mindstellar\container\Container;
+use mindstellar\event\HookBridge;
 
 /**
  * Parts of oc-load.php's start-up: the helper list it requires, the core services, and the session step.
@@ -76,9 +77,13 @@ final class Boot
 
     /**
      * Fill the site-wide container with core's services; runs once the helpers are loaded, before any plugin.
+     * A second call does nothing, so listeners already added stay.
      */
     public static function services(): void
     {
+        if (Container::root()->has(HookBridge::class)) {
+            return;
+        }
         CoreServices::register(Container::root());
     }
 

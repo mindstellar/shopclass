@@ -58,6 +58,15 @@ file_put_contents($pack . 'bike-trek.webp', 'RIFF' . pack('V', 100) . 'WEBP' . s
 $temps = static fn (): int => count(glob(sys_get_temp_dir() . '/sample??????') ?: array());
 $tempsBefore = $temps();
 
+harness_section('core services');
+// The installer starts with an empty container; the sample step must fill it.
+\mindstellar\container\Container::use(new \mindstellar\container\Container());
+\mindstellar\boot\Boot::services();
+$dispatcher = \mindstellar\container\Container::root()->get(\mindstellar\event\DispatcherInterface::class);
+\mindstellar\boot\Boot::services();
+check('a second services() call keeps the same dispatcher', \mindstellar\container\Container::root()->get(\mindstellar\event\DispatcherInterface::class) === $dispatcher);
+\mindstellar\container\Container::use(new \mindstellar\container\Container());
+
 harness_section('classifieds sample');
 install_seed_categories('classifieds');
 $result = install_seed_sample('classifieds', $pack);

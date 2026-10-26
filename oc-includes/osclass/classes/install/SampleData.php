@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mindstellar\install;
 
 use mindstellar\auth\Actor;
+use mindstellar\boot\Boot;
 use mindstellar\fields\FieldService;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
@@ -112,6 +113,8 @@ final class SampleData
      */
     public function installBatch(string $type, int $batch, ?string $imageDir = null): array
     {
+        // The installer does not boot the app, but saving a listing needs the core services.
+        Boot::services();
         $rows    = self::rows($type);
         $errors  = $this->installFields($type);
         $locale  = osc_current_admin_locale();
