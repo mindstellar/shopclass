@@ -66,6 +66,7 @@ if (!defined('ABS_PATH')) {
   body.oe-page a,body.oe-page .oe-link-btn{color:var(--oe-teal);}
   .oe-page .oe-h1{font-size:1.5rem;font-weight:600;letter-spacing:-.01em;margin:0 0 20px;overflow-wrap:anywhere;}
   .oe-page h2{font-size:1.0625rem;font-weight:600;margin:0 0 12px;}
+  .oe-page .oe-panel__title{font-size:1.0625rem;font-weight:600;}
   .oe-page .oe-band{
     background:var(--oe-band); border-bottom:1px solid var(--oe-rule);
     padding:16px 32px; display:flex; align-items:center; gap:12px;
@@ -75,10 +76,14 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-brand{font-weight:600;color:var(--oe-ink);letter-spacing:-.01em;text-decoration:none;}
   .oe-page .oe-brand span{color:var(--oe-teal);}
   .oe-page .oe-logo{max-height:28px;width:auto;display:block;}
+  .oe-page .oe-panel{
+    background:var(--oe-bench);border:1px solid var(--oe-rule);border-radius:6px;
+    padding:20px 24px;margin-bottom:20px;
+  }
   .oe-page .oe-card{
     background:var(--oe-bench); border:1px solid var(--oe-rule); border-radius:6px;
     box-shadow:0 1px 3px rgba(20,24,31,.06),0 8px 24px rgba(20,24,31,.05);
-    max-width:640px; width:100%; overflow:hidden; margin:48px auto;
+    max-width:640px; width:100%; overflow:hidden; margin:48px auto; padding:0;
   }
   .oe-page .oe-card .oe-body{padding:32px;}
   .oe-page .oe-title{font-size:1.375rem;font-weight:600;letter-spacing:-.005em;margin:0 0 12px;}
@@ -89,17 +94,13 @@ if (!defined('ABS_PATH')) {
     background:var(--oe-bench-sunk);border-radius:4px;padding:2px 6px;font-size:.9em;
   }
   .oe-page .oe-doc{max-width:880px;margin:0 auto;padding:32px 16px 64px;}
-  .oe-page .oe-panel,.oe-page .oe-bill-card{
-    background:var(--oe-bench);border:1px solid var(--oe-rule);border-radius:6px;
-    padding:20px 24px;margin-bottom:20px;
-  }
-  .oe-btn,.oe-bill-btn,.oe-lead a.button,.oe-lead a.btn,.oe-actions a.oe-primary,.oe-actions a.oe-secondary{
+  .oe-btn,.oe-btn--primary,.oe-lead a.button,.oe-lead a.btn,.oe-actions a.oe-primary,.oe-actions a.oe-secondary{
     display:inline-block;text-decoration:none;border:1px solid var(--oe-teal);border-radius:4px;
     padding:9px 18px;font:inherit;font-size:.9375rem;font-weight:500;cursor:pointer;
     background:var(--oe-teal);color:#fff;
     background-image:none;text-shadow:none;box-shadow:none;
   }
-  .oe-btn:hover,.oe-bill-btn:hover,.oe-lead a.button:hover,.oe-actions a.oe-primary:hover{
+  .oe-btn:hover,.oe-btn--primary:hover,.oe-lead a.button:hover,.oe-actions a.oe-primary:hover{
     background:var(--oe-teal-deep);
   }
   .oe-btn-danger,.oe-btn.oe-btn-danger{
@@ -129,7 +130,7 @@ if (!defined('ABS_PATH')) {
     color:var(--oe-ink-muted);font-weight:500;font-size:.8125rem;
     text-transform:uppercase;letter-spacing:.02em;
   }
-  .oe-page .oe-num,.oe-page .oe-bill-num{text-align:right;font-variant-numeric:tabular-nums;}
+  .oe-page .oe-num{text-align:right;font-variant-numeric:tabular-nums;}
   .oe-page .oe-scroll{overflow-x:auto;}
   @media (max-width:40rem){
     .oe-page .oe-bill thead{position:absolute;inline-size:1px;block-size:1px;overflow:hidden;clip-path:inset(50%);}
@@ -139,9 +140,9 @@ if (!defined('ABS_PATH')) {
     .oe-page .oe-bill td[data-label]::before{content:attr(data-label);color:var(--oe-ink-muted);font-size:.8125rem;text-align:start;}
   }
   .oe-muted,.oe-bill-sub{color:var(--oe-ink-muted);margin:4px 0 0;font-size:.875rem;}
-  .oe-page .oe-empty,.oe-page .oe-bill-empty{color:var(--oe-ink-muted);padding:24px 0;text-align:center;}
-  .oe-page .oe-pager,.oe-page .oe-bill-pager{display:flex;justify-content:space-between;margin-top:16px;font-size:.875rem;}
-  .oe-page .oe-pager a,.oe-page .oe-bill-pager a{text-decoration:none;}
+  .oe-page .oe-empty{color:var(--oe-ink-muted);padding:24px 0;text-align:center;}
+  .oe-page .oe-pager{display:flex;justify-content:space-between;margin-top:16px;font-size:.875rem;}
+  .oe-page .oe-pager a{text-decoration:none;}
   .oe-page .oe-figure,.oe-page .oe-bill-balance{font-size:2rem;font-weight:700;margin:0;}
   .oe-page .oe-figure.neg,.oe-page .oe-bill-balance.neg{color:var(--oe-danger);}
   .oe-page .oe-badge,.oe-page .oe-bill-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.75rem;font-weight:500;}
