@@ -42,9 +42,11 @@ $server = proc_open(
 $cacheControl = static function (string $mode, string $cookie = '') use ($port): string {
     $context = stream_context_create(array('http' => array('header' => $cookie === '' ? '' : 'Cookie: ' . $cookie)));
     for ($try = 0; $try < 50; $try++) {
-        $body = @file_get_contents('http://127.0.0.1:' . $port . '/?mode=' . $mode, false, $context);
-        if ($body !== false) {
-            foreach ($http_response_header as $line) {
+        $stream = @fopen('http://127.0.0.1:' . $port . '/?mode=' . $mode, 'rb', false, $context);
+        if ($stream !== false) {
+            $headers = stream_get_meta_data($stream)['wrapper_data'] ?? [];
+            fclose($stream);
+            foreach ($headers as $line) {
                 if (stripos($line, 'Cache-Control:') === 0) {
                     return trim(substr($line, 14));
                 }
