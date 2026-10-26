@@ -100,14 +100,14 @@ final class LocationNames
     }
 
     /**
-     * Place lists. A list that shows at least one translated name is sorted again by the shown
-     * name; a list with none keeps its order.
+     * Place lists. A whole list that shows at least one translated name is sorted again by the
+     * shown name; pass $sort false for one page of a longer list, which keeps its order.
      *
      * @param array<int|string,array<string,mixed>> $rows
      *
      * @return array<int|string,array<string,mixed>>
      */
-    public function translateList(array $rows, string $type, string $idKey, string $nameKey, string $locale): array
+    public function translateList(array $rows, string $type, string $idKey, string $nameKey, string $locale, bool $sort = true): array
     {
         $ids = [];
         foreach ($rows as $row) {
@@ -128,7 +128,7 @@ final class LocationNames
                 $changed            = true;
             }
         }
-        if (!$changed) {
+        if (!$changed || !$sort) {
             return $rows;
         }
         $names    = array_map(static fn (array $row): string => (string) ($row[$nameKey] ?? ''), $rows);

@@ -246,7 +246,7 @@ $names = static fn (Response $r): array => array_column((array) ($r->body()['dat
 
 harness_section('names in the asked language');
 pin('countries without a locale are the stored names', array('Switzerland', 'United States'), $names($get('countries', array(), $publicKey)));
-pin('countries in German, sorted by the German name', array('Schweiz', 'Vereinigte Staaten'), $names($get('countries', array('locale' => 'de_DE'), $publicKey)));
+pin('countries in German', array('Schweiz', 'Vereinigte Staaten'), $names($get('countries', array('locale' => 'de_DE'), $publicKey)));
 pin('the code and slug do not change', array(array('code' => 'CH', 'slug' => 'ch'), array('code' => 'US', 'slug' => 'us')), array_map(static fn (array $c): array => array('code' => $c['code'], 'slug' => $c['slug']), $get('countries', array('locale' => 'de_DE'), $publicKey)->body()['data']));
 pin('a language the site does not have is 422', 422, $get('countries', array('locale' => 'xx_XX'), $publicKey)->status());
 pin('a locale the site has but the place has no name in falls back', array('Switzerland', 'United States'), $names($get('countries', array('locale' => 'en_US'), $publicKey)));
@@ -264,5 +264,13 @@ pin('a prefix with no translated match returns what it did', array('Bern'), $nam
 pin('a prefix nobody has is empty', array(), $names($get('countries/ch/regions', array('q' => 'Nowhere', 'locale' => 'de_DE'), $publicKey)));
 pin('countries by a German prefix', array('Schweiz'), $names($get('countries', array('q' => 'Schw', 'locale' => 'de_DE'), $publicKey)));
 pin('a LIKE wildcard in q is plain text', array(), $names($get('countries/ch/regions', array('q' => '%', 'locale' => 'de_DE'), $publicKey)));
+
+harness_section('paging order');
+$at    = seed_country($admin, 'AT', 'Austria');
+$alpha = seed_region($admin, $at, 'Alpha');
+seed_region($admin, $at, 'Beta');
+$store->set('region', (string) $alpha, 'de_DE', 'Zulu');
+harness_reset_container();
+pin('a page keeps the stored-name order its cursor follows', array('Zulu', 'Beta'), $names($get('countries/at/regions', array('locale' => 'de_DE'), $publicKey)));
 
 exit(harness_result());

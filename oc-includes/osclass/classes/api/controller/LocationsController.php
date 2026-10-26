@@ -75,8 +75,8 @@ final class LocationsController
     }
 
     /**
-     * The page's names in the requested language, falling back to the stored name. Areas have
-     * no translations.
+     * The page's names in the requested language, falling back to the stored name. The page keeps
+     * the stored-name order its cursor follows. Areas have no translations.
      *
      * @param array<int,array<string,mixed>> $page
      *
@@ -90,7 +90,7 @@ final class LocationsController
             return $page;
         }
 
-        return Container::root()->get(LocationNames::class)->translateList($page, $type, $idKey, 's_name', $locale);
+        return Container::root()->get(LocationNames::class)->translateList($page, $type, $idKey, 's_name', $locale, false);
     }
 
     /**
