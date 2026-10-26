@@ -1092,7 +1092,7 @@ function osc_get_countries()
         return View::getInstance()->_get('countries');
     }
 
-    return Country::getInstance()->listAll();
+    return _osc_location_translate(Country::getInstance()->listAll(), 'country', 'pk_c_code', 's_name');
 }
 
 /**
@@ -1109,10 +1109,10 @@ function osc_get_regions($country = '')
     }
 
     if ($country == '') {
-        return Region::getInstance()->listAll();
+        return _osc_location_translate(Region::getInstance()->listAll(), 'region', 'pk_i_id', 's_name');
     }
 
-    return Region::getInstance()->findByCountry($country);
+    return _osc_location_translate(Region::getInstance()->findByCountry($country), 'region', 'pk_i_id', 's_name');
 }
 
 /**
@@ -1129,10 +1129,10 @@ function osc_get_cities($region = '')
     }
 
     if ($region == '') {
-        return City::getInstance()->listAll();
+        return _osc_location_translate(City::getInstance()->listAll(), 'city', 'pk_i_id', 's_name');
     }
 
-    return City::getInstance()->findByRegion((int) $region);
+    return _osc_location_translate(City::getInstance()->findByRegion((int) $region), 'city', 'pk_i_id', 's_name');
 }
 
 /**
