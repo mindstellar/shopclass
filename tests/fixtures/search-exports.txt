@@ -12,6 +12,7 @@ export search_order_type
 export search_order
 export search_radius
 export search_near
+export search_bbox
 export search_pattern
 export search_from_user
 export search_total_pages

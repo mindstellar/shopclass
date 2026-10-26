@@ -59,16 +59,8 @@ final class RadiusFilter
             return;
         }
         [$distance, $params] = $this->distance();
-        [$lat, $lngs]        = self::box($this->lat, $this->lng, $this->km);
-        $column              = DB_TABLE_PREFIX . 't_item_location.d_geo_';
-        $sql                 = '(' . $column . 'lat BETWEEN ? AND ?';
-        $bound               = array($lat[0], $lat[1]);
-        $ranges              = array();
-        foreach ($lngs as $range) {
-            $ranges[] = $column . 'long BETWEEN ? AND ?';
-            array_push($bound, $range[0], $range[1]);
-        }
-        $sql .= ' AND (' . implode(' OR ', $ranges) . ') AND ' . $distance . ' <= ?)';
+        [$sql, $bound]       = self::withinRanges(...self::box($this->lat, $this->lng, $this->km));
+        $sql                 = '(' . $sql . ' AND ' . $distance . ' <= ?)';
         array_push($bound, ...$params);
         $bound[] = $this->km;
         $statement->where($sql, $bound);
@@ -104,6 +96,28 @@ final class RadiusFilter
         }
 
         return array(array($latMin, $latMax), array(array($lngMin, $lngMax)));
+    }
+
+    /**
+     * The condition for a point inside a latitude range and any of the longitude ranges, with
+     * its values. The latitude range leads, so the index on the point serves it.
+     *
+     * @param array{0:float,1:float}            $lat
+     * @param array<int,array{0:float,1:float}> $lngs
+     *
+     * @return array{0:string,1:array<int,float>}
+     */
+    public static function withinRanges(array $lat, array $lngs): array
+    {
+        $column = DB_TABLE_PREFIX . 't_item_location.d_geo_';
+        $bound  = array($lat[0], $lat[1]);
+        $ranges = array();
+        foreach ($lngs as $range) {
+            $ranges[] = $column . 'long BETWEEN ? AND ?';
+            array_push($bound, $range[0], $range[1]);
+        }
+
+        return array($column . 'lat BETWEEN ? AND ? AND (' . implode(' OR ', $ranges) . ')', $bound);
     }
 
     /**

@@ -1105,7 +1105,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_sanitize_url($value)` | Sanitize a website URL. |
 | `osc_sanitize_username($value)` | Sanitize a username |
 
-### hSearch (75)
+### hSearch (76)
 
 `oc-includes/osclass/helpers/hSearch.php`
 
@@ -1151,6 +1151,7 @@ Core defines 1248 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_search()` | Gets search object |
 | `osc_search_alert()` | Gets alert of current search |
 | `osc_search_alert_subscribed()` | Gets current search page |
+| `osc_search_bbox()` | The map area the current search keeps to, or null. |
 | `osc_search_category()` | Gets current search category |
 | `osc_search_category_counts()` | Listings found per category on this search, from a search engine plugin. A parent category's count includes its subcategories. |
 | `osc_search_category_description($locale = '')` | Description of the category the current search is filtered to. Takes the first of a multi-category search, so it always agrees with osc_search_category_name(). |

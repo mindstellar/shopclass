@@ -43257,6 +43257,16 @@
                         }
                     },
                     {
+                        "name": "bbox",
+                        "in": "query",
+                        "required": false,
+                        "description": "west,south,east,north: only listings whose point is inside this box, such as a map's view. West above east crosses the date line. With lat/lng/radius both apply. Needs distance search switched on.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
@@ -52224,6 +52234,16 @@
                         }
                     },
                     {
+                        "name": "bbox",
+                        "in": "query",
+                        "required": false,
+                        "description": "west,south,east,north: only listings whose point is inside this box, such as a map's view. West above east crosses the date line. With lat/lng/radius both apply. Needs distance search switched on.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
                         "name": "custom_field",
                         "in": "query",
                         "required": false,
@@ -56338,6 +56358,12 @@
                     },
                     "premium": {
                         "type": "boolean"
+                    },
+                    "bbox": {
+                        "type": "string",
+                        "minLength": 0,
+                        "maxLength": 100,
+                        "description": "west,south,east,north, as GET /listings takes it."
                     },
                     "custom_field": {
                         "type": "object",

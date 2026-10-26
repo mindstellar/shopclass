@@ -37,6 +37,13 @@ function osc_apply_filter($hook, $content = '', ...$args)
     return $content;
 }
 
+$GLOBALS['__geo'] = true;
+
+function osc_geo_search_enabled()
+{
+    return $GLOBALS['__geo'];
+}
+
 $build = static function (array $request): string {
     return AlertEnvelope::build(SearchCriteria::fromRequest($request), $request);
 };
@@ -146,6 +153,9 @@ $refuse = array(
     'empty value kept'              => '{"v":2,"params":{"sPattern":""}}',
     'keys out of order'             => '{"v":2,"params":{"sPattern":"a","bPic":1}}',
     'escaped slash (not canonical)' => '{"v":2,"params":{"sPattern":"a\/b"}}',
+    'bbox not canonical'            => '{"v":2,"params":{"bbox":"72.80,18.9,73.1,19.3"}}',
+    'bbox out of range'             => '{"v":2,"params":{"bbox":"72.8,18.9,73.1,95"}}',
+    'bbox as a list'                => '{"v":2,"params":{"bbox":[72.8,18.9,73.1,19.3]}}',
     'oversize'                      => '{"v":2,"params":{"sPattern":"' . str_repeat('a', AlertEnvelope::MAX_BYTES) . '"}}',
 );
 foreach ($refuse as $label => $json) {
@@ -156,6 +166,20 @@ pin('isEnvelope() tells v2 from v1', array(true, false), array(
     AlertEnvelope::isEnvelope(array('v' => 2, 'held' => 'x')),
     AlertEnvelope::isEnvelope(array('price_min' => 0)),
 ));
+
+harness_section('a map area');
+
+$boxed = $build(array('sPattern' => 'bike', 'bbox' => '72.80, 18.9,73.1,19.30'));
+pin('the box is kept in its short form', '{"v":2,"params":{"bbox":"72.8,18.9,73.1,19.3","sPattern":"bike"}}', $boxed);
+pin('and validates', array('bbox' => '72.8,18.9,73.1,19.3', 'sPattern' => 'bike'), AlertEnvelope::validate($boxed));
+pin('replaying it gives the same box', array(72.8, 18.9, 73.1, 19.3), SearchCriteria::fromRequest((array) AlertEnvelope::validate($boxed))->box());
+pin('across the date line too', '{"v":2,"params":{"bbox":"170,-20,-170,20"}}', $build(array('bbox' => '170,-20,-170,20')));
+pin('with a radius both are kept', '{"v":2,"params":{"bbox":"1,2,3,4","iRadius":25}}', $build(array('bbox' => '1,2,3,4', 'iRadius' => '25')));
+pin('an invalid box is dropped', '{"v":2,"params":{}}', $build(array('bbox' => '1,5,3,4')));
+$GLOBALS['__geo'] = false;
+pin('with distance search off the box is not kept', '{"v":2,"params":{"sPattern":"bike"}}', $build(array('sPattern' => 'bike', 'bbox' => '1,2,3,4')));
+$GLOBALS['__geo'] = true;
+pin('fromValues() takes a box too', '{"v":2,"params":{"bbox":"1,2,3,4"}}', AlertEnvelope::fromValues(array('bbox' => '1.0,2,3,4'), array()));
 
 harness_section('plugin keys through alert_search_params');
 
@@ -242,6 +266,15 @@ $GLOBALS['__plugin'] = static function (array $params): array {
     return $params;
 };
 pin('a plugin cannot add a product to a search', '{"v":2,"params":{"sPattern":"kept"}}', $build(array('sPattern' => 'kept')));
+$GLOBALS['__plugin'] = static function (array $params): array {
+    $params['bbox'] = '0,0,1,1';
+
+    return $params;
+};
+pin('a plugin cannot add a box, bbox is a core key', '{"v":2,"params":{"sPattern":"kept"}}', $build(array('sPattern' => 'kept')));
+$boxOnly = $build(array('bbox' => '1,2,3,4'));
+pin('nor change one, and an alert with only a box keeps it', '{"v":2,"params":{"bbox":"1,2,3,4"}}', $boxOnly);
+pin('which validates with the plugin on', array('bbox' => '1,2,3,4'), AlertEnvelope::validate($boxOnly));
 $GLOBALS['__plugin'] = null;
 
 exit(harness_result());

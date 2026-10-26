@@ -47,6 +47,8 @@ final class SearchFilters
     public array $locations = array();
     /** @var array{lat:float,lng:float,km:float}|null */
     public ?array $radius = null;
+    /** @var array{west:float,south:float,east:float,north:float}|null only listings with a point inside; west past east crosses the date line */
+    public ?array $box = null;
     /** @var array<int,int> */
     public array $userIds = array();
 
@@ -111,6 +113,7 @@ final class SearchFilters
             $c->locations[$level] = $parts->locations->values($level);
         }
         $c->radius  = $parts->radius->recorded();
+        $c->box     = $parts->box->recorded();
         $c->userIds = $parts->users->ids();
         $c->flags   = $parts->flags;
         $c->itemId  = $parts->byItemId ? (int)$parts->itemId : null;

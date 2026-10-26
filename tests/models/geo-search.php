@@ -11,7 +11,8 @@
 /**
  * Distance search: migration 0072 gives each listing a search point (its own position, else
  * its city or region centre), a radius keeps the listings within it, "nearest first" sorts by
- * distance, and the search page only reads distance params when the site switched them on.
+ * distance, a box keeps to a map area, and the search page only reads these params when the
+ * site switched them on.
  *
  * Usage:  php tests/models/geo-search.php
  *         php tests/run-models.php geo-search
@@ -216,6 +217,62 @@ pin('a saved alert keeps the radius and the city it measures from', array(25, ar
 pin('and replays the same search', 25.0, $build($params)->nearPoint()['km'] ?? null);
 $params = AlertEnvelope::validate(AlertEnvelope::build($crit(array('sLat' => '19.0812', 'sLng' => '72.88', 'iRadius' => '25')), array()));
 pin('around the visitor\'s point it keeps the point, to two decimals', array('19.08', '72.88', 25), array($params['sLat'] ?? null, $params['sLng'] ?? null, $params['iRadius'] ?? null));
+
+harness_section('a map area');
+
+$fiji  = $item('Suva, west of the date line', null, null, array(-18.14, 178.44));
+$samoa = $item('Apia, east of the date line', null, null, array(-13.83, -171.77));
+ListingStore::stampPoint($fiji);
+ListingStore::stampPoint($samoa);
+$inBox = static function (array $box) use ($ids, $sorted): array {
+    $s = new Search();
+    $s->inBox(...$box);
+
+    return array($sorted($ids($s->doSearch())), $s->count());
+};
+pin('a box round Mumbai holds the listings there and leaves Pune out', array($sorted(array($exact, $inMumbai, $inThane)), 3), $inBox(array(72.7, 18.9, 73.1, 19.3)));
+pin('a box with no listings in it', array(array(), 0), $inBox(array(10.0, 10.0, 11.0, 11.0)));
+pin('a box across the date line holds both sides', array($sorted(array($fiji, $samoa)), 2), $inBox(array(170.0, -25.0, -170.0, -10.0)));
+pin('and only what is between its edges', array(array($fiji), 1), $inBox(array(175.0, -25.0, -175.0, -10.0)));
+pin('the same edges not crossing it hold neither', array(array(), 0), $inBox(array(-170.0, -25.0, 170.0, -10.0)));
+$s = new Search();
+$s->inBox(72.7, 18.9, 73.1, 19.3);
+$s->near(19.08, 72.88, 5);
+pin('a box and a radius both apply', $sorted(array($exact, $inMumbai)), $sorted($ids($s->doSearch())));
+pin('the search backends see the box', array('west' => 72.7, 'south' => 18.9, 'east' => 73.1, 'north' => 19.3), \mindstellar\search\SearchFilters::from((new ReflectionProperty(Search::class, 'parts'))->getValue($s))->box);
+$a = new Search();
+$a->inBox(72.7, 18.9, 73.1, 19.3);
+$b = new Search();
+$b->inBox(72.7, 18.9, 73.2, 19.3);
+check('the result cache tells two boxes apart', $a->toJson() !== $b->toJson());
+
+$admin->query("UPDATE {$p}t_item SET b_premium = 1 WHERE pk_i_id IN ($exact, $inPune)");
+$premiums = static function (Search $s) use ($ids, $sorted): array {
+    \mindstellar\cache\CacheManager::getInstance()->flush();
+
+    return $sorted($ids($s->getPremiums(10)));
+};
+$s = new Search();
+$s->inBox(72.7, 18.9, 73.1, 19.3);
+pin('the featured block keeps to the box', array($exact), $premiums($s));
+$s = new Search();
+$s->near(19.08, 72.88, 25);
+pin('and to the radius', array($exact), $premiums($s));
+$admin->query("UPDATE {$p}t_item SET b_premium = 0 WHERE pk_i_id IN ($exact, $inPune)");
+
+$setPref('geo_search', '0');
+pin('switched off, the search page ignores bbox', null, $build(array('bbox' => '72.7,18.9,73.1,19.3'))->box());
+$setPref('geo_search', '1');
+$s = $build(array('bbox' => '72.7,18.9,73.1,19.3'));
+pin('switched on, the search page keeps to it', $sorted(array($exact, $inMumbai, $inThane)), $sorted($ids($s->doSearch())));
+pin('an invalid bbox is ignored', null, $build(array('bbox' => '72.7,19.3,73.1,18.9'))->box());
+pin('with a city, both apply', array($inMumbai), $ids($build(array('bbox' => '72.7,18.9,73.1,19.3', 'sCity' => (string) $mumbai))->doSearch()));
+$params = AlertEnvelope::validate(AlertEnvelope::build($crit(array('bbox' => '170,-25,-170,-10')), array()));
+pin('a saved alert keeps the box', '170,-25,-170,-10', $params['bbox'] ?? null);
+pin('and replays it', $sorted(array($fiji, $samoa)), $sorted($ids($build((array) $params)->doSearch())));
+
+$explain = $admin->query('EXPLAIN SELECT fk_i_item_id FROM ' . $p . 't_item_location WHERE d_geo_lat BETWEEN 18.9 AND 19.3 AND (d_geo_long BETWEEN 72.7 AND 73.1)')->fetch_assoc();
+pin('the box reads the point index', 'idx_geo', $explain['key'] ?? null);
 
 harness_section('the maths');
 

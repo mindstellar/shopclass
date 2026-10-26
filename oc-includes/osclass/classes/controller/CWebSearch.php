@@ -256,6 +256,8 @@ class CWebSearch extends BaseModel
         $near = $this->mSearch->nearPoint();
         $this->_exportVariableToView('search_radius', $near !== null ? $criteria->radius() : 0);
         $this->_exportVariableToView('search_near', $near !== null ? array($near['lat'], $near['lng']) : null);
+        $box = $this->mSearch->box();
+        $this->_exportVariableToView('search_bbox', $box !== null ? array_values($box) : null);
 
         $this->_exportVariableToView('search_pattern', $criteria->pattern());
         $this->_exportVariableToView('search_from_user', $criteria->users());
@@ -580,8 +582,8 @@ class CWebSearch extends BaseModel
             'iPage', 'iPagesize', 'sOrder', 'iOrderType', 'sShowAs',
             // same set, narrowed
             'sPriceMin', 'sPriceMax', 'meta', 'bPic', 'bPremium',
-            // the same place, by distance
-            'sLat', 'sLng', 'iRadius',
+            // the same place, by distance or map area
+            'sLat', 'sLng', 'iRadius', 'bbox',
         );
         foreach ($drop as $key) {
             unset($params[$key]);

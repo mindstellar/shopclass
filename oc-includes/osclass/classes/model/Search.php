@@ -823,6 +823,24 @@ class Search extends DAO
     }
 
     /**
+     * Keep only listings whose point is inside this box. West past east crosses the date line.
+     */
+    public function inBox(float $west, float $south, float $east, float $north): void
+    {
+        $this->parts->box->within($west, $south, $east, $north);
+    }
+
+    /**
+     * The box set by inBox(), or null.
+     *
+     * @return array{west:float,south:float,east:float,north:float}|null
+     */
+    public function box(): ?array
+    {
+        return $this->parts->box->recorded();
+    }
+
+    /**
      * Return ads from specified users
      *
      * @param string|int|array<int,string|int>|null $id User ids or usernames

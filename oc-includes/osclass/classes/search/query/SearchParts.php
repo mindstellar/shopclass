@@ -23,6 +23,7 @@ final class SearchParts
     public PatternFilter $pattern;
     public LocationFilter $locations;
     public RadiusFilter $radius;
+    public BoxFilter $box;
     public CategoryFilter $categories;
     public UserFilter $users;
     public PluginClauses $plugin;
@@ -72,6 +73,7 @@ final class SearchParts
         $this->pattern    = new PatternFilter();
         $this->locations  = new LocationFilter();
         $this->radius     = new RadiusFilter();
+        $this->box        = new BoxFilter();
         $this->categories = new CategoryFilter();
         $this->users      = new UserFilter();
         $this->plugin     = new PluginClauses();

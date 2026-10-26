@@ -1517,6 +1517,7 @@ Search listings
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
+| `bbox` | query | string | no | west,south,east,north: only listings whose point is inside this box, such as a map's view. West above east crosses the date line. With lat/lng/radius both apply. Needs distance search switched on. |
 | `custom_field` | query | object | no | custom_field[<id>]=<value>, or custom_field[<id>][]=A&custom_field[<id>][]=B for a dropdown or radio field: any of up to 20 values. Needs a category filter; each id must be a searchable field of that category, else 422. |
 | `option` | query | object | no | option[<name>][]=<value>: only listings with one variant that has, for every name given, one of its values (OR within a name, AND across names). At most 3 names and 10 values each, names up to 30 and values up to 40 characters; anything over is ignored. With in_stock or on_sale, the same variant must meet them too. |
 | `ids` | query | string or array | no | One value, a comma list, or repeated. |
@@ -2066,6 +2067,7 @@ A user's live listings
 | `lat` | query | number | no | Measure distances from this point, with lng. Needs distance search switched on. |
 | `lng` | query | number | no |  |
 | `radius` | query | number | no | Only listings within this many km of lat/lng. |
+| `bbox` | query | string | no | west,south,east,north: only listings whose point is inside this box, such as a map's view. West above east crosses the date line. With lat/lng/radius both apply. Needs distance search switched on. |
 | `custom_field` | query | object | no | custom_field[<id>]=<value>, or custom_field[<id>][]=A&custom_field[<id>][]=B for a dropdown or radio field: any of up to 20 values. Needs a category filter; each id must be a searchable field of that category, else 422. |
 | `option` | query | object | no | option[<name>][]=<value>: only listings with one variant that has, for every name given, one of its values (OR within a name, AND across names). At most 3 names and 10 values each, names up to 30 and values up to 40 characters; anything over is ignored. With in_stock or on_sale, the same variant must meet them too. |
 | `ids` | query | string or array | no | One value, a comma list, or repeated. |
