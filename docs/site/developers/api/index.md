@@ -124,6 +124,7 @@ Filters for `GET /listings`:
 | `with_photos`, `premium` | `1` or `true` to keep only those. |
 | `custom_field[<id>]` | A custom field value, such as `custom_field[4]=Blue`. Ids come from `GET /custom-fields`. Needs a `category` filter, and the field must be searchable in that category (a parent category's fields count). An unknown id, or a field the category does not have, is a `422`; the web search page ignores them. |
 | `lat`, `lng`, `radius` | Distance search: a point, and optionally a radius in km (1 to 1000). A `422` while the site has distance search off. |
+| `bbox` | `west,south,east,north`: only listings inside this box, such as a map's view. West above east crosses the date line. A `422` for a bad box, or while the site has distance search off. |
 | `sort` | `created` (default), `id`, `price`, `relevance` or `distance` (nearest first; needs `lat` and `lng`). |
 | `order` | `desc` (default) or `asc`. |
 | `limit` | Page size, 1 up to the site's maximum results per page. Above that is a `422`. |

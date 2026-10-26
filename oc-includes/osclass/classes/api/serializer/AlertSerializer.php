@@ -34,6 +34,7 @@ final class AlertSerializer
         'sPriceMax' => 'price_max',
         'bPic'      => 'with_photos',
         'bPremium'  => 'premium',
+        'bbox'      => 'bbox',
         'meta'      => 'custom_field',
     ];
 
@@ -54,7 +55,7 @@ final class AlertSerializer
             $value          = $params[$key];
             $filters[$name] = match ($key) {
                 'bPic', 'bPremium'       => (bool) $value,
-                'sPattern'               => (string) $value,
+                'sPattern', 'bbox'       => (string) $value,
                 'sPriceMin', 'sPriceMax' => (int) $value,
                 'meta'                   => (array) $value,
                 default                  => array_values((array) $value),

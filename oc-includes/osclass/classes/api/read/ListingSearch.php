@@ -25,6 +25,7 @@ use mindstellar\listing\VariantStore;
 use mindstellar\search\Distance;
 use mindstellar\search\FacetIndex;
 use mindstellar\search\FacetTerms;
+use mindstellar\search\query\BoxFilter;
 use mindstellar\search\query\FacetFilter;
 use mindstellar\search\SearchBuilder;
 use mindstellar\search\SearchCriteria;
@@ -332,13 +333,35 @@ final class ListingSearch
     }
 
     /**
+     * The `bbox` query as the search page reads it, or null when none was sent.
+     *
+     * @throws ProblemException 422 when distance search is off, or the box is not valid
+     */
+    private static function box(Request $request): ?string
+    {
+        $bbox = $request->queryString('bbox');
+        if ($bbox === '') {
+            return null;
+        }
+        if (!osc_geo_search_enabled()) {
+            throw ProblemException::field('/bbox', 'rejected', 'is not available: distance search is switched off on this site', 'query');
+        }
+        $box = BoxFilter::parse($bbox);
+        if ($box === null) {
+            throw ProblemException::field('/bbox', 'format', 'must be west,south,east,north: longitudes from -180 to 180, latitudes from -90 to 90, south not above north', 'query');
+        }
+
+        return BoxFilter::format($box);
+    }
+
+    /**
      * The search page parameters for a request's filters.
      *
      * @param string   $locale the request's resolved locale, used for category slugs
      * @param int|null $userId a seller the list is fixed to (`/users/{id}/listings`)
      *
      * @return array<string,mixed>
-     * @throws ProblemException 422 for an unknown category or a user that is not an id
+     * @throws ProblemException 422 for an unknown category, a user that is not an id, or a bad bbox
      */
     public static function params(Request $request, CategoryCatalog $categories, string $locale, ?int $userId = null): array
     {
@@ -374,6 +397,10 @@ final class ListingSearch
         }
         if ($request->queryBool('premium')) {
             $params['bPremium'] = 1;
+        }
+        $bbox = self::box($request);
+        if ($bbox !== null) {
+            $params['bbox'] = $bbox;
         }
         $meta = $request->query()['custom_field'] ?? null;
         if (is_array($meta) && $meta !== []) {

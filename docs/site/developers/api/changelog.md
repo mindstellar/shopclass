@@ -75,6 +75,14 @@ None.
 
 ## Changes
 
+### v1: map area
+
+Added to v1 on 2026-10-26.
+
+- `GET /listings` and `GET /users/{id}/listings` take `bbox=west,south,east,north`: only listings whose point is inside the box. West above east crosses the date line. With `lat`, `lng` and `radius` both apply.
+- A box that is not four numbers in range, or with south above north, is `422`, as is any `bbox` while distance search is off.
+- `POST /account/alerts` keeps `bbox` in a saved search's `filters`.
+
 ### v1: menus the owner builds
 
 Added to v1 on 2026-10-24.

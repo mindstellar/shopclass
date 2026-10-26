@@ -439,6 +439,8 @@ $near = array('lat' => '30.27', 'lng' => '-97.74');
 $off  = $get('listings', $near + array('radius' => '10'), $publicKey);
 pin('switched off, a distance search is refused and names the field', array(422, '/lat'), array($off->status(), $off->body()['errors'][0]['pointer'] ?? null));
 pin('so is a distance sort', 422, $get('listings', array('sort' => 'distance'), $publicKey)->status());
+$off = $get('listings', array('bbox' => '-98,30,-97,31'), $publicKey);
+pin('switched off, a map area is refused too', array(422, '/bbox', 'rejected'), array($off->status(), $off->body()['errors'][0]['pointer'] ?? null, $off->body()['errors'][0]['code'] ?? null));
 Preference::getInstance()->set('geo_search', '1');
 scratchdb_forget_cache();
 osc_reset_preferences();
@@ -454,6 +456,17 @@ pin('outside a distance search distance_km is null', array(null), array_unique(a
 $half = $get('listings', array('lat' => '30.27', 'radius' => '10'), $publicKey);
 pin('a point needs both lat and lng', array(422, '/lng'), array($half->status(), $half->body()['errors'][0]['pointer'] ?? null));
 pin('a radius past the route maximum is refused', 422, $get('listings', $near + array('radius' => '5000'), $publicKey)->status());
+$boxCount = static fn (array $query): mixed => $get('listings', $query + array('category' => 'cars', 'count' => 'true'), $publicKey)->body()['meta']['total'] ?? null;
+pin('every car inside a box round the city', 25, $boxCount(array('bbox' => '-98,30,-97.5,30.5')));
+pin('none inside a box beside it', 0, $boxCount(array('bbox' => '-97.5,30,-97,30.5')));
+pin('a box across the date line reaching the city', 25, $boxCount(array('bbox' => '100,30,-97.5,30.5')));
+pin('a box across the date line stopping short of it', 0, $boxCount(array('bbox' => '100,30,-100,30.5')));
+pin('a box and a radius both apply', 0, $boxCount(array('bbox' => '-97.5,30,-97,30.5') + $near + array('radius' => '10')));
+foreach (array('three numbers' => '-98,30,-97.5', 'south above north' => '-98,31,-97.5,30', 'latitude past 90' => '-98,30,-97.5,91', 'text' => 'a,b,c,d') as $label => $bbox) {
+    $bad = $get('listings', array('bbox' => $bbox), $publicKey);
+    pin('a bad box is 422 at bbox: ' . $label, array(422, '/bbox', 'format', 'query'), array($bad->status(), $bad->body()['errors'][0]['pointer'] ?? null, $bad->body()['errors'][0]['code'] ?? null, $bad->body()['errors'][0]['in'] ?? null));
+}
+pin('the 422 has the validation shape', array(), $schemaErrors('Problem', $get('listings', array('bbox' => '1,2,3'), $publicKey)));
 Preference::getInstance()->set('geo_search', '0');
 scratchdb_forget_cache();
 osc_reset_preferences();

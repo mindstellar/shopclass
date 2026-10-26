@@ -736,6 +736,7 @@ final class Schema
                 'price_max'   => ['type' => 'integer', 'minimum' => 0],
                 'with_photos' => ['type' => 'boolean'],
                 'premium'     => ['type' => 'boolean'],
+                'bbox'        => $text(100) + ['description' => 'west,south,east,north, as GET /listings takes it.'],
                 'custom_field' => ['type' => 'object', 'additionalProperties' => ['type' => ['string', 'integer', 'object']]],
             ]),
             'Alert'        => self::object([
