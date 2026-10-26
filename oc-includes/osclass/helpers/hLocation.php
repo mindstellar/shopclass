@@ -468,7 +468,24 @@ function osc_geocode_attribution(): string
 }
 
 /**
+ * Load the current-language names of many places in one query, so osc_location_name() calls in
+ * a loop read them from memory. Call it before the loop.
+ *
+ * @param string                $type 'country', 'region' or 'city'
+ * @param array<int,int|string> $ids  region or city ids, or country codes
+ *
+ * @return void
+ * @since 7.1.0
+ */
+function osc_location_names_prime(string $type, array $ids): void
+{
+    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+    \mindstellar\container\Container::root()->get(\mindstellar\location\LocationNames::class)->prime($locale, [$type => $ids]);
+}
+
+/**
  * The name of a country, region or city in the current language, or $fallback when none is stored.
+ * Each new place costs a query; in a loop, call osc_location_names_prime() first.
  *
  * @param string     $type     'country', 'region' or 'city'
  * @param int|string $id       region or city id, or country code

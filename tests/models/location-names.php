@@ -126,6 +126,14 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocation.php';
 Container::root()->set(LocationNames::class, static fn () => new LocationNames($store));
 pin('osc_location_name() gives the current locale name', 'Köln', osc_location_name('city', $cologne, 'Cologne'));
 pin('osc_location_name() falls back for a place with no name', 'Nowhere', osc_location_name('city', 999999, 'Nowhere'));
+Container::root()->set(LocationNames::class, static fn () => new LocationNames($store));
+$q = harness_query_count(static function () use ($cologne, $bonn): void {
+    osc_location_names_prime('city', [$cologne, $bonn, 999999]);
+    foreach ([$cologne, $bonn, 999999] as $id) {
+        osc_location_name('city', $id, '');
+    }
+});
+pin('osc_location_names_prime() makes a loop of names cost one query', 1, $q);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
