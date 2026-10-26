@@ -315,7 +315,7 @@ final class LocationService
 
     /**
      * @param array<string,mixed>|null $names
-     * @throws InvalidException a language the site does not have, or a name over 100 characters
+     * @throws InvalidException a language the site does not have, a value that is not text, or a name over 100 characters
      */
     private function writeNames(string $type, int|string $id, ?array $names): void
     {
@@ -328,6 +328,9 @@ final class LocationService
             $locale = (string) $locale;
             if (!in_array($locale, $enabled, true)) {
                 throw new InvalidException('/names/' . $locale, 'invalid', _m('is not a language of this site'));
+            }
+            if (!is_scalar($value) && $value !== null) {
+                throw new InvalidException('/names/' . $locale, 'invalid', _m('A name must be text'));
             }
             $value = trim((string) $value);
             if (mb_strlen($value) > 100) {
