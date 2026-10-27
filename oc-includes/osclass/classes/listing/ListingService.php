@@ -20,6 +20,7 @@ use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
 use mindstellar\fields\FieldQuery;
+use mindstellar\location\LocationService;
 use mindstellar\security\ActionThrottle;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\DeferredMail;
@@ -848,7 +849,7 @@ final class ListingService
      */
     private function checkAdd(array $data, Actor $actor, bool $tooSoon, array &$notices): array
     {
-        $aItem   = osc_apply_filter('item_add_prepare_data', $data);
+        $aItem   = osc_apply_filter('item_add_prepare_data', self::withStoreAddress($data));
         $is_spam = 0;
 
         // Check status
@@ -1072,7 +1073,7 @@ final class ListingService
      */
     private function checkEdit(array $data, Actor $actor, array &$notices): array
     {
-        $aItem           = osc_apply_filter('item_edit_prepare_data', $data);
+        $aItem           = osc_apply_filter('item_edit_prepare_data', self::withStoreAddress($data));
         $aItem['idItem'] = (int) $aItem['idItem'];
 
         $aItem             = $this->sanitize($aItem);
@@ -1376,6 +1377,32 @@ final class ListingService
         }
         // A product with no options sells at the listing price, so its row keeps none of its own.
         VariantStore::saveDefault($itemId, array('i_price' => null) + (array) ($aItem['product']['fields'] ?? array()));
+    }
+
+    /**
+     * In shop mode, a listing saved with no location of its own gets the store address
+     * (Billing > Shop). Any location given is left as it is.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return array<string,mixed>
+     */
+    private static function withStoreAddress(array $aItem): array
+    {
+        foreach (array('countryId', 'countryName', 'regionId', 'regionName', 'cityId', 'cityName') as $key) {
+            if (trim((string) ($aItem[$key] ?? '')) !== '') {
+                return $aItem;
+            }
+        }
+        $store = LocationService::storeAddress();
+        if ($store === null) {
+            return $aItem;
+        }
+        foreach ($store as $key => $value) {
+            $aItem[$key] = $value ?? (str_ends_with($key, 'Id') ? null : '');
+        }
+
+        return $aItem;
     }
 
     private static function place(mixed $value): string

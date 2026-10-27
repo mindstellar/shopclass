@@ -45,6 +45,15 @@ final class LocationStore
     }
 
     /**
+     * @return array<string,mixed>|null pk_c_code, s_name, s_slug of the country with that name
+     * @throws \mindstellar\database\DbException
+     */
+    public static function countryByName(string $name): ?array
+    {
+        return Db::selectOne('SELECT pk_c_code, s_name, s_slug FROM ' . DB_TABLE_PREFIX . 't_country WHERE s_name = ? LIMIT 1', array($name));
+    }
+
+    /**
      * @throws \mindstellar\database\DbException
      */
     public static function addCountry(string $code, string $name, string $slug): void

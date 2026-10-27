@@ -59,6 +59,29 @@ final class LocationService
     }
 
     /**
+     * The store address (Billing > Shop) as resolve() gives a place, in shop mode. Null in
+     * classifieds or when no store address is set.
+     *
+     * @return array{countryId:?string,countryName:?string,regionId:?int,regionName:?string,cityId:?int,cityName:?string}|null
+     */
+    public static function storeAddress(): ?array
+    {
+        if (!osc_is_shop_mode()) {
+            return null;
+        }
+        $names = [];
+        foreach (['country', 'region', 'city'] as $key) {
+            $names[$key] = trim((string) osc_get_preference('shop_' . $key));
+        }
+        if (implode('', $names) === '') {
+            return null;
+        }
+        $country = $names['country'] === '' ? null : LocationStore::countryByName($names['country']);
+
+        return self::resolve(['countryCode' => (string) ($country['pk_c_code'] ?? '')] + $names, true);
+    }
+
+    /**
      * Refuse a country, region or city id that does not exist, a region outside the country or a
      * city outside the region (or the country, when no region is given). An empty value is not checked.
      *
