@@ -14,14 +14,14 @@
  */
 
 osc_admin_page(array(
-    'section' => osc_is_shop_mode() ? __('Products') : __('Listings'),
-    'title'   => osc_is_shop_mode() ? __('Manage products') : __('Manage listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
+    'title'   => osc_mode_text(__('Manage listings'), __('Manage products')),
     'help'    => __('Manage all the listings on your site: edit, delete or block the latest listings published. You can also filter by several parameters: user, region, city, etc.'),
     'actions' => array(
         array(
             'icon'  => 'bi-plus-circle-fill',
             'url'   => osc_admin_base_url(true) . '?page=items&amp;action=post',
-            'title' => osc_is_shop_mode() ? __('Add product') : __('Add listing'),
+            'title' => osc_mode_text(__('Add listing'), __('Add product')),
         ),
         array(
             'icon'  => 'bi-gear-fill',
@@ -88,7 +88,7 @@ $direction = in_array($direction, array('asc', 'desc'), true) ? $direction : '';
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(osc_is_shop_mode() ? __('Manage products') : __('Manage listings')); ?>
+<?php osc_admin_page_head(osc_mode_text(__('Manage listings'), __('Manage products'))); ?>
 <?php $sampleCount = (int) __get('sampleCount'); ?>
 <?php if (__get('samplePresent')) { ?>
     <form method="post" action="<?php echo osc_admin_base_url(true); ?>" class="text-muted small mb-2">
@@ -203,7 +203,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             'title' => __('No listings found'),
                             'text'  => __('Listings published by your users appear here, and you can post one yourself.'),
                             'action' => array(
-                                'label'   => osc_is_shop_mode() ? __('Add product') : __('Add listing'),
+                                'label'   => osc_mode_text(__('Add listing'), __('Add product')),
                                 'url'     => osc_admin_base_url(true) . '?page=items&amp;action=post',
                                 'variant' => 'primary',
                             ),

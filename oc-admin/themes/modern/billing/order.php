@@ -113,7 +113,7 @@ $rows = array(
     array('label' => __('Amount'), 'value' => osc_admin_money($order->getAmount(), $order->getCurrency())),
 );
 if ($isGoods) {
-    $rows[] = array('label' => __('Order'), 'value' => $order->getLabel());
+    $rows[] = array('label' => _x('Order', 'purchase order'), 'value' => $order->getLabel());
 } else {
     $rows[] = array('label' => __('Credits'), 'value' => number_format($order->getCredits()));
 }
@@ -220,7 +220,7 @@ foreach ($order->getMeta() as $key => $value) {
 
     <div class="billing-detail-grid">
         <div>
-            <?php osc_admin_panel_open(__('Order')); ?>
+            <?php osc_admin_panel_open(_x('Order', 'purchase order')); ?>
                 <?php osc_admin_definition($rows); ?>
             <?php osc_admin_panel_close(); ?>
 

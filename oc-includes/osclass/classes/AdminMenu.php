@@ -70,17 +70,17 @@ class AdminMenu
     {
         $this->add_menu(__('Dashboard'), osc_admin_base_url(), 'dash', 'moderator', 'bi bi-speedometer');
 
-        $this->add_menu(osc_is_shop_mode() ? __('Products') : __('Listings'), osc_admin_base_url(true) . '?page=items', 'items', 'moderator', 'bi bi-list-ul');
+        $this->add_menu(osc_mode_text(__('Listings'), __('Products')), osc_admin_base_url(true) . '?page=items', 'items', 'moderator', 'bi bi-list-ul');
         $this->add_submenu(
             'items',
-            osc_is_shop_mode() ? __('Manage products') : __('Manage listings'),
+            osc_mode_text(__('Manage listings'), __('Manage products')),
             osc_admin_base_url(true) . '?page=items',
             'items_manage',
             'moderator'
         );
         $this->add_submenu(
             'items',
-            osc_is_shop_mode() ? __('Reported products') : __('Reported listings'),
+            osc_mode_text(__('Reported listings'), __('Reported products')),
             osc_admin_base_url(true) . '?page=items&action=items_reported',
             'items_reported',
             'moderator'

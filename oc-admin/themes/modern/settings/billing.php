@@ -34,7 +34,7 @@ $tabs = array(
     'upgrades' => __('Upgrades'),
     'limits'   => __('Seller limits'),
     'receipts' => __('Receipts'),
-    'shop'     => osc_is_shop_mode() ? __('Shop') : __('Orders'),
+    'shop'     => osc_mode_text(__('Orders'), __('Shop')),
     'methods'  => __('Payment methods'),
 );
 $shown = __get('billing_tabs');

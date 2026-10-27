@@ -121,7 +121,7 @@ $isFiltered = $toShip
                 <thead>
                 <tr>
                     <th scope="col"><?php _e('Status'); ?></th>
-                    <th scope="col"><?php _e('Order'); ?></th>
+                    <th scope="col"><?php _ex('Order', 'purchase order'); ?></th>
                     <th scope="col"><?php _e('User'); ?></th>
                     <th scope="col"><?php _e('Payment method'); ?></th>
                     <th scope="col" class="col-numeric"><?php _e('Amount'); ?></th>
@@ -140,7 +140,7 @@ $isFiltered = $toShip
                                 $statusWords[$order->getStatus()] ?? $order->getStatus()
                             ); ?>
                         </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Order')); ?>">
+                        <td data-col-name="<?php echo osc_esc_html(_x('Order', 'purchase order')); ?>">
                             <a class="billing-order-link" href="<?php echo osc_esc_html($orderUrl); ?>">
                                 <?php echo osc_esc_html('#' . $order->getId()); ?>
                             </a>

@@ -25,6 +25,20 @@ if (!function_exists('__')) {
     }
 }
 
+if (!function_exists('_x')) {
+    function _x($key, $context, $domain = 'core')
+    {
+        return $key;
+    }
+}
+
+if (!function_exists('_ex')) {
+    function _ex($key, $context, $domain = 'core')
+    {
+        echo $key;
+    }
+}
+
 if (!function_exists('_n')) {
     function _n($single_key, $plural_key, $count, $domain = 'core')
     {
