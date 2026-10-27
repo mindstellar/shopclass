@@ -39,13 +39,14 @@ function customText($return = 'title')
 {
     $new_item      = __get('new_item');
     $text          = array();
-    $text['title'] = __('Listing');
+    $shop           = osc_is_shop_mode();
+    $text['title'] = $shop ? __('Product') : __('Listing');
     if ($new_item) {
-        $text['subtitle'] = __('Add listing');
-        $text['button']   = __('Add listing');
+        $text['subtitle'] = $shop ? __('Add product') : __('Add listing');
+        $text['button']   = $shop ? __('Add product') : __('Add listing');
     } else {
-        $text['subtitle'] = __('Edit listing');
-        $text['button']   = __('Update listing');
+        $text['subtitle'] = $shop ? __('Edit product') : __('Edit listing');
+        $text['button']   = $shop ? __('Update product') : __('Update listing');
     }
 
     return $text[$return];
@@ -212,7 +213,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
         );
     }
-    $headActions[] = array('label' => __('Back to listings'), 'url' => $itemBackUrl, 'variant' => 'dim');
+    $headActions[] = array('label' => (osc_is_shop_mode() ? __('Back to products') : __('Back to listings')), 'url' => $itemBackUrl, 'variant' => 'dim');
     osc_admin_page_head(customText('subtitle'), $headActions);
 
     // The surface the browser-side validator writes its refusals into. It is drawn only
@@ -686,7 +687,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     osc_admin_editor_close(array(
         array('label' => customText('button'), 'type' => 'submit', 'variant' => 'primary'),
-        array('label' => __('Back to listings'), 'url' => $itemBackUrl, 'variant' => 'dim'),
+        array('label' => (osc_is_shop_mode() ? __('Back to products') : __('Back to listings')), 'url' => $itemBackUrl, 'variant' => 'dim'),
     )); ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
