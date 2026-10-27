@@ -179,6 +179,13 @@ pin("cities('Kö') in another region finds nothing", array(), $complete('de_DE')
 pin('an empty term returns nothing', array(), $complete('de_DE')->cities(''));
 pin("countries('Deu') returns Germany in German", array(array('id' => 'DE', 'label' => 'Deutschland', 'value' => 'Deutschland')), $complete('de_DE')->countries('Deu'));
 pin("countries('Ger') still returns it", array('DE'), array_column($complete('de_DE')->countries('Ger'), 'id'));
+seed_country($admin, 'DK', 'Kingdom of Denmark');
+$store->set(LocationNameStore::COUNTRY, 'DK', 'de_DE', 'Dänemark');
+$both = array_column($complete('de_DE')->countries('D'), 'id');
+sort($both);
+pin("countries('D') finds both countries whose German names start with D", array('DE', 'DK'), $both);
+$store->forget(LocationNameStore::COUNTRY, 'DK');
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_country WHERE pk_c_code = 'DK'");
 pin("regions('Rheinl', 'DE') returns the region in German", array(array('id' => (string) $region, 'label' => 'Rheinland', 'value' => 'Rheinland')), $complete('de_DE')->regions('Rheinl', 'DE'));
 pin("regions('Rhine') still returns it", array((string) $region), array_column($complete('de_DE')->regions('Rhine'), 'id'));
 pin("regions('Rheinl', 'Deutschland') narrows by the German country name", array((string) $region), array_column($complete('de_DE')->regions('Rheinl', 'Deutschland'), 'id'));
