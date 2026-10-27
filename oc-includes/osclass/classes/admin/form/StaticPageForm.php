@@ -134,6 +134,42 @@ final class StaticPageForm
     }
 
     /**
+     * A new page posted without an internal name takes one from its title: the default
+     * language's, else the first that has one. It is made unique and clear of the reserved
+     * names, so the first save does not fail on a field most owners never open.
+     *
+     * @return void
+     */
+    public static function nameNewPageFromTitle(): void
+    {
+        if (trim(Params::getParamString('s_internal_name')) !== '') {
+            return;
+        }
+        $titles = array();
+        foreach (osc_get_admin_locales() as $locale) {
+            $titles[(string)$locale['pk_c_code']] = Params::getParamString($locale['pk_c_code'] . '#s_title');
+        }
+        $title = trim(strip_tags($titles[osc_language()] ?? ''));
+        if ($title === '') {
+            foreach ($titles as $candidate) {
+                if (trim(strip_tags($candidate)) !== '') {
+                    $title = trim(strip_tags($candidate));
+                    break;
+                }
+            }
+        }
+        $base = (string) osc_sanitizeString($title);
+        if ($base === '') {
+            return;
+        }
+        Params::setParam('s_internal_name', ReservedSlugs::unique(
+            $base,
+            static fn (string $name): bool => !WebThemes::getInstance()->isValidPage($name)
+                || isset(Page::getInstance()->findByInternalName($name)['pk_i_id'])
+        ));
+    }
+
+    /**
      * The control the last refusal belongs to, its message, and which rule it was.
      *
      * The rule is named because the screen remembers a submitted internal name only once
@@ -194,6 +230,11 @@ final class StaticPageForm
         $name   = (string)($values['s_internal_name'] ?? '');
         $titles = is_array($values['s_title'] ?? null) ? $values['s_title'] : array();
         $adding = self::$id === null;
+
+        // With no title either, the title is what is missing; the name is built from it.
+        if ($name === '' && $adding && self::titled($titles) === false) {
+            return self::fail('s_title', 'untitled', _m("The page couldn't be added, at least one title should not be empty"));
+        }
 
         if ($name === '') {
             return self::fail('s_internal_name', 'empty', _m('You have to set an internal name'));
