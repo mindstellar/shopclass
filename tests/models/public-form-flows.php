@@ -78,4 +78,6 @@ harness_section('change e-mail always answers');
 $change = harness_method_source($dir . 'CWebUser.php', 'changeEmailPost');
 check('a taken address gets the same flash as a free one', str_contains($change, "osc_add_flash_ok_message(_m('If that address is free, we sent a link to it.'))"));
 
-exit(harness_result());
+if (!defined('MODELS_RUNNER')) {
+    exit(harness_result());
+}
