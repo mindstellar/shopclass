@@ -18,6 +18,9 @@ $countries = __get('countries');
 $regions   = __get('regions');
 $cities    = __get('cities');
 $locales   = __get('locales');
+$aboutLocale = in_array(osc_current_admin_locale(), array_column((array) $locales, 'pk_c_code'), true)
+    ? osc_current_admin_locale()
+    : (string) ($locales[0]['pk_c_code'] ?? '');
 
 /**
  * The user form's add/edit copy, plus the alerts shown when editing.
@@ -205,29 +208,29 @@ if ($tab === 'profile') {
     <?php } ?>
 
     <?php osc_admin_form_section(__('Profile')); ?>
-    <?php osc_admin_form_row_open(__('Name')); ?>
+    <?php osc_admin_form_row_open(__('Name'), array('for' => 's_name')); ?>
         <?php UserForm::name_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Username')); ?>
+    <?php osc_admin_form_row_open(__('Username'), array('for' => 's_username')); ?>
         <?php UserForm::username_text($user); ?>
         <div id="available"></div>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open('', array('label_html' => osc_esc_html(__('E-mail')) . ' <span class="osc-field-required"></span>')); ?>
+    <?php osc_admin_form_row_open('', array('for' => 's_email', 'label_html' => osc_esc_html(__('E-mail')) . ' <span class="osc-field-required"></span>')); ?>
         <?php UserForm::email_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Cell phone')); ?>
+    <?php osc_admin_form_row_open(__('Cell phone'), array('for' => 's_phone_mobile')); ?>
         <?php UserForm::mobile_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Phone')); ?>
+    <?php osc_admin_form_row_open(__('Phone'), array('for' => 's_phone_land')); ?>
         <?php UserForm::phone_land_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Website')); ?>
+    <?php osc_admin_form_row_open(__('Website'), array('for' => 's_website')); ?>
         <?php UserForm::website_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('User type')); ?>
+    <?php osc_admin_form_row_open(__('User type'), array('for' => 'b_company')); ?>
         <?php UserForm::is_company_select($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Photo')); ?>
+    <?php osc_admin_form_row_open(__('Photo'), array('for' => 'avatar')); ?>
         <div class="user-editor-photo">
             <?php if ($aux['edit'] && function_exists('osc_user_avatar_url')) { ?>
                 <img class="user-editor-avatar" src="<?php echo osc_esc_html(osc_user_avatar_url($user['pk_i_id'], 'normal')); ?>"
@@ -242,38 +245,38 @@ if ($tab === 'profile') {
             <?php } ?>
         </div>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('About')); ?>
+    <?php osc_admin_form_row_open(__('About'), array('for' => 's_info[' . $aboutLocale . ']')); ?>
         <?php UserForm::multilanguage_info($locales, $user); ?>
     <?php osc_admin_form_row_close(); ?>
 
     <?php osc_admin_form_section(__('Location')); ?>
-    <?php osc_admin_form_row_open(__('Country')); ?>
+    <?php osc_admin_form_row_open(__('Country'), array('for' => count($countries) > 1 ? 'countryId' : 'country')); ?>
         <?php UserForm::country_select($countries, $user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Region')); ?>
+    <?php osc_admin_form_row_open(__('Region'), array('for' => count($regions) >= 1 ? 'regionId' : 'region')); ?>
         <?php UserForm::region_select($regions, $user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('City')); ?>
+    <?php osc_admin_form_row_open(__('City'), array('for' => count($cities) >= 1 ? 'cityId' : 'city')); ?>
         <?php UserForm::city_select($cities, $user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('City area')); ?>
+    <?php osc_admin_form_row_open(__('City area'), array('for' => 'cityArea')); ?>
         <?php UserForm::city_area_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Zip code')); ?>
+    <?php osc_admin_form_row_open(__('Zip code'), array('for' => 'zip')); ?>
         <?php UserForm::zip_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Address')); ?>
+    <?php osc_admin_form_row_open(__('Address'), array('for' => 'address')); ?>
         <?php UserForm::address_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
 
     <?php osc_admin_form_section(__('Password')); ?>
-    <?php osc_admin_form_row_open($aux['edit'] ? __('New password') : __('Password')); ?>
+    <?php osc_admin_form_row_open($aux['edit'] ? __('New password') : __('Password'), array('for' => 's_password')); ?>
         <?php UserForm::password_text($user); ?>
         <?php if ($aux['edit']) { ?>
             <p class="help-box"><?php _e('Leave blank to keep the current password.'); ?></p>
         <?php } ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Repeat password')); ?>
+    <?php osc_admin_form_row_open(__('Repeat password'), array('for' => 's_password2')); ?>
         <?php UserForm::check_password_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
 

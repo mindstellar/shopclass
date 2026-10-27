@@ -89,7 +89,7 @@ $aux = customFrmText();
                         'meta'        => __('Custom fields'),
                     ),
                 )); ?>
-                <?php osc_admin_form_row_open(__('Substring')); ?>
+                <?php osc_admin_form_row_open(__('Substring'), array('for' => 'b_substring')); ?>
                         <?php osc_admin_checkbox(array(
                             'name'      => 'b_substring',
                             'id'        => 'b_substring',

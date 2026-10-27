@@ -88,15 +88,15 @@ $formCount = (int)__get('form_count');
                     <?php } ?>
                     <?php FieldForm::multiLangTitle($field); ?>
                     <div class="cf-editor-body">
-                        <?php osc_admin_form_row_open(__('Options'), array('id' => 'div_field_options')); ?>
+                        <?php osc_admin_form_row_open(__('Options'), array('id' => 'div_field_options', 'for' => 's_options')); ?>
                                 <?php FieldForm::options_input_text($field); ?>
                                 <p class="help-inline"><?php _e('Separate options with commas'); ?></p>
                         <?php osc_admin_form_row_close(); ?>
-                        <?php osc_admin_form_row_open(__('Type')); ?>
+                        <?php osc_admin_form_row_open(__('Type'), array('for' => 'field_type')); ?>
                             <?php FieldForm::type_select($field); ?>
                         <?php osc_admin_form_row_close(); ?>
                         <?php if (!$builderMode) { ?>
-                        <?php osc_admin_form_row_open(__('Group')); ?>
+                        <?php osc_admin_form_row_open(__('Group'), array('for' => 'field_group')); ?>
                             <?php
                                 $groupOptions = array('0' => __('Ungrouped'));
                                 foreach ($allGroups as $g) {
@@ -136,6 +136,7 @@ $formCount = (int)__get('form_count');
                             <?php foreach ($cfgRows as $cfgKey => $cfgRow) { ?>
                                 <?php osc_admin_form_row_open($cfgRow['label'], array(
                                     'class' => 'cf-config-row',
+                                    'for'   => 'field-cfg_' . $cfgKey,
                                     'data'  => array('cfg-key' => $cfgKey),
                                 )); ?>
                                     <?php osc_admin_field(array(
@@ -154,7 +155,7 @@ $formCount = (int)__get('form_count');
 // a sibling field. Emitted as JSON in cfg_rules on submit.
 ?>
                         <div id="cf_rules_block" class="cf-rules-block">
-                            <?php osc_admin_form_row_open(__('Conditional logic')); ?>
+                            <?php osc_admin_form_row_open(__('Conditional logic'), array('for' => 'cf_rule_action')); ?>
                                 <?php osc_admin_select(array(
                                         'row'      => false,
                                         'id'       => 'cf_rule_action',
@@ -179,12 +180,14 @@ $formCount = (int)__get('form_count');
                                     osc_admin_select(array(
                                         'row'      => false,
                                         'id'       => 'cf_rule_field',
+                                        'attrs'    => array('aria-label' => __('Field to check')),
                                         'selected' => $ruleCond['field'] ?? '',
                                         'options'  => $ruleFieldOptions,
                                     ));
                                     osc_admin_select(array(
                                         'row'      => false,
                                         'id'       => 'cf_rule_op',
+                                        'attrs'    => array('aria-label' => __('Condition')),
                                         'selected' => $ruleCond['op'] ?? '',
                                         'options'  => array(
                                             'eq'     => __('is'),
@@ -197,6 +200,7 @@ $formCount = (int)__get('form_count');
                                     osc_admin_text(array(
                                         'row'         => false,
                                         'id'          => 'cf_rule_value',
+                                        'attrs'    => array('aria-label' => __('Value')),
                                         'value'       => $ruleCond['value'] ?? '',
                                         'placeholder' => __('Value'),
                                         'width'       => 'num',
@@ -210,7 +214,7 @@ $formCount = (int)__get('form_count');
                         // shows this block for DROPDOWN/RADIO only.
 ?>
                         <div id="cf_cascade_block" class="cf-rules-block" style="display:none;">
-                            <?php osc_admin_form_row_open(__('Cascading options')); ?>
+                            <?php osc_admin_form_row_open(__('Cascading options'), array('for' => 'cfg_cascade_parent')); ?>
                                 <?php
                                     $cascadeOptions = array('' => __('Not cascading'));
                                     foreach ($allFields as $sibling) {
@@ -228,7 +232,7 @@ $formCount = (int)__get('form_count');
                                     )); ?>
                                     <p class="help-inline"><?php _e('Filter this field\'s options by the value of a parent field.'); ?></p>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Option map'), array('id' => 'cf_cascade_map_row', 'style' => 'display:none;')); ?>
+                            <?php osc_admin_form_row_open(__('Option map'), array('for' => 'cfg_cascade_map', 'id' => 'cf_cascade_map_row', 'style' => 'display:none;')); ?>
                                     <?php osc_admin_textarea(array(
                                         'row'         => false,
                                         'id'          => 'cfg_cascade_map',
@@ -255,7 +259,7 @@ $formCount = (int)__get('form_count');
                             <span class="icon-more"></span><?php _e('Advanced options'); ?>
                         </div>
                         <div id="more-options_iframe" class="input-line">
-                            <?php osc_admin_form_row_open(__('Identifier name')); ?>
+                            <?php osc_admin_form_row_open(__('Identifier name'), array('for' => 'field-field_slug')); ?>
                                     <?php osc_admin_text(array(
                                         'row'   => false,
                                         'name'  => 'field_slug',

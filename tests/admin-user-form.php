@@ -64,6 +64,12 @@ if (!function_exists('osc_current_admin_theme_path')) {
     {
     }
 }
+if (!function_exists('osc_current_admin_locale')) {
+    function osc_current_admin_locale()
+    {
+        return 'en_US';
+    }
+}
 if (!function_exists('osc_enqueue_script')) {
     function osc_enqueue_script($id)
     {

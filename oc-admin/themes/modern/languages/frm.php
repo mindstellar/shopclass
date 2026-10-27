@@ -62,7 +62,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php osc_admin_text(array('name' => 's_thousands_sep', 'label' => __('Thousands separator'), 'value' => $aLocale['s_thousands_sep'] ?? '')); ?>
             <?php osc_admin_text(array('name' => 's_date_format', 'label' => __('Date format'), 'value' => $aLocale['s_date_format'] ?? '')); ?>
             <?php osc_admin_textarea(array('name' => 's_stop_words', 'label' => __('Stopwords'), 'value' => $aLocale['s_stop_words'] ?? '')); ?>
-            <?php osc_admin_form_row_open(__('Availability')); ?>
+            <?php osc_admin_form_row_open(__('Availability'), array('for' => 'b_enabled')); ?>
                     <?php osc_admin_checkbox(array(
                         'name'    => 'b_enabled',
                         'id'      => 'b_enabled',
