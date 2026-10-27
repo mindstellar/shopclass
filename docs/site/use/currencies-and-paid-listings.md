@@ -60,6 +60,7 @@ The **Shop** tab holds the settings a goods checkout needs:
 - **Delivery charge** and **Free delivery from**: one "Standard delivery" method at a
   flat charge, free once the order reaches the amount (0 means never).
 - **Cash on delivery** and its fee.
+- **Store address**: country, region and city used for a product that has no location of its own.
 - **Cancel unpaid orders after (days)**: bank transfer and cash on delivery orders keep
   their stock from the moment they are placed. Left unpaid this long (7 days by default),
   they are cancelled once a day and the stock goes back on sale.
