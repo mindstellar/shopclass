@@ -143,8 +143,15 @@ final class JobQueue
 
         try {
             // keep_existing: a key clash leaves the waiting job alone and queues nothing.
-            if ($unique === null || !empty($options['keep_existing'])) {
+            if ($unique === null) {
                 $id = (int) Db::table($this->table())->insert($row);
+            } elseif (!empty($options['keep_existing'])) {
+                // A no-op update on the clash, so a job already waiting is no failed query.
+                $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'
+                    . ' VALUES (' . implode(', ', array_fill(0, count($row), '?')) . ')'
+                    . ' ON DUPLICATE KEY UPDATE pk_i_id = pk_i_id';
+
+                $id = Db::insertGetId($sql, array_values($row));
             } else {
                 // LAST_INSERT_ID(pk_i_id) makes a matched row's id the insert id.
                 $sql = 'INSERT INTO ' . $this->table() . ' (' . implode(', ', array_keys($row)) . ')'

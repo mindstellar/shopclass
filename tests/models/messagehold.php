@@ -225,7 +225,12 @@ harness_section('JobQueue: keep_existing leaves a waiting job alone');
 $queue = \mindstellar\job\JobQueue::getInstance();
 $first = $queue->enqueue('test.keep', array('v' => 1), array('unique_key' => 'k1', 'keep_existing' => true, 'delay' => 60));
 check('the first job is queued', $first > 0);
+$log = tempnam(sys_get_temp_dir(), 'keeplog');
+$oldLog = ini_set('error_log', $log);
 pin('a second one with the same key is not', 0, $queue->enqueue('test.keep', array('v' => 2), array('unique_key' => 'k1', 'keep_existing' => true)));
+ini_set('error_log', (string) $oldLog);
+check('and the clash logs no failed query', !str_contains((string) file_get_contents($log), 'Db query failed'));
+unlink($log);
 pin('and the first keeps its payload', array('v' => 1), $queue->peek($first, 'test.keep', 'k1'));
 
 if (!defined('MODELS_RUNNER')) {
