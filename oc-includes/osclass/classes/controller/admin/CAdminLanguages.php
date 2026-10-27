@@ -542,7 +542,8 @@ class CAdminLanguages extends AdminSecBaseModel
         for ($i = $start; $i < $max; $i++) {
             $l     = $aLanguages[$i];
             $row   = array();
-            $row[] = '<input type="checkbox" name="id[]" value="' . $l['pk_c_code'] . '" />';
+            $row[] = '<input type="checkbox" name="id[]" value="' . $l['pk_c_code'] . '"'
+                . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $l['s_name'])) . '" />';
 
             $options   = array();
             if ($bLanguagesToUpdate && in_array($l['pk_c_code'], $aLanguagesToUpdate)) {

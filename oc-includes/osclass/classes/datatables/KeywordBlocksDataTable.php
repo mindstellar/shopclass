@@ -145,7 +145,8 @@ class KeywordBlocksDataTable extends DataTable
             $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
             $row                = array();
-            $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" /></div>';
+            $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
+                . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_keyword'])) . '" /></div>';
             $row['keyword']     = osc_esc_html($aRow['s_keyword']) . $actions;
             $row['scope']       = osc_esc_html($this->scopeLabel($aRow['s_scope']));
             $row['substring']   = ((int)$aRow['b_substring'] === 1)
