@@ -132,7 +132,21 @@ class Form extends FormInputs
      */
     public static function markInvalid($name, array $attributes)
     {
-        if (osc_form_error(self::errorPointer($name)) === '') {
+        return self::markInvalidWith($name, osc_form_error(self::errorPointer($name)), $attributes);
+    }
+
+    /**
+     * Like markInvalid(), for a page that holds the message itself.
+     *
+     * @param string              $name
+     * @param string              $message '' when the field was fine
+     * @param array<string,mixed> $attributes
+     *
+     * @return array<string,mixed>
+     */
+    public static function markInvalidWith($name, $message, array $attributes)
+    {
+        if ((string) $message === '') {
             return $attributes;
         }
         $attributes['aria-invalid']     = 'true';
@@ -151,7 +165,21 @@ class Form extends FormInputs
      */
     public static function errorLine($name, array $attributes = [])
     {
-        $message = osc_form_error(self::errorPointer($name));
+        return self::errorLineWith($name, osc_form_error(self::errorPointer($name)), $attributes);
+    }
+
+    /**
+     * Like errorLine(), for a page that holds the message itself.
+     *
+     * @param string              $name
+     * @param string              $message
+     * @param array<string,mixed> $attributes
+     *
+     * @return string
+     */
+    public static function errorLineWith($name, $message, array $attributes = [])
+    {
+        $message = (string) $message;
         if ($message === '') {
             return '';
         }

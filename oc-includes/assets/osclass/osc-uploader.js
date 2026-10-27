@@ -33,6 +33,7 @@ function oscPhotoUploader(root, cfg) {
         return;
     }
     root.setAttribute('data-osc-uploader-init', '1');
+    root.classList.add('is-enhanced');
     cfg = cfg || {};
     var maxImages = cfg.maxImages || 0;
     var maxSize = cfg.maxSizeBytes || 0;

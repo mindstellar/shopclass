@@ -138,8 +138,11 @@
     position: relative;
 }
 
-/* Visually hidden but still focusable, so Tab reaches it and Enter or Space opens the picker. */
-.osc-uploader-input {
+/*
+ * Visually hidden but still focusable, so Tab reaches it and Enter or Space opens the picker.
+ * Only once the script has taken over; before that the plain file input stays usable.
+ */
+.osc-uploader.is-enhanced .osc-uploader-input {
     block-size: 1px;
     clip-path: inset(50%);
     inline-size: 1px;
