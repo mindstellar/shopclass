@@ -31,6 +31,10 @@ function osc_locale_dec_point()
 {
     return $GLOBALS['sep'][1];
 }
+function osc_locale_currency_format()
+{
+    return '{CURRENCY}{NUMBER}';
+}
 function osc_current_user_locale()
 {
     return 'en_US';
@@ -47,15 +51,33 @@ use mindstellar\utility\Formatting;
 
 harness_section('money');
 
-pin('format', '1,234.50 EUR', Money::format(1234500000, 'eur'));
-pin('osc_admin_money forwards', Money::format(1234500000, 'eur'), osc_admin_money('1234500000', 'eur'));
+if (!class_exists('Currency', false)) {
+    class Currency
+    {
+        public static function getInstance(): self
+        {
+            return new self();
+        }
+
+        public function findByPrimaryKey($code)
+        {
+            $rows = array('USD' => '$', 'EUR' => '€');
+
+            return isset($rows[$code]) ? array('s_description' => $rows[$code]) : false;
+        }
+    }
+}
+
+pin('format uses the symbol, two decimals only when the amount has them', array('€1,234.50', '$33', '$3.30'), array(Money::format(1234500000, 'eur'), Money::format(33000000, 'USD'), Money::format(3300000, 'USD')));
+pin('format prints the code for a currency the site does not list', 'XYZ5', Money::format(5000000, 'xyz'));
+pin('osc_admin_money forwards', '€1,234.50', osc_admin_money('1234500000', 'eur'));
 pin('toMicros rounds to the micro', 12345679, Money::toMicros('12.3456789'));
 pin('fromMicros is a plain two-decimal amount for a form', '1234.50', Money::fromMicros(1234500000));
 pin('parse reads the locale', 1234500000, Money::parse(' 1,234.5 '));
 pin('parse refuses what is not a number', null, Money::parse('12 EUR'));
 $GLOBALS['sep'] = array('.', ',');
 pin('parse with a comma decimal point', 1234500000, Money::parse('1.234,5'));
-pin('format with a comma decimal point', '1.234,50 USD', Money::format(1234500000, 'USD'));
+pin('format with a comma decimal point', '$1.234,50', Money::format(1234500000, 'USD'));
 
 harness_section('byte sizes');
 

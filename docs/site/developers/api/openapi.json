@@ -60578,6 +60578,13 @@
                         "type": "boolean",
                         "description": "True while the buyer may cancel it: a pending bank transfer or cash on delivery order."
                     },
+                    "pay_instructions": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "How to pay a pending bank transfer order: the shop's instructions and the reference to quote."
+                    },
                     "can_pay": {
                         "type": "boolean",
                         "description": "True while the buyer may start paying again: a pending card order."
@@ -60597,6 +60604,7 @@
                     "gateway",
                     "receipt_url",
                     "can_cancel",
+                    "pay_instructions",
                     "can_pay"
                 ]
             },

@@ -75,6 +75,7 @@ check('the only error names the corrupt photo', count($photoErrors) === 1 && cou
 check('26 listings made', $result['listings'] === 26 && $result['failed'] === 0);
 check('the listing with the corrupt photo is saved without it', $count("SELECT COUNT(*) FROM {$p}t_item_description WHERE s_title LIKE 'Hybrid commuter bike%'") === 1);
 check('no temp copy is left', $temps() === $tempsBefore);
+check('every priced sample listing has a currency', $count("SELECT COUNT(*) FROM {$p}t_item WHERE i_price IS NOT NULL AND (fk_c_currency_code IS NULL OR fk_c_currency_code = '')") === 0);
 check('26 listings active', $count("SELECT COUNT(*) FROM {$p}t_item WHERE b_active = 1 AND b_enabled = 1") === 26);
 check('the kv group holds the item ids', count(osc_kv_get('sample', 'items', array())) === 26);
 check('the kv group holds every field id', count(osc_kv_get('sample', 'fields', array())) === $count("SELECT COUNT(*) FROM {$p}t_meta_fields"));
@@ -131,6 +132,7 @@ $result = install_seed_sample('shop');
 check('no errors: ' . implode('; ', $result['errors']), $result['errors'] === array());
 check('16 products made', $result['listings'] === 16);
 check('every product is for sale', $count("SELECT COUNT(DISTINCT fk_i_item_id) FROM {$p}t_item_variant") === 16);
+check('every product has a currency', $count("SELECT COUNT(*) FROM {$p}t_item WHERE fk_c_currency_code IS NULL OR fk_c_currency_code = ''") === 0);
 check('the t-shirt has 6 variants', $count("SELECT COUNT(*) FROM {$p}t_item_variant v JOIN {$p}t_item_description d ON d.fk_i_item_id = v.fk_i_item_id WHERE d.s_title = 'Cotton t-shirt' AND v.s_options IS NOT NULL") === 6);
 check('one product is low on stock', $count("SELECT COUNT(*) FROM {$p}t_item_variant WHERE i_stock <= 3 AND s_options IS NULL") >= 1);
 

@@ -1,7 +1,7 @@
 INSERT INTO /*TABLE_PREFIX*/t_currency (pk_c_code, s_name, s_description, b_enabled) VALUES
-    ('GBP', 'United Kingdom pound', 'Pound £', true),
-    ('USD', 'United States dollar', 'Dollar US$', true),
-    ('EUR', 'European Union euro', 'Euro €', true);
+    ('GBP', 'United Kingdom pound', '£', true),
+    ('USD', 'United States dollar', '$', true),
+    ('EUR', 'European Union euro', '€', true);
 
 INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ('osclass', 'version','/*OSCLASS_VERSION*/', 'STRING')
