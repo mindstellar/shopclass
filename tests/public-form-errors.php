@@ -70,6 +70,24 @@ if (!function_exists('osc_max_size_kb')) {
         return 2048;
     }
 }
+if (!function_exists('__')) {
+    function __($key)
+    {
+        return $key;
+    }
+}
+if (!function_exists('osc_selectable_parent_categories')) {
+    function osc_selectable_parent_categories()
+    {
+        return true;
+    }
+}
+if (!function_exists('_osc_location_list')) {
+    function _osc_location_list($rows, $type)
+    {
+        return $rows;
+    }
+}
 $session = Session::getInstance();
 $render  = static function (callable $draw): string {
     ob_start();
@@ -107,6 +125,43 @@ $html = $render(static fn () => ItemForm::description_textarea('description', 'e
 pin('a description with no error is plain', 0, substr_count($html, 'aria-invalid'));
 $html = $render(static fn () => ItemForm::price_input_text(array('i_price' => null)));
 pin('the message is escaped', 1, substr_count($html, '&lt;b&gt;Price&lt;/b&gt;</p>'));
+
+harness_section('every wired control is marked with its own line');
+$session->_setForm('form_errors', array(
+    '/description' => 'Add a description.', '/category_id' => 'Pick a category.', '/country' => 'Pick a country.',
+    '/region' => 'Pick a region.', '/city' => 'Pick a city.', '/message' => 'Write a message',
+));
+$marked = static function (string $html, string $id, string $message): array {
+    return array(
+        substr_count($html, 'aria-invalid="true"'),
+        substr_count($html, 'aria-describedby="' . $id . '-error"'),
+        substr_count($html, '<p class="oe-field-error" id="' . $id . '-error">' . $message . '</p>'),
+    );
+};
+$controls = array(
+    'the description'    => array(static fn () => ItemForm::description_textarea('description', 'en_US'), 'descriptionen_US', 'Add a description.'),
+    'the category'       => array(static fn () => ItemForm::category_select(array(array('pk_i_id' => 1, 's_name' => 'Cars')), array('pk_i_id' => 0)), 'catId', 'Pick a category.'),
+    'the country'        => array(static fn () => ItemForm::country_select(array(array('pk_c_code' => 'ES', 's_name' => 'Spain')), array('pk_i_id' => 0)), 'countryId', 'Pick a country.'),
+    'the region'         => array(static fn () => ItemForm::region_select(array(array('pk_i_id' => 1, 's_name' => 'Madrid')), array('pk_i_id' => 0)), 'regionId', 'Pick a region.'),
+    'the city'           => array(static fn () => ItemForm::city_select(array(array('pk_i_id' => 1, 's_name' => 'Madrid')), array('pk_i_id' => 0)), 'cityId', 'Pick a city.'),
+    'a generic textarea' => array(static fn () => ContactForm::your_message(), 'message', 'Write a message'),
+);
+foreach ($controls as $label => [$draw, $id, $message]) {
+    pin($label . ': aria-invalid, aria-describedby and its line', array(1, 1, 1), $marked($render($draw), $id, $message));
+}
+
+harness_section('each form name points at the validator field');
+$pointers = array(
+    'catId' => '/category_id', 'countryId' => '/country', 'countryName' => '/country', 'regionId' => '/region',
+    'regionName' => '/region', 'cityId' => '/city', 'cityName' => '/city', 'cityArea' => '/city_area',
+    'contactName' => '/contact_name', 'contactEmail' => '/contact_email', 'contactPhone' => '/contact_phone',
+    'title[en_US]' => '/title', 'description[en_US]' => '/description', 'yourName' => '/yourName',
+);
+$found = array();
+foreach (array_keys($pointers) as $name) {
+    $found[$name] = Form::errorPointer($name);
+}
+pin('every mapped name', $pointers, $found);
 
 harness_section('an InvalidException gives the map and the line');
 $e = InvalidException::all(array(
