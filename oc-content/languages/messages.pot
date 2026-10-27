@@ -3984,7 +3984,6 @@ msgstr ""
 msgid "Title too long (%s)."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Title too short (%s)."
 msgstr ""
