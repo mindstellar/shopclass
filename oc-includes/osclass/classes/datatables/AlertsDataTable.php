@@ -84,7 +84,7 @@ class AlertsDataTable extends DataTable
     private function addTableHeader()
     {
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('email', __('E-mail'));
         $this->addColumn('alert', __('Alert'));
         $this->addColumn('date', __('Date'));

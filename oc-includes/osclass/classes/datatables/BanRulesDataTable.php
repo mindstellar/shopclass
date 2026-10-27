@@ -72,7 +72,7 @@ class BanRulesDataTable extends DataTable
     private function addTableHeader()
     {
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('name', __('Ban name / Reason'));
         $this->addColumn('ip', __('IP rule'));
         $this->addColumn('email', __('E-mail rule'));

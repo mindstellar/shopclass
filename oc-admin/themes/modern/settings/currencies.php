@@ -74,7 +74,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <table class="table" cellpadding="0" cellspacing="0">
                 <thead>
                 <tr>
-                    <th class="col-bulkactions"><input id="check_all" type="checkbox"/></th>
+                    <th class="col-bulkactions"><input id="check_all" type="checkbox" aria-label="<?php echo osc_esc_html(__('Select all')); ?>"/></th>
                     <th><?php _e('Code'); ?></th>
                     <th><?php _e('Name'); ?></th>
                     <th><?php _e('Currency symbol'); ?></th>

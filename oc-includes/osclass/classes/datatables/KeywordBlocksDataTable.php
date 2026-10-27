@@ -62,7 +62,7 @@ class KeywordBlocksDataTable extends DataTable
      */
     private function addTableHeader()
     {
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('keyword', __('Keyword'));
         $this->addColumn('scope', __('Matches in'));
         $this->addColumn('substring', __('Match type'));

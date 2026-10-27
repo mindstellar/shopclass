@@ -87,7 +87,7 @@ class MediaDataTable extends DataTable
             preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::getInstance()->get_raw_request_uri())
         );
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('file', __('File'));
         $this->addColumn('action', __('Action'));
         $this->addColumn(
