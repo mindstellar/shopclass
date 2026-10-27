@@ -292,6 +292,16 @@ Country::getInstance()->deleteByPrimaryKey('AT');
 pin('Country delete removes the country, its regions and their cities', array(array(), array(), array()), array($store->all('country', 'AT'), $store->all('region', (string) $region3), $store->all('city', (string) $city3)));
 pin('other places keep their names', array('Köln'), array_values($store->all('city', (string) $city)));
 
+// The admin's multi-select delete has no single-query path: it runs LocationService::delete once per row.
+$bulkA = seed_city($admin, $region, 'Aachen', $country);
+$bulkB = seed_city($admin, $region, 'Essen', $country);
+$store->set('city', $bulkA, 'de_DE', 'Aachen DE');
+$store->set('city', $bulkB, 'de_DE', 'Essen DE');
+foreach (array($bulkA, $bulkB) as $bulkId) {
+    (new \mindstellar\location\LocationService())->delete('city', $bulkId);
+}
+pin('a multi-select delete removes the names of every city it took', array(array(), array()), array($store->all('city', (string) $bulkA), $store->all('city', (string) $bulkB)));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }
