@@ -49,11 +49,11 @@ $isFiltered = $toShip
               || (int)($filters['user_id'] ?? 0) > 0;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Orders'), array(array(
+    <?php osc_admin_page_head(__('Orders'), osc_is_shop_mode() ? array(array(
         'label' => $toShip ? __('All orders') : __('To ship'),
         'url'   => $toShip ? $base : $base . '&toShip=1',
         'icon'  => $toShip ? 'bi-list' : 'bi-box-seam',
-    ))); ?>
+    )) : array()); ?>
 
 
     <?php osc_admin_toolbar_open(); ?>

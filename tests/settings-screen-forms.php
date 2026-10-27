@@ -1221,6 +1221,19 @@ $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' =>
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
 pin('and reports itself', array('ok:Billing settings have been updated'), flashed($run));
 
+// The shop page is declared once per request from the site mode; a test that flips the mode
+// drops the declaration so the next draw makes it again.
+$forgetShopPage = static function (): void {
+    $registry = SettingsPageRegistry::getInstance();
+    $entries  = new ReflectionProperty($registry, 'entries');
+    $all      = $entries->getValue($registry);
+    unset($all[\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP]);
+    $entries->setValue($registry, $all);
+};
+seed_pref($admin, 'site_mode', 'shop');
+osc_reset_preferences();
+$forgetShopPage();
+
 $shop = array(
     'billing_shipping_flat' => '49.50',
     'billing_free_over'     => '999',
@@ -1249,6 +1262,16 @@ pin('an amount that is not a number is refused', array('warning:Enter an amount,
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
 pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
 check('the shop tab loads the cash on delivery areas script, with no inline script', in_array('admin-cod-areas', $GLOBALS['enqueued'] ?? array(), true) && !str_contains($run['drawn'], 'data-cod-chips]\')') && str_contains($run['drawn'], 'data-store="billing_cod_areas"'));
+
+seed_pref($admin, 'site_mode', 'classifieds');
+osc_reset_preferences();
+$forgetShopPage();
+drive('CAdminSettingsBilling', 'billing');
+$classifiedsShop = array_keys(SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP));
+pin('classifieds declares the Orders group only', array('billing_hold_days', 'billing_card_hold_minutes', 'billing_open_hold_orders', 'billing_order_prefix'), $classifiedsShop);
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_hold_days' => '5'));
+pin('and a save there leaves delivery and cash on delivery as stored', array(array('49500000', 'STRING'), array('1', 'BOOLEAN'), array('5', 'INTEGER')), array(pref($admin, 'billing_shipping_flat'), pref($admin, 'billing_cod_enabled'), pref($admin, 'billing_hold_days')));
+$forgetShopPage();
 
 seed_pref($admin, 'site_mode', 'shop');
 osc_reset_preferences();

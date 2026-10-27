@@ -357,29 +357,37 @@ final class BillingSettingsScreen
             return self::PAGE_SHOP;
         }
 
-        CoreSettings::page(self::PAGE_SHOP, __('Shop'), Billing::PREF_GROUP)
+        $page = CoreSettings::page(self::PAGE_SHOP, osc_is_shop_mode() ? __('Shop') : __('Orders'), Billing::PREF_GROUP)
             ->onAfterSave(static function () {
                 osc_reset_preferences();
-            })
-            ->group(
-                __('Delivery'),
-                __('One delivery method, "Standard delivery", at a flat charge. Amounts are in the listings\' currency.')
-            )
-            ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
-            ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
-            ->group(
-                __('Cash on delivery'),
-                __('The buyer pays the courier. Ship the order unpaid; marking it delivered marks it paid.')
-            )
-            ->checkbox('billing_cod_enabled', __('Accept cash on delivery'))
-                ->rowLabel(__('Availability'))
-            ->field(self::money('billing_cod_fee', __('Cash on delivery fee'), __('Added to the order total. 0 means no fee.'), osc_get_int_preference('billing_cod_fee', 0, 0)))
-            ->hidden(CodAreas::PREF)
-                ->sanitize(static fn ($value): string => self::codAreasJson($value))
-            ->custom('billing_cod_areas_picker', static function (array $field) {
-                self::codAreasPicker($field['values'] ?? array());
-            }, __('Cash on delivery only in'))
-                ->hint(__('Empty: cash on delivery everywhere you deliver.'))
+            });
+
+        // A classifieds site ships nothing, so it sees the Orders group only; delivery and
+        // cash on delivery keep their stored values.
+        if (osc_is_shop_mode()) {
+            $page
+                ->group(
+                    __('Delivery'),
+                    __('One delivery method, "Standard delivery", at a flat charge. Amounts are in the listings\' currency.')
+                )
+                ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
+                ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
+                ->group(
+                    __('Cash on delivery'),
+                    __('The buyer pays the courier. Ship the order unpaid; marking it delivered marks it paid.')
+                )
+                ->checkbox('billing_cod_enabled', __('Accept cash on delivery'))
+                    ->rowLabel(__('Availability'))
+                ->field(self::money('billing_cod_fee', __('Cash on delivery fee'), __('Added to the order total. 0 means no fee.'), osc_get_int_preference('billing_cod_fee', 0, 0)))
+                ->hidden(CodAreas::PREF)
+                    ->sanitize(static fn ($value): string => self::codAreasJson($value))
+                ->custom('billing_cod_areas_picker', static function (array $field) {
+                    self::codAreasPicker($field['values'] ?? array());
+                }, __('Cash on delivery only in'))
+                    ->hint(__('Empty: cash on delivery everywhere you deliver.'));
+        }
+
+        $page
             ->group(
                 __('Orders'),
                 __('Every order takes its stock when placed. A card order keeps it for the minutes below; bank transfer and cash on delivery orders until paid or cancelled.')

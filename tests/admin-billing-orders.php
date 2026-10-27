@@ -30,7 +30,7 @@ $p     = DB_TABLE_PREFIX;
 seed_locale($admin);
 seed_currency($admin);
 $tom = seed_user($admin, 'tom', 'tom@example.test');
-foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD'] as $k => $v) {
+foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD', 'site_mode' => 'shop'] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
@@ -247,6 +247,14 @@ $page = drive('index', [], []);
 check('the full list shows goods labels', str_contains($page['drawn'], 'Ship me × 2') && str_contains($page['drawn'], 'To ship'));
 $page = drive('index', [], ['toShip' => '1']);
 check('To ship lists paid goods orders only', str_contains($page['drawn'], 'Ship me × 2') && !str_contains($page['drawn'], 'billing-order-link" href="https://example.test/oc-admin/index.php?page=billing&amp;action=order&amp;id=' . $credits->getId() . '"') && !str_contains($page['drawn'], 'Tee × 2'));
+Preference::getInstance()->set('site_mode', 'classifieds');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$page = drive('index', [], ['toShip' => '1']);
+check('a classifieds site has no To ship button and ignores the filter', !str_contains($page['drawn'], 'To ship') && str_contains($page['drawn'], 'Ship me'));
+Preference::getInstance()->set('site_mode', 'shop');
+scratchdb_forget_cache();
+osc_reset_preferences();
 $page = drive('index', [], ['status' => 'shipped']);
 check('shipped and delivered are filters', str_contains($page['drawn'], 'value="shipped"') && str_contains($page['drawn'], 'value="delivered"'));
 

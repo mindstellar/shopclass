@@ -143,7 +143,7 @@ class CAdminBilling extends AdminSecBaseModel
             'goods'   => false,
         );
         // "To ship": paid goods orders and unpaid cash on delivery ones, newest first.
-        $toShip = Params::getParamInt('toShip') === 1;
+        $toShip = osc_is_shop_mode() && Params::getParamInt('toShip') === 1;
         if ($toShip) {
             $filters = array('status' => null) + OrderStore::TO_SHIP + $filters;
         }
