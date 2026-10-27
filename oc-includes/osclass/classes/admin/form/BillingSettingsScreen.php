@@ -386,7 +386,14 @@ final class BillingSettingsScreen
                 ->custom('billing_cod_areas_picker', static function (array $field) {
                     self::codAreasPicker($field['values'] ?? array());
                 }, __('Cash on delivery only in'))
-                    ->hint(__('Empty: cash on delivery everywhere you deliver.'));
+                    ->hint(__('Empty: cash on delivery everywhere you deliver.'))
+                ->group(
+                    __('Store address'),
+                    __('Used when a product has no location of its own.')
+                )
+                ->text('shop_country', __('Country'))
+                ->text('shop_region', __('Region'))
+                ->text('shop_city', __('City'));
         }
 
         $page
