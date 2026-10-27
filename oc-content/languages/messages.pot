@@ -347,6 +347,10 @@ msgstr ""
 msgid "Activity log settings saved"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Add a title in at least one language."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 msgid "Add an address"
 msgstr ""
@@ -461,6 +465,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Attachment"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Awaiting payment"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-conversation-content.php
@@ -657,6 +665,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/user/AddressBook.php
 msgid "Choose a country from the list."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Choose a currency so buyers can pay."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
@@ -953,6 +965,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/address-picker.php
 msgid "Deliver to"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Delivered"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
@@ -2031,6 +2047,10 @@ msgstr ""
 msgid "Option names %1$s and %2$s are the same."
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Order"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Order #%d"
@@ -2153,6 +2173,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Pay later"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Pay on delivery"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -2627,6 +2651,10 @@ msgstr ""
 msgid "Sharing listings by email has been disabled by the administrator"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Shipped"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Shipping class too long."
 msgstr ""
@@ -3011,6 +3039,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "That user no longer exists"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AccountService.php
+msgid "That username is reserved. Choose another."
 msgstr ""
 
 #: oc-includes/osclass/classes/webhook/WebhookService.php
@@ -3524,7 +3556,6 @@ msgid "The specified username is already in use"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
-#: oc-includes/osclass/classes/user/AccountService.php
 msgid "The specified username is not valid, it contains some invalid words"
 msgstr ""
 
@@ -4073,12 +4104,12 @@ msgstr ""
 msgid "Username already in use"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
-msgid "Username invalid"
-msgstr ""
-
 #: oc-includes/osclass/classes/user/AccountService.php
 msgid "Username is already taken"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
+msgid "Usernames can only have letters, numbers and underscores"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php

@@ -1015,11 +1015,7 @@ msgstr ""
 msgid "A link needs a label and an address."
 msgstr ""
 
-#: oc-includes/osclass/classes/menu/MenuItems.php
-msgid "A link needs a label."
-msgstr ""
-
-#: oc-includes/osclass/classes/menu/MenuItems.php
+#: oc-admin/themes/modern/appearance/menus.php
 msgid "A link needs an address that starts with http://, https:// or /."
 msgstr ""
 
@@ -1052,6 +1048,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/menu/MenuService.php
 msgid "A menu with that id already exists."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
+msgid "A new category has been added"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
@@ -1341,6 +1341,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/comments/frm.php
+#: oc-admin/themes/modern/fields/index.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/currency_form.php
 #: oc-admin/themes/modern/users/index.php
@@ -1387,6 +1388,7 @@ msgstr ""
 msgid "Add ban rule"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/iframe.php
 #: oc-admin/themes/modern/categories/index.php
 msgid "Add category"
 msgstr ""
@@ -1483,6 +1485,11 @@ msgstr ""
 #: oc-admin/themes/modern/plugins/add.php
 #: oc-admin/themes/modern/plugins/index.php
 msgid "Add plugin"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/items/index.php
+msgid "Add product"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -2390,6 +2397,10 @@ msgstr ""
 msgid "Back to plugins"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Back to products"
+msgstr ""
+
 #: oc-admin/gui/two_factor.php
 msgid "Back to the sign-in page"
 msgstr ""
@@ -3274,6 +3285,7 @@ msgid "Choose an option"
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
+#: oc-includes/osclass/classes/admin/ui/Field.php
 msgid "Choose image"
 msgstr ""
 
@@ -3554,6 +3566,10 @@ msgid "Comment Statistics"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
+msgid "Comment approved"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
 msgid "Comment author email"
 msgstr ""
 
@@ -3657,6 +3673,7 @@ msgstr ""
 msgid "Computers"
 msgstr ""
 
+#: oc-admin/themes/modern/fields/iframe.php
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Condition"
 msgstr ""
@@ -3681,8 +3698,28 @@ msgid ""
 "location pages to "
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Confirm a new e-mail address"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Confirm a new listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Confirm a new listing, guest"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Confirm a search alert"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
 msgid "Confirm new password"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Confirm your account"
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
@@ -5154,6 +5191,10 @@ msgstr ""
 msgid "Edit page"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Edit product"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/header.php
 msgid "Edit profile"
 msgstr ""
@@ -5675,8 +5716,12 @@ msgstr ""
 msgid "Field"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/index.php
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
 msgid "Field could not be added"
+msgstr ""
+
+#: oc-admin/themes/modern/fields/iframe.php
+msgid "Field to check"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -5739,6 +5784,14 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Fill in the host, database name and username first."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Filled with your shop e-mail. You can change it."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Filled with your shop name. You can change it."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
@@ -5894,7 +5947,7 @@ msgstr ""
 msgid "Form"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/index.php
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
 msgid "Form could not be created"
 msgstr ""
 
@@ -6128,6 +6181,18 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
 msgid "Give each option a name and at least one value first."
+msgstr ""
+
+#: oc-admin/themes/modern/fields/index.php
+msgid "Give it a name."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
+msgid "Give the field a name."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
+msgid "Give the form a name."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -7258,6 +7323,10 @@ msgstr ""
 msgid "Latest listings shown: this field must only contain numeric characters"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Latest products shown"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/searches.php
 #: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
@@ -7472,6 +7541,10 @@ msgstr ""
 msgid "Listing URL"
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Listing about to expire"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Listing actions"
 msgstr ""
@@ -7542,6 +7615,10 @@ msgid "Listing new"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
+msgid "Listing posted, guest"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
 msgid "Listing price"
 msgstr ""
 
@@ -7559,6 +7636,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Listing send friend"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Listing sent to a friend"
 msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
@@ -8025,6 +8106,11 @@ msgstr ""
 msgid "Manage plugins"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+#: oc-includes/osclass/classes/AdminMenu.php
+msgid "Manage products"
+msgstr ""
+
 #: oc-admin/themes/modern/comments/index.php
 msgid "Manage the comments that users publish on the listings on your site."
 msgstr ""
@@ -8274,6 +8360,10 @@ msgstr ""
 msgid "Message thread"
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Message to a user"
+msgstr ""
+
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid "Message waiting for its sender to confirm"
 msgstr ""
@@ -8400,6 +8490,7 @@ msgstr ""
 msgid "Moderated comments: this field must only contain numeric characters"
 msgstr ""
 
+#: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/settings/keywordBlock.php
 msgid "Moderation"
 msgstr ""
@@ -8559,15 +8650,12 @@ msgstr ""
 msgid "MySQLi extension is required. How to "
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/ajax/FieldAjax.php
-msgid "NEW custom field"
-msgstr ""
-
 #: oc-admin/themes/modern/admins/index.php
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/billing/package.php
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/emails/index.php
+#: oc-admin/themes/modern/fields/index.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
@@ -8686,14 +8774,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
 msgid ""
-"Needs a CAPTCHA provider configured under Settings &raquo; "
-"reCAPTCHA/Turnstile; "
+"Needs a CAPTCHA provider configured under Settings › Spam and bots › "
+"Captcha; "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid ""
-"Needs a CAPTCHA provider configured under Settings &raquo; "
-"reCAPTCHA/Turnstile; otherwise no challenge is shown."
+"Needs a CAPTCHA provider configured under Settings › Spam and bots › "
+"Captcha; otherwise no challenge is shown."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -8765,12 +8853,29 @@ msgstr ""
 msgid "New addresses"
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "New admin account"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/items.php
 msgid "New alerts"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
 msgid "New backup codes"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/iframe.php
+#: oc-admin/themes/modern/categories/index.php
+msgid "New category"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "New comment on your listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "New comment, to the admin"
 msgstr ""
 
 #: oc-includes/osclass/functions.php
@@ -8789,10 +8894,6 @@ msgstr ""
 msgid "New field"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/ajax/FormBuilderAjax.php
-msgid "New field group"
-msgstr ""
-
 #: oc-admin/themes/modern/fields/index.php
 msgid "New form"
 msgstr ""
@@ -8809,6 +8910,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
 msgid "New listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "New listing, to the admin"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -8855,6 +8960,10 @@ msgstr ""
 msgid ""
 "New themes show up here as they are published. You can also upload one "
 "yourself."
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "New user, to the admin"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/users.php
@@ -10109,6 +10218,10 @@ msgstr ""
 msgid "Password check before a restore"
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Password reset"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Password sign-in"
 msgstr ""
@@ -10584,12 +10697,22 @@ msgstr ""
 msgid "Process queue now"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Product"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ProductAlerts.php
 msgid "Product alerts"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-shop.php
 msgid "Product details"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/items/settings.php
+#: oc-includes/osclass/classes/AdminMenu.php
+msgid "Products"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
@@ -10700,6 +10823,10 @@ msgstr ""
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/billing/Receipts.php
 msgid "Qty"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Question about a listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -11790,6 +11917,22 @@ msgstr ""
 msgid "Search alert sign-ups"
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Search alert, daily"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Search alert, hourly"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Search alert, instant"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Search alert, weekly"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Search alerts"
@@ -12046,7 +12189,18 @@ msgstr ""
 msgid "Select a region..."
 msgstr ""
 
+#: oc-admin/themes/modern/admins/index.php
+#: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/media/index.php
+#: oc-admin/themes/modern/settings/currencies.php
+#: oc-includes/osclass/classes/datatables/AlertsDataTable.php
+#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+#: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
+#: oc-includes/osclass/classes/datatables/MediaDataTable.php
+#: oc-includes/osclass/classes/datatables/PagesDataTable.php
+#: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Select all"
 msgstr ""
 
@@ -13015,7 +13169,6 @@ msgstr ""
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/billing/packages.php
-#: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/fields/submissions.php
 #: oc-admin/themes/modern/messages/thread.php
 #: oc-admin/themes/modern/settings/api.php
@@ -13211,6 +13364,10 @@ msgstr ""
 msgid "Switch to light mode"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/currencies.php
+msgid "Symbol"
+msgstr ""
+
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "System"
 msgstr ""
@@ -13290,7 +13447,6 @@ msgstr ""
 msgid "Testing…"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/index.php
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Text"
 msgstr ""
@@ -13410,6 +13566,12 @@ msgstr ""
 msgid ""
 "The <strong>Better S3</strong> plugin is currently active. Disable it "
 "before turning on "
+msgstr ""
+
+#: oc-admin/themes/modern/settings/api.php
+msgid ""
+"The API is off, so keys and webhooks do nothing until you switch it on "
+"above."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -13748,6 +13910,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/DatabaseTools.php
 msgid "The last build failed: %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "The link \"%s\" needs an address that starts with http://, https:// or /."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "The link to \"%s\" needs a label."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
@@ -14977,6 +15147,7 @@ msgid "Two-step sign-in"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
+#: oc-admin/themes/modern/fields/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/settings/api.php
 msgid "Type"
@@ -15123,6 +15294,10 @@ msgstr ""
 msgid "Unmark as spam"
 msgstr ""
 
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Unpaid listing reminder"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/menus.php
 msgid "Unsaved changes"
 msgstr ""
@@ -15207,6 +15382,10 @@ msgstr ""
 #: oc-includes/osclass/classes/Breadcrumb.php
 #: oc-includes/osclass/functions.php
 msgid "Update my profile"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Update product"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/package-ui.php
@@ -15415,7 +15594,9 @@ msgid "Used report link"
 msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
-msgid "Used to quickly identify this page"
+msgid ""
+"Used to identify this page. Left empty on a new page, it is built from the "
+"title."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/credits.php
@@ -15755,6 +15936,10 @@ msgstr ""
 msgid "Views"
 msgstr ""
 
+#: oc-admin/themes/modern/comments/frm.php
+msgid "Visible"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Visitor addresses"
 msgstr ""
@@ -15969,6 +16154,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Welcome to Shopclass"
+msgstr ""
+
+#: oc-includes/osclass/classes/EmailVariables.php
+msgid "Welcome, new account"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -17033,6 +17222,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "previously approved comments"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "products at most"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
