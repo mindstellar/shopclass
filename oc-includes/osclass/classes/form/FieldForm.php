@@ -428,7 +428,8 @@ class FieldForm extends Form
                     if ($search) {
                         $options['sanitize'] = 'html';
 
-                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
+                        $attributes['aria-labelledby'] = $id . '-label';
                         echo self::getInstance()->text($name, $value, $attributes, $options);
                     } else {
                         $value              = osc_apply_filter(
@@ -443,7 +444,8 @@ class FieldForm extends Form
                     break;
                 case 'DROPDOWN':
                     if ($search) {
-                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
+                        $attributes['aria-labelledby'] = $id . '-label';
                     } else {
                         $options['label'] = $label;
                     }
@@ -456,13 +458,16 @@ class FieldForm extends Form
                     break;
                 case 'RADIO':
                     if ($search) {
-                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
                     } else {
                         $options['label'] = $label;
                     }
                     if (isset($field['s_options'])) {
                         $options['radioOptions'] = $field['s_options'];
-                        echo self::getInstance()->radio($name, $value, $attributes, $options);
+                        $radios = self::getInstance()->radio($name, $value, $attributes, $options);
+                        echo $search
+                            ? '<div role="group" aria-labelledby="' . $id . '-label">' . $radios . '</div>'
+                            : $radios;
                     }
                     break;
                 case 'CHECKBOX':
@@ -540,7 +545,8 @@ class FieldForm extends Form
                     break;
                 default:
                     if ($search) {
-                        echo '<h6>' . osc_esc_html((string) $label) . '</h6>';
+                        echo '<h6 id="' . $id . '-label">' . osc_esc_html((string) $label) . '</h6>';
+                        $attributes['aria-labelledby'] = $id . '-label';
                     } else {
                         $options['label'] = $label;
                     }

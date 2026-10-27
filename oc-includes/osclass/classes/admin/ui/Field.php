@@ -90,11 +90,14 @@ class Field
             // radio owns its own label, and what a custom field draws is the declaration's
             // business -- so the row label stays plain text. A `for` pointing at an id
             // nothing carries reaches nothing.
-            $opts = in_array($type, array('radio', 'custom'), true)
+            // A custom field that names its control's id is the exception.
+            $opts = $type === 'custom'
+                ? (empty($spec['id']) ? array() : array('for' => (string)$spec['id']))
+                : ($type === 'radio'
                 ? array()
                 : array('for' => $locales === array() ? $id : self::idFor(array(
                     'name' => self::translatedName($spec, (string)array_key_first($locales)),
-                )));
+                ))));
             // The marked-up form of the row label, for the label carrying an <em> or a
             // link. It is raw markup and so is the declaration's to get right, exactly as
             // it already is on osc_admin_form_row_open().
@@ -198,7 +201,7 @@ class Field
 
         $class = 'form-label' . (empty($spec['required']) ? '' : ' osc-field-required');
         // Neither a choice list nor a custom field has one control to point at.
-        $for   = in_array($type, array('radio', 'custom'), true)
+        $for   = $type === 'radio' || ($type === 'custom' && empty($spec['id']))
             ? ''
             : ' for="' . osc_esc_html($id) . '"';
         echo '<label class="' . $class . '"' . $for . '>'
@@ -638,7 +641,7 @@ class Field
             $marker = ' <span class="visually-hidden">(' . osc_esc_html(__('Your admin language')) . ')</span>';
         }
 
-        return '<li' . ($opens ? ' class="ui-tabs-active ui-state-active"' : '') . $attrs . '>'
+        return '<li role="presentation"' . ($opens ? ' class="ui-tabs-active ui-state-active"' : '') . $attrs . '>'
             . '<a href="#' . osc_esc_html($panel) . '">' . osc_esc_html($label) . $marker . '</a></li>';
     }
 

@@ -1020,6 +1020,7 @@ if (!function_exists('osc_admin_list_filter_field')) {
                        class="form-control form-control-sm<?php
                            echo (string) $optValue === $current ? '' : ' hide'; ?>"
                        placeholder="<?php echo osc_esc_html((string) ($spec['placeholder'] ?? '')); ?>"
+                       aria-label="<?php echo osc_esc_html((string) ($spec['label'] ?? $optValue)); ?>"
                        value="<?php echo osc_esc_html((string) ($spec['value'] ?? '')); ?>"/>
             <?php }
             return;

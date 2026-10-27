@@ -153,7 +153,8 @@ class MediaDataTable extends DataTable
             foreach ($media as $aRow) {
                 $row = array();
 
-                $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" />';
+                $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
+                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), '#' . $aRow['pk_i_id'] . '.' . $aRow['s_extension'])) . '" />';
                 $row['file']        = '<div id="media_list_pic"><img src="' . osc_apply_filter(
                     'resource_path',
                     osc_base_url() . $aRow['s_path'],

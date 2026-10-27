@@ -821,7 +821,7 @@ check('and the accepted one does not', strpos($html, 'field-en_US-s_title-error'
 emits(
     'the tab marks the locale whose panel holds it',
     $html,
-    '<li data-osc-tab-error title="Espanol: this page needs a title here."><a href="#field-s_title-es_ES">'
+    '<li role="presentation" data-osc-tab-error title="Espanol: this page needs a title here."><a href="#field-s_title-es_ES">'
 );
 pin('and only that one', 1, substr_count($html, 'data-osc-tab-error'));
 

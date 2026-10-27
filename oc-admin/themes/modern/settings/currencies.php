@@ -31,7 +31,8 @@ $aCurrencies = __get('aCurrencies');
 $aData = array();
 foreach ($aCurrencies as $currency) {
     $row   = array();
-    $row[] = '<input type="checkbox" name="code[]" value="' . osc_esc_html($currency['pk_c_code']) . '" />';
+    $row[] = '<input type="checkbox" name="code[]" value="' . osc_esc_html($currency['pk_c_code']) . '"'
+        . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $currency['pk_c_code'])) . '" />';
 
     $options   = array();
     $options[] = '<a href="' . osc_admin_base_url(true) . '?page=settings&amp;action=currencies&amp;type=edit&amp;code='

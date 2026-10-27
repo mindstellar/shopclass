@@ -869,7 +869,7 @@ foreach (translate_widgets($mine) as $index => $widget) {
 emits(
     'and its tab is the one marked',
     $mine,
-    '<li class="ui-tabs-active ui-state-active" data-osc-tab-mine title="Your admin language"><a href="#field-s_title-es_ES">'
+    '<li role="presentation" class="ui-tabs-active ui-state-active" data-osc-tab-mine title="Your admin language"><a href="#field-s_title-es_ES">'
 );
 pin('only one tab per strip is marked', 2, substr_count($mine, 'data-osc-tab-mine'));
 // A locale's name and a panel id are printed into markup, so both are escaped.
