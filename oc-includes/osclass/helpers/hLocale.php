@@ -68,29 +68,6 @@ function osc_get_locales()
 }
 
 /**
- * The name of an enabled locale by code, or the code itself when it is not known.
- *
- * @param string $code
- *
- * @return string
- */
-function osc_get_locale_name($code)
-{
-    $code = (string) $code;
-    try {
-        foreach (osc_get_locales() as $locale) {
-            if (($locale['pk_c_code'] ?? '') === $code && ($locale['s_name'] ?? '') !== '') {
-                return (string) $locale['s_name'];
-            }
-        }
-    } catch (\Throwable) {
-        // no database: the code is all there is
-    }
-
-    return $code;
-}
-
-/**
  * Private function to count locales
  *
  * @return int

@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1260 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -699,7 +699,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null)` | One page of a group's live keys, in key order. Pass the last key of a page as $afterKey for the next. A row never rewritten counts as updated when it was created. |
 | `osc_kv_set(string $group, string $key, $value, ?int $ttl = null)` | Write a key, replacing any value, state and expiry it had. |
 
-### hLocale (23)
+### hLocale (22)
 
 `oc-includes/osclass/helpers/hLocale.php`
 
@@ -712,7 +712,6 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_current_user_locale()` | Get the actual locale of the user. |
 | `osc_get_admin_locales()` | Gets list of enabled admin locales |
 | `osc_get_current_user_locale()` | Gets current locale object |
-| `osc_get_locale_name($code)` | The name of an enabled locale by code, or the code itself when it is not known. |
 | `osc_get_locales()` | Gets list of locales |
 | `osc_goto_first_locale()` | Reset iterator of locales |
 | `osc_has_web_enabled_locales()` | Iterator for enabled locales for website |
