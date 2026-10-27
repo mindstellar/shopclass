@@ -197,6 +197,14 @@
   }
 }
 
+// Inside the Details section the section is the card; the hook adds no frame of its own.
+#sec-details #plugin-hook {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+}
+
 #multiLangTabsContent {
   textarea {
     min-height: 30rem;
@@ -272,6 +280,16 @@
 .osc-variants {
   display: grid;
   gap: .75rem;
+  min-inline-size: 0;
+
+  > * {
+    min-inline-size: 0;
+  }
+
+  .table-responsive {
+    max-inline-size: 100%;
+    overflow-x: auto;
+  }
 
   &[hidden] {
     display: none;
