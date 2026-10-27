@@ -1095,4 +1095,16 @@ if (!function_exists('osc_admin_tree_picker')) {
     }
 }
 
+if (!function_exists('osc_admin_captcha_settings_path')) {
+    /**
+     * The menu path to the Captcha settings, built from the menu's own names.
+     *
+     * @return string
+     */
+    function osc_admin_captcha_settings_path(): string
+    {
+        return implode(' › ', array(__('Settings'), __('Spam and bots'), __('Captcha')));
+    }
+}
+
 /* file end: ./oc-includes/osclass/helpers/hAdminUi.php */
