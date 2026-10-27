@@ -464,22 +464,7 @@ function osc_private_user_menu($options = null)
         $options[] = array('name' => __('Logout'), 'url' => osc_user_logout_url(), 'class' => 'opt_logout');
     }
 
-    $options = osc_apply_filter('user_menu_filter', $options);
-
-    // Keep log out last. The filter is how a plugin adds an account entry and appending is
-    // the natural way to do it, which landed every one of them BELOW the log-out row --
-    // and displaced log out into the middle of the list, since the render below gives the
-    // final entry its own slot after the user_menu hook. Moving it here rather than holding
-    // it out of the filter leaves it visible to a plugin that wants to relabel it. A theme
-    // passing its own options without an opt_logout entry (bender has none) is untouched.
-    foreach ($options as $var_k => $var_option) {
-        if (isset($var_option['class']) && $var_option['class'] === 'opt_logout') {
-            unset($options[$var_k]);
-            $options[] = $var_option;
-            break;
-        }
-    }
-    $options = array_values($options);
+    $options = osc_account_nav_items($options, false);
 
     // A filter is free to return nothing; the final-entry render below would then reach for
     // a key that does not exist.
@@ -509,6 +494,87 @@ function osc_private_user_menu($options = null)
         . $options[$var_l - 1]['name'] . '</a></li>';
 
     echo '</ul>';
+}
+
+/**
+ * The account nav entries after `user_menu_filter`, log out last, each with a `current` flag for
+ * the page being shown. Themes draw their own markup from this list.
+ *
+ * @param array<int,array<string,string>>|null $items the entries to filter, or null for core's list
+ * @param bool                                   $markCurrent false skips the `current` flags
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function osc_account_nav_items(?array $items = null, bool $markCurrent = true): array
+{
+    $items ??= array(
+        array('name' => _m('Dashboard'), 'url' => osc_user_dashboard_url(), 'class' => 'opt_dashboard'),
+        array('name' => _m('Your listings'), 'url' => osc_user_list_items_url(), 'class' => 'opt_items'),
+        array('name' => _m('Alerts'), 'url' => osc_user_alerts_url(), 'class' => 'opt_alerts'),
+        array('name'  => _m('Public profile'),
+              'url'   => osc_user_public_profile_url(osc_logged_user_id()),
+              'class' => 'opt_publicprofile'),
+        array('name' => _m('Profile'), 'url' => osc_user_profile_url(), 'class' => 'opt_account'),
+        array('name' => _m('Sign-in details'), 'url' => osc_change_user_email_url(), 'class' => 'opt_signin'),
+        array('name' => _m('Log out'), 'url' => osc_user_logout_url(), 'class' => 'opt_logout'),
+    );
+    $items = osc_apply_filter('user_menu_filter', $items);
+    if (!is_array($items)) {
+        return array();
+    }
+
+    // Plugins append their entries, so log out is moved back to the end.
+    $logout = array();
+    $rest   = array();
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        if (($item['class'] ?? '') === 'opt_logout') {
+            $logout[] = $item;
+        } else {
+            $rest[] = $item;
+        }
+    }
+    $items = array_merge($rest, $logout);
+    if (!$markCurrent) {
+        return $items;
+    }
+    $classes = array_column($items, 'class');
+
+    $current = '';
+    if (osc_is_user_dashboard()) {
+        $current = 'opt_dashboard';
+    } elseif (osc_is_list_items()) {
+        $current = 'opt_items';
+    } elseif (osc_is_list_alerts()) {
+        $current = 'opt_alerts';
+    } elseif (osc_is_messages_page()) {
+        $current = 'opt_messages';
+    } elseif (osc_is_user_profile() || osc_is_current_page('user', 'delete')) {
+        $current = 'opt_account';
+    } elseif (osc_is_change_email_page() || osc_is_change_password_page() || osc_is_change_username_page()) {
+        $current = 'opt_signin';
+    } elseif (osc_is_current_page('user', 'addresses') || osc_is_current_page('user', 'addresses_post')) {
+        $current = 'opt_addresses';
+    } elseif (osc_is_current_page('user', 'api_access') || osc_is_current_page('user', 'api_access_post')) {
+        $current = 'opt_api_access';
+    } elseif (osc_is_current_page('billing', 'buy') || osc_is_current_page('billing', 'checkout')) {
+        $current = 'opt_billing_buy';
+    } elseif ((osc_is_current_page('billing', 'orders') || osc_is_current_page('billing', 'receipt'))
+              && in_array('opt_billing_orders', $classes, true)
+    ) {
+        $current = 'opt_billing_orders';
+    } elseif (osc_get_osclass_location() === 'billing') {
+        // The wallet has no action of its own: CWebBilling shows it for anything else.
+        $current = 'opt_billing_wallet';
+    }
+
+    foreach ($items as $k => $item) {
+        $items[$k]['current'] = $current !== '' && ($item['class'] ?? '') === $current;
+    }
+
+    return $items;
 }
 
 /**

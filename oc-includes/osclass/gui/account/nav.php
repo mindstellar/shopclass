@@ -13,89 +13,13 @@ if (!defined('ABS_PATH')) {
  */
 
 /**
- * The account section nav, shared by every core account partial.
- *
- * Built from the same `user_menu_filter` list `osc_private_user_menu()` passes
- * through, so a plugin that already adds an account entry -- core's own billing
- * links among them -- appears here too, and the `user_menu` hook still fires.
- *
- * Rendered here rather than by calling that helper because the helper emits its
- * own `<ul class="user_menu">` and an inline script; this page has a documented
- * class vocabulary of its own and needs no script to mark the current entry.
+ * The account section nav, shared by every core account partial. The list comes from
+ * osc_account_nav_items(), and the `user_menu` hook still fires inside it.
  */
 
-$navItems = array(
-    array('name' => _m('Dashboard'), 'url' => osc_user_dashboard_url(), 'class' => 'opt_dashboard'),
-    array('name' => _m('Your listings'), 'url' => osc_user_list_items_url(), 'class' => 'opt_items'),
-    array('name' => _m('Alerts'), 'url' => osc_user_alerts_url(), 'class' => 'opt_alerts'),
-    array('name' => _m('Public profile'),
-          'url' => osc_user_public_profile_url(osc_logged_user_id()), 'class' => 'opt_publicprofile'),
-    array('name' => _m('Profile'), 'url' => osc_user_profile_url(), 'class' => 'opt_account'),
-    // Email, username and password are one page. The entry points at the email
-    // route because that is the canonical one; the page carries all three.
-    array('name' => _m('Sign-in details'), 'url' => osc_change_user_email_url(), 'class' => 'opt_signin'),
-);
-
-$navItems[] = array('name' => _m('Log out'), 'url' => osc_user_logout_url(), 'class' => 'opt_logout');
-
-$navItems = osc_apply_filter('user_menu_filter', $navItems);
-if (!is_array($navItems) || $navItems === array()) {
+$navItems = osc_account_nav_items();
+if ($navItems === array()) {
     return;
-}
-
-// Log out goes last whatever the filter did -- the same rule
-// osc_private_user_menu() applies. Core's own billing links arrive through that
-// filter, and appending is the natural way for a plugin to add an entry, which
-// would otherwise push log out into the middle.
-//
-// Deleting the account is deliberately not here. It is irreversible, and a nav
-// entry makes it a peer of "Alerts"; it lives at the foot of the profile page
-// instead, where you have to go looking for it.
-$logout = array();
-$rest   = array();
-foreach ($navItems as $navItem) {
-    $class = (is_array($navItem) && isset($navItem['class'])) ? (string) $navItem['class'] : '';
-    if ($class === 'opt_logout') {
-        $logout[] = $navItem;
-    } else {
-        $rest[] = $navItem;
-    }
-}
-$navItems = array_merge($rest, $logout);
-
-$navCurrent = '';
-if (osc_is_user_dashboard()) {
-    $navCurrent = 'opt_dashboard';
-} elseif (osc_is_list_items()) {
-    $navCurrent = 'opt_items';
-} elseif (osc_is_list_alerts()) {
-    $navCurrent = 'opt_alerts';
-} elseif (osc_is_messages_page()) {
-    $navCurrent = 'opt_messages';
-} elseif (osc_is_user_profile()) {
-    $navCurrent = 'opt_account';
-} elseif (osc_is_change_email_page()
-          || osc_is_change_password_page()
-          || osc_is_change_username_page()
-) {
-    $navCurrent = 'opt_signin';
-} elseif (osc_is_current_page('user', 'addresses') || osc_is_current_page('user', 'addresses_post')) {
-    $navCurrent = 'opt_addresses';
-} elseif (osc_is_current_page('user', 'api_access') || osc_is_current_page('user', 'api_access_post')) {
-    $navCurrent = 'opt_api_access';
-} elseif (osc_is_current_page('user', 'delete')) {
-    // No entry of its own; it hangs off the profile page that links to it.
-    $navCurrent = 'opt_account';
-} elseif (osc_is_current_page('billing', 'buy') || osc_is_current_page('billing', 'checkout')) {
-    $navCurrent = 'opt_billing_buy';
-} elseif ((osc_is_current_page('billing', 'orders') || osc_is_current_page('billing', 'receipt'))
-          && in_array('opt_billing_orders', array_column($navItems, 'class'), true)
-) {
-    $navCurrent = 'opt_billing_orders';
-} elseif (osc_get_osclass_location() === 'billing') {
-    // The wallet has no action of its own: CWebBilling shows it for anything else.
-    // Orders hang off it too, since they have no nav entry.
-    $navCurrent = 'opt_billing_wallet';
 }
 ?>
 <nav class="oe-account-nav" aria-label="<?php echo osc_esc_html(_m('Your account')); ?>">
@@ -106,7 +30,7 @@ if (osc_is_user_dashboard()) {
                 continue;
             }
             $navClass = isset($navItem['class']) ? (string) $navItem['class'] : '';
-            $isHere   = $navClass !== '' && $navClass === $navCurrent;
+            $isHere   = !empty($navItem['current']);
             ?>
             <li class="<?php echo osc_esc_html($navClass); ?>">
                 <a href="<?php echo osc_esc_html($navItem['url']); ?>"

@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1252 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1253 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1418,12 +1418,13 @@ Core defines 1252 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_web_user_apply_identity($user)` | Populate the request-scoped identity for the given user. |
 | `osc_web_user_login($user, $remember = false)` | Log a front-end user in by issuing the signed identity cookie. |
 
-### hUtils (49)
+### hUtils (50)
 
 `oc-includes/osclass/helpers/hUtils.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_account_nav_items(?array $items = null, bool $markCurrent = true)` | The account nav entries after `user_menu_filter`, log out last, each with a `current` flag for the page being shown. Themes draw their own markup from this list. |
 | `osc_add_route($id, $regexp, $url, $file, $user_menu = false, $location = 'custom', $section = 'custom', $title = 'Custom')` | Register a file-backed custom route. |
 | `osc_add_route_hook($id, $regexp, $url)` | Register a controller route dispatched by class instead of by file. |
 | `osc_admin_cookie_path()` | The URL path of the admin, e.g. /oc-admin/ or /sub/oc-admin/, for cookies only the admin reads. |
