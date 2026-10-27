@@ -80,7 +80,7 @@ templates declare which sections exist: a sidebar, a footer column, a strip
 above the listing grid.
 
 **Appearance → Manage widgets** shows every section with what is in it. **Add widget**
-picks a type, then **Add to which section?** places it. Drag to reorder within a
+picks a type, then **Add to which section?** places it. The list names each section by its label; a section the theme no longer declares reads **Unused: slug**. Drag to reorder within a
 section; the order is the order visitors see.
 
 ### Built-in widget types
