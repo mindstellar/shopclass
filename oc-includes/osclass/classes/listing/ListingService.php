@@ -163,29 +163,41 @@ final class ListingService
     }
 
     /**
-     * Save the listing form for a web, admin or plugin caller and flash the photo notices.
-     * The caller puts the posted custom field values under 'meta' (see ListingInput::withMeta()).
+     * Save the listing form for a web, admin or plugin caller and flash the photo notices,
+     * also when the save is refused. The caller puts the posted custom field values under
+     * 'meta' (see ListingInput::withMeta()).
      *
-     * @param array<string,mixed>                                                $data
-     * @param array<int,array{pointer:string,code:string,message:string}>|null $refused set to the refusal's errors, each with the field it names
-     * @param-out array<int,array{pointer:string,code:string,message:string}> $refused
+     * @param array<string,mixed> $data
      *
-     * @return SavedListing|string what was saved, or the refusal's message
+     * @throws RefusedException InvalidException with each error's field, code and message
      */
-    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true, ?array &$refused = null): SavedListing|string
+    public function save(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true): SavedListing
     {
-        $refused = array();
         try {
             $saved = $isAdd ? $this->create($data, $actor, $import) : $this->update($data, $actor, $import, $matchSecret);
         } catch (RefusedException $e) {
             ListingNotices::flash($e->notices(), $actor->isAdmin());
-            $refused = $e instanceof InvalidException ? $e->errors() : array();
-
-            return $e->getMessage();
+            throw $e;
         }
         ListingNotices::flash($saved->notices(), $actor->isAdmin());
 
         return $saved;
+    }
+
+    /**
+     * save(), with a refusal answered as its message.
+     *
+     * @param array<string,mixed> $data
+     *
+     * @return SavedListing|string what was saved, or the refusal's message
+     */
+    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true): SavedListing|string
+    {
+        try {
+            return $this->save($data, $actor, $isAdd, $import, $matchSecret);
+        } catch (RefusedException $e) {
+            return $e->getMessage();
+        }
     }
 
     /**

@@ -25,14 +25,15 @@ use mindstellar\admin\form\ItemSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
 use mindstellar\exception\ConflictException;
+use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
 use mindstellar\install\SampleData;
 use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStatus;
-use mindstellar\listing\ListingValidator;
 use mindstellar\listing\PhotoService;
+use mindstellar\listing\SavedListing;
 use mindstellar\moderation\ListingModeration;
 
 class CAdminItems extends AdminSecBaseModel
@@ -41,8 +42,6 @@ class CAdminItems extends AdminSecBaseModel
 
     //specific for this class
     private Item $itemManager;
-    /** @var array<int,array{pointer:string,code:string,message:string}>|null the last refused save's errors */
-    private ?array $refused = null;
 
     /** Each action and the method that answers it; any other action shows the listings table. */
     private const ACTIONS = array(
@@ -423,12 +422,10 @@ class CAdminItems extends AdminSecBaseModel
         $meta     = Params::getParam('meta');
         ListingInput::keep($formData, $meta);
 
-        $success = $this->saveListing($formData, false);
+        $saved = $this->saveListing($formData, false);
 
-        // edit() answers with the number of rows it changed, or with the message it
-        // refused on. A save that changed nothing affected no rows and is still a
-        // save, so only a message is a refusal.
-        if (!is_string($success) && $success !== false) {
+        // A save that changed nothing affected no rows and is still a save.
+        if ($saved instanceof SavedListing && $saved->rows() !== false) {
             osc_add_flash_ok_message(_m('Changes saved correctly'), 'admin');
             $url = osc_admin_base_url(true) . '?page=items';
             // if Referer is saved that means referer is ManageListings or ReportListings
@@ -443,7 +440,7 @@ class CAdminItems extends AdminSecBaseModel
             // Drawn again with what was typed still in it, rather than thrown away
             // with a redirect. ListingInput::read() has already put the submission in the
             // session form, which is where the view reads the content fields from.
-            $this->drawItemForm(false, $this->refusal($success, $formData));
+            $this->drawItemForm(false, $this->refusal($saved, $formData));
 
             return;
         }
@@ -496,9 +493,9 @@ class CAdminItems extends AdminSecBaseModel
         $meta     = Params::getParam('meta');
         ListingInput::keep($formData, $meta);
 
-        $success = $this->saveListing($formData, true);
+        $saved = $this->saveListing($formData, true);
 
-        if ($success == 1 || $success == 2) {
+        if ($saved instanceof SavedListing) {
             $url = osc_admin_base_url(true) . '?page=items';
             // if Referer is saved that means referer is ManageListings or ReportListings
             if (Session::getInstance()->_get('osc_admin_referer') != '') {
@@ -511,7 +508,7 @@ class CAdminItems extends AdminSecBaseModel
 
             $this->redirectTo($url);
         } else {
-            $this->drawItemForm(true, $this->refusal($success, $formData));
+            $this->drawItemForm(true, $this->refusal($saved, $formData));
 
             return;
         }
@@ -885,84 +882,75 @@ class CAdminItems extends AdminSecBaseModel
     }
 
     /**
-     * Save the listing form as the admin: a new listing answers 1 when it waits for validation
-     * and 2 otherwise, an edit the rows it changed; a refusal answers with its message.
+     * Save the listing form as the admin: what was saved, or why it was refused.
      *
      * @param array<string,mixed> $data
-     *
-     * @return int|string
      */
-    private function saveListing(array $data, bool $isAdd)
+    private function saveListing(array $data, bool $isAdd): SavedListing|RefusedException
     {
-        return ListingService::legacyResult((new ListingService())->saveForm(ListingInput::withMeta($data), Actor::fromSession(true), $isAdd, false, true, $this->refused), $isAdd);
+        try {
+            return (new ListingService())->save(ListingInput::withMeta($data), Actor::fromSession(true), $isAdd);
+        } catch (RefusedException $e) {
+            return $e;
+        }
     }
 
     /**
      * The summary lines for a refused save; with none to show, flash the refusal instead.
      *
-     * @param mixed               $message The message the save refused with
-     * @param array<string,mixed> $data    The submission
+     * @param SavedListing|RefusedException $result what saveListing() gave
+     * @param array<string,mixed>           $data   The submission
      *
      * @return array<array-key,mixed>
      */
-    private function refusal($message, array $data)
+    private function refusal(SavedListing|RefusedException $result, array $data): array
     {
-        $errors = $this->itemErrors($message, $data);
+        $errors = $result instanceof InvalidException ? $this->itemErrors($result->errors(), $data) : array();
         if ($errors === array()) {
-            osc_add_flash_error_message(is_string($message) && $message !== '' ? $message : _m('An error has occurred'), 'admin');
+            $message = $result instanceof RefusedException ? $result->getMessage() : '';
+            osc_add_flash_error_message($message !== '' ? $message : _m('An error has occurred'), 'admin');
         }
 
         return $errors;
     }
 
     /**
-     * What a refused save has to say, split into the summary's lines plus the fields the
-     * screen can name. The listing service reports one message with a line per problem, so the
-     * lines are what the summary lists; an empty title is named per locale, because the
-     * field promises one and the tab strip is where it has to be pointed out.
+     * A refused save's errors as the form shows them: one summary line per error, with the
+     * field it names beside it in editorErrorFields. With no title in any language, the
+     * empty titles are named per locale under 'title' instead, as the tab strip points them out.
      *
-     * @param string              $message The message the save refused with
-     * @param array<string,mixed> $data    The submission, as ListingInput::read() left it
+     * @param array<int,array{pointer:string,code:string,message:string}> $refused
+     * @param array<string,mixed>                                          $data The submission, as ListingInput::read() left it
      *
      * @return array<array-key,mixed>
      */
-    private function itemErrors($message, array $data)
+    private function itemErrors(array $refused, array $data): array
     {
-        $titles     = array();
-        $superseded = array();
-        $anyTitle   = false;
+        $titles = array();
         foreach (osc_get_locales() as $locale) {
             $code = $locale['pk_c_code'];
-            if (trim(strip_tags((string)($data['title'][$code] ?? ''))) === '') {
-                $titles[$code] = sprintf(_m('%s: this listing needs a title'), $locale['s_name']);
-                // The validator says the same in its own words; list only ours.
-                $superseded[] = trim(sprintf(_m('Title too short (%s).'), ListingValidator::localeName($code)));
-            } else {
-                $anyTitle = true;
+            if (trim(strip_tags((string)($data['title'][$code] ?? ''))) !== '') {
+                $titles = array();
+                break;
             }
+            $titles[$code] = sprintf(_m('%s: this listing needs a title'), $locale['s_name']);
         }
-        if ($anyTitle) {
-            $titles = array();
-        } elseif ($titles !== array()) {
+        if ($titles !== array()) {
             $titles['summary'] = _m('Add a title in at least one language.');
         }
 
         $errors = array();
-        foreach (explode(PHP_EOL, (string)$message) as $line) {
-            $line = trim($line);
-            if ($line !== '' && !in_array($line, $superseded, true)) {
-                $errors[] = $line;
-            }
-        }
-        // The field each line names, in the same order, so the form can tell which section holds it.
         $fields = array();
-        foreach ((array)$this->refused as $entry) {
-            $line = trim((string)($entry['message'] ?? ''));
-            if ($line !== '' && !in_array($line, $superseded, true)) {
-                $fields[] = (string)($entry['pointer'] ?? '');
+        foreach ($refused as $entry) {
+            $message = trim($entry['message']);
+            // The per-locale title lines say the same in the form's own words.
+            $missingTitle = $titles !== array() && str_starts_with($entry['pointer'], '/title') && in_array($entry['code'], array('required', 'too_short'), true);
+            if ($message !== '' && !$missingTitle) {
+                $errors[] = $message;
+                $fields[] = $entry['pointer'];
             }
         }
-        $this->_exportVariableToView('editorErrorFields', count($fields) === count($errors) ? $fields : array());
+        $this->_exportVariableToView('editorErrorFields', $fields);
 
         if ($titles !== array()) {
             $errors['title'] = $titles;
