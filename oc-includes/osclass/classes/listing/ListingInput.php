@@ -417,6 +417,13 @@ final class ListingInput
             (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN))
                 ? osc_sanitize_html($form['description'] ?? '')
                 : $get('description');
+        // Text is kept only in the site's languages; any other key would be quoted in a message.
+        $enabled = array_flip(array_column(osc_get_locales(), 'pk_c_code'));
+        foreach (array('title', 'description') as $key) {
+            if (is_array($aItem[$key]) && $enabled !== array()) {
+                $aItem[$key] = array_intersect_key($aItem[$key], $enabled);
+            }
+        }
         $aItem['photos']       = $files;
         $ajax_photos           = isset($form['ajax_photos']) ? Params::purifyText($form['ajax_photos']) : '';
         $aItem['s_ip']         = get_ip();
