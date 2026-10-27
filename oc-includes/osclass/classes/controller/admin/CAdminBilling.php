@@ -281,17 +281,11 @@ class CAdminBilling extends AdminSecBaseModel
             return;
         }
         $back     = $this->orderUrl($order);
-        $carrier  = Utils::oneLine(Params::getParamString('carrier'));
-        $tracking = Utils::oneLine(Params::getParamString('tracking'));
-        $url      = Utils::oneLine(Params::getParamString('trackingUrl'));
-        if ($url !== '' && Receipts::httpsUrl($url) === '') {
-            $this->orderView(
-                array('carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url),
-                array('trackingUrl' => _m('The tracking link has to be a full https:// address'))
-            );
-
+        $typed = $this->trackingInput();
+        if ($typed === null) {
             return;
         }
+        ['carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url] = $typed;
 
         if (OrderStore::ship($order->getId(), $carrier, $tracking, $url)) {
             osc_add_flash_ok_message(sprintf(_m('Order #%d is marked shipped'), $order->getId()), 'admin');
@@ -315,17 +309,11 @@ class CAdminBilling extends AdminSecBaseModel
         if ($order === null) {
             return;
         }
-        $carrier  = Utils::oneLine(Params::getParamString('carrier'));
-        $tracking = Utils::oneLine(Params::getParamString('tracking'));
-        $url      = Utils::oneLine(Params::getParamString('trackingUrl'));
-        if ($url !== '' && Receipts::httpsUrl($url) === '') {
-            $this->orderView(
-                array('carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url),
-                array('trackingUrl' => _m('The tracking link has to be a full https:// address'))
-            );
-
+        $typed = $this->trackingInput();
+        if ($typed === null) {
             return;
         }
+        ['carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url] = $typed;
 
         if (OrderStore::setTracking($order->getId(), $carrier, $tracking, $url)) {
             osc_add_flash_ok_message(sprintf(_m('Tracking of order #%d is updated'), $order->getId()), 'admin');
@@ -334,6 +322,28 @@ class CAdminBilling extends AdminSecBaseModel
         }
 
         $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * The carrier, tracking and tracking link the ship and edit-tracking forms post. A link that
+     * is not https redraws the order with the typed values and null comes back.
+     *
+     * @return array{carrier:string,tracking:string,trackingUrl:string}|null
+     */
+    private function trackingInput(): ?array
+    {
+        $typed = array(
+            'carrier'     => Utils::oneLine(Params::getParamString('carrier')),
+            'tracking'    => Utils::oneLine(Params::getParamString('tracking')),
+            'trackingUrl' => Utils::oneLine(Params::getParamString('trackingUrl')),
+        );
+        if ($typed['trackingUrl'] !== '' && Receipts::httpsUrl($typed['trackingUrl']) === '') {
+            $this->orderView($typed, array('trackingUrl' => _m('The tracking link has to be a full https:// address')));
+
+            return null;
+        }
+
+        return $typed;
     }
 
     /**

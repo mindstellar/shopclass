@@ -26,6 +26,32 @@ $order   = __get('order');
 $entries = __get('entries');
 $typed   = is_array(__get('typed')) ? __get('typed') : array();
 $errors  = is_array(__get('errors')) ? __get('errors') : array();
+// The carrier, tracking number and link boxes, shared by the ship and edit-tracking forms.
+$trackingFields = static function (string $prefix, array $values) use ($errors): void {
+    osc_admin_text(array(
+        'id'    => $prefix . '-carrier',
+        'name'  => 'carrier',
+        'label' => __('Carrier'),
+        'value' => (string) ($values['carrier'] ?? ''),
+        'attrs' => array('maxlength' => 100),
+    ));
+    osc_admin_text(array(
+        'id'    => $prefix . '-number',
+        'name'  => 'tracking',
+        'label' => __('Tracking number'),
+        'value' => (string) ($values['tracking'] ?? ''),
+        'attrs' => array('maxlength' => 100),
+    ));
+    osc_admin_text(array(
+        'id'    => $prefix . '-url',
+        'name'  => 'trackingUrl',
+        'label' => __('Tracking link'),
+        'value' => (string) ($values['trackingUrl'] ?? ''),
+        'error' => $errors['trackingUrl'] ?? '',
+        'attrs' => array('maxlength' => 500, 'placeholder' => 'https://'),
+        'help'  => __('Optional. Must start with https://'),
+    ));
+};
 $balance = (int)__get('balance');
 $refundable = (bool)__get('refundable');
 $dashboardUrl = (string) __get('dashboardUrl');
@@ -338,30 +364,7 @@ foreach ($order->getMeta() as $key => $value) {
                         <input type="hidden" name="page" value="billing"/>
                         <input type="hidden" name="action" value="order_ship"/>
                         <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <?php
-                        osc_admin_text(array(
-                            'id'    => 'ship-carrier',
-                            'name'  => 'carrier',
-                            'label' => __('Carrier'),
-                            'value' => $typed['carrier'] ?? '',
-                            'attrs' => array('maxlength' => 100),
-                        ));
-                        osc_admin_text(array(
-                            'id'    => 'ship-tracking',
-                            'name'  => 'tracking',
-                            'label' => __('Tracking number'),
-                            'value' => $typed['tracking'] ?? '',
-                            'attrs' => array('maxlength' => 100),
-                        ));
-                        osc_admin_text(array(
-                            'id'    => 'ship-url',
-                            'name'  => 'trackingUrl',
-                            'label' => __('Tracking link'),
-                            'value' => $typed['trackingUrl'] ?? '',
-                            'error' => $errors['trackingUrl'] ?? '',
-                            'attrs' => array('maxlength' => 500, 'placeholder' => 'https://'),
-                            'help'  => __('Optional. Must start with https://'),
-                        )); ?>
+                        <?php $trackingFields('ship', $typed); ?>
                         <button type="submit" class="btn btn-submit"><?php _e('Mark shipped'); ?></button>
                     </form>
                 <?php osc_admin_panel_close(); ?>
@@ -387,29 +390,10 @@ foreach ($order->getMeta() as $key => $value) {
                         <input type="hidden" name="page" value="billing"/>
                         <input type="hidden" name="action" value="order_tracking"/>
                         <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <?php
-                        osc_admin_text(array(
-                            'id'    => 'track-carrier',
-                            'name'  => 'carrier',
-                            'label' => __('Carrier'),
-                            'value' => $typed['carrier'] ?? (string) ($fulfil['carrier'] ?? ''),
-                            'attrs' => array('maxlength' => 100),
-                        ));
-                        osc_admin_text(array(
-                            'id'    => 'track-number',
-                            'name'  => 'tracking',
-                            'label' => __('Tracking number'),
-                            'value' => $typed['tracking'] ?? (string) ($fulfil['tracking'] ?? ''),
-                            'attrs' => array('maxlength' => 100),
-                        ));
-                        osc_admin_text(array(
-                            'id'    => 'track-url',
-                            'name'  => 'trackingUrl',
-                            'label' => __('Tracking link'),
-                            'value' => $typed['trackingUrl'] ?? (string) ($fulfil['tracking_url'] ?? ''),
-                            'error' => $errors['trackingUrl'] ?? '',
-                            'attrs' => array('maxlength' => 500, 'placeholder' => 'https://'),
-                            'help'  => __('Optional. Must start with https://'),
+                        <?php $trackingFields('track', $typed + array(
+                            'carrier'     => (string) ($fulfil['carrier'] ?? ''),
+                            'tracking'    => (string) ($fulfil['tracking'] ?? ''),
+                            'trackingUrl' => (string) ($fulfil['tracking_url'] ?? ''),
                         )); ?>
                         <button type="submit" class="btn btn-submit"><?php _e('Save tracking'); ?></button>
                     </form>
