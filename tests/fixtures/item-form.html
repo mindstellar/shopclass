@@ -1,0 +1,31 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>item form</title></head>
+<body>
+<form id="adminItemForm" name="item" data-osc-mode="shop" data-osc-new="1">
+  <section id="sec-price" class="osc-section">
+    <input type="checkbox" id="product-sell" name="product[sell]" value="1" checked>
+    <input type="checkbox" id="product-has-options" data-variant-switch>
+    <div id="sell-rows" data-osc-needs-sell>
+      <div id="rows-a" data-variant-default><input name="product[sku]"></div>
+      <p id="note" data-variant-with-options hidden>Set per row</p>
+    </div>
+    <p id="not-selling" data-osc-not-selling hidden>Not for sale online.</p>
+  </section>
+  <section id="sec-options" class="osc-section" data-osc-needs-sell>
+    <div data-variant-editor hidden>
+      <div data-variant-options></div><table><thead><tr data-variant-head></tr></thead><tbody data-variant-rows></tbody></table>
+      <button type="button" data-option-add></button>
+    </div>
+  </section>
+  <section id="sec-shipping" class="osc-section" data-osc-needs-sell>
+    <div id="weight" data-variant-default data-osc-physical-only><input name="product[weight]"></div>
+    <p id="digital-line" data-osc-digital-only hidden>No shipping.</p>
+  </section>
+  <section id="sec-details" class="osc-section"><div id="plugin-hook"></div></section>
+  <details id="sec-seller" class="osc-section"><summary>Seller</summary><input id="contactEmail" name="contactEmail"></details>
+  <ul id="error_list"><li><a id="err-link" href="#contactEmail">Email</a></li></ul>
+  <nav class="osc-toc"><a id="toc-link" href="#sec-seller">Seller</a></nav>
+</form>
+<script src="variants.js"></script>
+<script src="editor.js"></script>
+</body></html>

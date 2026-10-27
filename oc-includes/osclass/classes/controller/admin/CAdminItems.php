@@ -41,6 +41,8 @@ class CAdminItems extends AdminSecBaseModel
 
     //specific for this class
     private Item $itemManager;
+    /** @var array<int,array{pointer:string,code:string,message:string}>|null the last refused save's errors */
+    private ?array $refused = null;
 
     /** Each action and the method that answers it; any other action shows the listings table. */
     private const ACTIONS = array(
@@ -892,7 +894,7 @@ class CAdminItems extends AdminSecBaseModel
      */
     private function saveListing(array $data, bool $isAdd)
     {
-        return ListingService::legacyResult((new ListingService())->saveForm(ListingInput::withMeta($data), Actor::fromSession(true), $isAdd), $isAdd);
+        return ListingService::legacyResult((new ListingService())->saveForm(ListingInput::withMeta($data), Actor::fromSession(true), $isAdd, false, true, $this->refused), $isAdd);
     }
 
     /**
@@ -952,6 +954,15 @@ class CAdminItems extends AdminSecBaseModel
                 $errors[] = $line;
             }
         }
+        // The field each line names, in the same order, so the form can tell which section holds it.
+        $fields = array();
+        foreach ((array)$this->refused as $entry) {
+            $line = trim((string)($entry['message'] ?? ''));
+            if ($line !== '' && !in_array($line, $superseded, true)) {
+                $fields[] = (string)($entry['pointer'] ?? '');
+            }
+        }
+        $this->_exportVariableToView('editorErrorFields', count($fields) === count($errors) ? $fields : array());
 
         if ($titles !== array()) {
             $errors['title'] = $titles;

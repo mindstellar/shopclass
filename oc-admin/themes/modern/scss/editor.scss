@@ -41,6 +41,15 @@
   .osc-publish {
     order: -1;
   }
+
+  // On Add the body comes first and Publishing closes the page; Edit keeps the state up top.
+  [data-osc-new="1"] .osc-publish {
+    order: 0;
+  }
+
+  .osc-toc {
+    display: none;
+  }
 }
 
 // One field, label above control.
@@ -777,6 +786,186 @@
   border: 0;
   margin: 0;
   padding: 0;
+}
+
+// Until the form script has looked; it also hides a hook holding only an empty wrapper.
+#sec-details:not([data-osc-synced]):not(:has(#plugin-hook > *)) {
+  display: none;
+}
+
+// A hidden attribute must beat any display rule a field or section carries.
+#adminItemForm [hidden] {
+  display: none;
+}
+
+// Product form sections: one card per concern, a warm title bar with a muted subtitle.
+.osc-editor-main .osc-section {
+  margin-block-end: 1rem;
+  min-inline-size: 0;
+}
+
+.osc-section > .widget-box-title {
+  align-items: baseline;
+  background: var(--osc-bench-warm);
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  flex-wrap: wrap;
+  font-weight: 600;
+  gap: .25rem .75rem;
+  padding: .8rem 1.25rem;
+}
+
+.osc-section > .widget-box-content {
+  padding: 1.25rem;
+}
+
+.osc-section > .widget-box-content > :last-child {
+  margin-block-end: 0;
+}
+
+.widget-box-title-hint {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  font-weight: 400;
+}
+
+.widget-box-title-hint.is-error {
+  background: var(--osc-danger-tint);
+  border-radius: 999px;
+  color: var(--osc-danger);
+  font-size: .75rem;
+  font-weight: 600;
+  margin-inline-start: auto;
+  padding: .05rem .6rem;
+}
+
+// Collapsible sections: no marker, a chevron that turns, the hint pushed to the end.
+details.osc-section > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+details.osc-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.osc-section > summary::before {
+  block-size: .45rem;
+  border-block-end: 2px solid var(--osc-ink-muted);
+  border-inline-end: 2px solid var(--osc-ink-muted);
+  content: "";
+  display: inline-block;
+  inline-size: .45rem;
+  margin-inline-end: .1rem;
+  transform: rotate(-45deg);
+  transition: transform 150ms;
+}
+
+details.osc-section[open] > summary::before {
+  transform: rotate(45deg);
+}
+
+details.osc-section:not([open]) > summary {
+  border-block-end: 0;
+  border-radius: inherit;
+}
+
+details.osc-section > summary .widget-box-title-hint:not(.is-error) {
+  margin-inline-start: auto;
+}
+
+details.osc-section[open] {
+  border-color: var(--osc-rule-strong);
+}
+
+// "On this page" in the rail; a phone has no room for it.
+.osc-toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.osc-toc a {
+  color: var(--osc-ink);
+  display: block;
+  padding-block: .25rem;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    color: var(--osc-bronze);
+    text-decoration: underline;
+  }
+}
+
+// The sell switch: a bold label with a muted line under it, on a warm strip.
+.osc-section .form-switch {
+  align-items: start;
+  background: var(--osc-bench-warm);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  column-gap: .75rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  margin-block-end: 1.1rem;
+  padding: .75rem 1rem;
+}
+
+.osc-section .form-switch > * {
+  grid-column: 2;
+  margin-block: 0;
+}
+
+.osc-section .form-switch > .form-check-input {
+  float: none;
+  grid-column: 1;
+  grid-row: 1;
+  margin: .15em 0 0;
+}
+
+.osc-section .form-switch .form-check-label {
+  font-weight: 600;
+}
+
+// The form's own label spacing would push the label below the switch.
+#item-form .osc-section .form-switch > .form-check-label {
+  margin: 0;
+}
+
+.osc-section .form-switch .form-text,
+.osc-section .form-switch small {
+  color: var(--osc-ink-muted);
+  display: block;
+  font-size: .8125rem;
+  font-weight: 400;
+}
+
+// Seller: name, e-mail and phone share a row.
+.osc-editor-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 767.98px) {
+  .osc-editor-cols-3 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+// A unit such as the weight's "g" sits in a box at the end of its input.
+.osc-section .field-group > .field-suffix {
+  align-self: stretch;
+  background: var(--osc-bench-warm);
+  border: 1px solid var(--osc-rule-strong);
+  border-inline-start: 0;
+  border-radius: 0 4px 4px 0;
+  display: inline-flex;
+  align-items: center;
+  padding-inline: .6rem;
+}
+
+// A focused field must stay clear of the sticky save bar.
+:root:has(#item-form) {
+  scroll-padding-block-end: 5.5rem;
 }
 
 // The error surface is hidden until something is in it: the browser-side validator appends

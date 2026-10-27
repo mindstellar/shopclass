@@ -448,6 +448,10 @@ msgid_plural "%d times"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "%d to fix"
+msgstr ""
+
 #: oc-includes/osclass/classes/job/JobWorker.php
 msgid "%d to retry"
 msgstr ""
@@ -1056,6 +1060,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/menu/MenuService.php
 msgid "A menu with that id already exists."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "A name the Shipping plugin groups items by, such as bulky."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
@@ -2853,7 +2861,7 @@ msgid "Buyer"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
-msgid "Buyers can add this item to a cart"
+msgid "Buyers can add this product to a cart."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -2924,6 +2932,7 @@ msgstr ""
 #: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/fields/index.php
 #: oc-admin/themes/modern/fields/submissions.php
+#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/parts/ui.php
@@ -3664,6 +3673,10 @@ msgstr ""
 #: oc-includes/osclass/classes/form/UserForm.php
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Company"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Compare-at price"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -4805,6 +4818,7 @@ msgstr ""
 msgid "Desktop"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -5105,6 +5119,12 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Each one adjusts from 2 to 20 kg. Space saving and easy to change."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid ""
+"Each option row below has its own SKU, price, compare-at price and stock. A "
+"row with no price sells at this price."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -5747,6 +5767,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid "Fields"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Fields for this category"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -7391,6 +7415,10 @@ msgstr ""
 msgid "Leave blank to keep the currently saved secret key"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Leave empty to sell without counting."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/menus.php
 msgid "Leave empty to use its own name."
 msgstr ""
@@ -7472,6 +7500,10 @@ msgstr ""
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Like new"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Like sizes or colours, each with its own stock."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
@@ -8723,6 +8755,10 @@ msgstr ""
 msgid "Name of the friend who wants send"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Name, category and description"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "Name: %s"
 msgstr ""
@@ -9317,6 +9353,10 @@ msgstr ""
 msgid "No setting matches."
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "No shipping. Products in a digital category are delivered as downloads."
+msgstr ""
+
 #: oc-admin/themes/modern/functions.php
 msgid "No subcategory"
 msgstr ""
@@ -9447,6 +9487,10 @@ msgstr ""
 msgid ""
 "Not enough space on the server: needs about %1$s, %2$s free. Nothing was "
 "saved."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Not for sale online. Buyers see the price and contact you."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
@@ -9735,10 +9779,6 @@ msgstr ""
 msgid "Old price"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Old price, shown crossed out (blank: no sale)"
-msgstr ""
-
 #: oc-admin/themes/modern/messages/index.php
 msgid "Older"
 msgstr ""
@@ -9754,6 +9794,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
 msgid "On a match"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "On this page"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -9897,6 +9941,10 @@ msgstr ""
 msgid "Optional fields"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Optional · empty uses the store address"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 msgid "Optional, such as \"Stock sync\"."
 msgstr ""
@@ -9928,6 +9976,7 @@ msgid "Optional. Your business name, address and tax number, printed at the top 
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
+#: oc-admin/themes/modern/items/frm.php
 msgid "Options"
 msgstr ""
 
@@ -10686,6 +10735,10 @@ msgstr ""
 msgid "Price (credits)"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Price and stock"
+msgstr ""
+
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid "Price drop: {ITEM_TITLE}"
 msgstr ""
@@ -10814,6 +10867,10 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Published"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Publishing"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
@@ -12304,17 +12361,20 @@ msgstr ""
 msgid "Sell marking a listing urgent"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Sell online"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Sell skipping the posting wait"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Sell this item"
+#: oc-admin/themes/modern/messages/index.php
+msgid "Seller"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
-#: oc-admin/themes/modern/messages/index.php
-msgid "Seller"
+msgid "Seller and contact"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -12583,6 +12643,10 @@ msgid "Shipped"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgid "Shipping"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
 msgid "Shipping class"
 msgstr ""
 
@@ -12832,6 +12896,10 @@ msgstr ""
 msgid "Showing %s to %s of %s results (filtered from %s total results)"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Shown crossed out next to the price. Leave empty when not on sale."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MaintenanceSettingsScreen.php
 msgid ""
 "Shown on the banner, and on the 503 page. Plain text only. Leave blank for "
@@ -12962,6 +13030,10 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 #: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Size"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Sizes, colours and other choices"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
@@ -13248,10 +13320,6 @@ msgstr ""
 msgid "Stock"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Stock (blank does not track)"
-msgstr ""
-
 #: oc-admin/themes/modern/billing/order.php
 msgid "Stock ran out after this order was paid. Short:"
 msgstr ""
@@ -13290,6 +13358,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "Store 1000 queries"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Store address"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Picker.php
@@ -13927,10 +13999,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
 msgid "The installation directory is not writable."
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "The item sells at the listing price."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -14591,10 +14659,6 @@ msgid ""
 "of Service or any other help information."
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "This item comes in options"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
 "This keeps going while the page is open. With cron set up it also carries "
@@ -14696,6 +14760,10 @@ msgstr ""
 msgid ""
 "This plugin is not in the market. Get its zip file from the theme author "
 "and upload it under Plugins, Add plugin."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "This product comes in options"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -15640,6 +15708,14 @@ msgid ""
 "title."
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Used to work out delivery cost"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Used when a product has no location of its own."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/credits.php
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
@@ -16186,11 +16262,15 @@ msgid "Weekly"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgid "Weight"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
 msgid "Weight (g)"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
-msgid "Weight in grams"
+msgid "Weight is set per row in Options."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -16229,6 +16309,10 @@ msgstr ""
 msgid ""
 "What background work did, newest first. The full history is in the <a "
 "href=\"%s\">activity log</a>."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "What buyers pay and how many you have"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -16295,6 +16379,10 @@ msgstr ""
 msgid "Where"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Where the item is"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 msgid "Where the site sends each event, as an https address."
 msgstr ""
@@ -16323,6 +16411,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/datatables/LogsDataTable.php
 msgid "Who"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Who posted it and how buyers reach them"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
@@ -16972,6 +17064,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 msgid "from %s"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "g"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php

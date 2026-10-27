@@ -722,6 +722,7 @@ msgstr ""
 msgid "City too long."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "City too short."
 msgstr ""
@@ -840,6 +841,7 @@ msgstr ""
 msgid "Country too long."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Country too short."
 msgstr ""
@@ -2472,6 +2474,7 @@ msgstr ""
 msgid "Region too long."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Region too short."
 msgstr ""

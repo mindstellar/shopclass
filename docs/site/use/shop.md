@@ -20,14 +20,30 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
    card payment holds the stock, and the order number prefix.
    **Cash on delivery only in** limits cash on delivery to the countries, regions or cities you pick
    (a buyer's address must be inside one); empty offers it everywhere you deliver.
+   **Store address** (country, region, city) is used for a product with no location of its own.
 4. **Appearance**: activate the shop theme. If it asks for plugins, one screen installs and turns
    them on for you.
 5. Install a payment method (see below), or use the built-in bank transfer and cash on delivery.
 
 ## 2. Add a product
 
-Add a listing as an admin, then use **Sell this item** on its edit screen. Tick **Buyers can add
-this item to a cart** and set the SKU, price, stock and weight.
+Add a product as an admin. The form is split into sections. The **On this page** list in
+the side column jumps to each one.
+
+- **Product**: name, category and description.
+- **Photos**.
+- **Price and stock**: the price and currency. Switch on **Sell online** so buyers can add the
+  product to a cart, then set the old price, SKU and stock. With it off, buyers see the price and
+  contact you.
+- **Options**: for sizes or colours (see below). Shown once **Sell online** is on.
+- **Shipping**: weight and shipping class. Shown once **Sell online** is on. A product in a
+  digital category has no shipping; it is delivered as a download.
+- **Details**: the fields of the chosen category, such as custom fields and downloadable files.
+- **Location**: optional and folded away. Leave it empty and the product uses the store address.
+- **Seller and contact**: folded away; it opens by itself if something in it needs fixing.
+- **Publishing** (side column): status, dates and expiry.
+
+**Save** stores the product; **Cancel** goes back to the list.
 
 For a product that comes in sizes or colours, add **option rows**: one row per combination, such
 as Black / M, each with its own SKU, price, stock and an optional old price, shown crossed out.

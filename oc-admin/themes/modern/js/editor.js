@@ -829,6 +829,77 @@
         });
     }
 
+    // ---------------------------------------------------------------------
+    // Sections of the product form: what "Sell online" and the category's
+    // delivery kind switch on and off, and closed sections opened for a link.
+    // ---------------------------------------------------------------------
+    function initItemSections() {
+        var form = document.getElementById('adminItemForm');
+        if (!form) {
+            return;
+        }
+        var sell = document.getElementById('product-sell');
+        var hook = document.getElementById('plugin-hook');
+        var details = document.getElementById('sec-details');
+
+        function setHidden(selector, value) {
+            form.querySelectorAll(selector).forEach(function (node) {
+                node.hidden = value;
+            });
+        }
+
+        function syncSell() {
+            if (!sell) {
+                return;
+            }
+            setHidden('[data-osc-needs-sell]', !sell.checked);
+            setHidden('[data-osc-not-selling]', sell.checked);
+        }
+
+        function syncFields() {
+            if (!hook) {
+                return;
+            }
+            if (details) {
+                // A category with no fields can still leave an empty wrapper behind.
+                details.hidden = hook.querySelector('input, select, textarea, [data-osc-no-shipping]') === null
+                    && hook.textContent.trim() === '';
+                details.setAttribute('data-osc-synced', '');
+            }
+            var digital = hook.querySelector('[data-osc-no-shipping]') !== null;
+            setHidden('[data-osc-physical-only]', digital);
+            setHidden('[data-osc-digital-only]', !digital);
+        }
+
+        function openFor(id) {
+            var target = id ? document.getElementById(id) : null;
+            var box = target ? target.closest('details:not([open])') : null;
+            while (box) {
+                box.open = true;
+                box = box.parentElement ? box.parentElement.closest('details:not([open])') : null;
+            }
+        }
+
+        if (sell) {
+            sell.addEventListener('change', syncSell);
+        }
+        document.addEventListener('osc:item-fields-loaded', syncFields);
+        document.addEventListener('click', function (e) {
+            var link = e.target.closest ? e.target.closest('#error_list a, .osc-toc a') : null;
+            var href = link ? link.getAttribute('href') : '';
+            if (href && href.charAt(0) === '#') {
+                openFor(href.slice(1));
+            }
+        });
+        window.addEventListener('hashchange', function () {
+            openFor(window.location.hash.slice(1));
+        });
+
+        syncSell();
+        syncFields();
+        openFor(window.location.hash.slice(1));
+    }
+
     document.addEventListener('click', function (e) {
         var link = e.target.closest ? e.target.closest('.field-translate .osc-tab a') : null;
         if (link) {
@@ -844,5 +915,6 @@
         initPhotoGrids();
         initExpiry();
         initConfirms();
+        initItemSections();
     });
 })();

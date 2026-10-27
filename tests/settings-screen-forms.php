@@ -1257,6 +1257,13 @@ drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_card_hold_min
 pin('and at most 120', array('120', 'INTEGER'), pref($admin, 'billing_card_hold_minutes'));
 pin('cash on delivery is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_cod_enabled'));
 pin('the prefix keeps letters, digits and dashes', array('KC1', 'STRING'), pref($admin, 'billing_order_prefix'));
+drive('CAdminSettingsBilling', 'billing_shop_post', array('shop_country' => 'Spain', 'shop_region' => 'Madrid', 'shop_city' => 'Madrid') + $shop);
+pin('the store address is stored', array(array('Spain', 'STRING'), array('Madrid', 'STRING'), array('Madrid', 'STRING')), array(pref($admin, 'shop_country'), pref($admin, 'shop_region'), pref($admin, 'shop_city')));
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', array('shop_country' => 'UK', 'shop_region' => 'Madrid', 'shop_city' => 'Madrid') + $shop);
+pin('a store country a listing would refuse is refused here', array('warning:Country too short.'), flashed($run));
+pin('and the stored one is kept', array('Spain', 'STRING'), pref($admin, 'shop_country'));
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', array('shop_country' => 'Spain', 'shop_region' => 'Madrid', 'shop_city' => str_repeat('a', 101)) + $shop);
+pin('so is a city longer than a listing holds', array('warning:City must be 100 characters or fewer'), flashed($run));
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shipping_flat' => 'lots') + $shop);
 pin('an amount that is not a number is refused', array('warning:Enter an amount, e.g. 49 or 49.50.'), flashed($run));
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));

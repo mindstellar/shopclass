@@ -88,6 +88,31 @@ final class ListingInput
     }
 
     /**
+     * In shop mode, a listing with no location of its own gets the store address (Billing >
+     * Shop) as country, region and city names. Any location typed is left as it is.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return array<string,mixed>
+     */
+    public static function storeAddress(array $aItem): array
+    {
+        if (!osc_is_shop_mode()) {
+            return $aItem;
+        }
+        foreach (array('countryId', 'country', 'regionId', 'region', 'cityId', 'city') as $key) {
+            if (trim((string) ($aItem[$key] ?? '')) !== '') {
+                return $aItem;
+            }
+        }
+        foreach (array('country', 'region', 'city') as $key) {
+            $aItem[$key] = trim((string) osc_get_preference('shop_' . $key));
+        }
+
+        return $aItem;
+    }
+
+    /**
      * The values of the admin "Sell this item" section: what a refused save posted, or the
      * listing's variants. A new listing starts for sale in shop mode. Prices are in the site's locale format. `options` and `variants`
      * fill the option editor, `photos` its photo choice (id => label), and `errors` holds a
@@ -503,6 +528,14 @@ final class ListingInput
             $aItem['dt_expiration'] = '';
         }
 
+        if ($isAdd || array_intersect_key($form, array_flip(array('countryId', 'country', 'region', 'regionId', 'city', 'cityId'))) !== array()) {
+            $filled = self::storeAddress($aItem);
+            if ($filled !== $aItem && $filled['country'] !== '') {
+                $country = \Country::newInstance()->findByName($filled['country']);
+                $filled['countryId'] = $country['pk_c_code'] ?? '';
+            }
+            $aItem = $filled;
+        }
         $places = LocationService::resolve([
             'countryCode' => $aItem['countryId'],
             'country'     => $aItem['country'],

@@ -16,6 +16,7 @@ use mindstellar\billing\CodAreas;
 use mindstellar\billing\Receipts;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\currency\Money;
+use mindstellar\listing\ListingValidator;
 
 /**
  * The billing settings screen, which is seven independent forms: the switch that turns
@@ -386,7 +387,14 @@ final class BillingSettingsScreen
                 ->custom('billing_cod_areas_picker', static function (array $field) {
                     self::codAreasPicker($field['values'] ?? array());
                 }, __('Cash on delivery only in'))
-                    ->hint(__('Empty: cash on delivery everywhere you deliver.'));
+                    ->hint(__('Empty: cash on delivery everywhere you deliver.'))
+                ->group(
+                    __('Store address'),
+                    __('Used when a product has no location of its own.')
+                )
+                ->field(self::storePlace('shop_country', __('Country'), 3, ListingValidator::COLUMN_WIDTHS['s_country'], _m('Country too short.')))
+                ->field(self::storePlace('shop_region', __('Region'), 2, ListingValidator::COLUMN_WIDTHS['s_region'], _m('Region too short.')))
+                ->field(self::storePlace('shop_city', __('City'), 2, ListingValidator::COLUMN_WIDTHS['s_city'], _m('City too short.')));
         }
 
         $page
@@ -495,6 +503,23 @@ final class BillingSettingsScreen
                 ? null
                 : _m('Enter an amount, e.g. 49 or 49.50.'),
             'persist'    => static fn ($value): string => (string) max(0, Money::parse((string) $value) ?? 0),
+        );
+    }
+
+    /**
+     * One store address field, held to the listing's own limits so a product that falls back
+     * to it is never refused for it.
+     *
+     * @return array<string,mixed>
+     */
+    private static function storePlace(string $name, string $label, int $min, int $max, string $tooShort): array
+    {
+        return array(
+            'name'      => $name,
+            'type'      => 'text',
+            'label'     => $label,
+            'maxlength' => $max,
+            'validate'  => static fn ($value): ?string => osc_validate_text(trim((string) $value), $min, false) ? null : $tooShort,
         );
     }
 
