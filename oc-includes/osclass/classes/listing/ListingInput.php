@@ -100,7 +100,7 @@ final class ListingInput
         if (!osc_is_shop_mode()) {
             return $aItem;
         }
-        foreach (array('countryId', 'country', 'region', 'city') as $key) {
+        foreach (array('countryId', 'country', 'regionId', 'region', 'cityId', 'city') as $key) {
             if (trim((string) ($aItem[$key] ?? '')) !== '') {
                 return $aItem;
             }

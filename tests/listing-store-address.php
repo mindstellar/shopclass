@@ -43,11 +43,10 @@ $out = ListingInput::storeAddress($empty);
 pin('an empty location takes the store address', array('Spain', 'Madrid', 'Madrid'), array($out['country'], $out['region'], $out['city']));
 pin('and the ids stay empty', array('', ''), array($out['countryId'], $out['cityId']));
 pin('and other fields are untouched', 'Mug', $out['title']);
-foreach (array('countryId' => 'ES', 'country' => 'France', 'region' => 'Lazio', 'city' => 'Rome') as $key => $value) {
+foreach (array('countryId' => 'ES', 'country' => 'France', 'regionId' => '4', 'region' => 'Lazio', 'cityId' => '9', 'city' => 'Rome') as $key => $value) {
     $typed = array($key => $value) + $empty;
     pin("a typed $key leaves the form as it is", $typed, ListingInput::storeAddress($typed));
 }
-pin('a region id alone does not count as a location', 'Spain', ListingInput::storeAddress(array('regionId' => '4') + $empty)['country']);
 
 harness_section('other cases');
 $GLOBALS['shopMode'] = false;
