@@ -106,26 +106,26 @@ final class BillingSettingsScreen
             ->number(
                 'billing_free_live_listings',
                 __('Free listings per seller'),
-                __('Live listings a seller may have at once. 0 means no limit. Pending listings count; only expiry or deletion frees a slot.')
+                __('Live listings a seller may have at once. 0 means no limit. Pending listings count; only expiry or deletion frees a place.')
             )
                 ->clampMin(0)
                 ->default(0)
             ->checkbox(
                 'billing_slot_enabled',
-                __('Sell extra listing slots'),
-                __('A price of 0 makes extra slots free.')
+                __('Sell extra listing places'),
+                __('A price of 0 makes extra places free.')
             )
-                ->rowLabel(__('Extra slots'))
-            ->number('billing_slot_credits', __('Slot price in credits'))
+                ->rowLabel(__('Extra places'))
+            ->number('billing_slot_credits', __('Place price in credits'))
                 ->clampMin(0)
                 ->default(0)
-            ->number('billing_slot_quantity', __('Slots per purchase'))
+            ->number('billing_slot_quantity', __('Places per purchase'))
                 ->clampMin(1)
                 ->default(1)
             ->checkbox(
                 'billing_pay_at_post',
                 __('Take payment at the end of posting'),
-                __('A seller over the limit writes the listing first and pays for the slot on the last step. Off, they are sent to buy a slot before they can post.')
+                __('A seller over the limit writes the listing first and pays for the extra place on the last step. Off, they are sent to buy one before they can post.')
             )
                 ->rowLabel(__('Pay at post'))
                 ->default(true)
@@ -272,19 +272,19 @@ final class BillingSettingsScreen
                 __('Seller limits'),
                 __('Lets a seller buy a higher limit. Everyone else keeps the global limit.')
             )
-            ->checkbox('billing_photos_enabled', __('Sell a raised photo cap'))
+            ->checkbox('billing_photos_enabled', __('Sell extra photos'))
                 ->rowLabel(__('Extra photos'))
             ->number('billing_photos_credits', __('Price (credits)'))
                 ->clampMin(0)
                 ->default(0)
             ->number(
                 'billing_photos_quantity',
-                __('Photo cap'),
-                __('Photos allowed per listing while the entitlement is held.')
+                __('Photos allowed'),
+                __('Photos allowed per listing while the seller holds it.')
             )
                 ->clampMin(1)
                 ->default(10)
-            ->checkbox('billing_no_wait_enabled', __('Sell waiving the flood wait'))
+            ->checkbox('billing_no_wait_enabled', __('Sell skipping the posting wait'))
                 ->rowLabel(__('Skip the posting wait'))
             ->number('billing_no_wait_credits', __('Price (credits)'))
                 ->clampMin(0)

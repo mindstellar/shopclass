@@ -1284,6 +1284,15 @@ osc_reset_preferences();
 drive('CAdminSettingsBilling', 'billing');
 pin('classifieds shows them', array('switch', 'pricing', 'offline', 'upgrades', 'limits', 'receipts', 'shop', 'methods'), __get('billing_tabs'));
 
+harness_section('billing wording');
+$words = '';
+foreach (array(\mindstellar\admin\form\BillingSettingsScreen::PAGE_PRICING, \mindstellar\admin\form\BillingSettingsScreen::PAGE_LIMITS) as $pageId) {
+    foreach (SettingsPageRegistry::getInstance()->fields($pageId) as $field) {
+        $words .= ' ' . ($field['label'] ?? '') . ' ' . ($field['help'] ?? '') . ' ' . ($field['row_label'] ?? '');
+    }
+}
+check('the pricing and limits screens use no shop jargon', !preg_match('/entitlement|flood|\bslot|raised photo|photo cap/i', $words), $words);
+
 harness_section('billing pricing: pay at post');
 
 $payFields = SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_PRICING);
