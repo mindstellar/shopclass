@@ -457,6 +457,8 @@ pin('add country: the first submit button adds, so Enter never imports', array('
 check('add country: the import offer skips validation, so no name is needed', $submits->item(1)?->hasAttribute('formnovalidate') === true);
 $x = $render('form', array('locations' => $list(), 'locationForm' => array('kind' => 'add', 'level' => 'region', 'error' => null)));
 pin('add region: no import offer', 0, $x->query('//*[@data-loc-offer]')->length);
+$x = $render('form', array('locations' => $list(), 'locationForm' => array('kind' => 'add', 'level' => 'region', 'error' => null, 'names' => array_map(static fn (array $f): array => array('value' => '') + $f, $fields))));
+pin('add region: one blank name input per language', array('names[en_US]' => '', 'names[ar_SA]' => '', 'names[de_DE]' => ''), array_column(array_map(static fn ($n) => array($n->getAttribute('name'), $n->getAttribute('value')), iterator_to_array($x->query('//section[contains(@class,"loc-names")]//input'))), 1, 0));
 
 // ---- Controller contracts (source scan: the controllers need a live admin session) --
 $tools  = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php');
