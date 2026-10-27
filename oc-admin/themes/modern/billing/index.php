@@ -85,12 +85,19 @@ $isFiltered = $toShip
         )); ?>
 
         <p class="billing-summary">
-            <?php printf(
-                osc_esc_html(__('%1$s orders · %2$s paid · %3$s awaiting payment')),
-                '<strong>' . number_format($summary['count']) . '</strong>',
-                '<strong>' . number_format($summary['paid']) . '</strong>',
-                '<strong>' . number_format($summary['pending']) . '</strong>'
-            ); ?>
+            <?php if (($filters['status'] ?? '') !== '') {
+                printf(
+                    osc_esc_html(_n('%s order', '%s orders', (int) $summary['count'])),
+                    '<strong>' . number_format($summary['count']) . '</strong>'
+                );
+            } else {
+                printf(
+                    osc_esc_html(_n('%1$s order · %2$s paid · %3$s awaiting payment', '%1$s orders · %2$s paid · %3$s awaiting payment', (int) $summary['count'])),
+                    '<strong>' . number_format($summary['count']) . '</strong>',
+                    '<strong>' . number_format($summary['paid']) . '</strong>',
+                    '<strong>' . number_format($summary['pending']) . '</strong>'
+                );
+            } ?>
         </p>
     <?php osc_admin_toolbar_close(); ?>
 

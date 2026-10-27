@@ -933,8 +933,19 @@ final class OrderStore extends Model
      */
     public static function summary(array $filters): array
     {
+        $count  = self::searchCount($filters);
+        $status = (string) ($filters['status'] ?? '');
+        if ($status !== '') {
+            // The status filter already narrows the count; paid and pending are what it matches.
+            return array(
+                'count'   => $count,
+                'paid'    => $status === Order::STATUS_PAID ? $count : 0,
+                'pending' => $status === Order::STATUS_PENDING ? $count : 0,
+            );
+        }
+
         return array(
-            'count'   => self::searchCount($filters),
+            'count'   => $count,
             'paid'    => self::searchCount(array_merge($filters, array('status' => Order::STATUS_PAID))),
             'pending' => self::searchCount(array_merge($filters, array('status' => Order::STATUS_PENDING))),
         );

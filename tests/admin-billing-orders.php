@@ -248,6 +248,16 @@ check('To ship lists paid goods orders only', str_contains($page['drawn'], 'Ship
 $page = drive('index', [], ['status' => 'shipped']);
 check('shipped and delivered are filters', str_contains($page['drawn'], 'value="shipped"') && str_contains($page['drawn'], 'value="delivered"'));
 
+harness_section('the summary');
+$sum = OrderStore::summary(['status' => 'shipped', 'goods' => false]);
+pin('a shipped filter reports no paid or pending', [0, 0], [$sum['paid'], $sum['pending']]);
+$sum = OrderStore::summary(['status' => '']);
+check('no filter still counts both', $sum['paid'] >= 1 && $sum['count'] >= $sum['paid']);
+$page = drive('index', [], ['status' => 'shipped']);
+check('the shipped list shows one count, not paid and awaiting', str_contains($page['drawn'], 'billing-summary') && !str_contains($page['drawn'], 'awaiting payment'));
+$page = drive('index', [], []);
+check('the full list shows all three', str_contains($page['drawn'], 'awaiting payment'));
+
 harness_section('a listing order');
 $cat  = seed_category($admin);
 $item = seed_item($admin, $cat, $tom, 'Red car');
