@@ -245,7 +245,7 @@ $mails();
 Billing::refund(OrderStore::find($gone->getId()));
 $sent = $mails();
 pin('refunding tells the buyer', ['tom@example.test'], array_column($sent, 'to'));
-check('with the amount, the method and the wait', str_contains($sent[0]['subject'], 'was refunded') && str_contains($sent[0]['body'], '1447.00 USD') && str_contains($sent[0]['body'], 'Fake') && str_contains($sent[0]['body'], '3-5 working days'));
+check('with the amount, the method and the wait', str_contains($sent[0]['subject'], 'was refunded') && str_contains($sent[0]['body'], \mindstellar\currency\Money::format(1447000000, 'USD')) && str_contains($sent[0]['body'], 'Fake') && str_contains($sent[0]['body'], '3-5 working days'));
 Receipts::afterRefunded($gone->getId(), $tom, 0);
 pin('a second refund hook sends nothing', [], $mails());
 $unpaid = $make('fake');

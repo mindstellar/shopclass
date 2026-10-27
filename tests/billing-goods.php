@@ -530,7 +530,7 @@ pin('the included one is stored with amount 0 and the tax as its unit', [[0, $m(
 pin('so the lines still add up to the total', OrderStore::find($taxed->getId())->getAmount(), (int) array_sum(array_column(OrderLineStore::ofOrder($taxed->getId()), 'amount')));
 $receipt = Receipts::details(OrderStore::find($taxed->getId()));
 $vatRow  = array_values(array_filter($receipt['lines'], static fn ($x) => $x['title'] === 'VAT 20%'))[0];
-check('the receipt and its mail show the tax as included', $vatRow['included'] === true && str_contains(Receipts::linesHtml($receipt), '>1.50 USD (included)<'), Receipts::linesHtml($receipt));
+check('the receipt and its mail show the tax as included', $vatRow['included'] === true && str_contains(Receipts::linesHtml($receipt), '>' . \mindstellar\currency\Money::format(1500000, 'USD') . ' (included)<'), Receipts::linesHtml($receipt));
 osc_remove_filter('cart_tax_lines', $taxes);
 OrderStore::cancel($taxed->getId());
 
