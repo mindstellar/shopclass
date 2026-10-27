@@ -462,7 +462,6 @@ msgid_plural "%d tries"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-admin/themes/modern/parts/ui.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d unsaved changes"
 msgstr ""
@@ -772,7 +771,6 @@ msgstr ""
 msgid "1 thing needs fixing before this can be saved."
 msgstr ""
 
-#: oc-admin/themes/modern/parts/ui.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "1 unsaved change"
 msgstr ""
@@ -11854,7 +11852,6 @@ msgstr ""
 #: oc-admin/themes/modern/fields/group_iframe.php
 #: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/pages/frm.php
-#: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/mailserver.php
 #: oc-includes/osclass/classes/admin/form/SitemapSettingsScreen.php
