@@ -147,6 +147,7 @@ final class SampleData
                     'title'        => array($locale => $row['title']),
                     'description'  => array($locale => $row['description']),
                     'price'        => $row['price'],
+                    'currency'     => osc_currency(),
                     'contactName'  => __('Example seller'),
                     'contactEmail' => self::SELLER_EMAIL,
                     'meta'         => $meta,
