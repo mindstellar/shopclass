@@ -103,6 +103,13 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - One listing's rating summary and stars come from one query.
 
 ### Fixed
+- A refused package or ship save keeps what was typed and marks the field; a refused tax save stays under its own menu entry.
+- Goods refunds no longer say credits were taken back.
+- Any pending order can be cancelled, so a bank transfer that never arrives can be closed; a shipped order's tracking can be edited, and shipping with no tracking asks first.
+- The orders header counts only the filtered status; the Shop tab and To ship button show only in shop mode; billing labels and delivery help use plain words.
+- Wrong password, taken e-mail change and a clicked-twice alert link now answer in plain words and keep what was typed.
+- The contact form lists each missing field; its name and e-mail inputs are required.
+- Registering from checkout keeps the return path; listings with no price sort last by price.
 - The to-ship badge no longer breaks the Billing heading and Find; the Listing stats range switch is back.
 - Admin login and small screens: viewport meta, visible focus on Save buttons, Cleanup rules table stacks on a phone.
 - Add user keeps what was typed after a refusal and the username messages name the rule.
