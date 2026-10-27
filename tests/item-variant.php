@@ -211,6 +211,11 @@ pin('and no row is written', [], $rows($mine));
 $shown = ListingInput::productForm($plain);
 pin('the admin form reads the default row', [true, 'P-1', '2', '120', 'letter'], [$shown['sell'], $shown['sku'], $shown['stock'], $shown['weight'], $shown['shippingClass']]);
 pin('a listing with no row shows an unticked form', [false, ''], [ListingInput::productForm($mine)['sell'], ListingInput::productForm(0)['sku']]);
+$mode = Preference::getInstance()->get('site_mode');
+Preference::getInstance()->set('site_mode', 'shop');
+pin('a new product in shop mode starts for sale', [true, false], [ListingInput::productForm(0)['sell'], ListingInput::productForm($mine)['sell']]);
+Preference::getInstance()->set('site_mode', $mode === null || $mode === '' ? 'classifieds' : $mode);
+pin('a new listing in classifieds mode does not', false, ListingInput::productForm(0)['sell']);
 
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => null], $boss);
 pin('product null stops selling', [200, []], [$r->status(), $rows($plain)]);
