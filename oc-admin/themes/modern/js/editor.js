@@ -539,6 +539,8 @@
                     : say('count', { n: all.length });
             }
             add.hidden = max > 0 && all.length >= max;
+            // A list with no items fails the accessibility check, so an empty grid is a group.
+            grid.setAttribute('role', tiles().length ? 'list' : 'group');
         }
 
         function reject(name, message) {
