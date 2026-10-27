@@ -92,7 +92,7 @@ class UsersDataTable extends DataTable
 
         $this->addColumn('status-border', '');
         $this->addColumn('status', __('Status'));
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('email', __('E-mail'));
         $this->addColumn('username', __('Username'));
         $this->addColumn('name', __('Name'));

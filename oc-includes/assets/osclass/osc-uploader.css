@@ -134,6 +134,25 @@
     transition: border-color .15s, background-color .15s;
 }
 
+.osc-uploader-drop {
+    position: relative;
+}
+
+/* Visually hidden but still focusable, so Tab reaches it and Enter or Space opens the picker. */
+.osc-uploader-input {
+    block-size: 1px;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+}
+
+.osc-uploader-drop:focus-within {
+    outline: 2px solid var(--osc-bronze, #8f5d00);
+    outline-offset: 2px;
+}
+
 .osc-uploader-drop.is-dragover {
     background-color: var(--osc-bronze-tint, #fbf0e2);
     border-color: var(--osc-bronze, #8f5d00);

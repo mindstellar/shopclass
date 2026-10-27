@@ -59,7 +59,7 @@ class PagesDataTable extends DataTable
     private function addTableHeader()
     {
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('internal_name', __('Internal name'));
         $this->addColumn('title', __('Title'));
         $this->addColumn('order', __('Order'));

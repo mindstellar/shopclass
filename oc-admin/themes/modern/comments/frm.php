@@ -58,10 +58,10 @@ $comment = __get('comment');
             <input type="hidden" name="id"
                    value="<?php echo (isset($comment['pk_i_id'])) ? $comment['pk_i_id'] : '' ?>"/>
             <div class="form-horizontal">
-                <?php osc_admin_form_row_open(__('Title')); ?>
+                <?php osc_admin_form_row_open(__('Title'), array('for' => 'title')); ?>
                         <?php CommentForm::title_input_text($comment); ?>
                 <?php osc_admin_form_row_close(); ?>
-                <?php osc_admin_form_row_open(__('Author')); ?>
+                <?php osc_admin_form_row_open(__('Author'), array('for' => 'authorName')); ?>
                         <?php CommentForm::author_input_text($comment); ?>
                         <?php if (isset($comment['fk_i_user_id']) && $comment['fk_i_user_id'] != '') {
                             _e('Registered user'); ?>
@@ -69,10 +69,10 @@ $comment = __get('comment');
                             $comment['fk_i_user_id']; ?>"><?php _e('Edit user'); ?></a>
                         <?php } ?>
                 <?php osc_admin_form_row_close(); ?>
-                <?php osc_admin_form_row_open(__("Author's e-mail")); ?>
+                <?php osc_admin_form_row_open(__("Author's e-mail"), array('for' => 'authorEmail')); ?>
                         <?php CommentForm::email_input_text($comment); ?>
                 <?php osc_admin_form_row_close(); ?>
-                <?php osc_admin_form_row_open(__('Status')); ?>
+                <?php osc_admin_form_row_open(__('Visible')); ?>
                         <div class="form-label-checkbox">
                             <?php echo($comment['b_active'] ? __('Active') : __('Inactive')); ?> ( <a
                                     href="<?php echo osc_admin_base_url(true); ?>?page=comments&action=status&id=<?php echo
@@ -81,7 +81,7 @@ $comment = __get('comment');
                                     ? __('Deactivate') : __('Activate')); ?></a> )
                         </div>
                 <?php osc_admin_form_row_close(); ?>
-                <?php osc_admin_form_row_open(__('Status')); ?>
+                <?php osc_admin_form_row_open(__('Moderation')); ?>
                         <div class="form-label-checkbox">
                             <?php echo($comment['b_enabled'] ? __('Unblocked') : __('Blocked')); ?> ( <a
                                     href="<?php echo osc_admin_base_url(true); ?>?page=comments&action=status&id=<?php echo
@@ -90,7 +90,7 @@ $comment = __get('comment');
                                     ? __('Block') : __('Unblock')); ?></a> )
                         </div>
                 <?php osc_admin_form_row_close(); ?>
-                <?php osc_admin_form_row_open(__('Comment'), array('controls_class' => 'input-description-wide')); ?>
+                <?php osc_admin_form_row_open(__('Comment'), array('for' => 'body', 'controls_class' => 'input-description-wide')); ?>
                         <?php CommentForm::body_input_textarea($comment); ?>
                 <?php osc_admin_form_row_close(); ?>
             </div>

@@ -32,7 +32,7 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
             <h3 class="card-header"><?php _e('Edit field group'); ?></h3>
             <fieldset>
                 <div class="card-body">
-                    <?php osc_admin_form_row_open(__('Group name')); ?>
+                    <?php osc_admin_form_row_open(__('Group name'), array('for' => 'group_name')); ?>
                             <?php osc_admin_text(array(
                                 'row'   => false,
                                 'id'    => 'group_name',
@@ -41,7 +41,7 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
                                 'attrs' => array('autocomplete' => 'off'),
                             )); ?>
                     <?php osc_admin_form_row_close(); ?>
-                    <?php osc_admin_form_row_open(__('Identifier name')); ?>
+                    <?php osc_admin_form_row_open(__('Identifier name'), array('for' => 'field-group_slug')); ?>
                             <?php osc_admin_text(array(
                                 'row'   => false,
                                 'name'  => 'group_slug',
