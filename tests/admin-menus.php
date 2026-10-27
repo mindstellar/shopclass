@@ -181,7 +181,7 @@ pin('the nested menu is stored', array('Sale', 'Motors'), array_column(osc_menu(
 pin('...with its child', array(array('label' => 'About us', 'url' => '/page/' . $about)), osc_menu('main')[1]['children']);
 
 $r = drive('menu_save_post', array('menu' => 'main', 'items' => json_encode(array(array('type' => 'link', 'url' => 'javascript:alert(1)', 'label' => array('en_US' => 'x')), array('type' => 'tag')))));
-pin('validation errors are flashed, one each, and name the link', array('error:The link "x" needs an address that starts with http://, https:// or /.', 'error:A menu item has an unknown type.'), $r['flashes']);
+pin('validation errors are flashed, one each, and name the link', array('error:The link &quot;x&quot; needs an address that starts with http://, https:// or /.', 'error:A menu item has an unknown type.'), $r['flashes']);
 pin('a refused save does not redirect', array(), $r['redirects']);
 pin(
     'it draws the editor again with the posted link, marked unsaved',
@@ -189,6 +189,8 @@ pin(
     array($r['view']['menuEditor']['draft'], $r['view']['menuEditor']['items'])
 );
 pin('...and the saved menu is kept', array('Sale', 'Motors'), array_column(osc_menu('main'), 'label'));
+$r = drive('menu_save_post', array('menu' => 'main', 'items' => json_encode(array(array('type' => 'link', 'url' => 'nope', 'label' => array('en_US' => 'a & "b"'))))));
+pin('a posted label is escaped in the flash', array('error:The link &quot;a &amp; &quot;b&quot;&quot; needs an address that starts with http://, https:// or /.'), $r['flashes']);
 $r = drive('menu_save_post', array('menu' => 'main', 'items' => 'not json'));
 pin('bad JSON is refused', array('error:The menu could not be read.'), $r['flashes']);
 

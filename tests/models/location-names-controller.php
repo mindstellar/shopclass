@@ -138,6 +138,8 @@ pin('...and still renames', 'Bavaria State', (string) $admin->query("SELECT s_na
 $answer = $post(array('type' => 'edit_city', 'city_id' => $city, 'e_city' => 'Munich', 'names' => array('xx_XX' => 'x')));
 pin('a language the site lacks is refused with its reason', 'error:xx_XX is not a language of this site', $answer);
 pin('...and writes nothing', array('de_DE' => 'München'), $store->all('city', $city));
+$answer = $post(array('type' => 'edit_city', 'city_id' => $city, 'e_city' => 'Munich', 'names' => array('<b>x</b>' => 'x')));
+pin('a posted language code is escaped in the flash', 'error:&lt;b&gt;x&lt;/b&gt; is not a language of this site', $answer);
 
 harness_section('the drawer is filled from the stored names');
 $_GET = $_POST = $_REQUEST = array('form' => 'edit', 'id' => (string) $region);

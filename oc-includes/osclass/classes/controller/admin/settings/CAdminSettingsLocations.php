@@ -857,6 +857,8 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             exit;
         }
 
+        // Messages name posted places and language codes, and flash messages print as HTML.
+        $message = osc_esc_html($message);
         switch ($status) {
             case 'ok':
                 osc_add_flash_ok_message($message, 'admin');

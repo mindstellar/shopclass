@@ -683,7 +683,8 @@ class CAdminAppearance extends AdminSecBaseModel
             ? $service->save($id, array(), Params::getParamString('label', false, false, false), true)
             : $service->save($id, json_decode(Params::getParamString('items', false, false, false), true), null);
         foreach ($errors as $error) {
-            osc_add_flash_error_message($error, 'admin');
+            // A message can name a posted label, and flash messages print as HTML.
+            osc_add_flash_error_message(osc_esc_html($error), 'admin');
         }
         if ($errors !== array() && !$create) {
             // Back to the editor with the posted items, so the owner fixes the one item named
