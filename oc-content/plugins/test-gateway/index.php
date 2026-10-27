@@ -147,7 +147,9 @@ osc_add_hook('admin_page_header', static function () {
         return;
     }
     echo '<div class="flashmessage flashmessage-warning" role="status">'
-        . osc_esc_html(__('Test payments are on: buyers can get credits without paying. Turn them off before the site goes live.', 'test-gateway'))
+        . osc_esc_html(osc_is_shop_mode()
+            ? __('Test payments are on: buyers can complete orders without paying. Turn them off before the site goes live.', 'test-gateway')
+            : __('Test payments are on: buyers can get credits without paying. Turn them off before the site goes live.', 'test-gateway'))
         . ' <a href="' . osc_esc_html(osc_settings_page_url(TestGateway::PAGE)) . '">'
         . osc_esc_html(__('Test payments settings', 'test-gateway')) . '</a></div>';
 }, 10);

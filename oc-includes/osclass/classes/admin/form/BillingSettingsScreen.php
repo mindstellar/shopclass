@@ -67,7 +67,9 @@ final class BillingSettingsScreen
             })
             ->group(
                 __('Billing'),
-                __('Sell featured listings, posting credits or plugin extras. While off, posting stays free and the Billing menu is hidden.')
+                osc_is_shop_mode()
+                    ? __('Take payment for shop orders and plugin extras. While off, the Billing menu is hidden.')
+                    : __('Sell featured listings, posting credits or plugin extras. While off, posting stays free and the Billing menu is hidden.')
             )
             ->checkbox(
                 Billing::PREF_ENABLED,
