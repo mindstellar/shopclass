@@ -62,10 +62,10 @@ class ContactForm extends Form
     {
         if (Session::getInstance()->_getForm('yourName') != '') {
             $name = Session::getInstance()->_getForm('yourName');
-            parent::generic_input_text('yourName', $name);
         } else {
-            parent::generic_input_text('yourName', osc_logged_user_name());
+            $name = osc_logged_user_name();
         }
+        echo (new self())->text('yourName', $name, ['id' => 'yourName', 'required' => 'required', 'autocomplete' => 'name']);
 
         return true;
     }
@@ -79,10 +79,12 @@ class ContactForm extends Form
     {
         if (Session::getInstance()->_getForm('yourEmail') != '') {
             $email = Session::getInstance()->_getForm('yourEmail');
-            parent::generic_input_text('yourEmail', $email);
         } else {
-            parent::generic_input_text('yourEmail', osc_logged_user_email());
+            $email = osc_logged_user_email();
         }
+        echo (new self())->text('yourEmail', $email, [
+            'id' => 'yourEmail', 'type' => 'email', 'required' => 'required', 'autocomplete' => 'email',
+        ]);
 
         return true;
     }
