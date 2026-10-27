@@ -199,6 +199,7 @@ final class OrderSchema
                 'free_over'        => $maybe(Schema::object(['amount' => $amount, 'remaining' => $amount], ['amount', 'remaining']), 'Free delivery from this subtotal, and how much is left to reach it.'),
                 'gateways'         => ['type' => 'array', 'items' => Schema::ref('QuoteGateway')],
                 'problems'         => ['type' => 'array', 'items' => Schema::ref('QuoteProblem')],
+                'open_orders'      => Schema::object(['count' => ['type' => 'integer'], 'limit' => ['type' => 'integer']], ['count', 'limit']) + ['description' => 'Only for a signed-in buyer: their unpaid bank transfer orders and the most they may hold. A limit of 0 means none.'],
             ], ['currency', 'lines', 'needs_shipping', 'shipping_methods', 'shipping', 'discounts', 'taxes', 'fees', 'totals', 'free_over', 'gateways', 'problems']),
             'QuoteDocument' => Schema::object(['data' => Schema::ref('Quote')], ['data']),
         ];

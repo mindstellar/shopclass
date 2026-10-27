@@ -105,8 +105,8 @@ final class GoodsCheckout
         if (!isset($gateways[$gatewayId])) {
             $errors[] = array('pointer' => '/gateway', 'code' => 'unavailable', 'message' => _m('This payment method is not available.'));
         }
-        if (isset($gateways[$gatewayId]) && self::holdsTooMany($userId)) {
-            $errors[] = array('pointer' => '/gateway', 'code' => 'too_many_open', 'message' => _m('Pay for or cancel your open orders first.'));
+        if (isset($gateways[$gatewayId]) && $gatewayId === gateway\OfflineGateway::ID && self::holdsTooMany($userId)) {
+            $errors[] = array('pointer' => '/gateway', 'code' => 'too_many_open', 'message' => _m('Pay for or cancel your open bank transfer orders first.'));
         }
         if ($errors !== array()) {
             throw InvalidException::all($errors);
@@ -193,14 +193,27 @@ final class GoodsCheckout
     }
 
     /**
-     * Whether the buyer already holds the most unpaid goods orders. Every one keeps stock aside,
-     * so every gateway counts together.
+     * Whether the buyer already holds the most unpaid bank transfer orders. Cash on delivery and
+     * card orders are not limited.
      */
     private static function holdsTooMany(int $userId): bool
     {
-        $limit = osc_billing_open_hold_orders();
+        $open = self::openOrders($userId);
 
-        return $limit > 0 && OrderStore::countForUser($userId, array(Order::STATUS_PENDING)) >= $limit;
+        return $open['limit'] > 0 && $open['count'] >= $open['limit'];
+    }
+
+    /**
+     * The buyer's unpaid bank transfer orders and the most they may hold; a limit of 0 means none.
+     *
+     * @return array{count:int,limit:int}
+     */
+    public static function openOrders(int $userId): array
+    {
+        return array(
+            'count' => OrderStore::countForUser($userId, array(Order::STATUS_PENDING), array(gateway\OfflineGateway::ID)),
+            'limit' => osc_billing_open_hold_orders(),
+        );
     }
 
     /**
