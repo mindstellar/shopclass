@@ -61053,6 +61053,22 @@
                         "items": {
                             "$ref": "#/components/schemas/QuoteProblem"
                         }
+                    },
+                    "open_orders": {
+                        "type": "object",
+                        "properties": {
+                            "count": {
+                                "type": "integer"
+                            },
+                            "limit": {
+                                "type": "integer"
+                            }
+                        },
+                        "required": [
+                            "count",
+                            "limit"
+                        ],
+                        "description": "Only for a signed-in buyer: their unpaid bank transfer orders and the most they may hold. A limit of 0 means none."
                     }
                 },
                 "required": [

@@ -30,7 +30,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <thead>
             <tr>
                 <th class="col-name"><?php _e('Name'); ?></th>
-                <th class="col-title"><?php _e('Title'); ?></th>
+                <th class="col-title"><?php _e('Subject'); ?></th>
             </tr>
             </thead>
             <tbody>
@@ -40,7 +40,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>">
                             <?php echo $array[0]; ?>
                         </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Title')); ?>">
+                        <td data-col-name="<?php echo osc_esc_html(__('Subject')); ?>">
                             <?php echo $array[1]; ?>
                         </td>
                     </tr>

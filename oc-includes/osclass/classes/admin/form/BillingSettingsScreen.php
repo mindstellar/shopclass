@@ -412,23 +412,30 @@ final class BillingSettingsScreen
                     : __('An unpaid order is cancelled after this many days. A listing waiting for payment is deleted after the same number of days; the seller is reminded a day before.')
             )
                 ->clampMin(1)
-                ->default(7)
-            ->number(
-                'billing_card_hold_minutes',
-                __('Hold stock for card payments (minutes)'),
-                __('A card order keeps its stock this long while the buyer pays. Still unpaid then, it is cancelled and the stock goes back on sale. 5 to 120.')
-            )
-                ->set('min', 5)
-                ->set('max', 120)
-                ->sanitize(static fn ($value): int => max(5, min(120, (int) $value)))
-                ->default(15)
-            ->number(
-                'billing_open_hold_orders',
-                __('Open unpaid orders per buyer'),
-                __('Most unpaid orders one buyer may hold at once, card orders included. 0 means no limit.')
-            )
-                ->clampMin(0)
-                ->default(3)
+                ->default(7);
+
+        // Card hold and the open-order limit are goods-only; a classifieds site keeps the stored values.
+        if (osc_is_shop_mode()) {
+            $page
+                ->number(
+                    'billing_card_hold_minutes',
+                    __('Hold stock for card payments (minutes)'),
+                    __('A card order keeps its stock this long while the buyer pays. Still unpaid then, it is cancelled and the stock goes back on sale. 5 to 120.')
+                )
+                    ->set('min', 5)
+                    ->set('max', 120)
+                    ->sanitize(static fn ($value): int => max(5, min(120, (int) $value)))
+                    ->default(15)
+                ->number(
+                    'billing_open_hold_orders',
+                    __('Open unpaid orders per buyer'),
+                    __('Most unpaid bank transfer orders one buyer may hold at once. Cash on delivery and card orders are not limited. 0 means no limit.')
+                )
+                    ->clampMin(0)
+                    ->default(3);
+        }
+
+        $page
             ->text('billing_order_prefix', __('Order number prefix'), __('Optional. Letters, digits and dashes, e.g. KC- gives #KC-1042.'))
                 ->width('num')
                 ->attrs(array('maxlength' => '10'))

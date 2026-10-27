@@ -321,6 +321,7 @@ pin('and its order is cancelled', Order::STATUS_CANCELLED, OrderStore::find($las
 osc_set_preference('billing_cod_enabled', '1', 'osclass', 'BOOLEAN');
 osc_set_preference('billing_currency', 'USD', 'osclass', 'STRING');
 osc_reset_preferences();
+PaymentGatewayRegistry::getInstance()->register(new \mindstellar\billing\gateway\CashOnDeliveryGateway());
 pin('cash on delivery is a gateway', true, isset(PaymentGatewayRegistry::getInstance()->available()['cod']));
 pin('but not one a listing order offers', [false, true], [isset(ListingCheckout::gateways()['cod']), isset(ListingCheckout::gateways()['lcgw'])]);
 pin('nor takes', '/gateway unavailable', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'cod')));
@@ -370,6 +371,16 @@ pin('a price that rose meanwhile leaves it held with the credits kept', [null, 5
 osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
 osc_reset_preferences();
 osc_register_billing_slot();
+
+harness_section('Listing order: cancelled by the admin');
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+pin('a pending order waits', 'waiting', ListingCheckout::state($held, $uid)['step']);
+pin('the admin cancels it', true, OrderStore::cancel($order->getId()));
+pin('the seller can pay again, the listing stays held', ['pay', Order::STATUS_CANCELLED, null], [ListingCheckout::state($held, $uid)['step'], OrderStore::find($order->getId())->getStatus(), $row($held)['dt_first_pub_date']]);
+$again = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+pin('a new order links to the listing', [true, $again->getId()], [$again->getId() !== $order->getId(), OrderStore::listingOrder($held)?->getId()]);
 
 harness_section('Listing order: listing deleted');
 

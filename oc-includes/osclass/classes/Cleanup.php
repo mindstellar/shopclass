@@ -52,7 +52,7 @@ class Cleanup extends DAO
     public static function ruleLabels()
     {
         return array(
-            'reported'          => __('Reported listings'),
+            'reported'          => osc_is_shop_mode() ? __('Reported products') : __('Reported listings'),
             'expired'           => __('Expired listings'),
             'inactive_listings' => __('Unactivated listings'),
             'spam'              => __('Spam listings'),

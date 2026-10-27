@@ -134,6 +134,20 @@ $big = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $large . ':1']
 pin('a variant\'s own price beats the listing price', ['799.00', '799.00', '848.00'], [$big['lines'][0]['unit']['amount'], $big['lines'][0]['amount']['amount'], $big['totals']['total']['amount']]);
 check('a quote is not cached', str_contains((string) $r->header('Cache-Control'), 'no-store'));
 
+Preference::getInstance()->set('billing_open_hold_orders', '3');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$open = [OrderStore::create($tom, 'offline', $m(1), 'USD', 0), OrderStore::create($tom, 'offline', $m(1), 'USD', 0), OrderStore::create($tom, 'fake', $m(1), 'USD', 0)];
+$q    = $call('GET', 'cart/quote', null, $key($tom, ['listings:read']), [], ['lines' => $mugV . ':1']);
+pin('a signed-in quote says how many bank transfer orders are open', [[], ['count' => 2, 'limit' => 3]], [api_admin_schema_errors('QuoteDocument', $q), $q->body()['data']['open_orders']]);
+pin('a guest quote has no open_orders', false, array_key_exists('open_orders', $call('GET', 'cart/quote', null, null, $guest, ['lines' => $mugV . ':1'])->body()['data']));
+foreach ($open as $o) {
+    OrderStore::cancel($o->getId());
+}
+Preference::getInstance()->set('billing_open_hold_orders', '0');
+scratchdb_forget_cache();
+osc_reset_preferences();
+
 $fee = static function ($totals, $cart) use ($m) {
     if (($cart['gateway'] ?? null) === 'fake') {
         $totals['fees'][] = ['id' => 'fee.fake', 'label' => 'Handling', 'amount' => $m(5)];

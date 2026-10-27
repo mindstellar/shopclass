@@ -1535,7 +1535,9 @@ osc_register_billing_seller_limits();
 osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
         $registry->register(new OfflineGateway());
-        $registry->register(new CashOnDeliveryGateway());
+        if (osc_is_shop_mode()) {
+            $registry->register(new CashOnDeliveryGateway());
+        }
     }
 });
 osc_add_filter('cart_totals', array(CashOnDeliveryGateway::class, 'feeLine'), 5);

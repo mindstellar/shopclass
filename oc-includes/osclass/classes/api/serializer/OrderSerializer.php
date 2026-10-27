@@ -67,9 +67,11 @@ final class OrderSerializer
      *
      * @param array<int,array{id:string,name:string,fee:int}> $gateways the payment methods on offer, each with its fee in micros
      *
+     * @param array{count:int,limit:int}|null                 $openOrders  the signed-in buyer's unpaid bank transfer orders; null for a guest
+     *
      * @return array<string,mixed>
      */
-    public function quote(Quote $quote, array $gateways): array
+    public function quote(Quote $quote, array $gateways, ?array $openOrders = null): array
     {
         $currency = $quote->currency();
         $money    = fn (int $micros): array => $this->amount($micros, $currency);
@@ -102,7 +104,7 @@ final class OrderSerializer
         $chosen     = $quote->shipping();
         $freeOver   = $quote->freeOver();
 
-        return array(
+        return ($openOrders === null ? array() : array('open_orders' => array('count' => $openOrders['count'], 'limit' => $openOrders['limit']))) + array(
             'currency'         => $currency,
             'lines'            => $lines,
             'needs_shipping'   => $quote->needsShipping(),
