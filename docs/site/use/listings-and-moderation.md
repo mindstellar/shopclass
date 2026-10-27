@@ -55,22 +55,22 @@ photos. This cannot be undone.* To take something down reversibly,
 
 ## Selling a listing
 
-On a listing's edit screen, **Sell this item** makes it a product. Tick **Buyers can add this
-item to a cart**, then set:
+In a shop, the **Price and stock** section of the product form has a **Sell online** switch. Turn it
+on so buyers can add the product to a cart, then set:
 
 | Field | What it does |
 |---|---|
 | **SKU** | Your stock code, up to 64 characters. |
-| **Old price, shown crossed out** | The price before a sale, shown crossed out next to the price; a higher old price marks the product as on sale. Blank: no sale. |
+| **Compare-at price** | The price before a sale, shown crossed out next to the price; a higher old price marks the product as on sale. Blank: no sale. |
 | **Stock** | How many you have. Each sale takes one; at 0 it is out of stock. Blank does not count stock. |
 | **Weight in grams** | For shipping. |
 | **Shipping class** | A name your shipping plugin groups items by, such as `bulky`. |
 
 The item sells at the listing price; change that price to change what buyers pay. Turn on
-**This item comes in options** for option rows (Colour x Size and so on): each row has its own
+**This product comes in options** for option rows (Colour x Size and so on): each row has its own
 SKU, price and stock, and a row with no price sells at the listing price.
 
-Untick it to stop selling. Only admins see this section. When **Settings → General → Site is a**
+Switch **Sell online** off to stop selling. Only admins see these fields. When **Settings → General → Site is a**
 is set to shop, only admins can add listings at all.
 
 ## Reported listings
