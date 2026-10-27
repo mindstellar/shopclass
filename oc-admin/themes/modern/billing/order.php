@@ -406,9 +406,11 @@ foreach ($order->getMeta() as $key => $value) {
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
 
-            <?php if ($isGoods && ($order->isPending() || $order->awaitsCash())) { ?>
+            <?php if ($order->isPending() || ($isGoods && $order->awaitsCash())) { ?>
                 <?php osc_admin_panel_open(__('Cancel this order')); ?>
-                    <p class="panel-subtitle"><?php _e('Close an order that will not be paid. Stock held for it goes back on sale.'); ?></p>
+                    <p class="panel-subtitle"><?php echo osc_esc_html($isGoods
+                        ? __('Close an order that will not be paid. Stock held for it goes back on sale.')
+                        : __('Close an order that will not be paid.')); ?></p>
                     <button type="button" class="btn btn-dim" data-osc-dialog-open="#order-cancel-dialog"><?php _e('Cancel order'); ?></button>
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
@@ -506,7 +508,7 @@ foreach ($order->getMeta() as $key => $value) {
             'confirm' => __('Refund'),
         ));
     }
-    if ($isGoods && ($order->isPending() || $order->awaitsCash())) {
+    if ($order->isPending() || ($isGoods && $order->awaitsCash())) {
         osc_admin_confirm_dialog(array(
             'id'      => 'order-cancel-dialog',
             'url'     => $actionUrl,

@@ -312,7 +312,7 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     /**
-     * Cancel an order that is still unpaid.
+     * Cancel an order that is still unpaid, of any kind.
      *
      * @return void
      */
@@ -320,8 +320,11 @@ class CAdminBilling extends AdminSecBaseModel
     {
         osc_csrf_check();
 
-        $order = $this->goodsOrder();
+        $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null) {
+            osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
+
             return;
         }
         if (OrderStore::cancel($order->getId())) {

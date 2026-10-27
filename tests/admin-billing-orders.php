@@ -165,7 +165,12 @@ $page = drive('order_cancel', ['id' => $id]);
 pin('cancels the pending order', ['cancelled', true], [$status($id), str_contains(implode(' ', $page['flashes']), 'is cancelled')]);
 $page = drive('order_cancel', ['id' => $id]);
 pin('not twice', ['cancelled', true], [$status($id), str_contains(implode(' ', $page['flashes']), 'warning:')]);
-pin('an order that is not goods is not found', true, str_contains(implode(' ', drive('order_cancel', ['id' => OrderStore::create($tom, 'offline', $m(1), 'USD', 5)->getId()])['flashes']), 'no longer exists'));
+pin('a missing order is not found', true, str_contains(implode(' ', drive('order_cancel', ['id' => 999999])['flashes']), 'no longer exists'));
+$cr = OrderStore::create($tom, 'offline', $m(1), 'USD', 5);
+$page = drive('order', [], ['id' => $cr->getId()]);
+check('a pending credits order offers cancel too', str_contains($page['drawn'], 'order-cancel-dialog') && !str_contains($page['drawn'], 'Stock held'));
+$page = drive('order_cancel', ['id' => $cr->getId()]);
+pin('and it cancels', ['cancelled', true], [$status($cr->getId()), str_contains(implode(' ', $page['flashes']), 'is cancelled')]);
 
 harness_section('ship');
 $paid = $make('offline');
