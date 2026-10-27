@@ -239,7 +239,7 @@ class CWebItem extends BaseModel
             $saved = $listings->create($this->listingData($formData), Actor::visitor());
         } catch (RefusedException $e) {
             ListingNotices::flash($e->notices(), false);
-            osc_add_flash_error_message($e->getMessage());
+            osc_add_flash_error_message($this->refusalLine($e));
             $this->redirectTo(osc_item_post_url());
 
             return false;
@@ -358,7 +358,7 @@ class CWebItem extends BaseModel
                 $success = $saved->rows();
                 ListingNotices::flash($saved->notices(), false);
             } catch (RefusedException $e) {
-                $success = $e->getMessage();
+                $success = $this->refusalLine($e);
                 ListingNotices::flash($e->notices(), false);
             }
 
@@ -385,6 +385,21 @@ class CWebItem extends BaseModel
         }
 
         return null;
+    }
+
+    /**
+     * The line that tops a refused listing form. A listing refused on several fields has each
+     * one's message kept for the form to print under that field.
+     */
+    private function refusalLine(RefusedException $e): string
+    {
+        if (!$e instanceof InvalidException) {
+            return $e->getMessage();
+        }
+        $errors = $e->byPointer();
+        Session::getInstance()->_setForm('form_errors', $errors);
+
+        return osc_form_error_line($errors);
     }
 
     /**

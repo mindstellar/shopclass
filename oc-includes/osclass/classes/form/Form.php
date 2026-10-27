@@ -54,7 +54,86 @@ class Form extends FormInputs
         $options['defaultValue']      = $id;
         $options['selectPlaceholder'] = $default_item;
         $options['selectOptions'] = $newItems;
-        echo (new self())->select($name, $id, $attributes, $options);
+        $attributes = self::markInvalid($name, $attributes);
+        echo (new self())->select($name, $id, $attributes, $options), self::errorLine($name, $attributes);
+    }
+
+    /**
+     * The pointer a field's name stands for in a refusal, e.g. title[en_US] is /title.
+     *
+     * @param string $name
+     *
+     * @return string
+     */
+    public static function errorPointer($name)
+    {
+        $base = (string) preg_replace('|\[.*$|', '', (string) $name);
+        $map  = [
+            'catId'       => 'category_id',
+            'countryId'   => 'country',
+            'countryName' => 'country',
+            'regionId'    => 'region',
+            'regionName'  => 'region',
+            'cityId'      => 'city',
+            'cityName'    => 'city',
+            'cityArea'    => 'city_area',
+            'contactName' => 'contact_name',
+            'contactEmail' => 'contact_email',
+            'contactPhone' => 'contact_phone',
+        ];
+
+        return '/' . ($map[$base] ?? $base);
+    }
+
+    /**
+     * Add aria-invalid and aria-describedby to a control whose field the last submit refused.
+     *
+     * @param string              $name
+     * @param array<string,mixed> $attributes
+     *
+     * @return array<string,mixed>
+     */
+    public static function markInvalid($name, array $attributes)
+    {
+        if (osc_form_error(self::errorPointer($name)) === '') {
+            return $attributes;
+        }
+        $attributes['aria-invalid']     = 'true';
+        $attributes['aria-describedby'] = self::errorId($name, $attributes);
+
+        return $attributes;
+    }
+
+    /**
+     * The message line for a refused field, '' when the field was fine.
+     *
+     * @param string              $name
+     * @param array<string,mixed> $attributes the control's, as markInvalid() returned them
+     *
+     * @return string
+     */
+    public static function errorLine($name, array $attributes = [])
+    {
+        $message = osc_form_error(self::errorPointer($name));
+        if ($message === '') {
+            return '';
+        }
+
+        return '<p class="oe-field-error" id="' . osc_esc_html(self::errorId($name, $attributes)) . '">'
+            . osc_esc_html($message) . '</p>';
+    }
+
+    /**
+     * @param string              $name
+     * @param array<string,mixed> $attributes
+     *
+     * @return string
+     */
+    private static function errorId($name, array $attributes)
+    {
+        $id = (string) ($attributes['id'] ?? preg_replace('|([^_a-zA-Z0-9-]+)|', '', (string) $name));
+
+        return $id . '-error';
     }
 
     /**
@@ -87,7 +166,8 @@ class Form extends FormInputs
         if (!$autocomplete) {
             $attributes['autocomplete'] = 'off';
         }
-        echo (new self())->text($name, $value, $attributes);
+        $attributes = self::markInvalid($name, $attributes);
+        echo (new self())->text($name, $value, $attributes), self::errorLine($name, $attributes);
     }
 
     /**
@@ -157,7 +237,8 @@ class Form extends FormInputs
     protected static function generic_textarea($name, $value)
     {
         $attributes['id'] = preg_replace('|([^_a-zA-Z0-9-]+)|', '', $name);
-        echo (new self())->textarea($name, $value, $attributes);
+        $attributes = self::markInvalid($name, $attributes);
+        echo (new self())->textarea($name, $value, $attributes), self::errorLine($name, $attributes);
     }
 
     /**

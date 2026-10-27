@@ -68,11 +68,12 @@ class ItemForm extends Form
             $item = osc_item();
         }
 
-        $extra = '';
+        $attributes = parent::markInvalid('catId', ['id' => 'catId'] + (array) $attributes);
+        $extra      = '';
         foreach ($attributes as $attrName => $attrValue) {
-            // Attribute names are developer-supplied keys; values are escaped so a caller
-            // can pass required/data-* without hand-injecting markup into the <select>.
-            $extra .= ' ' . $attrName . '="' . osc_esc_html((string)$attrValue) . '"';
+            if ($attrName !== 'id') {
+                $extra .= ' ' . $attrName . '="' . osc_esc_html((string)$attrValue) . '"';
+            }
         }
         echo '<select name="catId" id="catId"' . $extra . '>';
         if (isset($default_item)) {
@@ -102,7 +103,7 @@ class ItemForm extends Form
                 }
             }
         }
-        echo '</select>';
+        echo '</select>', parent::errorLine('catId', $attributes);
 
         return true;
     }
@@ -495,7 +496,9 @@ class ItemForm extends Form
         $locale              = self::field_locale($locale);
         $attributes['id']    = self::locale_field_id($name, $locale);
         $options['sanitize'] = null;
-        echo (new self())->textarea($name . '[' . $locale . ']', $value, $attributes, $options);
+        $field               = $name . '[' . $locale . ']';
+        $attributes          = parent::markInvalid($field, $attributes);
+        echo (new self())->textarea($field, $value, $attributes, $options), parent::errorLine($field, $attributes);
 
         return true;
     }

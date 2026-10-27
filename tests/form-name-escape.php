@@ -26,6 +26,11 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hFields.php';
 
+function osc_form_error(string $pointer): string
+{
+    return '';
+}
+
 class Params
 {
     public static function getParam($key, $a = false, $b = true)

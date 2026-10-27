@@ -66,4 +66,19 @@ final class InvalidException extends RefusedException
     {
         return $this->errors;
     }
+
+    /**
+     * The first message of each field, by pointer.
+     *
+     * @return array<string,string>
+     */
+    public function byPointer(): array
+    {
+        $map = [];
+        foreach ($this->errors as $error) {
+            $map[$error['pointer']] ??= $error['message'];
+        }
+
+        return $map;
+    }
 }
