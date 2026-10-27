@@ -295,9 +295,15 @@ pin('Pay again asks the gateway once more and says where to go', [200, $calls + 
 pin('another user cannot pay it', '404 not_found', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $annKey)));
 pin('nor a read-only key', '403 insufficient_scope', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $reader)));
 pin('a pending card order cannot be cancelled by the buyer', ['409 conflict', 'pending'], [api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey)), OrderStore::find($o['id'])->getStatus()]);
+pin('a pending card order carries no pay instructions', null, $call('GET', 'account/orders/' . $o['id'], null, $tomKey)->body()['data']['pay_instructions']);
 $admin->query("UPDATE {$p}t_billing_order SET s_gateway = 'offline' WHERE pk_i_id = " . (int) $o['id']);
 $bank = $call('GET', 'account/orders/' . $o['id'], null, $tomKey)->body()['data'];
 pin('a pending bank transfer order can, and is not paid again', [true, false], [$bank['can_cancel'], $bank['can_pay']]);
+Preference::getInstance()->set('billing_offline_instructions', "Send it to IBAN 123.\nThanks");
+scratchdb_forget_cache();
+osc_reset_preferences();
+$bank = $call('GET', 'account/orders/' . $o['id'], null, $tomKey);
+pin('a pending bank transfer order tells how to pay, with the reference', ["Send it to IBAN 123.\nThanks\nReference: #" . $o['id'], []], [$bank->body()['data']['pay_instructions'], api_admin_schema_errors('OrderDocument', $bank)]);
 pin('paying it again is a 409', '409 conflict', api_admin_code($call('POST', 'account/orders/' . $o['id'] . '/pay', null, $tomKey)));
 $r = $call('POST', 'account/orders/' . $o['id'] . '/cancel', null, $tomKey);
 pin('the owner cancels a pending order', [200, 'cancelled', false, []], [$r->status(), $r->body()['data']['status'], $r->body()['data']['can_cancel'], api_admin_schema_errors('OrderDocument', $r)]);

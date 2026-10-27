@@ -80,6 +80,21 @@ final class PaymentGatewayRegistry extends Registry
     }
 
     /**
+     * How to pay a pending order, from a gateway that offers it (a bank transfer does), or
+     * null.
+     *
+     * @param Order $order
+     *
+     * @return string|null
+     */
+    public function instructions(Order $order): ?string
+    {
+        $gateway = $this->get($order->getGateway());
+
+        return $gateway !== null && method_exists($gateway, 'instructions') ? $gateway->instructions($order) : null;
+    }
+
+    /**
      * Gateways that are both registered and ready to take money. This is what checkout
      * offers; all() is what the admin lists, so a half-configured gateway stays visible
      * where it can be finished rather than vanishing.
