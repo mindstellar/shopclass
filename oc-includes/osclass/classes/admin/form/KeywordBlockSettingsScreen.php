@@ -56,7 +56,7 @@ final class KeywordBlockSettingsScreen extends SettingsScreen
             ->checkbox(
                 'enabled_recaptcha_reports',
                 __('Require a CAPTCHA to report a listing'),
-                __('Needs a CAPTCHA provider configured under Settings &raquo; reCAPTCHA/Turnstile; '
+                __('Needs a CAPTCHA provider configured under Settings › Spam and bots › Captcha; '
                    . 'otherwise no challenge is shown.')
             )
                 ->rowLabel(__('Report CAPTCHA'))

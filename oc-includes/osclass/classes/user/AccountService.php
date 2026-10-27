@@ -177,7 +177,7 @@ final class AccountService
             if ($numeric !== '') {
                 $refuse($numeric, 13);
             } elseif (osc_is_username_blacklisted($username)) {
-                $refuse(_m('The specified username is not valid, it contains some invalid words'), 9);
+                $refuse(_m('That username is reserved. Choose another.'), 9);
             } elseif (UserStore::usernameTaken($username, 0, $admin)) {
                 // Checked here as well as when claimed, so a taken e-mail refuses it the same way.
                 $refuse(_m('Username is already taken'), 8);

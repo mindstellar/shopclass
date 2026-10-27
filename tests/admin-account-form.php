@@ -666,7 +666,7 @@ pin('nothing was inserted for a form of invalid fields', $count, rows($admin));
 // of problems should be able to walk down the form.
 pin('and all four problems are reported together', array(
     array('warning', 'Name cannot be left empty'),
-    array('warning', 'Username invalid'),
+    array('warning', 'Usernames can only have letters, numbers and underscores'),
     array('warning', 'E-mail is not a valid email address'),
     array('warning', 'New password cannot be left empty'),
 ), $driven['flashes']);
