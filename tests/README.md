@@ -113,9 +113,10 @@ Tests for the admin and public form screens added in the UI polish work:
 | `admin-login-page.php`, `admin-cleanup-page.php`, `admin-version-page.php`, `admin-email-labels.php`, `admin-captcha-help.php` | single admin screens: phone fit, headings, labels, help text |
 | `billing-order-list.php`, `billing-shop-credits.php` | the shared order list; credits hidden in a shop |
 | `item-form-sections.php` | the product form's sections and their show/hide script |
-| `listing-admin-errors.php`, `listing-store-address.php` | listing save errors; the store address fallback |
+| `listing-admin-errors.php`, `models/listing-store-address.php` | listing save errors; the store address fallback |
 | `public-form-errors.php`, `gui-markup-helpers.php`, `flash-dismiss.php` | inline field errors, markup helpers, flash dismiss |
 | `models/public-form-flows.php` | public forms keep what was typed and always answer |
+| `admin-ui-single-copy.php` | page heads and panels come from the one copy in hAdminUi.php |
 
 ## Pinned lists
 
