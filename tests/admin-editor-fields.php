@@ -228,6 +228,12 @@ if (!function_exists('osc_is_shop_mode')) {
         return !empty($GLOBALS['fixtureShop']);
     }
 }
+if (!function_exists('osc_mode_text')) {
+    function osc_mode_text(string $classifieds, string $shop): string
+    {
+        return osc_is_shop_mode() ? $shop : $classifieds;
+    }
+}
 if (!function_exists('osc_page_title')) {
     function osc_page_title()
     {

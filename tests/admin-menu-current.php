@@ -120,6 +120,7 @@ foreach (['osc_admin_base_url' => static fn ($withFile = false) => 'https://exam
           'osc_billing_enabled' => static fn () => true,
           'osc_billing_credits_enabled' => static fn () => true,
           'osc_is_shop_mode' => static fn () => false,
+          'osc_mode_text' => static fn ($classifieds, $shop) => $classifieds,
           'osc_is_moderator' => static fn () => true,
           'osc_add_hook' => static fn () => null,
           'osc_run_hook' => static fn () => null,

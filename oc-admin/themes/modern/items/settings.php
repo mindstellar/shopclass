@@ -16,7 +16,7 @@
 $form = __get('item_form');
 
 osc_admin_page(array(
-    'section' => osc_is_shop_mode() ? __('Products') : __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Listing Settings'),
     'help'    => __('Modify the general settings for your listings. Decide if users have to register in order to publish something, the number of pictures allowed for each listing, etc.'),
 ));

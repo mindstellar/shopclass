@@ -360,7 +360,7 @@ final class BillingSettingsScreen
             return self::PAGE_SHOP;
         }
 
-        $page = CoreSettings::page(self::PAGE_SHOP, osc_is_shop_mode() ? __('Shop') : __('Orders'), Billing::PREF_GROUP)
+        $page = CoreSettings::page(self::PAGE_SHOP, osc_mode_text(__('Orders'), __('Shop')), Billing::PREF_GROUP)
             ->onAfterSave(static function () {
                 osc_reset_preferences();
             });
