@@ -31,6 +31,39 @@ use mindstellar\listing\ListingMailService;
 
 $admin = scratchdb_session('osc_models_public_form_flows');
 require_once __DIR__ . '/../lib/action-standins.php';
+foreach (array('hMessages', 'hUtils') as $helper) {
+    require_once ABS_PATH . 'oc-includes/osclass/helpers/' . $helper . '.php';
+}
+// hDefines.php cannot be required here, so the real return-path reader is lifted out of it.
+if (!function_exists('osc_login_return_path')) {
+    eval(harness_method_source(ABS_PATH . 'oc-includes/osclass/helpers/hDefines.php', 'osc_login_return_path'));
+}
+if (!function_exists('osc_user_login_url')) {
+    function osc_user_login_url($return = '')
+    {
+        return \mindstellar\auth\SignIn::linkWithReturn(osc_base_url() . 'index.php?page=login', (string) $return);
+    }
+
+    function osc_register_account_url($return = '')
+    {
+        return \mindstellar\auth\SignIn::linkWithReturn(osc_base_url() . 'index.php?page=register', (string) $return);
+    }
+
+    function osc_user_profile_url()
+    {
+        return osc_base_url() . 'index.php?page=user&action=profile';
+    }
+
+    function osc_change_user_email_confirm_url($userId, $code)
+    {
+        return osc_base_url() . 'index.php?page=user&action=change_email_confirm&userId=' . (int) $userId . '&code=' . $code;
+    }
+
+    function osc_change_user_email_url()
+    {
+        return osc_base_url() . 'index.php?page=user&action=change_email';
+    }
+}
 
 harness_section('contact form errors');
 try {
@@ -99,13 +132,87 @@ Session::getInstance()->_setForm('user_s_phone_land', '');
 check('the fields draw with the typed values', str_contains($typed, 'Typed Name') && str_contains($typed, '0161 22'));
 
 harness_section('register keeps the return path');
-$register = file_get_contents($dir . 'CWebRegister.php');
-check('a register that needs validation keeps the return for the validate link', str_contains($register, 'osc_set_login_redirect(') && str_contains($register, 'osc_login_return_path()'));
-check('the validate link goes to the kept return', str_contains($register, 'osc_pop_login_redirect()'));
+final class FlowRedirect extends RuntimeException
+{
+}
+$asVisitor = static function (array $params): void {
+    $csrf = new \mindstellar\security\Csrf();
+    foreach (array('return', 'new_email', 's_email', 's_name', 's_username', 's_password', 's_password2', 'action') as $key) {
+        Params::unsetParam($key);
+    }
+    foreach ($params + array('CSRFName' => $csrf->getCsrfTokenName(), 'CSRFToken' => $csrf->getCsrfTokenValue()) as $key => $value) {
+        Params::setParam($key, $value);
+    }
+};
+foreach (array('enabled_users' => '1', 'enabled_user_registration' => '1', 'enabled_user_validation' => '1') as $k => $v) {
+    Preference::getInstance()->set($k, $v);
+}
+osc_reset_preferences();
+$asVisitor(array(
+    'action' => 'register_post', 'return' => '/index.php?page=cart', 's_email' => 'flow-new@example.test',
+    's_name' => 'Flow New', 's_username' => 'flownew', 's_password' => 'Fl0w-pass-9', 's_password2' => 'Fl0w-pass-9',
+));
+$register = new class () extends CWebRegister {
+    public string $sent = '';
+
+    public function __construct()
+    {
+        $this->ajax   = true;
+        $this->action = Params::getParamString('action');
+    }
+
+    public function redirectTo($url, $code = null)
+    {
+        $this->sent = (string) $url;
+        throw new FlowRedirect($url);
+    }
+};
+try {
+    $register->doModel();
+} catch (FlowRedirect $e) {
+}
+pin('a register that needs validation sends them to log in with the return kept', osc_base_url() . 'index.php?page=login&return=%2Findex.php%3Fpage%3Dcart', $register->sent);
+pin('and the validate link goes back to the return', osc_base_url() . 'index.php?page=cart', osc_pop_login_redirect());
 
 harness_section('change e-mail always answers');
-$change = harness_method_source($dir . 'CWebUser.php', 'changeEmailPost');
-check('a taken address gets the same flash as a free one', str_contains($change, "osc_add_flash_ok_message(_m('If that address is free, we sent a link to it.'))"));
+$changer = seed_user($admin, 'changer', 'changer@example.test');
+seed_user($admin, 'holder', 'holder@example.test');
+Session::getInstance()->_setEphemeral('userId', (string) $changer);
+$pending = static fn (): string => (string) (UserEmailTmp::getInstance()->findByPrimaryKey($changer)['s_new_email'] ?? '');
+$changeTo = static function (string $email) use ($asVisitor): array {
+    $asVisitor(array('action' => 'change_email_post', 'new_email' => $email));
+    $web = new class () extends CWebUser {
+        public string $sent = '';
+
+        public function __construct()
+        {
+            $this->ajax   = true;
+            $this->action = Params::getParamString('action');
+        }
+
+        public function redirectTo($url, $code = null)
+        {
+            $this->sent = (string) $url;
+            throw new FlowRedirect($url);
+        }
+    };
+    Session::getInstance()->_dropMessage('pubMessages');
+    try {
+        (new ReflectionMethod('CWebUser', 'changeEmailPost'))->invoke($web);
+    } catch (FlowRedirect $e) {
+    }
+
+    return array($web->sent, Session::getInstance()->_getMessage('pubMessages'));
+};
+[$freeSent, $freeFlash] = $changeTo('brand-new@example.test');
+pin('a free address is queued for confirmation', 'brand-new@example.test', $pending());
+UserEmailTmp::getInstance()->deleteByUser($changer);
+[$takenSent, $takenFlash] = $changeTo('holder@example.test');
+pin('a taken address is not queued', '', $pending());
+pin('both go to the profile', array(osc_user_profile_url(), osc_user_profile_url()), array($freeSent, $takenSent));
+pin('both get the same flash', $freeFlash, $takenFlash);
+check('and it is the "if that address is free" one', str_contains((string) json_encode($takenFlash), 'If that address is free'));
+Session::getInstance()->_setEphemeral('userId', '');
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
