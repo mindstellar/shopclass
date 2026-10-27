@@ -183,12 +183,13 @@ pin("regions('Rheinl', 'DE') returns the region in German", array(array('id' => 
 pin("regions('Rhine') still returns it", array((string) $region), array_column($complete('de_DE')->regions('Rhine'), 'id'));
 pin("regions('Rheinl', 'Deutschland') narrows by the German country name", array((string) $region), array_column($complete('de_DE')->regions('Rheinl', 'Deutschland'), 'id'));
 pin('a typed percent sign is not a wildcard', array(), $complete('de_DE')->cities('%'));
+// The fillers sort before Köln by name and by id ('09…' as text), so a cut-off at 100 ids would drop Cologne.
 for ($i = 0; $i < 150; $i++) {
-    $store->set(LocationNameStore::CITY, 900000 + $i, 'de_DE', 'Kö ' . $i);
+    $store->set(LocationNameStore::CITY, sprintf('09%05d', $i), 'de_DE', 'Köa ' . $i);
 }
 pin('more than 100 other matches do not push the region\'s city out', array((string) $cologne), array_column($complete('de_DE')->cities('Kö', $region), 'id'));
 for ($i = 0; $i < 150; $i++) {
-    $store->forget(LocationNameStore::CITY, 900000 + $i);
+    $store->forget(LocationNameStore::CITY, sprintf('09%05d', $i));
 }
 $auto = $complete('de_DE');
 pin("cities('Kö') runs at most 4 queries (match, list, names of cities and regions)", true, harness_query_count(static fn () => $auto->cities('Kö')) <= 4);
