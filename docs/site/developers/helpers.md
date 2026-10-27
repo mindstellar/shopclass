@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1256 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -698,7 +698,7 @@ Core defines 1256 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null)` | One page of a group's live keys, in key order. Pass the last key of a page as $afterKey for the next. A row never rewritten counts as updated when it was created. |
 | `osc_kv_set(string $group, string $key, $value, ?int $ttl = null)` | Write a key, replacing any value, state and expiry it had. |
 
-### hLocale (20)
+### hLocale (21)
 
 `oc-includes/osclass/helpers/hLocale.php`
 
@@ -719,6 +719,7 @@ Core defines 1256 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_locale_dec_point()` | Gets current locale's decimal point |
 | `osc_locale_field($field, $locale = '')` | Gets locale generic field |
 | `osc_locale_name()` | Gets current locale's name |
+| `osc_locale_name_of(string $code)` | The name of an enabled language, for a message; its code when it has none or is not enabled. |
 | `osc_locale_num_dec()` | Gets current locale's number of decimals |
 | `osc_locale_text_direction()` | Gets current locale's test direction |
 | `osc_locale_thousands_sep()` | Gets current locale's thousands separator |

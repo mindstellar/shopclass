@@ -64,24 +64,6 @@ final class ListingValidator
     }
 
     /**
-     * A locale's name for a message, falling back to its code.
-     */
-    public static function localeName(string $code): string
-    {
-        try {
-            foreach (osc_get_locales() as $locale) {
-                if (($locale['pk_c_code'] ?? '') === $code && ($locale['s_name'] ?? '') !== '') {
-                    return (string) $locale['s_name'];
-                }
-            }
-        } catch (\Throwable) {
-            // no database: the code is all there is
-        }
-
-        return $code;
-    }
-
-    /**
      * The length of a title or description as the poster typed it. Params::purifyText()
      * stores "&" as "&amp;" and "<" as "&lt;", so counting the stored text refused a title
      * the form's own maxlength had let through.
@@ -132,13 +114,13 @@ final class ListingValidator
         $hasTitle = false;
         foreach ($aItem['title'] as $key => $value) {
             if (!self::fitsTitle($value, $maxTitle)) {
-                $tooLong[] = self::entry('/title', 'too_long', sprintf(_m('Title too long (%s).'), self::localeName($key)));
+                $tooLong[] = self::entry('/title', 'too_long', sprintf(_m('Title too long (%s).'), osc_locale_name_of((string) $key)));
             } elseif (osc_validate_text($value)) {
                 $hasTitle = true;
             } elseif (trim((string) $value) === '') {
-                $tooShort[] = self::entry('/title', 'required', sprintf(_m('Add a title (%s).'), self::localeName($key)));
+                $tooShort[] = self::entry('/title', 'required', sprintf(_m('Add a title (%s).'), osc_locale_name_of((string) $key)));
             } else {
-                $tooShort[] = self::entry('/title', 'too_short', sprintf(_m('Title too short (%s).'), self::localeName($key)));
+                $tooShort[] = self::entry('/title', 'too_short', sprintf(_m('Title too short (%s).'), osc_locale_name_of((string) $key)));
             }
         }
         $errors = array_merge($errors, $hasTitle || $tooLong !== array() ? array() : $tooShort, $tooLong);
@@ -152,12 +134,12 @@ final class ListingValidator
                 break;
             }
             if (trim((string) $value) === '') {
-                $descErrors[] = self::entry('/description', 'required', sprintf(_m('Add a description (%s).'), self::localeName($key)));
+                $descErrors[] = self::entry('/description', 'required', sprintf(_m('Add a description (%s).'), osc_locale_name_of((string) $key)));
             } elseif (!osc_validate_text($value, 3)) {
-                $descErrors[] = self::entry('/description', 'too_short', sprintf(_m('Description too short (%s).'), self::localeName($key)));
+                $descErrors[] = self::entry('/description', 'too_short', sprintf(_m('Description too short (%s).'), osc_locale_name_of((string) $key)));
             }
             if (!$fits) {
-                $descErrors[] = self::entry('/description', 'too_long', sprintf(_m('Description too long (%s).'), self::localeName($key)));
+                $descErrors[] = self::entry('/description', 'too_long', sprintf(_m('Description too long (%s).'), osc_locale_name_of((string) $key)));
             }
         }
         $errors = array_merge($errors, $descErrors);

@@ -23,6 +23,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 
 use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingValidator;

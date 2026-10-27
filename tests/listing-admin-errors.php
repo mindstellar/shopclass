@@ -70,7 +70,7 @@ pin('the form is told the field of each listed line, in order', array('/descript
 pin('beside the lines it lists', array('Description too short (English).', 'City too short.', 'City too short.'), array_values(array_filter($errors, 'is_int', ARRAY_FILTER_USE_KEY)));
 
 harness_section('locale names');
-pin('a locale is named, not coded', 'Hindi (India)', ListingValidator::localeName('hi_IN'));
-pin('an unknown one keeps its code', 'xx_XX', ListingValidator::localeName('xx_XX'));
+pin('a locale is named, not coded', 'Hindi (India)', osc_locale_name_of('hi_IN'));
+pin('an unknown one keeps its code', 'xx_XX', osc_locale_name_of('xx_XX'));
 
 exit(harness_result());
