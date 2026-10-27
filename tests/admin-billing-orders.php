@@ -182,8 +182,10 @@ $page = drive('order', [], ['id' => $pid]);
 check('a paid goods order offers shipping with the three fields', str_contains($page['drawn'], 'value="order_ship"') && str_contains($page['drawn'], 'name="carrier"') && str_contains($page['drawn'], 'name="tracking"') && str_contains($page['drawn'], 'name="trackingUrl"'));
 foreach (['http://track.test/1', 'javascript:alert(1)', 'ftp://x.test/1', 'https://a.test/"x"'] as $bad) {
     $page = drive('order_ship', ['id' => $pid, 'carrier' => 'DHL', 'trackingUrl' => $bad]);
-    pin("the link $bad is refused", ['paid', true], [$status($pid), str_contains(implode(' ', $page['flashes']), 'https://')]);
+    pin("the link $bad is refused", ['paid', true], [$status($pid), str_contains($page['drawn'], 'full https:// address')]);
 }
+$page = drive('order_ship', ['id' => $pid, 'carrier' => 'DHL', 'tracking' => 'JD01', 'trackingUrl' => 'http://bad.test']);
+check('a refused link keeps the carrier and number, and names the link', str_contains($page['drawn'], 'value="DHL"') && str_contains($page['drawn'], 'value="JD01"') && str_contains($page['drawn'], 'value="http://bad.test"') && str_contains($page['drawn'], 'aria-invalid="true"') && $page['redirects'] === array());
 $page = drive('order_ship', ['id' => $pid, 'carrier' => "DHL\n", 'tracking' => 'JD01', 'trackingUrl' => 'https://track.test/JD01']);
 $ful  = OrderStore::find($pid)->fulfilment();
 pin('a good one ships', ['shipped', 'DHL', 'JD01', 'https://track.test/JD01'], [$status($pid), $ful['carrier'], $ful['tracking'], $ful['tracking_url']]);

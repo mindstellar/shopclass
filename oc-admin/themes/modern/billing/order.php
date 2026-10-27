@@ -24,6 +24,8 @@ osc_admin_page(array(
 /** @var \mindstellar\billing\Order $order */
 $order   = __get('order');
 $entries = __get('entries');
+$typed   = is_array(__get('typed')) ? __get('typed') : array();
+$errors  = is_array(__get('errors')) ? __get('errors') : array();
 $balance = (int)__get('balance');
 $refundable = (bool)__get('refundable');
 $dashboardUrl = (string) __get('dashboardUrl');
@@ -340,18 +342,22 @@ foreach ($order->getMeta() as $key => $value) {
                             'id'    => 'ship-carrier',
                             'name'  => 'carrier',
                             'label' => __('Carrier'),
+                            'value' => $typed['carrier'] ?? '',
                             'attrs' => array('maxlength' => 100),
                         ));
                         osc_admin_text(array(
                             'id'    => 'ship-tracking',
                             'name'  => 'tracking',
                             'label' => __('Tracking number'),
+                            'value' => $typed['tracking'] ?? '',
                             'attrs' => array('maxlength' => 100),
                         ));
                         osc_admin_text(array(
                             'id'    => 'ship-url',
                             'name'  => 'trackingUrl',
                             'label' => __('Tracking link'),
+                            'value' => $typed['trackingUrl'] ?? '',
+                            'error' => $errors['trackingUrl'] ?? '',
                             'attrs' => array('maxlength' => 500, 'placeholder' => 'https://'),
                             'help'  => __('Optional. Must start with https://'),
                         )); ?>

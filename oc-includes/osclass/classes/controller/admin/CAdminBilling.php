@@ -165,11 +165,15 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     /**
-     * One order, its ledger entries, and whatever can still be done to it.
+     * One order, its ledger entries, and whatever can still be done to it. A refused shipping
+     * form draws it again with what was typed and the fields named.
+     *
+     * @param array<string,string> $typed  posted shipping values by field name
+     * @param array<string,string> $errors message by field name
      *
      * @return void
      */
-    private function orderView()
+    private function orderView(array $typed = array(), array $errors = array())
     {
         $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null) {
@@ -179,6 +183,8 @@ class CAdminBilling extends AdminSecBaseModel
 
         $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
 
+        $this->_exportVariableToView('typed', $typed);
+        $this->_exportVariableToView('errors', $errors);
         $this->_exportVariableToView('order', $order);
         $this->_exportVariableToView('user', User::getInstance()->findByPrimaryKey($order->getUserId()));
         $this->_exportVariableToView('gateway', $gateway);
@@ -271,16 +277,20 @@ class CAdminBilling extends AdminSecBaseModel
         if ($order === null) {
             return;
         }
-        $back = $this->orderUrl($order);
-        $url = Utils::oneLine(Params::getParamString('trackingUrl'));
+        $back     = $this->orderUrl($order);
+        $carrier  = Utils::oneLine(Params::getParamString('carrier'));
+        $tracking = Utils::oneLine(Params::getParamString('tracking'));
+        $url      = Utils::oneLine(Params::getParamString('trackingUrl'));
         if ($url !== '' && Receipts::httpsUrl($url) === '') {
-            osc_add_flash_error_message(_m('The tracking link has to be a full https:// address'), 'admin');
-            $this->redirectTo($back);
+            $this->orderView(
+                array('carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url),
+                array('trackingUrl' => _m('The tracking link has to be a full https:// address'))
+            );
 
             return;
         }
 
-        if (OrderStore::ship($order->getId(), Utils::oneLine(Params::getParamString('carrier')), Utils::oneLine(Params::getParamString('tracking')), $url)) {
+        if (OrderStore::ship($order->getId(), $carrier, $tracking, $url)) {
             osc_add_flash_ok_message(sprintf(_m('Order #%d is marked shipped'), $order->getId()), 'admin');
         } else {
             osc_add_flash_warning_message(_m('Only a paid order, or an unpaid cash on delivery one, can be marked shipped'), 'admin');
