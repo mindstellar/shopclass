@@ -183,7 +183,8 @@ final class OrdersController
     }
 
     /**
-     * `POST account/orders/{id}/cancel`: close a pending goods order. Anything else is a 409.
+     * `POST account/orders/{id}/cancel`: close a pending bank transfer or cash on delivery order.
+     * Anything else is a 409.
      */
     public function cancel(ApiCall $call): Response
     {
