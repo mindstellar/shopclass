@@ -927,6 +927,11 @@ details.osc-section[open] {
   font-weight: 600;
 }
 
+// The form's own label spacing would push the label below the switch.
+#item-form .osc-section .form-switch > .form-check-label {
+  margin: 0;
+}
+
 .osc-section .form-switch .form-text,
 .osc-section .form-switch small {
   color: var(--osc-ink-muted);
