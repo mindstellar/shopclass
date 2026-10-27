@@ -373,7 +373,12 @@ class CAdminBilling extends AdminSecBaseModel
 
         if (Billing::refund($order)) {
             osc_add_flash_ok_message(
-                sprintf(_m('Order #%d is recorded as refunded and the credits have been taken back'), $order->getId()),
+                sprintf(
+                    $order->isGoods()
+                        ? _m('Order #%d is recorded as refunded.')
+                        : _m('Order #%d is recorded as refunded and the credits have been taken back'),
+                    $order->getId()
+                ),
                 'admin'
             );
         } else {
@@ -411,7 +416,12 @@ class CAdminBilling extends AdminSecBaseModel
 
         if ($result->getOutcome() === CallbackResult::OUTCOME_REFUNDED) {
             osc_add_flash_ok_message(
-                sprintf(_m('Order #%d is refunded and the credits have been taken back'), $order->getId()),
+                sprintf(
+                    $order->isGoods()
+                        ? _m('Order #%d is refunded.')
+                        : _m('Order #%d is refunded and the credits have been taken back'),
+                    $order->getId()
+                ),
                 'admin'
             );
         } elseif ($result->getOutcome() === CallbackResult::OUTCOME_PENDING) {

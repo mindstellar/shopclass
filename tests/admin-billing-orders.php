@@ -326,4 +326,15 @@ check('without a note it uses the core words', str_starts_with($flash, 'info:The
 [$flash] = $refundAnswer(static fn (int $id) => \mindstellar\billing\CallbackResult::ignored('card expired'));
 pin('a refusal is still an error', 'error:The refund was not made: card expired', $flash);
 
+harness_section('refund flashes');
+$goodsPaid = $make('offline');
+Billing::markPaid(OrderStore::find($goodsPaid->getId()), null);
+$page = drive('order_refund', ['id' => $goodsPaid->getId()]);
+$flash = implode(' ', $page['flashes']);
+check('a goods refund does not mention credits', str_contains($flash, 'is recorded as refunded') && !str_contains($flash, 'credits'));
+$creditsPaid = OrderStore::create($tom, 'fake', $m(5), 'USD', 50);
+Billing::markPaid($creditsPaid, 'ext-r');
+$page = drive('order_refund', ['id' => $creditsPaid->getId()]);
+check('a credits refund still does', str_contains(implode(' ', $page['flashes']), 'credits have been taken back'));
+
 exit(harness_result());
