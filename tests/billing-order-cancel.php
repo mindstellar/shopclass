@@ -87,6 +87,14 @@ pin('an unknown order goes back to the list', osc_billing_orders_url(), $r['redi
 $r = cancel_post($sam, $card->getId());
 pin('a pending card order stays open, as its payment page may still take the money', array(Order::STATUS_PENDING, true), array($status($card->getId()), str_starts_with($r['flashes'], 'warning:')));
 
+harness_section('shop mode and shopper accounts');
+osc_set_preference('site_mode', \mindstellar\site\SiteMode::SHOP);
+scratchdb_forget_cache();
+osc_reset_preferences();
+$shopOrder = OrderStore::create($sam, 'offline', 2_000_000, 'USD', 10, array());
+$r = cancel_post($sam, $shopOrder->getId());
+pin('in shop mode the cancel runs instead of a 404', array(true, osc_billing_orders_url(), Order::STATUS_CANCELLED), array(osc_is_shop_mode(), $r['redirect'], $status($shopOrder->getId())));
+pin('a shopper keeps the billing cancel page', array(true, false), array(in_array('cancel', OSC_SHOPPER_PAGES['billing']['keep'], true), osc_shopper_page_hidden('billing', 'cancel')));
 
 harness_section('no CSRF token');
 $open = OrderStore::create($sam, 'offline', 2_000_000, 'USD', 10, array());
