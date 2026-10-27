@@ -383,7 +383,7 @@ if (!function_exists('seed_locale')) {
               s_author_url, s_currency_format, s_date_format, b_enabled, b_enabled_bo)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1, 1)',
             'sssssssss',
-            array($code, $name, $name, $name, '1.0', 'Mindstellar', 'https://example.test', '{CURRENCY}{NUMBER}', 'd/m/Y')
+            array($code, $name, $name, $name, '1.0', 'Mindstellar', 'https://example.test', '$ ', 'd/m/Y')
         );
 
         return $code;

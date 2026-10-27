@@ -467,7 +467,7 @@ $lines  = OrderLineStore::ofOrder($placed['order']->getId());
 pin('a placed order carries the fee line and charges it', [$m(7), 'fee', 'Cash on delivery fee', $m(2)], [$placed['order']->getAmount(), end($lines)['kind'], end($lines)['title'], end($lines)['amount']]);
 pin('the checkout tells the buyer what to pay', [CheckoutIntent::KIND_HTML, true, true], [
     $placed['next']->getKind(),
-    str_contains($placed['next']->getPayload(), 'Pay ' . \mindstellar\currency\Money::format(7000000, 'USD') . ' when it arrives.'),
+    str_contains($placed['next']->getPayload(), 'Pay 7.00 USD when it arrives.'),
     str_contains($placed['next']->getPayload(), 'Order #' . $placed['order']->getId()),
 ]);
 

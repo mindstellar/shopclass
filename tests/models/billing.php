@@ -2763,7 +2763,7 @@ Billing::markPaid($bought, 'pi_receipt_1');
 pin('paying an order sends one receipt', 1, count($mails));
 pin('to the buyer', 'buyer@example.test', $mails[0]['to'] ?? null);
 check('the subject names the order', strpos((string) ($mails[0]['subject'] ?? ''), '#' . $bought->getId()) !== false);
-check('the body has the amount', strpos((string) ($mails[0]['body'] ?? ''), \mindstellar\currency\Money::format(2500000, 'USD')) !== false);
+check('the body has the amount', strpos((string) ($mails[0]['body'] ?? ''), '2.50 USD') !== false);
 check('the body has the credits', strpos((string) ($mails[0]['body'] ?? ''), '30 credits') !== false);
 check('the body has the provider reference', strpos((string) ($mails[0]['body'] ?? ''), 'pi_receipt_1') !== false);
 check('the order records the receipt as sent', OrderStore::find($bought->getId())->meta(OrderStore::RECEIPT_SENT) !== null);

@@ -20,37 +20,12 @@ final class Money
     public const MICROS = 1000000;
 
     /**
-     * The amount as a shopper reads it: the currency's symbol in the locale's currency format,
-     * with decimals only when the amount has them ("$33", "$33.50"). The code stands in for a
-     * currency the site does not list.
+     * Two decimals in the site's locale and the currency code: "1,234.50 EUR".
      */
     public static function format(int $micros, string $currency): string
     {
-        $price    = $micros / self::MICROS;
-        $decimals = round($price, 2) == floor($price) ? 0 : 2;
-        $number   = number_format($price, $decimals, osc_locale_dec_point(), osc_locale_thousands_sep());
-
-        return str_replace(
-            array('{NUMBER}', '{CURRENCY}'),
-            array($number, self::symbol($currency)),
-            osc_locale_currency_format()
-        );
-    }
-
-    /**
-     * What the site prints for a currency: its symbol, or the upper-case code when it has no row.
-     */
-    public static function symbol(string $currency): string
-    {
-        $code = strtoupper($currency);
-        try {
-            $row = \Currency::getInstance()->findByPrimaryKey($code);
-        } catch (\Throwable) {
-            $row = false;
-        }
-        $symbol = is_array($row) ? trim((string) ($row['s_description'] ?? '')) : '';
-
-        return $symbol === '' ? $code : $symbol;
+        return number_format($micros / self::MICROS, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
+               . ' ' . strtoupper($currency);
     }
 
     /**

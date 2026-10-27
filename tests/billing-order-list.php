@@ -47,7 +47,7 @@ harness_section('a list of shop orders');
 $html = $render([$bank, $cod]);
 check('it shows the order number and what was bought', str_contains($html, '#' . $bank->getId()) && str_contains($html, 'Mug and 2 more'));
 check('it has no Credits column', !str_contains($html, 'Credits'));
-check('the amount reads like a price', str_contains($html, '$33') && !str_contains($html, 'USD'));
+check('the amount reads like a price', str_contains($html, '33.00 USD'));
 check('a bank transfer waits for payment, cash on delivery says so', str_contains($html, 'Awaiting payment') && str_contains($html, 'Pay on delivery') && !str_contains($html, 'Pending'));
 check('the bank order shows how to pay', str_contains($html, 'Send it to IBAN 123.') && str_contains($html, 'Reference: #' . $bank->getId()));
 
