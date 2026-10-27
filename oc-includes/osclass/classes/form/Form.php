@@ -59,7 +59,33 @@ class Form extends FormInputs
     }
 
     /**
+     * Posted names whose refusal pointer is another name. A new field that prints its error
+     * goes here when the names differ, else in MARKED_NAMES.
+     */
+    private const POINTER_NAMES = [
+        'catId'        => 'category_id',
+        'countryId'    => 'country',
+        'countryName'  => 'country',
+        'regionId'     => 'region',
+        'regionName'   => 'region',
+        'cityId'       => 'city',
+        'cityName'     => 'city',
+        'cityArea'     => 'city_area',
+        'contactName'  => 'contact_name',
+        'contactEmail' => 'contact_email',
+        'contactPhone' => 'contact_phone',
+    ];
+
+    /** Posted names that are their own pointer and whose error a core form prints. */
+    private const MARKED_NAMES = [
+        'title', 'description', 'price', 'currency', 'address', 'zip', 'yourName', 'yourEmail',
+        'phoneNumber', 'message', 'friendName', 'friendEmail',
+    ];
+
+    /**
      * The pointer a field's name stands for in a refusal, e.g. title[en_US] is /title.
+     *
+     * @internal
      *
      * @param string $name
      *
@@ -68,26 +94,15 @@ class Form extends FormInputs
     public static function errorPointer($name)
     {
         $base = (string) preg_replace('|\[.*$|', '', (string) $name);
-        $map  = [
-            'catId'       => 'category_id',
-            'countryId'   => 'country',
-            'countryName' => 'country',
-            'regionId'    => 'region',
-            'regionName'  => 'region',
-            'cityId'      => 'city',
-            'cityName'    => 'city',
-            'cityArea'    => 'city_area',
-            'contactName' => 'contact_name',
-            'contactEmail' => 'contact_email',
-            'contactPhone' => 'contact_phone',
-        ];
 
-        return '/' . ($map[$base] ?? $base);
+        return '/' . (self::POINTER_NAMES[$base] ?? $base);
     }
 
     /**
      * Whether the core public forms print a field's message under its control. Anything else
      * (photos, options, custom fields) has to be told in the top line.
+     *
+     * @internal
      *
      * @param string $pointer
      *
@@ -95,12 +110,10 @@ class Form extends FormInputs
      */
     public static function marksPointer($pointer)
     {
-        return in_array($pointer, [
-            '/title', '/description', '/category_id', '/price', '/currency', '/country', '/region',
-            '/city', '/city_area', '/address', '/zip', '/contact_name', '/contact_email',
-            '/contact_phone', '/yourName', '/yourEmail', '/phoneNumber', '/message', '/friendName',
-            '/friendEmail',
-        ], true);
+        $base = substr((string) $pointer, 1);
+
+        return str_starts_with((string) $pointer, '/')
+            && (in_array($base, self::POINTER_NAMES, true) || in_array($base, self::MARKED_NAMES, true));
     }
 
     /**

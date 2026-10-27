@@ -162,6 +162,9 @@ foreach (array_keys($pointers) as $name) {
     $found[$name] = Form::errorPointer($name);
 }
 pin('every mapped name', $pointers, $found);
+$marked = array_filter(array_merge(array_values($pointers), array('/price', '/currency', '/address', '/zip', '/yourEmail', '/phoneNumber', '/message', '/friendName', '/friendEmail')), static fn (string $p): bool => Form::marksPointer($p));
+pin('each one a form prints is marked', 23, count($marked));
+pin('photos are not', false, Form::marksPointer('/photos'));
 
 harness_section('an InvalidException gives the map and the line');
 $e = InvalidException::all(array(
