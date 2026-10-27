@@ -95,7 +95,7 @@ final class AdminAccountForm
                 ->set('maxlength', self::WIDTHS['s_username'])
                 // _m, not __: the message the screen has always shown for this, already
                 // translated under that domain.
-                ->validate(static fn ($value) => osc_validate_username($value) ? null : _m('Username invalid'))
+                ->validate(static fn ($value) => osc_validate_username($value) ? null : _m('Usernames can only have letters, numbers and underscores'))
             ->email('s_email', __('E-mail'))
                 ->set('label_html', __('E-mail <em>(required)</em>'))
                 ->required()
