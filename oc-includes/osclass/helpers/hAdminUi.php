@@ -701,43 +701,59 @@ if (!function_exists('osc_admin_disclosure_close')) {
 }
 
 /*
- * Fallbacks for the theme components the primitives above build on. The active admin
- * theme defines these already and loads first, so on a stock install nothing below runs --
- * they exist so a plugin calling osc_admin_field() still renders on a theme that ships
- * neither -- and core's own declared-settings-page view calls them too, which would fatal
- * on such a theme. Markup is identical to themes/modern/parts/ui.php by design; the class
- * names are consumed directly by third-party plugins and cannot drift between the two copies.
+ * Page head and panel helpers. The admin theme no longer ships its own copies, so a
+ * theme that skips them still gets the same markup; plugins use these class names directly.
  */
 
 if (!function_exists('osc_admin_page_head')) {
     /**
-     * The heading a screen opens on.
+     * The page title, and the actions that belong to the page as a whole.
      *
-     * @param string $title
-     * @param array  $actions Action specs rendered to its right
-     * @param array  $opts    'class' => extra classes on the heading
+     * With no actions this emits exactly the `<h2 class="render-title">` every screen
+     * already uses, so adopting it changes no pixels.
+     *
+     * @param string                         $title
+     * @param array<int,array<string,mixed>> $actions Action specs; see osc_admin_action_button()
+     * @param array<string,mixed>            $opts    'class' => extra classes on the heading; 'level' => 3 for a section inside a page; 'actions_html' =>
+     *                                                callable printing a control that is not a button (a segmented
+     *                                                toggle, a select), used instead of $actions
      *
      * @return void
      */
     function osc_admin_page_head($title, array $actions = array(), array $opts = array())
     {
-        $class = 'render-title osc-page-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        // Level 2 is the page title; a section inside a page asks for 3 (see the heading scale in render-page.scss).
+        $level = (int)($opts['level'] ?? 2) === 3 ? 3 : 2;
+        if (function_exists('osc_admin_page_titled')) {
+            osc_admin_page_titled($level === 2);
+        }
+        $class = 'render-title' . ($level === 2 ? ' osc-page-title' : '') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
         if ($actions === array() && empty($opts['actions_html'])) {
-            echo '<h2 class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h2>';
+            echo '<h' . $level . ' class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h' . $level . '>';
+            if (function_exists('osc_admin_settings_group_tabs')) {
+                osc_admin_settings_group_tabs();
+            }
 
             return;
+        } ?>
+        <div class="page-head">
+            <h<?php echo $level; ?> class="<?php echo osc_esc_html($class); ?>"><?php echo osc_esc_html($title); ?></h<?php echo $level; ?>>
+            <div class="page-head-actions">
+                <?php foreach ($actions as $action) {
+                    osc_admin_action_button($action);
+                }
+                // Composes with $actions rather than replacing it: a screen with both a
+                // button and a segmented control should not silently lose the button.
+                if (!empty($opts['actions_html'])) {
+                    ($opts['actions_html'])();
+                } ?>
+            </div>
+        </div>
+        <?php
+        if (function_exists('osc_admin_settings_group_tabs')) {
+            osc_admin_settings_group_tabs();
         }
-
-        echo '<div class="page-head"><h2 class="' . osc_esc_html($class) . '">'
-            . osc_esc_html($title) . '</h2><div class="page-head-actions">';
-        foreach ($actions as $action) {
-            osc_admin_action_button($action);
-        }
-        if (!empty($opts['actions_html'])) {
-            ($opts['actions_html'])();
-        }
-        echo '</div></div>';
     }
 }
 
@@ -1010,6 +1026,7 @@ if (!function_exists('osc_admin_definition')) {
             echo '<div class="osc-deflist-row"><dt>' . osc_esc_html($row['label'] ?? '') . '</dt>'
                 . '<dd' . (!empty($row['mono']) ? ' class="osc-mono"' : '') . '>'
                 . (!empty($row['html']) ? $row['value'] : osc_esc_html((string)($row['value'] ?? '')))
+                . (!empty($row['note']) ? '<p class="osc-deflist-note">' . osc_esc_html($row['note']) . '</p>' : '')
                 . '</dd></div>';
         }
         echo '</dl>';
@@ -1092,6 +1109,18 @@ if (!function_exists('osc_admin_tree_picker')) {
     function osc_admin_tree_picker(array $opts)
     {
         \mindstellar\admin\ui\Picker::categoryChecks($opts);
+    }
+}
+
+if (!function_exists('osc_admin_captcha_settings_path')) {
+    /**
+     * The menu path to the Captcha settings, built from the menu's own names.
+     *
+     * @return string
+     */
+    function osc_admin_captcha_settings_path(): string
+    {
+        return implode(' › ', array(__('Settings'), __('Spam and bots'), __('Captcha')));
     }
 }
 

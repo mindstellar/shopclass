@@ -86,7 +86,7 @@ final class CategoryCatalog
     public static function fromSite(): self
     {
         static $site = [];
-        $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+        $locale = osc_current_ui_locale();
         $key    = $locale . '|' . CacheGroup::generation('category');
 
         return $site[$key] ??= new self(static function () use ($locale): array {

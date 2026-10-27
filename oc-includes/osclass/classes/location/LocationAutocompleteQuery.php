@@ -29,11 +29,13 @@ final class LocationAutocompleteQuery
     }
 
     /**
-     * Suggestions in $locale, sharing the request's name memo.
+     * Suggestions in $locale, sharing the request's name store and memo.
      */
     public static function inLocale(string $locale): self
     {
-        return new self($locale, new LocationNameStore(), Container::root()->get(LocationNames::class));
+        $root = Container::root();
+
+        return new self($locale, $root->get(LocationNameStore::class), $root->get(LocationNames::class));
     }
 
     /**

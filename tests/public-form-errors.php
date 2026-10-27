@@ -23,6 +23,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 
 use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingValidator;
@@ -88,6 +89,15 @@ if (!function_exists('_osc_location_list')) {
         return $rows;
     }
 }
+harness_section('the helpers exist');
+$missing = array_filter(array('osc_keep_form', 'osc_form_error', 'osc_form_errors', 'osc_form_error_line'), static fn (string $fn): bool => !function_exists($fn));
+foreach (array('osc_keep_form', 'osc_form_error', 'osc_form_errors', 'osc_form_error_line') as $fn) {
+    check($fn . '() is defined', !in_array($fn, $missing, true));
+}
+if ($missing !== array()) {
+    exit(harness_result());
+}
+
 $session = Session::getInstance();
 $render  = static function (callable $draw): string {
     ob_start();
@@ -117,10 +127,12 @@ pin('the e-mail field too', 1, substr_count($html, 'id="yourEmail-error">Enter a
 $html = $render(static fn () => ContactForm::your_message());
 pin('a field with no error stays plain', 0, substr_count($html, 'aria-invalid') + substr_count($html, 'oe-field-error'));
 
-$session->_setForm('form_errors', array('/title' => 'Add a title (English).', '/price' => '<b>Price</b>'));
+$session->_setForm('form_errors', array('/title/en_US' => 'Add a title (English).', '/price' => '<b>Price</b>'));
 $html = $render(static fn () => ItemForm::title_input('title', 'en_US'));
 pin('the title input is marked', 1, substr_count($html, 'aria-invalid="true"'));
 pin('with its own line', 1, substr_count($html, 'id="titleen_US-error">Add a title (English).</p>'));
+$html = $render(static fn () => ItemForm::title_input('title', 'de_DE'));
+pin('another language box stays plain', 0, substr_count($html, 'aria-invalid') + substr_count($html, 'oe-field-error'));
 $html = $render(static fn () => ItemForm::description_textarea('description', 'en_US'));
 pin('a description with no error is plain', 0, substr_count($html, 'aria-invalid'));
 $html = $render(static fn () => ItemForm::price_input_text(array('i_price' => null)));
@@ -128,7 +140,7 @@ pin('the message is escaped', 1, substr_count($html, '&lt;b&gt;Price&lt;/b&gt;</
 
 harness_section('every wired control is marked with its own line');
 $session->_setForm('form_errors', array(
-    '/description' => 'Add a description.', '/category_id' => 'Pick a category.', '/country' => 'Pick a country.',
+    '/description/en_US' => 'Add a description.', '/category_id' => 'Pick a category.', '/country' => 'Pick a country.',
     '/region' => 'Pick a region.', '/city' => 'Pick a city.', '/message' => 'Write a message',
 ));
 $marked = static function (string $html, string $id, string $message): array {
@@ -155,13 +167,16 @@ $pointers = array(
     'catId' => '/category_id', 'countryId' => '/country', 'countryName' => '/country', 'regionId' => '/region',
     'regionName' => '/region', 'cityId' => '/city', 'cityName' => '/city', 'cityArea' => '/city_area',
     'contactName' => '/contact_name', 'contactEmail' => '/contact_email', 'contactPhone' => '/contact_phone',
-    'title[en_US]' => '/title', 'description[en_US]' => '/description', 'yourName' => '/yourName',
+    'title[en_US]' => '/title/en_US', 'description[de_DE]' => '/description/de_DE', 'yourName' => '/yourName',
 );
 $found = array();
 foreach (array_keys($pointers) as $name) {
     $found[$name] = Form::errorPointer($name);
 }
 pin('every mapped name', $pointers, $found);
+$marked = array_filter(array_merge(array_values($pointers), array('/title', '/price', '/currency', '/address', '/zip', '/yourEmail', '/phoneNumber', '/message', '/friendName', '/friendEmail')), static fn (string $p): bool => Form::marksPointer($p));
+pin('each one a form prints is marked', 24, count($marked));
+pin('photos are not', false, Form::marksPointer('/photos'));
 
 harness_section('an InvalidException gives the map and the line');
 $e = InvalidException::all(array(
@@ -183,6 +198,24 @@ pin(
     osc_form_error_line(array('/photos' => 'Too many photos.', '/product/options' => 'Pick a size.'))
 );
 
+harness_section('the listing controller keeps the refused fields');
+$session->_setForm('form_errors', array());
+$refusalLine = new ReflectionMethod('CWebItem', 'refusalLine');
+$refusalLine->setAccessible(true);
+defined('OSC_DEBUG') || define('OSC_DEBUG', false);
+$controller = (new ReflectionClass('CWebItem'))->newInstanceWithoutConstructor();
+$line       = $refusalLine->invoke($controller, InvalidException::all(array(
+    ListingValidator::entry('/title', 'required', 'Add a title.'),
+    ListingValidator::entry('/price', 'invalid', 'Price must be a number.'),
+)));
+pin('an InvalidException keeps one message per field for the form', array('/title' => 'Add a title.', '/price' => 'Price must be a number.'), $session->_getForm('form_errors'));
+pin('and tops the form with the pointer line', 'Check the fields marked below.', $line);
+$session->_setForm('form_errors', array());
+pin('another refusal is its own message', 'Not now.', $refusalLine->invoke($controller, new \mindstellar\exception\RefusedException('Not now.')));
+pin('and marks no field', array(), $session->_getForm('form_errors'));
+check('send to a friend hands its field messages to osc_keep_form', str_contains(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'sendFriendPost'), 'osc_keep_form(array(), osc_form_error_line($errors), $errors)'));
+check('the contact form hands its field messages to osc_keep_form', str_contains(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'contactPost'), 'osc_keep_form($contactValues, $error, $errors)'));
+
 harness_section('ListingValidator words an empty title and a short one apart');
 $data = array(
     'photos' => array(), 'title' => array('en_US' => ''), 'description' => array('en_US' => 'A long enough text'),
@@ -192,7 +225,7 @@ $data = array(
 $title = static function (array $data): array {
     $found = array();
     foreach ((new ListingValidator())->common($data) as $error) {
-        if ($error['pointer'] === '/title') {
+        if ($error['pointer'] === '/title/en_US') {
             $found[] = array($error['code'], $error['message']);
         }
     }
@@ -209,7 +242,7 @@ $data['title']['en_US'] = '';
 $data['description']['en_US'] = '';
 $codes = array();
 foreach ((new ListingValidator())->common($data) as $error) {
-    if ($error['pointer'] === '/description') {
+    if ($error['pointer'] === '/description/en_US') {
         $codes[] = $error['code'];
     }
 }

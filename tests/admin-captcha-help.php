@@ -21,7 +21,7 @@ require_once __DIR__ . '/lib/harness.php';
 harness_section('captcha help');
 foreach (['KeywordBlockSettingsScreen', 'CommentSettingsScreen'] as $screen) {
     $src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/' . $screen . '.php');
-    check($screen . ' points at Spam and bots, Captcha', str_contains($src, 'Settings › Spam and bots › Captcha'));
+    check($screen . ' points at Spam and bots, Captcha', str_contains($src, 'osc_admin_captcha_settings_path()'));
     check($screen . ' no longer names a menu entry that does not exist', !str_contains($src, 'reCAPTCHA/Turnstile'));
 }
 exit(harness_result());

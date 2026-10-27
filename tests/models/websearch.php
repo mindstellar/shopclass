@@ -88,6 +88,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocation.php';
 
 // Page-level helpers that live in files a model test cannot load (hDefines, hTheme,
 // hHttpCache, hBilling). Recorded where the call itself is part of the contract.

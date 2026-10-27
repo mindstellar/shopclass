@@ -87,7 +87,7 @@ A `422 validation_failed` lists every problem at once in `errors`:
 | `out_of_stock` | An order line asks for more than is in stock. |
 | `not_buyable` | An order line names a product that is gone, hidden, unpriced or in another currency. |
 | `unavailable` | The payment method is not on offer for this order. |
-| `too_many_open` | The buyer already holds the most unpaid orders the shop allows, card orders included. |
+| `too_many_open` | The buyer already holds the most unpaid bank transfer orders the shop allows. |
 
 Plugin endpoints may add `ext_<slug>_<name>` codes. Treat an unknown code as `invalid`.
 

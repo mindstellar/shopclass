@@ -182,7 +182,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <span class="dash-stat-icon <?php echo $numReportedItems > 0 ? 'dash-stat-icon-danger' : 'dash-stat-icon-muted'; ?>"><i class="bi bi-flag" aria-hidden="true"></i></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-value"><?php echo number_format($numReportedItems); ?></span>
-                <span class="dash-stat-label"><?php echo osc_is_shop_mode() ? __('Reported products') : __('Reported listings'); ?></span>
+                <span class="dash-stat-label"><?php echo osc_mode_text(__('Reported listings'), __('Reported products')); ?></span>
             </span>
         </a>
     </div>

@@ -54,7 +54,7 @@ final class CommentSettingsScreen extends SettingsScreen
             ->checkbox(
                 'enabled_recaptcha_comments',
                 __('Require a CAPTCHA to post a comment'),
-                __('Needs a CAPTCHA provider configured under Settings › Spam and bots › Captcha; otherwise no challenge is shown.')
+                sprintf(__('Needs a CAPTCHA provider configured under %s; otherwise no challenge is shown.'), osc_admin_captcha_settings_path())
             )
                 ->set('row', false)
             ->checkbox('comment_ratings', __('Allow signed-in users to add a star rating (1 to 5) to a comment'))

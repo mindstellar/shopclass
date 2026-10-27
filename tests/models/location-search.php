@@ -81,6 +81,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocation.php';
 
 use mindstellar\location\LocationAutocompleteQuery;
 use mindstellar\location\LocationNames;
@@ -178,16 +179,24 @@ pin("cities('Kö') in another region finds nothing", array(), $complete('de_DE')
 pin('an empty term returns nothing', array(), $complete('de_DE')->cities(''));
 pin("countries('Deu') returns Germany in German", array(array('id' => 'DE', 'label' => 'Deutschland', 'value' => 'Deutschland')), $complete('de_DE')->countries('Deu'));
 pin("countries('Ger') still returns it", array('DE'), array_column($complete('de_DE')->countries('Ger'), 'id'));
+seed_country($admin, 'DK', 'Kingdom of Denmark');
+$store->set(LocationNameStore::COUNTRY, 'DK', 'de_DE', 'Dänemark');
+$both = array_column($complete('de_DE')->countries('D'), 'id');
+sort($both);
+pin("countries('D') finds both countries whose German names start with D", array('DE', 'DK'), $both);
+$store->forget(LocationNameStore::COUNTRY, 'DK');
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_country WHERE pk_c_code = 'DK'");
 pin("regions('Rheinl', 'DE') returns the region in German", array(array('id' => (string) $region, 'label' => 'Rheinland', 'value' => 'Rheinland')), $complete('de_DE')->regions('Rheinl', 'DE'));
 pin("regions('Rhine') still returns it", array((string) $region), array_column($complete('de_DE')->regions('Rhine'), 'id'));
 pin("regions('Rheinl', 'Deutschland') narrows by the German country name", array((string) $region), array_column($complete('de_DE')->regions('Rheinl', 'Deutschland'), 'id'));
 pin('a typed percent sign is not a wildcard', array(), $complete('de_DE')->cities('%'));
+// The fillers sort before Köln by name and by id ('09…' as text), so a cut-off at 100 ids would drop Cologne.
 for ($i = 0; $i < 150; $i++) {
-    $store->set(LocationNameStore::CITY, 900000 + $i, 'de_DE', 'Kö ' . $i);
+    $store->set(LocationNameStore::CITY, sprintf('09%05d', $i), 'de_DE', 'Köa ' . $i);
 }
 pin('more than 100 other matches do not push the region\'s city out', array((string) $cologne), array_column($complete('de_DE')->cities('Kö', $region), 'id'));
 for ($i = 0; $i < 150; $i++) {
-    $store->forget(LocationNameStore::CITY, 900000 + $i);
+    $store->forget(LocationNameStore::CITY, sprintf('09%05d', $i));
 }
 $auto = $complete('de_DE');
 pin("cities('Kö') runs at most 4 queries (match, list, names of cities and regions)", true, harness_query_count(static fn () => $auto->cities('Kö')) <= 4);

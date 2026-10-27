@@ -40,35 +40,37 @@ View::getInstance()->_exportVariableToView('locales', array(
     array('pk_c_code' => 'hi_IN', 's_name' => 'Hindi (India)'),
 ));
 
-$summary = static function (string $message, array $title, array $refused = array()): array {
+$summary = static function (array $title, array $refused): array {
     $controller = (new ReflectionClass(CAdminItems::class))->newInstanceWithoutConstructor();
-    (new ReflectionProperty($controller, 'refused'))->setValue($controller, $refused);
     $method     = new ReflectionMethod($controller, 'itemErrors');
-    $method->setAccessible(true);
 
-    return $method->invoke($controller, $message, array('title' => $title));
+    return $method->invoke($controller, $refused, array('title' => $title));
 };
 
 harness_section('a title in one language');
-$errors = $summary("Email invalid.\n", array('en_US' => 'Red car', 'hi_IN' => ''));
+$errors = $summary(array('en_US' => 'Red car', 'hi_IN' => ''), array(ListingValidator::entry('/contact_email', 'invalid', 'Email invalid.')));
 pin('no title line for the empty language', array('Email invalid.'), array_values($errors));
 
 harness_section('no title anywhere');
-$errors = $summary("Title too short (English).\nTitle too short (Hindi (India)).\n", array('en_US' => '', 'hi_IN' => ''));
+$errors = $summary(array('en_US' => '', 'hi_IN' => ''), array(
+    ListingValidator::entry('/title', 'required', 'Add a title (English).'),
+    ListingValidator::entry('/title', 'too_short', 'Title too short (Hindi (India)).'),
+));
 pin('one summary line', 'Add a title in at least one language.', $errors['title']['summary'] ?? null);
 pin('the validator\'s own lines are not listed twice', array('title'), array_keys($errors));
 
 harness_section('the field each line names');
-$errors = $summary("Title too short (English).\nDescription too short (English).\nCity too short.\n", array('en_US' => ''), array(
-    ListingValidator::entry('/title', 'too_short', 'Title too short (English).'),
+$errors = $summary(array('en_US' => ''), array(
+    ListingValidator::entry('/title', 'required', 'Add a title (English).'),
     ListingValidator::entry('/description', 'too_short', 'Description too short (English).'),
     ListingValidator::entry('/city', 'too_short', 'City too short.'),
+    ListingValidator::entry('/city', 'too_long', 'City too short.'),
 ));
-pin('the form is told the field of each listed line, in order', array('/description', '/city'), View::getInstance()->_get('editorErrorFields'));
-pin('beside the lines it lists', array('Description too short (English).', 'City too short.'), array_values(array_filter($errors, 'is_int', ARRAY_FILTER_USE_KEY)));
+pin('the form is told the field of each listed line, in order', array('/description', '/city', '/city'), View::getInstance()->_get('editorErrorFields'));
+pin('beside the lines it lists', array('Description too short (English).', 'City too short.', 'City too short.'), array_values(array_filter($errors, 'is_int', ARRAY_FILTER_USE_KEY)));
 
 harness_section('locale names');
-pin('a locale is named, not coded', 'Hindi (India)', ListingValidator::localeName('hi_IN'));
-pin('an unknown one keeps its code', 'xx_XX', ListingValidator::localeName('xx_XX'));
+pin('a locale is named, not coded', 'Hindi (India)', osc_locale_name_of('hi_IN'));
+pin('an unknown one keeps its code', 'xx_XX', osc_locale_name_of('xx_XX'));
 
 exit(harness_result());

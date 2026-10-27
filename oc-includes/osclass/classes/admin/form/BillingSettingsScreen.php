@@ -360,7 +360,7 @@ final class BillingSettingsScreen
             return self::PAGE_SHOP;
         }
 
-        $page = CoreSettings::page(self::PAGE_SHOP, osc_is_shop_mode() ? __('Shop') : __('Orders'), Billing::PREF_GROUP)
+        $page = CoreSettings::page(self::PAGE_SHOP, osc_mode_text(__('Orders'), __('Shop')), Billing::PREF_GROUP)
             ->onAfterSave(static function () {
                 osc_reset_preferences();
             });
@@ -390,7 +390,7 @@ final class BillingSettingsScreen
                     ->hint(__('Empty: cash on delivery everywhere you deliver.'))
                 ->group(
                     __('Store address'),
-                    __('Used when a product has no location of its own.')
+                    __('Filled into a product saved without a location. Products already saved keep theirs.')
                 )
                 ->field(self::storePlace('shop_country', __('Country'), 3, ListingValidator::COLUMN_WIDTHS['s_country'], _m('Country too short.')))
                 ->field(self::storePlace('shop_region', __('Region'), 2, ListingValidator::COLUMN_WIDTHS['s_region'], _m('Region too short.')))

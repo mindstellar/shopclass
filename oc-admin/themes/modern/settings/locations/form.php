@@ -82,6 +82,31 @@ $drawerActions = static function (string $submit) use ($back): void { ?>
     </div>
 <?php };
 
+$namesSection = static function (array $fields): void {
+    if ($fields === array()) {
+        return;
+    } ?>
+    <section class="loc-field loc-names" aria-labelledby="loc-names-title">
+        <h3 class="loc-facts-title" id="loc-names-title"><?php _e('Names per language'); ?></h3>
+        <p class="form-text"><?php _e('Shown to visitors reading the site in that language. Blank uses the name above.'); ?></p>
+        <?php foreach ($fields as $field) {
+            $fieldId = 'loc-n-' . $field['code']; ?>
+            <div class="loc-field loc-names-field">
+                <label class="form-label" for="<?php echo osc_esc_html($fieldId); ?>">
+                    <?php echo osc_esc_html($field['label']); ?>
+                    <?php if ($field['default']) { ?>
+                        <span class="loc-names-default"><?php _e('(site default)'); ?></span>
+                    <?php } ?>
+                </label>
+                <input class="form-control" id="<?php echo osc_esc_html($fieldId); ?>" type="text"
+                       name="names[<?php echo osc_esc_html($field['code']); ?>]" maxlength="100"
+                       value="<?php echo osc_esc_html($field['value']); ?>" autocomplete="off"
+                       <?php echo $field['rtl'] ? 'dir="rtl"' : ''; ?>/>
+            </div>
+        <?php } ?>
+    </section>
+<?php };
+
 switch ($form['kind']) {
     case 'add':
         if ($level === 'country') {
@@ -150,7 +175,8 @@ switch ($form['kind']) {
                 <?php } else { ?>
                     <p class="form-text loc-form-note"><?php _e('The slug is made from the name. You can change it after saving.'); ?></p>
                 <?php } ?>
-                <?php osc_run_hook('admin_locations_drawer_fields', $level, null); ?>
+                <?php $namesSection($form['names'] ?? array());
+                osc_run_hook('admin_locations_drawer_fields', $level, null); ?>
             </div>
             <footer class="osc-drawer-foot">
                 <?php $drawerActions($title); ?>
@@ -253,27 +279,7 @@ switch ($form['kind']) {
                         <?php _e('Used in the address of search pages. Leave blank to make one from the name; a slug already taken gets a number added.'); ?>
                     </p>
                 </div>
-                <?php if (!empty($form['names'])) { ?>
-                    <section class="loc-field loc-names" aria-labelledby="loc-names-title">
-                        <h3 class="loc-facts-title" id="loc-names-title"><?php _e('Names per language'); ?></h3>
-                        <p class="form-text"><?php _e('Shown to visitors reading the site in that language. Blank uses the name above.'); ?></p>
-                        <?php foreach ($form['names'] as $field) {
-                            $fieldId = 'loc-n-' . $field['code']; ?>
-                            <div class="loc-field loc-names-field">
-                                <label class="form-label" for="<?php echo osc_esc_html($fieldId); ?>">
-                                    <?php echo osc_esc_html($field['label']); ?>
-                                    <?php if ($field['default']) { ?>
-                                        <span class="loc-names-default"><?php _e('(site default)'); ?></span>
-                                    <?php } ?>
-                                </label>
-                                <input class="form-control" id="<?php echo osc_esc_html($fieldId); ?>" type="text"
-                                       name="names[<?php echo osc_esc_html($field['code']); ?>]" maxlength="100"
-                                       value="<?php echo osc_esc_html($field['value']); ?>" autocomplete="off"
-                                       <?php echo $field['rtl'] ? 'dir="rtl"' : ''; ?>/>
-                            </div>
-                        <?php } ?>
-                    </section>
-                <?php }
+                <?php $namesSection($form['names'] ?? array());
                 osc_run_hook('admin_locations_drawer_fields', $level, $record); ?>
                 <section class="loc-facts" aria-labelledby="loc-facts-title"
                          data-loc-record-level="<?php echo osc_esc_html($level); ?>"

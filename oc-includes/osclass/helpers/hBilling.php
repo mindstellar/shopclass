@@ -1529,15 +1529,13 @@ osc_register_billing_seller_limits();
 
 /*
  * Core's own gateways -- bank transfer and cash on delivery, settled by hand from the admin
- * order screen. Registered only once billing is switched on: an unconditional registration
- * would offer a payment method at checkout that a site never asked for.
+ * order screen. Registered only once billing is switched on. Cash on delivery is registered in
+ * classifieds mode too, so old orders keep their method, but checkout does not offer it there.
  */
 osc_add_hook(PaymentGatewayRegistry::HOOK, static function (PaymentGatewayRegistry $registry) {
     if (osc_billing_enabled()) {
         $registry->register(new OfflineGateway());
-        if (osc_is_shop_mode()) {
-            $registry->register(new CashOnDeliveryGateway());
-        }
+        $registry->register(new CashOnDeliveryGateway());
     }
 });
 osc_add_filter('cart_totals', array(CashOnDeliveryGateway::class, 'feeLine'), 5);

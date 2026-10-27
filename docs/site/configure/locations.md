@@ -56,10 +56,12 @@ hidden.
 
 #### Names per language
 
-Edit a country, region or city to see a **Names per language** section. It has one field per
+Add or edit a country, region or city to see a **Names per language** section. It has one field per
 enabled site language, with the site's default language first. Visitors reading
 the site in a language see that language's name. A blank field uses the stored
 name. The section is hidden when the site has only one language.
+
+Deleting a language and adding it again wipes the place names saved in it.
 
 The slug does not change: a place has one slug, whatever the language. The
 lists in the admin panel keep showing the stored name. To add a language, see

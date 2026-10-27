@@ -75,6 +75,13 @@ None.
 
 ## Changes
 
+### v1: order bank details and open-order limit
+
+Added to v1 on 2026-10-27.
+
+- An order has `pay_instructions`: the bank details and reference for a pending bank transfer order, else `null`.
+- `GET /cart/quote` has `open_orders` (`count`, `limit`) for a signed-in buyer: their unpaid bank transfer orders and the most they may hold. `too_many_open` counts bank transfer orders only.
+
 ### v1: location names on admin routes
 
 Added to v1 on 2026-10-26.

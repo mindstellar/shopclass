@@ -198,52 +198,6 @@ if (!function_exists('osc_admin_page_titled')) {
     }
 }
 
-if (!function_exists('osc_admin_page_head')) {
-    /**
-     * The page title, and the actions that belong to the page as a whole.
-     *
-     * With no actions this emits exactly the `<h2 class="render-title">` every screen
-     * already uses, so adopting it changes no pixels.
-     *
-     * @param string                         $title
-     * @param array<int,array<string,mixed>> $actions Action specs; see osc_admin_action_button()
-     * @param array<string,mixed>            $opts    'class' => extra classes on the heading; 'level' => 3 for a section inside a page; 'actions_html' =>
-     *                                                callable printing a control that is not a button (a segmented
-     *                                                toggle, a select), used instead of $actions
-     *
-     * @return void
-     */
-    function osc_admin_page_head($title, array $actions = array(), array $opts = array())
-    {
-        // Level 2 is the page title; a section inside a page asks for 3 (see the heading scale in render-page.scss).
-        $level = (int)($opts['level'] ?? 2) === 3 ? 3 : 2;
-        osc_admin_page_titled($level === 2);
-        $class = 'render-title' . ($level === 2 ? ' osc-page-title' : '') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
-
-        if ($actions === array() && empty($opts['actions_html'])) {
-            echo '<h' . $level . ' class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h' . $level . '>';
-            osc_admin_settings_group_tabs();
-
-            return;
-        } ?>
-        <div class="page-head">
-            <h<?php echo $level; ?> class="<?php echo osc_esc_html($class); ?>"><?php echo osc_esc_html($title); ?></h<?php echo $level; ?>>
-            <div class="page-head-actions">
-                <?php foreach ($actions as $action) {
-                    osc_admin_action_button($action);
-                }
-                // Composes with $actions rather than replacing it: a screen with both a
-                // button and a segmented control should not silently lose the button.
-                if (!empty($opts['actions_html'])) {
-                    ($opts['actions_html'])();
-                } ?>
-            </div>
-        </div>
-        <?php
-        osc_admin_settings_group_tabs();
-    }
-}
-
 if (!function_exists('osc_admin_settings_group_tabs')) {
     /**
      * On a Settings screen, the row of tabs for its group (Site, Content, Email, ...).
@@ -272,58 +226,6 @@ if (!function_exists('osc_admin_settings_group_tabs')) {
             $drawn = true;
             osc_admin_tab_nav($tabs, 'osc-tabnav-group');
         }
-    }
-}
-
-if (!function_exists('osc_admin_action_button')) {
-    /**
-     * One action, as a link or a button.
-     *
-     * Keys: label, url, variant (primary|secondary|danger|dim), icon (bootstrap-icon
-     * name), title, attrs (associative, rendered verbatim as escaped attributes), class
-     * (extra classes, for a button a script has to find).
-     *
-     * Variant maps to the button vocabulary in DESIGN: one primary per region, secondary
-     * for everything routine, danger reserved for genuinely destructive work.
-     *
-     * @param array<string,mixed> $action
-     *
-     * @return void
-     */
-    function osc_admin_action_button(array $action)
-    {
-        $variant = $action['variant'] ?? 'secondary';
-        $classes = array('btn', 'btn-sm');
-        $classes[] = 'btn-' . ($variant === 'primary' ? 'submit' : $variant);
-        // Its own classes go here, not in attrs: a second class attribute is dropped by
-        // the parser, which silently takes a script's hook off the button.
-        if (!empty($action['class'])) {
-            $classes[] = osc_esc_html($action['class']);
-        }
-
-        $attrs = '';
-        foreach (($action['attrs'] ?? array()) as $name => $value) {
-            $attrs .= ' ' . osc_esc_html($name) . '="' . osc_esc_html($value) . '"';
-        }
-        if (!empty($action['title'])) {
-            $attrs .= ' title="' . osc_esc_html($action['title']) . '"';
-        }
-
-        $inner = '';
-        if (!empty($action['icon'])) {
-            $inner .= '<i class="bi ' . osc_esc_html($action['icon']) . '" aria-hidden="true"></i> ';
-        }
-        $inner .= osc_esc_html($action['label'] ?? '');
-
-        if (!empty($action['url'])) {
-            echo '<a class="' . implode(' ', $classes) . '" href="' . osc_esc_html($action['url']) . '"'
-                 . $attrs . '>' . $inner . '</a>';
-
-            return;
-        }
-
-        echo '<button type="' . osc_esc_html($action['type'] ?? 'button') . '" class="'
-             . implode(' ', $classes) . '"' . $attrs . '>' . $inner . '</button>';
     }
 }
 
@@ -385,116 +287,6 @@ if (!function_exists('osc_admin_link_group')) {
     }
 }
 
-if (!function_exists('osc_admin_panel_open')) {
-    /**
-     * Open a panel. Flat at rest -- the border and the surface tone carry it, never a shadow.
-     *
-     * For content that does not frame itself: a form, definition rows, a figure. NOT a
-     * table -- `.table` already draws its own frame, so a panel around one nests two
-     * borders and sets the section apart from every list screen in the admin, which put
-     * their table straight in the flow under an <h3 class="render-title">.
-     *
-     * The title is an <h3> so a screen reader can navigate the panels on a screen. The
-     * stylesheet flattens every heading level inside `.widget-box-title` to the same
-     * 18px/normal, so this renders identically to the bare <span> it replaced.
-     *
-     * Options:
-     *   'subtitle' => string  One line under the title, for the thing a header cannot say.
-     *   'actions'  => array   Action specs rendered in the header, inline-end.
-     *   'class'    => string  Extra classes on the box, for a panel with a variant.
-     *   'id'       => string  Id on the box.
-     *   'attrs'    => array   Extra attributes on the box.
-     *   'hint'     => string|array  Muted text in the title bar. A list takes strings or
-     *                         array('text' =>, 'state' => 'error'); 'hint_state' marks a single one.
-     *   'collapsible' => bool A <details> with the title as its summary; 'open' starts it expanded.
-     *
-     * @param string              $title Omit for a panel that needs no header
-     * @param array<string,mixed> $opts
-     *
-     * @return void
-     */
-    function osc_admin_panel_open($title = '', array $opts = array())
-    {
-        // A collapsible panel is a <details>, so the close has to know which tag it ends.
-        $tag = empty($opts['collapsible']) ? 'div' : 'details';
-        $GLOBALS['osc_admin_panel_stack'][] = $tag;
-
-        echo '<' . $tag . ' class="widget-box'
-            . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '"'
-            . (!empty($opts['id']) ? ' id="' . osc_esc_html($opts['id']) . '"' : '')
-            . osc_admin_field_attrs($opts['attrs'] ?? array())
-            . ($tag === 'details' && !empty($opts['open']) ? ' open' : '') . '>';
-
-        if ($title !== '' || $tag === 'details') {
-            $head = $tag === 'details' ? 'summary' : 'div';
-            echo '<' . $head . ' class="widget-box-title"><h3>' . osc_esc_html($title) . '</h3>';
-            $hints = $opts['hint'] ?? array();
-            if (!is_array($hints)) {
-                $hints = array(array('text' => $hints, 'state' => $opts['hint_state'] ?? ''));
-            }
-            foreach ($hints as $hint) {
-                $hint = is_array($hint) ? $hint : array('text' => $hint);
-                if ((string)($hint['text'] ?? '') === '') {
-                    continue;
-                }
-                echo '<span class="widget-box-title-hint'
-                    . (($hint['state'] ?? '') === 'error' ? ' is-error' : '') . '">'
-                    . osc_esc_html((string)$hint['text']) . '</span>';
-            }
-            if (!empty($opts['actions'])) {
-                echo '<span class="widget-box-title-actions">';
-                foreach ($opts['actions'] as $action) {
-                    osc_admin_action_button($action);
-                }
-                echo '</span>';
-            }
-            echo '</' . $head . '>';
-        }
-
-        echo '<div class="widget-box-content">';
-
-        if (!empty($opts['subtitle'])) {
-            echo '<p class="panel-subtitle">' . osc_esc_html($opts['subtitle']) . '</p>';
-        }
-    }
-}
-
-if (!function_exists('osc_admin_panel_close')) {
-    /**
-     * Close the panel opened by osc_admin_panel_open().
-     *
-     * @return void
-     */
-    function osc_admin_panel_close()
-    {
-        $tag = is_array($GLOBALS['osc_admin_panel_stack'] ?? null)
-            ? array_pop($GLOBALS['osc_admin_panel_stack'])
-            : null;
-        echo '</div></' . ($tag === 'details' ? 'details' : 'div') . '>';
-    }
-}
-
-if (!function_exists('osc_admin_status')) {
-    /**
-     * A status pill: a tint, a shape, and the word. Never colour alone -- the glyph is
-     * a second channel for greyscale and colour-blind readers, and the word is a third.
-     *
-     * $state selects the tint and silhouette from the $status-badge map in
-     * scss/definitions.scss. An unmapped state still renders, in the neutral tint with
-     * the fallback ring, so a plugin's own word degrades gracefully instead of vanishing.
-     *
-     * @param string $state Lower-case state key, e.g. 'paid'
-     * @param string $word  The visible word, already translated
-     *
-     * @return void
-     */
-    function osc_admin_status($state, $word)
-    {
-        echo '<span class="osc-status status-' . osc_esc_html($state) . '">'
-             . osc_esc_html($word) . '</span>';
-    }
-}
-
 if (!function_exists('osc_admin_empty')) {
     /**
      * The state a screen is in before it has been used.
@@ -523,42 +315,6 @@ if (!function_exists('osc_admin_empty')) {
                 <div class="osc-empty-action"><?php osc_admin_action_button($opts['action']); ?></div>
             <?php } ?>
         </div>
-        <?php
-    }
-}
-
-if (!function_exists('osc_admin_definition')) {
-    /**
-     * Label/value rows -- the read-only counterpart to a form.
-     *
-     * Each row is an array with 'label' and 'value'. A row may set 'html' => true to pass
-     * markup through (for a status pill or a link), which is why the default escapes:
-     * the unsafe path has to be asked for by name. 'note' adds a muted line under the value.
-     *
-     * @param array<int,array<string,mixed>> $rows
-     *
-     * @return void
-     */
-    function osc_admin_definition(array $rows)
-    { ?>
-        <dl class="osc-deflist">
-            <?php foreach ($rows as $row) { ?>
-                <div class="osc-deflist-row">
-                    <dt><?php echo osc_esc_html($row['label'] ?? ''); ?></dt>
-                    <dd<?php echo !empty($row['mono']) ? ' class="osc-mono"' : ''; ?>>
-                        <?php
-                        if (!empty($row['html'])) {
-                            echo $row['value'];
-                        } else {
-                            echo osc_esc_html((string) ($row['value'] ?? ''));
-                        }
-                        if (!empty($row['note'])) { ?>
-                            <p class="osc-deflist-note"><?php echo osc_esc_html($row['note']); ?></p>
-                        <?php } ?>
-                    </dd>
-                </div>
-            <?php } ?>
-        </dl>
         <?php
     }
 }
@@ -708,47 +464,6 @@ if (!function_exists('osc_admin_money')) {
     function osc_admin_money($micros, $currency)
     {
         return \mindstellar\currency\Money::format((int) $micros, (string) $currency);
-    }
-}
-
-if (!function_exists('osc_admin_form_actions')) {
-    /**
-     * The submit row at the foot of a form.
-     *
-     * Emits `<button>` rather than `<input type="submit">`. Both render identically here,
-     * but the admin was split roughly evenly between them, and only one can carry an icon
-     * or wrap a translated label that outgrows its box.
-     *
-     * With no arguments this is a lone "Save changes" -- the case that covers most
-     * settings screens.
-     *
-     * @param array<int,array<string,mixed>> $actions Action specs; the first defaults to variant 'primary'
-     * @param array<string,mixed>            $opts    'dirty' => true for the unsaved-changes status bar
-     *
-     * @return void
-     */
-    function osc_admin_form_actions(array $actions = array(), array $opts = array())
-    {
-        if ($actions === array()) {
-            $actions = array(array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'));
-        }
-
-        // Opt-in, so an existing screen's action row is the markup it has always been.
-        $dirty = !empty($opts['dirty'])
-            ? ' data-osc-dirty-bar data-osc-dirty-one="' . osc_esc_html(__('1 unsaved change')) . '"'
-              . ' data-osc-dirty-many="' . osc_esc_html(__('%d unsaved changes')) . '"'
-            : '';
-
-        echo '<div class="form-actions"' . $dirty . '>';
-        if ($dirty !== '') {
-            echo '<p class="form-actions-status" role="status" aria-live="polite"></p>';
-        }
-        foreach ($actions as $i => $action) {
-            $action['variant'] = $action['variant'] ?? ($i === 0 ? 'primary' : 'secondary');
-            $action['type']    = $action['type'] ?? 'submit';
-            osc_admin_action_button($action);
-        }
-        echo '</div>';
     }
 }
 

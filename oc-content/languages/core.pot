@@ -901,6 +901,13 @@ msgstr ""
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
 "<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was "
+"cancelled. Your listing stays on hold until the fee is "
+"paid.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/osclass/classes/mail/CoreEmails.php
+msgid ""
+"<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was "
 "delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>"
 msgstr ""
 
@@ -3000,6 +3007,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Captcha"
 msgstr ""
 
@@ -5829,6 +5837,12 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Fill in the host, database name and username first."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"Filled into a product saved without a location. Products already saved keep "
+"theirs."
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -8836,8 +8850,8 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
 msgid ""
-"Needs a CAPTCHA provider configured under Settings › Spam and bots › "
-"Captcha; otherwise no challenge is shown."
+"Needs a CAPTCHA provider configured under %s; otherwise no challenge is "
+"shown."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -9990,7 +10004,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
+msgctxt "purchase order"
+msgid "Order"
+msgstr ""
+
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
+msgctxt "sort position"
 msgid "Order"
 msgstr ""
 
@@ -10774,6 +10793,7 @@ msgid "Process queue now"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgctxt "item for sale"
 msgid "Product"
 msgstr ""
 
@@ -12621,6 +12641,7 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 #: oc-includes/osclass/gui/admin/settings-page.php
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Settings"
 msgstr ""
 
@@ -13208,6 +13229,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Spam and bots"
 msgstr ""
 
@@ -13484,6 +13506,7 @@ msgid "Switch to light mode"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/currencies.php
+msgctxt "currency symbol"
 msgid "Symbol"
 msgstr ""
 
@@ -15733,10 +15756,6 @@ msgstr ""
 msgid "Used to work out delivery cost"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Used when a product has no location of its own."
-msgstr ""
-
 #: oc-admin/themes/modern/billing/credits.php
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
@@ -16075,6 +16094,7 @@ msgid "Views"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
+msgctxt "comment is shown on the site"
 msgid "Visible"
 msgstr ""
 
@@ -16283,6 +16303,7 @@ msgid "Weekly"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgctxt "product weight"
 msgid "Weight"
 msgstr ""
 
@@ -17088,6 +17109,7 @@ msgid "from %s"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgctxt "unit: grams"
 msgid "g"
 msgstr ""
 

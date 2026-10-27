@@ -139,6 +139,8 @@ the one exception: it locks out everything except a signed-in admin.
 
 **Tools → Cleanup** removes dead content in bulk:
 
+In shop mode these read "products" instead of "listings".
+
 | Group | What it removes |
 |---|---|
 | **Reported listings** | Flagged by visitors as spam |

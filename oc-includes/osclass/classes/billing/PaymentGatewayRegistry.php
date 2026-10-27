@@ -81,7 +81,8 @@ final class PaymentGatewayRegistry extends Registry
 
     /**
      * How to pay a pending order, from a gateway that offers it (a bank transfer does), or
-     * null.
+     * null. A gateway opts in by having an instructions(Order) method; it is not part of
+     * PaymentGateway, so plugin gateways written before it keep working.
      *
      * @param Order $order
      *
@@ -109,6 +110,10 @@ final class PaymentGatewayRegistry extends Registry
         $out = array();
         foreach ($this->entries as $id => $gateway) {
             if (!$gateway->isConfigured()) {
+                continue;
+            }
+            // Delivery only exists in shop mode; the gateway stays registered for old orders.
+            if ($id === gateway\CashOnDeliveryGateway::ID && !osc_is_shop_mode()) {
                 continue;
             }
             if ($currency !== null && !in_array($currency, $gateway->getSupportedCurrencies(), true)) {

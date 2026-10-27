@@ -318,6 +318,7 @@ pin('and the listing keeps the order it had', $order->getId(), OrderStore::listi
 $last = (int) $admin->query("SELECT MAX(pk_i_id) FROM {$p}t_billing_order WHERE fk_i_user_id = {$uid}")->fetch_row()[0];
 pin('and its order is cancelled', Order::STATUS_CANCELLED, OrderStore::find($last)->getStatus());
 
+osc_set_preference('site_mode', 'shop', 'osclass', 'STRING');
 osc_set_preference('billing_cod_enabled', '1', 'osclass', 'BOOLEAN');
 osc_set_preference('billing_currency', 'USD', 'osclass', 'STRING');
 osc_reset_preferences();

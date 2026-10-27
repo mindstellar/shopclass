@@ -88,31 +88,6 @@ final class ListingInput
     }
 
     /**
-     * In shop mode, a listing with no location of its own gets the store address (Billing >
-     * Shop) as country, region and city names. Any location typed is left as it is.
-     *
-     * @param array<string,mixed> $aItem
-     *
-     * @return array<string,mixed>
-     */
-    public static function storeAddress(array $aItem): array
-    {
-        if (!osc_is_shop_mode()) {
-            return $aItem;
-        }
-        foreach (array('countryId', 'country', 'regionId', 'region', 'cityId', 'city') as $key) {
-            if (trim((string) ($aItem[$key] ?? '')) !== '') {
-                return $aItem;
-            }
-        }
-        foreach (array('country', 'region', 'city') as $key) {
-            $aItem[$key] = trim((string) osc_get_preference('shop_' . $key));
-        }
-
-        return $aItem;
-    }
-
-    /**
      * The values of the admin "Sell this item" section: what a refused save posted, or the
      * listing's variants. A new listing starts for sale in shop mode. Prices are in the site's locale format. `options` and `variants`
      * fill the option editor, `photos` its photo choice (id => label), and `errors` holds a
@@ -442,6 +417,13 @@ final class ListingInput
             (osc_tinymce_frontend() || (defined('OC_ADMIN') && OC_ADMIN))
                 ? osc_sanitize_html($form['description'] ?? '')
                 : $get('description');
+        // Text is kept only in the site's languages; any other key would be quoted in a message.
+        $enabled = array_flip(array_column(osc_get_locales(), 'pk_c_code'));
+        foreach (array('title', 'description') as $key) {
+            if (is_array($aItem[$key]) && $enabled !== array()) {
+                $aItem[$key] = array_intersect_key($aItem[$key], $enabled);
+            }
+        }
         $aItem['photos']       = $files;
         $ajax_photos           = isset($form['ajax_photos']) ? Params::purifyText($form['ajax_photos']) : '';
         $aItem['s_ip']         = get_ip();
@@ -528,14 +510,6 @@ final class ListingInput
             $aItem['dt_expiration'] = '';
         }
 
-        if ($isAdd || array_intersect_key($form, array_flip(array('countryId', 'country', 'region', 'regionId', 'city', 'cityId'))) !== array()) {
-            $filled = self::storeAddress($aItem);
-            if ($filled !== $aItem && $filled['country'] !== '') {
-                $country = \Country::newInstance()->findByName($filled['country']);
-                $filled['countryId'] = $country['pk_c_code'] ?? '';
-            }
-            $aItem = $filled;
-        }
         $places = LocationService::resolve([
             'countryCode' => $aItem['countryId'],
             'country'     => $aItem['country'],

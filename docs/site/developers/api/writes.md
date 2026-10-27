@@ -37,7 +37,7 @@ TOKEN=sca_…        # an access token, or a personal key
 | `POST /account/conversations/{id}/block` | `conversations:write` | Block it: nobody writes in it until you unblock. |
 | `DELETE /account/conversations/{id}/block` | `conversations:write` | Lift your own block. |
 | `POST /account/conversations/{id}/report` | `conversations:write` | Report it to the admins. |
-| `GET /cart/quote` | `listings:read` | Price a cart. Needs no sign-in. |
+| `GET /cart/quote` | `listings:read` | Price a cart. Needs no sign-in. A signed-in buyer also gets `open_orders` (`count`, `limit`): their unpaid bank transfer orders and the most they may hold. |
 | `GET /account/orders` | `orders:read` | Your orders, newest first. |
 | `POST /account/orders` | `orders:write` | Place an order. `201`. |
 | `GET /account/orders/{id}` | `orders:read` | One of your orders. The `Location` of a new one. |

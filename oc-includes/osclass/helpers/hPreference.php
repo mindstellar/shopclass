@@ -1475,6 +1475,20 @@ function osc_is_shop_mode(): bool
 }
 
 /**
+ * Pick the wording for the site mode. Pass both strings through __() at the call site.
+ *
+ * @param string $classifieds Text for a classifieds site
+ * @param string $shop        Text for a shop
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_mode_text(string $classifieds, string $shop): string
+{
+    return osc_is_shop_mode() ? $shop : $classifieds;
+}
+
+/**
  * Return subdomain type
  *
  * @return string

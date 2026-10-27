@@ -131,8 +131,16 @@ try {
 }
 pin('the listing is refused', true, $refused instanceof InvalidException);
 $first = $refused->errors()[0] ?? array();
-pin('with the member, code and message', array('/description', 'too_short', 'Description too short (English).'), array($first['pointer'] ?? null, $first['code'] ?? null, $first['message'] ?? null));
+pin('with the member, code and message', array('/description/en_US', 'too_short', 'Description too short (English).'), array($first['pointer'] ?? null, $first['code'] ?? null, $first['message'] ?? null));
 pin('the web text is the messages, one per line', implode('', array_map(static fn (array $e): string => $e['message'] . PHP_EOL, $refused->errors())), $refused->getMessage());
+
+harness_section('only the site\'s languages are read');
+$texts = ListingInput::fromArray($form(array(
+    'title'       => array('en_US' => 'Red hatchback', '<b>x</b>' => 'Bad', 'xx_XX' => 'Other'),
+    'description' => array('en_US' => 'A small red car, one owner.', '<b>x</b>' => 'Bad text'),
+)), Actor::guest('192.0.2.5'), true);
+pin('titles in other languages are dropped', array('en_US'), array_keys($texts['title']));
+pin('...and descriptions', array('en_US'), array_keys($texts['description']));
 
 harness_section('expirationDays() is the category days plus the runtime entitlement');
 osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');

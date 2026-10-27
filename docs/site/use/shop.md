@@ -13,9 +13,10 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
 1. **Settings → General → Site is a**: pick **Shop**. In shop mode only admins add products.
    A shop also sells digital goods. Credit packages, credits and paying to publish are hidden
    in a shop and come back when you switch to classifieds. A classifieds site keeps the cart,
-   orders and payment plugins too.
+   orders and payment plugins too, but its billing **Orders** tab shows only the unpaid-order
+   cancel days and the order number prefix.
 2. **Settings → Billing**: switch **Enable billing** on and set your currency.
-3. **Settings → Billing → Shop**: set the delivery charge, the amount that makes delivery free,
+3. **Settings → Billing → Shop** (called **Orders** on a classifieds site): set the delivery charge, the amount that makes delivery free,
    cash on delivery and its fee, how long unpaid orders wait before they are cancelled, how long a
    card payment holds the stock, and the order number prefix.
    **Cash on delivery only in** limits cash on delivery to the countries, regions or cities you pick
@@ -63,9 +64,9 @@ A number beside **Billing** and **Orders** counts the orders waiting to ship, an
 
 | Status | Meaning |
 |---|---|
-| **Pending** | Placed, not paid. Bank transfer and cash on delivery orders wait here. |
+| **Pending** | Placed, not paid. Bank transfer and cash on delivery orders wait here. Any pending order can be cancelled. |
 | **Paid** | Money received. It shows in **To ship** until you send it. |
-| **Shipped** | You marked it shipped with a carrier and tracking number. Cash on delivery is shipped before it is paid. |
+| **Shipped** | You marked it shipped with a carrier and tracking number (you can edit them later; shipping with none asks you to confirm). Cash on delivery is shipped before it is paid. |
 | **Delivered** | You marked it delivered. A cash on delivery order is marked paid now. |
 | **Cancelled** | Closed before payment, by you, the buyer, or because a card order was not paid within the hold minutes. The stock goes back on sale. |
 | **Refunded** | The money went back. The stock goes back on sale. |
@@ -74,7 +75,7 @@ A number beside **Billing** and **Orders** counts the orders waiting to ship, an
 A card payment that arrives after its order was cancelled is refunded by the payment plugin.
 
 Unpaid bank transfer and cash on delivery orders are cancelled after **Cancel unpaid orders after (days)**. A
-shopper may hold at most the number of open unpaid orders you allow.
+shopper may hold at most the number of open unpaid bank transfer orders you allow. Cash on delivery and card orders are not limited.
 
 ## 4. The order mails
 

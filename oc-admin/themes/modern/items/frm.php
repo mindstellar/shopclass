@@ -40,13 +40,13 @@ function customText($return = 'title')
     $new_item      = __get('new_item');
     $text          = array();
     $shop           = osc_is_shop_mode();
-    $text['title'] = $shop ? __('Product') : __('Listing');
+    $text['title'] = osc_mode_text(__('Listing'), _x('Product', 'item for sale'));
     if ($new_item) {
-        $text['subtitle'] = $shop ? __('Add product') : __('Add listing');
-        $text['button']   = $shop ? __('Add product') : __('Add listing');
+        $text['subtitle'] = osc_mode_text(__('Add listing'), __('Add product'));
+        $text['button']   = osc_mode_text(__('Add listing'), __('Add product'));
     } else {
-        $text['subtitle'] = $shop ? __('Edit product') : __('Edit listing');
-        $text['button']   = $shop ? __('Update product') : __('Update listing');
+        $text['subtitle'] = osc_mode_text(__('Edit listing'), __('Edit product'));
+        $text['button']   = osc_mode_text(__('Update listing'), __('Update product'));
     }
 
     return $text[$return];
@@ -300,7 +300,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
         );
     }
-    $headActions[] = array('label' => (osc_is_shop_mode() ? __('Back to products') : __('Back to listings')), 'url' => $itemBackUrl, 'variant' => 'dim');
+    $headActions[] = array('label' => (osc_mode_text(__('Back to listings'), __('Back to products'))), 'url' => $itemBackUrl, 'variant' => 'dim');
     osc_admin_page_head(customText('subtitle'), $headActions);
 
     // The surface the browser-side validator writes its refusals into. It is drawn only
@@ -345,7 +345,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     };
 
     // 1. What it is.
-    $itemSection('sec-product', $itemShop ? __('Product') : __('Listing'), __('Name, category and description'));
+    $itemSection('sec-product', osc_mode_text(__('Listing'), _x('Product', 'item for sale')), __('Name, category and description'));
 
     // The posted names are the ones the save has always read; only what draws them is new.
     osc_admin_field(array(
@@ -426,7 +426,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     if ($itemShop || osc_price_enabled_at_items()) {
         $itemSection(
             'sec-price',
-            $itemShop ? __('Price and stock') : __('Price'),
+            osc_mode_text(__('Price'), __('Price and stock')),
             $itemShop ? __('What buyers pay and how many you have') : ''
         );
 
@@ -637,7 +637,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         echo '<div data-osc-physical-only>';
         echo '<div class="osc-editor-cols">';
         echo '<div data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
-        $itemSellField('weight', __('Weight'), 'numeric', 0, '', __('g'));
+        $itemSellField('weight', _x('Weight', 'product weight'), 'numeric', 0, '', _x('g', 'unit: grams'));
         echo '</div>';
         $itemSellField('shippingClass', __('Shipping class'), '', 40, __('A name the Shipping plugin groups items by, such as bulky.'));
         echo '</div>';
@@ -662,7 +662,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     $itemSection(
         'sec-location',
         __('Location'),
-        $itemShop ? __('Optional · empty uses the store address') : __('Where the item is'),
+        osc_mode_text(__('Where the item is'), __('Optional · empty uses the store address')),
         array('collapsible' => $itemShop)
     );
     osc_admin_location_picker(array(

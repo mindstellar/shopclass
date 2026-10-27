@@ -65,11 +65,11 @@ class ContactForm extends Form
         } else {
             $name = osc_logged_user_name();
         }
-        $attributes = parent::markInvalid(
+        echo parent::withError(
             'yourName',
-            ['id' => 'yourName', 'required' => 'required', 'autocomplete' => 'name']
+            ['id' => 'yourName', 'required' => 'required', 'autocomplete' => 'name'],
+            static fn (array $a): string => (new self())->text('yourName', $name, $a)
         );
-        echo (new self())->text('yourName', $name, $attributes), parent::errorLine('yourName', $attributes);
 
         return true;
     }
@@ -86,10 +86,9 @@ class ContactForm extends Form
         } else {
             $email = osc_logged_user_email();
         }
-        $attributes = parent::markInvalid('yourEmail', [
+        echo parent::withError('yourEmail', [
             'id' => 'yourEmail', 'type' => 'email', 'required' => 'required', 'autocomplete' => 'email',
-        ]);
-        echo (new self())->text('yourEmail', $email, $attributes), parent::errorLine('yourEmail', $attributes);
+        ], static fn (array $a): string => (new self())->text('yourEmail', $email, $a));
 
         return true;
     }

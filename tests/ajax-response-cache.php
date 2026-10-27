@@ -11,7 +11,7 @@
 /**
  * Pins AjaxResponse's cache headers: JSON is private by default, and shared() lets a browser
  * or shared cache keep it for five minutes, and localized() is private for a visitor with a chosen
- * language. Headers only exist under a web server, so this
+ * language or an answer in a language other than the site's. Headers only exist under a web server, so this
  * runs PHP's built-in one.
  *
  * DB-free.  Usage:  php tests/ajax-response-cache.php
@@ -23,6 +23,25 @@ if (isset($_GET['mode'])) {
     require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
     if ($_GET['mode'] === 'cookie') {
         setcookie('signed_out', '', 1);
+    }
+    if (isset($_GET['real'])) {
+        // The real cookie and session lookup, with only the site language fixed.
+        function osc_language()
+        {
+            return 'en_US';
+        }
+        require_once __DIR__ . '/../oc-includes/osclass/helpers/hLocale.php';
+        View::getInstance()->_exportVariableToView('locales', array(array('pk_c_code' => 'en_US'), array('pk_c_code' => 'de_DE')));
+    } elseif (isset($_GET['locale'])) {
+        // A locale picked without a cookie, as a plugin reading Accept-Language would.
+        function osc_language()
+        {
+            return 'en_US';
+        }
+        function osc_current_user_locale()
+        {
+            return $_GET['locale'];
+        }
     }
     match ($_GET['mode']) {
         'json'      => \mindstellar\utility\AjaxResponse::json(array('ok' => 1)),
@@ -66,6 +85,10 @@ pin('shared() may be kept five minutes by any cache', 'public, max-age=300, s-ma
 pin('...unless the answer also sets a cookie', 'private, no-store', $cacheControl('cookie'));
 pin('localized() is shared but revalidated by the browser', 'public, max-age=0, s-maxage=300, must-revalidate', $cacheControl('localized'));
 pin('...and private for a visitor with a chosen language', 'private, no-store', $cacheControl('localized', 'oc_userLocale=de_DE'));
+pin('...shared when the answer is in the site language', 'public, max-age=0, s-maxage=300, must-revalidate', $cacheControl('localized&locale=en_US'));
+pin('...and private when it is in another language with no cookie', 'private, no-store', $cacheControl('localized&locale=de_DE'));
+pin('with the real lookup, a language named only in the URL is not used, so the answer stays shared', 'public, max-age=0, s-maxage=300, must-revalidate', $cacheControl('localized&real=1&lang=de_DE'));
+pin('with the real lookup, a language cookie makes it private', 'private, no-store', $cacheControl('localized&real=1', 'oc_userLocale=de_DE'));
 
 proc_terminate($server);
 proc_close($server);

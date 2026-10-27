@@ -9,8 +9,8 @@
  */
 
 /**
- * An admin adds a shop product with no location: it lands in the store's city. A typed
- * location, an edit with the location left out over the API, and classifieds are not touched.
+ * A shop product saved with no location lands in the store's city, also when a plugin calls
+ * ListingService directly. A typed location and classifieds are not touched.
  *
  * Usage:  php tests/models/listing-store-address.php       (standalone, own scratch database)
  *         php tests/run-models.php listing-store-address   (as part of the suite)
@@ -26,6 +26,7 @@ if (api_admin_isolated(__FILE__)) {
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\location\LocationService;
 
 $admin = api_admin_boot('osc_models_listing_store_address');
 $p     = DB_TABLE_PREFIX;
@@ -68,19 +69,24 @@ harness_section('adding in shop mode');
 pin('no location: the store city', array('United States', 'Texas', 'Austin', (string) $austin), $place($add()));
 pin('a typed city is kept', array('United States', 'Ohio', 'Dayton', (string) $dayton), $place($add(['countryId' => 'US', 'regionId' => (string) $ohio, 'cityId' => (string) $dayton])));
 
-harness_section('editing');
-$id = $add(['countryId' => 'US', 'regionId' => (string) $ohio, 'cityId' => (string) $dayton]);
-$bare = $form();
-foreach (['countryId', 'country', 'region', 'regionId', 'city', 'cityId'] as $key) {
-    unset($bare[$key]);
+harness_section('a plugin calling the service');
+$data = ListingInput::fromArray($form(), $actor, true);
+foreach (['countryId', 'regionId', 'cityId'] as $key) {
+    $data[$key] = null;
 }
-$data = ListingInput::fromArray(['id' => $id] + $bare, $actor, false);
-pin('an edit with the location left out over the API is not given the store city', false, ($data['cityName'] ?? '') === 'Austin');
-pin('an edit form with the location cleared takes the store address', 'Austin', ListingInput::fromArray(['id' => $id, 'city' => ''] + $form(), $actor, false)['cityName']);
+foreach (['country', 'region', 'city', 'countryName', 'regionName', 'cityName'] as $key) {
+    $data[$key] = '';
+}
+pin('create with no location: the store city', array('United States', 'Texas', 'Austin', (string) $austin), $place($service->create($data, $actor)->id()));
+
+harness_section('editing');
+$id   = $add(['countryId' => 'US', 'regionId' => (string) $ohio, 'cityId' => (string) $dayton]);
+$edit = static fn (array $extra): array => $place($service->update(ListingInput::fromArray(['id' => $id] + $extra + $form(), $actor, false), $actor, false, false)->id());
+pin('an edit keeps a typed city', array('United States', 'Ohio', 'Dayton', (string) $dayton), $edit(['countryId' => 'US', 'regionId' => (string) $ohio, 'cityId' => (string) $dayton]));
+pin('an edit with the location cleared takes the store address', array('United States', 'Texas', 'Austin', (string) $austin), $edit([]));
 
 harness_section('classifieds');
 $set(['site_mode' => 'classifieds']);
-$data = ListingInput::fromArray($form(), $actor, true);
-pin('a classifieds listing gets no store address', array('', ''), array($data['countryName'] ?? '', $data['cityName'] ?? ''));
+pin('a classifieds site has no store address to give', null, LocationService::storeAddress());
 
 exit(harness_result());

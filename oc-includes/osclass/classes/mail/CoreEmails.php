@@ -2137,7 +2137,7 @@ final class CoreEmails
         if ($mail === null) {
             return;
         }
-        [$title, $body] = self::orderTemplates($kind);
+        [$title, $body] = self::orderTemplates($kind, $order);
         $this->deliver(new MailComposing($kind, $mail['to'], $mail['toName'], $title, $body, $mail['words'], $mail['htmlWords'], $order, null, null, array($order)));
     }
 
@@ -2146,7 +2146,7 @@ final class CoreEmails
      *
      * @return array{0:string,1:string}
      */
-    private static function orderTemplates(string $kind): array
+    private static function orderTemplates(string $kind, ?Order $order = null): array
     {
         switch ($kind) {
             case 'order_placed':
@@ -2165,6 +2165,13 @@ final class CoreEmails
                     __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was delivered. We hope you enjoy it.</p>{ORDER_PRODUCTS}<p>{ORDER_LINK}</p>'),
                 );
             case 'order_cancelled':
+                if ($order !== null && $order->isListing()) {
+                    return array(
+                        __('Your order {ORDER_NUMBER} was cancelled'),
+                        __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. Your listing stays on hold until the fee is paid.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),
+                    );
+                }
+
                 return array(
                     __('Your order {ORDER_NUMBER} was cancelled'),
                     __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),

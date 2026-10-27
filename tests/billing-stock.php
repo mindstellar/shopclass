@@ -431,28 +431,35 @@ $setLimit = static function (string $limit): void {
 };
 $setStock($a, 50);
 $placeKim = static fn (string $gateway) => $checkout->place($kim, [['variant' => $a, 'qty' => 1]], $address, 'standard', $gateway)['order'];
+// A refusal here is a FAIL line naming the case, not a crash that hides the rest.
+$placed = static function (callable $place): int {
+    try {
+        return $place()->getId();
+    } catch (\Throwable $e) {
+        return 0;
+    }
+};
 $setLimit('3');
 $offlineOpen = static fn (int $user): int => OrderStore::countForUser($user, [Order::STATUS_PENDING], ['offline']);
 $kimOrders = [$placeKim('offline'), $placeKim('offline'), $placeKim('offline')];
 pin('the buyer holds three open bank transfer orders', 3, $offlineOpen($kim));
 pin('a fourth bank transfer order is refused on the gateway', ['/gateway too_many_open'], $refused(static fn () => $placeKim('offline')));
 pin('the refused order wrote nothing', 3, OrderStore::countForUser($kim, [Order::STATUS_PENDING]));
-pin('at the limit the buyer can still order with cash on delivery', true, $placeKim('cod')->getId() > 0);
-pin('and with a card', true, $placeKim('card')->getId() > 0);
+pin('at the limit the buyer can still order with cash on delivery', true, $placed(static fn () => $placeKim('cod')) > 0);
+pin('and with a card', true, $placed(static fn () => $placeKim('card')) > 0);
 pin('and the limit counts bank transfer orders only', 3, $offlineOpen($kim));
 $lee = seed_user($admin, 'lee', 'lee@example.test');
-pin('another buyer is not affected', true, $checkout->place($lee, [['variant' => $a, 'qty' => 1]], $address, 'standard', 'offline')['order']->getId() > 0);
+pin('another buyer is not affected', true, $placed(static fn () => $checkout->place($lee, [['variant' => $a, 'qty' => 1]], $address, 'standard', 'offline')['order']) > 0);
 OrderStore::cancel($kimOrders[0]->getId());
-$again = $placeKim('offline');
-pin('cancelling one frees a slot', true, $again->getId() > 0);
+pin('cancelling one frees a slot', true, $placed(static fn () => $placeKim('offline')) > 0);
 pin('at the limit again', ['/gateway too_many_open'], $refused(static fn () => $placeKim('offline')));
 OrderStore::cancel($kimOrders[1]->getId());
 Billing::markPaid(OrderStore::find($kimOrders[2]->getId()));
-$afterPaid = $placeKim('offline');
-pin('a paid bank transfer order does not count toward the limit', [2, true], [$offlineOpen($kim), $afterPaid->getId() > 0]);
+$afterPaid = $placed(static fn () => $placeKim('offline'));
+pin('a paid bank transfer order does not count toward the limit', [2, true], [$offlineOpen($kim), $afterPaid > 0]);
 $setLimit('0');
-$more = [$placeKim('offline'), $placeKim('offline')];
-pin('a limit of 0 never refuses', true, $more[1]->getId() > 0);
+$more = [$placed(static fn () => $placeKim('offline')), $placed(static fn () => $placeKim('offline'))];
+pin('a limit of 0 never refuses', true, $more[1] > 0);
 $setLimit('3');
 pin('and the limit applies again once set', ['/gateway too_many_open'], $refused(static fn () => $placeKim('offline')));
 pin('the open-orders count and limit for the quote', ['count' => 4, 'limit' => 3], \mindstellar\billing\GoodsCheckout::openOrders($kim));

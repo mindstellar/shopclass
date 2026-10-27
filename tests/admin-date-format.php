@@ -46,6 +46,10 @@ function osc_current_admin_locale()
 {
     return $GLOBALS['locale'];
 }
+function osc_current_ui_locale(): string
+{
+    return $GLOBALS['locale'];
+}
 $GLOBALS['tr']      = array();
 $GLOBALS['trCalls'] = 0;
 function __($key, $domain = 'core')

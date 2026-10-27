@@ -278,6 +278,9 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         $query = new LocationAdminQuery();
 
         switch ($kind) {
+            case 'add':
+                $form['names'] = LocationAdminView::nameFields(osc_get_locales(), array(), osc_language());
+                break;
             case 'edit':
                 $record = $query->record($level, Params::getParamString('id', false, false, false), $withCounts);
                 if ($record === null) {
@@ -381,8 +384,9 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->runImport($countryCode, $this->listUrl());
         }
 
+        $names = $this->postedNames();
         $this->write(
-            static fn (LocationService $editor) => $editor->addCountry($countryCode, $countryName),
+            static fn (LocationService $editor) => $editor->addCountry($countryCode, $countryName, $names),
             $this->listUrl(),
             _m('There were some problems adding the country')
         );
@@ -422,7 +426,8 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
         $back = $this->listUrl(array('country' => $country['pk_c_code']) + $this->keep());
-        $this->write(static fn (LocationService $editor) => $editor->addRegion($countryCode, $regionName), $back);
+        $names = $this->postedNames();
+        $this->write(static fn (LocationService $editor) => $editor->addRegion($countryCode, $regionName, $names), $back);
         $this->respond('ok', sprintf(_m('%s has been added as a new region'), $regionName), $back);
     }
 
@@ -456,7 +461,8 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             $this->respond('error', _m('This location no longer exists.'), $this->listUrl());
         }
         $back = $this->listUrl(array('country' => $region['fk_c_country_code'], 'region' => $regionId) + $this->keep());
-        $this->write(static fn (LocationService $editor) => $editor->addCity($regionId, $newCity), $back);
+        $names = $this->postedNames();
+        $this->write(static fn (LocationService $editor) => $editor->addCity($regionId, $newCity, $names), $back);
         $this->respond('ok', sprintf(_m('%s has been added as a new city'), $newCity), $back);
     }
 
@@ -857,6 +863,8 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             exit;
         }
 
+        // Messages name posted places and language codes, and flash messages print as HTML.
+        $message = osc_esc_html($message);
         switch ($status) {
             case 'ok':
                 osc_add_flash_ok_message($message, 'admin');
