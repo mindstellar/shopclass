@@ -55,7 +55,8 @@ final class AjaxResponse
 
     /**
      * JSON in the visitor's language, such as translated place names. A visitor with a chosen
-     * language or a session gets a private answer; others share one that browsers revalidate.
+     * language or a session gets a private answer, as does any answer not in the site language;
+     * others share one that browsers revalidate.
      *
      * @param mixed $data
      *
@@ -69,6 +70,12 @@ final class AjaxResponse
             if (isset($_COOKIE[$name]) && $_COOKIE[$name] !== '') {
                 $perVisitor = true;
             }
+        }
+        // A plugin may pick the language without a cookie (from Accept-Language, say); a shared
+        // cache must not hand that answer to the next visitor.
+        if (function_exists('osc_current_user_locale') && function_exists('osc_language')
+            && osc_current_user_locale() !== osc_language()) {
+            $perVisitor = true;
         }
         self::send($data, 200, 0, $perVisitor ? 'private, no-store' : 'public, max-age=0, s-maxage=300, must-revalidate');
     }

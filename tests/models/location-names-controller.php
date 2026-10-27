@@ -9,7 +9,7 @@
  */
 
 /**
- * The Names section of the locations edit drawer, posted to the real controller: names[] reach
+ * The Names section of the locations add and edit drawers, posted to the real controller: names[] reach
  * t_location_name, a post without names keeps them, the drawer is filled from them, and a post
  * that fails the CSRF check writes nothing.
  *
@@ -138,6 +138,23 @@ pin('...and still renames', 'Bavaria State', (string) $admin->query("SELECT s_na
 $answer = $post(array('type' => 'edit_city', 'city_id' => $city, 'e_city' => 'Munich', 'names' => array('xx_XX' => 'x')));
 pin('a language the site lacks is refused with its reason', 'error:xx_XX is not a language of this site', $answer);
 pin('...and writes nothing', array('de_DE' => 'München'), $store->all('city', $city));
+
+harness_section('names when adding a place');
+$post(array('type' => 'add_region', 'country_c_parent' => 'DE', 'region' => 'Saxony', 'names' => array('de_DE' => 'Sachsen', 'en_US' => '')));
+$saxony = (int) $admin->query("SELECT pk_i_id FROM {$p}t_region WHERE s_name = 'Saxony'")->fetch_row()[0];
+pin('a new region keeps its names', array('de_DE' => 'Sachsen'), $store->all('region', $saxony));
+$post(array('type' => 'add_city', 'region_parent' => $saxony, 'city' => 'Dresden', 'names' => array('de_DE' => 'Dresden DE')));
+$dresden = (int) ($admin->query("SELECT pk_i_id FROM {$p}t_city WHERE s_name = 'Dresden'")->fetch_row()[0] ?? 0);
+pin('a new city keeps its names', array('de_DE' => 'Dresden DE'), $store->all('city', $dresden));
+$post(array('type' => 'add_country', 'c_manual' => '1', 'c_country' => 'AT', 'country' => 'Austria', 'names' => array('de_DE' => 'Österreich')));
+pin('a new country keeps its names', array('de_DE' => 'Österreich'), $store->all('country', 'AT'));
+$answer = $post(array('type' => 'add_city', 'region_parent' => $saxony, 'city' => 'Leipzig', 'names' => array('xx_XX' => 'x')));
+pin('a new place with a language the site lacks is refused', 'error:xx_XX is not a language of this site', $answer);
+pin('...and is not added', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_city WHERE s_name = 'Leipzig'")->fetch_row()[0]);
+$_GET = $_POST = $_REQUEST = array('form' => 'add');
+Params::init();
+$addForm = (new ReflectionMethod('CAdminSettingsLocations', 'formModel'))->invoke((new ReflectionClass('TestLocations'))->newInstanceWithoutConstructor(), array('found' => true, 'level' => 'city'), false);
+pin('the add drawer has one blank field per language', array('de_DE' => '', 'en_US' => ''), array_column($addForm['names'] ?? array(), 'value', 'code'));
 
 harness_section('the drawer is filled from the stored names');
 $_GET = $_POST = $_REQUEST = array('form' => 'edit', 'id' => (string) $region);

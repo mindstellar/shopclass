@@ -44,6 +44,12 @@ if (!function_exists('osc_current_user_locale')) {
         return $GLOBALS['__lists_locale'];
     }
 }
+if (!function_exists('osc_current_ui_locale')) {
+    function osc_current_ui_locale(): string
+    {
+        return $GLOBALS['__lists_locale'];
+    }
+}
 foreach (['osc_base_url' => 'http://lists.test/', 'osc_cache_get' => false, 'osc_cache_set' => true] as $stub => $value) {
     if (!function_exists($stub)) {
         eval("function $stub() { return " . var_export($value, true) . '; }');

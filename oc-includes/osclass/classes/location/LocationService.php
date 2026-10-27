@@ -134,14 +134,15 @@ final class LocationService
     /**
      * Add a country by its two-letter code; its slug is made from the name.
      *
+     * @param array<string,mixed>|null $names as for editCountry()
      * @return string the stored code
      * @throws RefusedException
      * @throws \mindstellar\database\DbException when the row could not be written
      */
-    public function addCountry(string $code, string $name): string
+    public function addCountry(string $code, string $name, ?array $names = null): string
     {
         Demo::refuse();
-        return (string) DeferredMail::transaction(function () use ($code, $name): string {
+        return (string) DeferredMail::transaction(function () use ($code, $name, $names): string {
             $this->checkName($name, _m('Country name cannot be blank'));
             $code = CountryCode::normalize($code);
             if ($code === null) {
@@ -151,6 +152,7 @@ final class LocationService
                 throw new InvalidException('/code', 'taken', sprintf(_m('%s already was in the database'), $name));
             }
             LocationStore::addCountry($code, $name, '');
+            $this->writeNames(LocationNameStore::COUNTRY, $code, $names);
             osc_calculate_location_slug('country');
             osc_calculate_location_slug('region');
             osc_calculate_location_slug('city');
@@ -184,13 +186,14 @@ final class LocationService
     }
 
     /**
+     * @param array<string,mixed>|null $names as for editCountry()
      * @return int the new region's id
      * @throws RefusedException
      */
-    public function addRegion(string $countryCode, string $name): int
+    public function addRegion(string $countryCode, string $name, ?array $names = null): int
     {
         Demo::refuse();
-        return (int) DeferredMail::transaction(function () use ($countryCode, $name): int {
+        return (int) DeferredMail::transaction(function () use ($countryCode, $name, $names): int {
             $country = \Country::getInstance()->findByCode($countryCode);
             if (!isset($country['pk_c_code'])) {
                 throw new NotFoundException(_m('This location no longer exists.'));
@@ -202,6 +205,7 @@ final class LocationService
             }
             $id = (int) $regions->insertGetId(['fk_c_country_code' => $country['pk_c_code'], 's_name' => $name]);
             RegionStats::getInstance()->setNumItems($id, 0);
+            $this->writeNames(LocationNameStore::REGION, $id, $names);
             osc_calculate_location_slug('region');
             osc_calculate_location_slug('city');
 
@@ -236,13 +240,14 @@ final class LocationService
     }
 
     /**
+     * @param array<string,mixed>|null $names as for editCountry()
      * @return int the new city's id
      * @throws RefusedException
      */
-    public function addCity(int $regionId, string $name): int
+    public function addCity(int $regionId, string $name, ?array $names = null): int
     {
         Demo::refuse();
-        return (int) DeferredMail::transaction(function () use ($regionId, $name): int {
+        return (int) DeferredMail::transaction(function () use ($regionId, $name, $names): int {
             $region = $regionId > 0 ? Region::getInstance()->findByPrimaryKey($regionId) : false;
             if (!is_array($region)) {
                 throw new NotFoundException(_m('This location no longer exists.'));
@@ -260,6 +265,7 @@ final class LocationService
                 'fk_c_country_code' => $region['fk_c_country_code'],
             ]);
             CityStats::getInstance()->setNumItems($id, 0);
+            $this->writeNames(LocationNameStore::CITY, $id, $names);
             osc_calculate_location_slug('city');
 
             return $id;

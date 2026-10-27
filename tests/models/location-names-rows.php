@@ -284,10 +284,12 @@ pin('Region delete removes the region and its cities', array(array(), array()), 
 
 $country2 = seed_country($admin, 'AT', 'Austria');
 $region3  = seed_region($admin, $country2, 'Tyrol');
+$city3    = seed_city($admin, $region3, 'Innsbruck', $country2);
 $store->set('country', 'AT', 'de_DE', 'Österreich');
 $store->set('region', $region3, 'de_DE', 'Tirol');
+$store->set('city', $city3, 'de_DE', 'Innsbruck DE');
 Country::getInstance()->deleteByPrimaryKey('AT');
-pin('Country delete removes the country and its regions', array(array(), array()), array($store->all('country', 'AT'), $store->all('region', (string) $region3)));
+pin('Country delete removes the country, its regions and their cities', array(array(), array(), array()), array($store->all('country', 'AT'), $store->all('region', (string) $region3), $store->all('city', (string) $city3)));
 pin('other places keep their names', array('Köln'), array_values($store->all('city', (string) $city)));
 
 if (!defined('MODELS_RUNNER')) {

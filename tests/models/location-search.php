@@ -81,6 +81,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSearch.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocation.php';
 
 use mindstellar\location\LocationAutocompleteQuery;
 use mindstellar\location\LocationNames;
