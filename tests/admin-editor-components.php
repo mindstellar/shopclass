@@ -589,14 +589,12 @@ $escaped = render(static function () {
 omits('the hint is escaped', $escaped, '<b>h</b>');
 omits('and so is the id', $escaped, 'id=""x"');
 
-// The admin theme ships its own copy and loads first, so the two must not drift.
-$bodies = array();
-foreach (array('oc-admin/themes/modern/parts/ui.php', 'oc-includes/osclass/helpers/hAdminUi.php') as $file) {
-    $src = (string)file_get_contents(ABS_PATH . $file);
-    preg_match('/    function osc_admin_panel_open\(.*?\n    function osc_admin_panel_close\(\)\n.*?\n    }\n/s', $src, $m);
-    $bodies[] = preg_replace('/\s*\/\*\*.*?\*\//s', '', $m[0] ?? '');
+// The panel and page-head helpers have one copy, in core; the stock theme must not redefine them.
+$theme = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/parts/ui.php');
+foreach (array('osc_admin_panel_open', 'osc_admin_panel_close', 'osc_admin_page_head') as $fn) {
+    check($fn . ' is defined only in core', strpos($theme, 'function ' . $fn . '(') === false);
 }
-check('the theme copy and the core copy of the panel helpers are the same code', $bodies[0] !== '' && $bodies[0] === $bodies[1]);
+check('the stock theme renders its page head through the core copy', (new ReflectionFunction('osc_admin_page_head'))->getFileName() === ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php');
 
 exit(harness_result());
 
