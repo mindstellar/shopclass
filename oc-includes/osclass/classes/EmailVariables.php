@@ -88,6 +88,24 @@ class EmailVariables
     }
 
     /**
+     * The subject for the templates list as safe HTML: escaped, with each placeholder as an
+     * italic word, e.g. `New comment on <em>listing title</em>`.
+     */
+    public static function plainSubjectHtml(string $subject): string
+    {
+        $subject = preg_replace('/^\s*\{WEB_TITLE\}\s*[-:\x{2013}\x{2014}]?\s*/u', '', $subject) ?? $subject;
+        $parts   = preg_split('/\{([A-Z0-9_]+)\}/', $subject, -1, PREG_SPLIT_DELIM_CAPTURE) ?: array($subject);
+        $html    = '';
+        foreach ($parts as $i => $part) {
+            $html .= $i % 2 === 1
+                ? '<em>' . osc_esc_html(preg_replace('/\bitem\b/', 'listing', strtolower(str_replace('_', ' ', $part)))) . '</em>'
+                : osc_esc_html($part);
+        }
+
+        return $html;
+    }
+
+    /**
      * Populate the variable list with the built-in placeholders.
      */
     public function __construct()

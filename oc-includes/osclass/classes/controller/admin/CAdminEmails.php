@@ -127,9 +127,8 @@ class CAdminEmails extends AdminSecBaseModel
                     $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
                     $row     = array();
-                    $row[]   = '<strong>' . osc_esc_html(EmailVariables::label((string)$email['s_internal_name'])) . '</strong>'
-                        . '<div class="text-muted small">' . osc_esc_html($email['s_internal_name']) . '</div>' . $actions;
-                    $row[]   = osc_esc_html(EmailVariables::plainSubject((string)$title['s_title']));
+                    $row[]   = '<strong>' . osc_esc_html(EmailVariables::label((string)$email['s_internal_name'])) . '</strong>' . $actions;
+                    $row[]   = EmailVariables::plainSubjectHtml((string)$title['s_title']);
                     $aData[] = $row;
                 }
                 // ----
