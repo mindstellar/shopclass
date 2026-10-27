@@ -198,6 +198,24 @@ pin(
     osc_form_error_line(array('/photos' => 'Too many photos.', '/product/options' => 'Pick a size.'))
 );
 
+harness_section('the listing controller keeps the refused fields');
+$session->_setForm('form_errors', array());
+$refusalLine = new ReflectionMethod('CWebItem', 'refusalLine');
+$refusalLine->setAccessible(true);
+defined('OSC_DEBUG') || define('OSC_DEBUG', false);
+$controller = (new ReflectionClass('CWebItem'))->newInstanceWithoutConstructor();
+$line       = $refusalLine->invoke($controller, InvalidException::all(array(
+    ListingValidator::entry('/title', 'required', 'Add a title.'),
+    ListingValidator::entry('/price', 'invalid', 'Price must be a number.'),
+)));
+pin('an InvalidException keeps one message per field for the form', array('/title' => 'Add a title.', '/price' => 'Price must be a number.'), $session->_getForm('form_errors'));
+pin('and tops the form with the pointer line', 'Check the fields marked below.', $line);
+$session->_setForm('form_errors', array());
+pin('another refusal is its own message', 'Not now.', $refusalLine->invoke($controller, new \mindstellar\exception\RefusedException('Not now.')));
+pin('and marks no field', array(), $session->_getForm('form_errors'));
+check('send to a friend hands its field messages to osc_keep_form', str_contains(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'sendFriendPost'), 'osc_keep_form(array(), osc_form_error_line($errors), $errors)'));
+check('the contact form hands its field messages to osc_keep_form', str_contains(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebItem.php', 'contactPost'), 'osc_keep_form($contactValues, $error, $errors)'));
+
 harness_section('ListingValidator words an empty title and a short one apart');
 $data = array(
     'photos' => array(), 'title' => array('en_US' => ''), 'description' => array('en_US' => 'A long enough text'),
