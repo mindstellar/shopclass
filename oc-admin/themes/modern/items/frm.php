@@ -470,19 +470,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         }
 
         if ($itemShop) {
-            echo '<div data-variant-default data-osc-needs-sell' . ($hasOptions ? ' hidden' : '') . '>';
+            echo '<div data-osc-needs-sell><div data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
             $itemSellField('compareAt', __('Compare-at price'), 'decimal', 0, __('Shown crossed out next to the price. Leave empty when not on sale.'));
-            echo '</div>';
+            echo '</div></div>';
         }
         echo '</div>';
 
         if ($itemShop) {
-            echo '<div class="osc-editor-cols" data-variant-default data-osc-needs-sell' . ($hasOptions ? ' hidden' : '') . '>';
+            // Sell online hides the wrapper; the options switch alone hides what is inside it.
+            echo '<div data-osc-needs-sell>';
+            echo '<div class="osc-editor-cols" data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
             $itemSellField('sku', __('SKU'), '', 64);
             $itemSellField('stock', __('Stock'), 'numeric', 0, __('Leave empty to sell without counting.'));
             echo '</div>';
-            echo '<p class="form-text" data-variant-with-options data-osc-needs-sell' . ($hasOptions ? '' : ' hidden') . '>'
+            echo '<p class="form-text" data-variant-with-options' . ($hasOptions ? '' : ' hidden') . '>'
                 . osc_esc_html(__('Each option row below has its own SKU, price, compare-at price and stock. A row with no price sells at this price.')) . '</p>';
+            echo '</div>';
             echo '<p class="form-text" data-osc-not-selling' . ($sellValues['sell'] ? ' hidden' : '') . '>'
                 . osc_esc_html(__('Not for sale online. Buyers see the price and contact you.')) . '</p>';
         }

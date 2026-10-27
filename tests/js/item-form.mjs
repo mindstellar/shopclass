@@ -49,6 +49,10 @@ try {
     check('options on: first default block hidden', await hidden(page, '#rows-a'));
     check('options on: second default block hidden', await hidden(page, '#weight'));
     check('options on: with-options note shown', !(await hidden(page, '#note')));
+    await page.click('#product-sell');
+    await page.click('#product-sell');
+    check('sell off and on with options: default block stays hidden', await hidden(page, '#rows-a'));
+    check('sell off and on with options: note stays shown', !(await hidden(page, '#note')));
     await page.click('#product-has-options');
     check('options off: both default blocks back', !(await hidden(page, '#rows-a')) && !(await hidden(page, '#weight')));
     check('options off: note hidden', await hidden(page, '#note'));
@@ -57,6 +61,7 @@ try {
     check('sell off: options section hidden', await hidden(page, '#sec-options'));
     check('sell off: shipping section hidden', await hidden(page, '#sec-shipping'));
     check('sell off: not-selling line shown', !(await hidden(page, '#not-selling')));
+    check('sell off: SKU and stock wrapper hidden', await hidden(page, '#sell-rows'));
     await page.click('#product-sell');
     check('sell on again: shipping section shown', !(await hidden(page, '#sec-shipping')));
 

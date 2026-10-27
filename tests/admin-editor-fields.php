@@ -921,8 +921,10 @@ foreach (array('item-add-shop', 'item-edit-shop') as $screen) {
         : null);
     foreach (array('product-compareAt', 'product-sku', 'product-stock') as $id) {
         check("$screen: #$id sits in Price and stock, shown only for a plain sellable product",
-            dom($screen)->query('//*[@id="sec-price"]//*[@data-variant-default and @data-osc-needs-sell]//input[@id="' . $id . '"]')->length === 1);
+            dom($screen)->query('//*[@id="sec-price"]//*[@data-osc-needs-sell]//*[@data-variant-default]//input[@id="' . $id . '"]')->length === 1);
     }
+    check("$screen: no node is toggled by both Sell online and the options switch",
+        dom($screen)->query('//*[@data-osc-needs-sell][@data-variant-default or @data-variant-with-options]')->length === 0);
     check("$screen: the weight sits in Shipping, for a plain physical product",
         dom($screen)->query('//*[@id="sec-shipping"]//*[@data-osc-physical-only]//*[@data-variant-default]//input[@id="product-weight"]')->length === 1);
     check("$screen: the shipping class sits in Shipping",

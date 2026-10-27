@@ -5,8 +5,10 @@
   <section id="sec-price" class="osc-section">
     <input type="checkbox" id="product-sell" name="product[sell]" value="1" checked>
     <input type="checkbox" id="product-has-options" data-variant-switch>
-    <div id="rows-a" data-variant-default><input name="product[sku]"></div>
-    <p id="note" data-variant-with-options hidden>Set per row</p>
+    <div id="sell-rows" data-osc-needs-sell>
+      <div id="rows-a" data-variant-default><input name="product[sku]"></div>
+      <p id="note" data-variant-with-options hidden>Set per row</p>
+    </div>
     <p id="not-selling" data-osc-not-selling hidden>Not for sale online.</p>
   </section>
   <section id="sec-options" class="osc-section" data-osc-needs-sell>
