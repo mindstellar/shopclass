@@ -236,6 +236,23 @@ final class ListingValidator
     }
 
     /**
+     * A listing that is sold needs a currency, or the cart cannot price it.
+     *
+     * @param array<string,mixed> $product  the `product` member ListingInput::read() built
+     * @param mixed               $currency the listing's currency code
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    public function productCurrency(array $product, mixed $currency): array
+    {
+        if (empty($product['sell']) || (is_string($currency) && trim($currency) !== '')) {
+            return array();
+        }
+
+        return array(self::entry('/currency', 'required', _m('Choose a currency so buyers can pay.')));
+    }
+
+    /**
      * @param array<int,mixed> $rows
      * @param int[]            $photoIds
      *
