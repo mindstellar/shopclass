@@ -30,6 +30,64 @@ class EmailVariables
     private $variables;
 
     /**
+     * A plain name for a core e-mail template, for the templates list. A template a plugin
+     * adds, which has no name here, shows its internal name with the underscores as spaces.
+     *
+     * @param string $internalName the template key, such as email_item_inquiry
+     *
+     * @return string
+     */
+    public static function label(string $internalName): string
+    {
+        $labels = array(
+            'email_item_inquiry'                      => __('Question about a listing'),
+            'email_contact_user'                      => __('Message to a user'),
+            'email_send_friend'                       => __('Listing sent to a friend'),
+            'email_user_registration'                 => __('Welcome, new account'),
+            'email_user_validation'                   => __('Confirm your account'),
+            'email_user_forgot_password'              => __('Password reset'),
+            'email_new_email'                         => __('Confirm a new e-mail address'),
+            'email_item_validation'                   => __('Confirm a new listing'),
+            'email_item_validation_non_register_user' => __('Confirm a new listing, guest'),
+            'email_new_item_non_register_user'        => __('Listing posted, guest'),
+            'email_alert_validation'                  => __('Confirm a search alert'),
+            'email_comment_validated'                 => __('Comment approved'),
+            'email_new_comment_user'                  => __('New comment on your listing'),
+            'email_new_comment_admin'                 => __('New comment, to the admin'),
+            'email_admin_new_item'                    => __('New listing, to the admin'),
+            'email_admin_new_user'                    => __('New user, to the admin'),
+            'email_new_admin'                         => __('New admin account'),
+            'email_warn_expiration'                   => __('Listing about to expire'),
+            'email_listing_unpaid_reminder'           => __('Unpaid listing reminder'),
+            'alert_email_instant'                     => __('Search alert, instant'),
+            'alert_email_hourly'                      => __('Search alert, hourly'),
+            'alert_email_daily'                       => __('Search alert, daily'),
+            'alert_email_weekly'                      => __('Search alert, weekly'),
+        );
+
+        return $labels[$internalName] ?? ucfirst(str_replace('_', ' ', $internalName));
+    }
+
+    /**
+     * A template's subject as plain words: the site-name prefix is dropped and any other
+     * placeholder reads as {item title} rather than {ITEM_TITLE}.
+     *
+     * @param string $subject
+     *
+     * @return string
+     */
+    public static function plainSubject(string $subject): string
+    {
+        $subject = preg_replace('/^\s*\{WEB_TITLE\}\s*[-:\x{2013}\x{2014}]?\s*/u', '', $subject) ?? $subject;
+
+        return preg_replace_callback(
+            '/\{([A-Z0-9_]+)\}/',
+            static fn (array $m): string => '{' . strtolower(str_replace('_', ' ', $m[1])) . '}',
+            $subject
+        ) ?? $subject;
+    }
+
+    /**
      * Populate the variable list with the built-in placeholders.
      */
     public function __construct()
