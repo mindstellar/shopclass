@@ -788,7 +788,8 @@
   padding: 0;
 }
 
-#sec-details:not(:has(#plugin-hook > *)) {
+// Until the form script has looked; it also hides a hook holding only an empty wrapper.
+#sec-details:not([data-osc-synced]):not(:has(#plugin-hook > *)) {
   display: none;
 }
 

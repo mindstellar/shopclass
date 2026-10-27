@@ -861,7 +861,10 @@
                 return;
             }
             if (details) {
-                details.hidden = hook.firstElementChild === null;
+                // A category with no fields can still leave an empty wrapper behind.
+                details.hidden = hook.querySelector('input, select, textarea, [data-osc-no-shipping]') === null
+                    && hook.textContent.trim() === '';
+                details.setAttribute('data-osc-synced', '');
             }
             var digital = hook.querySelector('[data-osc-no-shipping]') !== null;
             setHidden('[data-osc-physical-only]', digital);

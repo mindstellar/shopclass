@@ -50,6 +50,10 @@ window.addEventListener('load', function () {
         check('physical: weight shown again', !$('weight').hidden);
         fields('');
         check('empty hook: details hidden', $('sec-details').hidden);
+        fields('<div class="row"></div>');
+        check('a hook with only an empty wrapper: details hidden', $('sec-details').hidden);
+        fields('<p>Pick a category first.</p>');
+        check('a hook with text: details shown', !$('sec-details').hidden);
 
         // A jump to the details element itself does not open it, so only the script can.
         check('seller starts closed', !$('sec-seller').open);
