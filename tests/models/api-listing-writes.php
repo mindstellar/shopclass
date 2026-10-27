@@ -371,7 +371,7 @@ pin('a region of another country or a city of another region answers mismatch', 
     $placeError($call('POST', 'listings', $listing(array('region_id' => $otherRegion)), $sueToken)),
     $placeError($call('POST', 'listings', $listing(array('city_id' => $otherCity)), $sueToken)),
 ));
-pin('ItemActions\' own refusal is 422 with its message', array(422, 'Description too short (en_US).'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['message'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
+pin('ItemActions\' own refusal is 422 with its message', array(422, 'Description too short (English).'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['message'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
 pin('a refusal carries the member and code of each error', array('validation_failed', '/description', 'minLength'), (static fn (Response $r): array => array($r->body()['code'] ?? null, $r->body()['errors'][0]['pointer'] ?? null, $r->body()['errors'][0]['code'] ?? null))($call('POST', 'listings', $listing(array('description' => 'ab')), $sueToken)));
 pin('a language the site does not have is 422', array(422, '/translations/fr_FR'), (static fn (Response $r): array => array($r->status(), $r->body()['errors'][0]['pointer'] ?? null))($call('POST', 'listings', $listing(array('translations' => array('fr_FR' => array('title' => 'Voiture')))), $sueToken)));
 pin('a required custom field left out is refused as on the form', 422, $call('POST', 'listings', $listing(array('custom_fields' => array())), $sueToken)->status());

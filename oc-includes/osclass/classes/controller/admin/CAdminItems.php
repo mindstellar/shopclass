@@ -31,6 +31,7 @@ use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
 use mindstellar\listing\ListingStatus;
+use mindstellar\listing\ListingValidator;
 use mindstellar\listing\PhotoService;
 use mindstellar\moderation\ListingModeration;
 
@@ -440,8 +441,7 @@ class CAdminItems extends AdminSecBaseModel
             // Drawn again with what was typed still in it, rather than thrown away
             // with a redirect. ListingInput::read() has already put the submission in the
             // session form, which is where the view reads the content fields from.
-            osc_add_flash_error_message($success, 'admin');
-            $this->drawItemForm(false, $this->itemErrors($success, $formData));
+            $this->drawItemForm(false, $this->refusal($success, $formData));
 
             return;
         }
@@ -509,8 +509,7 @@ class CAdminItems extends AdminSecBaseModel
 
             $this->redirectTo($url);
         } else {
-            osc_add_flash_error_message($success, 'admin');
-            $this->drawItemForm(true, $this->itemErrors($success, $formData));
+            $this->drawItemForm(true, $this->refusal($success, $formData));
 
             return;
         }
@@ -897,6 +896,24 @@ class CAdminItems extends AdminSecBaseModel
     }
 
     /**
+     * The summary lines for a refused save; with none to show, flash the refusal instead.
+     *
+     * @param mixed               $message The message the save refused with
+     * @param array<string,mixed> $data    The submission
+     *
+     * @return array<array-key,mixed>
+     */
+    private function refusal($message, array $data)
+    {
+        $errors = $this->itemErrors($message, $data);
+        if ($errors === array()) {
+            osc_add_flash_error_message(is_string($message) && $message !== '' ? $message : _m('An error has occurred'), 'admin');
+        }
+
+        return $errors;
+    }
+
+    /**
      * What a refused save has to say, split into the summary's lines plus the fields the
      * screen can name. The listing service reports one message with a line per problem, so the
      * lines are what the summary lists; an empty title is named per locale, because the
@@ -909,16 +926,23 @@ class CAdminItems extends AdminSecBaseModel
      */
     private function itemErrors($message, array $data)
     {
-        $titles    = array();
+        $titles     = array();
         $superseded = array();
+        $anyTitle   = false;
         foreach (osc_get_locales() as $locale) {
             $code = $locale['pk_c_code'];
             if (trim(strip_tags((string)($data['title'][$code] ?? ''))) === '') {
-                $titles[$code]  = sprintf(_m('%s: this listing needs a title'), $locale['s_name']);
-                // The same refusal in the validator's own words. Both would be listed, so
-                // the summary counted one empty title twice and said so.
-                $superseded[] = trim(sprintf(_m('Title too short (%s).'), $code));
+                $titles[$code] = sprintf(_m('%s: this listing needs a title'), $locale['s_name']);
+                // The validator says the same in its own words; list only ours.
+                $superseded[] = trim(sprintf(_m('Title too short (%s).'), ListingValidator::localeName($code)));
+            } else {
+                $anyTitle = true;
             }
+        }
+        if ($anyTitle) {
+            $titles = array();
+        } elseif ($titles !== array()) {
+            $titles['summary'] = _m('Add a title in at least one language.');
         }
 
         $errors = array();

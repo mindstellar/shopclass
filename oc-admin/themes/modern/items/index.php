@@ -14,14 +14,14 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Listings'),
-    'title'   => __('Manage listings'),
+    'section' => osc_is_shop_mode() ? __('Products') : __('Listings'),
+    'title'   => osc_is_shop_mode() ? __('Manage products') : __('Manage listings'),
     'help'    => __('Manage all the listings on your site: edit, delete or block the latest listings published. You can also filter by several parameters: user, region, city, etc.'),
     'actions' => array(
         array(
             'icon'  => 'bi-plus-circle-fill',
             'url'   => osc_admin_base_url(true) . '?page=items&amp;action=post',
-            'title' => __('Add listing'),
+            'title' => osc_is_shop_mode() ? __('Add product') : __('Add listing'),
         ),
         array(
             'icon'  => 'bi-gear-fill',
@@ -88,7 +88,7 @@ $direction = in_array($direction, array('asc', 'desc'), true) ? $direction : '';
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(__('Manage listings')); ?>
+<?php osc_admin_page_head(osc_is_shop_mode() ? __('Manage products') : __('Manage listings')); ?>
 <?php $sampleCount = (int) __get('sampleCount'); ?>
 <?php if (__get('samplePresent')) { ?>
     <form method="post" action="<?php echo osc_admin_base_url(true); ?>" class="text-muted small mb-2">
@@ -203,7 +203,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             'title' => __('No listings found'),
                             'text'  => __('Listings published by your users appear here, and you can post one yourself.'),
                             'action' => array(
-                                'label'   => __('Add listing'),
+                                'label'   => osc_is_shop_mode() ? __('Add product') : __('Add listing'),
                                 'url'     => osc_admin_base_url(true) . '?page=items&amp;action=post',
                                 'variant' => 'primary',
                             ),
@@ -230,12 +230,12 @@ osc_admin_pagination($aData);
                 <div class="row">
                     <div class="col-lg-6">
                         <div class="row-wrapper">
-                            <?php osc_admin_form_row_open(__('Pattern')); ?>
+                            <?php osc_admin_form_row_open(__('Pattern'), array('for' => 'sSearch')); ?>
                                     <input class="form-control" type="text" name="sSearch" id="sSearch"
                                            placeholder="<?php echo osc_esc_html(__('Title or description')); ?>"
                                            value="<?php echo osc_esc_html(Params::getParamString('sSearch')); ?>" />
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Category')); ?>
+                            <?php osc_admin_form_row_open(__('Category'), array('for' => 'catId')); ?>
                                     <?php ManageItemsForm::category_select($categories, null, null, true); ?>
                             <?php osc_admin_form_row_close(); ?>
                             <?php // Written out rather than through ManageItemsForm so the fields can
@@ -244,7 +244,7 @@ osc_admin_pagination($aData);
                             <?php // A country is a closed list, so it picks rather than suggests: typing
                                   // a name and not choosing a suggestion used to leave countryId empty,
                                   // and the filter then did nothing at all.?>
-                            <?php osc_admin_form_row_open(__('Country')); ?>
+                            <?php osc_admin_form_row_open(__('Country'), array('for' => 'countryId')); ?>
                                     <select class="form-select" id="countryId" name="countryId"
                                             data-osc-clears="#regionId,#region,#cityId,#city">
                                         <option value=""><?php _e('Any country'); ?></option>
@@ -257,7 +257,7 @@ osc_admin_pagination($aData);
                                         <?php } ?>
                                     </select>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Region')); ?>
+                            <?php osc_admin_form_row_open(__('Region'), array('for' => 'region')); ?>
                                     <input class="form-control" type="text" id="region" name="region"
                                            placeholder="<?php echo osc_esc_html(__('Any region')); ?>"
                                            value="<?php echo osc_esc_html(Params::getParamString('region')); ?>"
@@ -270,7 +270,7 @@ osc_admin_pagination($aData);
                                     <input type="hidden" id="regionId" name="regionId"
                                            value="<?php echo osc_esc_html(Params::getParamString('regionId')); ?>"/>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('City')); ?>
+                            <?php osc_admin_form_row_open(__('City'), array('for' => 'city')); ?>
                                     <input class="form-control" type="text" id="city" name="city"
                                            placeholder="<?php echo osc_esc_html(__('Any city')); ?>"
                                            value="<?php echo osc_esc_html(Params::getParamString('city')); ?>"
@@ -286,13 +286,13 @@ osc_admin_pagination($aData);
                     </div>
                     <div class="col-lg-6">
                         <div class="row-wrapper">
-                            <?php osc_admin_form_row_open(__('Email')); ?>
+                            <?php osc_admin_form_row_open(__('Email'), array('for' => 'user')); ?>
                                     <input class="form-control" id="user" name="user" type="text"
                                            placeholder="<?php echo osc_esc_html(__('Any seller')); ?>"
                                            value="<?php echo osc_esc_html(Params::getParamString('user')); ?>" />
                                     <input id="userId" name="userId" type="hidden" value="<?php echo osc_esc_html(Params::getParamString('userId')); ?>" />
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Premium')); ?>
+                            <?php osc_admin_form_row_open(__('Premium'), array('for' => 'b_premium')); ?>
                                     <select class="form-select" id="b_premium" name="b_premium">
                                         <option value="" <?php echo ((Params::getParam('b_premium') == '')
                                                                 ? 'selected="selected"' : '') ?>><?php _e('Choose an option'); ?></option>
@@ -302,7 +302,7 @@ osc_admin_pagination($aData);
                                                                 ? 'selected="selected"' : '') ?>><?php _e('OFF'); ?></option>
                                     </select>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Active')); ?>
+                            <?php osc_admin_form_row_open(__('Active'), array('for' => 'b_active')); ?>
                                     <select class="form-select" id="b_active" name="b_active">
                                         <option value="" <?php echo ((Params::getParam('b_active') == '') ? 'selected="selected"'
                                                                 : '') ?>><?php _e('Choose an option'); ?></option>
@@ -312,7 +312,7 @@ osc_admin_pagination($aData);
                                                                 ? 'selected="selected"' : '') ?>><?php _e('OFF'); ?></option>
                                     </select>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Block')); ?>
+                            <?php osc_admin_form_row_open(__('Block'), array('for' => 'b_enabled')); ?>
                                     <select class="form-select" id="b_enabled" name="b_enabled">
                                         <option value="" <?php echo ((Params::getParam('b_enabled') == '')
                                                                 ? 'selected="selected"' : '') ?>><?php _e('Choose an option'); ?></option>
@@ -322,7 +322,7 @@ osc_admin_pagination($aData);
                                                                 ? 'selected="selected"' : '') ?>><?php _e('OFF'); ?></option>
                                     </select>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Spam')); ?>
+                            <?php osc_admin_form_row_open(__('Spam'), array('for' => 'b_spam')); ?>
                                     <select class="form-select" id="b_spam" name="b_spam">
                                         <option value="" <?php echo ((Params::getParam('b_spam') == '') ? 'selected="selected"'
                                                                 : '') ?>><?php _e('Choose an option'); ?></option>
@@ -332,7 +332,7 @@ osc_admin_pagination($aData);
                                                                 : '') ?>><?php _e('OFF'); ?></option>
                                     </select>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Payment')); ?>
+                            <?php osc_admin_form_row_open(__('Payment'), array('for' => 'status')); ?>
                                     <select class="form-select" id="status" name="status">
                                         <option value=""><?php _e('Choose an option'); ?></option>
                                         <option value="unpaid" <?php echo (Params::getParamString('status') === 'unpaid'

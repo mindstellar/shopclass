@@ -1343,7 +1343,10 @@ final class ListingService
             ? array_map(static fn (array $photo): int => (int) $photo['pk_i_id'], PhotoStore::ofItems(array($itemId)))
             : array();
 
-        return $this->validator->product($aItem['product'], $photos);
+        return array_merge(
+            $this->validator->productCurrency($aItem['product'], $aItem['currency'] ?? null),
+            $this->validator->product($aItem['product'], $photos)
+        );
     }
 
     /**

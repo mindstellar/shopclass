@@ -129,6 +129,7 @@ $form    = static fn (int $id, array $product): array => [
     'title'        => ['en_US' => 'Cotton tee'],
     'description'  => ['en_US' => 'A plain cotton tee in two colours and sizes.'],
     'price'        => '15',
+    'currency'     => 'USD',
     'contactName'  => 'Sue',
     'contactEmail' => 'sue@example.test',
     'contactPhone' => '5550199',

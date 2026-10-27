@@ -64,6 +64,24 @@ final class ListingValidator
     }
 
     /**
+     * A locale's name for a message, falling back to its code.
+     */
+    public static function localeName(string $code): string
+    {
+        try {
+            foreach (osc_get_locales() as $locale) {
+                if (($locale['pk_c_code'] ?? '') === $code && ($locale['s_name'] ?? '') !== '') {
+                    return (string) $locale['s_name'];
+                }
+            }
+        } catch (\Throwable) {
+            // no database: the code is all there is
+        }
+
+        return $code;
+    }
+
+    /**
      * The length of a title or description as the poster typed it. Params::purifyText()
      * stores "&" as "&amp;" and "<" as "&lt;", so counting the stored text refused a title
      * the form's own maxlength had let through.
@@ -114,11 +132,11 @@ final class ListingValidator
         $hasTitle = false;
         foreach ($aItem['title'] as $key => $value) {
             if (!self::fitsTitle($value, $maxTitle)) {
-                $tooLong[] = self::entry('/title', 'too_long', sprintf(_m('Title too long (%s).'), $key));
+                $tooLong[] = self::entry('/title', 'too_long', sprintf(_m('Title too long (%s).'), self::localeName($key)));
             } elseif (osc_validate_text($value)) {
                 $hasTitle = true;
             } else {
-                $tooShort[] = self::entry('/title', 'too_short', sprintf(_m('Title too short (%s).'), $key));
+                $tooShort[] = self::entry('/title', 'too_short', sprintf(_m('Title too short (%s).'), self::localeName($key)));
             }
         }
         $errors = array_merge($errors, $hasTitle || $tooLong !== array() ? array() : $tooShort, $tooLong);
@@ -132,10 +150,10 @@ final class ListingValidator
                 break;
             }
             if (!osc_validate_text($value, 3)) {
-                $descErrors[] = self::entry('/description', 'too_short', sprintf(_m('Description too short (%s).'), $key));
+                $descErrors[] = self::entry('/description', 'too_short', sprintf(_m('Description too short (%s).'), self::localeName($key)));
             }
             if (!$fits) {
-                $descErrors[] = self::entry('/description', 'too_long', sprintf(_m('Description too long (%s).'), $key));
+                $descErrors[] = self::entry('/description', 'too_long', sprintf(_m('Description too long (%s).'), self::localeName($key)));
             }
         }
         $errors = array_merge($errors, $descErrors);
@@ -215,6 +233,23 @@ final class ListingValidator
         }
 
         return $this->variantRows(array_values($product['variants']), array_map('intval', $photoIds));
+    }
+
+    /**
+     * A listing that is sold needs a currency, or the cart cannot price it.
+     *
+     * @param array<string,mixed> $product  the `product` member ListingInput::read() built
+     * @param mixed               $currency the listing's currency code
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    public function productCurrency(array $product, mixed $currency): array
+    {
+        if (empty($product['sell']) || (is_string($currency) && trim($currency) !== '')) {
+            return array();
+        }
+
+        return array(self::entry('/currency', 'required', _m('Choose a currency so buyers can pay.')));
     }
 
     /**
