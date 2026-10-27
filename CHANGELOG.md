@@ -135,6 +135,12 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - The buy-credits page lists only the payment methods that take the billing currency.
 - Signing in or registering from a page that needs it, such as the checkout, returns to that page: `osc_user_login_url()` and `osc_register_account_url()` take an optional same-site `return` path, and no cookie is set for it.
 - A title or description with "&", "<" or ">" is no longer refused as too long when it fits the form: lengths count the text as typed, not as stored.
+- Admin list checkboxes, toolbar search, the logs section and option-filter headings have names for screen readers, and the tab strips pass the accessibility check.
+- A classifieds site no longer shows the card hold, open-orders limit or cash on delivery settings; shop mode says Reported products.
+- The e-mail templates list shows the name and a readable subject, without the internal key or braces.
+- The widget Add menu names each section; an unused section reads "Unused: slug".
+- The open-orders limit counts and checks bank transfer orders only; `GET /cart/quote` returns `open_orders` for a signed-in buyer.
+- A refused listing, contact or send-to-friend form marks each wrong field with its own message; an empty title says to add one.
 
 ## Shopclass 7.0.5
 
