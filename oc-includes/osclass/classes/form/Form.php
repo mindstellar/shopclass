@@ -54,8 +54,7 @@ class Form extends FormInputs
         $options['defaultValue']      = $id;
         $options['selectPlaceholder'] = $default_item;
         $options['selectOptions'] = $newItems;
-        $attributes = self::markInvalid($name, $attributes);
-        echo (new self())->select($name, $id, $attributes, $options), self::errorLine($name, $attributes);
+        echo self::withError($name, $attributes, static fn (array $a): string => (new self())->select($name, $id, $a, $options));
     }
 
     /**
@@ -155,6 +154,23 @@ class Form extends FormInputs
     }
 
     /**
+     * A control with its refusal wired in: markInvalid() on its attributes, the control
+     * $draw builds from them, then its errorLine().
+     *
+     * @param string                                $name
+     * @param array<string,mixed>                   $attributes
+     * @param callable(array<string,mixed>): string $draw
+     *
+     * @return string
+     */
+    protected static function withError($name, array $attributes, callable $draw)
+    {
+        $attributes = self::markInvalid($name, $attributes);
+
+        return $draw($attributes) . self::errorLine($name, $attributes);
+    }
+
+    /**
      * @param string              $name
      * @param array<string,mixed> $attributes
      *
@@ -197,8 +213,7 @@ class Form extends FormInputs
         if (!$autocomplete) {
             $attributes['autocomplete'] = 'off';
         }
-        $attributes = self::markInvalid($name, $attributes);
-        echo (new self())->text($name, $value, $attributes), self::errorLine($name, $attributes);
+        echo self::withError($name, $attributes, static fn (array $a): string => (new self())->text($name, $value, $a));
     }
 
     /**
@@ -268,8 +283,7 @@ class Form extends FormInputs
     protected static function generic_textarea($name, $value)
     {
         $attributes['id'] = preg_replace('|([^_a-zA-Z0-9-]+)|', '', $name);
-        $attributes = self::markInvalid($name, $attributes);
-        echo (new self())->textarea($name, $value, $attributes), self::errorLine($name, $attributes);
+        echo self::withError($name, $attributes, static fn (array $a): string => (new self())->textarea($name, $value, $a));
     }
 
     /**

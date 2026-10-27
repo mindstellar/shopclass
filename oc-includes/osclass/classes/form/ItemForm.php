@@ -68,42 +68,46 @@ class ItemForm extends Form
             $item = osc_item();
         }
 
-        $attributes = parent::markInvalid('catId', ['id' => 'catId'] + (array) $attributes);
-        $extra      = '';
-        foreach ($attributes as $attrName => $attrValue) {
-            if ($attrName !== 'id') {
-                $extra .= ' ' . $attrName . '="' . osc_esc_html((string)$attrValue) . '"';
-            }
-        }
-        echo '<select name="catId" id="catId"' . $extra . '>';
-        if (isset($default_item)) {
-            echo '<option value="">' . $default_item . '</option>';
-        } else {
-            echo '<option value="">' . __('Select a category') . '</option>';
-        }
-
-        if (count($categories) == 1) {
-            $parent_selectable = 1;
-        }
-
-        foreach ($categories as $c) {
-            if (!osc_selectable_parent_categories() && !$parent_selectable) {
-                echo '<optgroup label="' . osc_esc_html((string) $c['s_name']) . '">';
-                if (isset($c['categories']) && is_array($c['categories'])) {
-                    self::subcategory_select($c['categories'], $item, $default_item, 1);
+        echo parent::withError('catId', ['id' => 'catId'] + (array) $attributes, static function (array $a) use ($categories, $item, $default_item, $parent_selectable, $catId): string {
+            ob_start();
+            $extra      = '';
+            foreach ($a as $attrName => $attrValue) {
+                if ($attrName !== 'id') {
+                    $extra .= ' ' . $attrName . '="' . osc_esc_html((string)$attrValue) . '"';
                 }
+            }
+            echo '<select name="catId" id="catId"' . $extra . '>';
+            if (isset($default_item)) {
+                echo '<option value="">' . $default_item . '</option>';
             } else {
-                $selected = ((isset($item['fk_i_category_id'])
-                        && $item['fk_i_category_id'] == $c['pk_i_id'])
-                    || (isset($catId) && $catId == $c['pk_i_id']));
-                echo '<option value="' . $c['pk_i_id'] . '"' . ($selected ? ' selected="selected"'
-                        : '') . '>' . osc_esc_html((string) $c['s_name']) . '</option>';
-                if (isset($c['categories']) && is_array($c['categories'])) {
-                    self::subcategory_select($c['categories'], $item, $default_item, 1);
+                echo '<option value="">' . __('Select a category') . '</option>';
+            }
+
+            if (count($categories) == 1) {
+                $parent_selectable = 1;
+            }
+
+            foreach ($categories as $c) {
+                if (!osc_selectable_parent_categories() && !$parent_selectable) {
+                    echo '<optgroup label="' . osc_esc_html((string) $c['s_name']) . '">';
+                    if (isset($c['categories']) && is_array($c['categories'])) {
+                        self::subcategory_select($c['categories'], $item, $default_item, 1);
+                    }
+                } else {
+                    $selected = ((isset($item['fk_i_category_id'])
+                            && $item['fk_i_category_id'] == $c['pk_i_id'])
+                        || (isset($catId) && $catId == $c['pk_i_id']));
+                    echo '<option value="' . $c['pk_i_id'] . '"' . ($selected ? ' selected="selected"'
+                            : '') . '>' . osc_esc_html((string) $c['s_name']) . '</option>';
+                    if (isset($c['categories']) && is_array($c['categories'])) {
+                        self::subcategory_select($c['categories'], $item, $default_item, 1);
+                    }
                 }
             }
-        }
-        echo '</select>', parent::errorLine('catId', $attributes);
+            echo '</select>';
+
+            return (string) ob_get_clean();
+        });
 
         return true;
     }
@@ -497,8 +501,7 @@ class ItemForm extends Form
         $attributes['id']    = self::locale_field_id($name, $locale);
         $options['sanitize'] = null;
         $field               = $name . '[' . $locale . ']';
-        $attributes          = parent::markInvalid($field, $attributes);
-        echo (new self())->textarea($field, $value, $attributes, $options), parent::errorLine($field, $attributes);
+        echo parent::withError($field, $attributes, static fn (array $a): string => (new self())->textarea($field, $value, $a, $options));
 
         return true;
     }
