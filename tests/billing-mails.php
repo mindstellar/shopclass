@@ -293,10 +293,22 @@ Billing::markPaid($credits, 'ext-6');
 $sent = $mails();
 pin('keeps the old receipt and tells the owner nothing', ['tom@example.test'], array_column($sent, 'to'));
 pin('with the old subject', 'Your receipt from ' . osc_page_title() . ', order #' . $credits->getId(), $sent[0]['subject']);
-foreach ([Receipts::MAIL_DELIVERED => Order::STATUS_DELIVERED, Receipts::MAIL_CANCELLED => Order::STATUS_CANCELLED, Receipts::MAIL_REFUNDED => Order::STATUS_REFUNDED] as $kind => $status) {
+foreach ([Receipts::MAIL_DELIVERED => Order::STATUS_DELIVERED, Receipts::MAIL_REFUNDED => Order::STATUS_REFUNDED] as $kind => $status) {
     $admin->query("UPDATE {$p}t_billing_order SET s_status = '$status' WHERE pk_i_id = {$credits->getId()}");
     pin("a credits order in $status gets no $kind mail, and no mark", [true, [], null], [Receipts::sendNotice($kind, $credits->getId()), $mails(), OrderStore::find($credits->getId())->meta('_mail_' . $kind)]);
 }
+
+harness_section('a cancelled listing-fee or credits order');
+$fee = OrderStore::create($tom, 'offline', $m(5), 'USD', 0, ['_kind' => Order::KIND_LISTING, '_buyer' => ['email' => 'tom@example.test', 'name' => 'Tom']]);
+$mails();
+OrderStore::cancel($fee->getId());
+$sent = $mails();
+pin('cancelling a listing-fee order tells the seller', ['tom@example.test'], array_column($sent, 'to'));
+check('and says the listing stays on hold', str_contains($sent[0]['subject'], 'was cancelled') && str_contains($sent[0]['body'], 'stays on hold'));
+$topup = OrderStore::create($tom, 'offline', $m(10), 'USD', 100);
+$mails();
+OrderStore::cancel($topup->getId());
+pin('cancelling a credits order tells the buyer', ['tom@example.test'], array_column($mails(), 'to'));
 
 harness_section('the mail events');
 $bridge = \mindstellar\event\HookBridge::active();
