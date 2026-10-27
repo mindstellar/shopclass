@@ -256,6 +256,9 @@ class CAdminPages extends AdminSecBaseModel
      */
     private function savePage($id)
     {
+        if ($id === null) {
+            StaticPageForm::nameNewPageFromTitle();
+        }
         $formId = StaticPageForm::register($id);
         $result = osc_settings_save($formId, $id);
         // The form store writes the page tables directly, not through the Page model.
@@ -284,8 +287,12 @@ class CAdminPages extends AdminSecBaseModel
                 Session::getInstance()->_setForm('s_internal_name', $name);
             }
 
-            foreach ($result['errors'] as $error) {
-                osc_add_flash_error_message($error, 'admin');
+            // The editor shows the refusal in its summary and beside the field, so a flash
+            // would be the same sentence a third time.
+            if ($failure === array()) {
+                foreach ($result['errors'] as $error) {
+                    osc_add_flash_error_message($error, 'admin');
+                }
             }
             $field  = $failure['field'] ?? 's_internal_name';
             $errors = array($field => ($field === 's_title'

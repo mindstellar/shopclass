@@ -276,6 +276,10 @@ function customHead()
         var CSRF = '<?php echo $csrf_token; ?>';
         var CF_CAT_NAMES = <?php echo json_encode((object)$catNames); ?>;
         var CF_TXT = {
+            newFieldTitle: '<?php echo osc_esc_js(__('New field')); ?>',
+            newFormTitle:  '<?php echo osc_esc_js(__('New form')); ?>',
+            nameNeeded:    '<?php echo osc_esc_js(__('Give it a name.')); ?>',
+            ajaxError:     '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>',
             saving:     '<?php echo osc_esc_js(__('Saving…')); ?>',
             saved:      '<?php echo osc_esc_js(__('Saved')); ?>',
             inForms:    '<?php echo osc_esc_js(__('In %d forms')); ?>',
@@ -652,54 +656,89 @@ function customHead()
                 });
             }
 
-            // + New form
-            var addFormBtn = document.getElementById('add-form-button');
-            if (addFormBtn) {
-                addFormBtn.addEventListener('click', function (e) {
-                    e.preventDefault();
-                    fetch(BASE + '?page=ajax&action=add_group&' + CSRF, { credentials: 'same-origin' })
-                        .then(function (r) { return r.json(); }).then(function (ret) {
-                            if (ret && ret.error == 0) {
-                                var empty = document.getElementById('forms-empty');
-                                if (empty) { empty.remove(); }
-                                buildFormCard(ret.group_id, ret.group_name);
-                                show_group_iframe(ret.group_id);
-                            } else { setJsMessage('error', '<?php echo osc_esc_js(__('Form could not be created')); ?>'); }
-                        });
-                });
+            // + New form / + New field: ask for the name first, create on Add.
+            var addDlg = document.getElementById('addDialog');
+            var addForm = document.getElementById('addDialogForm');
+            var addName = document.getElementById('addDialogName');
+            var addType = document.getElementById('addDialogType');
+            var addErr = document.getElementById('addDialogError');
+            var addKind = '';
+
+            function openAdd(kind) {
+                addKind = kind;
+                addDlg.querySelector('.osc-dialog-title-text').textContent =
+                    kind === 'field' ? CF_TXT.newFieldTitle : CF_TXT.newFormTitle;
+                addType.closest('.add-dialog-type').hidden = kind !== 'field';
+                addName.value = '';
+                addErr.hidden = true;
+                addDlg.showModal();
+                addName.focus();
             }
 
-            // + New field (appends a palette chip and opens its editor)
+            function addFail(msg) {
+                addErr.textContent = msg || CF_TXT.ajaxError;
+                addErr.hidden = false;
+                addName.focus();
+            }
+
+            function addFieldChip(ret) {
+                var li = document.createElement('li');
+                li.className = 'field-chip';
+                li.setAttribute('data-field-id', ret.field_id);
+                li.setAttribute('data-type', ret.field_type || 'TEXT');
+                li.innerHTML = ''
+                    + '<div class="field-chip-row">'
+                    + '  <button type="button" class="chip-grip" tabindex="-1" title="<?php echo osc_esc_js(__('Drag to reorder, or focus and use the arrow keys')); ?>" aria-label="<?php echo osc_esc_js(__('Reorder field: use the arrow keys')); ?>"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>'
+                    + '  <span class="chip-name"></span>'
+                    + '  <span class="chip-type"></span>'
+                    + '  <span class="chip-actions">'
+                    + '    <button type="button" class="chip-btn chip-edit" onclick="edit_field(' + ret.field_id + '); return false;" title="<?php echo osc_esc_js(__('Edit field')); ?>"><i class="bi bi-pencil-fill"></i></button>'
+                    + '    <button type="button" class="chip-btn chip-remove" title="<?php echo osc_esc_js(__('Remove from form')); ?>"><i class="bi bi-x-lg"></i></button>'
+                    + '  </span>'
+                    + '</div>'
+                    + '<div class="field-chip-editor edit" hidden></div>';
+                li.querySelector('.chip-name').textContent = ret.field_name;
+                li.querySelector('.chip-type').textContent = ret.type_label || '';
+                var pEmpty = document.getElementById('palette-empty');
+                if (pEmpty) { pEmpty.remove(); }
+                document.getElementById('palette-list').appendChild(li);
+                edit_field(ret.field_id);
+            }
+
+            var addFormBtn = document.getElementById('add-form-button');
+            if (addFormBtn) {
+                addFormBtn.addEventListener('click', function (e) { e.preventDefault(); openAdd('form'); });
+            }
             var addFieldBtn = document.getElementById('add-field-button');
             if (addFieldBtn) {
-                addFieldBtn.addEventListener('click', function (e) {
+                addFieldBtn.addEventListener('click', function (e) { e.preventDefault(); openAdd('field'); });
+            }
+            if (addForm) {
+                addForm.addEventListener('submit', function (e) {
                     e.preventDefault();
-                    fetch(BASE + '?page=ajax&action=add_field&' + CSRF, { credentials: 'same-origin' })
-                        .then(function (r) { return r.text(); }).then(function (res) {
-                            var ret; try { ret = JSON.parse(res); } catch (err) { ret = null; }
-                            if (ret && ret.error == 0) {
-                                var li = document.createElement('li');
-                                li.className = 'field-chip';
-                                li.setAttribute('data-field-id', ret.field_id);
-                                li.setAttribute('data-type', 'TEXT');
-                                li.innerHTML = ''
-                                    + '<div class="field-chip-row">'
-                                    + '  <button type="button" class="chip-grip" tabindex="-1" title="<?php echo osc_esc_js(__('Drag to reorder, or focus and use the arrow keys')); ?>" aria-label="<?php echo osc_esc_js(__('Reorder field: use the arrow keys')); ?>"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>'
-                                    + '  <span class="chip-name"></span>'
-                                    + '  <span class="chip-type"><?php echo osc_esc_js(__('Text')); ?></span>'
-                                    + '  <span class="chip-actions">'
-                                    + '    <button type="button" class="chip-btn chip-edit" onclick="edit_field(' + ret.field_id + '); return false;" title="<?php echo osc_esc_js(__('Edit field')); ?>"><i class="bi bi-pencil-fill"></i></button>'
-                                    + '    <button type="button" class="chip-btn chip-remove" title="<?php echo osc_esc_js(__('Remove from form')); ?>"><i class="bi bi-x-lg"></i></button>'
-                                    + '  </span>'
-                                    + '</div>'
-                                    + '<div class="field-chip-editor edit" hidden></div>';
-                                li.querySelector('.chip-name').textContent = ret.field_name;
-                                var pEmpty = document.getElementById('palette-empty');
-                                if (pEmpty) { pEmpty.remove(); }
-                                palette.appendChild(li);
-                                edit_field(ret.field_id);
-                            } else { setJsMessage('error', '<?php echo osc_esc_js(__('Field could not be added')); ?>'); }
-                        });
+                    var name = addName.value.trim();
+                    if (name === '') { addFail(CF_TXT.nameNeeded); return; }
+                    var body = new URLSearchParams();
+                    body.set(addKind === 'field' ? 's_name' : 'group_name', name);
+                    if (addKind === 'field') { body.set('field_type', addType.value); }
+                    var submit = addForm.querySelector('[type="submit"]');
+                    submit.disabled = true;
+                    fetch(BASE + '?page=ajax&action=' + (addKind === 'field' ? 'add_field' : 'add_group') + '&' + CSRF, {
+                        method: 'POST', credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }, body: body
+                    }).then(function (r) { return r.json(); }).then(function (ret) {
+                        submit.disabled = false;
+                        if (!ret || ret.error != 0) { addFail(ret && ret.msg); return; }
+                        addDlg.close();
+                        if (addKind === 'field') {
+                            addFieldChip(ret);
+                        } else {
+                            var empty = document.getElementById('forms-empty');
+                            if (empty) { empty.remove(); }
+                            buildFormCard(ret.group_id, ret.group_name);
+                            show_group_iframe(ret.group_id);
+                        }
+                    }).catch(function () { submit.disabled = false; addFail(); });
                 });
             }
         });
@@ -824,6 +863,30 @@ if ($looseCount > 0) { ?>
     <!-- Announces keyboard reordering to assistive tech. -->
     <div id="cf-live" class="visually-hidden" role="status" aria-live="polite"></div>
 
+    <dialog id="addDialog" class="osc-dialog">
+        <form id="addDialogForm" novalidate>
+            <div class="osc-dialog-body">
+                <p class="osc-dialog-title"><i class="bi bi-plus-circle-fill" aria-hidden="true"></i> <span class="osc-dialog-title-text"></span></p>
+                <div class="mb-3">
+                    <label class="form-label" for="addDialogName"><?php _e('Name'); ?></label>
+                    <input type="text" class="form-control" id="addDialogName" maxlength="255" autocomplete="off">
+                </div>
+                <div class="mb-3 add-dialog-type">
+                    <label class="form-label" for="addDialogType"><?php _e('Type'); ?></label>
+                    <select class="form-select" id="addDialogType">
+                        <?php foreach (osc_field_types() as $typeId => $typeSpec) { ?>
+                            <option value="<?php echo osc_esc_html($typeId); ?>"<?php echo $typeId === 'TEXT' ? ' selected' : ''; ?>><?php echo osc_esc_html(__($typeSpec['label'])); ?></option>
+                        <?php } ?>
+                    </select>
+                </div>
+                <p class="text-danger mb-0" id="addDialogError" role="alert" hidden></p>
+            </div>
+            <div class="osc-dialog-actions">
+                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+                <button type="submit" class="btn btn-submit btn-sm"><?php _e('Add'); ?></button>
+            </div>
+        </form>
+    </dialog>
     <dialog id="deleteModal" class="osc-dialog osc-dialog-danger" data-field-id="">
         <div class="osc-dialog-body">
             <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php echo __('Delete field'); ?></p>

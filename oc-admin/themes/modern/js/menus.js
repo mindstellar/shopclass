@@ -400,6 +400,12 @@
                     addError.hidden = false;
                     return;
                 }
+                if (!/^(https?:\/\/|\/)/i.test(url.value.trim())) {
+                    addError.textContent = t.badAddress;
+                    addError.hidden = false;
+                    url.focus();
+                    return;
+                }
                 item.label[state.default] = label.value.trim();
                 item.url = url.value.trim();
                 label.value = '';
@@ -434,4 +440,8 @@
     flatten(state.items, 0);
     clamp();
     render();
+    if (state.draft) {
+        dirty = true;
+        status.textContent = t.unsaved;
+    }
 }());

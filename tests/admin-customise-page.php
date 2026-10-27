@@ -206,6 +206,14 @@ $part = (string) ob_get_clean();
 check('the current type shows its saved values', strpos($part, 'value="Saved"') !== false && (bool) preg_match('#<option value="rail" selected>#', $part));
 check('...and is not hidden', !preg_match('#data-type-id="aisle.hero"\s+hidden#', $part));
 
+harness_section('on a phone the preview comes first');
+
+$scss = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/scss/_customise.scss');
+check(
+    'the stacked layout puts the preview and its Publish bar above the settings',
+    (bool) preg_match('/@media \(max-width: 991\.98px\) \{.*?\.cz-main \{\s*order: -1;/s', $scss)
+);
+
 $code = harness_result();
 ob_end_flush();
 exit($code);

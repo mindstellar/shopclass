@@ -19,20 +19,18 @@ osc_enqueue_script('admin-categories');
 
 $categories = __get('categories');
 
-// Same URL the empty state offers, and built before the registration below rather than
-// beside the body it is also used in: the header renders first, and an undefined variable
-// left its button pointing at "#".
-$add_url = osc_admin_base_url(true) . '?page=categories&amp;action=add_post_default&amp;' . osc_csrf_token_url();
+// Opens the empty drawer; the category is created when it is saved.
+$add_button = array(
+    'icon'  => 'bi-plus-circle-fill',
+    'label' => __('Add category'),
+    'class' => 'js-cat-add',
+);
 
 osc_admin_page(array(
     'section' => __('Listings'),
     'title'   => __('Categories'),
     'actions' => array(
-        array(
-            'icon'  => 'bi-plus-circle-fill',
-            'url'   => $add_url,
-            'title' => __('Add category'),
-        ),
+        $add_button,
     ),
     'help'    => static function () { ?>
         <p><?php _e('Add, edit or delete the categories in which users post listings. Drag a row by its handle to '
@@ -165,6 +163,8 @@ function drawCategory($category)
              'enable'        => __('Enable'),
              'disable'       => __('Disable'),
              'editPrefix'    => __('Edit category'),
+             'newPrefix'     => __('Add category'),
+             'newTitle'      => __('New category'),
          ), JSON_HEX_APOS | JSON_HEX_QUOT)); ?>'>
 
         <div class="cat-toolbar">
@@ -193,7 +193,7 @@ function drawCategory($category)
                                . 'Add your first one to get started.'),
                 'action' => array(
                     'label'   => __('Add category'),
-                    'url'     => $add_url,
+                    'class'   => 'js-cat-add',
                     'icon'    => 'bi-plus-lg',
                     'variant' => 'primary',
                 ),
@@ -211,7 +211,7 @@ function drawCategory($category)
                aria-labelledby="catDrawerTitle" hidden>
             <header class="osc-drawer-head cat-drawer-head">
                 <div>
-                    <span class="cat-drawer-eyebrow"><?php _e('Edit category'); ?></span>
+                    <span class="cat-drawer-eyebrow" id="catDrawerEyebrow"><?php _e('Edit category'); ?></span>
                     <h2 class="osc-drawer-title cat-drawer-title" id="catDrawerTitle"></h2>
                 </div>
                 <button type="button" class="osc-drawer-close cat-drawer-close" id="catDrawerClose"

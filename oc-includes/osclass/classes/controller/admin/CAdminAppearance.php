@@ -631,7 +631,7 @@ class CAdminAppearance extends AdminSecBaseModel
     /**
      * The menu editor: one menu at a time, with the categories and pages it can link to.
      */
-    private function menusScreen(): void
+    private function menusScreen(?array $draft = null): void
     {
         if (osc_is_moderator()) {
             http_response_code(403);
@@ -655,7 +655,8 @@ class CAdminAppearance extends AdminSecBaseModel
             'core'       => in_array($id, MenuService::CORE, true),
             'place'      => $service->themePlaces()[$id] ?? null,
             'places'     => $service->themePlaces() !== array(),
-            'items'      => $saved !== null ? $saved['items'] : $service->automaticItems($id),
+            'items'      => $draft ?? ($saved !== null ? $saved['items'] : $service->automaticItems($id)),
+            'draft'      => $draft !== null,
             'categories' => $picker['categories'],
             'pages'      => $picker['pages'],
         ));
@@ -683,6 +684,13 @@ class CAdminAppearance extends AdminSecBaseModel
             : $service->save($id, json_decode(Params::getParamString('items', false, false, false), true), null);
         foreach ($errors as $error) {
             osc_add_flash_error_message($error, 'admin');
+        }
+        if ($errors !== array() && !$create) {
+            // Back to the editor with the posted items, so the owner fixes the one item named
+            // instead of building the menu again.
+            $this->menusScreen($service->draft(json_decode(Params::getParamString('items', false, false, false), true)));
+
+            return;
         }
         if ($errors === array()) {
             osc_add_flash_ok_message($create ? _m('Menu created. Add items to it.') : _m('Menu saved.'), 'admin');

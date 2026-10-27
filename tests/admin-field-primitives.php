@@ -283,6 +283,12 @@ emits('a file field is a file picker', $html, '<input type="file"');
 // path disclosure for nothing.
 check('a file field carries no value', strpos($html, 'value=') === false, $html);
 
+$html = render(static function () {
+    osc_admin_field(array('type' => 'image', 'name' => 'logo', 'label' => 'Logo'));
+});
+emits('an image field is a Choose image button over a file input', $html, '<label class="btn btn-secondary btn-sm field-image-choose" for="field-logo">Choose image</label>');
+check('and the file input is hidden visually, not removed', strpos($html, 'visually-hidden field-image-input') !== false && strpos($html, 'type="file"') !== false, $html);
+
 harness_section('an option can be disabled or keep its own id');
 $html = render(static function () {
     osc_admin_radio_group(array(

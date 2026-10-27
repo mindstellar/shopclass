@@ -73,6 +73,18 @@ final class CategoryAjax extends AjaxHandler
 
     public function editIframe(): void
     {
+        if (Params::getParamInt('id') <= 0) {
+            // A new category: the same form, empty, saved by editPost() as a create.
+            $this->controller->_exportVariableToView(
+                'category',
+                array('pk_i_id' => '', 'fk_i_parent_id' => null, 'i_expiration_days' => 0, 'b_price_enabled' => 1, 'locale' => array())
+            );
+            $this->controller->_exportVariableToView('has_subcategories', false);
+            $this->controller->_exportVariableToView('languages', OSCLocale::getInstance()->listAllEnabled());
+            $this->controller->doView('categories/iframe.php');
+
+            return;
+        }
         $this->controller->_exportVariableToView(
             'category',
             Category::getInstance()->findByPrimaryKey(Params::getParamInt('id'), 'all')
@@ -160,6 +172,11 @@ final class CategoryAjax extends AjaxHandler
         }
 
         $l = osc_language();
+        if ((int) $id <= 0) {
+            AjaxResponse::json($this->create($fields, $aFieldsDescription, $has_one_title === 1));
+
+            return;
+        }
         // The service fires edited_category with the outcome, saved or not.
         $editor = CategoryService::make();
         // @phpstan-ignore equal.alwaysTrue (error is changed by the loop above)
@@ -190,5 +207,41 @@ final class CategoryAjax extends AjaxHandler
             $msg = __('An error occurred while updating');
         }
         AjaxResponse::json(array('error' => $error, 'msg' => $msg, 'text' => $aFieldsDescription[$l]['s_name']));
+    }
+
+    /**
+     * Create a root category from the drawer, with the names typed there. The slug comes
+     * from the name, so no placeholder row is ever written.
+     *
+     * @param array<string,mixed>               $fields
+     * @param array<string,array<string,mixed>> $descriptions
+     *
+     * @return array<string,mixed>
+     */
+    private function create(array $fields, array $descriptions, bool $hasTitle): array
+    {
+        if (!$hasTitle) {
+            return array('error' => 1, 'msg' => __('Sorry, including at least a title is mandatory'));
+        }
+        // A language left blank gets no row; the editor can fill it in later.
+        $descriptions = array_filter($descriptions, static fn (array $d): bool => ($d['s_name'] ?? '') !== '');
+        foreach ($descriptions as $locale => $d) {
+            unset($descriptions[$locale]['s_slug']);
+        }
+        try {
+            CategoryService::make()->create(
+                null,
+                array('i_expiration_days' => (int) $fields['i_expiration_days'], 'b_price_enabled' => (int) $fields['b_price_enabled']),
+                $descriptions,
+                true,
+                true
+            );
+        } catch (InvalidException | RuntimeException $e) {
+            return array('error' => 2, 'msg' => __('An error occurred while updating'));
+        }
+        $msg = __('A new category has been added');
+        osc_add_flash_ok_message($msg, 'admin');
+
+        return array('error' => 0, 'msg' => $msg, 'created' => true);
     }
 }

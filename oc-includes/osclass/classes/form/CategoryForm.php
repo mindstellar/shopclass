@@ -27,7 +27,7 @@ class CategoryForm extends Form
     public static function primary_input_hidden($category)
     {
         $attributes['id'] = 'id';
-        echo (new self())->hidden('id', $category['pk_i_id'], $attributes);
+        echo (new self())->hidden('id', $category['pk_i_id'] ?? '', $attributes);
     }
 
     /**
@@ -241,22 +241,25 @@ class CategoryForm extends Form
             $nameTextarea  = $locale['pk_c_code'] . '#s_description';
             $valueTextarea = isset($category['locale'][$locale['pk_c_code']])
                 ? $category['locale'][$locale['pk_c_code']]['s_description'] : '';
-            $contentTemp = '<div id="' . $category['pk_i_id'] . '-' . $locale['pk_c_code']
+            $contentTemp = '<div id="' . ($category['pk_i_id'] ?? 'new') . '-' . $locale['pk_c_code']
                 . '" class="category-details-form">';
             $contentTemp .= '<div class="form-controls"><label>' . __('Name') . '</label><input id="'
                 . $name . '" type="text" name="' . $name . '" value="'
                 . osc_esc_html(htmlentities($value, ENT_COMPAT, 'UTF-8', false)) . '"/></div>';
 
-            $contentTemp .= '<div class="form-controls"><label>' . __('Slug') . '</label><input id="'
-                . $nameSlug . '" type="text" name="' . $nameSlug . '" value="'
-                . osc_esc_html(urldecode($valueSlug)) . '" /></div>';
+            // A new category gets its slug from the name it is saved with.
+            if (isset($category['pk_i_id']) && $category['pk_i_id'] !== '') {
+                $contentTemp .= '<div class="form-controls"><label>' . __('Slug') . '</label><input id="'
+                    . $nameSlug . '" type="text" name="' . $nameSlug . '" value="'
+                    . osc_esc_html(urldecode($valueSlug)) . '" /></div>';
+            }
 
             $contentTemp .= '<div class="form-controls"><label>' . __('Description') . '</label>';
             $contentTemp .= '<textarea id="' . $nameTextarea . '" name="' . $nameTextarea
                 . '" rows="10">' . osc_esc_html($valueTextarea) . '</textarea>';
             $contentTemp .= '</div></div>';
             $tabs[]      = \mindstellar\admin\ui\Field::localeTab(
-                $category['pk_i_id'] . '-' . $locale['pk_c_code'],
+                ($category['pk_i_id'] ?? 'new') . '-' . $locale['pk_c_code'],
                 $locale['s_name'],
                 $locale['pk_c_code'],
                 $current_locale_code
