@@ -173,20 +173,47 @@ final class FieldAjax extends AjaxHandler
         AjaxResponse::json($result);
     }
 
+    /**
+     * Create a field from the name and type typed in the add dialog, so no placeholder row
+     * is written. The slug comes from the name.
+     */
     public function add(): void
     {
-        $s_name  = __('NEW custom field');
-        $slug    = FieldSlug::unique($s_name);
-        $fieldId = Field::getInstance()->insertField($s_name, 'TEXT', $slug, 0, '', array());
-        if ($fieldId) {
-            AjaxResponse::json(array(
-                'error'      => 0,
-                'field_id'   => $fieldId,
-                'field_name' => $s_name
-            ));
-        } else {
-            AjaxResponse::json(array('error' => 1));
+        $name = trim(Params::getParamString('s_name'));
+        if ($name === '') {
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Give the field a name.')));
+
+            return;
         }
+        if (FieldService::make(osc_language())->nameTaken($name, 0)) {
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Sorry, you already have a field with that name')));
+
+            return;
+        }
+        $type = Params::getParamString('field_type');
+        $spec = osc_field_type($type);
+        if ($spec === null) {
+            $type = 'TEXT';
+            $spec = osc_field_type($type);
+        }
+        $fieldId = Field::getInstance()->insertField($name, osc_field_type_storage($type), FieldSlug::unique($name), 0, '', array());
+        if (!$fieldId) {
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Field could not be added')));
+
+            return;
+        }
+        $field = Field::getInstance();
+        if (!in_array($type, FieldTypeRegistry::STORAGE_PRIMITIVES, true)) {
+            $field->updateJsonMeta($fieldId, 'type', $type);
+        }
+        $field->updateJsonMeta($fieldId, 'locale', array(osc_current_admin_locale() => array('s_name' => $name)));
+        AjaxResponse::json(array(
+            'error'      => 0,
+            'field_id'   => $fieldId,
+            'field_name' => $name,
+            'field_type' => $type,
+            'type_label' => $spec !== null ? __($spec['label']) : $type,
+        ));
     }
 
     public function order(): void
