@@ -72,7 +72,7 @@ $comment = __get('comment');
                 <?php osc_admin_form_row_open(__("Author's e-mail"), array('for' => 'authorEmail')); ?>
                         <?php CommentForm::email_input_text($comment); ?>
                 <?php osc_admin_form_row_close(); ?>
-                <?php osc_admin_form_row_open(__('Visible')); ?>
+                <?php osc_admin_form_row_open(_x('Visible', 'comment is shown on the site')); ?>
                         <div class="form-label-checkbox">
                             <?php echo($comment['b_active'] ? __('Active') : __('Inactive')); ?> ( <a
                                     href="<?php echo osc_admin_base_url(true); ?>?page=comments&action=status&id=<?php echo

@@ -62,7 +62,7 @@ class PagesDataTable extends DataTable
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('internal_name', __('Internal name'));
         $this->addColumn('title', __('Title'));
-        $this->addColumn('order', __('Order'));
+        $this->addColumn('order', _x('Order', 'sort position'));
 
         $dummy = &$this;
         osc_run_hook('admin_pages_table', $dummy);
