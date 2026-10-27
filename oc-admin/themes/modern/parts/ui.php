@@ -160,7 +160,7 @@ if (!function_exists('osc_admin_page_header')) {
                 }
                 // A plus icon marks the page's add action, which shows its title as text.
                 $isAdd = in_array($action['icon'] ?? '', array('bi-plus', 'bi-plus-lg', 'bi-plus-circle', 'bi-plus-circle-fill'), true); ?>
-                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"<?php echo $isAdd ? ' class="osc-head-add"' : ''; ?>
+                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"<?php $headClass = trim(($isAdd ? 'osc-head-add ' : '') . (string) ($action['class'] ?? '')); echo $headClass !== '' ? ' class="' . osc_esc_html($headClass) . '"' : ''; ?>
                    <?php if (!empty($action['onclick'])) { ?>onclick="<?php echo osc_esc_html($action['onclick']); ?>"<?php } ?>
                    title="<?php echo osc_esc_html($label); ?>"
                    <?php if (!$isAdd) { ?>aria-label="<?php echo osc_esc_html($label); ?>"<?php } ?><?php echo $attrs; ?>>
