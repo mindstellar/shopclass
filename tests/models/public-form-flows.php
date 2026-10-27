@@ -69,6 +69,18 @@ $login = file_get_contents($dir . 'CWebLogin.php');
 check('every login bounce goes through the keeping redirect', substr_count(harness_method_source($dir . 'CWebLogin.php', 'loginPost'), '$this->redirectTo($back)') === 0
     && str_contains(harness_method_source($dir . 'CWebLogin.php', 'bounce'), "_setForm('email'"));
 
+harness_section('a refused add keeps what was typed');
+// The admin Add user form has no user, so it hands the fields an empty string.
+Session::getInstance()->_setForm('user_s_name', 'Typed Name');
+Session::getInstance()->_setForm('user_s_phone_land', '0161 22');
+ob_start();
+UserForm::name_text('');
+UserForm::phone_land_text(null);
+$typed = (string) ob_get_clean();
+Session::getInstance()->_setForm('user_s_name', '');
+Session::getInstance()->_setForm('user_s_phone_land', '');
+check('the fields draw with the typed values', str_contains($typed, 'Typed Name') && str_contains($typed, '0161 22'));
+
 harness_section('register keeps the return path');
 $register = file_get_contents($dir . 'CWebRegister.php');
 check('a register that needs validation keeps the return for the validate link', str_contains($register, 'osc_set_login_redirect(') && str_contains($register, 'osc_login_return_path()'));

@@ -38,9 +38,7 @@ class UserForm extends Form
      */
     public static function name_text($user = null)
     {
-        if (Session::getInstance()->_getForm('user_s_name') != '') {
-            $user['s_name'] = Session::getInstance()->_getForm('user_s_name');
-        }
+        $user = self::withFormValue($user, 's_name');
         parent::generic_input_text(
             's_name',
             isset($user['s_name']) ? $user['s_name'] : '',
@@ -58,9 +56,7 @@ class UserForm extends Form
      */
     public static function username_text($user = null)
     {
-        if (Session::getInstance()->_getForm('user_s_username') != '') {
-            $user['s_username'] = Session::getInstance()->_getForm('user_s_username');
-        }
+        $user = self::withFormValue($user, 's_username');
         parent::generic_input_text(
             's_username',
             isset($user['s_username']) ? $user['s_username'] : '',
@@ -157,9 +153,7 @@ class UserForm extends Form
      */
     public static function email_text($user = null)
     {
-        if (Session::getInstance()->_getForm('user_s_email') != '') {
-            $user['s_email'] = Session::getInstance()->_getForm('user_s_email');
-        }
+        $user = self::withFormValue($user, 's_email');
         parent::generic_input_text(
             's_email',
             isset($user['s_email']) ? $user['s_email'] : '',
@@ -194,9 +188,7 @@ class UserForm extends Form
      */
     public static function mobile_text($user = null)
     {
-        if (Session::getInstance()->_getForm('user_s_phone_mobile') != '') {
-            $user['s_phone_mobile'] = Session::getInstance()->_getForm('user_s_phone_mobile');
-        }
+        $user = self::withFormValue($user, 's_phone_mobile');
         parent::generic_input_text(
             's_phone_mobile',
             isset($user['s_phone_mobile']) ? $user['s_phone_mobile'] : '',
@@ -214,9 +206,7 @@ class UserForm extends Form
      */
     public static function phone_land_text($user = null)
     {
-        if (Session::getInstance()->_getForm('user_s_phone_land') != '') {
-            $user['s_phone_land'] = Session::getInstance()->_getForm('user_s_phone_land');
-        }
+        $user = self::withFormValue($user, 's_phone_land');
         parent::generic_input_text(
             's_phone_land',
             isset($user['s_phone_land']) ? $user['s_phone_land'] : '',
@@ -688,6 +678,25 @@ class UserForm extends Form
             })();
         </script>
         <?php
+    }
+
+    /**
+     * $user as an array, with $key replaced by the failed-submit session value when there is one.
+     * A form with no user passes '' or null, which cannot take a key.
+     *
+     * @param mixed $user
+     *
+     * @return array<string,mixed>
+     */
+    private static function withFormValue($user, string $key): array
+    {
+        $user  = is_array($user) ? $user : array();
+        $value = Session::getInstance()->_getForm('user_' . $key);
+        if ($value != '') {
+            $user[$key] = $value;
+        }
+
+        return $user;
     }
 }
 
