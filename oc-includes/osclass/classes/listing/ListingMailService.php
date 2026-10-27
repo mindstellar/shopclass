@@ -52,13 +52,13 @@ final class ListingMailService
         try {
             $errors = array();
             if (!osc_validate_text($form['yourName'])) {
-                $errors[] = self::error('/yourName', _m('Your name: this field is required'));
+                $errors[] = self::error('/yourName', _m('Enter your name'));
             }
             if (!osc_validate_email($form['yourEmail'])) {
-                $errors[] = self::error('/yourEmail', _m('Invalid email address'));
+                $errors[] = self::error('/yourEmail', _m('Enter a valid e-mail address'));
             }
             if (!osc_validate_text($form['message'])) {
-                $errors[] = self::error('/message', _m('Message: this field is required'));
+                $errors[] = self::error('/message', _m('Write a message'));
             }
             if ($errors !== array()) {
                 throw InvalidException::all($errors);
@@ -101,7 +101,7 @@ final class ListingMailService
             // Checked before sending: a bad address makes PHPMailer throw.
             $errors = array();
             if (!osc_validate_text($form['yourName'])) {
-                $errors[] = self::error('/yourName', _m('Your name: this field is required'));
+                $errors[] = self::error('/yourName', _m('Enter your name'));
             }
             if (!osc_validate_email($form['yourEmail'])) {
                 $errors[] = self::error('/yourEmail', _m('Your email: invalid email address'));

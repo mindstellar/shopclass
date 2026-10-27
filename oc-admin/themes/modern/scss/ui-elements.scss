@@ -239,6 +239,7 @@ input.btn-mini {
 }
 
 .btn-submit {
+  --#{$prefix}btn-focus-shadow-rgb: var(--osc-bronze-rgb);
   background-color: var(--osc-bronze);
   border-color: var(--osc-bronze);
   color: var(--osc-ink-inverse);

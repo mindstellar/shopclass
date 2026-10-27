@@ -116,6 +116,11 @@ if (!function_exists('osc_csrf_token_url')) {
         return 'CSRFName=t&CSRFToken=t';
     }
 }
+if (!function_exists('osc_purge_page_cache')) {
+    function osc_purge_page_cache($what = '')
+    {
+    }
+}
 if (!function_exists('osc_page_templates')) {
     function osc_page_templates()
     {
@@ -530,9 +535,10 @@ $noTitle['en_US#s_text']   = '<p>Body with no title anywhere.</p>';
 $result                    = drive('CAdminPages', $noTitle, array('page' => 'pages', 'action' => 'edit_post'));
 pin(
     'a page with no title in any locale is refused',
-    array(array('error', "The page couldn't be updated, at least one title should not be empty")),
-    $result['flashes']
+    "The page couldn't be updated, at least one title should not be empty",
+    \mindstellar\admin\form\StaticPageForm::failure()['message'] ?? null
 );
+pin('and the editor shows it, not a flash', array(), $result['flashes']);
 pin(
     'and its body is not written',
     '<p>The edited English body.</p>',
@@ -544,8 +550,8 @@ $noName['s_internal_name'] = '';
 $result                    = drive('CAdminPages', $noName, array('page' => 'pages', 'action' => 'edit_post'));
 pin(
     'a page with no internal name is refused',
-    array(array('error', 'You have to set an internal name')),
-    $result['flashes']
+    'You have to set an internal name',
+    \mindstellar\admin\form\StaticPageForm::failure()['message'] ?? null
 );
 
 $reserved                    = $pagePost;
@@ -553,8 +559,8 @@ $reserved['s_internal_name'] = 'contact';
 $result                      = drive('CAdminPages', $reserved, array('page' => 'pages', 'action' => 'edit_post'));
 pin(
     'an internal name that would shadow a core route is refused',
-    array(array('error', 'You have to set a different internal name')),
-    $result['flashes']
+    'You have to set a different internal name',
+    \mindstellar\admin\form\StaticPageForm::failure()['message'] ?? null
 );
 pin(
     'and the page keeps the name it had',
@@ -567,10 +573,40 @@ $apiSlug['s_internal_name'] = 'api';
 $result                     = drive('CAdminPages', $apiSlug, array('page' => 'pages', 'action' => 'edit_post'));
 pin(
     'the API\'s /api/ prefix is refused as an internal name',
-    array(array('error', 'A slug of "api", or one starting with "api/", is reserved for the site\'s API. Choose another.')),
-    $result['flashes']
+    'A slug of "api", or one starting with "api/", is reserved for the site\'s API. Choose another.',
+    \mindstellar\admin\form\StaticPageForm::failure()['message'] ?? null
 );
 pin('and the page keeps its name', 'about-our-shop', row($admin, 't_pages', 'pk_i_id', $pageId)['s_internal_name']);
+
+harness_section('a new page with only a title gets its internal name from it');
+
+$newPage = array(
+    'page'          => 'pages',
+    'action'        => 'add_post',
+    'en_US#s_title' => 'Shipping & returns',
+    'en_US#s_text'  => '<p>Posted in 3 days.</p>',
+);
+$result = drive('CAdminPages', $newPage, array('page' => 'pages', 'action' => 'add_post'));
+pin('it is saved and the admin goes back to the list', array(array('ok', 'The page has been added')), $result['flashes']);
+$created = $admin->query('SELECT s_internal_name FROM ' . DB_TABLE_PREFIX . "t_pages WHERE s_internal_name LIKE 'shipping%'")->fetch_all(MYSQLI_ASSOC);
+pin('the name comes from the title', array(array('s_internal_name' => osc_sanitizeString('Shipping & returns'))), $created);
+
+$result = drive('CAdminPages', $newPage, array('page' => 'pages', 'action' => 'add_post'));
+pin('a second page with the same title is saved with a different name', array(array('ok', 'The page has been added')), $result['flashes']);
+pin(
+    'and the two names differ',
+    2,
+    (int) $admin->query('SELECT COUNT(DISTINCT s_internal_name) FROM ' . DB_TABLE_PREFIX . "t_pages WHERE s_internal_name LIKE 'shipping%'")->fetch_row()[0]
+);
+
+$empty = $newPage;
+$empty['en_US#s_title'] = '';
+$result = drive('CAdminPages', $empty, array('page' => 'pages', 'action' => 'add_post'));
+pin(
+    'no title and no name asks for the title',
+    array("The page couldn't be added, at least one title should not be empty", array()),
+    array(\mindstellar\admin\form\StaticPageForm::failure()['message'] ?? null, $result['flashes'])
+);
 
 /* ----------------------------------------------------------------------------
  * The page editor's save is the declaration's, not the controller's.

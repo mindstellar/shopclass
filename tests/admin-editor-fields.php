@@ -222,6 +222,24 @@ if (!function_exists('osc_item_url')) {
         return 'https://example.test/a-red-bicycle_i42';
     }
 }
+if (!function_exists('osc_is_shop_mode')) {
+    function osc_is_shop_mode()
+    {
+        return !empty($GLOBALS['fixtureShop']);
+    }
+}
+if (!function_exists('osc_page_title')) {
+    function osc_page_title()
+    {
+        return 'Demo shop';
+    }
+}
+if (!function_exists('osc_contact_email')) {
+    function osc_contact_email()
+    {
+        return 'shop@example.test';
+    }
+}
 if (!function_exists('osc_is_moderator')) {
     function osc_is_moderator()
     {
@@ -380,6 +398,11 @@ function render_screen(string $screen): string
 {
     $view = View::getInstance();
 
+    if (str_ends_with($screen, '-shop')) {
+        $GLOBALS['fixtureShop'] = true;
+        $screen                 = substr($screen, 0, -5);
+    }
+
     if ($screen === 'item-add' || $screen === 'item-edit') {
         $isNew = ($screen === 'item-add');
         $view->_exportVariableToView('new_item', $isNew);
@@ -389,6 +412,9 @@ function render_screen(string $screen): string
             $view->_exportVariableToView('resources', $GLOBALS['fixtureResources']);
         } else {
             $view->_exportVariableToView('resources', array());
+            if (!empty($GLOBALS['fixtureShop'])) {
+                $view->_exportVariableToView('itemProduct', mindstellar\listing\ListingInput::productForm(0));
+            }
         }
 
         ob_start();
@@ -792,6 +818,17 @@ foreach (array('item-edit', 'item-add', 'page-edit', 'page-add') as $screen) {
     sort($disabled);
     pin($screen . ': no named control is disabled', array(), $disabled);
 }
+
+harness_section('shop mode and classifieds mode on the listing form');
+pin('classifieds: no sell fields', 0, dom('item-add')->query('//*[contains(@class,"osc-sell-fields")]')->length);
+pin('classifieds: no product controls', 0, count(controls('item-add', 'product[sell]')));
+pin('shop: the sell fields are there', 1, dom('item-add-shop')->query('//fieldset[contains(@class,"osc-sell-fields")]')->length);
+$sell = controls('item-add-shop', 'product[sell]');
+pin('shop: a new product starts ticked as sellable', true, $sell !== array() && $sell[count($sell) - 1]->hasAttribute('checked'));
+pin('shop: the contact name defaults to the shop', 'Demo shop', controls('item-add-shop', 'contactName')[0]->getAttribute('value'));
+pin('shop: the contact e-mail defaults to the shop e-mail', 'shop@example.test', controls('item-add-shop', 'contactEmail')[0]->getAttribute('value'));
+pin('classifieds: the contact fields start empty', '', controls('item-add', 'contactName')[0]->getAttribute('value'));
+check('shop: the form says product', strpos(screen('item-add-shop'), 'Add product') !== false);
 
 exit(harness_result());
 

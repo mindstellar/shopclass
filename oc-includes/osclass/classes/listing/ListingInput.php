@@ -89,7 +89,7 @@ final class ListingInput
 
     /**
      * The values of the admin "Sell this item" section: what a refused save posted, or the
-     * listing's variants. Prices are in the site's locale format. `options` and `variants`
+     * listing's variants. A new listing starts for sale in shop mode. Prices are in the site's locale format. `options` and `variants`
      * fill the option editor, `photos` its photo choice (id => label), and `errors` holds a
      * refused save's messages by row index, or under 'options' for the option names.
      *
@@ -112,7 +112,7 @@ final class ListingInput
             }
         } else {
             $stored = $itemId > 0 ? VariantStore::ofItem($itemId) : array();
-            $sell   = $stored !== array();
+            $sell   = $itemId > 0 ? $stored !== array() : osc_is_shop_mode();
             $row    = array();
             $rows   = null;
             foreach ($stored as $one) {
@@ -541,7 +541,8 @@ final class ListingInput
         }
 
         if ($aItem['currency'] == '') {
-            $aItem['currency'] = null;
+            // The form draws no currency field when prices are off, so a sold product takes the site's.
+            $aItem['currency'] = !empty($product['sell']) && (string) osc_currency() !== '' ? (string) osc_currency() : null;
         }
 
         return osc_apply_filter('item_prepare_data', $aItem);

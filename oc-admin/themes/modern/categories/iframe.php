@@ -18,7 +18,7 @@ $has_subcats = __get('has_subcategories');
 $locales     = OSCLocale::getInstance()->listAllEnabled();
 ?>
 <div class="iframe-category">
-    <h3><?php _e('Edit category'); ?></h3>
+    <h3><?php echo empty($category['pk_i_id']) ? __('New category') : __('Edit category'); ?></h3>
     <form action="<?php echo osc_admin_base_url(true); ?>" method="post" data-cat-edit-form>
         <input type="hidden" name="page" value="ajax"/>
         <input type="hidden" name="action" value="edit_category_post"/>
@@ -47,7 +47,7 @@ $locales     = OSCLocale::getInstance()->listAllEnabled();
             <div class="form-vertical">
                 <div class="form-actions">
                     <input type="submit" class="btn btn-primary btn-sm"
-                           value="<?php echo osc_esc_html(__('Save changes')); ?>"/>
+                           value="<?php echo osc_esc_html(empty($category['pk_i_id']) ? __('Add category') : __('Save changes')); ?>"/>
                     <button type="button" class="btn btn-dim btn-sm" data-cat-drawer-cancel>
                         <?php echo osc_esc_html(__('Cancel')); ?>
                     </button>

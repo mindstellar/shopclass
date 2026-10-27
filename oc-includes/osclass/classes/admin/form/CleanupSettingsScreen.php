@@ -65,10 +65,10 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
                 osc_admin_form_section(__('What to remove'), array(
                     'intro' => __('Tick what to clean and how old it must be. Everything removed is gone for good.'),
                 ));
-                echo '<div class="table-responsive"><table class="table" style="min-width:34rem"><thead><tr>'
+                echo '<div class="table-responsive"><table class="table osc-table-stack"><thead><tr>'
                     . '<th>' . osc_esc_html(__('What to remove')) . '</th>'
                     . '<th>' . osc_esc_html(__('Older than')) . '</th>'
-                    . '<th class="text-end">' . osc_esc_html(__('Matching now')) . '</th>'
+                    . '<th>' . osc_esc_html(__('Matching now')) . '</th>'
                     . '</tr></thead><tbody>';
             })
                 ->set('row', false);
@@ -76,7 +76,7 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
         foreach (self::descriptions() as $rule => $description) {
             $form
                 ->custom('rule_open_' . $rule, static function (): void {
-                    echo '<tr><td>';
+                    echo '<tr><td data-col-name="' . osc_esc_html(__('What to remove')) . '">';
                 })
                     ->set('row', false)
                 ->checkbox('enabled_' . $rule, $labels[$rule], $description)
@@ -84,7 +84,7 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
                     ->set('id', 'enabled_' . $rule)
                     ->default(false)
                 ->custom('rule_days_' . $rule, static function (): void {
-                    echo '</td><td>';
+                    echo '</td><td data-col-name="' . osc_esc_html(__('Older than')) . '">';
                 })
                     ->set('row', false)
                 ->number('days_' . $rule, __('Older than'))
@@ -95,7 +95,7 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
                     ->sanitize(self::positiveOr(Cleanup::DEFAULT_DAYS))
                 ->custom('rule_close_' . $rule, static function (array $field) use ($rule): void {
                     $days = (int) ($field['values']['days_' . $rule] ?? Cleanup::DEFAULT_DAYS);
-                    echo '</td><td class="text-end">'
+                    echo '</td><td data-col-name="' . osc_esc_html(__('Matching now')) . '">'
                         . number_format(Cleanup::getInstance()->countFor($rule, $days > 0 ? $days : Cleanup::DEFAULT_DAYS))
                         . '</td></tr>';
                 })

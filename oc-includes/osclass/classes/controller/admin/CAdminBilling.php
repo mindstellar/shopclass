@@ -87,6 +87,9 @@ class CAdminBilling extends AdminSecBaseModel
             case ('order_ship'):
                 $this->orderShipPost();
                 break;
+            case ('order_tracking'):
+                $this->orderTrackingPost();
+                break;
             case ('order_delivered'):
                 $this->orderDeliveredPost();
                 break;
@@ -140,7 +143,7 @@ class CAdminBilling extends AdminSecBaseModel
             'goods'   => false,
         );
         // "To ship": paid goods orders and unpaid cash on delivery ones, newest first.
-        $toShip = Params::getParamInt('toShip') === 1;
+        $toShip = osc_is_shop_mode() && Params::getParamInt('toShip') === 1;
         if ($toShip) {
             $filters = array('status' => null) + OrderStore::TO_SHIP + $filters;
         }
@@ -165,11 +168,15 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     /**
-     * One order, its ledger entries, and whatever can still be done to it.
+     * One order, its ledger entries, and whatever can still be done to it. A refused shipping
+     * form draws it again with what was typed and the fields named.
+     *
+     * @param array<string,string> $typed  posted shipping values by field name
+     * @param array<string,string> $errors message by field name
      *
      * @return void
      */
-    private function orderView()
+    private function orderView(array $typed = array(), array $errors = array())
     {
         $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null) {
@@ -179,6 +186,8 @@ class CAdminBilling extends AdminSecBaseModel
 
         $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
 
+        $this->_exportVariableToView('typed', $typed);
+        $this->_exportVariableToView('errors', $errors);
         $this->_exportVariableToView('order', $order);
         $this->_exportVariableToView('user', User::getInstance()->findByPrimaryKey($order->getUserId()));
         $this->_exportVariableToView('gateway', $gateway);
@@ -271,22 +280,70 @@ class CAdminBilling extends AdminSecBaseModel
         if ($order === null) {
             return;
         }
-        $back = $this->orderUrl($order);
-        $url = Utils::oneLine(Params::getParamString('trackingUrl'));
-        if ($url !== '' && Receipts::httpsUrl($url) === '') {
-            osc_add_flash_error_message(_m('The tracking link has to be a full https:// address'), 'admin');
-            $this->redirectTo($back);
-
+        $back     = $this->orderUrl($order);
+        $typed = $this->trackingInput();
+        if ($typed === null) {
             return;
         }
+        ['carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url] = $typed;
 
-        if (OrderStore::ship($order->getId(), Utils::oneLine(Params::getParamString('carrier')), Utils::oneLine(Params::getParamString('tracking')), $url)) {
+        if (OrderStore::ship($order->getId(), $carrier, $tracking, $url)) {
             osc_add_flash_ok_message(sprintf(_m('Order #%d is marked shipped'), $order->getId()), 'admin');
         } else {
             osc_add_flash_warning_message(_m('Only a paid order, or an unpaid cash on delivery one, can be marked shipped'), 'admin');
         }
 
         $this->redirectTo($back);
+    }
+
+    /**
+     * Correct the tracking of a shipped order. The status does not move.
+     *
+     * @return void
+     */
+    private function orderTrackingPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        $typed = $this->trackingInput();
+        if ($typed === null) {
+            return;
+        }
+        ['carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url] = $typed;
+
+        if (OrderStore::setTracking($order->getId(), $carrier, $tracking, $url)) {
+            osc_add_flash_ok_message(sprintf(_m('Tracking of order #%d is updated'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Only a shipped order can have its tracking changed'), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * The carrier, tracking and tracking link the ship and edit-tracking forms post. A link that
+     * is not https redraws the order with the typed values and null comes back.
+     *
+     * @return array{carrier:string,tracking:string,trackingUrl:string}|null
+     */
+    private function trackingInput(): ?array
+    {
+        $typed = array(
+            'carrier'     => Utils::oneLine(Params::getParamString('carrier')),
+            'tracking'    => Utils::oneLine(Params::getParamString('tracking')),
+            'trackingUrl' => Utils::oneLine(Params::getParamString('trackingUrl')),
+        );
+        if ($typed['trackingUrl'] !== '' && Receipts::httpsUrl($typed['trackingUrl']) === '') {
+            $this->orderView($typed, array('trackingUrl' => _m('The tracking link has to be a full https:// address')));
+
+            return null;
+        }
+
+        return $typed;
     }
 
     /**
@@ -312,7 +369,7 @@ class CAdminBilling extends AdminSecBaseModel
     }
 
     /**
-     * Cancel an order that is still unpaid.
+     * Cancel an order that is still unpaid, of any kind.
      *
      * @return void
      */
@@ -320,8 +377,11 @@ class CAdminBilling extends AdminSecBaseModel
     {
         osc_csrf_check();
 
-        $order = $this->goodsOrder();
+        $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null) {
+            osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
+
             return;
         }
         if (OrderStore::cancel($order->getId())) {
@@ -373,7 +433,12 @@ class CAdminBilling extends AdminSecBaseModel
 
         if (Billing::refund($order)) {
             osc_add_flash_ok_message(
-                sprintf(_m('Order #%d is recorded as refunded and the credits have been taken back'), $order->getId()),
+                sprintf(
+                    $order->isGoods()
+                        ? _m('Order #%d is recorded as refunded.')
+                        : _m('Order #%d is recorded as refunded and the credits have been taken back'),
+                    $order->getId()
+                ),
                 'admin'
             );
         } else {
@@ -411,7 +476,12 @@ class CAdminBilling extends AdminSecBaseModel
 
         if ($result->getOutcome() === CallbackResult::OUTCOME_REFUNDED) {
             osc_add_flash_ok_message(
-                sprintf(_m('Order #%d is refunded and the credits have been taken back'), $order->getId()),
+                sprintf(
+                    $order->isGoods()
+                        ? _m('Order #%d is refunded.')
+                        : _m('Order #%d is refunded and the credits have been taken back'),
+                    $order->getId()
+                ),
                 'admin'
             );
         } elseif ($result->getOutcome() === CallbackResult::OUTCOME_PENDING) {
@@ -559,7 +629,23 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
         }
 
+        $this->drawPackage($package);
+    }
+
+    /**
+     * The package form, with what was typed and the fields a refused save names.
+     *
+     * @param array|null           $package stored row, null for a new package
+     * @param array<string,mixed>  $typed   posted values by field name
+     * @param array<string,string> $errors  message by field name
+     *
+     * @return void
+     */
+    private function drawPackage(?array $package, array $typed = array(), array $errors = array())
+    {
         $this->_exportVariableToView('package', $package);
+        $this->_exportVariableToView('typed', $typed);
+        $this->_exportVariableToView('errors', $errors);
         $this->doView('billing/package.php');
     }
 
@@ -577,7 +663,6 @@ class CAdminBilling extends AdminSecBaseModel
         osc_csrf_check();
 
         $id        = Params::getParamInt('id');
-        $back      = osc_admin_base_url(true) . '?page=billing&action=package' . ($id > 0 ? '&id=' . $id : '');
         $name      = trim(Params::getParamString('name'));
         $amountRaw = trim(Params::getParamString('amount'));
         $currency  = strtoupper(trim(Params::getParamString('currency')));
@@ -585,24 +670,31 @@ class CAdminBilling extends AdminSecBaseModel
         $position  = Params::getParamInt('position');
         $enabled   = Params::getParam('enabled') != '' ? 1 : 0;
 
+        $errors = array();
         if ($name === '') {
-            osc_add_flash_error_message(_m('Enter a name for this package'), 'admin');
-            $this->redirectTo($back);
+            $errors['name'] = _m('Enter a name for this package');
         }
-
         if ($amountRaw === '' || !is_numeric($amountRaw) || (float) $amountRaw < 0) {
-            osc_add_flash_error_message(_m('Enter a valid amount, 0 or more'), 'admin');
-            $this->redirectTo($back);
+            $errors['amount'] = _m('Enter a valid amount, 0 or more');
         }
-
         if ($credits < 1) {
-            osc_add_flash_error_message(_m('Credits must be at least 1'), 'admin');
-            $this->redirectTo($back);
+            $errors['credits'] = _m('Credits must be at least 1');
         }
-
         if (!\mindstellar\currency\CurrencyCode::valid($currency)) {
-            osc_add_flash_error_message(_m('Currency must be a 3-letter code, e.g. USD'), 'admin');
-            $this->redirectTo($back);
+            $errors['currency'] = _m('Currency must be a 3-letter code, e.g. USD');
+        }
+        if ($errors !== array()) {
+            $typed = array(
+                'name'     => $name,
+                'amount'   => $amountRaw,
+                'currency' => $currency,
+                'credits'  => Params::getParamString('credits'),
+                'position' => $position,
+                'enabled'  => (bool) $enabled,
+            );
+            $this->drawPackage($id > 0 ? PackageStore::find($id) : null, $typed, $errors);
+
+            return;
         }
 
         $data = array(
@@ -628,7 +720,7 @@ class CAdminBilling extends AdminSecBaseModel
             }
         } catch (InvalidArgumentException $e) {
             osc_add_flash_error_message(_m('That package could not be saved'), 'admin');
-            $this->redirectTo($back);
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=package' . ($id > 0 ? '&id=' . $id : ''));
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');

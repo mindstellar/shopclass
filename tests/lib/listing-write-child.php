@@ -53,6 +53,7 @@ $form    = static fn (array $extra = []): array => $extra + [
     'title'        => ['en_US' => 'Red hatchback'],
     'description'  => ['en_US' => 'A small red car, one owner, full service history.'],
     'price'        => '1500',
+    'currency'     => 'USD',
     'contactName'  => 'Office',
     'contactEmail' => 'office@example.test',
     'contactPhone' => '5550199',

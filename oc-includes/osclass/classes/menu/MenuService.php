@@ -221,6 +221,17 @@ final class MenuService
     }
 
     /**
+     * A posted menu cut down to what the editor can draw, for putting it back on screen after
+     * a refused save. Nothing is checked or stored.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function draft(mixed $items): array
+    {
+        return (new MenuItems($this->locales, static fn (): bool => false, static fn (): bool => false))->draft($items);
+    }
+
+    /**
      * Remove a saved menu; `main` and `footer` go back to the automatic ones.
      */
     public function delete(string $id): bool

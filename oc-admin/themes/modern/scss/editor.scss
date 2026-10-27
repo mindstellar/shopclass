@@ -59,6 +59,14 @@
   border-color: var(--osc-rule-strong);
 }
 
+// Reboot floats a fieldset's legend and only clears the element right after it, so the
+// row that follows the hidden input sat beside the legend and shrank to nothing.
+.osc-sell-fields > legend {
+  float: none;
+  inline-size: auto;
+  padding: 0;
+}
+
 .osc-field .help-box {
   display: block;
 }
@@ -541,6 +549,10 @@
 
 .osc-editor-actions > .form-actions {
   margin-block-start: 1.5rem;
+}
+
+#item-form {
+  padding-block-end: 1rem;
 }
 
 .osc-editor-actions .form-actions[data-osc-dirty-bar] {

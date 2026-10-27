@@ -113,6 +113,13 @@ pin('past the first 3 a user is active', 'ACTIVE', $active(Actor::user($ann)));
 pin('an admin posts active whatever the setting', 'ACTIVE', $active(Actor::admin(1)));
 pin('an edit has no status', false, array_key_exists('active', ListingInput::fromArray($form(array('id' => '1')), Actor::user($sue), false)));
 
+harness_section('a sold product with no currency posted takes the site currency');
+$setPref(['currency' => 'USD']);
+$sold = ListingInput::fromArray($form(array('product' => array('sell' => '1'))), Actor::admin(1), true);
+pin('the site currency fills in', 'USD', $sold['currency']);
+pin('a listing that is not sold keeps none', null, ListingInput::fromArray($form(), Actor::admin(1), true)['currency']);
+pin('a posted currency is kept', 'EUR', ListingInput::fromArray($form(array('currency' => 'EUR', 'product' => array('sell' => '1'))), Actor::admin(1), true)['currency']);
+
 harness_section('refusals are structured and read as before');
 $setPref(['moderate_items' => '-1']);
 $service = new ListingService();
@@ -124,7 +131,7 @@ try {
 }
 pin('the listing is refused', true, $refused instanceof InvalidException);
 $first = $refused->errors()[0] ?? array();
-pin('with the member, code and message', array('/description', 'too_short', 'Description too short (en_US).'), array($first['pointer'] ?? null, $first['code'] ?? null, $first['message'] ?? null));
+pin('with the member, code and message', array('/description', 'too_short', 'Description too short (English).'), array($first['pointer'] ?? null, $first['code'] ?? null, $first['message'] ?? null));
 pin('the web text is the messages, one per line', implode('', array_map(static fn (array $e): string => $e['message'] . PHP_EOL, $refused->errors())), $refused->getMessage());
 
 harness_section('expirationDays() is the category days plus the runtime entitlement');

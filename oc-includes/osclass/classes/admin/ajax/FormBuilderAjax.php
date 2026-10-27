@@ -25,13 +25,20 @@ use Params;
  */
 final class FormBuilderAjax extends AjaxHandler
 {
+    /** Create a form (field group) with the name typed in the add dialog. */
     public function addGroup(): void
     {
-        $newId = FieldGroup::getInstance()->insertGroup(__('New field group'));
+        $name = trim(Params::getParamString('group_name'));
+        if ($name === '') {
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Give the form a name.')));
+
+            return;
+        }
+        $newId = FieldGroup::getInstance()->insertGroup($name);
         if ($newId) {
-            AjaxResponse::json(array('error' => 0, 'group_id' => $newId, 'group_name' => __('New field group')));
+            AjaxResponse::json(array('error' => 0, 'group_id' => $newId, 'group_name' => $name));
         } else {
-            AjaxResponse::json(array('error' => 1));
+            AjaxResponse::json(array('error' => 1, 'msg' => __('Form could not be created')));
         }
     }
 

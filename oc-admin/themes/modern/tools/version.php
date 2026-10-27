@@ -28,9 +28,6 @@ unset($customPageTitle);
 osc_current_admin_theme_path('parts/header.php');
 ?>
 <div class="widget-box">
-    <div class="widget-box-title">
-        <h3>Shopclass <?php echo OSCLASS_VERSION; ?></h3>
-    </div>
     <div class="widget-box-content">
 
         <?php

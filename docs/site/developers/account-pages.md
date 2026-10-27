@@ -232,6 +232,9 @@ osc_add_filter('user_menu_filter', function ($options) {
 
 The `opt_logout` entry is always moved last, whatever the filter returns.
 
+A theme that draws its own nav reads the same list from `osc_account_nav_items()`: the
+filtered entries, log out last, each with a `current` flag for the page being shown.
+
 In shop mode core drops the seller entries from a shopper's menu: `opt_items`,
 `opt_publicprofile`, `opt_alerts`, `opt_billing_wallet`, `opt_billing_buy` and
 `opt_api_access`, and adds `opt_billing_orders` (Your orders) when billing is on. It does

@@ -566,6 +566,31 @@ final class OrderStore extends Model
     }
 
     /**
+     * Correct the carrier, tracking number and link of an order already shipped. Only the
+     * `_shipping` meta changes; the status stays.
+     *
+     * @param int    $id
+     * @param string $carrier  Up to 100 characters
+     * @param string $tracking Up to 100 characters
+     * @param string $url      The parcel's tracking page; the caller checks it is https
+     *
+     * @return bool false when the order is not shipped
+     */
+    public static function setTracking(int $id, string $carrier, string $tracking, string $url): bool
+    {
+        $carrier  = mb_substr(trim($carrier), 0, 100, 'UTF-8');
+        $tracking = mb_substr(trim($tracking), 0, 100, 'UTF-8');
+        $url      = mb_substr(trim($url), 0, 500, 'UTF-8');
+
+        return self::changeMeta($id, static function (array $meta) use ($carrier, $tracking, $url): array {
+            $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
+            $meta['_shipping'] = array('carrier' => $carrier, 'tracking' => $tracking, 'url' => $url) + $shipping;
+
+            return $meta;
+        }, array(Order::STATUS_SHIPPED));
+    }
+
+    /**
      * A shipped order arrived. A cash on delivery order not paid yet is paid now, as the
      * courier collected. Fires `OrderDelivered` once the write commits.
      *
@@ -933,8 +958,19 @@ final class OrderStore extends Model
      */
     public static function summary(array $filters): array
     {
+        $count  = self::searchCount($filters);
+        $status = (string) ($filters['status'] ?? '');
+        if ($status !== '') {
+            // The status filter already narrows the count; paid and pending are what it matches.
+            return array(
+                'count'   => $count,
+                'paid'    => $status === Order::STATUS_PAID ? $count : 0,
+                'pending' => $status === Order::STATUS_PENDING ? $count : 0,
+            );
+        }
+
         return array(
-            'count'   => self::searchCount($filters),
+            'count'   => $count,
             'paid'    => self::searchCount(array_merge($filters, array('status' => Order::STATUS_PAID))),
             'pending' => self::searchCount(array_merge($filters, array('status' => Order::STATUS_PENDING))),
         );

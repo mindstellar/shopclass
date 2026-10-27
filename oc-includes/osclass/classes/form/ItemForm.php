@@ -1792,7 +1792,7 @@ class ItemForm extends Form
                 <?php } ?>
             </div>
             <label class="osc-uploader-drop">
-                <input type="file" class="osc-uploader-input" multiple accept="<?php echo osc_esc_html($acceptAttr); ?>" hidden>
+                <input type="file" class="osc-uploader-input" multiple accept="<?php echo osc_esc_html($acceptAttr); ?>">
                 <span><?php _e('Click, or drop images here, to upload'); ?></span>
             </label>
             <div class="osc-uploader-errors"></div>

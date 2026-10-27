@@ -144,7 +144,9 @@ class CAdminUsers extends AdminSecBaseModel
                 break;
             default:
                 osc_add_flash_error_message($success, 'admin');
-                break;
+                $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=create');
+
+                return;
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=users');

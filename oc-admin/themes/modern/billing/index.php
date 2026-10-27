@@ -49,11 +49,11 @@ $isFiltered = $toShip
               || (int)($filters['user_id'] ?? 0) > 0;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Orders'), array(array(
+    <?php osc_admin_page_head(__('Orders'), osc_is_shop_mode() ? array(array(
         'label' => $toShip ? __('All orders') : __('To ship'),
         'url'   => $toShip ? $base : $base . '&toShip=1',
         'icon'  => $toShip ? 'bi-list' : 'bi-box-seam',
-    ))); ?>
+    )) : array()); ?>
 
 
     <?php osc_admin_toolbar_open(); ?>
@@ -85,12 +85,19 @@ $isFiltered = $toShip
         )); ?>
 
         <p class="billing-summary">
-            <?php printf(
-                osc_esc_html(__('%1$s orders · %2$s paid · %3$s awaiting payment')),
-                '<strong>' . number_format($summary['count']) . '</strong>',
-                '<strong>' . number_format($summary['paid']) . '</strong>',
-                '<strong>' . number_format($summary['pending']) . '</strong>'
-            ); ?>
+            <?php if (($filters['status'] ?? '') !== '') {
+                printf(
+                    osc_esc_html(_n('%s order', '%s orders', (int) $summary['count'])),
+                    '<strong>' . number_format($summary['count']) . '</strong>'
+                );
+            } else {
+                printf(
+                    osc_esc_html(_n('%1$s order · %2$s paid · %3$s awaiting payment', '%1$s orders · %2$s paid · %3$s awaiting payment', (int) $summary['count'])),
+                    '<strong>' . number_format($summary['count']) . '</strong>',
+                    '<strong>' . number_format($summary['paid']) . '</strong>',
+                    '<strong>' . number_format($summary['pending']) . '</strong>'
+                );
+            } ?>
         </p>
     <?php osc_admin_toolbar_close(); ?>
 
@@ -110,7 +117,7 @@ $isFiltered = $toShip
         ));
     } else { ?>
         <div class="table-responsive">
-            <table class="table billing-orders">
+            <table class="table billing-orders osc-table-stack">
                 <thead>
                 <tr>
                     <th scope="col"><?php _e('Status'); ?></th>
@@ -133,7 +140,7 @@ $isFiltered = $toShip
                                 $statusWords[$order->getStatus()] ?? $order->getStatus()
                             ); ?>
                         </td>
-                        <td>
+                        <td data-col-name="<?php echo osc_esc_html(__('Order')); ?>">
                             <a class="billing-order-link" href="<?php echo osc_esc_html($orderUrl); ?>">
                                 <?php echo osc_esc_html('#' . $order->getId()); ?>
                             </a>
@@ -146,7 +153,7 @@ $isFiltered = $toShip
                                 <?php } ?>
                             <?php } ?>
                         </td>
-                        <td>
+                        <td data-col-name="<?php echo osc_esc_html(__('User')); ?>">
                             <?php if ($user !== null) { ?>
                                 <a href="<?php echo osc_esc_html(
                                     osc_admin_base_url(true) . '?page=users&action=edit&id=' . $order->getUserId()
@@ -155,12 +162,12 @@ $isFiltered = $toShip
                                 <span class="text-muted"><?php _e('Deleted user'); ?></span>
                             <?php } ?>
                         </td>
-                        <td><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
-                        <td class="col-numeric">
+                        <td data-col-name="<?php echo osc_esc_html(__('Payment method')); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?></td>
+                        <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Amount')); ?>">
                             <?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?>
                         </td>
-                        <td class="col-numeric"><?php echo $order->isGoods() ? '–' : number_format($order->getCredits()); ?></td>
-                        <td><?php echo osc_admin_date($order->getDate(), true); ?></td>
+                        <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Credits')); ?>"><?php echo $order->isGoods() ? '–' : number_format($order->getCredits()); ?></td>
+                        <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($order->getDate(), true); ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>

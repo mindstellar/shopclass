@@ -58,6 +58,15 @@ class CWebLogin extends BaseModel
     }
 
     /**
+     * Back to the login form with the typed e-mail kept.
+     */
+    private function bounce(string $back, string $email): void
+    {
+        Session::getInstance()->_setForm('email', $email);
+        $this->redirectTo($back);
+    }
+
+    /**
      * Sign in.
      */
     private function loginPost(): void
@@ -87,12 +96,12 @@ class CWebLogin extends BaseModel
             $wrongCredentials = true;
         }
         if ($wrongCredentials) {
-            $this->redirectTo($back);
+            $this->bounce($back, $email);
         }
 
         if (!\mindstellar\security\Captcha::passes()) {
             osc_add_flash_error_message(\mindstellar\security\Captcha::failMessage());
-            $this->redirectTo($back);
+            $this->bounce($back, $email);
         }
 
         $signIn = \mindstellar\auth\SignIn::attempt($email, $password, osc_captcha_enabled());
@@ -100,11 +109,11 @@ class CWebLogin extends BaseModel
         switch ($signIn->status()) {
             case \mindstellar\auth\SignIn::BLOCKED:
                 osc_add_flash_error_message(osc_login_throttle_message($signIn->retryAfter()));
-                $this->redirectTo($back);
+                $this->bounce($back, $email);
                 break;
             case \mindstellar\auth\SignIn::WRONG:
                 osc_add_flash_error_message(_m('Invalid email/username or password'));
-                $this->redirectTo($back);
+                $this->bounce($back, $email);
                 break;
             case \mindstellar\auth\SignIn::BANNED:
                 if ($signIn->banned() & 1) {
@@ -113,7 +122,7 @@ class CWebLogin extends BaseModel
                 if ($signIn->banned() & 2) {
                     osc_add_flash_error_message(_m('Your current IP is not allowed'));
                 }
-                $this->redirectTo($back);
+                $this->bounce($back, $email);
                 break;
             case \mindstellar\auth\SignIn::INACTIVE:
                 if ((time() - strtotime($user['dt_access_date'])) > 1200) { // EACH 20 MINUTES
@@ -124,11 +133,11 @@ class CWebLogin extends BaseModel
                 } else {
                     osc_add_flash_error_message(_m('The user has not been validated yet'));
                 }
-                $this->redirectTo($back);
+                $this->bounce($back, $email);
                 break;
             case \mindstellar\auth\SignIn::DISABLED:
                 osc_add_flash_error_message(_m('The user has been suspended'));
-                $this->redirectTo($back);
+                $this->bounce($back, $email);
                 break;
         }
 
@@ -169,7 +178,7 @@ class CWebLogin extends BaseModel
         $fresh = User::getInstance()->findByPrimaryKey((int) $user['pk_i_id']);
         if (!$fresh || !$fresh['b_active'] || !$fresh['b_enabled']) {
             osc_add_flash_error_message(_m("The user doesn't exist"));
-            $this->redirectTo($back);
+            $this->bounce($back, $email);
         }
         osc_web_user_login($fresh, Params::getParam('remember') == 1);
 

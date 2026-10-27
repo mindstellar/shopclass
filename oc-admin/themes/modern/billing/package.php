@@ -22,12 +22,15 @@ $isEdit  = is_array($package);
 $base      = osc_admin_base_url(true) . '?page=billing';
 $actionUrl = osc_admin_base_url(true);
 
-$name     = $isEdit ? $package['s_name'] : '';
-$amount   = $isEdit ? \mindstellar\currency\Money::fromMicros((int) $package['i_amount']) : '';
-$currency = $isEdit ? $package['s_currency'] : osc_billing_currency();
-$credits  = $isEdit ? (int) $package['i_credits'] : '';
-$position = $isEdit ? (int) $package['i_position'] : 0;
-$enabled  = $isEdit ? (bool) $package['b_enabled'] : true;
+$typed  = is_array(__get('typed')) ? __get('typed') : array();
+$errors = is_array(__get('errors')) ? __get('errors') : array();
+
+$name     = $typed['name'] ?? ($isEdit ? $package['s_name'] : '');
+$amount   = $typed['amount'] ?? ($isEdit ? \mindstellar\currency\Money::fromMicros((int) $package['i_amount']) : '');
+$currency = $typed['currency'] ?? ($isEdit ? $package['s_currency'] : osc_billing_currency());
+$credits  = $typed['credits'] ?? ($isEdit ? (int) $package['i_credits'] : '');
+$position = $typed['position'] ?? ($isEdit ? (int) $package['i_position'] : 0);
+$enabled  = $typed['enabled'] ?? ($isEdit ? (bool) $package['b_enabled'] : true);
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(
@@ -46,6 +49,7 @@ $enabled  = $isEdit ? (bool) $package['b_enabled'] : true;
             <?php
             osc_admin_text(array(
                 'id'       => 'pkg-name',
+                'error'    => $errors['name'] ?? '',
                 'name'     => 'name',
                 'label'    => __('Name'),
                 'value'    => $name,
@@ -53,6 +57,7 @@ $enabled  = $isEdit ? (bool) $package['b_enabled'] : true;
             ));
             osc_admin_number(array(
                 'id'       => 'pkg-amount',
+                'error'    => $errors['amount'] ?? '',
                 'name'     => 'amount',
                 'label'    => __('Price'),
                 'value'    => $amount,
@@ -63,6 +68,7 @@ $enabled  = $isEdit ? (bool) $package['b_enabled'] : true;
             ));
             osc_admin_text(array(
                 'id'       => 'pkg-currency',
+                'error'    => $errors['currency'] ?? '',
                 'name'     => 'currency',
                 'label'    => __('Currency'),
                 'value'    => $currency,
@@ -73,6 +79,7 @@ $enabled  = $isEdit ? (bool) $package['b_enabled'] : true;
             ));
             osc_admin_number(array(
                 'id'       => 'pkg-credits',
+                'error'    => $errors['credits'] ?? '',
                 'name'     => 'credits',
                 'label'    => __('Credits'),
                 'value'    => $credits,

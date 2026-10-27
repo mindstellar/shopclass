@@ -182,22 +182,22 @@ osc_admin_pagination($aData);
                         <div class="row row-cols-lg-2">
                             <div class="col-lg-6">
                                 <div class="row-wrapper">
-                                    <?php osc_admin_form_row_open(__('Email')); ?>
+                                    <?php osc_admin_form_row_open(__('Email'), array('for' => 's_email')); ?>
                                             <input id="s_email" name="s_email" type="text"
                                                    placeholder="<?php echo osc_esc_html(__('Any e-mail')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParamString('s_email')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
-                                    <?php osc_admin_form_row_open(__('Name')); ?>
+                                    <?php osc_admin_form_row_open(__('Name'), array('for' => 's_name')); ?>
                                             <input id="s_name" name="s_name" type="text"
                                                    placeholder="<?php echo osc_esc_html(__('Any name')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParamString('s_name')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
-                                    <?php osc_admin_form_row_open(__('Username')); ?>
+                                    <?php osc_admin_form_row_open(__('Username'), array('for' => 's_username')); ?>
                                             <input id="s_username" name="s_username" type="text"
                                                    placeholder="<?php echo osc_esc_html(__('Any username')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParamString('s_username')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
-                                    <?php osc_admin_form_row_open(__('Active')); ?>
+                                    <?php osc_admin_form_row_open(__('Active'), array('for' => 'b_active')); ?>
                                             <select id="b_active" name="b_active">
                                                 <option value="" <?php echo((Params::getParam('b_active') == '')
                                                     ? 'selected="selected"' : '') ?>><?php _e('Choose an option'); ?></option>
@@ -214,7 +214,7 @@ osc_admin_pagination($aData);
                                     <?php // Country picks from a closed list; region and city suggest
                                           // through the data-ac attributes ui-common.js reads, so this
                                           // screen no longer carries its own copy of that wiring.?>
-                                    <?php osc_admin_form_row_open(__('Country')); ?>
+                                    <?php osc_admin_form_row_open(__('Country'), array('for' => 'countryId')); ?>
                                             <select id="countryId" name="countryId" class="form-select"
                                                     data-osc-clears="#regionId,#region,#cityId,#city">
                                                 <option value=""><?php _e('Any country'); ?></option>
@@ -227,7 +227,7 @@ osc_admin_pagination($aData);
                                                 <?php } ?>
                                             </select>
                                     <?php osc_admin_form_row_close(); ?>
-                                    <?php osc_admin_form_row_open(__('Region')); ?>
+                                    <?php osc_admin_form_row_open(__('Region'), array('for' => 'region')); ?>
                                             <input id="region" name="region" type="text" class="form-control"
                                                    placeholder="<?php echo osc_esc_html(__('Any region')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParamString('region')); ?>"
@@ -240,7 +240,7 @@ osc_admin_pagination($aData);
                                             <input id="regionId" name="regionId" type="hidden"
                                                    value="<?php echo osc_esc_html(Params::getParamString('regionId')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
-                                    <?php osc_admin_form_row_open(__('City')); ?>
+                                    <?php osc_admin_form_row_open(__('City'), array('for' => 'city')); ?>
                                             <input id="city" name="city" type="text" class="form-control"
                                                    placeholder="<?php echo osc_esc_html(__('Any city')); ?>"
                                                    value="<?php echo osc_esc_html(Params::getParamString('city')); ?>"
@@ -252,7 +252,7 @@ osc_admin_pagination($aData);
                                             <input id="cityId" name="cityId" type="hidden"
                                                    value="<?php echo osc_esc_html(Params::getParamString('cityId')); ?>"/>
                                     <?php osc_admin_form_row_close(); ?>
-                                    <?php osc_admin_form_row_open(__('Block')); ?>
+                                    <?php osc_admin_form_row_open(__('Block'), array('for' => 'b_enabled')); ?>
                                             <select id="b_enabled" name="b_enabled">
                                                 <option value="" <?php echo((Params::getParam('b_enabled') == '')
                                                     ? 'selected="selected"' : '') ?>><?php _e('Choose an option'); ?></option>

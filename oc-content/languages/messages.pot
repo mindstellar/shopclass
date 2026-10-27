@@ -347,6 +347,10 @@ msgstr ""
 msgid "Activity log settings saved"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Add a title in at least one language."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 msgid "Add an address"
 msgstr ""
@@ -394,8 +398,8 @@ msgstr ""
 msgid "Alert id isn't in the correct format"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Alerts"
 msgstr ""
 
@@ -461,6 +465,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Attachment"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Awaiting payment"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-conversation-content.php
@@ -657,6 +665,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/user/AddressBook.php
 msgid "Choose a country from the list."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Choose a currency so buyers can pay."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
@@ -904,8 +916,8 @@ msgstr ""
 msgid "Custom URL removed from the sitemap"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Dashboard"
 msgstr ""
 
@@ -953,6 +965,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/address-picker.php
 msgid "Deliver to"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Delivered"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
@@ -1091,6 +1107,10 @@ msgstr ""
 msgid "Enter a valid amount, 0 or more"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingMailService.php
+msgid "Enter a valid e-mail address"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid "Enter a valid email address."
 msgstr ""
@@ -1113,6 +1133,10 @@ msgstr ""
 msgid ""
 "Enter the full web address of the endpoint, such as "
 "https://example.com/webhooks."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingMailService.php
+msgid "Enter your name"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
@@ -1304,6 +1328,10 @@ msgstr ""
 msgid "If it was not you, ignore this e-mail. The message is deleted in 24 hours."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebUser.php
+msgid "If that address is free, we sent a link to it."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid ""
 "If that email address belongs to an account, we have sent it instructions "
@@ -1331,7 +1359,6 @@ msgid "Invalid CSRF token."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
-#: oc-includes/osclass/classes/listing/ListingMailService.php
 msgid "Invalid email address"
 msgstr ""
 
@@ -1473,7 +1500,7 @@ msgstr ""
 msgid "Location"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Log out"
 msgstr ""
 
@@ -1561,10 +1588,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Message settings have been updated"
-msgstr ""
-
-#: oc-includes/osclass/classes/listing/ListingMailService.php
-msgid "Message: this field is required"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
@@ -1942,6 +1965,10 @@ msgstr ""
 msgid "Only a shipped order can be marked delivered"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only a shipped order can have its tracking changed"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "Only a site admin can ban a sender for good."
 msgstr ""
@@ -2031,6 +2058,10 @@ msgstr ""
 msgid "Option names %1$s and %2$s are the same."
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Order"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/buy-content.php
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Order #%d"
@@ -2061,7 +2092,15 @@ msgid "Order #%d is recorded as refunded and the credits have been taken back"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is recorded as refunded."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Order #%d is refunded and the credits have been taken back"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is refunded."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -2153,6 +2192,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Pay later"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Pay on delivery"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -2314,7 +2357,7 @@ msgstr ""
 msgid "Probable invalid request."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Profile"
 msgstr ""
 
@@ -2322,7 +2365,7 @@ msgstr ""
 msgid "Promote:"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Public profile"
 msgstr ""
 
@@ -2627,6 +2670,10 @@ msgstr ""
 msgid "Sharing listings by email has been disabled by the administrator"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Shipped"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Shipping class too long."
 msgstr ""
@@ -2694,8 +2741,8 @@ msgstr ""
 msgid "Sign out of all devices"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Sign-in details"
 msgstr ""
 
@@ -3011,6 +3058,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "That user no longer exists"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AccountService.php
+msgid "That username is reserved. Choose another."
 msgstr ""
 
 #: oc-includes/osclass/classes/webhook/WebhookService.php
@@ -3524,7 +3575,6 @@ msgid "The specified username is already in use"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
-#: oc-includes/osclass/classes/user/AccountService.php
 msgid "The specified username is not valid, it contains some invalid words"
 msgstr ""
 
@@ -3964,6 +4014,10 @@ msgstr ""
 msgid "Too many wrong passwords. Try again later."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Tracking of order #%d is updated"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "Two-step sign-in is off."
 msgstr ""
@@ -4073,12 +4127,12 @@ msgstr ""
 msgid "Username already in use"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
-msgid "Username invalid"
-msgstr ""
-
 #: oc-includes/osclass/classes/user/AccountService.php
 msgid "Username is already taken"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
+msgid "Usernames can only have letters, numbers and underscores"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
@@ -4198,6 +4252,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "With photos only"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingMailService.php
+msgid "Write a message"
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -4566,10 +4624,10 @@ msgstr ""
 msgid "Your listing will be published after an admin approves the changes."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 #: oc-includes/osclass/gui/billing/publish-content.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Your listings"
 msgstr ""
 
@@ -4604,10 +4662,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Your name (optional)"
-msgstr ""
-
-#: oc-includes/osclass/classes/listing/ListingMailService.php
-msgid "Your name: this field is required"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php

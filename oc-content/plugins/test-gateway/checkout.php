@@ -62,10 +62,12 @@ $button = static function (string $outcome, string $label, string $class) use ($
                 <th scope="row"><?php echo osc_esc_html(__('Amount', 'test-gateway')); ?></th>
                 <td><?php echo osc_esc_html($money); ?></td>
             </tr>
-            <tr>
-                <th scope="row"><?php echo osc_esc_html(__('Credits', 'test-gateway')); ?></th>
-                <td><?php echo number_format($order->getCredits()); ?></td>
-            </tr>
+            <?php if (!$order->isGoods()) { ?>
+                <tr>
+                    <th scope="row"><?php echo osc_esc_html(__('Credits', 'test-gateway')); ?></th>
+                    <td><?php echo number_format($order->getCredits()); ?></td>
+                </tr>
+            <?php } ?>
             <tr>
                 <th scope="row"><?php echo osc_esc_html(__('Status', 'test-gateway')); ?></th>
                 <td>

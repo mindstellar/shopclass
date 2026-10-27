@@ -384,7 +384,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'label'  => __('Internal name') . ' / ' . __('Slug'),
         'layout' => 'stacked',
         'value'  => $pageInternalName,
-        'help'   => __('Used to quickly identify this page'),
+        'help'   => __('Used to identify this page. Left empty on a new page, it is built from the title.'),
         'error'  => $pageErrors['s_internal_name'] ?? '',
         // Readonly, never disabled: a disabled control posts nothing, and the save refuses
         // a page whose internal name is empty -- so a system page could not be saved at all.

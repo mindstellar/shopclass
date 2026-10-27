@@ -59,7 +59,12 @@ class CWebRegister extends BaseModel
                 $success     = $userActions->add();
                 if ($success == 1) {
                     osc_add_flash_ok_message(_m('The user has been created. An activation email has been sent'));
-                    $this->redirectTo(osc_base_url());
+                    // A checkout or listing page sent them here; the validate link takes them back.
+                    $return = osc_login_return_path();
+                    if ($return !== '') {
+                        osc_set_login_redirect(\mindstellar\auth\SignIn::returnUrl($return));
+                    }
+                    $this->redirectTo($return !== '' ? osc_user_login_url($return) : osc_base_url());
                 } elseif ($success == 2) {
                     osc_add_flash_ok_message(_m('Your account has been created successfully'));
                     Params::setParam('action', 'login_post');
@@ -92,7 +97,7 @@ class CWebRegister extends BaseModel
                 osc_run_hook('validate_user', $user);
 
                 osc_add_flash_ok_message(_m('Your account has been validated'));
-                $this->redirectTo(osc_base_url());
+                $this->redirectTo(osc_pop_login_redirect() ?: osc_base_url());
                 break;
         }
     }

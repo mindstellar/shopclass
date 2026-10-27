@@ -84,6 +84,34 @@ final class MenuItems
     }
 
     /**
+     * A posted menu cut down to the shape the editor draws, with nothing checked: what a
+     * refused save puts back on screen so the owner's work is not lost.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function draft(mixed $items, int $depth = 1): array
+    {
+        if ($depth === 1) {
+            $this->count = 0;
+        }
+        $out = [];
+        foreach (is_array($items) && $depth <= self::MAX_DEPTH ? $items : [] as $item) {
+            $type = is_array($item) ? ($item['type'] ?? null) : null;
+            if (!in_array($type, self::TYPES, true) || ++$this->count > self::MAX_ITEMS) {
+                continue;
+            }
+            $row = ['type' => $type, 'ref' => is_scalar($item['ref'] ?? null) ? (int) $item['ref'] : 0, 'url' => self::plain($item['url'] ?? ''), 'label' => $this->labels($item['label'] ?? [])];
+            $kids = $this->draft($item['children'] ?? [], $depth + 1);
+            if ($kids !== []) {
+                $row['children'] = $kids;
+            }
+            $out[] = $row;
+        }
+
+        return $out;
+    }
+
+    /**
      * @param array<mixed> $items
      *
      * @return array<int,array<string,mixed>>
@@ -139,13 +167,15 @@ final class MenuItems
         }
         if ($type === 'link') {
             $url = is_string($item['url'] ?? null) ? WidgetConfig::imageValue($item['url']) : '';
+            // Named by its label, or its address when it has none, so the owner can find it.
+            $name = $labels !== [] ? reset($labels) : self::plain($item['url'] ?? '');
             if ($url === '') {
-                $this->fail(__('A link needs an address that starts with http://, https:// or /.'));
+                $this->fail(sprintf(__('The link "%s" needs an address that starts with http://, https:// or /.'), $name));
 
                 return null;
             }
             if ($labels === []) {
-                $this->fail(__('A link needs a label.'));
+                $this->fail(sprintf(__('The link to "%s" needs a label.'), $name));
 
                 return null;
             }

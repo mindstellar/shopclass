@@ -12,8 +12,10 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\billing\gateway\CashOnDeliveryGateway;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
+use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\currency\Money;
 
@@ -30,10 +32,19 @@ $statusWords = array(
     Order::STATUS_FAILED    => _m('Failed'),
     Order::STATUS_REFUNDED  => _m('Refunded'),
     Order::STATUS_CANCELLED => _m('Cancelled'),
+    Order::STATUS_SHIPPED   => _m('Shipped'),
+    Order::STATUS_DELIVERED => _m('Delivered'),
 );
+
+// The credits column is for sites that sell credits; a list of shop orders has none.
+$showCredits = false;
+foreach ($orders as $order) {
+    $showCredits = $showCredits || $order->getCredits() > 0;
+}
 
 // Column headings, also each cell's label when a row stacks on a phone.
 $col = array(
+    'number'  => _m('Order'),
     'date'    => _m('Date'),
     'method'  => _m('Payment method'),
     'amount'  => _m('Amount'),
@@ -45,16 +56,22 @@ $col = array(
 <table class="oe-table">
     <thead>
     <tr>
+        <th scope="col"><?php echo osc_esc_html($col['number']); ?></th>
         <th scope="col"><?php echo osc_esc_html($col['date']); ?></th>
         <th scope="col"><?php echo osc_esc_html($col['method']); ?></th>
         <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['amount']); ?></th>
+        <?php if ($showCredits) { ?>
         <th scope="col" class="oe-num oe-bill-num"><?php echo osc_esc_html($col['credits']); ?></th>
+        <?php } ?>
         <th scope="col"><?php echo osc_esc_html($col['status']); ?></th>
     </tr>
     </thead>
     <tbody>
     <?php foreach ($orders as $order) { ?>
         <tr>
+            <td data-label="<?php echo osc_esc_html($col['number']); ?>"><?php echo osc_esc_html(osc_billing_order_number($order->getId())); ?>
+                <?php if ($order->isGoods()) { ?><br><span class="oe-muted"><?php echo osc_esc_html($order->getLabel()); ?></span><?php } ?>
+            </td>
             <td data-label="<?php echo osc_esc_html($col['date']); ?>"><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
             <td data-label="<?php echo osc_esc_html($col['method']); ?>"><?php echo osc_esc_html(osc_billing_gateway_name($order->getGateway())); ?>
                 <?php if ($order->isListing()) {
@@ -63,14 +80,25 @@ $col = array(
                     $link   = $state === 'held' ? osc_billing_publish_url($itemId) : ($state === 'live' ? osc_item_url_ns($itemId) : ''); ?>
                     <br><span class="oe-muted"><?php if ($link !== '') { ?><a href="<?php echo osc_esc_html($link); ?>"><?php echo osc_esc_html($order->getLabel()); ?></a><?php } else { echo osc_esc_html($order->getLabel()); } ?></span>
                 <?php } ?>
+                <?php $howToPay = PaymentGatewayRegistry::getInstance()->instructions($order);
+                if ($howToPay !== null) { ?>
+                    <br><span class="oe-muted"><?php echo nl2br(osc_esc_html($howToPay)); ?></span>
+                <?php } ?>
             </td>
             <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['amount']); ?>">
                 <?php echo osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())); ?>
             </td>
+            <?php if ($showCredits) { ?>
             <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['credits']); ?>"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
+            <?php } ?>
             <td data-label="<?php echo osc_esc_html($col['status']); ?>">
                 <span class="oe-badge oe-bill-badge <?php echo osc_esc_html($order->getStatus()); ?>">
-                    <?php echo osc_esc_html($statusWords[$order->getStatus()] ?? $order->getStatus()); ?>
+                    <?php
+                    $word = $statusWords[$order->getStatus()] ?? $order->getStatus();
+                    if ($order->isGoods() && $order->isPending()) {
+                        $word = $order->getGateway() === CashOnDeliveryGateway::ID ? _m('Pay on delivery') : _m('Awaiting payment');
+                    }
+                    echo osc_esc_html($word); ?>
                 </span>
                 <?php if (Receipts::available($order)) { ?>
                     <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Receipt')); ?></a>

@@ -489,6 +489,25 @@ document.addEventListener('DOMContentLoaded', function () {
     oscInitTabs(document);
 });
 
+// A form marked [data-osc-confirm-empty="#dialogId"] asks first when every visible field is
+// blank. The dialog's own confirm button submits the form, and that submit passes.
+document.addEventListener('submit', function (e) {
+    var form = e.target;
+    var id = form.getAttribute ? form.getAttribute('data-osc-confirm-empty') : null;
+    if (!id || (e.submitter && e.submitter.closest('dialog'))) {
+        return;
+    }
+    var dialog = document.querySelector(id);
+    var filled = Array.prototype.some.call(
+        form.querySelectorAll('input:not([type="hidden"]), textarea, select'),
+        function (field) { return field.value.trim() !== ''; }
+    );
+    if (!filled && dialog && typeof dialog.showModal === 'function') {
+        e.preventDefault();
+        dialog.showModal();
+    }
+});
+
 // Shared behaviour for native <dialog class="osc-dialog">: a click on any
 // [data-osc-dialog-open="#id"] opens the target dialog, [data-osc-dialog-close]
 // closes its dialog, and a click on the dialog's own backdrop area (the element
@@ -1193,4 +1212,18 @@ document.addEventListener('DOMContentLoaded', function () {
             current.scrollIntoView({block: 'nearest', inline: 'nearest'});
         }
     });
+});
+
+// An image field's Choose image button shows the name of the file picked; ticking Remove clears it.
+document.addEventListener('change', function (e) {
+    var field = e.target.closest ? e.target.closest('.field-image') : null;
+    var name = field ? field.querySelector('.field-image-name') : null;
+    if (!name) {
+        return;
+    }
+    if (e.target.classList.contains('field-image-input')) {
+        name.textContent = e.target.files && e.target.files.length ? e.target.files[0].name : '';
+    } else if (e.target.type === 'checkbox' && e.target.checked) {
+        name.textContent = '';
+    }
 });

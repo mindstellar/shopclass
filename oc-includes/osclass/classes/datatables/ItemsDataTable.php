@@ -100,7 +100,7 @@ class ItemsDataTable extends DataTable
 
         $this->addColumn('status-border', '');
         $this->addColumn('status', __('Status'));
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('image', __('Image'));
         $this->addColumn('title', __('Title'));
         $this->addColumn('user', __('User'));
@@ -368,7 +368,8 @@ class ItemsDataTable extends DataTable
                     ? '<img src="' . osc_esc_html($thumbUrl) . '" loading="lazy" alt=""/>'
                     : '<i class="bi bi-image" aria-hidden="true"></i>';
                 $row['image'] = '<a class="listing-thumb' . ($thumbUrl === '' ? ' listing-thumb--empty' : '')
-                    . '" href="' . $itemUrl . '" target="_blank" rel="noopener">' . $thumbInner . '</a>';
+                    . '" href="' . $itemUrl . '" target="_blank" rel="noopener" aria-label="'
+                    . osc_esc_html(osc_item_title()) . '">' . $thumbInner . '</a>';
 
                 // Title cell: the title link + row actions, with the moderation/spam
                 // keyword badge dropped to its own line below everything.
@@ -656,7 +657,7 @@ class ItemsDataTable extends DataTable
         $url_date       = $url_base . $arg_date;
         $url_expiration = $url_base . $arg_expiration;
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" />');
+        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
         $this->addColumn('title', __('Title'));
         $this->addColumn('user', __('User'));
         // Distinct, deduplicated reporters (one vote per person) and the recorded

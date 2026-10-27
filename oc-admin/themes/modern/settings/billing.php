@@ -34,7 +34,7 @@ $tabs = array(
     'upgrades' => __('Upgrades'),
     'limits'   => __('Seller limits'),
     'receipts' => __('Receipts'),
-    'shop'     => __('Shop'),
+    'shop'     => osc_is_shop_mode() ? __('Shop') : __('Orders'),
     'methods'  => __('Payment methods'),
 );
 $shown = __get('billing_tabs');
@@ -42,7 +42,7 @@ if (is_array($shown)) {
     $tabs = array_intersect_key($tabs, array_flip($shown));
 }
 $tab = (string) __get('billing_tab');
-if ($tab === 'shop') {
+if ($tab === 'shop' && osc_is_shop_mode()) {
     osc_register_script('admin-cod-areas', osc_asset_url_versioned(osc_current_admin_theme_js_url('cod-areas.js')), array('admin-osc'));
     osc_enqueue_script('admin-cod-areas');
 }

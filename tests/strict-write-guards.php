@@ -661,7 +661,7 @@ $lastTitle = static function () use ($admin, $prefix): string {
 $before = $itemCount();
 pin(
     'a 150-character title is refused by name',
-    "Title too long (en_US).\n",
+    "Title too long (English).\n",
     $publish(array('title' => array('en_US' => $longTitle)))
 );
 pin('and no listing was written', $before, $itemCount());
@@ -733,7 +733,7 @@ $editItemAs = static function (array $overrides, bool $isAdmin = false) use ($it
 $rowBefore = $itemRow();
 pin(
     'an over-long title is refused on edit too',
-    "Title too long (en_US).\n",
+    "Title too long (English).\n",
     $editItemAs(array('title' => array('en_US' => $longTitle)))
 );
 pin('and the listing is untouched', $rowBefore, $itemRow());

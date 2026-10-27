@@ -86,6 +86,24 @@ final class OfflineGateway implements PaymentGateway
     }
 
     /**
+     * What a buyer needs to pay a pending order later: the admin's instructions and the
+     * reference to quote. Null once the order is no longer waiting for money.
+     *
+     * @param Order $order
+     *
+     * @return string|null
+     */
+    public function instructions(Order $order): ?string
+    {
+        $text = osc_billing_offline_instructions();
+        if (!$order->isPending() || $order->getGateway() !== $this->getId() || $text === '') {
+            return null;
+        }
+
+        return $text . "\n" . sprintf(_m('Reference: %s'), osc_billing_order_number($order->getId()));
+    }
+
+    /**
      * There is no webhook for a bank transfer -- an admin settles the order by hand
      * with the existing "Mark paid" action, which exercises the exact same
      * Billing::markPaid() path a real gateway's callback would.

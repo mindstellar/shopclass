@@ -278,19 +278,23 @@
         panel.close();
     }
 
+    var eyebrow = document.getElementById('catDrawerEyebrow');
+
+    // node is null for a new category: the drawer opens empty and Save creates it.
     function openDrawer(node) {
-        var id = node.getAttribute('data-cat-id');
-        var name = node.getAttribute('data-name') || '';
+        var id = node ? node.getAttribute('data-cat-id') : 'new';
+        var name = node ? (node.getAttribute('data-name') || '') : I18N.newTitle;
         document.querySelectorAll('.cat-node.is-editing').forEach(function (n) {
             n.classList.remove('is-editing');
         });
-        node.classList.add('is-editing');
+        if (node) { node.classList.add('is-editing'); }
+        if (eyebrow) { eyebrow.textContent = node ? I18N.editPrefix : I18N.newPrefix; }
         drawerTitle.textContent = name;
         drawer.dataset.catId = id;
         drawerBody.innerHTML = '<div class="cat-drawer-loading"><i class="bi bi-arrow-repeat"></i></div>';
         panel.open(document.activeElement);
 
-        fetch(CFG.edit + '&id=' + encodeURIComponent(id), {
+        fetch(CFG.edit + '&id=' + encodeURIComponent(node ? id : 0), {
             credentials: 'same-origin',
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         }).then(function (r) {
@@ -311,6 +315,14 @@
     }
 
     closeBtn.addEventListener('click', closeDrawer);
+
+    // The page-head and empty-state buttons sit outside the app, so listen on the page.
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.js-cat-add')) {
+            e.preventDefault();
+            openDrawer(null);
+        }
+    });
 
     // Cancel button inside the fetched form, and the form submit.
     drawerBody.addEventListener('click', function (e) {
@@ -343,6 +355,11 @@
                 return;
             }
             // error 0 = saved, 4 = saved with an empty title (still success).
+            if (res.error === 0 && res.created) {
+                // The server queued the success message; reload to show the new row with it.
+                window.location.reload();
+                return;
+            }
             if (res.error === 0 || res.error === 4) {
                 var node = nodeById(drawer.dataset.catId);
                 if (node && res.text) {

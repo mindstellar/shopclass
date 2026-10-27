@@ -64,6 +64,10 @@ pin('weight past the column', ['/product/weight'], $codes($v->product(['sell' =>
 pin('a negative was price', ['/product/compare_at'], $codes($v->product(['sell' => true, 'fields' => ['i_compare_price' => -1]])));
 pin('a was price that is not a number', ['/product/compare_at'], $codes($v->product(['sell' => true, 'fields' => ['i_compare_price' => 'cheap']])));
 pin('a good was price passes', [], $v->product(['sell' => true, 'fields' => ['i_compare_price' => 9500000]]));
+pin('a sold listing with no currency is refused', ['/currency'], $codes($v->productCurrency(['sell' => true], null)));
+pin('and so is a blank one', ['/currency'], $codes($v->productCurrency(['sell' => true], ' ')));
+pin('a sold listing with a currency passes', [], $v->productCurrency(['sell' => true], 'USD'));
+pin('a listing not sold needs no currency', [], $v->productCurrency(['sell' => false], null));
 pin('the widths match the columns', ['s_sku' => 64, 's_shipping_class' => 40], ListingValidator::VARIANT_WIDTHS);
 $cols = [];
 foreach ($admin->query("SELECT COLUMN_NAME, CHARACTER_MAXIMUM_LENGTH FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$p}t_item_variant' AND CHARACTER_MAXIMUM_LENGTH IS NOT NULL AND COLUMN_NAME IN ('s_sku', 's_shipping_class')") as $c) {
@@ -144,6 +148,13 @@ pin('and changes nothing', '9', $rows($one)[0]['i_stock']);
 $edit($one, ['product' => ['sell' => '0']]);
 pin('stopping the sale removes the row', [], $rows($one));
 pin('and the listing is no longer buyable', false, VariantStore::isBuyable($one));
+$noCurrency = null;
+try {
+    $service->create(ListingInput::fromArray($form(['ownerId' => '0', 'currency' => '', 'product' => $sell]), $adminActor, true), $adminActor);
+} catch (\mindstellar\exception\InvalidException $e) {
+    $noCurrency = $codes($e->errors());
+}
+pin('a product saved with no currency is refused', ['/currency'], $noCurrency);
 
 harness_section('the API');
 $bossId = api_admin_seed_admin($admin, 'boss');
@@ -200,6 +211,11 @@ pin('and no row is written', [], $rows($mine));
 $shown = ListingInput::productForm($plain);
 pin('the admin form reads the default row', [true, 'P-1', '2', '120', 'letter'], [$shown['sell'], $shown['sku'], $shown['stock'], $shown['weight'], $shown['shippingClass']]);
 pin('a listing with no row shows an unticked form', [false, ''], [ListingInput::productForm($mine)['sell'], ListingInput::productForm(0)['sku']]);
+$mode = Preference::getInstance()->get('site_mode');
+Preference::getInstance()->set('site_mode', 'shop');
+pin('a new product in shop mode starts for sale', [true, false], [ListingInput::productForm(0)['sell'], ListingInput::productForm($mine)['sell']]);
+Preference::getInstance()->set('site_mode', $mode === null || $mode === '' ? 'classifieds' : $mode);
+pin('a new listing in classifieds mode does not', false, ListingInput::productForm(0)['sell']);
 
 $r = $call('PATCH', 'admin/listings/' . $plain, ['product' => null], $boss);
 pin('product null stops selling', [200, []], [$r->status(), $rows($plain)]);

@@ -70,10 +70,10 @@ class AdminMenu
     {
         $this->add_menu(__('Dashboard'), osc_admin_base_url(), 'dash', 'moderator', 'bi bi-speedometer');
 
-        $this->add_menu(__('Listings'), osc_admin_base_url(true) . '?page=items', 'items', 'moderator', 'bi bi-list-ul');
+        $this->add_menu(osc_is_shop_mode() ? __('Products') : __('Listings'), osc_admin_base_url(true) . '?page=items', 'items', 'moderator', 'bi bi-list-ul');
         $this->add_submenu(
             'items',
-            __('Manage listings'),
+            osc_is_shop_mode() ? __('Manage products') : __('Manage listings'),
             osc_admin_base_url(true) . '?page=items',
             'items_manage',
             'moderator'
@@ -212,21 +212,17 @@ class AdminMenu
         if (osc_billing_enabled()) {
             // Orders waiting to ship show as a badge; Orders then opens on the To ship list.
             $toShip = $this->ordersToShip();
-            $badge  = '';
-            if ($toShip > 0) {
-                require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
-                $badge = osc_admin_count($toShip);
-            }
             $this->add_menu(
-                __('Billing') . $badge,
+                __('Billing'),
                 osc_admin_base_url(true) . '?page=billing',
                 'billing',
                 'administrator',
                 'bi bi-receipt'
             );
+            $this->aMenu['billing']['count'] = $toShip;
             $this->add_submenu(
                 'billing',
-                __('Orders') . $badge,
+                __('Orders'),
                 osc_admin_base_url(true) . '?page=billing' . ($toShip > 0 ? '&toShip=1' : ''),
                 'billing_orders',
                 'administrator',
@@ -234,6 +230,7 @@ class AdminMenu
                 null,
                 array(osc_admin_base_url(true) . '?page=billing')
             );
+            $this->aMenu['billing']['sub']['billing_orders']['count'] = $toShip;
             if (osc_billing_credits_enabled()) {
                 $this->add_submenu(
                     'billing',
@@ -449,13 +446,29 @@ class AdminMenu
     }
 
     /**
+     * The count badge beside a menu title: nothing at zero. The admin theme's own
+     * osc_admin_count() is used when it is loaded, else the core one.
+     */
+    private static function countBadge(int $count): string
+    {
+        if ($count <= 0) {
+            return '';
+        }
+        if (!function_exists('osc_admin_count')) {
+            require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
+        }
+
+        return osc_admin_count($count);
+    }
+
+    /**
      * Orders waiting to ship, for the badge. Zero for a moderator, who cannot open Billing.
      *
      * @return int
      */
     private function ordersToShip(): int
     {
-        return osc_is_moderator() ? 0 : \mindstellar\billing\OrderStore::toShipCount();
+        return osc_is_moderator() || !osc_is_shop_mode() ? 0 : \mindstellar\billing\OrderStore::toShipCount();
     }
 
     /**
@@ -652,10 +665,14 @@ class AdminMenu
         // A refused save redraws its form from a POST, which has no query string.
         if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
             $actual_url = 'page=' . $actual_page;
+            // A declared page's refused save is such a POST: light its own entry, not General.
+            if ($actual_page === 'settings' && Params::getParam('action') === 'custom_post' && Params::getParamString('id') !== '') {
+                $actual_url .= '&action=custom&id=' . Params::getParamString('id');
+            }
         }
 
         // A declared page with no menu entry sits in no Settings group; the prefix match would light General.
-        if (Params::getParam('page') === 'settings' && Params::getParam('action') === 'custom') {
+        if (Params::getParam('page') === 'settings' && in_array(Params::getParam('action'), array('custom', 'custom_post'), true)) {
             $declared = osc_settings_page(Params::getParamString('id'));
             if ($declared !== null && $declared['menu'] === '') {
                 return array('settings', '');
@@ -998,7 +1015,7 @@ class AdminMenu
             // one tree tell a screen reader the user is in two places at once.
             $ariaSection = ($isCurrent && empty($value['sub'])) ? ' aria-current="page"' : '';
             $str .= '<a class="h6" href="' . $value[1] . '"' . $ariaSection . '>';
-            $str .= $menuTag . ' ' . $value[0] . '</a>';
+            $str .= $menuTag . ' ' . $value[0] . self::countBadge($value['count'] ?? 0) . '</a>';
 
             if (isset($value['sub']) && !empty($value['sub'])) {
                 $isOpen = ($activeMenu === $menuId);
@@ -1083,7 +1100,7 @@ class AdminMenu
                 $str       .= '<li><a class="nav-link py-1 ' . ($isCurrent ? 'sub-active' : '')
                               . '" id="' . $arrSubMenu[2] . '" href="' . $arrSubMenu[1] . '"'
                               . ($isCurrent ? ' aria-current="page"' : '') . '>'
-                              . $arrSubMenu[0]
+                              . $arrSubMenu[0] . self::countBadge($arrSubMenu['count'] ?? 0)
                               . '</a></li>' . PHP_EOL;
             }
         }

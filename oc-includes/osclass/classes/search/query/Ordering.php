@@ -214,7 +214,12 @@ final class Ordering
      */
     public function apply(Statement $statement): void
     {
-        $statement->orderBy((string)$this->column, (string)$this->direction);
+        $column = (string)$this->column;
+        if (preg_match('/^(?:[A-Za-z0-9_]*t_item\.)?i_price$/', $column)) {
+            // A listing with no price goes last, whichever way the prices run.
+            $column = sprintf('ISNULL(%1$s), %1$s', $column);
+        }
+        $statement->orderBy($column, (string)$this->direction);
         if ($this->column === 'relevance') {
             // Many listings share a score; the id keeps their order the same on every page.
             $statement->orderBy(DB_TABLE_PREFIX . 't_item.pk_i_id', (string)$this->direction);

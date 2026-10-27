@@ -59,4 +59,12 @@
   a {
     white-space: nowrap;
   }
+
+  // On a phone the tabs wrap, so none hides off the edge with nothing to show it is there.
+  @media (max-width: 575.98px) {
+    > .osc-tabnav {
+      flex-wrap: wrap;
+      min-inline-size: 0;
+    }
+  }
 }
