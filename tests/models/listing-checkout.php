@@ -372,6 +372,16 @@ osc_set_preference('billing_slot_credits', '3', 'osclass', 'INTEGER');
 osc_reset_preferences();
 osc_register_billing_slot();
 
+harness_section('Listing order: cancelled by the admin');
+
+[$uid, , $held] = $seller(0);
+$order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+pin('a pending order waits', 'waiting', ListingCheckout::state($held, $uid)['step']);
+pin('the admin cancels it', true, OrderStore::cancel($order->getId()));
+pin('the seller can pay again, the listing stays held', ['pay', Order::STATUS_CANCELLED, null], [ListingCheckout::state($held, $uid)['step'], OrderStore::find($order->getId())->getStatus(), $row($held)['dt_first_pub_date']]);
+$again = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+pin('a new order links to the listing', [true, $again->getId()], [$again->getId() !== $order->getId(), OrderStore::listingOrder($held)?->getId()]);
+
 harness_section('Listing order: listing deleted');
 
 $secret = static fn (int $id): string => (string) $admin->query("SELECT s_secret FROM {$p}t_item WHERE pk_i_id = {$id}")->fetch_row()[0];
