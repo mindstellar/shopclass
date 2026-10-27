@@ -221,7 +221,7 @@ drive('order_delivered', ['id' => $cid]);
 pin('delivered, it is paid', ['delivered', true], [$status($cid), OrderStore::find($cid)->isPaid()]);
 
 harness_section('the token');
-foreach (['orderShipPost', 'orderDeliveredPost', 'orderCancelPost'] as $method) {
+foreach (['orderShipPost', 'orderTrackingPost', 'orderDeliveredPost', 'orderCancelPost'] as $method) {
     $source = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminBilling.php', $method);
     $csrf   = strpos($source, 'osc_csrf_check()');
     $writes = array_filter([strpos($source, 'OrderStore::'), strpos($source, 'Billing::')], static fn ($x) => $x !== false);
@@ -353,5 +353,22 @@ $creditsPaid = OrderStore::create($tom, 'fake', $m(5), 'USD', 50);
 Billing::markPaid($creditsPaid, 'ext-r');
 $page = drive('order_refund', ['id' => $creditsPaid->getId()]);
 check('a credits refund still does', str_contains(implode(' ', $page['flashes']), 'credits have been taken back'));
+
+harness_section('tracking after shipping');
+$tr = $make('fake');
+Billing::markPaid(OrderStore::find($tr->getId()), 'ext-t');
+$page = drive('order', [], ['id' => $tr->getId()]);
+check('a paid order asks before shipping with empty boxes', str_contains($page['drawn'], 'data-osc-confirm-empty="#order-ship-dialog"') && str_contains($page['drawn'], 'id="order-ship-dialog"') && str_contains($page['drawn'], 'Ship order #' . $tr->getId() . ' without a tracking number?'));
+drive('order_ship', ['id' => $tr->getId(), 'carrier' => 'DHL', 'tracking' => 'OLD1']);
+$page = drive('order', [], ['id' => $tr->getId()]);
+check('a shipped order has an Edit tracking form with the stored values', str_contains($page['drawn'], 'value="order_tracking"') && str_contains($page['drawn'], 'value="OLD1"') && !str_contains($page['drawn'], 'order-ship-dialog'));
+$page = drive('order_tracking', ['id' => $tr->getId(), 'carrier' => 'UPS', 'tracking' => 'NEW2', 'trackingUrl' => 'https://ups.test/NEW2']);
+$ful = OrderStore::find($tr->getId())->fulfilment();
+pin('the tracking is corrected and the status stays', ['shipped', 'UPS', 'NEW2', 'https://ups.test/NEW2'], [$status($tr->getId()), $ful['carrier'], $ful['tracking'], $ful['tracking_url']]);
+check('the shipped date is kept', $ful['shipped_at'] !== null);
+$page = drive('order_tracking', ['id' => $tr->getId(), 'carrier' => 'UPS', 'trackingUrl' => 'http://x.test']);
+pin('a bad link is refused', 'NEW2', OrderStore::find($tr->getId())->fulfilment()['tracking']);
+$unshipped = $make('fake');
+pin('an unshipped order cannot take tracking', false, OrderStore::setTracking($unshipped->getId(), 'DHL', 'X', ''));
 
 exit(harness_result());

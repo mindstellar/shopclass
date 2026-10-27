@@ -87,6 +87,9 @@ class CAdminBilling extends AdminSecBaseModel
             case ('order_ship'):
                 $this->orderShipPost();
                 break;
+            case ('order_tracking'):
+                $this->orderTrackingPost();
+                break;
             case ('order_delivered'):
                 $this->orderDeliveredPost();
                 break;
@@ -297,6 +300,40 @@ class CAdminBilling extends AdminSecBaseModel
         }
 
         $this->redirectTo($back);
+    }
+
+    /**
+     * Correct the tracking of a shipped order. The status does not move.
+     *
+     * @return void
+     */
+    private function orderTrackingPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        $carrier  = Utils::oneLine(Params::getParamString('carrier'));
+        $tracking = Utils::oneLine(Params::getParamString('tracking'));
+        $url      = Utils::oneLine(Params::getParamString('trackingUrl'));
+        if ($url !== '' && Receipts::httpsUrl($url) === '') {
+            $this->orderView(
+                array('carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url),
+                array('trackingUrl' => _m('The tracking link has to be a full https:// address'))
+            );
+
+            return;
+        }
+
+        if (OrderStore::setTracking($order->getId(), $carrier, $tracking, $url)) {
+            osc_add_flash_ok_message(sprintf(_m('Tracking of order #%d is updated'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Only a shipped order can have its tracking changed'), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
     }
 
     /**
