@@ -33,6 +33,7 @@ function oscInitTabs(root) {
             var lis = container.querySelectorAll('ul > li');
             for (var i = 0; i < lis.length; i++) {
                 lis[i].classList.remove('ui-tabs-active', 'ui-state-active', 'ui-state-default', 'ui-corner-top', 'ui-tab');
+                lis[i].setAttribute('role', 'presentation');
             }
 
             function panelFor(link) {

@@ -239,7 +239,7 @@ class CWebItem extends BaseModel
             $saved = $listings->create($this->listingData($formData), Actor::visitor());
         } catch (RefusedException $e) {
             ListingNotices::flash($e->notices(), false);
-            osc_add_flash_error_message($e->getMessage());
+            osc_add_flash_error_message($this->refusalLine($e));
             $this->redirectTo(osc_item_post_url());
 
             return false;
@@ -358,7 +358,7 @@ class CWebItem extends BaseModel
                 $success = $saved->rows();
                 ListingNotices::flash($saved->notices(), false);
             } catch (RefusedException $e) {
-                $success = $e->getMessage();
+                $success = $this->refusalLine($e);
                 ListingNotices::flash($e->notices(), false);
             }
 
@@ -385,6 +385,21 @@ class CWebItem extends BaseModel
         }
 
         return null;
+    }
+
+    /**
+     * The line that tops a refused listing form. A listing refused on several fields has each
+     * one's message kept for the form to print under that field.
+     */
+    private function refusalLine(RefusedException $e): string
+    {
+        if (!$e instanceof InvalidException) {
+            return $e->getMessage();
+        }
+        $errors = $e->byPointer();
+        Session::getInstance()->_setForm('form_errors', $errors);
+
+        return osc_form_error_line($errors);
     }
 
     /**
@@ -634,7 +649,8 @@ class CWebItem extends BaseModel
                 'message'     => Params::getParamString('message'),
             ));
         } catch (InvalidException $e) {
-            osc_add_flash_error_message(trim(ListingMailService::messages($e)));
+            $errors = $e->byPointer();
+            osc_keep_form(array(), osc_form_error_line($errors), $errors);
             $this->redirectTo(osc_item_send_friend_url());
 
             return false;
@@ -711,8 +727,8 @@ class CWebItem extends BaseModel
             'phoneNumber'  => Params::getParamString('phoneNumber'),
             'message_body' => Params::getParamString('message'),
         );
-        $fail = function (string $error) use ($contactValues) {
-            osc_keep_form($contactValues, $error);
+        $fail = function (string $error, array $errors = array()) use ($contactValues) {
+            osc_keep_form($contactValues, $error, $errors);
             $this->redirectTo(osc_local_referer(osc_item_url()));
         };
         if (!Captcha::passes()) {
@@ -739,7 +755,7 @@ class CWebItem extends BaseModel
 
             return false;
         } catch (InvalidException $e) {
-            $fail(trim(ListingMailService::messages($e)));
+            $fail(osc_form_error_line($e->byPointer()), $e->byPointer());
 
             return false;
         } catch (RefusedException $e) {
@@ -760,7 +776,7 @@ class CWebItem extends BaseModel
      * Sends the contact form's message as an on-site conversation and lands on the thread.
      *
      * @param array<string,mixed>      $item the listing row
-     * @param callable(string): mixed $fail sends the visitor back to the form with an error
+     * @param callable(string, array<string,string>=): mixed $fail sends the visitor back to the form with an error
      *
      * @return false|null false when the request was sent back to the form
      */
@@ -771,7 +787,7 @@ class CWebItem extends BaseModel
         try {
             $sent = Container::root()->get(MessagingService::class)->start((int) $item['pk_i_id'], $body, Actor::visitor());
         } catch (InvalidException $e) {
-            $fail($e->getMessage());
+            $fail(osc_form_error_line($e->byPointer()), $e->byPointer());
 
             return false;
         } catch (BlockedException $e) {

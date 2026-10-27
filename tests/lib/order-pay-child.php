@@ -43,6 +43,7 @@ try {
             'billing_cod_enabled'      => '1',
             'billing_cod_fee'          => '2000000',
             'billing_open_hold_orders' => '0',
+            'site_mode'                => 'shop',
         ] as $k => $v) {
             Preference::getInstance()->set($k, $v);
         }

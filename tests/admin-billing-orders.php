@@ -172,6 +172,12 @@ check('a pending credits order offers cancel too', str_contains($page['drawn'], 
 $page = drive('order_cancel', ['id' => $cr->getId()]);
 pin('and it cancels', ['cancelled', true], [$status($cr->getId()), str_contains(implode(' ', $page['flashes']), 'is cancelled')]);
 
+$lo   = OrderStore::create($tom, 'offline', $m(3), 'USD', 0, ['_kind' => Order::KIND_LISTING, '_label' => 'Listing fee']);
+$page = drive('order', [], ['id' => $lo->getId()]);
+check('a pending listing-fee order offers cancel', str_contains($page['drawn'], 'order-cancel-dialog') && str_contains($page['drawn'], 'order_cancel'));
+$page = drive('order_cancel', ['id' => $lo->getId()]);
+pin('and it cancels', ['cancelled', true], [$status($lo->getId()), str_contains(implode(' ', $page['flashes']), 'is cancelled')]);
+
 harness_section('ship');
 $paid = $make('offline');
 $pid  = $paid->getId();

@@ -265,6 +265,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_admin_field(array(
             'type'  => 'custom',
             'name'  => 'key_expires',
+            'id'    => 'key_expires',
             'label' => __('Expires'),
             'help'  => __('Optional. Leave empty for a key that works until you revoke it.'),
             'render' => static function () use ($input) {

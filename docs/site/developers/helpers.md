@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1253 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1256 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1418,7 +1418,7 @@ Core defines 1253 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_web_user_apply_identity($user)` | Populate the request-scoped identity for the given user. |
 | `osc_web_user_login($user, $remember = false)` | Log a front-end user in by issuing the signed identity cookie. |
 
-### hUtils (50)
+### hUtils (53)
 
 `oc-includes/osclass/helpers/hUtils.php`
 
@@ -1438,6 +1438,9 @@ Core defines 1253 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_cron_last_run()` | When cron last ran, on any schedule, as a UNIX time. 0 when it never has. |
 | `osc_escape_string($string)` | Escapes letters and numbers of a string |
 | `osc_field($item, $field, $locale)` | Generic function for view layer, return the $field of $item with specific $locale |
+| `osc_form_error(string $pointer)` | The message kept for one field of the form that was just refused, e.g. '/yourName'. |
+| `osc_form_error_line(array $errors)` | The one line that tops a refused form: the message when one field is wrong, else a pointer to the marked fields plus any message no field prints under itself. |
+| `osc_form_errors()` | All the field messages kept for the form that was just refused, by pointer. |
 | `osc_format_date($date, $dateformat = null)` | Formats the date using the appropiate format. |
 | `osc_get_http_referer()` | Where the visitor came from, when it is on this site: the rewrite's referer, the stored one, then the Referer header. |
 | `osc_get_i18n_repository_url($path = '')` | Get i18n repository URL. |
@@ -1450,7 +1453,7 @@ Core defines 1253 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_google_maps_geocode_url($address)` | **Deprecated 7.0.0 core looks addresses up only through a geocode provider plugin.** Get Google Maps geocode URL. |
 | `osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</strong>')` | Gets prepared text, with: - higlight search pattern and search city - maxim length of text |
 | `osc_is_bot_request()` | Whether this request came from a crawler rather than a person. |
-| `osc_keep_form(array $values, string $error)` | Keep a failed form's values for the next page, plus the reason as 'contact_error', and show the reason as a flash message. Read them back with osc_gui_kept(). |
+| `osc_keep_form(array $values, string $error, array $errors = array())` | Keep a failed form's values for the next page, plus the reason as 'contact_error', and show the reason as a flash message. Read them back with osc_gui_kept(). $errors (pointer =&gt; message, e.g. '/title') mark each wrong field: see osc_form_error(). |
 | `osc_local_referer($fallback)` | The page the request came from when it is on this site, else $fallback. The host is compared, not a prefix, so a look-alike host cannot pass. |
 | `osc_openstreet_api_key()` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin.** Get Open Street Maps API key. |
 | `osc_openstreet_geocode_url($address)` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin.** Get OpenStreetMaps geocode URL. |

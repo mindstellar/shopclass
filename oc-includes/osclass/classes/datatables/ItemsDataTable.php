@@ -341,7 +341,8 @@ class ItemsDataTable extends DataTable
 
                 // fill a row
                 $row['bulkactions']   =
-                    '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" active="' . $aRow['b_active']
+                    '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
+                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_title'])) . '" active="' . $aRow['b_active']
                     . '" blocked="' . $aRow['b_enabled'] . '"/>';
                 $status               = $this->get_row_status();
                 $row['status-border'] = '';
@@ -752,7 +753,8 @@ class ItemsDataTable extends DataTable
 
                 // fill a row
                 $row['bulkactions'] =
-                    '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" active="' . $aRow['b_active']
+                    '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
+                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_title'])) . '" active="' . $aRow['b_active']
                     . '" blocked="' . $aRow['b_enabled'] . '"/>';
                 $row['title']       = '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . osc_esc_html($title) . '</a>' . $actions;
                 $row['user']        = osc_esc_html($aRow['s_user_name']);

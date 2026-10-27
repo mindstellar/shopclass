@@ -154,7 +154,8 @@ class BanRulesDataTable extends DataTable
 
                 $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
-                $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '" /></div>';
+                $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
+                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_name'])) . '" /></div>';
                 $row['name']        = osc_esc_html($aRow['s_name']) . $actions;
                 $row['ip']          = osc_esc_html($aRow['s_ip']);
                 $row['email']       = osc_esc_html($aRow['s_email']);

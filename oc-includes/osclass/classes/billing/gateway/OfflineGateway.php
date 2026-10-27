@@ -25,6 +25,8 @@ use mindstellar\billing\PaymentGateway;
  */
 final class OfflineGateway implements PaymentGateway
 {
+    public const ID = 'offline';
+
     /**
      * Stable identifier stored on every order this gateway handles.
      *
@@ -32,7 +34,7 @@ final class OfflineGateway implements PaymentGateway
      */
     public function getId(): string
     {
-        return 'offline';
+        return self::ID;
     }
 
     /**

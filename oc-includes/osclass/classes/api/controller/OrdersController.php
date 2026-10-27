@@ -83,7 +83,7 @@ final class OrdersController
             }
         }
 
-        return Response::ok($this->serializer->quote($quote, $gateways));
+        return Response::ok($this->serializer->quote($quote, $gateways, $call->userId() > 0 ? GoodsCheckout::openOrders($call->userId()) : null));
     }
 
     public function index(ApiCall $call): Response

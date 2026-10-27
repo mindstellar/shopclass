@@ -198,7 +198,7 @@ function osc_show_pagination_admin($aData)
                         <span class="list-first"><?php _e('Page'); ?></span>
                     </li>
                     <li class="pagination-input">
-                        <input id="gotoPage" type="text" name="iPage" value="<?php echo $pageActual; ?>"/>
+                        <input id="gotoPage" aria-label="<?php echo osc_esc_html(__('Page')); ?>" type="text" name="iPage" value="<?php echo $pageActual; ?>"/>
                         <button type="submit"><?php _e('Go!'); ?></button>
                     </li>
                 </ul>

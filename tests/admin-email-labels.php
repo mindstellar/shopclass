@@ -31,4 +31,7 @@ harness_section('subjects');
 pin('the site name prefix goes', 'Someone has a question about your listing', EmailVariables::plainSubject('{WEB_TITLE} - Someone has a question about your listing'));
 pin('other placeholders read as words', 'Confirm {item title}', EmailVariables::plainSubject('Confirm {ITEM_TITLE}'));
 pin('plain text stays', 'Welcome', EmailVariables::plainSubject('Welcome'));
+harness_section('subjects in the list');
+pin('placeholders are italic words', 'New comment on <em>listing title</em>', EmailVariables::plainSubjectHtml('{WEB_TITLE} - New comment on {ITEM_TITLE}'));
+pin('the rest is escaped', 'A &lt;b&gt; &amp; <em>user name</em>', EmailVariables::plainSubjectHtml('A <b> & {USER_NAME}'));
 exit(harness_result());

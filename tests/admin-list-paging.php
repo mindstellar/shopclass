@@ -193,6 +193,7 @@ $long = $render(static fn () => osc_admin_pager(array(
     'params'   => array('status' => 'paid'),
 )));
 check('the go-to form keeps the list filters', strpos($long, 'gotoPage') !== false && strpos($long, 'name="status"') !== false && strpos($long, 'name="page"') !== false, $long);
+check('the go-to box has a name', strpos($long, 'id="gotoPage" aria-label="Page"') !== false, $long);
 check('no pageNum goes out', strpos($pager, 'pageNum') === false, $pager);
 
 $_SERVER['QUERY_STRING'] = 'page=items&pageNum=2&iDisplayLength=10';

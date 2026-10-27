@@ -8621,8 +8621,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
-"Most unpaid orders one buyer may hold at once, card orders included. 0 "
-"means no limit."
+"Most unpaid bank transfer orders one buyer may hold at once. Cash on "
+"delivery and card orders are not limited. 0 means no limit."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -11467,6 +11467,13 @@ msgstr ""
 msgid "Reported listings"
 msgstr ""
 
+#: oc-admin/themes/modern/items/reported.php
+#: oc-admin/themes/modern/main/index.php
+#: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/Cleanup.php
+msgid "Reported products"
+msgstr ""
+
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Reports"
 msgstr ""
@@ -12169,6 +12176,7 @@ msgstr ""
 msgid "Secret key"
 msgstr ""
 
+#: oc-admin/themes/modern/tools/logs.php
 #: oc-includes/osclass/classes/datatables/LogsDataTable.php
 msgid "Section"
 msgstr ""
@@ -12231,7 +12239,16 @@ msgstr ""
 msgid "Select"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations/list.php
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
+#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+#: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
+#: oc-includes/osclass/classes/datatables/MediaDataTable.php
+#: oc-includes/osclass/classes/datatables/PagesDataTable.php
+#: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Select %s"
 msgstr ""
 
@@ -13393,6 +13410,7 @@ msgid "Subdomain type"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
+#: oc-admin/themes/modern/emails/index.php
 msgid "Subject"
 msgstr ""
 
@@ -14931,7 +14949,6 @@ msgid "Timezone"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
-#: oc-admin/themes/modern/emails/index.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/stats/comments.php
@@ -15413,6 +15430,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Unsubscribe link."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/widgets.php
+msgid "Unused: %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php

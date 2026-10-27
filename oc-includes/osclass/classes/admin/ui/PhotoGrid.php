@@ -65,7 +65,8 @@ class PhotoGrid
         echo '<span class="form-label" id="' . osc_esc_html($labelId) . '">'
             . osc_esc_html($label) . '</span>';
 
-        echo '<div class="osc-photo-grid" role="list" aria-labelledby="' . osc_esc_html($labelId) . '"'
+        // A list with no items fails the accessibility check, so an empty grid is a group.
+        echo '<div class="osc-photo-grid" role="' . ($count > 0 ? 'list' : 'group') . '" aria-labelledby="' . osc_esc_html($labelId) . '"'
             . ' data-osc-photo-grid>';
 
         $first = true;

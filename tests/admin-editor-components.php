@@ -440,6 +440,12 @@ emits('...the size a file may not pass', $photos, 'data-max-size="2097152"');
 emits('...and the extensions it may have', $photos, 'data-extensions="gif,jpg,png"');
 divs_balance('every div the grid opens is closed', $photos);
 
+$empty = render(static function () use ($photoOpts) {
+    osc_admin_photo_grid(array_merge($photoOpts, array('resources' => array())));
+});
+emits('an empty grid is a named group, not a list with no items', $empty,
+    '<div class="osc-photo-grid" role="group" aria-labelledby="photos-label" data-osc-photo-grid>');
+
 harness_section('a photo waiting for the save');
 
 $staged = render(static function () use ($photoOpts) {
