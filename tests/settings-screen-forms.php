@@ -2588,4 +2588,15 @@ $litMenu->add_submenu('billing', 'Lit bill', osc_settings_page_url('np-lit-bill'
 check('a page with no menu entry lights no Settings sub-item', $litFor('np-lit-bare')[1] === '', json_encode($litFor('np-lit-bare')));
 check('a page in Billing lights Billing and its own entry', $litFor('np-lit-bill') === array('billing', 'settings-page-np-lit-bill'), json_encode($litFor('np-lit-bill')));
 
+$litAfterRefusedSave = static function (string $id): array {
+    $_GET                    = array();
+    $_POST                   = array('page' => 'settings', 'action' => 'custom_post', 'id' => $id);
+    $_SERVER['QUERY_STRING'] = '';
+    Params::init();
+
+    return AdminMenu::getInstance()->currentIds();
+};
+check('a refused save in Billing keeps Billing and its own entry lit', $litAfterRefusedSave('np-lit-bill') === array('billing', 'settings-page-np-lit-bill'), json_encode($litAfterRefusedSave('np-lit-bill')));
+check('a refused save of a page with no entry lights no Settings sub-item', $litAfterRefusedSave('np-lit-bare')[1] === '', json_encode($litAfterRefusedSave('np-lit-bare')));
+
 exit(harness_result());
