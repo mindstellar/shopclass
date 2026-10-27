@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -105,7 +105,7 @@ Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (45)
+### hAdminUi (46)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -113,6 +113,7 @@ Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_admin_action_button(array $action)` | One action, as a link or a button. |
 | `osc_admin_action_section(array $opts = array())` | A titled block of actions — the "do a thing" panel (connection test, queue, migration, cleanup, maintenance) that is not a label\|control form. Renders a heading, an optional intro, optional body content, and each action as a button with its own help line. |
+| `osc_admin_captcha_settings_path()` | The menu path to the Captcha settings, built from the menu's own names. |
 | `osc_admin_category_picker(array $opts = array())` | The category chooser: a control showing the chosen path, and a searchable list of the whole tree behind it. |
 | `osc_admin_checkbox(array $opts)` | A checkbox with its label on one line and its hint underneath. |
 | `osc_admin_count(int $count, string $id = '')` | A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather than "Pending (3)". Returns the markup, led by a space so the label and number never run together; a zero is drawn muted. |
@@ -140,7 +141,7 @@ Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_admin_form_section($title, array $opts = array())` | A titled group of fields within a screen, with an optional explanatory paragraph. |
 | `osc_admin_location_picker(array $opts = array())` | Where a record is: the country select, the region and city inputs with their hidden ids, and the rest of the address behind a disclosure. |
 | `osc_admin_number(array $opts)` | A number, at number width. Keys: the shared set, plus 'min', 'max', 'step', 'prefix', 'suffix'. |
-| `osc_admin_page_head($title, array $actions = array(), array $opts = array())` | The heading a screen opens on. |
+| `osc_admin_page_head($title, array $actions = array(), array $opts = array())` | The page title, and the actions that belong to the page as a whole. |
 | `osc_admin_panel_close()` | Close the panel osc_admin_panel_open() opened. |
 | `osc_admin_panel_open($title = '', array $opts = array())` | A titled panel. Opens the box and its content area; osc_admin_panel_close() ends both. |
 | `osc_admin_photo_grid(array $opts = array())` | A record's photos as a grid of tiles: the ones it already has, the ones uploaded ahead of the save, one drop target and the count against the site's ceiling. |
@@ -698,7 +699,7 @@ Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null)` | One page of a group's live keys, in key order. Pass the last key of a page as $afterKey for the next. A row never rewritten counts as updated when it was created. |
 | `osc_kv_set(string $group, string $key, $value, ?int $ttl = null)` | Write a key, replacing any value, state and expiry it had. |
 
-### hLocale (21)
+### hLocale (23)
 
 `oc-includes/osclass/helpers/hLocale.php`
 
@@ -711,6 +712,7 @@ Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_current_user_locale()` | Get the actual locale of the user. |
 | `osc_get_admin_locales()` | Gets list of enabled admin locales |
 | `osc_get_current_user_locale()` | Gets current locale object |
+| `osc_get_locale_name($code)` | The name of an enabled locale by code, or the code itself when it is not known. |
 | `osc_get_locales()` | Gets list of locales |
 | `osc_goto_first_locale()` | Reset iterator of locales |
 | `osc_has_web_enabled_locales()` | Iterator for enabled locales for website |
@@ -877,7 +879,7 @@ Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (138)
+### hPreference (139)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -958,6 +960,7 @@ Core defines 1257 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_max_results_per_page_at_search()` | Gets max results per page at search |
 | `osc_max_size_kb()` | Gets max kb of uploads |
 | `osc_mod_rewrite_loaded()` | Gets if mod rewrite is loaded or not (if apache runs on cgi mode, mod rewrite will not be detected) |
+| `osc_mode_text(string $classifieds, string $shop)` | Pick the wording for the site mode. Pass both strings through __() at the call site. |
 | `osc_moderate_admin_edit()` | Gets if admin needs to moderate edited items. |
 | `osc_moderate_admin_post()` | Gets if admin needs to moderate newly posted items. |
 | `osc_moderate_comments()` | Gets how many comments should be posted before auto-moderation |
