@@ -463,7 +463,7 @@ class FormInputs implements InputInterface
         $attributesString = '';
         foreach ($attributes as $key => $value) {
             // Callers may pass a value already escaped, so entities are not encoded twice.
-            $key   = preg_replace('/[^A-Za-z0-9_:.-]/', '', (string) $key);
+            $key   = preg_replace('/[^A-Za-z0-9_:.@-]/', '', (string) $key);
             $value = htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8', false);
             $attributesString .= sprintf(' %s="%s"', $key, $value);
         }
