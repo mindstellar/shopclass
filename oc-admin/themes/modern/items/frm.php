@@ -201,8 +201,58 @@ $itemFacts   = is_array(__get('itemFacts')) ? __get('itemFacts') : array();
 $itemMoves   = is_array(__get('itemActions')) ? __get('itemActions') : array();
 $itemUser    = is_array(__get('itemUser')) ? __get('itemUser') : null;
 
+$itemShop    = osc_is_shop_mode();
+
+// Sell online: one default row for a plain product, or option rows (Colour x Size ...).
+$sellValues = (is_array(__get('itemProduct')) ? __get('itemProduct') : array()) + array_fill_keys(array('sku', 'price', 'compareAt', 'stock', 'weight', 'shippingClass'), '')
+    + array('sell' => false, 'hasOptions' => false, 'options' => array(), 'variants' => array(), 'photos' => array(), 'errors' => array());
+
+// How many refusals each section holds, so it can say "N to fix" and a folded one opens.
+$itemFixKeys = array(
+    'sec-product'  => array('title', 'description', 'catId'),
+    'sec-price'    => array('price', 'currency', 'product'),
+    'sec-seller'   => array('contactName', 'contactEmail', 'contactPhone', 'showEmail'),
+    'sec-location' => array('countryId', 'country', 'region', 'regionId', 'city', 'cityId', 'cityArea', 'zip', 'address'),
+);
+$itemFix = array();
+foreach ($itemErrors as $errorKey => $errorText) {
+    $errorKey = strtok((string)$errorKey, '[');
+    foreach ($itemFixKeys as $sectionId => $sectionKeys) {
+        if (in_array($errorKey, $sectionKeys, true)) {
+            $itemFix[$sectionId] = ($itemFix[$sectionId] ?? 0) + 1;
+        }
+    }
+}
+foreach ((array)$sellValues['errors'] as $variantErrors) {
+    $itemFix['sec-options'] = ($itemFix['sec-options'] ?? 0) + count((array)$variantErrors);
+}
+$itemToc = array();
+
+/** One single-row product field: product[key], drawn stacked. */
+$itemSellField = static function (string $key, string $label, string $inputmode, int $maxlength, string $help = '', string $suffix = '') use ($sellValues) {
+    $attrs = array('autocomplete' => 'off');
+    if ($inputmode !== '') {
+        $attrs['inputmode'] = $inputmode;
+    }
+    if ($maxlength > 0) {
+        $attrs['maxlength'] = (string)$maxlength;
+    }
+    osc_admin_field(array(
+        'type'   => 'text',
+        'id'     => 'product-' . $key,
+        'name'   => 'product[' . $key . ']',
+        'label'  => $label,
+        'layout' => 'stacked',
+        'width'  => $inputmode === '' ? 'text' : 'num',
+        'value'  => $sellValues[$key],
+        'help'   => $help,
+        'suffix' => $suffix,
+        'attrs'  => $attrs,
+    ));
+};
+
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="adminItemForm">
+<div id="adminItemForm" data-osc-mode="<?php echo $itemShop ? 'shop' : 'classifieds'; ?>" data-osc-new="<?php echo $new_item ? '1' : '0'; ?>">
     <?php
     $headActions = array();
     if ($itemViewUrl !== '') {
@@ -245,6 +295,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ),
     ));
 
+    /** Open one form section, adding "N to fix" to its hint and listing it in "On this page". */
+    $itemSection = static function (string $id, string $title, string $hint, array $opts = array()) use (&$itemFix, &$itemToc) {
+        $hints = $hint === '' ? array() : array($hint);
+        $fix   = $itemFix[$id] ?? 0;
+        if ($fix > 0) {
+            $hints[] = array('text' => sprintf(__('%d to fix'), $fix), 'state' => 'error');
+            $opts['open'] = true;
+        }
+        $itemToc[] = array('id' => $id, 'title' => $title, 'fix' => $fix, 'attrs' => $opts['attrs'] ?? array());
+        osc_admin_panel_open($title, $opts + array('id' => $id, 'class' => 'osc-section', 'hint' => $hints));
+    };
+
+    // 1. What it is.
+    $itemSection('sec-product', $itemShop ? __('Product') : __('Listing'), __('Name, category and description'));
+
     // The posted names are the ones the save has always read; only what draws them is new.
     osc_admin_field(array(
         'type'           => 'text',
@@ -264,8 +329,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'purify'         => false,
     ));
 
-    echo '<div class="osc-editor-cols">';
-
     osc_admin_category_picker(array(
         'name'     => 'catId',
         'value'    => $itemCatId,
@@ -275,114 +338,166 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'help'     => __('Changing the category changes which details apply below.'),
     ));
 
-    if (osc_price_enabled_at_items()) {
-        $currencies = osc_get_currencies();
-        $itemPrice  = $itemTyped('price', $itemRecord['i_price'] ?? '');
-        $itemPrice  = $itemPrice === '' ? '' : osc_prepare_price($itemPrice);
-        $currency   = $itemTyped(
-            'currency',
-            $itemRecord['fk_c_currency_code'] ?? Preference::getInstance()->get('currency')
-        );
-        // The category script hides this whole block for a category that takes no price, by
-        // the wrapper the price input sits in -- so the label belongs inside it.
-        echo '<div class="osc-field item-price osc-price-field">';
-        echo '<label class="form-label" for="price">' . osc_esc_html(__('Price')) . '</label>';
-        // The amount and its currency are one field, so they share a row under one label.
-        echo '<div class="field-group">';
-        osc_admin_field(array(
-            'type'        => 'text',
-            'id'          => 'price',
-            'name'        => 'price',
-            'row'         => false,
-            'width'       => 'num',
-            'class'       => 'field-grow',
-            // A rejected save put the price in the session the way the save stores it --
-            // an integer in millionths -- so both sources take the same formatting.
-            'value'       => $itemPrice,
-            'placeholder' => __('Enter price'),
-            'error'       => $itemErrors['price'] ?? '',
-            'attrs'       => array('autocomplete' => 'off', 'inputmode' => 'decimal'),
+    // Neither preset: a listing description wants tables and a colour picker but no
+    // embedded image or media, so the pair is passed here rather than earning a preset of
+    // its own for one caller.
+    osc_admin_field(array(
+        'type'           => 'richtext',
+        'name'           => 'description',
+        'translate_name' => 'description[%s]',
+        'label'          => __('Description'),
+        'layout'         => 'stacked',
+        'required'       => true,
+        'translate'      => true,
+        // The title's strip above switches this field too; a second strip could disagree with it.
+        'tabs'           => false,
+        'locales'        => $itemLocales,
+        'value'          => $itemBodies,
+        'error'          => $itemErrors['description'] ?? '',
+        'preset'         => 'basic',
+        'height'         => 320,
+        'config'         => array(
+            'plugins' => 'advlist anchor autolink charmap code fullscreen insertdatetime'
+                         . ' link lists preview searchreplace table',
+            'toolbar' => 'undo redo | blocks | bold italic underline forecolor | bullist numlist'
+                         . ' | link charmap table | removeformat | searchreplace code fullscreen preview',
+        ),
+    ));
+    osc_admin_panel_close();
+
+    // 2. Photos.
+    if (osc_images_enabled_at_items()) {
+        $itemSection('sec-photos', __('Photos'), '');
+        osc_admin_photo_grid(array(
+            'label'      => __('Photos'),
+            'resources'  => $new_item ? array() : osc_get_item_resources(),
+            'staged'     => $itemStaged,
+            'max'        => (int)osc_max_images_per_item(),
+            'max_size'   => (int)osc_max_size_kb() * 1024,
+            'upload_url' => osc_base_url(true) . '?page=ajax&action=ajax_upload',
+            'delete_url' => osc_base_url(true) . '?page=ajax&action=delete_image',
+            'temp_url'   => osc_base_url() . 'oc-content/uploads/temp/',
+            'secret'     => $new_item ? '' : osc_item_secret(),
+            'cover'      => true,
         ));
-        if (count($currencies) > 1) {
-            $currencyOptions = array();
-            foreach ($currencies as $one) {
-                $currencyOptions[$one['pk_c_code']] = $one['s_description'];
-            }
-            osc_admin_field(array(
-                'type'    => 'select',
-                'id'      => 'currency',
-                'name'    => 'currency',
-                'row'     => false,
-                'options' => $currencyOptions,
-                'value'   => $currency,
-                'attrs'   => array('aria-label' => __('Currency')),
-            ));
-        } elseif (count($currencies) === 1) {
-            osc_admin_field(array(
-                'type'  => 'hidden',
-                'id'    => 'currency',
-                'name'  => 'currency',
-                'value' => $currencies[0]['pk_c_code'],
-            ));
-            echo '<span class="field-suffix">' . osc_esc_html($currencies[0]['s_description']) . '</span>';
-        }
-        echo '</div>';
-        echo '</div>';
+        osc_admin_panel_close();
     }
 
-    echo '</div>';
+    // 3. Price, and in shop mode whether and how it sells. The [data-*] markers are what the
+    // form script shows and hides; with no script everything stays visible.
+    $hasOptions = (bool)$sellValues['hasOptions'];
+    if ($itemShop || osc_price_enabled_at_items()) {
+        $itemSection(
+            'sec-price',
+            $itemShop ? __('Price and stock') : __('Price'),
+            $itemShop ? __('What buyers pay and how many you have') : ''
+        );
 
-    if (osc_is_shop_mode()) {
-        // Sell this item: one default row for a plain product, or option rows (Colour x Size ...).
-        $sellValues = (is_array(__get('itemProduct')) ? __get('itemProduct') : array()) + array_fill_keys(array('sku', 'price', 'compareAt', 'stock', 'weight', 'shippingClass'), '')
-            + array('sell' => false, 'hasOptions' => false, 'options' => array(), 'variants' => array(), 'photos' => array(), 'errors' => array());
-        echo '<fieldset class="osc-field osc-sell-fields">';
-        echo '<legend class="form-label">' . osc_esc_html(__('Sell this item')) . '</legend>';
-        echo '<input type="hidden" name="product[sell]" value="0">';
-        osc_admin_field(array(
-            'type'    => 'checkbox',
-            'id'      => 'product-sell',
-            'name'    => 'product[sell]',
-            'value'   => '1',
-            'label'   => __('Buyers can add this item to a cart'),
-            'checked' => $sellValues['sell'],
-            'error'   => $itemErrors['product'] ?? '',
-        ));
+        if ($itemShop) {
+            echo '<div class="osc-sell-fields">';
+            echo '<input type="hidden" name="product[sell]" value="0">';
+            echo '<div class="form-switch osc-sell-switch">';
+            osc_admin_field(array(
+                'type'    => 'checkbox',
+                'id'      => 'product-sell',
+                'name'    => 'product[sell]',
+                'value'   => '1',
+                'layout'  => 'stacked',
+                'label'   => __('Sell online'),
+                'help'    => __('Buyers can add this product to a cart.'),
+                'checked' => $sellValues['sell'],
+                'error'   => $itemErrors['product'] ?? '',
+                'attrs'   => array('role' => 'switch'),
+            ));
+            echo '</div>';
+            echo '</div>';
+        }
+
+        echo '<div class="osc-editor-cols">';
+        if (osc_price_enabled_at_items()) {
+            $currencies = osc_get_currencies();
+            $itemPrice  = $itemTyped('price', $itemRecord['i_price'] ?? '');
+            $itemPrice  = $itemPrice === '' ? '' : osc_prepare_price($itemPrice);
+            $currency   = $itemTyped(
+                'currency',
+                $itemRecord['fk_c_currency_code'] ?? Preference::getInstance()->get('currency')
+            );
+            // The category script hides this whole block for a category that takes no price, by
+            // the wrapper the price input sits in -- so the label belongs inside it.
+            echo '<div class="osc-field item-price osc-price-field">';
+            echo '<label class="form-label" for="price">' . osc_esc_html(__('Price')) . '</label>';
+            // The amount and its currency are one field, so they share a row under one label.
+            echo '<div class="field-group">';
+            osc_admin_field(array(
+                'type'        => 'text',
+                'id'          => 'price',
+                'name'        => 'price',
+                'row'         => false,
+                'width'       => 'num',
+                'class'       => 'field-grow',
+                // A rejected save put the price in the session the way the save stores it --
+                // an integer in millionths -- so both sources take the same formatting.
+                'value'       => $itemPrice,
+                'placeholder' => __('Enter price'),
+                'error'       => $itemErrors['price'] ?? '',
+                'attrs'       => array('autocomplete' => 'off', 'inputmode' => 'decimal'),
+            ));
+            if (count($currencies) > 1) {
+                $currencyOptions = array();
+                foreach ($currencies as $one) {
+                    $currencyOptions[$one['pk_c_code']] = $one['s_description'];
+                }
+                osc_admin_field(array(
+                    'type'    => 'select',
+                    'id'      => 'currency',
+                    'name'    => 'currency',
+                    'row'     => false,
+                    'options' => $currencyOptions,
+                    'value'   => $currency,
+                    'attrs'   => array('aria-label' => __('Currency')),
+                ));
+            } elseif (count($currencies) === 1) {
+                osc_admin_field(array(
+                    'type'  => 'hidden',
+                    'id'    => 'currency',
+                    'name'  => 'currency',
+                    'value' => $currencies[0]['pk_c_code'],
+                ));
+                echo '<span class="field-suffix">' . osc_esc_html($currencies[0]['s_description']) . '</span>';
+            }
+            echo '</div>';
+            echo '</div>';
+        }
+
+        if ($itemShop) {
+            echo '<div data-variant-default data-osc-needs-sell' . ($hasOptions ? ' hidden' : '') . '>';
+            $itemSellField('compareAt', __('Compare-at price'), 'decimal', 0, __('Shown crossed out next to the price. Leave empty when not on sale.'));
+            echo '</div>';
+        }
+        echo '</div>';
+
+        if ($itemShop) {
+            echo '<div class="osc-editor-cols" data-variant-default data-osc-needs-sell' . ($hasOptions ? ' hidden' : '') . '>';
+            $itemSellField('sku', __('SKU'), '', 64);
+            $itemSellField('stock', __('Stock'), 'numeric', 0, __('Leave empty to sell without counting.'));
+            echo '</div>';
+            echo '<p class="form-text" data-variant-with-options data-osc-needs-sell' . ($hasOptions ? '' : ' hidden') . '>'
+                . osc_esc_html(__('Each option row below has its own SKU, price, compare-at price and stock. A row with no price sells at this price.')) . '</p>';
+            echo '<p class="form-text" data-osc-not-selling' . ($sellValues['sell'] ? ' hidden' : '') . '>'
+                . osc_esc_html(__('Not for sale online. Buyers see the price and contact you.')) . '</p>';
+        }
+        osc_admin_panel_close();
+    }
+
+    if ($itemShop) {
+        // 4. Options: one row per combination (Colour x Size ...).
+        $itemSection('sec-options', __('Options'), __('Sizes, colours and other choices'), array('attrs' => array('data-osc-needs-sell' => true)));
         echo '<input type="hidden" name="product[hasOptions]" value="0">';
         echo '<div class="form-check form-switch osc-variant-switch">';
         echo '<input class="form-check-input" type="checkbox" role="switch" id="product-has-options" name="product[hasOptions]" value="1" data-variant-switch'
-            . ($sellValues['hasOptions'] ? ' checked' : '') . '>';
-        echo '<label class="form-check-label" for="product-has-options">' . osc_esc_html(__('This item comes in options')) . '</label>';
-        echo '</div>';
-
-        echo '<div data-variant-default' . ($sellValues['hasOptions'] ? ' hidden' : '') . '>';
-        echo '<p class="form-text">' . osc_esc_html(__('The item sells at the listing price.')) . '</p>';
-        foreach (
-            array(
-                'sku'           => array(__('SKU'), 'text', 64, ''),
-                'compareAt'     => array(__('Old price, shown crossed out (blank: no sale)'), 'text', 0, 'decimal'),
-                'stock'         => array(__('Stock (blank does not track)'), 'text', 0, 'numeric'),
-                'weight'        => array(__('Weight in grams'), 'text', 0, 'numeric'),
-                'shippingClass' => array(__('Shipping class'), 'text', 40, ''),
-            ) as $sellKey => $sellSpec
-        ) {
-            $sellAttrs = array('autocomplete' => 'off');
-            if ($sellSpec[3] !== '') {
-                $sellAttrs['inputmode'] = $sellSpec[3];
-            }
-            if ($sellSpec[2] > 0) {
-                $sellAttrs['maxlength'] = (string) $sellSpec[2];
-            }
-            osc_admin_field(array(
-                'type'  => $sellSpec[1],
-                'id'    => 'product-' . $sellKey,
-                'name'  => 'product[' . $sellKey . ']',
-                'label' => $sellSpec[0],
-                'width' => $sellSpec[3] === '' ? 'text' : 'num',
-                'value' => $sellValues[$sellKey],
-                'attrs' => $sellAttrs,
-            ));
-        }
+            . ($hasOptions ? ' checked' : '') . '>';
+        echo '<label class="form-check-label" for="product-has-options">' . osc_esc_html(__('This product comes in options')) . '</label>';
+        echo '<div class="form-text">' . osc_esc_html(__('Like sizes or colours, each with its own stock.')) . '</div>';
         echo '</div>';
 
         $variantI18n = array(
@@ -395,7 +510,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'tooMany'     => sprintf(__('That makes %%d rows; an item has at most %d.'), \mindstellar\listing\VariantStore::MAX_ROWS),
             'noValues'    => __('Give each option a name and at least one value first.'),
         );
-        echo '<div class="osc-variants" data-variant-editor' . ($sellValues['hasOptions'] ? '' : ' hidden')
+        echo '<div class="osc-variants" data-variant-editor' . ($hasOptions ? '' : ' hidden')
             . ' data-max-options="' . \mindstellar\listing\VariantStore::MAX_OPTIONS . '"'
             . ' data-max-values="' . \mindstellar\listing\VariantStore::MAX_VALUES . '"'
             . ' data-max-rows="' . \mindstellar\listing\VariantStore::MAX_ROWS . '"'
@@ -478,56 +593,142 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         }
         echo '</tbody></table></div>';
         echo '</div>';
-        echo '</fieldset>';
+        osc_admin_panel_close();
+
+        // 5. Shipping. A product in a digital category ships nothing; the plugin that
+        // delivers it marks its output, and the form script swaps the fields for one line.
+        $itemSection('sec-shipping', __('Shipping'), __('Used to work out delivery cost'), array('attrs' => array('data-osc-needs-sell' => true)));
+        echo '<div data-osc-physical-only>';
+        echo '<div class="osc-editor-cols">';
+        echo '<div data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
+        $itemSellField('weight', __('Weight'), 'numeric', 0, '', __('g'));
+        echo '</div>';
+        $itemSellField('shippingClass', __('Shipping class'), '', 40, __('A name the Shipping plugin groups items by, such as bulky.'));
+        echo '</div>';
+        echo '<p class="form-text" data-variant-with-options' . ($hasOptions ? '' : ' hidden') . '>'
+            . osc_esc_html(__('Weight is set per row in Options.')) . '</p>';
+        echo '</div>';
+        echo '<p class="form-text" data-osc-digital-only hidden>'
+            . osc_esc_html(__('No shipping. Products in a digital category are delivered as downloads.')) . '</p>';
+        osc_admin_panel_close();
     }
 
-    // Neither preset: a listing description wants tables and a colour picker but no
-    // embedded image or media, so the pair is passed here rather than earning a preset of
-    // its own for one caller.
-    osc_admin_field(array(
-        'type'           => 'richtext',
-        'name'           => 'description',
-        'translate_name' => 'description[%s]',
-        'label'          => __('Description'),
-        'layout'         => 'stacked',
-        'required'       => true,
-        'translate'      => true,
-        // The title's strip above switches this field too; a second strip could disagree with it.
-        'tabs'           => false,
-        'locales'        => $itemLocales,
-        'value'          => $itemBodies,
-        'error'          => $itemErrors['description'] ?? '',
-        'preset'         => 'basic',
-        'height'         => 320,
-        'config'         => array(
-            'plugins' => 'advlist anchor autolink charmap code fullscreen insertdatetime'
-                         . ' link lists preview searchreplace table',
-            'toolbar' => 'undo redo | blocks | bold italic underline forecolor | bullist numlist'
-                         . ' | link charmap table | removeformat | searchreplace code fullscreen preview',
-        ),
-    ));
-
-    if (osc_images_enabled_at_items()) {
-        osc_admin_photo_grid(array(
-            'label'      => __('Photos'),
-            'resources'  => $new_item ? array() : osc_get_item_resources(),
-            'staged'     => $itemStaged,
-            'max'        => (int)osc_max_images_per_item(),
-            'max_size'   => (int)osc_max_size_kb() * 1024,
-            'upload_url' => osc_base_url(true) . '?page=ajax&action=ajax_upload',
-            'delete_url' => osc_base_url(true) . '?page=ajax&action=delete_image',
-            'temp_url'   => osc_base_url() . 'oc-content/uploads/temp/',
-            'secret'     => $new_item ? '' : osc_item_secret(),
-            'cover'      => true,
-        ));
-    }
-
-    // The category's own fields, fetched after load by the item_form / item_edit hook.
+    // 6. The category's own fields, fetched after load by the item_form / item_edit hook.
+    $itemSection('sec-details', __('Details'), __('Fields for this category'));
     if ($new_item) {
         ItemForm::plugin_post_item();
     } else {
         ItemForm::plugin_edit_item();
     }
+    osc_admin_panel_close();
+
+    // 7. Location. Optional in shop mode, where it folds away unless a refused save needs it.
+    $itemSection(
+        'sec-location',
+        __('Location'),
+        $itemShop ? __('Optional · empty uses the store address') : __('Where the item is'),
+        array('collapsible' => $itemShop)
+    );
+    osc_admin_location_picker(array(
+        'value' => array(
+            'countryId' => $itemTyped('countryId', $itemRecord['fk_c_country_code'] ?? ''),
+            'country'   => $itemTyped('country', $itemRecord['s_country'] ?? ''),
+            'region'    => $itemTyped('region', $itemRecord['s_region'] ?? ''),
+            'regionId'  => $itemTyped('regionId', $itemRecord['fk_i_region_id'] ?? ''),
+            'city'      => $itemTyped('city', $itemRecord['s_city'] ?? ''),
+            'cityId'    => $itemTyped('cityId', $itemRecord['fk_i_city_id'] ?? ''),
+            'cityArea'  => $itemTyped('cityArea', $itemRecord['s_city_area'] ?? ''),
+            'zip'       => $itemTyped('zip', $itemRecord['s_zip'] ?? ''),
+            'address'   => $itemTyped('address', $itemRecord['s_address'] ?? ''),
+        ),
+        'errors' => $itemErrors,
+    ));
+    osc_admin_panel_close();
+
+    // 8. Seller. A product the owner adds to their own shop is sold under the shop's name
+    // and address, so in shop mode it folds to one line naming who it is.
+    $shopOwned    = $new_item && $itemShop;
+    $contactName  = $itemTyped('contactName', $shopOwned ? osc_page_title() : ($itemRecord['s_contact_name'] ?? ''));
+    $contactEmail = $itemTyped('contactEmail', $shopOwned ? osc_contact_email() : ($itemRecord['s_contact_email'] ?? ''));
+    $itemSection(
+        'sec-seller',
+        __('Seller and contact'),
+        $itemShop
+            ? implode(' · ', array_filter(array($contactName, $contactEmail), static fn (string $part): bool => $part !== ''))
+            : __('Who posted it and how buyers reach them'),
+        array('collapsible' => $itemShop)
+    );
+
+    osc_admin_user_picker(array(
+        'user'   => $itemUser,
+        'id'     => 'userPicker',
+        'label'  => $itemUser === null ? __('Find a registered user') : __('Change the seller'),
+        'help'   => __('Picking a user fills the contact fields below. The listing belongs to'
+                       . ' whichever account matches the contact e-mail.'),
+        'source' => osc_admin_base_url(true) . '?page=ajax&action=userajax',
+        'fields' => array('name' => 'contactName', 'email' => 'contactEmail'),
+    ));
+
+    echo '<div class="osc-editor-cols osc-contact-cols">';
+    osc_admin_field(array(
+        'type'   => 'text',
+        'id'     => 'contactName',
+        'name'   => 'contactName',
+        'label'  => __('Name'),
+        'layout' => 'stacked',
+        'help'   => $shopOwned ? __('Filled with your shop name. You can change it.') : '',
+        'value'  => $contactName,
+        'error'  => $itemErrors['contactName'] ?? '',
+    ));
+    osc_admin_field(array(
+        'type'   => 'text',
+        'id'     => 'contactEmail',
+        'name'   => 'contactEmail',
+        'label'  => __('E-mail'),
+        'layout' => 'stacked',
+        'help'   => $shopOwned ? __('Filled with your shop e-mail. You can change it.') : '',
+        'value'  => $contactEmail,
+        'error'  => $itemErrors['contactEmail'] ?? '',
+    ));
+    osc_admin_field(array(
+        'type'   => 'text',
+        'id'     => 'contactPhone',
+        'name'   => 'contactPhone',
+        'label'  => __('Phone'),
+        'layout' => 'stacked',
+        'value'  => $itemTyped('contactPhone', $itemRecord['s_contact_phone'] ?? ''),
+        'error'  => $itemErrors['contactPhone'] ?? '',
+    ));
+    echo '</div>';
+
+    // A checkbox posts nothing when it is off, so the stored value may only be replaced
+    // when a rejected submit actually put the key in the form session.
+    $showEmail = array_key_exists('showEmail', $itemSession)
+        ? !empty($itemSession['showEmail'])
+        : !empty($itemRecord['b_show_email']);
+    osc_admin_checkbox(array(
+        'name'    => 'showEmail',
+        'id'      => 'showEmail',
+        'value'   => '1',
+        'checked' => $showEmail,
+        'label'   => __('Show the e-mail address on the listing'),
+    ));
+
+    if (!$new_item) {
+        osc_admin_disclosure_open(__('Advanced'), array('summary_hint' => __('IP address')));
+        osc_admin_field(array(
+            'type'   => 'text',
+            'id'     => 'ipAddress',
+            'name'   => 'ipAddress',
+            'label'  => __('IP address'),
+            'layout' => 'stacked',
+            'value'  => osc_item_ip(),
+            'attrs'  => array('readonly' => true),
+        ));
+        osc_admin_disclosure_close();
+    }
+
+    osc_admin_panel_close();
 
     osc_admin_editor_rail(array('id' => 'right-side'));
 
@@ -577,6 +778,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     $expiryHtml = (string)ob_get_clean();
 
     osc_admin_publish_panel(array(
+        'title'     => __('Publishing'),
         'status'    => $itemStatus !== array()
             ? $itemStatus
             : array(array('inactive', __('Not saved yet'))),
@@ -595,99 +797,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         echo '</div>';
     }
 
-    osc_admin_panel_open(__('Seller'));
-
-    osc_admin_user_picker(array(
-        'user'   => $itemUser,
-        'id'     => 'userPicker',
-        'label'  => $itemUser === null ? __('Find a registered user') : __('Change the seller'),
-        'help'   => __('Picking a user fills the contact fields below. The listing belongs to'
-                       . ' whichever account matches the contact e-mail.'),
-        'source' => osc_admin_base_url(true) . '?page=ajax&action=userajax',
-        'fields' => array('name' => 'contactName', 'email' => 'contactEmail'),
-    ));
-
-    // A product the owner adds to their own shop is sold under the shop's name and address.
-    $shopOwned = $new_item && osc_is_shop_mode();
-    osc_admin_field(array(
-        'type'   => 'text',
-        'id'     => 'contactName',
-        'name'   => 'contactName',
-        'label'  => __('Name'),
-        'layout' => 'stacked',
-        'help'   => $shopOwned ? __('Filled with your shop name. You can change it.') : '',
-        'value'  => $itemTyped('contactName', $shopOwned ? osc_page_title() : ($itemRecord['s_contact_name'] ?? '')),
-        'error'  => $itemErrors['contactName'] ?? '',
-    ));
-    osc_admin_field(array(
-        'type'   => 'text',
-        'id'     => 'contactEmail',
-        'name'   => 'contactEmail',
-        'label'  => __('E-mail'),
-        'layout' => 'stacked',
-        'help'   => $shopOwned ? __('Filled with your shop e-mail. You can change it.') : '',
-        'value'  => $itemTyped('contactEmail', $shopOwned ? osc_contact_email() : ($itemRecord['s_contact_email'] ?? '')),
-        'error'  => $itemErrors['contactEmail'] ?? '',
-    ));
-    osc_admin_field(array(
-        'type'   => 'text',
-        'id'     => 'contactPhone',
-        'name'   => 'contactPhone',
-        'label'  => __('Phone'),
-        'layout' => 'stacked',
-        'value'  => $itemTyped('contactPhone', $itemRecord['s_contact_phone'] ?? ''),
-        'error'  => $itemErrors['contactPhone'] ?? '',
-    ));
-
-    // A checkbox posts nothing when it is off, so the stored value may only be replaced
-    // when a rejected submit actually put the key in the form session.
-    $showEmail = array_key_exists('showEmail', $itemSession)
-        ? !empty($itemSession['showEmail'])
-        : !empty($itemRecord['b_show_email']);
-    osc_admin_checkbox(array(
-        'name'    => 'showEmail',
-        'id'      => 'showEmail',
-        'value'   => '1',
-        'checked' => $showEmail,
-        'label'   => __('Show the e-mail address on the listing'),
-    ));
-
-    if (!$new_item) {
-        osc_admin_disclosure_open(__('Advanced'), array('summary_hint' => __('IP address')));
-        osc_admin_field(array(
-            'type'   => 'text',
-            'id'     => 'ipAddress',
-            'name'   => 'ipAddress',
-            'label'  => __('IP address'),
-            'layout' => 'stacked',
-            'value'  => osc_item_ip(),
-            'attrs'  => array('readonly' => true),
-        ));
-        osc_admin_disclosure_close();
+    echo '<nav class="widget-box osc-toc" aria-labelledby="osc-toc-title">';
+    echo '<div class="widget-box-title"><h3 id="osc-toc-title">' . osc_esc_html(__('On this page')) . '</h3></div>';
+    echo '<ul class="widget-box-content">';
+    foreach ($itemToc as $tocEntry) {
+        echo '<li' . osc_admin_field_attrs($tocEntry['attrs']) . '><a href="#' . osc_esc_html($tocEntry['id']) . '">'
+            . osc_esc_html($tocEntry['title'])
+            . ($tocEntry['fix'] > 0 ? osc_admin_count($tocEntry['fix']) : '') . '</a></li>';
     }
-
-    osc_admin_panel_close();
-
-    osc_admin_panel_open(__('Location'));
-    osc_admin_location_picker(array(
-        'value' => array(
-            'countryId' => $itemTyped('countryId', $itemRecord['fk_c_country_code'] ?? ''),
-            'country'   => $itemTyped('country', $itemRecord['s_country'] ?? ''),
-            'region'    => $itemTyped('region', $itemRecord['s_region'] ?? ''),
-            'regionId'  => $itemTyped('regionId', $itemRecord['fk_i_region_id'] ?? ''),
-            'city'      => $itemTyped('city', $itemRecord['s_city'] ?? ''),
-            'cityId'    => $itemTyped('cityId', $itemRecord['fk_i_city_id'] ?? ''),
-            'cityArea'  => $itemTyped('cityArea', $itemRecord['s_city_area'] ?? ''),
-            'zip'       => $itemTyped('zip', $itemRecord['s_zip'] ?? ''),
-            'address'   => $itemTyped('address', $itemRecord['s_address'] ?? ''),
-        ),
-        'errors' => $itemErrors,
-    ));
-    osc_admin_panel_close();
+    echo '</ul></nav>';
 
     osc_admin_editor_close(array(
         array('label' => customText('button'), 'type' => 'submit', 'variant' => 'primary'),
-        array('label' => (osc_is_shop_mode() ? __('Back to products') : __('Back to listings')), 'url' => $itemBackUrl, 'variant' => 'dim'),
+        array('label' => __('Cancel'), 'url' => $itemBackUrl, 'variant' => 'dim'),
     )); ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
