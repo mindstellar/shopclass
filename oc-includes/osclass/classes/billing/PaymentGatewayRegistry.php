@@ -81,7 +81,8 @@ final class PaymentGatewayRegistry extends Registry
 
     /**
      * How to pay a pending order, from a gateway that offers it (a bank transfer does), or
-     * null.
+     * null. A gateway opts in by having an instructions(Order) method; it is not part of
+     * PaymentGateway, so plugin gateways written before it keep working.
      *
      * @param Order $order
      *
