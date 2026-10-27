@@ -14,6 +14,7 @@ if (!defined('ABS_PATH')) {
 <html dir="ltr" lang="en-US">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow, noarchive"/>
     <meta name="googlebot" content="noindex, nofollow, noarchive"/>
     <title><?php echo osc_page_title(); ?> &raquo; <?php _e('Log in'); ?></title>
