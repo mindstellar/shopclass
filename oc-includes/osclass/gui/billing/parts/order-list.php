@@ -19,6 +19,8 @@ use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\currency\Money;
 
+require_once dirname(__DIR__, 2) . '/page-fn.php';
+
 /**
  * A table of orders, shared by the orders page and the shopper's dashboard. Expects $orders
  * (Order[]); the caller draws the empty state.
@@ -102,6 +104,18 @@ $col = array(
                 </span>
                 <?php if (Receipts::available($order)) { ?>
                     <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Receipt')); ?></a>
+                <?php } ?>
+                <?php if ($order->buyerMayCancel()) { ?>
+                    <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
+                        <?php echo osc_csrf_token_form(); ?>
+                        <input type="hidden" name="page" value="billing"/>
+                        <input type="hidden" name="action" value="cancel"/>
+                        <input type="hidden" name="id" value="<?php echo (int) $order->getId(); ?>"/>
+                        <button type="submit" class="oe-link-btn oe-danger-link" data-osc-confirm="<?php
+                            echo osc_esc_html(sprintf(_m('Cancel order %s?'), osc_billing_order_number($order->getId()))); ?>"><?php
+                            echo osc_esc_html(_m('Cancel')); ?></button>
+                    </form>
+                    <?php osc_gui_print_confirm_script(); ?>
                 <?php } ?>
             </td>
         </tr>

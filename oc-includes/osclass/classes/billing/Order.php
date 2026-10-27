@@ -352,14 +352,14 @@ final class Order
     }
 
     /**
-     * Whether the buyer may cancel it: a pending goods order paid outside the site. A card
+     * Whether the buyer may cancel it: a pending order paid outside the site, of any kind. A card
      * order stays open, as its payment page may still take the money.
      *
      * @return bool
      */
     public function buyerMayCancel(): bool
     {
-        return $this->isGoods() && $this->isPending() && in_array($this->gateway, Billing::HOLDS_STOCK, true);
+        return $this->isPending() && in_array($this->gateway, Billing::HOLDS_STOCK, true);
     }
 
     /**
