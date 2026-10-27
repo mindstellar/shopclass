@@ -80,7 +80,7 @@ class AdminMenu
         );
         $this->add_submenu(
             'items',
-            __('Reported listings'),
+            osc_is_shop_mode() ? __('Reported products') : __('Reported listings'),
             osc_admin_base_url(true) . '?page=items&action=items_reported',
             'items_reported',
             'moderator'

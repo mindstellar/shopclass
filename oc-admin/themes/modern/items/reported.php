@@ -15,7 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Listings'),
-    'title'   => __('Reported listings'),
+    'title'   => osc_is_shop_mode() ? __('Reported products') : __('Reported listings'),
     'help'    => __('From here, you can edit or delete the listings reported by users (spam, misclassified, duplicate, expired, offensive). You can also delete the report if you consider it mistaken.'),
 ));
 
@@ -26,7 +26,7 @@ $rows      = $aData['aRows'];
 $sort      = Params::getParam('sort');
 $direction = Params::getParam('direction');
 osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(__('Reported listings')); ?>
+<?php osc_admin_page_head(osc_is_shop_mode() ? __('Reported products') : __('Reported listings')); ?>
 <div class="relative">
     <?php // One row: bulk actions on the left, the filter reset and page size on the right.
     osc_admin_toolbar_open(array('align' => 'between')); ?>
