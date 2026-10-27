@@ -84,7 +84,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
             continue;
         }
     }
-    $sections[$stored] = array('label' => $stored, 'description' => '', 'orphan' => true);
+    $sections[$stored] = array('label' => sprintf(__('Unused: %s'), $stored), 'description' => '', 'orphan' => true);
 }
 ?>
 <?php if ($locations === array()) { ?>
@@ -104,7 +104,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                 $isOrphan = $section['orphan'];
                 $widgets  = Widget::getInstance()->findByLocation($location); ?>
                 <div class="form-card widget-section<?php echo $isOrphan ? ' is-unavailable' : ''; ?>"
-                     data-location="<?php echo osc_esc_html($location); ?>"<?php echo $isOrphan ? ' data-unavailable="1"' : ''; ?>>
+                     data-location="<?php echo osc_esc_html($location); ?>" data-label="<?php echo osc_esc_html($section['label']); ?>"<?php echo $isOrphan ? ' data-unavailable="1"' : ''; ?>>
                     <div class="form-card-head">
                         <button type="button" class="form-card-toggle" aria-expanded="true"
                                 aria-label="<?php echo osc_esc_html(__('Collapse or expand this section')); ?>"><i class="bi bi-chevron-down" aria-hidden="true"></i></button>
@@ -553,7 +553,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                 item.type = 'button';
                 item.className = 'cf-add-item';
                 item.setAttribute('role', 'menuitem');
-                item.textContent = sec.getAttribute('data-location');
+                item.textContent = sec.getAttribute('data-label') || sec.getAttribute('data-location');
                 item.addEventListener('click', function () {
                     menu.hidden = true;
                     place.setAttribute('aria-expanded', 'false');
