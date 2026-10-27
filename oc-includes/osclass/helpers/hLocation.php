@@ -88,7 +88,7 @@ function _osc_location_translate(mixed $rows, string $type, string $idKey, strin
     if (!is_array($rows) || $rows === []) {
         return $rows;
     }
-    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+    $locale = osc_current_ui_locale();
 
     return \mindstellar\container\Container::root()->get(\mindstellar\location\LocationNames::class)
         ->translateList($rows, $type, $idKey, $nameKey, $locale);
@@ -479,7 +479,7 @@ function osc_geocode_attribution(): string
  */
 function osc_location_names_prime(string $type, array $ids): void
 {
-    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+    $locale = osc_current_ui_locale();
     \mindstellar\container\Container::root()->get(\mindstellar\location\LocationNames::class)->prime($locale, [$type => $ids]);
 }
 
@@ -496,7 +496,7 @@ function osc_location_names_prime(string $type, array $ids): void
  */
 function osc_location_name(string $type, int|string $id, string $fallback = ''): string
 {
-    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+    $locale = osc_current_ui_locale();
 
     return \mindstellar\container\Container::root()->get(\mindstellar\location\LocationNames::class)->name($type, $id, $locale, $fallback);
 }

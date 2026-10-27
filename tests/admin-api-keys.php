@@ -68,6 +68,12 @@ if (!function_exists('osc_current_admin_locale')) {
         return 'en_US';
     }
 }
+if (!function_exists('osc_current_ui_locale')) {
+    function osc_current_ui_locale(): string
+    {
+        return 'en_US';
+    }
+}
 if (!function_exists('osc_logged_admin_id')) {
     function osc_logged_admin_id()
     {

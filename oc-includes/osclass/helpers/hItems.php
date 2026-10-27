@@ -1105,7 +1105,7 @@ function osc_resource_owner_title($resource)
     }
 
     $ownerType  = (string)($resource['s_owner_type'] ?? '');
-    $prefLocale = (defined('OC_ADMIN') && OC_ADMIN) ? osc_current_admin_locale() : osc_current_user_locale();
+    $prefLocale = osc_current_ui_locale();
 
     // Pick a non-empty s_title from a *_description table, preferring the current locale.
     $localizedTitle = static function ($type, $id) use ($prefLocale) {
@@ -2157,7 +2157,7 @@ function _osc_item_adjacent(string $direction, ?int $itemId): array
     }
 
     $dir    = $direction === 'prev' ? 'prev' : 'next';
-    $locale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+    $locale = osc_current_ui_locale();
     $suffix = '_' . $itemId . '_' . (osc_rewrite_enabled() ? '1' : '0') . '_' . $locale;
 
     $found  = false;

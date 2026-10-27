@@ -322,3 +322,13 @@ function osc_current_admin_locale()
 
     return osc_admin_language();
 }
+
+/**
+ * The language of the screen being drawn: the admin's inside the admin, the visitor's elsewhere.
+ *
+ * @return string Locale code
+ */
+function osc_current_ui_locale(): string
+{
+    return (string)(defined('OC_ADMIN') && OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale());
+}

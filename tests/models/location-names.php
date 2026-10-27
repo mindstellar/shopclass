@@ -120,6 +120,12 @@ if (!function_exists('osc_current_user_locale')) {
         return 'de_DE';
     }
 }
+if (!function_exists('osc_current_ui_locale')) {
+    function osc_current_ui_locale(): string
+    {
+        return osc_current_user_locale();
+    }
+}
 $currentLocale = osc_current_user_locale();
 $store->set('city', $cologne, $currentLocale, 'Köln');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocation.php';

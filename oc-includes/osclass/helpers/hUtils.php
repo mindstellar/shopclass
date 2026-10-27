@@ -313,7 +313,7 @@ function osc_format_date($date, $dateformat = null)
     // Keyed by the language plus three translated words, so a translator switched mid-request
     // (an email in another language) still gets its own names.
     static $names = array();
-    $locale = (defined('OC_ADMIN') && OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale())
+    $locale = osc_current_ui_locale()
         . '|' . __('January') . '|' . __('Mon') . '|' . __('PM');
     if (!isset($names[$locale])) {
         $month       = array(

@@ -60,7 +60,7 @@ class Search extends DAO
         $this->total_results       = null;
         $this->total_results_table = null;
         $admin                     = defined('OC_ADMIN') && OC_ADMIN;
-        $this->parts->userLocale   = $admin ? osc_current_admin_locale() : osc_current_user_locale();
+        $this->parts->userLocale   = osc_current_ui_locale();
         if ($admin) {
             $this->addField(sprintf('%st_item_location.*', DB_TABLE_PREFIX));
         }

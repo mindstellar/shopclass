@@ -72,7 +72,7 @@ final class ListingReader
      */
     public function row(int $id, ?callable $keep = null, ?string $locale = null): ?array
     {
-        return $this->rows->find($id, $locale ?? (OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale()), $keep);
+        return $this->rows->find($id, $locale ?? osc_current_ui_locale(), $keep);
     }
 
     /**

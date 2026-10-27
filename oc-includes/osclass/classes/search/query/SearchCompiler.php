@@ -165,7 +165,7 @@ final class SearchCompiler
             $inner->where('ti.pk_i_id = d.fk_i_item_id');
             $inner->where(...($parts->pattern->fullTextUsable() ? $parts->pattern->matchCondition() : $parts->pattern->likeCondition()));
             $inner->where('ti.b_premium = 1');
-            $parts->pattern->defaultLocale(self::admin() ? osc_current_admin_locale() : osc_current_user_locale());
+            $parts->pattern->defaultLocale(osc_current_ui_locale());
             $inner->where(...$parts->pattern->localeCondition());
             $sub = $inner->compile();
         }

@@ -178,7 +178,7 @@ class Item extends DAO
     {
         if (!empty($items)) {
             if (null === $prefLocale) {
-                $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+                $prefLocale = osc_current_ui_locale();
             }
             $items = $this->extendItemDescription($items, $prefLocale, $descriptions);
             $items = $this->extendCategoryName($items, $prefLocale);
@@ -1482,7 +1482,7 @@ class Item extends DAO
     public function extendCategoryName($items, $prefLocale = null)
     {
         if (null === $prefLocale) {
-            $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+            $prefLocale = osc_current_ui_locale();
         }
         $results = array();
         // get categoryIds from items
@@ -1582,7 +1582,7 @@ class Item extends DAO
     {
         if (!empty($items)) {
             if (null === $prefLocale) {
-                $prefLocale = OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+                $prefLocale = osc_current_ui_locale();
             }
             try {
                 $descriptions ??= (new \mindstellar\listing\ListingQuery())->descriptions(array_column($items, 'pk_i_id'));
