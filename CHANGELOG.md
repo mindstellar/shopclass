@@ -104,28 +104,38 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - One listing's rating summary and stars come from one query.
 
 ### Fixed
-- A refused package or ship save keeps what was typed and marks the field; a refused tax save stays under its own menu entry.
+- A refused package or ship save keeps what was typed and marks the field.
+- A refused tax save stays under its own menu entry.
 - Goods refunds no longer say credits were taken back.
-- Any pending order can be cancelled, so a bank transfer that never arrives can be closed; a shipped order's tracking can be edited, and shipping with no tracking asks first.
-- The orders header counts only the filtered status; the Shop tab and To ship button show only in shop mode; billing labels and delivery help use plain words.
-- Wrong password, taken e-mail change and a clicked-twice alert link now answer in plain words and keep what was typed.
-- The contact form lists each missing field; its name and e-mail inputs are required.
-- Registering from checkout keeps the return path; listings with no price sort last by price.
-- The to-ship badge no longer breaks the Billing heading and Find; the Listing stats range switch is back.
-- Admin login and small screens: viewport meta, visible focus on Save buttons, Cleanup rules table stacks on a phone.
+- Any pending order can be cancelled.
+- A shipped order's tracking can be edited; shipping with no tracking asks first.
+- The orders header counts only the filtered status.
+- The Shop tab and To ship button show only in shop mode.
+- Billing labels and delivery help use plain words.
+- Wrong password, taken e-mail change and a clicked-twice alert link answer in plain words.
+- The contact form lists each missing field.
+- Registering from checkout keeps the return path.
+- Listings with no price sort last by price.
+- The to-ship badge no longer breaks the Billing heading.
+- The Listing stats range switch is back.
+- Admin login and Cleanup rules fit small screens; Save buttons show focus.
 - Add user keeps what was typed after a refusal and the username messages name the rule.
-- Email templates list shows a plain name per template; API settings say keys do nothing while the API is off.
+- API settings say keys do nothing while the API is off.
 - Version page shows the version in one heading.
-- In shop mode the admin says Products, a new product starts sellable with the shop's contact details, and the sell fields are hidden in classifieds.
-- A product saved for sale without a currency takes the site currency; sample data now carries the currency.
-- Listing save errors name languages and no longer ask for optional titles; the cart checkbox on the listing form fits a phone.
+- In shop mode the admin says Products and a new product starts sellable.
+- The sell fields are hidden in classifieds.
+- A product saved for sale without a currency takes the site currency.
+- Listing save errors name languages and no longer ask for optional titles.
 - Add category, Add field and Add form no longer write a placeholder row; they create on Save.
-- A new page takes its internal name from its title; a refused menu save names the bad link and keeps the items.
+- A new page takes its internal name from its title.
+- A refused menu save names the bad link and keeps the items.
 - The customiser works on a phone and its image fields use the media picker.
 - New installs show currency symbols ($, £, €) next to listing prices.
-- The account order list shows the order number and what was bought; the order API carries `pay_instructions`.
-- Admin form labels, select-all boxes and listing thumbnails have accessible names; photos can be added by keyboard; the comment box fits a phone.
-- A plugin or theme settings page core refuses is left out with an admin notice and a log line, instead of taking the whole site down.
+- The account order list shows the order number and what was bought.
+- The order API carries `pay_instructions`.
+- Admin form labels, select-all boxes and listing thumbnails have accessible names.
+- Photos can be added by keyboard.
+- A settings page core refuses is left out with an admin notice instead of taking the site down.
 - A checkbox on a settings page honours `disabled`.
 - The API main menu no longer links a top category to a subcategory that has the same slug.
 - After-commit callbacks queued behind one that ends the request now run at shutdown.
@@ -133,14 +143,16 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - A mail template with no text now uses the bundled English text instead of stopping the request.
 - Checkbox filters use the `s_value` index.
 - The buy-credits page lists only the payment methods that take the billing currency.
-- Signing in or registering from a page that needs it, such as the checkout, returns to that page: `osc_user_login_url()` and `osc_register_account_url()` take an optional same-site `return` path, and no cookie is set for it.
-- A title or description with "&", "<" or ">" is no longer refused as too long when it fits the form: lengths count the text as typed, not as stored.
-- Admin list checkboxes, toolbar search, the logs section and option-filter headings have names for screen readers, and the tab strips pass the accessibility check.
-- A classifieds site no longer shows the card hold, open-orders limit or cash on delivery settings; shop mode says Reported products.
+- `osc_user_login_url()` and `osc_register_account_url()` take an optional same-site `return` path.
+- A title or description with "&", "<" or ">" is no longer refused as too long.
+- Admin list checkboxes, toolbar search, the logs section and option-filter headings have names for screen readers.
+- A classifieds site no longer shows the card hold, open-orders limit or cash on delivery settings.
+- Shop mode says Reported products.
 - The e-mail templates list shows the name and a readable subject, without the internal key or braces.
-- The widget Add menu names each section; an unused section reads "Unused: slug".
-- The open-orders limit counts and checks bank transfer orders only; `GET /cart/quote` returns `open_orders` for a signed-in buyer.
-- A refused listing, contact or send-to-friend form marks each wrong field with its own message; an empty title says to add one.
+- The widget Add menu names each section.
+- The open-orders limit counts bank transfer orders only.
+- `GET /cart/quote` returns `open_orders` for a signed-in buyer.
+- A refused listing, contact or send-to-friend form marks each wrong field with its own message.
 
 ## Shopclass 7.0.5
 
