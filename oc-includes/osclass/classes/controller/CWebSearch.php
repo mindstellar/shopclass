@@ -12,8 +12,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\container\Container;
-use mindstellar\location\LocationNames;
 use mindstellar\location\LocationNameStore;
 
 /**
@@ -227,33 +225,15 @@ class CWebSearch extends BaseModel
         $pageSize    = $criteria->pageSize();
         $iTotalItems = $result->total();
 
-        $names  = Container::root()->get(LocationNames::class);
-        $locale = osc_current_user_locale();
-
-        $p_sCountry  = implode(', ', $criteria->countries());
-        $countryName = $p_sCountry;
-        if (strlen($p_sCountry) == 2) {
-            $c = Country::getInstance()->findByCode($p_sCountry);
-            if ($c) {
-                $countryName = $names->name(LocationNameStore::COUNTRY, $c['pk_c_code'], $locale, $c['s_name']);
-            }
-        }
+        $p_sCountry = implode(', ', $criteria->countries());
         $p_sRegion  = implode(', ', $criteria->regions());
-        $regionName = $p_sRegion;
-        if (is_numeric($p_sRegion)) {
-            $r = Region::getInstance()->findByPrimaryKey($p_sRegion);
-            if ($r) {
-                $regionName = $names->name(LocationNameStore::REGION, $r['pk_i_id'], $locale, $r['s_name']);
-            }
-        }
-        $p_sCity  = implode(', ', $criteria->cities());
-        $cityName = $p_sCity;
-        if (is_numeric($p_sCity)) {
-            $c = City::getInstance()->findByPrimaryKey($p_sCity);
-            if ($c) {
-                $cityName = $names->name(LocationNameStore::CITY, $c['pk_i_id'], $locale, $c['s_name']);
-            }
-        }
+        $p_sCity    = implode(', ', $criteria->cities());
+        $country    = strlen($p_sCountry) == 2 ? Country::getInstance()->findByCode($p_sCountry) : null;
+        $region     = is_numeric($p_sRegion) ? Region::getInstance()->findByPrimaryKey($p_sRegion) : null;
+        $city       = is_numeric($p_sCity) ? City::getInstance()->findByPrimaryKey($p_sCity) : null;
+        $countryName = $country ? osc_location_name(LocationNameStore::COUNTRY, $country['pk_c_code'], $country['s_name']) : $p_sCountry;
+        $regionName  = $region ? osc_location_name(LocationNameStore::REGION, $region['pk_i_id'], $region['s_name']) : $p_sRegion;
+        $cityName    = $city ? osc_location_name(LocationNameStore::CITY, $city['pk_i_id'], $city['s_name']) : $p_sCity;
 
         $this->_exportVariableToView('search_start', $page * $pageSize);
         $this->_exportVariableToView('search_end', $result->endOffset($page, $pageSize));

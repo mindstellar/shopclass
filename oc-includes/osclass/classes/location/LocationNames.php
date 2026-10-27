@@ -131,6 +131,19 @@ final class LocationNames
         if (!$changed || !$sort) {
             return $rows;
         }
+
+        return self::sortByName($rows, $nameKey, $locale);
+    }
+
+    /**
+     * Rows sorted by $nameKey in the locale's alphabet, or a natural sort without intl.
+     *
+     * @param array<int|string,array<string,mixed>> $rows
+     *
+     * @return list<array<string,mixed>>
+     */
+    public static function sortByName(array $rows, string $nameKey, string $locale): array
+    {
         $names    = array_map(static fn (array $row): string => (string) ($row[$nameKey] ?? ''), $rows);
         $collator = class_exists(\Collator::class) ? \Collator::create($locale) : null;
         $compare  = $collator instanceof \Collator

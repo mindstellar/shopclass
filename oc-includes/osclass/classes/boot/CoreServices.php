@@ -94,7 +94,8 @@ final class CoreServices
         $c->set(GoodsCheckout::class, static fn (Container $c): GoodsCheckout => new GoodsCheckout($c->get(CartPricer::class), $c->get(DispatcherInterface::class)));
         $c->set(CoreEmails::class, static fn (Container $c): CoreEmails => new CoreEmails($c->get(DispatcherInterface::class)));
         $c->set(Clock::class, static fn (): Clock => new SystemClock());
-        $c->set(LocationNames::class, static fn (): LocationNames => new LocationNames(new LocationNameStore()));
+        $c->set(LocationNameStore::class, static fn (): LocationNameStore => new LocationNameStore());
+        $c->set(LocationNames::class, static fn (Container $c): LocationNames => new LocationNames($c->get(LocationNameStore::class)));
         $c->set(MessageStore::class, static fn (): MessageStore => new MessageStore());
         $c->set(ConversationStore::class, static fn (Container $c): ConversationStore => new ConversationStore($c->get(MessageStore::class)));
         $c->set(MessagingService::class, static fn (Container $c): MessagingService => new MessagingService(
