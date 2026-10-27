@@ -81,8 +81,12 @@ class Form extends FormInputs
         'phoneNumber', 'message', 'friendName', 'friendEmail',
     ];
 
+    /** Posted names kept per language, whose pointer names the language: title[en_US] is /title/en_US. */
+    private const LOCALE_NAMES = ['title', 'description'];
+
     /**
-     * The pointer a field's name stands for in a refusal, e.g. title[en_US] is /title.
+     * The pointer a field's name stands for in a refusal, e.g. catId is /category_id and
+     * title[en_US] is /title/en_US.
      *
      * @internal
      *
@@ -93,6 +97,9 @@ class Form extends FormInputs
     public static function errorPointer($name)
     {
         $base = (string) preg_replace('|\[.*$|', '', (string) $name);
+        if (in_array($base, self::LOCALE_NAMES, true) && preg_match('|^[^\[]+\[([^\[\]/]+)\]$|', (string) $name, $m) === 1) {
+            return '/' . $base . '/' . $m[1];
+        }
 
         return '/' . (self::POINTER_NAMES[$base] ?? $base);
     }
@@ -109,7 +116,7 @@ class Form extends FormInputs
      */
     public static function marksPointer($pointer)
     {
-        $base = substr((string) $pointer, 1);
+        $base = (string) preg_replace('#^(' . implode('|', self::LOCALE_NAMES) . ')/[^/]+$#', '$1', substr((string) $pointer, 1));
 
         return str_starts_with((string) $pointer, '/')
             && (in_array($base, self::POINTER_NAMES, true) || in_array($base, self::MARKED_NAMES, true));

@@ -114,13 +114,13 @@ final class ListingValidator
         $hasTitle = false;
         foreach ($aItem['title'] as $key => $value) {
             if (!self::fitsTitle($value, $maxTitle)) {
-                $tooLong[] = self::entry('/title', 'too_long', sprintf(_m('Title too long (%s).'), osc_locale_name_of((string) $key)));
+                $tooLong[] = self::entry('/title/' . $key, 'too_long', sprintf(_m('Title too long (%s).'), osc_locale_name_of((string) $key)));
             } elseif (osc_validate_text($value)) {
                 $hasTitle = true;
             } elseif (trim((string) $value) === '') {
-                $tooShort[] = self::entry('/title', 'required', sprintf(_m('Add a title (%s).'), osc_locale_name_of((string) $key)));
+                $tooShort[] = self::entry('/title/' . $key, 'required', sprintf(_m('Add a title (%s).'), osc_locale_name_of((string) $key)));
             } else {
-                $tooShort[] = self::entry('/title', 'too_short', sprintf(_m('Title too short (%s).'), osc_locale_name_of((string) $key)));
+                $tooShort[] = self::entry('/title/' . $key, 'too_short', sprintf(_m('Title too short (%s).'), osc_locale_name_of((string) $key)));
             }
         }
         $errors = array_merge($errors, $hasTitle || $tooLong !== array() ? array() : $tooShort, $tooLong);
@@ -134,12 +134,12 @@ final class ListingValidator
                 break;
             }
             if (trim((string) $value) === '') {
-                $descErrors[] = self::entry('/description', 'required', sprintf(_m('Add a description (%s).'), osc_locale_name_of((string) $key)));
+                $descErrors[] = self::entry('/description/' . $key, 'required', sprintf(_m('Add a description (%s).'), osc_locale_name_of((string) $key)));
             } elseif (!osc_validate_text($value, 3)) {
-                $descErrors[] = self::entry('/description', 'too_short', sprintf(_m('Description too short (%s).'), osc_locale_name_of((string) $key)));
+                $descErrors[] = self::entry('/description/' . $key, 'too_short', sprintf(_m('Description too short (%s).'), osc_locale_name_of((string) $key)));
             }
             if (!$fits) {
-                $descErrors[] = self::entry('/description', 'too_long', sprintf(_m('Description too long (%s).'), osc_locale_name_of((string) $key)));
+                $descErrors[] = self::entry('/description/' . $key, 'too_long', sprintf(_m('Description too long (%s).'), osc_locale_name_of((string) $key)));
             }
         }
         $errors = array_merge($errors, $descErrors);

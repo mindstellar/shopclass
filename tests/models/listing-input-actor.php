@@ -131,7 +131,7 @@ try {
 }
 pin('the listing is refused', true, $refused instanceof InvalidException);
 $first = $refused->errors()[0] ?? array();
-pin('with the member, code and message', array('/description', 'too_short', 'Description too short (English).'), array($first['pointer'] ?? null, $first['code'] ?? null, $first['message'] ?? null));
+pin('with the member, code and message', array('/description/en_US', 'too_short', 'Description too short (English).'), array($first['pointer'] ?? null, $first['code'] ?? null, $first['message'] ?? null));
 pin('the web text is the messages, one per line', implode('', array_map(static fn (array $e): string => $e['message'] . PHP_EOL, $refused->errors())), $refused->getMessage());
 
 harness_section('only the site\'s languages are read');
