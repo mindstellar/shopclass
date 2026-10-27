@@ -398,6 +398,11 @@ function render_screen(string $screen): string
 {
     $view = View::getInstance();
 
+    // A refused save: one seller field and one title error, as the controller exports them.
+    if (str_ends_with($screen, '-err')) {
+        $view->_exportVariableToView('editorErrors', array('contactEmail' => 'Write a full address.', 'title' => 'Add a title.'));
+        $screen = substr($screen, 0, -4);
+    }
     if (str_ends_with($screen, '-shop')) {
         $GLOBALS['fixtureShop'] = true;
         $screen                 = substr($screen, 0, -5);
@@ -822,13 +827,116 @@ foreach (array('item-edit', 'item-add', 'page-edit', 'page-add') as $screen) {
 harness_section('shop mode and classifieds mode on the listing form');
 pin('classifieds: no sell fields', 0, dom('item-add')->query('//*[contains(@class,"osc-sell-fields")]')->length);
 pin('classifieds: no product controls', 0, count(controls('item-add', 'product[sell]')));
-pin('shop: the sell fields are there', 1, dom('item-add-shop')->query('//fieldset[contains(@class,"osc-sell-fields")]')->length);
+pin('shop: the sell fields are there, in Price and stock', 1, dom('item-add-shop')->query('//*[@id="sec-price"]//*[contains(@class,"osc-sell-fields")]')->length);
 $sell = controls('item-add-shop', 'product[sell]');
 pin('shop: a new product starts ticked as sellable', true, $sell !== array() && $sell[count($sell) - 1]->hasAttribute('checked'));
 pin('shop: the contact name defaults to the shop', 'Demo shop', controls('item-add-shop', 'contactName')[0]->getAttribute('value'));
 pin('shop: the contact e-mail defaults to the shop e-mail', 'shop@example.test', controls('item-add-shop', 'contactEmail')[0]->getAttribute('value'));
 pin('classifieds: the contact fields start empty', '', controls('item-add', 'contactName')[0]->getAttribute('value'));
 check('shop: the form says product', strpos(screen('item-add-shop'), 'Add product') !== false);
+
+harness_section('the listing form is drawn as sections, in order');
+
+/**
+ * The ids of the sections drawn in the main column, in document order.
+ *
+ * @param string $screen
+ *
+ * @return string[]
+ */
+function section_ids(string $screen): array
+{
+    $ids = array();
+    foreach (dom($screen)->query('//*[@id="left-side"]//*[starts-with(@id,"sec-")]') as $node) {
+        $ids[] = $node->getAttribute('id');
+    }
+
+    return $ids;
+}
+
+$classifiedsOrder = array('sec-product', 'sec-photos', 'sec-price', 'sec-details', 'sec-location', 'sec-seller');
+$shopOrder        = array('sec-product', 'sec-photos', 'sec-price', 'sec-options', 'sec-shipping', 'sec-details', 'sec-location', 'sec-seller');
+foreach (array('item-add' => $classifiedsOrder, 'item-edit' => $classifiedsOrder, 'item-add-shop' => $shopOrder, 'item-edit-shop' => $shopOrder) as $screen => $order) {
+    pin("$screen: the sections, in order", $order, section_ids($screen));
+    check("$screen: #plugin-hook sits in Details", dom($screen)->query('//*[@id="sec-details"]//*[@id="plugin-hook"]')->length === 1);
+    check("$screen: and is still inside the form", id_in_form($screen, 'plugin-hook'));
+    check("$screen: the price sits in its section", dom($screen)->query('//*[@id="sec-price"]//input[@id="price"]')->length === 1);
+    check("$screen: the contact e-mail sits in Seller", dom($screen)->query('//*[@id="sec-seller"]//input[@id="contactEmail"]')->length === 1);
+    check("$screen: the country sits in Location", dom($screen)->query('//*[@id="sec-location"]//select[@name="countryId"]')->length === 1);
+
+    $rail = array();
+    foreach (dom($screen)->query('//*[@id="right-side"]/*') as $node) {
+        $rail[] = $node->getAttribute('class');
+    }
+    pin("$screen: the rail holds Publishing and the section list", 2, count($rail));
+    check("$screen: Publishing comes first", isset($rail[0]) && str_contains($rail[0], 'osc-publish'));
+    check("$screen: then the section list", isset($rail[1]) && str_contains($rail[1], 'osc-toc'));
+    pin("$screen: Publishing is titled so", 'Publishing', trim((string)dom($screen)->query('//*[@id="right-side"]//*[contains(@class,"osc-publish")]//h3')->item(0)?->textContent));
+
+    $links = array();
+    foreach (dom($screen)->query('//nav[contains(@class,"osc-toc")]//a') as $node) {
+        $links[] = ltrim($node->getAttribute('href'), '#');
+    }
+    pin("$screen: the section list links every section drawn", $order, $links);
+
+    check("$screen: the save bar offers Cancel back to the list",
+        dom($screen)->query('//*[contains(@class,"form-actions")]//a[normalize-space(.)="Cancel"][@href="https://example.test/oc-admin/index.php?page=items"]')->length === 1);
+}
+
+foreach (array('item-add', 'item-edit') as $screen) {
+    pin("$screen: classifieds posts no product field", 0, dom($screen)->query('//*[starts-with(@name,"product[")]')->length);
+    pin("$screen: classifieds draws Location open, not folded", 0, dom($screen)->query('//details[@id="sec-location" or @id="sec-seller"]')->length);
+    pin("$screen: the form says which mode it is in", 'classifieds', dom($screen)->query('//*[@id="adminItemForm"]/@data-osc-mode')->item(0)?->nodeValue);
+}
+pin('item-add-shop: the form says which mode it is in', 'shop', dom('item-add-shop')->query('//*[@id="adminItemForm"]/@data-osc-mode')->item(0)?->nodeValue);
+pin('item-add: the form says it is new', '1', dom('item-add')->query('//*[@id="adminItemForm"]/@data-osc-new')->item(0)?->nodeValue);
+pin('item-edit: the form says it is not', '0', dom('item-edit')->query('//*[@id="adminItemForm"]/@data-osc-new')->item(0)?->nodeValue);
+
+harness_section('shop mode folds Location and Seller until they hold an error');
+
+foreach (array('sec-location', 'sec-seller') as $id) {
+    $node = dom('item-add-shop')->query('//*[@id="' . $id . '"]')->item(0);
+    pin("item-add-shop: #$id is a details", 'details', $node?->nodeName);
+    check("item-add-shop: #$id starts closed", $node instanceof DOMElement && !$node->hasAttribute('open'));
+}
+$seller   = dom('item-add-shop-err')->query('//*[@id="sec-seller"]')->item(0);
+$location = dom('item-add-shop-err')->query('//*[@id="sec-location"]')->item(0);
+check('item-add-shop-err: Seller holds an error, so it is open', $seller instanceof DOMElement && $seller->hasAttribute('open'));
+check('item-add-shop-err: Location holds none, so it stays closed', $location instanceof DOMElement && !$location->hasAttribute('open'));
+pin('item-add-shop-err: Seller says how many to fix', '1 to fix',
+    trim((string)dom('item-add-shop-err')->query('//*[@id="sec-seller"]//*[contains(@class,"widget-box-title-hint") and contains(@class,"is-error")]')->item(0)?->textContent));
+pin('item-add-shop-err: so does Product', '1 to fix',
+    trim((string)dom('item-add-shop-err')->query('//*[@id="sec-product"]//*[contains(@class,"widget-box-title-hint") and contains(@class,"is-error")]')->item(0)?->textContent));
+pin('item-add-shop-err: Price has nothing to fix', 0,
+    dom('item-add-shop-err')->query('//*[@id="sec-price"]//*[contains(@class,"is-error")]')->length);
+
+harness_section('Sell online is a switch that still posts product[sell]');
+
+foreach (array('item-add-shop', 'item-edit-shop') as $screen) {
+    $sell = controls($screen, 'product[sell]');
+    pin("$screen: two controls carry product[sell]", 2, count($sell));
+    pin("$screen: the hidden 0 comes first", array('hidden', '0'), isset($sell[0]) ? array($sell[0]->getAttribute('type'), $sell[0]->getAttribute('value')) : null);
+    pin("$screen: then the switch", array('checkbox', 'product-sell', 'switch', '1'), isset($sell[1])
+        ? array($sell[1]->getAttribute('type'), $sell[1]->getAttribute('id'), $sell[1]->getAttribute('role'), $sell[1]->getAttribute('value'))
+        : null);
+    foreach (array('product-compareAt', 'product-sku', 'product-stock') as $id) {
+        check("$screen: #$id sits in Price and stock, shown only for a plain sellable product",
+            dom($screen)->query('//*[@id="sec-price"]//*[@data-variant-default and @data-osc-needs-sell]//input[@id="' . $id . '"]')->length === 1);
+    }
+    check("$screen: the weight sits in Shipping, for a plain physical product",
+        dom($screen)->query('//*[@id="sec-shipping"]//*[@data-osc-physical-only]//*[@data-variant-default]//input[@id="product-weight"]')->length === 1);
+    check("$screen: the shipping class sits in Shipping",
+        dom($screen)->query('//*[@id="sec-shipping"]//*[@data-osc-physical-only]//input[@id="product-shippingClass"]')->length === 1);
+    check("$screen: the options switch and editor sit in Options",
+        dom($screen)->query('//*[@id="sec-options"]//input[@id="product-has-options"]')->length === 1
+        && dom($screen)->query('//*[@id="sec-options"]//*[@data-variant-editor]')->length === 1);
+    foreach (array('sec-options', 'sec-shipping') as $id) {
+        check("$screen: #$id needs Sell online", dom($screen)->query('//*[@id="' . $id . '"][@data-osc-needs-sell]')->length === 1);
+    }
+    check("$screen: a quiet line for a product not sold online", dom($screen)->query('//*[@id="sec-price"]//*[@data-osc-not-selling]')->length === 1);
+    check("$screen: a line for a digital product", dom($screen)->query('//*[@id="sec-shipping"]//*[@data-osc-digital-only]')->length === 1);
+    check("$screen: notes for a product with options", dom($screen)->query('//*[@data-variant-with-options]')->length === 2);
+}
 
 exit(harness_result());
 
