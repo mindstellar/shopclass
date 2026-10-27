@@ -665,10 +665,14 @@ class AdminMenu
         // A refused save redraws its form from a POST, which has no query string.
         if ($actual_url === '' && is_string($actual_page) && $actual_page !== '') {
             $actual_url = 'page=' . $actual_page;
+            // A declared page's refused save is such a POST: light its own entry, not General.
+            if ($actual_page === 'settings' && Params::getParam('action') === 'custom_post' && Params::getParamString('id') !== '') {
+                $actual_url .= '&action=custom&id=' . Params::getParamString('id');
+            }
         }
 
         // A declared page with no menu entry sits in no Settings group; the prefix match would light General.
-        if (Params::getParam('page') === 'settings' && Params::getParam('action') === 'custom') {
+        if (Params::getParam('page') === 'settings' && in_array(Params::getParam('action'), array('custom', 'custom_post'), true)) {
             $declared = osc_settings_page(Params::getParamString('id'));
             if ($declared !== null && $declared['menu'] === '') {
                 return array('settings', '');

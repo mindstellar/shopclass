@@ -24,6 +24,8 @@ osc_admin_page(array(
 /** @var \mindstellar\billing\Order $order */
 $order   = __get('order');
 $entries = __get('entries');
+$typed   = is_array(__get('typed')) ? __get('typed') : array();
+$errors  = is_array(__get('errors')) ? __get('errors') : array();
 $balance = (int)__get('balance');
 $refundable = (bool)__get('refundable');
 $dashboardUrl = (string) __get('dashboardUrl');
@@ -331,7 +333,8 @@ foreach ($order->getMeta() as $key => $value) {
         <div>
             <?php if ($order->canShip()) { ?>
                 <?php osc_admin_panel_open(__('Ship this order')); ?>
-                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>"
+                          id="order-ship-form" data-osc-confirm-empty="#order-ship-dialog">
                         <input type="hidden" name="page" value="billing"/>
                         <input type="hidden" name="action" value="order_ship"/>
                         <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
@@ -340,18 +343,22 @@ foreach ($order->getMeta() as $key => $value) {
                             'id'    => 'ship-carrier',
                             'name'  => 'carrier',
                             'label' => __('Carrier'),
+                            'value' => $typed['carrier'] ?? '',
                             'attrs' => array('maxlength' => 100),
                         ));
                         osc_admin_text(array(
                             'id'    => 'ship-tracking',
                             'name'  => 'tracking',
                             'label' => __('Tracking number'),
+                            'value' => $typed['tracking'] ?? '',
                             'attrs' => array('maxlength' => 100),
                         ));
                         osc_admin_text(array(
                             'id'    => 'ship-url',
                             'name'  => 'trackingUrl',
                             'label' => __('Tracking link'),
+                            'value' => $typed['trackingUrl'] ?? '',
+                            'error' => $errors['trackingUrl'] ?? '',
                             'attrs' => array('maxlength' => 500, 'placeholder' => 'https://'),
                             'help'  => __('Optional. Must start with https://'),
                         )); ?>
@@ -370,6 +377,41 @@ foreach ($order->getMeta() as $key => $value) {
                         <input type="hidden" name="action" value="order_delivered"/>
                         <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
                         <button type="submit" class="btn btn-submit"><?php _e('Mark delivered'); ?></button>
+                    </form>
+                <?php osc_admin_panel_close(); ?>
+            <?php } ?>
+
+            <?php if ($isGoods && $order->getStatus() === Order::STATUS_SHIPPED) { ?>
+                <?php osc_admin_panel_open(__('Edit tracking')); ?>
+                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                        <input type="hidden" name="page" value="billing"/>
+                        <input type="hidden" name="action" value="order_tracking"/>
+                        <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                        <?php
+                        osc_admin_text(array(
+                            'id'    => 'track-carrier',
+                            'name'  => 'carrier',
+                            'label' => __('Carrier'),
+                            'value' => $typed['carrier'] ?? (string) ($fulfil['carrier'] ?? ''),
+                            'attrs' => array('maxlength' => 100),
+                        ));
+                        osc_admin_text(array(
+                            'id'    => 'track-number',
+                            'name'  => 'tracking',
+                            'label' => __('Tracking number'),
+                            'value' => $typed['tracking'] ?? (string) ($fulfil['tracking'] ?? ''),
+                            'attrs' => array('maxlength' => 100),
+                        ));
+                        osc_admin_text(array(
+                            'id'    => 'track-url',
+                            'name'  => 'trackingUrl',
+                            'label' => __('Tracking link'),
+                            'value' => $typed['trackingUrl'] ?? (string) ($fulfil['tracking_url'] ?? ''),
+                            'error' => $errors['trackingUrl'] ?? '',
+                            'attrs' => array('maxlength' => 500, 'placeholder' => 'https://'),
+                            'help'  => __('Optional. Must start with https://'),
+                        )); ?>
+                        <button type="submit" class="btn btn-submit"><?php _e('Save tracking'); ?></button>
                     </form>
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
@@ -406,9 +448,11 @@ foreach ($order->getMeta() as $key => $value) {
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
 
-            <?php if ($isGoods && ($order->isPending() || $order->awaitsCash())) { ?>
+            <?php if ($order->isPending() || ($isGoods && $order->awaitsCash())) { ?>
                 <?php osc_admin_panel_open(__('Cancel this order')); ?>
-                    <p class="panel-subtitle"><?php _e('Close an order that will not be paid. Stock held for it goes back on sale.'); ?></p>
+                    <p class="panel-subtitle"><?php echo osc_esc_html($isGoods
+                        ? __('Close an order that will not be paid. Stock held for it goes back on sale.')
+                        : __('Close an order that will not be paid.')); ?></p>
                     <button type="button" class="btn btn-dim" data-osc-dialog-open="#order-cancel-dialog"><?php _e('Cancel order'); ?></button>
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
@@ -506,7 +550,7 @@ foreach ($order->getMeta() as $key => $value) {
             'confirm' => __('Refund'),
         ));
     }
-    if ($isGoods && ($order->isPending() || $order->awaitsCash())) {
+    if ($order->isPending() || ($isGoods && $order->awaitsCash())) {
         osc_admin_confirm_dialog(array(
             'id'      => 'order-cancel-dialog',
             'url'     => $actionUrl,
@@ -518,6 +562,16 @@ foreach ($order->getMeta() as $key => $value) {
             'title'   => sprintf(__('Cancel order #%d?'), $order->getId()),
             'text'    => __('The buyer is not charged. This cannot be undone.'),
             'confirm' => __('Cancel order'),
+        ));
+    }
+    if ($order->canShip()) {
+        osc_admin_confirm_dialog(array(
+            'id'           => 'order-ship-dialog',
+            'tone'         => 'neutral',
+            'confirm_form' => 'order-ship-form',
+            'title'        => sprintf(__('Ship order #%d without a tracking number?'), $order->getId()),
+            'text'         => __('The buyer will see the order as shipped with no carrier or tracking. You can add them later.'),
+            'confirm'      => __('Mark shipped'),
         ));
     }
     if ($order->isPaid()) {

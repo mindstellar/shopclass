@@ -262,7 +262,7 @@ if (!function_exists('osc_admin_settings_group_tabs')) {
             return;
         }
         // A declared page with no menu entry is in no group; the lookup would land on General.
-        $declared = Params::getParam('action') === 'custom' ? osc_settings_page(Params::getParamString('id')) : null;
+        $declared = in_array(Params::getParam('action'), array('custom', 'custom_post'), true) ? osc_settings_page(Params::getParamString('id')) : null;
         if ($declared !== null && $declared['menu'] === '') {
             return;
         }

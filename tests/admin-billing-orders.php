@@ -30,7 +30,7 @@ $p     = DB_TABLE_PREFIX;
 seed_locale($admin);
 seed_currency($admin);
 $tom = seed_user($admin, 'tom', 'tom@example.test');
-foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD'] as $k => $v) {
+foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD', 'site_mode' => 'shop'] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
@@ -165,7 +165,12 @@ $page = drive('order_cancel', ['id' => $id]);
 pin('cancels the pending order', ['cancelled', true], [$status($id), str_contains(implode(' ', $page['flashes']), 'is cancelled')]);
 $page = drive('order_cancel', ['id' => $id]);
 pin('not twice', ['cancelled', true], [$status($id), str_contains(implode(' ', $page['flashes']), 'warning:')]);
-pin('an order that is not goods is not found', true, str_contains(implode(' ', drive('order_cancel', ['id' => OrderStore::create($tom, 'offline', $m(1), 'USD', 5)->getId()])['flashes']), 'no longer exists'));
+pin('a missing order is not found', true, str_contains(implode(' ', drive('order_cancel', ['id' => 999999])['flashes']), 'no longer exists'));
+$cr = OrderStore::create($tom, 'offline', $m(1), 'USD', 5);
+$page = drive('order', [], ['id' => $cr->getId()]);
+check('a pending credits order offers cancel too', str_contains($page['drawn'], 'order-cancel-dialog') && !str_contains($page['drawn'], 'Stock held'));
+$page = drive('order_cancel', ['id' => $cr->getId()]);
+pin('and it cancels', ['cancelled', true], [$status($cr->getId()), str_contains(implode(' ', $page['flashes']), 'is cancelled')]);
 
 harness_section('ship');
 $paid = $make('offline');
@@ -177,8 +182,10 @@ $page = drive('order', [], ['id' => $pid]);
 check('a paid goods order offers shipping with the three fields', str_contains($page['drawn'], 'value="order_ship"') && str_contains($page['drawn'], 'name="carrier"') && str_contains($page['drawn'], 'name="tracking"') && str_contains($page['drawn'], 'name="trackingUrl"'));
 foreach (['http://track.test/1', 'javascript:alert(1)', 'ftp://x.test/1', 'https://a.test/"x"'] as $bad) {
     $page = drive('order_ship', ['id' => $pid, 'carrier' => 'DHL', 'trackingUrl' => $bad]);
-    pin("the link $bad is refused", ['paid', true], [$status($pid), str_contains(implode(' ', $page['flashes']), 'https://')]);
+    pin("the link $bad is refused", ['paid', true], [$status($pid), str_contains($page['drawn'], 'full https:// address')]);
 }
+$page = drive('order_ship', ['id' => $pid, 'carrier' => 'DHL', 'tracking' => 'JD01', 'trackingUrl' => 'http://bad.test']);
+check('a refused link keeps the carrier and number, and names the link', str_contains($page['drawn'], 'value="DHL"') && str_contains($page['drawn'], 'value="JD01"') && str_contains($page['drawn'], 'value="http://bad.test"') && str_contains($page['drawn'], 'aria-invalid="true"') && $page['redirects'] === array());
 $page = drive('order_ship', ['id' => $pid, 'carrier' => "DHL\n", 'tracking' => 'JD01', 'trackingUrl' => 'https://track.test/JD01']);
 $ful  = OrderStore::find($pid)->fulfilment();
 pin('a good one ships', ['shipped', 'DHL', 'JD01', 'https://track.test/JD01'], [$status($pid), $ful['carrier'], $ful['tracking'], $ful['tracking_url']]);
@@ -214,7 +221,7 @@ drive('order_delivered', ['id' => $cid]);
 pin('delivered, it is paid', ['delivered', true], [$status($cid), OrderStore::find($cid)->isPaid()]);
 
 harness_section('the token');
-foreach (['orderShipPost', 'orderDeliveredPost', 'orderCancelPost'] as $method) {
+foreach (['orderShipPost', 'orderTrackingPost', 'orderDeliveredPost', 'orderCancelPost'] as $method) {
     $source = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminBilling.php', $method);
     $csrf   = strpos($source, 'osc_csrf_check()');
     $writes = array_filter([strpos($source, 'OrderStore::'), strpos($source, 'Billing::')], static fn ($x) => $x !== false);
@@ -240,8 +247,26 @@ $page = drive('index', [], []);
 check('the full list shows goods labels', str_contains($page['drawn'], 'Ship me × 2') && str_contains($page['drawn'], 'To ship'));
 $page = drive('index', [], ['toShip' => '1']);
 check('To ship lists paid goods orders only', str_contains($page['drawn'], 'Ship me × 2') && !str_contains($page['drawn'], 'billing-order-link" href="https://example.test/oc-admin/index.php?page=billing&amp;action=order&amp;id=' . $credits->getId() . '"') && !str_contains($page['drawn'], 'Tee × 2'));
+Preference::getInstance()->set('site_mode', 'classifieds');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$page = drive('index', [], ['toShip' => '1']);
+check('a classifieds site has no To ship button and ignores the filter', !str_contains($page['drawn'], 'To ship') && str_contains($page['drawn'], 'Ship me'));
+Preference::getInstance()->set('site_mode', 'shop');
+scratchdb_forget_cache();
+osc_reset_preferences();
 $page = drive('index', [], ['status' => 'shipped']);
 check('shipped and delivered are filters', str_contains($page['drawn'], 'value="shipped"') && str_contains($page['drawn'], 'value="delivered"'));
+
+harness_section('the summary');
+$sum = OrderStore::summary(['status' => 'shipped', 'goods' => false]);
+pin('a shipped filter reports no paid or pending', [0, 0], [$sum['paid'], $sum['pending']]);
+$sum = OrderStore::summary(['status' => '']);
+check('no filter still counts both', $sum['paid'] >= 1 && $sum['count'] >= $sum['paid']);
+$page = drive('index', [], ['status' => 'shipped']);
+check('the shipped list shows one count, not paid and awaiting', str_contains($page['drawn'], 'billing-summary') && !str_contains($page['drawn'], 'awaiting payment'));
+$page = drive('index', [], []);
+check('the full list shows all three', str_contains($page['drawn'], 'awaiting payment'));
 
 harness_section('a listing order');
 $cat  = seed_category($admin);
@@ -325,5 +350,33 @@ pin('and leaves the order paid', 'paid', $st);
 check('without a note it uses the core words', str_starts_with($flash, 'info:The refund was sent. The order changes to refunded'));
 [$flash] = $refundAnswer(static fn (int $id) => \mindstellar\billing\CallbackResult::ignored('card expired'));
 pin('a refusal is still an error', 'error:The refund was not made: card expired', $flash);
+
+harness_section('refund flashes');
+$goodsPaid = $make('offline');
+Billing::markPaid(OrderStore::find($goodsPaid->getId()), null);
+$page = drive('order_refund', ['id' => $goodsPaid->getId()]);
+$flash = implode(' ', $page['flashes']);
+check('a goods refund does not mention credits', str_contains($flash, 'is recorded as refunded') && !str_contains($flash, 'credits'));
+$creditsPaid = OrderStore::create($tom, 'fake', $m(5), 'USD', 50);
+Billing::markPaid($creditsPaid, 'ext-r');
+$page = drive('order_refund', ['id' => $creditsPaid->getId()]);
+check('a credits refund still does', str_contains(implode(' ', $page['flashes']), 'credits have been taken back'));
+
+harness_section('tracking after shipping');
+$tr = $make('fake');
+Billing::markPaid(OrderStore::find($tr->getId()), 'ext-t');
+$page = drive('order', [], ['id' => $tr->getId()]);
+check('a paid order asks before shipping with empty boxes', str_contains($page['drawn'], 'data-osc-confirm-empty="#order-ship-dialog"') && str_contains($page['drawn'], 'id="order-ship-dialog"') && str_contains($page['drawn'], 'Ship order #' . $tr->getId() . ' without a tracking number?'));
+drive('order_ship', ['id' => $tr->getId(), 'carrier' => 'DHL', 'tracking' => 'OLD1']);
+$page = drive('order', [], ['id' => $tr->getId()]);
+check('a shipped order has an Edit tracking form with the stored values', str_contains($page['drawn'], 'value="order_tracking"') && str_contains($page['drawn'], 'value="OLD1"') && !str_contains($page['drawn'], 'order-ship-dialog'));
+$page = drive('order_tracking', ['id' => $tr->getId(), 'carrier' => 'UPS', 'tracking' => 'NEW2', 'trackingUrl' => 'https://ups.test/NEW2']);
+$ful = OrderStore::find($tr->getId())->fulfilment();
+pin('the tracking is corrected and the status stays', ['shipped', 'UPS', 'NEW2', 'https://ups.test/NEW2'], [$status($tr->getId()), $ful['carrier'], $ful['tracking'], $ful['tracking_url']]);
+check('the shipped date is kept', $ful['shipped_at'] !== null);
+$page = drive('order_tracking', ['id' => $tr->getId(), 'carrier' => 'UPS', 'trackingUrl' => 'http://x.test']);
+pin('a bad link is refused', 'NEW2', OrderStore::find($tr->getId())->fulfilment()['tracking']);
+$unshipped = $make('fake');
+pin('an unshipped order cannot take tracking', false, OrderStore::setTracking($unshipped->getId(), 'DHL', 'X', ''));
 
 exit(harness_result());

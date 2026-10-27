@@ -106,26 +106,26 @@ final class BillingSettingsScreen
             ->number(
                 'billing_free_live_listings',
                 __('Free listings per seller'),
-                __('Live listings a seller may have at once. 0 means no limit. Pending listings count; only expiry or deletion frees a slot.')
+                __('Live listings a seller may have at once. 0 means no limit. Pending listings count; only expiry or deletion frees a place.')
             )
                 ->clampMin(0)
                 ->default(0)
             ->checkbox(
                 'billing_slot_enabled',
-                __('Sell extra listing slots'),
-                __('A price of 0 makes extra slots free.')
+                __('Sell extra listing places'),
+                __('A price of 0 makes extra places free.')
             )
-                ->rowLabel(__('Extra slots'))
-            ->number('billing_slot_credits', __('Slot price in credits'))
+                ->rowLabel(__('Extra places'))
+            ->number('billing_slot_credits', __('Place price in credits'))
                 ->clampMin(0)
                 ->default(0)
-            ->number('billing_slot_quantity', __('Slots per purchase'))
+            ->number('billing_slot_quantity', __('Places per purchase'))
                 ->clampMin(1)
                 ->default(1)
             ->checkbox(
                 'billing_pay_at_post',
                 __('Take payment at the end of posting'),
-                __('A seller over the limit writes the listing first and pays for the slot on the last step. Off, they are sent to buy a slot before they can post.')
+                __('A seller over the limit writes the listing first and pays for the extra place on the last step. Off, they are sent to buy one before they can post.')
             )
                 ->rowLabel(__('Pay at post'))
                 ->default(true)
@@ -272,19 +272,19 @@ final class BillingSettingsScreen
                 __('Seller limits'),
                 __('Lets a seller buy a higher limit. Everyone else keeps the global limit.')
             )
-            ->checkbox('billing_photos_enabled', __('Sell a raised photo cap'))
+            ->checkbox('billing_photos_enabled', __('Sell extra photos'))
                 ->rowLabel(__('Extra photos'))
             ->number('billing_photos_credits', __('Price (credits)'))
                 ->clampMin(0)
                 ->default(0)
             ->number(
                 'billing_photos_quantity',
-                __('Photo cap'),
-                __('Photos allowed per listing while the entitlement is held.')
+                __('Photos allowed'),
+                __('Photos allowed per listing while the seller holds it.')
             )
                 ->clampMin(1)
                 ->default(10)
-            ->checkbox('billing_no_wait_enabled', __('Sell waiving the flood wait'))
+            ->checkbox('billing_no_wait_enabled', __('Sell skipping the posting wait'))
                 ->rowLabel(__('Skip the posting wait'))
             ->number('billing_no_wait_credits', __('Price (credits)'))
                 ->clampMin(0)
@@ -357,37 +357,49 @@ final class BillingSettingsScreen
             return self::PAGE_SHOP;
         }
 
-        CoreSettings::page(self::PAGE_SHOP, __('Shop'), Billing::PREF_GROUP)
+        $page = CoreSettings::page(self::PAGE_SHOP, osc_is_shop_mode() ? __('Shop') : __('Orders'), Billing::PREF_GROUP)
             ->onAfterSave(static function () {
                 osc_reset_preferences();
-            })
-            ->group(
-                __('Delivery'),
-                __('One delivery method, "Standard delivery", at a flat charge. Amounts are in the listings\' currency.')
-            )
-            ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
-            ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
-            ->group(
-                __('Cash on delivery'),
-                __('The buyer pays the courier. Ship the order unpaid; marking it delivered marks it paid.')
-            )
-            ->checkbox('billing_cod_enabled', __('Accept cash on delivery'))
-                ->rowLabel(__('Availability'))
-            ->field(self::money('billing_cod_fee', __('Cash on delivery fee'), __('Added to the order total. 0 means no fee.'), osc_get_int_preference('billing_cod_fee', 0, 0)))
-            ->hidden(CodAreas::PREF)
-                ->sanitize(static fn ($value): string => self::codAreasJson($value))
-            ->custom('billing_cod_areas_picker', static function (array $field) {
-                self::codAreasPicker($field['values'] ?? array());
-            }, __('Cash on delivery only in'))
-                ->hint(__('Empty: cash on delivery everywhere you deliver.'))
+            });
+
+        // A classifieds site ships nothing, so it sees the Orders group only; delivery and
+        // cash on delivery keep their stored values.
+        if (osc_is_shop_mode()) {
+            $page
+                ->group(
+                    __('Delivery'),
+                    __('Standard delivery at one charge. With the Shipping plugin on, its zones set the charge instead. Amounts are in the listings\' currency.')
+                )
+                ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
+                ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
+                ->group(
+                    __('Cash on delivery'),
+                    __('The buyer pays the courier. Ship the order unpaid; marking it delivered marks it paid.')
+                )
+                ->checkbox('billing_cod_enabled', __('Accept cash on delivery'))
+                    ->rowLabel(__('Availability'))
+                ->field(self::money('billing_cod_fee', __('Cash on delivery fee'), __('Added to the order total. 0 means no fee.'), osc_get_int_preference('billing_cod_fee', 0, 0)))
+                ->hidden(CodAreas::PREF)
+                    ->sanitize(static fn ($value): string => self::codAreasJson($value))
+                ->custom('billing_cod_areas_picker', static function (array $field) {
+                    self::codAreasPicker($field['values'] ?? array());
+                }, __('Cash on delivery only in'))
+                    ->hint(__('Empty: cash on delivery everywhere you deliver.'));
+        }
+
+        $page
             ->group(
                 __('Orders'),
-                __('Every order takes its stock when placed. A card order keeps it for the minutes below; bank transfer and cash on delivery orders until paid or cancelled.')
+                osc_is_shop_mode()
+                    ? __('Every order takes its stock when placed. A card order keeps it for the minutes below; bank transfer and cash on delivery orders until paid or cancelled.')
+                    : __('How long an unpaid order waits before it is cancelled.')
             )
             ->number(
                 'billing_hold_days',
                 __('Cancel unpaid orders after (days)'),
-                __('An unpaid order is cancelled after this many days. A bank transfer or cash on delivery order\'s stock goes back on sale. A listing waiting for payment is deleted after the same number of days; the seller is reminded a day before.')
+                osc_is_shop_mode()
+                    ? __('An unpaid bank transfer or cash on delivery order is cancelled after this many days, and its stock goes back on sale.')
+                    : __('An unpaid order is cancelled after this many days. A listing waiting for payment is deleted after the same number of days; the seller is reminded a day before.')
             )
                 ->clampMin(1)
                 ->default(7)

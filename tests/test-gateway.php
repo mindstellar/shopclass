@@ -306,6 +306,34 @@ pin('no currencies set means the billing currency', array('USD'), $gateway->getS
 $setting('currencies', 'eur, GBP, nope');
 pin('listed codes are used and a bad one is skipped', array('EUR', 'GBP'), $gateway->getSupportedCurrencies());
 
+$checkoutPage = static function (Order $order): string {
+    View::getInstance()->_exportVariableToView('testGatewayOrder', $order);
+    ob_start();
+    include ABS_PATH . 'oc-content/plugins/test-gateway/checkout.php';
+
+    return (string) ob_get_clean();
+};
+foreach (array('osc_locale_dec_point' => '.', 'osc_locale_thousands_sep' => ',', 'osc_locale_currency_format' => '{CURRENCY}{NUMBER}') as $fn => $value) {
+    if (!function_exists($fn)) {
+        eval('function ' . $fn . '() { return ' . var_export($value, true) . '; }');
+    }
+}
+if (!function_exists('osc_csrf_token_form')) {
+    function osc_csrf_token_form()
+    {
+        return '';
+    }
+}
+if (!function_exists('osc_billing_orders_url')) {
+    function osc_billing_orders_url(): string
+    {
+        return WEB_PATH . 'orders';
+    }
+}
+check('a credits order shows its Credits row', strpos($checkoutPage($newOrder(25)), 'Credits') !== false);
+$goodsOrder = OrderStore::create($buyer, TestGateway::ID, 25_000_000, 'USD', 0, array('_kind' => Order::KIND_GOODS));
+check('a goods order shows no Credits row', strpos($checkoutPage($goodsOrder), 'Credits') === false);
+
 /* ----------------------------------------------------------------------------
  * The admin Refund button.
  * ------------------------------------------------------------------------- */
