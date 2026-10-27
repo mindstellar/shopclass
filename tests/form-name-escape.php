@@ -119,8 +119,8 @@ check('the category tree\'s labels are escaped, & kept as it was', !str_contains
 harness_section('a custom field on the search form');
 $field = ['pk_i_id' => 7, 's_slug' => 'colour', 's_name' => 'Colour &amp; trim ' . $evil, 'e_type' => 'TEXT', 's_value' => 'red'];
 $out   = $capture(static fn () => FieldForm::meta($field, true));
-check('the heading is escaped, & kept as it was', !str_contains($out, '<img') && str_contains($out, '<h6>Colour &amp; trim &lt;img src=x onerror=alert(1)&gt;</h6>'));
+check('the heading is escaped, & kept as it was', !str_contains($out, '<img') && str_contains($out, '<h6 id="meta_colour-label">Colour &amp; trim &lt;img src=x onerror=alert(1)&gt;</h6>'));
 $out = $capture(static fn () => FieldForm::meta(['s_name' => 'Size'] + $field, true));
-check('a plain name prints as before', str_contains($out, '<h6>Size</h6>'));
+check('a plain name prints as before', str_contains($out, '<h6 id="meta_colour-label">Size</h6>'));
 
 exit(harness_result());

@@ -48,7 +48,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <a class="btn btn-dim"
                            href="<?php echo osc_admin_base_url(true); ?>?page=tools&amp;action=logs"><?php _e('Reset'); ?></a>
                     <?php } ?>
-                    <select name="section" class="form-select form-select-sm">
+                    <select name="section" class="form-select form-select-sm" aria-label="<?php _e('Section'); ?>">
                         <option value=""><?php _e('All sections'); ?></option>
                         <?php foreach ($sections as $s) { ?>
                             <option value="<?php echo osc_esc_html($s); ?>" <?php echo($curSection === $s ? 'selected="selected"' : ''); ?>>
