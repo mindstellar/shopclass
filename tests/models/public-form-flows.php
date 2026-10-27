@@ -64,10 +64,27 @@ ob_start();
 UserForm::email_login_text();
 check('and is empty with nothing kept', !str_contains((string) ob_get_clean(), 'kept@example.test'));
 
-$dir   = dirname(__DIR__, 2) . '/oc-includes/osclass/classes/controller/';
-$login = file_get_contents($dir . 'CWebLogin.php');
-check('every login bounce goes through the keeping redirect', substr_count(harness_method_source($dir . 'CWebLogin.php', 'loginPost'), '$this->redirectTo($back)') === 0
-    && str_contains(harness_method_source($dir . 'CWebLogin.php', 'bounce'), "_setForm('email'"));
+$dir = dirname(__DIR__, 2) . '/oc-includes/osclass/classes/controller/';
+defined('OSC_DEBUG') || define('OSC_DEBUG', false);
+$login = new class () extends CWebLogin {
+    public array $sent = array();
+
+    public function __construct()
+    {
+        $this->ajax = true;
+    }
+
+    public function redirectTo($url, $code = null)
+    {
+        $this->sent[] = $url;
+    }
+};
+$bounce = new ReflectionMethod('CWebLogin', 'bounce');
+$bounce->setAccessible(true);
+$bounce->invoke($login, 'https://example.test/login', 'typed@example.test');
+pin('a bounce keeps the typed e-mail and goes back', array('typed@example.test', array('https://example.test/login')), array(Session::getInstance()->_getForm('email'), $login->sent));
+Session::getInstance()->_setForm('email', '');
+check('every login bounce goes through the keeping redirect', substr_count(harness_method_source($dir . 'CWebLogin.php', 'loginPost'), '$this->redirectTo($back)') === 0);
 
 harness_section('a refused add keeps what was typed');
 // The admin Add user form has no user, so it hands the fields an empty string.
