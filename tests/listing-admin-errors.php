@@ -29,7 +29,6 @@ function _m($text)
     return $text;
 }
 
-
 foreach (array('hLocale', 'hValidate') as $helper) {
     require_once ABS_PATH . 'oc-includes/osclass/helpers/' . $helper . '.php';
 }
