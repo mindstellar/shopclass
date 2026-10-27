@@ -229,58 +229,6 @@ if (!function_exists('osc_admin_settings_group_tabs')) {
     }
 }
 
-if (!function_exists('osc_admin_action_button')) {
-    /**
-     * One action, as a link or a button.
-     *
-     * Keys: label, url, variant (primary|secondary|danger|dim), icon (bootstrap-icon
-     * name), title, attrs (associative, rendered verbatim as escaped attributes), class
-     * (extra classes, for a button a script has to find).
-     *
-     * Variant maps to the button vocabulary in DESIGN: one primary per region, secondary
-     * for everything routine, danger reserved for genuinely destructive work.
-     *
-     * @param array<string,mixed> $action
-     *
-     * @return void
-     */
-    function osc_admin_action_button(array $action)
-    {
-        $variant = $action['variant'] ?? 'secondary';
-        $classes = array('btn', 'btn-sm');
-        $classes[] = 'btn-' . ($variant === 'primary' ? 'submit' : $variant);
-        // Its own classes go here, not in attrs: a second class attribute is dropped by
-        // the parser, which silently takes a script's hook off the button.
-        if (!empty($action['class'])) {
-            $classes[] = osc_esc_html($action['class']);
-        }
-
-        $attrs = '';
-        foreach (($action['attrs'] ?? array()) as $name => $value) {
-            $attrs .= ' ' . osc_esc_html($name) . '="' . osc_esc_html($value) . '"';
-        }
-        if (!empty($action['title'])) {
-            $attrs .= ' title="' . osc_esc_html($action['title']) . '"';
-        }
-
-        $inner = '';
-        if (!empty($action['icon'])) {
-            $inner .= '<i class="bi ' . osc_esc_html($action['icon']) . '" aria-hidden="true"></i> ';
-        }
-        $inner .= osc_esc_html($action['label'] ?? '');
-
-        if (!empty($action['url'])) {
-            echo '<a class="' . implode(' ', $classes) . '" href="' . osc_esc_html($action['url']) . '"'
-                 . $attrs . '>' . $inner . '</a>';
-
-            return;
-        }
-
-        echo '<button type="' . osc_esc_html($action['type'] ?? 'button') . '" class="'
-             . implode(' ', $classes) . '"' . $attrs . '>' . $inner . '</button>';
-    }
-}
-
 if (!function_exists('osc_admin_tab_nav')) {
     /**
      * A row of page tabs, each a link with one current; it scrolls sideways on a phone.
