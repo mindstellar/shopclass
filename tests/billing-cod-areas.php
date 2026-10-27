@@ -41,6 +41,7 @@ foreach ([
     'billing_offline_instructions' => 'Pay to account 123',
     'billing_cod_enabled'      => '1',
     'billing_open_hold_orders' => '0',
+    'site_mode'                => 'shop',
 ] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }

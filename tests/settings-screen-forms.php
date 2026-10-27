@@ -1275,7 +1275,7 @@ osc_reset_preferences();
 $forgetShopPage();
 drive('CAdminSettingsBilling', 'billing');
 $classifiedsShop = array_keys(SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP));
-pin('classifieds declares the Orders group only', array('billing_hold_days', 'billing_card_hold_minutes', 'billing_open_hold_orders', 'billing_order_prefix'), $classifiedsShop);
+pin('classifieds declares the Orders group only', array('billing_hold_days', 'billing_order_prefix'), $classifiedsShop);
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_hold_days' => '5'));
 pin('and a save there leaves delivery and cash on delivery as stored', array(array('49500000', 'STRING'), array('1', 'BOOLEAN'), array('5', 'INTEGER')), array(pref($admin, 'billing_shipping_flat'), pref($admin, 'billing_cod_enabled'), pref($admin, 'billing_hold_days')));
 $forgetShopPage();

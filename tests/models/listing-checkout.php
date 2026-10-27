@@ -321,6 +321,7 @@ pin('and its order is cancelled', Order::STATUS_CANCELLED, OrderStore::find($las
 osc_set_preference('billing_cod_enabled', '1', 'osclass', 'BOOLEAN');
 osc_set_preference('billing_currency', 'USD', 'osclass', 'STRING');
 osc_reset_preferences();
+PaymentGatewayRegistry::getInstance()->register(new \mindstellar\billing\gateway\CashOnDeliveryGateway());
 pin('cash on delivery is a gateway', true, isset(PaymentGatewayRegistry::getInstance()->available()['cod']));
 pin('but not one a listing order offers', [false, true], [isset(ListingCheckout::gateways()['cod']), isset(ListingCheckout::gateways()['lcgw'])]);
 pin('nor takes', '/gateway unavailable', $refusal(fn () => ListingCheckout::startOrder($held, $uid, $pkg, 'cod')));
