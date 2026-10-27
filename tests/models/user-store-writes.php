@@ -60,7 +60,7 @@ pin('a missing alert fails', UserAlerts::FAILED, $service->activateByLink(999999
 pin('the right link activates', UserAlerts::ACTIVATED, $service->activateByLink($a, 'owner@example.test', 'sekret'));
 pin('the alert is on', '1', (string) $alertRow($a)['b_active']);
 pin('the alert went to the account with that e-mail', (string) $owner, (string) $alertRow($a)['fk_i_user_id']);
-pin('a second click changes nothing and fails, as before', UserAlerts::FAILED, $service->activateByLink($a, 'owner@example.test', 'sekret'));
+pin('a second click finds the alert already on and still answers ACTIVATED', UserAlerts::ACTIVATED, $service->activateByLink($a, 'owner@example.test', 'sekret'));
 
 $held = $seedAlert('owner@example.test', $owner, AlertEnvelope::held('legacy'), 'sekret');
 pin('a held alert answers HELD', UserAlerts::HELD, $service->activateByLink($held, 'owner@example.test', 'sekret'));
