@@ -54,12 +54,41 @@ class Form extends FormInputs
         $options['defaultValue']      = $id;
         $options['selectPlaceholder'] = $default_item;
         $options['selectOptions'] = $newItems;
-        $attributes = self::markInvalid($name, $attributes);
-        echo (new self())->select($name, $id, $attributes, $options), self::errorLine($name, $attributes);
+        echo self::withError($name, $attributes, static fn (array $a): string => (new self())->select($name, $id, $a, $options));
     }
 
     /**
-     * The pointer a field's name stands for in a refusal, e.g. title[en_US] is /title.
+     * Posted names whose refusal pointer is another name. A new field that prints its error
+     * goes here when the names differ, else in MARKED_NAMES.
+     */
+    private const POINTER_NAMES = [
+        'catId'        => 'category_id',
+        'countryId'    => 'country',
+        'countryName'  => 'country',
+        'regionId'     => 'region',
+        'regionName'   => 'region',
+        'cityId'       => 'city',
+        'cityName'     => 'city',
+        'cityArea'     => 'city_area',
+        'contactName'  => 'contact_name',
+        'contactEmail' => 'contact_email',
+        'contactPhone' => 'contact_phone',
+    ];
+
+    /** Posted names that are their own pointer and whose error a core form prints. */
+    private const MARKED_NAMES = [
+        'title', 'description', 'price', 'currency', 'address', 'zip', 'yourName', 'yourEmail',
+        'phoneNumber', 'message', 'friendName', 'friendEmail',
+    ];
+
+    /** Posted names kept per language, whose pointer names the language: title[en_US] is /title/en_US. */
+    private const LOCALE_NAMES = ['title', 'description'];
+
+    /**
+     * The pointer a field's name stands for in a refusal, e.g. catId is /category_id and
+     * title[en_US] is /title/en_US.
+     *
+     * @internal
      *
      * @param string $name
      *
@@ -68,26 +97,18 @@ class Form extends FormInputs
     public static function errorPointer($name)
     {
         $base = (string) preg_replace('|\[.*$|', '', (string) $name);
-        $map  = [
-            'catId'       => 'category_id',
-            'countryId'   => 'country',
-            'countryName' => 'country',
-            'regionId'    => 'region',
-            'regionName'  => 'region',
-            'cityId'      => 'city',
-            'cityName'    => 'city',
-            'cityArea'    => 'city_area',
-            'contactName' => 'contact_name',
-            'contactEmail' => 'contact_email',
-            'contactPhone' => 'contact_phone',
-        ];
+        if (in_array($base, self::LOCALE_NAMES, true) && preg_match('|^[^\[]+\[([^\[\]/]+)\]$|', (string) $name, $m) === 1) {
+            return '/' . $base . '/' . $m[1];
+        }
 
-        return '/' . ($map[$base] ?? $base);
+        return '/' . (self::POINTER_NAMES[$base] ?? $base);
     }
 
     /**
      * Whether the core public forms print a field's message under its control. Anything else
      * (photos, options, custom fields) has to be told in the top line.
+     *
+     * @internal
      *
      * @param string $pointer
      *
@@ -95,12 +116,10 @@ class Form extends FormInputs
      */
     public static function marksPointer($pointer)
     {
-        return in_array($pointer, [
-            '/title', '/description', '/category_id', '/price', '/currency', '/country', '/region',
-            '/city', '/city_area', '/address', '/zip', '/contact_name', '/contact_email',
-            '/contact_phone', '/yourName', '/yourEmail', '/phoneNumber', '/message', '/friendName',
-            '/friendEmail',
-        ], true);
+        $base = (string) preg_replace('#^(' . implode('|', self::LOCALE_NAMES) . ')/[^/]+$#', '$1', substr((string) $pointer, 1));
+
+        return str_starts_with((string) $pointer, '/')
+            && (in_array($base, self::POINTER_NAMES, true) || in_array($base, self::MARKED_NAMES, true));
     }
 
     /**
@@ -139,6 +158,23 @@ class Form extends FormInputs
 
         return '<p class="oe-field-error" id="' . osc_esc_html(self::errorId($name, $attributes)) . '">'
             . osc_esc_html($message) . '</p>';
+    }
+
+    /**
+     * A control with its refusal wired in: markInvalid() on its attributes, the control
+     * $draw builds from them, then its errorLine().
+     *
+     * @param string                                $name
+     * @param array<string,mixed>                   $attributes
+     * @param callable(array<string,mixed>): string $draw
+     *
+     * @return string
+     */
+    protected static function withError($name, array $attributes, callable $draw)
+    {
+        $attributes = self::markInvalid($name, $attributes);
+
+        return $draw($attributes) . self::errorLine($name, $attributes);
     }
 
     /**
@@ -184,8 +220,7 @@ class Form extends FormInputs
         if (!$autocomplete) {
             $attributes['autocomplete'] = 'off';
         }
-        $attributes = self::markInvalid($name, $attributes);
-        echo (new self())->text($name, $value, $attributes), self::errorLine($name, $attributes);
+        echo self::withError($name, $attributes, static fn (array $a): string => (new self())->text($name, $value, $a));
     }
 
     /**
@@ -255,8 +290,7 @@ class Form extends FormInputs
     protected static function generic_textarea($name, $value)
     {
         $attributes['id'] = preg_replace('|([^_a-zA-Z0-9-]+)|', '', $name);
-        $attributes = self::markInvalid($name, $attributes);
-        echo (new self())->textarea($name, $value, $attributes), self::errorLine($name, $attributes);
+        echo self::withError($name, $attributes, static fn (array $a): string => (new self())->textarea($name, $value, $a));
     }
 
     /**

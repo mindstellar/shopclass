@@ -20,6 +20,7 @@ use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
 use mindstellar\fields\FieldQuery;
+use mindstellar\location\LocationService;
 use mindstellar\security\ActionThrottle;
 use mindstellar\user\UserQuery;
 use mindstellar\utility\DeferredMail;
@@ -162,29 +163,41 @@ final class ListingService
     }
 
     /**
-     * Save the listing form for a web, admin or plugin caller and flash the photo notices.
-     * The caller puts the posted custom field values under 'meta' (see ListingInput::withMeta()).
+     * Save the listing form for a web, admin or plugin caller and flash the photo notices,
+     * also when the save is refused. The caller puts the posted custom field values under
+     * 'meta' (see ListingInput::withMeta()).
      *
-     * @param array<string,mixed>                                                $data
-     * @param array<int,array{pointer:string,code:string,message:string}>|null $refused set to the refusal's errors, each with the field it names
-     * @param-out array<int,array{pointer:string,code:string,message:string}> $refused
+     * @param array<string,mixed> $data
      *
-     * @return SavedListing|string what was saved, or the refusal's message
+     * @throws RefusedException InvalidException with each error's field, code and message
      */
-    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true, ?array &$refused = null): SavedListing|string
+    public function save(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true): SavedListing
     {
-        $refused = array();
         try {
             $saved = $isAdd ? $this->create($data, $actor, $import) : $this->update($data, $actor, $import, $matchSecret);
         } catch (RefusedException $e) {
             ListingNotices::flash($e->notices(), $actor->isAdmin());
-            $refused = $e instanceof InvalidException ? $e->errors() : array();
-
-            return $e->getMessage();
+            throw $e;
         }
         ListingNotices::flash($saved->notices(), $actor->isAdmin());
 
         return $saved;
+    }
+
+    /**
+     * save(), with a refusal answered as its message.
+     *
+     * @param array<string,mixed> $data
+     *
+     * @return SavedListing|string what was saved, or the refusal's message
+     */
+    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true): SavedListing|string
+    {
+        try {
+            return $this->save($data, $actor, $isAdd, $import, $matchSecret);
+        } catch (RefusedException $e) {
+            return $e->getMessage();
+        }
     }
 
     /**
@@ -848,7 +861,7 @@ final class ListingService
      */
     private function checkAdd(array $data, Actor $actor, bool $tooSoon, array &$notices): array
     {
-        $aItem   = osc_apply_filter('item_add_prepare_data', $data);
+        $aItem   = osc_apply_filter('item_add_prepare_data', self::withStoreAddress($data));
         $is_spam = 0;
 
         // Check status
@@ -1072,7 +1085,7 @@ final class ListingService
      */
     private function checkEdit(array $data, Actor $actor, array &$notices): array
     {
-        $aItem           = osc_apply_filter('item_edit_prepare_data', $data);
+        $aItem           = osc_apply_filter('item_edit_prepare_data', self::withStoreAddress($data));
         $aItem['idItem'] = (int) $aItem['idItem'];
 
         $aItem             = $this->sanitize($aItem);
@@ -1376,6 +1389,32 @@ final class ListingService
         }
         // A product with no options sells at the listing price, so its row keeps none of its own.
         VariantStore::saveDefault($itemId, array('i_price' => null) + (array) ($aItem['product']['fields'] ?? array()));
+    }
+
+    /**
+     * In shop mode, a listing saved with no location of its own gets the store address
+     * (Billing > Shop). Any location given is left as it is.
+     *
+     * @param array<string,mixed> $aItem
+     *
+     * @return array<string,mixed>
+     */
+    private static function withStoreAddress(array $aItem): array
+    {
+        foreach (array('countryId', 'countryName', 'regionId', 'regionName', 'cityId', 'cityName') as $key) {
+            if (trim((string) ($aItem[$key] ?? '')) !== '') {
+                return $aItem;
+            }
+        }
+        $store = LocationService::storeAddress();
+        if ($store === null) {
+            return $aItem;
+        }
+        foreach ($store as $key => $value) {
+            $aItem[$key] = $value ?? (str_ends_with($key, 'Id') ? null : '');
+        }
+
+        return $aItem;
     }
 
     private static function place(mixed $value): string

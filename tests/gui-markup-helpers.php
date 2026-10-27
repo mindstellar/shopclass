@@ -40,7 +40,7 @@ check('the row is an .oe-field', str_starts_with($row, '<div class="oe-field">')
 check('the label points at the input, escaped', str_contains($row, '<label class="oe-label" for="x-mail">Mail &lt;b&gt;</label>'));
 check('the input is printed as given', str_contains($row, "\n<input id=\"x-mail\">\n"));
 check('the hint has the -hint id, escaped', str_contains($row, '<span class="oe-hint" id="x-mail-hint">Hint &amp; more</span>'));
-check('the error has the -err id, escaped', str_contains($row, '<span class="oe-hint oe-field-error" id="x-mail-err">Bad &quot;mail&quot;</span>'));
+check('the error has the -error id, escaped', str_contains($row, '<span class="oe-hint oe-field-error" id="x-mail-error">Bad &quot;mail&quot;</span>'));
 $bare = $render(static fn () => osc_gui_field('y', 'Y', static function (): void {
     echo '<select id="y"></select>';
 }, '', '', 'oe-wide'));
@@ -86,7 +86,7 @@ $field = $render(static fn () => osc_gui_field($x, $x, '<input>', $x, $x, $x));
 check('field class', str_starts_with($field, '<div class="oe-field ' . $e . '">'));
 check('field for and label', str_contains($field, '<label class="oe-label" for="' . $e . '">' . $e . '</label>'));
 check('hint id and text', str_contains($field, '<span class="oe-hint" id="' . $e . '-hint">' . $e . '</span>'));
-check('error id and text', str_contains($field, '<span class="oe-hint oe-field-error" id="' . $e . '-err">' . $e . '</span>'));
+check('error id and text', str_contains($field, '<span class="oe-hint oe-field-error" id="' . $e . '-error">' . $e . '</span>'));
 $panel = $render(static fn () => osc_gui_panel_open($x, $x, $x, 'div'));
 check('panel id and class', str_starts_with($panel, '<div id="' . $e . '" class="oe-panel ' . $e . '">'));
 check('panel title', str_contains($panel, '<h2 class="oe-panel__title">' . $e . '</h2>'));

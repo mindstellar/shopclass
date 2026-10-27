@@ -23,6 +23,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hValidate.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 
 use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingValidator;
@@ -117,10 +118,12 @@ pin('the e-mail field too', 1, substr_count($html, 'id="yourEmail-error">Enter a
 $html = $render(static fn () => ContactForm::your_message());
 pin('a field with no error stays plain', 0, substr_count($html, 'aria-invalid') + substr_count($html, 'oe-field-error'));
 
-$session->_setForm('form_errors', array('/title' => 'Add a title (English).', '/price' => '<b>Price</b>'));
+$session->_setForm('form_errors', array('/title/en_US' => 'Add a title (English).', '/price' => '<b>Price</b>'));
 $html = $render(static fn () => ItemForm::title_input('title', 'en_US'));
 pin('the title input is marked', 1, substr_count($html, 'aria-invalid="true"'));
 pin('with its own line', 1, substr_count($html, 'id="titleen_US-error">Add a title (English).</p>'));
+$html = $render(static fn () => ItemForm::title_input('title', 'de_DE'));
+pin('another language box stays plain', 0, substr_count($html, 'aria-invalid') + substr_count($html, 'oe-field-error'));
 $html = $render(static fn () => ItemForm::description_textarea('description', 'en_US'));
 pin('a description with no error is plain', 0, substr_count($html, 'aria-invalid'));
 $html = $render(static fn () => ItemForm::price_input_text(array('i_price' => null)));
@@ -128,7 +131,7 @@ pin('the message is escaped', 1, substr_count($html, '&lt;b&gt;Price&lt;/b&gt;</
 
 harness_section('every wired control is marked with its own line');
 $session->_setForm('form_errors', array(
-    '/description' => 'Add a description.', '/category_id' => 'Pick a category.', '/country' => 'Pick a country.',
+    '/description/en_US' => 'Add a description.', '/category_id' => 'Pick a category.', '/country' => 'Pick a country.',
     '/region' => 'Pick a region.', '/city' => 'Pick a city.', '/message' => 'Write a message',
 ));
 $marked = static function (string $html, string $id, string $message): array {
@@ -155,13 +158,16 @@ $pointers = array(
     'catId' => '/category_id', 'countryId' => '/country', 'countryName' => '/country', 'regionId' => '/region',
     'regionName' => '/region', 'cityId' => '/city', 'cityName' => '/city', 'cityArea' => '/city_area',
     'contactName' => '/contact_name', 'contactEmail' => '/contact_email', 'contactPhone' => '/contact_phone',
-    'title[en_US]' => '/title', 'description[en_US]' => '/description', 'yourName' => '/yourName',
+    'title[en_US]' => '/title/en_US', 'description[de_DE]' => '/description/de_DE', 'yourName' => '/yourName',
 );
 $found = array();
 foreach (array_keys($pointers) as $name) {
     $found[$name] = Form::errorPointer($name);
 }
 pin('every mapped name', $pointers, $found);
+$marked = array_filter(array_merge(array_values($pointers), array('/title', '/price', '/currency', '/address', '/zip', '/yourEmail', '/phoneNumber', '/message', '/friendName', '/friendEmail')), static fn (string $p): bool => Form::marksPointer($p));
+pin('each one a form prints is marked', 24, count($marked));
+pin('photos are not', false, Form::marksPointer('/photos'));
 
 harness_section('an InvalidException gives the map and the line');
 $e = InvalidException::all(array(
@@ -192,7 +198,7 @@ $data = array(
 $title = static function (array $data): array {
     $found = array();
     foreach ((new ListingValidator())->common($data) as $error) {
-        if ($error['pointer'] === '/title') {
+        if ($error['pointer'] === '/title/en_US') {
             $found[] = array($error['code'], $error['message']);
         }
     }
@@ -209,7 +215,7 @@ $data['title']['en_US'] = '';
 $data['description']['en_US'] = '';
 $codes = array();
 foreach ((new ListingValidator())->common($data) as $error) {
-    if ($error['pointer'] === '/description') {
+    if ($error['pointer'] === '/description/en_US') {
         $codes[] = $error['code'];
     }
 }

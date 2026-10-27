@@ -138,6 +138,8 @@ pin('...and still renames', 'Bavaria State', (string) $admin->query("SELECT s_na
 $answer = $post(array('type' => 'edit_city', 'city_id' => $city, 'e_city' => 'Munich', 'names' => array('xx_XX' => 'x')));
 pin('a language the site lacks is refused with its reason', 'error:xx_XX is not a language of this site', $answer);
 pin('...and writes nothing', array('de_DE' => 'München'), $store->all('city', $city));
+$answer = $post(array('type' => 'edit_city', 'city_id' => $city, 'e_city' => 'Munich', 'names' => array('<b>x</b>' => 'x')));
+pin('a posted language code is escaped in the flash', 'error:&lt;b&gt;x&lt;/b&gt; is not a language of this site', $answer);
 
 harness_section('names when adding a place');
 $post(array('type' => 'add_region', 'country_c_parent' => 'DE', 'region' => 'Saxony', 'names' => array('de_DE' => 'Sachsen', 'en_US' => '')));

@@ -185,7 +185,10 @@ final class ListingWriter
             }
         }
 
-        return ProblemException::from(Problem::refused($e->errors()));
+        // The form names a title or description by its language (/title/en_US); the API by its member.
+        $errors = array_map(static fn (array $error): array => ['pointer' => (string) preg_replace('#^/(title|description)/[^/]+$#', '/$1', $error['pointer'])] + $error, $e->errors());
+
+        return ProblemException::from(Problem::refused($errors));
     }
 
     /**

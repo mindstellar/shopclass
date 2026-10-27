@@ -155,6 +155,29 @@ function osc_locale_name()
 }
 
 /**
+ * The name of an enabled language, for a message; its code when it has none or is not enabled.
+ *
+ * @param string $code e.g. en_US
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_locale_name_of(string $code): string
+{
+    try {
+        foreach (osc_get_locales() as $locale) {
+            if (($locale['pk_c_code'] ?? '') === $code && ($locale['s_name'] ?? '') !== '') {
+                return (string) $locale['s_name'];
+            }
+        }
+    } catch (\Throwable) {
+        // No database yet: the code is all there is.
+    }
+
+    return $code;
+}
+
+/**
  * The visitor's language row, or the first enabled language when theirs is not listed.
  *
  * @return array<string,mixed>
