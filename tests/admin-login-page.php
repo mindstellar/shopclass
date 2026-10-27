@@ -19,8 +19,8 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\billing\Billing;
-use mindstellar\billing\OrderStore;
 use mindstellar\billing\Order;
+use mindstellar\billing\OrderStore;
 
 $admin = api_admin_boot('osc_admin_login_page');
 
