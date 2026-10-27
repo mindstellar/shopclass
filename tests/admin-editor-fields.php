@@ -919,6 +919,8 @@ foreach (array('item-add-shop', 'item-edit-shop') as $screen) {
     pin("$screen: then the switch", array('checkbox', 'product-sell', 'switch', '1'), isset($sell[1])
         ? array($sell[1]->getAttribute('type'), $sell[1]->getAttribute('id'), $sell[1]->getAttribute('role'), $sell[1]->getAttribute('value'))
         : null);
+    check("$screen: Sell online is drawn as the same switch as the options one",
+        dom($screen)->query('//div[contains(@class,"form-check") and contains(@class,"form-switch")]/input[@id="product-sell"][contains(@class,"form-check-input")]/following-sibling::label[@for="product-sell"][@class="form-check-label"]/following-sibling::div[@class="form-text"]')->length === 1);
     foreach (array('product-compareAt', 'product-sku', 'product-stock') as $id) {
         check("$screen: #$id sits in Price and stock, shown only for a plain sellable product",
             dom($screen)->query('//*[@id="sec-price"]//*[@data-osc-needs-sell]//*[@data-variant-default]//input[@id="' . $id . '"]')->length === 1);

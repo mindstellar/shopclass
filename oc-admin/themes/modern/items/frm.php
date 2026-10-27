@@ -396,19 +396,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         if ($itemShop) {
             echo '<div class="osc-sell-fields">';
             echo '<input type="hidden" name="product[sell]" value="0">';
-            echo '<div class="form-switch osc-sell-switch">';
-            osc_admin_field(array(
-                'type'    => 'checkbox',
-                'id'      => 'product-sell',
-                'name'    => 'product[sell]',
-                'value'   => '1',
-                'layout'  => 'stacked',
-                'label'   => __('Sell online'),
-                'help'    => __('Buyers can add this product to a cart.'),
-                'checked' => $sellValues['sell'],
-                'error'   => $itemErrors['product'] ?? '',
-                'attrs'   => array('role' => 'switch'),
-            ));
+            $sellError = (string)($itemErrors['product'] ?? '');
+            echo '<div class="form-check form-switch osc-sell-switch">';
+            echo '<input class="form-check-input" type="checkbox" role="switch" id="product-sell" name="product[sell]" value="1"'
+                . ($sellValues['sell'] ? ' checked' : '')
+                . ' aria-describedby="product-sell-help' . ($sellError === '' ? '' : ' product-sell-error') . '"'
+                . ($sellError === '' ? '' : ' aria-invalid="true"') . '>';
+            echo '<label class="form-check-label" for="product-sell">' . osc_esc_html(__('Sell online')) . '</label>';
+            echo '<div class="form-text" id="product-sell-help">' . osc_esc_html(__('Buyers can add this product to a cart.')) . '</div>';
+            \mindstellar\admin\ui\Field::errorText('product-sell', array('error' => $sellError));
             echo '</div>';
             echo '</div>';
         }
