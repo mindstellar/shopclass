@@ -1373,20 +1373,64 @@ if (!function_exists('osc_server_rewrite_rules')) {
 /**
  * Keep a failed form's values for the next page, plus the reason as 'contact_error',
  * and show the reason as a flash message. Read them back with osc_gui_kept().
+ * $errors (pointer => message, e.g. '/title') mark each wrong field: see osc_form_error().
  *
  * @param array<string,string> $values field => value
  * @param string               $error
+ * @param array<string,string> $errors pointer => message
  *
  * @return void
  */
-function osc_keep_form(array $values, string $error): void
+function osc_keep_form(array $values, string $error, array $errors = array()): void
 {
     $session = Session::getInstance();
     foreach ($values as $key => $value) {
         $session->_setForm($key, (string) $value);
     }
     $session->_setForm('contact_error', $error);
+    if ($errors !== array()) {
+        $session->_setForm('form_errors', $errors);
+    }
     osc_add_flash_error_message($error);
+}
+
+/**
+ * The one line that tops a refused form: the message when one field is wrong, else a
+ * pointer to the marked fields.
+ *
+ * @param array<string,string> $errors pointer => message
+ *
+ * @return string
+ */
+function osc_form_error_line(array $errors): string
+{
+    return count($errors) === 1 ? trim((string) reset($errors)) : _m('Check the fields marked below.');
+}
+
+/**
+ * The message kept for one field of the form that was just refused, e.g. '/yourName'.
+ *
+ * @param string $pointer
+ *
+ * @return string '' when the field was fine
+ */
+function osc_form_error(string $pointer): string
+{
+    $errors = osc_form_errors();
+
+    return isset($errors[$pointer]) ? (string) $errors[$pointer] : '';
+}
+
+/**
+ * All the field messages kept for the form that was just refused, by pointer.
+ *
+ * @return array<string,string>
+ */
+function osc_form_errors(): array
+{
+    $errors = Session::getInstance()->_getForm('form_errors');
+
+    return is_array($errors) ? $errors : array();
 }
 
 /**

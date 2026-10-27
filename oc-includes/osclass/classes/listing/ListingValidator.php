@@ -135,6 +135,8 @@ final class ListingValidator
                 $tooLong[] = self::entry('/title', 'too_long', sprintf(_m('Title too long (%s).'), self::localeName($key)));
             } elseif (osc_validate_text($value)) {
                 $hasTitle = true;
+            } elseif (trim((string) $value) === '') {
+                $tooShort[] = self::entry('/title', 'required', sprintf(_m('Add a title (%s).'), self::localeName($key)));
             } else {
                 $tooShort[] = self::entry('/title', 'too_short', sprintf(_m('Title too short (%s).'), self::localeName($key)));
             }
@@ -149,7 +151,9 @@ final class ListingValidator
                 $descErrors = array();
                 break;
             }
-            if (!osc_validate_text($value, 3)) {
+            if (trim((string) $value) === '') {
+                $descErrors[] = self::entry('/description', 'required', sprintf(_m('Add a description (%s).'), self::localeName($key)));
+            } elseif (!osc_validate_text($value, 3)) {
                 $descErrors[] = self::entry('/description', 'too_short', sprintf(_m('Description too short (%s).'), self::localeName($key)));
             }
             if (!$fits) {

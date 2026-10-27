@@ -48,4 +48,12 @@ ListingInput::keep(array('title' => 'Blue car'), '');
 ListingInput::dropKept(null);
 pin('a form with no meta array is kept as it is', 'Blue car', $session->_getForm('title'));
 
+harness_section('a refused post keeps its field messages with the form');
+$session->_clearVariables();
+ListingInput::keep(array('title' => ''), '');
+$session->_setForm('form_errors', array('/title' => 'Add a title (English).'));
+pin('the messages sit beside the values', array('/title' => 'Add a title (English).'), $session->_getForm('form_errors'));
+$session->_clearVariables();
+pin('a saved listing clears them', '', $session->_getForm('form_errors'));
+
 exit(harness_result());
