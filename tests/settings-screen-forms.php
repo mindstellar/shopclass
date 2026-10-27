@@ -1303,10 +1303,25 @@ check(
     implode(',', $keys)
 );
 pin('it follows slot sales', 'billing_slot_enabled', $payFields['billing_pay_at_post']['depends'] ?? null);
+$forgetShopPage();
+drive('CAdminSettingsBilling', 'billing');
 check(
     'the hold-days help names listings',
     stripos((string) (SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP)['billing_hold_days']['help'] ?? ''), 'listing') !== false
 );
+seed_pref($admin, 'site_mode', 'shop');
+osc_reset_preferences();
+$forgetShopPage();
+drive('CAdminSettingsBilling', 'billing');
+$shopPage = SettingsPageRegistry::getInstance()->get(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP);
+check(
+    'in a shop the hold-days help talks about orders and stock, not listings',
+    stripos((string) (SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP)['billing_hold_days']['help'] ?? ''), 'listing') === false
+);
+check('the Delivery text says zones set the charge when the Shipping plugin is on', str_contains(json_encode($shopPage), 'its zones set the charge instead'));
+seed_pref($admin, 'site_mode', 'classifieds');
+osc_reset_preferences();
+$forgetShopPage();
 
 // hBilling.php cannot be loaded whole here (the harness stubs its registrars), so the
 // readers under test (and the credits switch the admin menu reads) are taken from it by name.

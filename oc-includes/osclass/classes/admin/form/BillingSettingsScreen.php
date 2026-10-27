@@ -368,7 +368,7 @@ final class BillingSettingsScreen
             $page
                 ->group(
                     __('Delivery'),
-                    __('One delivery method, "Standard delivery", at a flat charge. Amounts are in the listings\' currency.')
+                    __('Standard delivery at one charge. With the Shipping plugin on, its zones set the charge instead. Amounts are in the listings\' currency.')
                 )
                 ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
                 ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
@@ -390,12 +390,16 @@ final class BillingSettingsScreen
         $page
             ->group(
                 __('Orders'),
-                __('Every order takes its stock when placed. A card order keeps it for the minutes below; bank transfer and cash on delivery orders until paid or cancelled.')
+                osc_is_shop_mode()
+                    ? __('Every order takes its stock when placed. A card order keeps it for the minutes below; bank transfer and cash on delivery orders until paid or cancelled.')
+                    : __('How long an unpaid order waits before it is cancelled.')
             )
             ->number(
                 'billing_hold_days',
                 __('Cancel unpaid orders after (days)'),
-                __('An unpaid order is cancelled after this many days. A bank transfer or cash on delivery order\'s stock goes back on sale. A listing waiting for payment is deleted after the same number of days; the seller is reminded a day before.')
+                osc_is_shop_mode()
+                    ? __('An unpaid bank transfer or cash on delivery order is cancelled after this many days, and its stock goes back on sale.')
+                    : __('An unpaid order is cancelled after this many days. A listing waiting for payment is deleted after the same number of days; the seller is reminded a day before.')
             )
                 ->clampMin(1)
                 ->default(7)
