@@ -22,11 +22,11 @@ const browser = await puppeteer.launch({executablePath: '/opt/google/chrome/chro
 let failed = 0;
 const check = (name, ok) => { console.log((ok ? 'ok   ' : 'FAIL ') + name); if (!ok) failed++; };
 
-async function fresh() {
+async function fresh(hash = '') {
     const page = await browser.newPage();
     await page.setRequestInterception(true);
     page.on('request', (req) => {
-        const url = req.url();
+        const url = req.url().split('#')[0];
         if (url.endsWith('/fixture.html')) {
             req.respond({contentType: 'text/html', body: html});
         } else if (url.endsWith('/variants.js') || url.endsWith('/editor.js')) {
@@ -35,7 +35,7 @@ async function fresh() {
             req.respond({status: 404, body: ''});
         }
     });
-    await page.goto('http://fixture.test/fixture.html');
+    await page.goto('http://fixture.test/fixture.html' + hash);
     return page;
 }
 const hidden = (page, sel) => page.$eval(sel, (e) => e.hidden);
@@ -89,6 +89,8 @@ try {
     check('empty hook: details hidden', await hidden(page, '#sec-details'));
 
     check('seller starts closed', !(await page.$eval('#sec-seller', (e) => e.open)));
+    // The browser opens a closed ancestor on its own when it jumps; stop the jump so only the script can.
+    await page.$eval('#err-link', (a) => a.addEventListener('click', (e) => e.preventDefault()));
     await page.click('#err-link');
     check('error link opens seller', await page.$eval('#sec-seller', (e) => e.open));
     await page.close();
@@ -99,9 +101,14 @@ try {
     await page.close();
 
     page = await fresh();
-    await page.evaluate(() => { location.hash = '#contactEmail'; });
+    // A jump to the details element itself does not open it, so only the script can.
+    await page.evaluate(() => { location.hash = '#sec-seller'; });
     await new Promise((r) => setTimeout(r, 100));
     check('hash change opens seller', await page.$eval('#sec-seller', (e) => e.open));
+    await page.close();
+
+    page = await fresh('#sec-seller');
+    check('a hash at load opens seller', await page.$eval('#sec-seller', (e) => e.open));
     await page.close();
 } finally {
     await browser.close();
