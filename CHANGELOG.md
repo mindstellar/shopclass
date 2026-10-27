@@ -108,25 +108,28 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - A refused tax save stays under its own menu entry.
 - Goods refunds no longer say credits were taken back.
 - Any pending order can be cancelled.
-- A shipped order's tracking can be edited; shipping with no tracking asks first.
+- A shipped order's tracking can be edited.
+- Shipping with no tracking asks first.
 - The orders header counts only the filtered status.
 - The Shop tab and To ship button show only in shop mode.
 - Billing labels and delivery help use plain words.
-- Wrong password, taken e-mail change and a clicked-twice alert link answer in plain words.
+- Wrong password, taken e-mail and clicked-twice alert link messages use plain words.
 - The contact form lists each missing field.
 - Registering from checkout keeps the return path.
 - Listings with no price sort last by price.
 - The to-ship badge no longer breaks the Billing heading.
 - The Listing stats range switch is back.
-- Admin login and Cleanup rules fit small screens; Save buttons show focus.
-- Add user keeps what was typed after a refusal and the username messages name the rule.
+- Admin login and Cleanup rules fit small screens.
+- Save buttons show focus.
+- Add user keeps what was typed after a refusal.
+- Username messages name the rule.
 - API settings say keys do nothing while the API is off.
 - Version page shows the version in one heading.
 - In shop mode the admin says Products and a new product starts sellable.
 - The sell fields are hidden in classifieds.
 - A product saved for sale without a currency takes the site currency.
 - Listing save errors name languages and no longer ask for optional titles.
-- Add category, Add field and Add form no longer write a placeholder row; they create on Save.
+- Add category, Add field and Add form create the row on Save, not before.
 - A new page takes its internal name from its title.
 - A refused menu save names the bad link and keeps the items.
 - The customiser works on a phone and its image fields use the media picker.
