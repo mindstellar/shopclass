@@ -127,7 +127,19 @@ $menu = static function (): array {
     $m->init();
     $all = $m->get_array_menu();
 
-    return array($all['billing'][0] ?? '', $all['billing']['sub']['billing_orders'][0] ?? '', $all['billing']['sub']['billing_orders'][1] ?? '');
+    $paths = [];
+    foreach ($m->settingsLocations() as $loc) {
+        $paths = array_merge($paths, $loc['path']);
+    }
+
+    return array(
+        $all['billing'][0] ?? '',
+        $all['billing']['sub']['billing_orders'][0] ?? '',
+        $all['billing']['sub']['billing_orders'][1] ?? '',
+        (int) ($all['billing']['count'] ?? 0),
+        (int) ($all['billing']['sub']['billing_orders']['count'] ?? 0),
+        $paths,
+    );
 };
 
 harness_section('the count');
@@ -157,15 +169,27 @@ Billing::markPaid($bank, null);
 pin('paying an order adds it at once', 2, OrderStore::toShipCount());
 
 harness_section('the menu badge');
-[$billing, $orders, $url] = $menu();
-check('Billing and Orders carry the number', str_contains($billing, '>2<') && str_contains($orders, '>2<'));
+Preference::getInstance()->set('site_mode', 'classifieds');
+scratchdb_forget_cache();
+osc_reset_preferences();
+[$billing, $orders, $url, $nBilling, $nOrders] = $menu();
+pin('classifieds mode: no badge is computed', [0, 0], [$nBilling, $nOrders]);
+Preference::getInstance()->set('site_mode', 'shop');
+scratchdb_forget_cache();
+osc_reset_preferences();
+[$billing, $orders, $url, $nBilling, $nOrders, $paths] = $menu();
+pin('Billing and Orders carry the number in their own slot', [2, 2], [$nBilling, $nOrders]);
+check('the titles and the settings paths hold no markup', !str_contains($billing . $orders, '<') && !str_contains(implode('', $paths), '<'));
 check('Orders opens the To ship list', str_contains($url, 'toShip=1'));
 foreach ([$bank, $cod] as $o) {
     $o->getGateway() === 'cod' ? OrderStore::ship($o->getId(), 'DHL', 'JD3', '') : OrderStore::ship($o->getId(), 'DHL', 'JD4', '');
 }
 pin('nothing waits now', 0, OrderStore::toShipCount());
-[$billing, $orders, $url] = $menu();
-check('at zero there is no badge and Orders opens the plain list', !str_contains($billing, 'osc-count') && !str_contains($orders, 'osc-count') && !str_contains($url, 'toShip'));
+[$billing, $orders, $url, $nBilling, $nOrders] = $menu();
+check('at zero there is no badge and Orders opens the plain list', $nBilling === 0 && $nOrders === 0 && !str_contains($url, 'toShip'));
+Preference::getInstance()->set('site_mode', 'classifieds');
+scratchdb_forget_cache();
+osc_reset_preferences();
 
 harness_section('credits in the menu');
 $credits = static function (): array {

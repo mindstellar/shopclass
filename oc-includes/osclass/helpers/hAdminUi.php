@@ -723,7 +723,7 @@ if (!function_exists('osc_admin_page_head')) {
     {
         $class = 'render-title osc-page-title' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
-        if ($actions === array()) {
+        if ($actions === array() && empty($opts['actions_html'])) {
             echo '<h2 class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h2>';
 
             return;
@@ -733,6 +733,9 @@ if (!function_exists('osc_admin_page_head')) {
             . osc_esc_html($title) . '</h2><div class="page-head-actions">';
         foreach ($actions as $action) {
             osc_admin_action_button($action);
+        }
+        if (!empty($opts['actions_html'])) {
+            ($opts['actions_html'])();
         }
         echo '</div></div>';
     }
