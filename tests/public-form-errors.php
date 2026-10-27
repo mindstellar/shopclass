@@ -172,6 +172,16 @@ $e = InvalidException::all(array(
 pin('first message per pointer', array('/title' => 'Add a title (English).', '/price' => 'Price must be a number.'), $e->byPointer());
 pin('several fields: one pointer line', 'Check the fields marked below.', osc_form_error_line($e->byPointer()));
 pin('one field: its message', 'Price must be a number.', osc_form_error_line(array('/price' => "Price must be a number.\n")));
+pin(
+    'a field no form marks keeps its message in the line',
+    'Check the fields marked below. Too many photos.',
+    osc_form_error_line(array('/title' => 'Add a title.', '/photos' => 'Too many photos.'))
+);
+pin(
+    'nothing marked: every message',
+    'Too many photos. Pick a size.',
+    osc_form_error_line(array('/photos' => 'Too many photos.', '/product/options' => 'Pick a size.'))
+);
 
 harness_section('ListingValidator words an empty title and a short one apart');
 $data = array(

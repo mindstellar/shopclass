@@ -86,6 +86,24 @@ class Form extends FormInputs
     }
 
     /**
+     * Whether the core public forms print a field's message under its control. Anything else
+     * (photos, options, custom fields) has to be told in the top line.
+     *
+     * @param string $pointer
+     *
+     * @return bool
+     */
+    public static function marksPointer($pointer)
+    {
+        return in_array($pointer, [
+            '/title', '/description', '/category_id', '/price', '/currency', '/country', '/region',
+            '/city', '/city_area', '/address', '/zip', '/contact_name', '/contact_email',
+            '/contact_phone', '/yourName', '/yourEmail', '/phoneNumber', '/message', '/friendName',
+            '/friendEmail',
+        ], true);
+    }
+
+    /**
      * Add aria-invalid and aria-describedby to a control whose field the last submit refused.
      *
      * @param string              $name

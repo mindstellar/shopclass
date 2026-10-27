@@ -1396,7 +1396,7 @@ function osc_keep_form(array $values, string $error, array $errors = array()): v
 
 /**
  * The one line that tops a refused form: the message when one field is wrong, else a
- * pointer to the marked fields.
+ * pointer to the marked fields plus any message no field prints under itself.
  *
  * @param array<string,string> $errors pointer => message
  *
@@ -1404,7 +1404,23 @@ function osc_keep_form(array $values, string $error, array $errors = array()): v
  */
 function osc_form_error_line(array $errors): string
 {
-    return count($errors) === 1 ? trim((string) reset($errors)) : _m('Check the fields marked below.');
+    if (count($errors) === 1) {
+        return trim((string) reset($errors));
+    }
+    $line   = array();
+    $marked = false;
+    foreach ($errors as $pointer => $message) {
+        if (Form::marksPointer((string) $pointer)) {
+            $marked = true;
+        } else {
+            $line[] = trim((string) $message);
+        }
+    }
+    if ($marked) {
+        array_unshift($line, _m('Check the fields marked below.'));
+    }
+
+    return implode(' ', $line);
 }
 
 /**
