@@ -398,8 +398,8 @@ msgstr ""
 msgid "Alert id isn't in the correct format"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Alerts"
 msgstr ""
 
@@ -916,8 +916,8 @@ msgstr ""
 msgid "Custom URL removed from the sitemap"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Dashboard"
 msgstr ""
 
@@ -1500,7 +1500,7 @@ msgstr ""
 msgid "Location"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Log out"
 msgstr ""
 
@@ -2357,7 +2357,7 @@ msgstr ""
 msgid "Probable invalid request."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Profile"
 msgstr ""
 
@@ -2365,7 +2365,7 @@ msgstr ""
 msgid "Promote:"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Public profile"
 msgstr ""
 
@@ -2741,8 +2741,8 @@ msgstr ""
 msgid "Sign out of all devices"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Sign-in details"
 msgstr ""
 
@@ -4624,10 +4624,10 @@ msgstr ""
 msgid "Your listing will be published after an admin approves the changes."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/nav.php
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 #: oc-includes/osclass/gui/billing/publish-content.php
 #: oc-includes/osclass/helpers/hTheme.php
+#: oc-includes/osclass/helpers/hUtils.php
 msgid "Your listings"
 msgstr ""
 

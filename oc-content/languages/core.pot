@@ -8797,13 +8797,8 @@ msgstr ""
 msgid "Needs PHP %s"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
-msgid ""
-"Needs a CAPTCHA provider configured under Settings › Spam and bots › "
-"Captcha; "
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
+#: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
 msgid ""
 "Needs a CAPTCHA provider configured under Settings › Spam and bots › "
 "Captcha; otherwise no challenge is shown."
@@ -13442,6 +13437,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Take payment at the end of posting"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"Take payment for shop orders and plugin extras. While off, the Billing menu "
+"is hidden."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
