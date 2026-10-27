@@ -89,6 +89,15 @@ if (!function_exists('_osc_location_list')) {
         return $rows;
     }
 }
+harness_section('the helpers exist');
+$missing = array_filter(array('osc_keep_form', 'osc_form_error', 'osc_form_errors', 'osc_form_error_line'), static fn (string $fn): bool => !function_exists($fn));
+foreach (array('osc_keep_form', 'osc_form_error', 'osc_form_errors', 'osc_form_error_line') as $fn) {
+    check($fn . '() is defined', !in_array($fn, $missing, true));
+}
+if ($missing !== array()) {
+    exit(harness_result());
+}
+
 $session = Session::getInstance();
 $render  = static function (callable $draw): string {
     ob_start();
