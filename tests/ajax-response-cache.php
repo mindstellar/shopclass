@@ -24,7 +24,15 @@ if (isset($_GET['mode'])) {
     if ($_GET['mode'] === 'cookie') {
         setcookie('signed_out', '', 1);
     }
-    if (isset($_GET['locale'])) {
+    if (isset($_GET['real'])) {
+        // The real cookie and session lookup, with only the site language fixed.
+        function osc_language()
+        {
+            return 'en_US';
+        }
+        require_once __DIR__ . '/../oc-includes/osclass/helpers/hLocale.php';
+        View::getInstance()->_exportVariableToView('locales', array(array('pk_c_code' => 'en_US'), array('pk_c_code' => 'de_DE')));
+    } elseif (isset($_GET['locale'])) {
         // A locale picked without a cookie, as a plugin reading Accept-Language would.
         function osc_language()
         {
@@ -79,6 +87,8 @@ pin('localized() is shared but revalidated by the browser', 'public, max-age=0, 
 pin('...and private for a visitor with a chosen language', 'private, no-store', $cacheControl('localized', 'oc_userLocale=de_DE'));
 pin('...shared when the answer is in the site language', 'public, max-age=0, s-maxage=300, must-revalidate', $cacheControl('localized&locale=en_US'));
 pin('...and private when it is in another language with no cookie', 'private, no-store', $cacheControl('localized&locale=de_DE'));
+pin('with the real lookup, a language named only in the URL is not used, so the answer stays shared', 'public, max-age=0, s-maxage=300, must-revalidate', $cacheControl('localized&real=1&lang=de_DE'));
+pin('with the real lookup, a language cookie makes it private', 'private, no-store', $cacheControl('localized&real=1', 'oc_userLocale=de_DE'));
 
 proc_terminate($server);
 proc_close($server);
