@@ -628,14 +628,17 @@ final class OrderStore extends Model
      * Close a pending order unpaid, or a cash on delivery parcel the buyer refused, giving back
      * any stock it holds. Fires `OrderCancelled` once the write commits.
      *
-     * @param int $id
+     * @param int         $id
+     * @param string|null $from The status the caller checked; null picks it from the order
      *
      * @return bool false when the order is neither
      */
-    public static function cancel(int $id): bool
+    public static function cancel(int $id, ?string $from = null): bool
     {
-        $order = self::find($id);
-        $from  = $order !== null && $order->awaitsCash() ? Order::STATUS_SHIPPED : Order::STATUS_PENDING;
+        if ($from === null) {
+            $order = self::find($id);
+            $from  = $order !== null && $order->awaitsCash() ? Order::STATUS_SHIPPED : Order::STATUS_PENDING;
+        }
         $userId = Db::transaction(static function () use ($id, $from): ?int {
             $userId = self::move($id, $from, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
             if ($userId !== null) {

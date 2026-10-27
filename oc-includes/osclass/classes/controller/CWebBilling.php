@@ -16,6 +16,7 @@ use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\ItemUpgradeStore;
 use mindstellar\billing\ListingCheckout;
+use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
@@ -102,7 +103,7 @@ class CWebBilling extends WebSecBaseModel
     public function doModel()
     {
         // A shop has no credits or pay step; only the order pages stay.
-        if (osc_is_shop_mode() && !in_array($this->action, array('orders', 'receipt'), true)) {
+        if (osc_is_shop_mode() && !in_array($this->action, array('orders', 'receipt', 'cancel'), true)) {
             $this->do404();
 
             return;
@@ -121,6 +122,9 @@ class CWebBilling extends WebSecBaseModel
                 break;
             case ('receipt'):
                 $this->receiptView();
+                break;
+            case ('cancel'):
+                $this->cancelPost();
                 break;
             case ('upgrade'):
                 $this->upgradePost();
@@ -207,6 +211,28 @@ class CWebBilling extends WebSecBaseModel
         }
 
         Receipts::render($order, osc_billing_orders_url(), _m('Back to your orders'));
+    }
+
+    /**
+     * Cancel one of the user's own orders still waiting for a payment made outside the site. A
+     * listing it paid for stays held.
+     *
+     * @return void
+     */
+    private function cancelPost()
+    {
+        osc_csrf_check();
+
+        $order = OrderStore::find(Params::getParamInt('id'));
+        if ($order === null || $order->getUserId() !== (int) osc_logged_user_id()) {
+            osc_add_flash_error_message(_m('That order no longer exists'));
+        } elseif ($order->buyerMayCancel() && OrderStore::cancel($order->getId(), Order::STATUS_PENDING)) {
+            osc_add_flash_ok_message(sprintf(_m('Order %s is cancelled'), osc_billing_order_number($order->getId())));
+        } else {
+            osc_add_flash_warning_message(_m('Only an unpaid bank transfer or cash on delivery order can be cancelled'));
+        }
+
+        $this->redirectTo(osc_billing_orders_url());
     }
 
     /**
