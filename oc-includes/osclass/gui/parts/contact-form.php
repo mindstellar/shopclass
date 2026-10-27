@@ -51,7 +51,7 @@ if ($cfMsg) { ?>
     echo !empty($cf['name']) ? ' name="' . osc_esc_html((string) $cf['name']) . '"' : '';
     echo !$cfMsg && !empty($cf['attachment']) ? ' enctype="multipart/form-data"' : ''; ?>>
     <?php $cfError = osc_gui_kept('contact_error');
-    $cfLines = array_values(array_filter(array_map('trim', explode("\n", $cfError)), 'strlen'));
+    $cfLines = array_values(array_filter(array_map('trim', explode("\n", $cfError)), static fn (string $l): bool => $l !== ''));
     if (count($cfLines) > 1) { ?>
         <ul class="oe-form-error oe-list" role="alert">
             <?php foreach ($cfLines as $cfLine) { ?><li><?php echo osc_esc_html($cfLine); ?></li><?php } ?>
