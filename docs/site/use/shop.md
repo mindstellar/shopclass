@@ -27,7 +27,7 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
 
 ## 2. Add a product
 
-Go to **Products → Add product**. The form is split into sections. The **On this page** list in
+Add a product as an admin. The form is split into sections. The **On this page** list in
 the side column jumps to each one.
 
 - **Product**: name, category and description.
