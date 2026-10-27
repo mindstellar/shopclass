@@ -518,6 +518,80 @@ $dirty = render(static function () {
 omits('the title is escaped', $dirty, '<script>x</script>');
 omits('and so is the hint', $dirty, '<i>h</i>');
 
+/* ----------------------------------------------------------------------------
+ * The panel as a form section.
+ * ------------------------------------------------------------------------- */
+
+harness_section('the panel as a form section');
+
+$plain = render(static function () {
+    osc_admin_panel_open('Seller');
+    echo '<p>x</p>';
+    osc_admin_panel_close();
+});
+pin('a plain panel is the markup it always was', '<div class="widget-box"><div class="widget-box-title"><h3>Seller</h3></div>'
+    . '<div class="widget-box-content"><p>x</p></div></div>', $plain);
+
+$section = render(static function () {
+    osc_admin_panel_open('Price', array(
+        'id'    => 'sec-price',
+        'class' => 'osc-section',
+        'hint'  => array('What buyers pay', array('text' => '1 to fix', 'state' => 'error')),
+        'attrs' => array('data-osc-needs-sell' => true),
+    ));
+    osc_admin_panel_close();
+});
+emits('a section carries its id, class and attributes', $section,
+    '<div class="widget-box osc-section" id="sec-price" data-osc-needs-sell>');
+emits('its hint sits in the title bar after the heading', $section,
+    '<h3>Price</h3><span class="widget-box-title-hint">What buyers pay</span>');
+emits('an error hint is marked', $section, '<span class="widget-box-title-hint is-error">1 to fix</span>');
+
+$single = render(static function () {
+    osc_admin_panel_open('Product', array('hint' => '2 to fix', 'hint_state' => 'error'));
+    osc_admin_panel_close();
+});
+emits('a single hint takes hint_state', $single, '<span class="widget-box-title-hint is-error">2 to fix</span>');
+
+$folded = render(static function () {
+    osc_admin_panel_open('Location', array('id' => 'sec-location', 'collapsible' => true, 'hint' => 'Optional'));
+    echo '<p>x</p>';
+    osc_admin_panel_close();
+});
+pin('a collapsible panel is a closed details, closed as one', '<details class="widget-box" id="sec-location">'
+    . '<summary class="widget-box-title"><h3>Location</h3><span class="widget-box-title-hint">Optional</span></summary>'
+    . '<div class="widget-box-content"><p>x</p></div></details>', $folded);
+
+$unfolded = render(static function () {
+    osc_admin_panel_open('Seller', array('collapsible' => true, 'open' => true));
+    osc_admin_panel_close();
+});
+emits('open starts it expanded', $unfolded, '<details class="widget-box" open>');
+
+$nested = render(static function () {
+    osc_admin_panel_open('Outer', array('collapsible' => true));
+    osc_admin_panel_open('Inner');
+    osc_admin_panel_close();
+    osc_admin_panel_close();
+});
+check('a plain panel inside a details closes in order', str_ends_with($nested, '</div></div></div></details>'), $nested);
+
+$escaped = render(static function () {
+    osc_admin_panel_open('T', array('hint' => '<b>h</b>', 'id' => '"x'));
+    osc_admin_panel_close();
+});
+omits('the hint is escaped', $escaped, '<b>h</b>');
+omits('and so is the id', $escaped, 'id=""x"');
+
+// The admin theme ships its own copy and loads first, so the two must not drift.
+$bodies = array();
+foreach (array('oc-admin/themes/modern/parts/ui.php', 'oc-includes/osclass/helpers/hAdminUi.php') as $file) {
+    $src = (string)file_get_contents(ABS_PATH . $file);
+    preg_match('/    function osc_admin_panel_open\(.*?\n    function osc_admin_panel_close\(\)\n.*?\n    }\n/s', $src, $m);
+    $bodies[] = preg_replace('/\s*\/\*\*.*?\*\//s', '', $m[0] ?? '');
+}
+check('the theme copy and the core copy of the panel helpers are the same code', $bodies[0] !== '' && $bodies[0] === $bodies[1]);
+
 exit(harness_result());
 
 /* file end: ./tests/admin-editor-components.php */

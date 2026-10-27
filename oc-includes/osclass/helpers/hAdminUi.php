@@ -829,17 +829,40 @@ if (!function_exists('osc_admin_panel_open')) {
      * A titled panel. Opens the box and its content area; osc_admin_panel_close() ends both.
      *
      * @param string $title Omit for a panel that needs no header
-     * @param array  $opts  'subtitle', 'actions' (action specs in the header), 'class'
+     * @param array  $opts  'subtitle', 'actions' (action specs in the header), 'class', 'id',
+     *                      'attrs', 'hint' (string, or a list of strings or array('text', 'state')),
+     *                      'hint_state' => 'error', 'collapsible' (a <details>) and 'open'
      *
      * @return void
      */
     function osc_admin_panel_open($title = '', array $opts = array())
     {
-        echo '<div class="widget-box'
-            . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '">';
+        // A collapsible panel is a <details>, so the close has to know which tag it ends.
+        $tag = empty($opts['collapsible']) ? 'div' : 'details';
+        $GLOBALS['osc_admin_panel_stack'][] = $tag;
 
-        if ($title !== '') {
-            echo '<div class="widget-box-title"><h3>' . osc_esc_html($title) . '</h3>';
+        echo '<' . $tag . ' class="widget-box'
+            . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '"'
+            . (!empty($opts['id']) ? ' id="' . osc_esc_html($opts['id']) . '"' : '')
+            . osc_admin_field_attrs($opts['attrs'] ?? array())
+            . ($tag === 'details' && !empty($opts['open']) ? ' open' : '') . '>';
+
+        if ($title !== '' || $tag === 'details') {
+            $head = $tag === 'details' ? 'summary' : 'div';
+            echo '<' . $head . ' class="widget-box-title"><h3>' . osc_esc_html($title) . '</h3>';
+            $hints = $opts['hint'] ?? array();
+            if (!is_array($hints)) {
+                $hints = array(array('text' => $hints, 'state' => $opts['hint_state'] ?? ''));
+            }
+            foreach ($hints as $hint) {
+                $hint = is_array($hint) ? $hint : array('text' => $hint);
+                if ((string)($hint['text'] ?? '') === '') {
+                    continue;
+                }
+                echo '<span class="widget-box-title-hint'
+                    . (($hint['state'] ?? '') === 'error' ? ' is-error' : '') . '">'
+                    . osc_esc_html((string)$hint['text']) . '</span>';
+            }
             if (!empty($opts['actions'])) {
                 echo '<span class="widget-box-title-actions">';
                 foreach ($opts['actions'] as $action) {
@@ -847,7 +870,7 @@ if (!function_exists('osc_admin_panel_open')) {
                 }
                 echo '</span>';
             }
-            echo '</div>';
+            echo '</' . $head . '>';
         }
 
         echo '<div class="widget-box-content">';
@@ -866,7 +889,10 @@ if (!function_exists('osc_admin_panel_close')) {
      */
     function osc_admin_panel_close()
     {
-        echo '</div></div>';
+        $tag = is_array($GLOBALS['osc_admin_panel_stack'] ?? null)
+            ? array_pop($GLOBALS['osc_admin_panel_stack'])
+            : null;
+        echo '</div></' . ($tag === 'details' ? 'details' : 'div') . '>';
     }
 }
 
