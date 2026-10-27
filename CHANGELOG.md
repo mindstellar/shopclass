@@ -116,12 +116,12 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Email templates list shows a plain name per template; API settings say keys do nothing while the API is off.
 - Version page shows the version in one heading.
 - In shop mode the admin says Products, a new product starts sellable with the shop's contact details, and the sell fields are hidden in classifieds.
-- A product saved for sale without a currency is refused; sample data now carries the currency.
+- A product saved for sale without a currency takes the site currency; sample data now carries the currency.
 - Listing save errors name languages and no longer ask for optional titles; the cart checkbox on the listing form fits a phone.
 - Add category, Add field and Add form no longer write a placeholder row; they create on Save.
 - A new page takes its internal name from its title; a refused menu save names the bad link and keeps the items.
 - The customiser works on a phone and its image fields use the media picker.
-- Money shows the currency symbol everywhere, and new installs ship symbols for USD, GBP and EUR.
+- New installs show currency symbols ($, £, €) next to listing prices.
 - The account order list shows the order number and what was bought; the order API carries `pay_instructions`.
 - Admin form labels, select-all boxes and listing thumbnails have accessible names; photos can be added by keyboard; the comment box fits a phone.
 - A plugin or theme settings page core refuses is left out with an admin notice and a log line, instead of taking the whole site down.
