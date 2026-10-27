@@ -606,13 +606,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'fields' => array('name' => 'contactName', 'email' => 'contactEmail'),
     ));
 
+    // A product the owner adds to their own shop is sold under the shop's name and address.
+    $shopOwned = $new_item && osc_is_shop_mode();
     osc_admin_field(array(
         'type'   => 'text',
         'id'     => 'contactName',
         'name'   => 'contactName',
         'label'  => __('Name'),
         'layout' => 'stacked',
-        'value'  => $itemTyped('contactName', $itemRecord['s_contact_name'] ?? ''),
+        'help'   => $shopOwned ? __('Filled with your shop name. You can change it.') : '',
+        'value'  => $itemTyped('contactName', $shopOwned ? osc_page_title() : ($itemRecord['s_contact_name'] ?? '')),
         'error'  => $itemErrors['contactName'] ?? '',
     ));
     osc_admin_field(array(
@@ -621,7 +624,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'name'   => 'contactEmail',
         'label'  => __('E-mail'),
         'layout' => 'stacked',
-        'value'  => $itemTyped('contactEmail', $itemRecord['s_contact_email'] ?? ''),
+        'help'   => $shopOwned ? __('Filled with your shop e-mail. You can change it.') : '',
+        'value'  => $itemTyped('contactEmail', $shopOwned ? osc_contact_email() : ($itemRecord['s_contact_email'] ?? '')),
         'error'  => $itemErrors['contactEmail'] ?? '',
     ));
     osc_admin_field(array(
