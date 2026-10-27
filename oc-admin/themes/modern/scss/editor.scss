@@ -899,20 +899,27 @@ details.osc-section[open] {
 
 // The sell switch: a bold label with a muted line under it, on a warm strip.
 .osc-section .form-switch {
-  align-items: flex-start;
+  align-items: start;
   background: var(--osc-bench-warm);
   border: 1px solid var(--osc-rule);
   border-radius: 6px;
-  display: flex;
-  gap: .75rem;
+  column-gap: .75rem;
+  display: grid;
+  grid-template-columns: auto 1fr;
   margin-block-end: 1.1rem;
   padding: .75rem 1rem;
 }
 
-.osc-section .form-switch .form-check-input {
-  flex: 0 0 auto;
+.osc-section .form-switch > * {
+  grid-column: 2;
+  margin-block: 0;
+}
+
+.osc-section .form-switch > .form-check-input {
   float: none;
-  margin: .1rem 0 0;
+  grid-column: 1;
+  grid-row: 1;
+  margin: .15em 0 0;
 }
 
 .osc-section .form-switch .form-check-label {
