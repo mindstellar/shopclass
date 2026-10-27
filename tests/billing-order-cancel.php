@@ -55,14 +55,16 @@ $credits = OrderStore::create($sam, 'offline', 2_000_000, 'USD', 10, array());
 $paid    = OrderStore::create($sam, 'offline', 2_000_000, 'USD', 10, array());
 OrderStore::settle($paid->getId(), Order::STATUS_PAID, 'ref-1');
 $paid = OrderStore::find($paid->getId());
+$card = OrderStore::create($sam, 'fake', 2_000_000, 'USD', 10, array());
 $status = static fn (int $id): string => OrderStore::find($id)->getStatus();
 
 harness_section('the order list');
-$html = $render(array($fee, $credits, $paid));
+$html = $render(array($fee, $credits, $paid, $card));
 check('a pending listing fee and credits order each get a Cancel form', substr_count($html, 'name="action" value="cancel"') === 2
     && str_contains($html, 'value="' . $fee->getId() . '"') && str_contains($html, 'value="' . $credits->getId() . '"'));
 check('the form carries a CSRF token', str_contains($html, "name='CSRFToken'"));
 check('a paid order has none', !str_contains($html, 'name="id" value="' . $paid->getId() . '"'));
+check('a pending card order has none', !str_contains($html, 'name="id" value="' . $card->getId() . '"'));
 
 harness_section('someone else');
 $r = cancel_post($kim, $fee->getId());
@@ -82,6 +84,9 @@ $r = cancel_post($sam, $paid->getId());
 pin('a paid order stays paid', Order::STATUS_PAID, $status($paid->getId()));
 $r = cancel_post($sam, 999999);
 pin('an unknown order goes back to the list', osc_billing_orders_url(), $r['redirect']);
+$r = cancel_post($sam, $card->getId());
+pin('a pending card order stays open, as its payment page may still take the money', array(Order::STATUS_PENDING, true), array($status($card->getId()), str_starts_with($r['flashes'], 'warning:')));
+
 
 harness_section('no CSRF token');
 $open = OrderStore::create($sam, 'offline', 2_000_000, 'USD', 10, array());
