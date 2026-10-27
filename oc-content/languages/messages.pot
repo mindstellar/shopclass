@@ -347,6 +347,14 @@ msgstr ""
 msgid "Activity log settings saved"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Add a description (%s)."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Add a title (%s)."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Add a title in at least one language."
 msgstr ""
@@ -637,6 +645,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Changes saved correctly"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUtils.php
+msgid "Check the fields marked below."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
@@ -2189,7 +2201,7 @@ msgid "Pay again"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
-msgid "Pay for or cancel your open orders first."
+msgid "Pay for or cancel your open bank transfer orders first."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
