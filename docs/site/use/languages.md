@@ -60,6 +60,10 @@ category and every new page needs another translation, forever.
 Two languages done properly beat five done half-way. On a local
 marketplace, one language done well usually beats both.
 
+## Searching places by name
+
+A search can match a place by its name in any language. Only the first 10 typed names per level (country, region, city) are matched this way; any more match the stored name only.
+
 ## Contributing a translation
 
 Translations live in

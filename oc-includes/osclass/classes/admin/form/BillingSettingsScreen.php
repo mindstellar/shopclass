@@ -390,7 +390,7 @@ final class BillingSettingsScreen
                     ->hint(__('Empty: cash on delivery everywhere you deliver.'))
                 ->group(
                     __('Store address'),
-                    __('Used when a product has no location of its own.')
+                    __('Filled into a product saved without a location. Products already saved keep theirs.')
                 )
                 ->field(self::storePlace('shop_country', __('Country'), 3, ListingValidator::COLUMN_WIDTHS['s_country'], _m('Country too short.')))
                 ->field(self::storePlace('shop_region', __('Region'), 2, ListingValidator::COLUMN_WIDTHS['s_region'], _m('Region too short.')))

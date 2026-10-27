@@ -10,7 +10,7 @@
 
 /**
  * Admin wording and settings by site mode: "Reported products" in shop mode, no goods-only
- * settings or cash on delivery on a classifieds site, and widget sections named by label.
+ * settings on a classifieds site, and widget sections named by label.
  * Usage: php tests/admin-mode-wording.php
  */
 
@@ -78,7 +78,7 @@ $menuLabels = static function (): string {
 
 harness_section('classifieds');
 $setMode('classifieds');
-pin('no cash on delivery gateway', false, in_array('cod', $gatewayIds(), true));
+pin('cash on delivery stays registered for old orders', true, in_array('cod', $gatewayIds(), true));
 pin('bank transfer stays', true, in_array('offline', $gatewayIds(), true));
 pin('the Orders group has hold days and the prefix only', array('billing_hold_days', 'billing_order_prefix'), $shopFields());
 check('reports say listings', str_contains($menuLabels(), 'Reported listings') && !str_contains($menuLabels(), 'Reported products'));

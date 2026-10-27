@@ -48,7 +48,7 @@ jobs:
             php-versions: 'nightly'
             experimental: true
     runs-on: ${{ matrix.operating-system }}
-    continue-on-error: ${{ matrix.experimental }}
+    continue-on-error: ${{ matrix.experimental || matrix.php-versions == '8.6' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7

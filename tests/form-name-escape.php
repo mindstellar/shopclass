@@ -128,4 +128,15 @@ check('the heading is escaped, & kept as it was', !str_contains($out, '<img') &&
 $out = $capture(static fn () => FieldForm::meta(['s_name' => 'Size'] + $field, true));
 check('a plain name prints as before', str_contains($out, '<h6 id="meta_colour-label">Size</h6>'));
 
+harness_section('attribute values');
+$inputs = new \mindstellar\form\FormInputs();
+$attrs  = new ReflectionMethod($inputs, 'attributesToString');
+$attrs->setAccessible(true);
+$str = $attrs->invoke($inputs, ['title' => 'a" onfocus="x', 'data-x' => 'Tom &amp; Jerry']);
+check('a quote in an attribute value cannot end the attribute', !str_contains($str, '" onfocus="') && str_contains($str, 'title="a&quot; onfocus=&quot;x"'));
+check('an already escaped value is not encoded twice', str_contains($str, 'data-x="Tom &amp; Jerry"'));
+$bad = ['pk_i_id' => 8, 's_slug' => 'a"><b>', 's_name' => 'Size', 'e_type' => 'TEXT', 's_value' => ''];
+$out = $capture(static fn () => FieldForm::meta($bad, true));
+check('a slug cannot break the label id', !str_contains($out, '<b>-label') && !str_contains($out, 'id="meta_a"><b>'));
+
 exit(harness_result());

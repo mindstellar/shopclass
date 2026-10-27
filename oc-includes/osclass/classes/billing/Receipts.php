@@ -184,7 +184,7 @@ final class Receipts
     }
 
     /**
-     * `billing_order_cancelled`: tell the buyer the order was cancelled.
+     * `billing_order_cancelled`: tell the buyer the order was cancelled, whatever it was for.
      *
      * @param int $orderId
      * @param int $userId
@@ -251,7 +251,7 @@ final class Receipts
     {
         $order = OrderStore::find($orderId);
         $mark  = '_mail_' . $kind;
-        if (!in_array($kind, array(self::MAIL_PLACED, self::MAIL_SHIPPED, self::MAIL_ADMIN, self::MAIL_DELIVERED, self::MAIL_CANCELLED, self::MAIL_REFUNDED), true) || $order === null || !$order->isGoods() || $order->meta($mark) !== null) {
+        if (!in_array($kind, array(self::MAIL_PLACED, self::MAIL_SHIPPED, self::MAIL_ADMIN, self::MAIL_DELIVERED, self::MAIL_CANCELLED, self::MAIL_REFUNDED), true) || $order === null || (!$order->isGoods() && $kind !== self::MAIL_CANCELLED) || $order->meta($mark) !== null) {
             return true;
         }
         if (($kind === self::MAIL_SHIPPED && $order->getStatus() !== Order::STATUS_SHIPPED && $order->getStatus() !== Order::STATUS_DELIVERED)
