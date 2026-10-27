@@ -24,7 +24,8 @@
         if (!editor || !toggle) {
             return;
         }
-        var plain = document.querySelector('[data-variant-default]');
+        var plain = document.querySelectorAll('[data-variant-default]');
+        var withOptions = document.querySelectorAll('[data-variant-with-options]');
         var optionsBox = editor.querySelector('[data-variant-options]');
         var head = editor.querySelector('[data-variant-head]');
         var body = editor.querySelector('[data-variant-rows]');
@@ -244,9 +245,12 @@
 
         function show() {
             editor.hidden = !toggle.checked;
-            if (plain) {
-                plain.hidden = toggle.checked;
-            }
+            plain.forEach(function (block) {
+                block.hidden = toggle.checked;
+            });
+            withOptions.forEach(function (block) {
+                block.hidden = !toggle.checked;
+            });
             if (toggle.checked && options().length === 0) {
                 addOption();
             }
