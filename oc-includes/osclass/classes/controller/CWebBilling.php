@@ -16,6 +16,7 @@ use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\ItemUpgradeStore;
 use mindstellar\billing\ListingCheckout;
+use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
@@ -225,7 +226,7 @@ class CWebBilling extends WebSecBaseModel
         $order = OrderStore::find(Params::getParamInt('id'));
         if ($order === null || $order->getUserId() !== (int) osc_logged_user_id()) {
             osc_add_flash_error_message(_m('That order no longer exists'));
-        } elseif ($order->buyerMayCancel() && OrderStore::cancel($order->getId())) {
+        } elseif ($order->buyerMayCancel() && OrderStore::cancel($order->getId(), Order::STATUS_PENDING)) {
             osc_add_flash_ok_message(sprintf(_m('Order %s is cancelled'), osc_billing_order_number($order->getId())));
         } else {
             osc_add_flash_warning_message(_m('Only an unpaid bank transfer or cash on delivery order can be cancelled'));

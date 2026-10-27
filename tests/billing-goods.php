@@ -407,6 +407,7 @@ pin('delivered, it is paid', [true, Order::STATUS_DELIVERED, true, true], [Billi
 pin('and a purchase', true, OrderLineStore::bought($tom, $euro));
 $refusedCod = OrderStore::create($tom, 'cod', $m(9), 'USD', 0, ['_kind' => 'goods']);
 OrderStore::ship($refusedCod->getId(), 'DHL', 'C2', '');
+pin('a buyer cancel checked while pending does not cancel it once shipped', [false, Order::STATUS_SHIPPED], [OrderStore::cancel($refusedCod->getId(), Order::STATUS_PENDING), OrderStore::find($refusedCod->getId())->getStatus()]);
 pin('a refused parcel can be cancelled', [true, Order::STATUS_CANCELLED], [OrderStore::cancel($refusedCod->getId()), OrderStore::find($refusedCod->getId())->getStatus()]);
 $paidCod = OrderStore::create($tom, 'cod', $m(9), 'USD', 0, ['_kind' => 'goods']);
 Billing::markPaid($paidCod);

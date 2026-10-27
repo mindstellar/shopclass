@@ -189,7 +189,7 @@ final class OrdersController
     public function cancel(ApiCall $call): Response
     {
         $order = $this->own($call);
-        if (!$order->buyerMayCancel() || !OrderStore::cancel($order->getId())) {
+        if (!$order->buyerMayCancel() || !OrderStore::cancel($order->getId(), Order::STATUS_PENDING)) {
             throw ProblemException::of('conflict', 'Only a pending bank transfer or cash on delivery order can be cancelled.');
         }
 
