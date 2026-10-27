@@ -287,27 +287,6 @@ if (!function_exists('osc_admin_link_group')) {
     }
 }
 
-if (!function_exists('osc_admin_status')) {
-    /**
-     * A status pill: a tint, a shape, and the word. Never colour alone -- the glyph is
-     * a second channel for greyscale and colour-blind readers, and the word is a third.
-     *
-     * $state selects the tint and silhouette from the $status-badge map in
-     * scss/definitions.scss. An unmapped state still renders, in the neutral tint with
-     * the fallback ring, so a plugin's own word degrades gracefully instead of vanishing.
-     *
-     * @param string $state Lower-case state key, e.g. 'paid'
-     * @param string $word  The visible word, already translated
-     *
-     * @return void
-     */
-    function osc_admin_status($state, $word)
-    {
-        echo '<span class="osc-status status-' . osc_esc_html($state) . '">'
-             . osc_esc_html($word) . '</span>';
-    }
-}
-
 if (!function_exists('osc_admin_empty')) {
     /**
      * The state a screen is in before it has been used.
@@ -336,42 +315,6 @@ if (!function_exists('osc_admin_empty')) {
                 <div class="osc-empty-action"><?php osc_admin_action_button($opts['action']); ?></div>
             <?php } ?>
         </div>
-        <?php
-    }
-}
-
-if (!function_exists('osc_admin_definition')) {
-    /**
-     * Label/value rows -- the read-only counterpart to a form.
-     *
-     * Each row is an array with 'label' and 'value'. A row may set 'html' => true to pass
-     * markup through (for a status pill or a link), which is why the default escapes:
-     * the unsafe path has to be asked for by name. 'note' adds a muted line under the value.
-     *
-     * @param array<int,array<string,mixed>> $rows
-     *
-     * @return void
-     */
-    function osc_admin_definition(array $rows)
-    { ?>
-        <dl class="osc-deflist">
-            <?php foreach ($rows as $row) { ?>
-                <div class="osc-deflist-row">
-                    <dt><?php echo osc_esc_html($row['label'] ?? ''); ?></dt>
-                    <dd<?php echo !empty($row['mono']) ? ' class="osc-mono"' : ''; ?>>
-                        <?php
-                        if (!empty($row['html'])) {
-                            echo $row['value'];
-                        } else {
-                            echo osc_esc_html((string) ($row['value'] ?? ''));
-                        }
-                        if (!empty($row['note'])) { ?>
-                            <p class="osc-deflist-note"><?php echo osc_esc_html($row['note']); ?></p>
-                        <?php } ?>
-                    </dd>
-                </div>
-            <?php } ?>
-        </dl>
         <?php
     }
 }
@@ -521,47 +464,6 @@ if (!function_exists('osc_admin_money')) {
     function osc_admin_money($micros, $currency)
     {
         return \mindstellar\currency\Money::format((int) $micros, (string) $currency);
-    }
-}
-
-if (!function_exists('osc_admin_form_actions')) {
-    /**
-     * The submit row at the foot of a form.
-     *
-     * Emits `<button>` rather than `<input type="submit">`. Both render identically here,
-     * but the admin was split roughly evenly between them, and only one can carry an icon
-     * or wrap a translated label that outgrows its box.
-     *
-     * With no arguments this is a lone "Save changes" -- the case that covers most
-     * settings screens.
-     *
-     * @param array<int,array<string,mixed>> $actions Action specs; the first defaults to variant 'primary'
-     * @param array<string,mixed>            $opts    'dirty' => true for the unsaved-changes status bar
-     *
-     * @return void
-     */
-    function osc_admin_form_actions(array $actions = array(), array $opts = array())
-    {
-        if ($actions === array()) {
-            $actions = array(array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'));
-        }
-
-        // Opt-in, so an existing screen's action row is the markup it has always been.
-        $dirty = !empty($opts['dirty'])
-            ? ' data-osc-dirty-bar data-osc-dirty-one="' . osc_esc_html(__('1 unsaved change')) . '"'
-              . ' data-osc-dirty-many="' . osc_esc_html(__('%d unsaved changes')) . '"'
-            : '';
-
-        echo '<div class="form-actions"' . $dirty . '>';
-        if ($dirty !== '') {
-            echo '<p class="form-actions-status" role="status" aria-live="polite"></p>';
-        }
-        foreach ($actions as $i => $action) {
-            $action['variant'] = $action['variant'] ?? ($i === 0 ? 'primary' : 'secondary');
-            $action['type']    = $action['type'] ?? 'submit';
-            osc_admin_action_button($action);
-        }
-        echo '</div>';
     }
 }
 

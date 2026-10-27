@@ -83,13 +83,16 @@ function render(callable $fn): string
 
 harness_section('one copy');
 $helpers = realpath(ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php');
-foreach (array('osc_admin_page_head', 'osc_admin_panel_open', 'osc_admin_panel_close', 'osc_admin_action_button') as $fn) {
+foreach (array('osc_admin_page_head', 'osc_admin_panel_open', 'osc_admin_panel_close', 'osc_admin_action_button', 'osc_admin_definition', 'osc_admin_form_actions', 'osc_admin_status') as $fn) {
     pin($fn . ' is defined in hAdminUi.php', $helpers, (new ReflectionFunction($fn))->getFileName());
 }
 
 harness_section('action button');
 $danger = render(static fn () => osc_admin_action_button(array('label' => 'Delete', 'url' => '#', 'variant' => 'outline-danger')));
 check('a quiet destructive button uses the theme-safe danger class', str_contains($danger, 'osc-btn-danger') && !str_contains($danger, 'btn-outline-danger'), $danger);
+
+$def = render(static fn () => osc_admin_definition(array(array('label' => 'Size', 'value' => '5 MB', 'note' => 'After cleanup'))));
+check('a definition row keeps its note', str_contains($def, '<p class="osc-deflist-note">After cleanup</p>'), $def);
 
 harness_section('page head');
 $first = render(static fn () => osc_admin_page_head('General'));

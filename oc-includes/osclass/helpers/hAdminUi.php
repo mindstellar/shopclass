@@ -1026,6 +1026,7 @@ if (!function_exists('osc_admin_definition')) {
             echo '<div class="osc-deflist-row"><dt>' . osc_esc_html($row['label'] ?? '') . '</dt>'
                 . '<dd' . (!empty($row['mono']) ? ' class="osc-mono"' : '') . '>'
                 . (!empty($row['html']) ? $row['value'] : osc_esc_html((string)($row['value'] ?? '')))
+                . (!empty($row['note']) ? '<p class="osc-deflist-note">' . osc_esc_html($row['note']) . '</p>' : '')
                 . '</dd></div>';
         }
         echo '</dl>';
