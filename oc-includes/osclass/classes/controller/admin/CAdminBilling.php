@@ -559,7 +559,23 @@ class CAdminBilling extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
         }
 
+        $this->drawPackage($package);
+    }
+
+    /**
+     * The package form, with what was typed and the fields a refused save names.
+     *
+     * @param array|null           $package stored row, null for a new package
+     * @param array<string,mixed>  $typed   posted values by field name
+     * @param array<string,string> $errors  message by field name
+     *
+     * @return void
+     */
+    private function drawPackage(?array $package, array $typed = array(), array $errors = array())
+    {
         $this->_exportVariableToView('package', $package);
+        $this->_exportVariableToView('typed', $typed);
+        $this->_exportVariableToView('errors', $errors);
         $this->doView('billing/package.php');
     }
 
@@ -577,7 +593,6 @@ class CAdminBilling extends AdminSecBaseModel
         osc_csrf_check();
 
         $id        = Params::getParamInt('id');
-        $back      = osc_admin_base_url(true) . '?page=billing&action=package' . ($id > 0 ? '&id=' . $id : '');
         $name      = trim(Params::getParamString('name'));
         $amountRaw = trim(Params::getParamString('amount'));
         $currency  = strtoupper(trim(Params::getParamString('currency')));
@@ -585,24 +600,31 @@ class CAdminBilling extends AdminSecBaseModel
         $position  = Params::getParamInt('position');
         $enabled   = Params::getParam('enabled') != '' ? 1 : 0;
 
+        $errors = array();
         if ($name === '') {
-            osc_add_flash_error_message(_m('Enter a name for this package'), 'admin');
-            $this->redirectTo($back);
+            $errors['name'] = _m('Enter a name for this package');
         }
-
         if ($amountRaw === '' || !is_numeric($amountRaw) || (float) $amountRaw < 0) {
-            osc_add_flash_error_message(_m('Enter a valid amount, 0 or more'), 'admin');
-            $this->redirectTo($back);
+            $errors['amount'] = _m('Enter a valid amount, 0 or more');
         }
-
         if ($credits < 1) {
-            osc_add_flash_error_message(_m('Credits must be at least 1'), 'admin');
-            $this->redirectTo($back);
+            $errors['credits'] = _m('Credits must be at least 1');
         }
-
         if (!\mindstellar\currency\CurrencyCode::valid($currency)) {
-            osc_add_flash_error_message(_m('Currency must be a 3-letter code, e.g. USD'), 'admin');
-            $this->redirectTo($back);
+            $errors['currency'] = _m('Currency must be a 3-letter code, e.g. USD');
+        }
+        if ($errors !== array()) {
+            $typed = array(
+                'name'     => $name,
+                'amount'   => $amountRaw,
+                'currency' => $currency,
+                'credits'  => Params::getParamString('credits'),
+                'position' => $position,
+                'enabled'  => (bool) $enabled,
+            );
+            $this->drawPackage($id > 0 ? PackageStore::find($id) : null, $typed, $errors);
+
+            return;
         }
 
         $data = array(
@@ -628,7 +650,7 @@ class CAdminBilling extends AdminSecBaseModel
             }
         } catch (InvalidArgumentException $e) {
             osc_add_flash_error_message(_m('That package could not be saved'), 'admin');
-            $this->redirectTo($back);
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=package' . ($id > 0 ? '&id=' . $id : ''));
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=packages');
