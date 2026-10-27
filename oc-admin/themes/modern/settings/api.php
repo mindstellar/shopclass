@@ -22,6 +22,13 @@ $input   = (array) __get('api_key_input');
 $issued  = __get('api_key_issued');
 $adminId = (int) __get('api_admin_id');
 $twoStep = (bool) __get('api_reauth_2fa');
+$apiOff  = !osc_api_enabled();
+$offNote = static function () use ($apiOff): void {
+    if ($apiOff) {
+        echo '<p class="text-muted" id="api-off-note">'
+            . osc_esc_html(__('The API is off, so keys and webhooks do nothing until you switch it on above.')) . '</p>';
+    }
+};
 
 $webhooks     = (array) __get('api_webhooks');
 $hookEvents   = (array) __get('api_webhook_events');
@@ -140,7 +147,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="api-keys" class="separate-top">
         <?php osc_admin_form_section(__('Keys'), array(
             'intro' => __('Admin keys act as you, with the scopes you give them. Public keys only read public data and are safe to put in an app or a web page.'),
-        )); ?>
+        ));
+        $offNote(); ?>
         <?php
         // Live keys first; revoked and expired ones fold away below, so New key stays near.
         $liveKeys = array_values(array_filter($keys, static fn ($k) => $k['status'] === ApiKeyService::STATUS_ACTIVE));
@@ -290,7 +298,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="api-webhooks" class="separate-top">
         <?php osc_admin_form_section(__('Webhooks'), array(
             'intro' => __('A webhook tells another system when something happens here, such as a new listing, by sending it a signed POST. A delivery that fails is tried again for about two hours; an endpoint that fails 8 times in a row is paused and you get an e-mail.'),
-        )); ?>
+        ));
+        $offNote(); ?>
         <?php if ($webhooks === array()) { ?>
             <p class="text-muted"><?php _e('No webhook endpoints yet.'); ?></p>
         <?php } else { ?>
@@ -461,9 +470,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_admin_form_row_open(__('Events'));
         $eventBoxes('api-webhook-events', (array) ($hookInput['events'] ?? array()));
         osc_admin_form_row_close();
-        osc_admin_form_row_open(__('Status'));
+        osc_admin_form_row_open(__('Status'), array('for' => 'api-webhook-enabled'));
         osc_admin_checkbox(array(
             'name'    => 'webhook_enabled',
+            'id'      => 'api-webhook-enabled',
             'value'   => '1',
             'checked' => $hookInput === array() || !empty($hookInput['enabled']),
             'label'   => __('Send events to it from now on'),

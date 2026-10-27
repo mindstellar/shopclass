@@ -213,6 +213,7 @@ check('offers admin scopes to a full admin', strpos($page['drawn'], 'value="admi
 pin('shows no key', '', $shown($page['drawn']));
 check('the revoke dialog asks for the password', str_contains($page['drawn'], 'id="api-revoke-password"'));
 check('so does the rotate dialog', str_contains($page['drawn'], 'id="api-rotate-password"'));
+check('with the API off, keys and webhooks say they do nothing yet', substr_count($page['drawn'], 'id="api-off-note"') === 2);
 
 harness_section('making a key');
 
@@ -347,6 +348,9 @@ $bad = drive('api_post', array('api_enabled' => '1', 'api_cors_origins' => "http
 check('a line that is not an origin is refused', $bad['redirects'] === array() && str_contains(implode(' ', $bad['flashes']), 'not an origin is not an origin'));
 $ok = drive('api_post', array('api_enabled' => '1', 'api_cors_origins' => "https://app.example.com/\n\n*\nhttps://app.example.com", 'api_rate_limit_default' => '0', 'api_rate_limit_anon' => '60', 'api_rate_limit_write' => '30', 'api_cache_max_age' => '60', 'api_hide_phone' => '1'));
 pin('a good save goes back to the screen', array(CAdminSettingsApi::url()), $ok['redirects']);
+scratchdb_forget_cache();
+osc_reset_preferences();
+check('with the API on, the note is gone', !str_contains(drive('api')['drawn'], 'id="api-off-note"'));
 $pref = static fn (string $name): ?string => $admin->query("SELECT s_value FROM " . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'api' AND s_name = '$name'")->fetch_row()[0] ?? null;
 pin('origins are stored one per line, tidied', "https://app.example.com\n*", $pref('api_cors_origins'));
 pin('a zero rate limit is floored at one', '1', $pref('api_rate_limit_default'));
