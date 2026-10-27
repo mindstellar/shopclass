@@ -135,8 +135,10 @@ msgid "%1$s of %2$s selected"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
-msgid "%1$s orders · %2$s paid · %3$s awaiting payment"
-msgstr ""
+msgid "%1$s order · %2$s paid · %3$s awaiting payment"
+msgid_plural "%1$s orders · %2$s paid · %3$s awaiting payment"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "%1$s per file · %2$s per request"
@@ -660,6 +662,12 @@ msgstr ""
 msgid "%s needs these plugins"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
+msgid "%s order"
+msgid_plural "%s orders"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -1085,7 +1093,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "A price of 0 makes extra slots free."
+msgid "A price of 0 makes extra places free."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -1147,8 +1155,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
-"A seller over the limit writes the listing first and pays for the slot on "
-"the last step. Off, they are sent to buy a slot before they can post."
+"A seller over the limit writes the listing first and pays for the extra "
+"place on the last step. Off, they are sent to buy one before they can post."
 msgstr ""
 
 #: oc-includes/osclass/classes/menu/MenuService.php
@@ -1966,10 +1974,15 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
-"An unpaid order is cancelled after this many days. A bank transfer or cash "
-"on delivery order's stock goes back on sale. A listing waiting for payment "
-"is deleted after the same number of days; the seller is reminded a day "
-"before."
+"An unpaid bank transfer or cash on delivery order is cancelled after this "
+"many days, and its stock goes back on sale."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"An unpaid order is cancelled after this many days. A listing waiting for "
+"payment is deleted after the same number of days; the seller is reminded a "
+"day before."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
@@ -3471,6 +3484,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/preview.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Close"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Close an order that will not be paid."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -5207,6 +5224,10 @@ msgstr ""
 msgid "Edit rule"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Edit tracking"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/users/frm.php
@@ -5630,7 +5651,7 @@ msgid "Extra photos"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Extra slots"
+msgid "Extra places"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -6427,6 +6448,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 msgid "How long a signed URL stays valid (60-604800)."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "How long an unpaid order waits before it is cancelled."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -7774,7 +7799,7 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
 "Live listings a seller may have at once. 0 means no limit. Pending listings "
-"count; only expiry or deletion frees a slot."
+"count; only expiry or deletion frees a place."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -9748,12 +9773,6 @@ msgstr ""
 msgid "One day"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid ""
-"One delivery method, \"Standard delivery\", at a flat charge. Amounts are "
-"in the listings' currency."
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "One hour"
 msgstr ""
@@ -9952,6 +9971,7 @@ msgid "Order saved"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
+#: oc-admin/themes/modern/settings/billing.php
 #: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Orders"
@@ -10398,10 +10418,6 @@ msgstr ""
 msgid "Photo %d"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Photo cap"
-msgstr ""
-
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Photo format"
 msgstr ""
@@ -10432,7 +10448,11 @@ msgid "Photos"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Photos allowed per listing while the entitlement is held."
+msgid "Photos allowed"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Photos allowed per listing while the seller holds it."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -10477,6 +10497,10 @@ msgstr ""
 msgid "Picking a user fills the contact fields below. The listing belongs to"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Place price in credits"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "Placed on this page in the page builder. Edit it there."
 msgstr ""
@@ -10487,6 +10511,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
 msgid "Placeholders"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Places per purchase"
 msgstr ""
 
 #: oc-admin/gui/recover.php
@@ -11832,6 +11860,10 @@ msgstr ""
 msgid "Save to your S3 bucket"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Save tracking"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Save upgrade settings"
 msgstr ""
@@ -12244,15 +12276,15 @@ msgid "Selected: %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Sell a raised photo cap"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Sell bump to top"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Sell extra listing slots"
+msgid "Sell extra listing places"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Sell extra photos"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -12277,12 +12309,12 @@ msgstr ""
 msgid "Sell marking a listing urgent"
 msgstr ""
 
-#: oc-admin/themes/modern/items/frm.php
-msgid "Sell this item"
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Sell skipping the posting wait"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Sell waiving the flood wait"
+#: oc-admin/themes/modern/items/frm.php
+msgid "Sell this item"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -12540,6 +12572,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Share listing"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Ship order #%d without a tracking number?"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -12957,14 +12993,6 @@ msgstr ""
 msgid "Skipped, because the Aisle theme is not installed."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Slot price in credits"
-msgstr ""
-
-#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Slots per purchase"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid ""
 "Slow work, such as emptying a large category or moving photos to a bucket, "
@@ -13138,6 +13166,12 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Stainless steel workbench"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid ""
+"Standard delivery at one charge. With the Shipping plugin on, its zones set "
+"the charge instead. Amounts are in the listings' currency."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
@@ -13725,6 +13759,12 @@ msgstr ""
 msgid ""
 "The buyer sees your instructions at checkout and pays outside the site. You "
 "mark the order paid."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid ""
+"The buyer will see the order as shipped with no carrier or tracking. You "
+"can add them later."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php

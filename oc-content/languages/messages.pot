@@ -1107,6 +1107,10 @@ msgstr ""
 msgid "Enter a valid amount, 0 or more"
 msgstr ""
 
+#: oc-includes/osclass/classes/listing/ListingMailService.php
+msgid "Enter a valid e-mail address"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid "Enter a valid email address."
 msgstr ""
@@ -1129,6 +1133,10 @@ msgstr ""
 msgid ""
 "Enter the full web address of the endpoint, such as "
 "https://example.com/webhooks."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingMailService.php
+msgid "Enter your name"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
@@ -1320,6 +1328,10 @@ msgstr ""
 msgid "If it was not you, ignore this e-mail. The message is deleted in 24 hours."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebUser.php
+msgid "If that address is free, we sent a link to it."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid ""
 "If that email address belongs to an account, we have sent it instructions "
@@ -1347,7 +1359,6 @@ msgid "Invalid CSRF token."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
-#: oc-includes/osclass/classes/listing/ListingMailService.php
 msgid "Invalid email address"
 msgstr ""
 
@@ -1577,10 +1588,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Message settings have been updated"
-msgstr ""
-
-#: oc-includes/osclass/classes/listing/ListingMailService.php
-msgid "Message: this field is required"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
@@ -1958,6 +1965,10 @@ msgstr ""
 msgid "Only a shipped order can be marked delivered"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Only a shipped order can have its tracking changed"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebContact.php
 msgid "Only a site admin can ban a sender for good."
 msgstr ""
@@ -2081,7 +2092,15 @@ msgid "Order #%d is recorded as refunded and the credits have been taken back"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is recorded as refunded."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Order #%d is refunded and the credits have been taken back"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Order #%d is refunded."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -3995,6 +4014,10 @@ msgstr ""
 msgid "Too many wrong passwords. Try again later."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Tracking of order #%d is updated"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "Two-step sign-in is off."
 msgstr ""
@@ -4229,6 +4252,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "With photos only"
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingMailService.php
+msgid "Write a message"
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
@@ -4635,10 +4662,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php
 msgid "Your name (optional)"
-msgstr ""
-
-#: oc-includes/osclass/classes/listing/ListingMailService.php
-msgid "Your name: this field is required"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
