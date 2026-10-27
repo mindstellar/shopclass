@@ -176,6 +176,26 @@ select.field-select {
   }
 }
 
+.field-image-pick {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  max-inline-size: 100%;
+}
+
+.field-image-name {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.field-image-pick:has(.field-image-input:focus-visible) .field-image-choose {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 2px;
+}
+
 .field-image-preview {
   background: var(--osc-bench);
   border: 1px solid var(--osc-chrome-edge);
@@ -187,11 +207,11 @@ select.field-select {
 
 // An image made for one scheme, such as a logo for dark headers, is shown on that scheme's
 // background whatever the admin's own scheme is. The field sets data-surface in its attrs.
-.field-image:has(> input[data-surface="light"]) .field-image-preview {
+.field-image:has(input[data-surface="light"]) .field-image-preview {
   background: var(--bs-white);
 }
 
-.field-image:has(> input[data-surface="dark"]) .field-image-preview {
+.field-image:has(input[data-surface="dark"]) .field-image-preview {
   background: var(--bs-dark);
 }
 

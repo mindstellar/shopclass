@@ -18,6 +18,7 @@
   min-height: 32rem;
 }
 
+
 .cz-side {
   background-color: var(--osc-bench);
   border-inline-end: 1px solid var(--osc-rule);
@@ -392,13 +393,24 @@
     height: auto;
   }
 
+  // Stacked, the preview and its Publish/Discard bar come first, so a change is seen where
+  // it is made; the settings sit below.
+  .cz-main {
+    order: -1;
+  }
+
   .cz-side {
     border-block-end: 1px solid var(--osc-rule);
     border-inline-end: 0;
     overflow: visible;
   }
 
+  .cz-canvas {
+    padding: .75rem;
+  }
+
   .cz-frame {
-    block-size: 80dvh;
+    block-size: 60dvh;
+    min-block-size: 22rem;
   }
 }

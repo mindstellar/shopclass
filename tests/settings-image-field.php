@@ -452,8 +452,8 @@ namespace {
     image_seed(7);
     $empty = image_render('brand', array('show_logo' => true, 'logo' => '', 'icon' => '', 'tagline' => '', 'width' => ''));
     check('a page with an image field posts multipart without asking', strpos($empty, 'enctype="multipart/form-data"') !== false, $empty);
-    check('the file input takes images', strpos($empty, '<input type="file" id="field-logo" name="logo" class="" accept="image/*" />') !== false, $empty);
-    check('an empty required image asks the browser for one', strpos($empty, 'name="icon" class="" accept="image/*" required />') !== false, $empty);
+    check('the file input takes images', strpos($empty, '<input type="file" id="field-logo" name="logo" class="visually-hidden field-image-input" accept="image/*" />') !== false, $empty);
+    check('an empty required image asks the browser for one', strpos($empty, 'name="icon" class="visually-hidden field-image-input" accept="image/*" required />') !== false, $empty);
     check('nothing stored draws no preview', strpos($empty, '<img') === false, $empty);
     check('nothing stored draws no remove box', strpos($empty, '_remove') === false, $empty);
 

@@ -353,8 +353,14 @@ class Field
                     echo '<img class="field-image-preview" src="' . osc_esc_html($spec['preview_url']) . '"'
                         . ' alt="' . osc_esc_html($spec['label'] ?? '') . '" />';
                 }
-                echo '<input type="file"' . $common . ' class="' . self::cssClass('file', $spec) . '"'
-                    . ' accept="image/*"' . $attrs . ' />';
+                // The native file box is hidden behind a Choose image button, the look of the
+                // widget image field; it stays focusable and posts as before.
+                echo '<span class="field-image-pick"><input type="file"' . $common
+                    . ' class="' . trim(self::cssClass('file', $spec) . ' visually-hidden field-image-input') . '"'
+                    . ' accept="image/*"' . $attrs . ' />'
+                    . '<label class="btn btn-secondary btn-sm field-image-choose" for="' . osc_esc_html($id) . '">'
+                    . osc_esc_html(__('Choose image')) . '</label>'
+                    . '<span class="field-image-name" aria-live="polite"></span></span>';
                 if ($kept) {
                     $removeName = (string)($spec['remove_name'] ?? $name . '_remove');
                     echo '<label class="field-choice"><input type="checkbox"'

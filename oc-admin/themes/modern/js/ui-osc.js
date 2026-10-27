@@ -1194,3 +1194,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+// An image field's Choose image button shows the name of the file picked; ticking Remove clears it.
+document.addEventListener('change', function (e) {
+    var field = e.target.closest ? e.target.closest('.field-image') : null;
+    var name = field ? field.querySelector('.field-image-name') : null;
+    if (!name) {
+        return;
+    }
+    if (e.target.classList.contains('field-image-input')) {
+        name.textContent = e.target.files && e.target.files.length ? e.target.files[0].name : '';
+    } else if (e.target.type === 'checkbox' && e.target.checked) {
+        name.textContent = '';
+    }
+});
