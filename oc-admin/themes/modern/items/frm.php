@@ -214,17 +214,54 @@ $itemFixKeys = array(
     'sec-seller'   => array('contactName', 'contactEmail', 'contactPhone', 'showEmail'),
     'sec-location' => array('countryId', 'country', 'region', 'regionId', 'city', 'cityId', 'cityArea', 'zip', 'address'),
 );
-$itemFix = array();
+// A refused save's lines name their field by pointer; a line naming none belongs to the product.
+$itemFixPointers = array(
+    'title' => 'sec-product', 'description' => 'sec-product', 'category_id' => 'sec-product', 'owner_id' => 'sec-seller',
+    'photos' => 'sec-photos', 'price' => 'sec-price', 'currency' => 'sec-price', 'custom_fields' => 'sec-details',
+    'contact_name' => 'sec-seller', 'contact_email' => 'sec-seller', 'contact_phone' => 'sec-seller',
+    'country' => 'sec-location', 'region' => 'sec-location', 'region_id' => 'sec-location', 'city' => 'sec-location',
+    'city_id' => 'sec-location', 'city_area' => 'sec-location', 'address' => 'sec-location', 'zip' => 'sec-location',
+);
+$itemErrorFields = is_array(__get('editorErrorFields')) ? __get('editorErrorFields') : array();
+$itemFix         = array();
+$itemFixAdd      = static function (string $sectionId) use (&$itemFix) {
+    $itemFix[$sectionId] = ($itemFix[$sectionId] ?? 0) + 1;
+};
 foreach ($itemErrors as $errorKey => $errorText) {
-    $errorKey = strtok((string)$errorKey, '[');
+    if (is_int($errorKey)) {
+        if ($itemErrorFields === array()) {
+            $itemFixAdd('sec-product');
+        }
+        continue;
+    }
+    $errorKey = strtok($errorKey, '[');
+    $found    = 'sec-product';
     foreach ($itemFixKeys as $sectionId => $sectionKeys) {
         if (in_array($errorKey, $sectionKeys, true)) {
-            $itemFix[$sectionId] = ($itemFix[$sectionId] ?? 0) + 1;
+            $found = $sectionId;
         }
     }
+    $itemFixAdd($found);
 }
-foreach ((array)$sellValues['errors'] as $variantErrors) {
-    $itemFix['sec-options'] = ($itemFix['sec-options'] ?? 0) + count((array)$variantErrors);
+foreach ($itemErrorFields as $pointer) {
+    $parts = explode('/', trim((string)$pointer, '/'));
+    if ($parts[0] === 'product') {
+        $itemFixAdd(in_array($parts[1] ?? '', array('options', 'variants', 'variant'), true) ? 'sec-options' : 'sec-price');
+    } else {
+        $itemFixAdd($itemFixPointers[$parts[0]] ?? 'sec-product');
+    }
+}
+// A section this form does not draw hands its count to the first one, so the counts still add up.
+$itemDrawn = array(
+    'sec-photos'  => osc_images_enabled_at_items(),
+    'sec-price'   => $itemShop || osc_price_enabled_at_items(),
+    'sec-options' => $itemShop,
+);
+foreach ($itemDrawn as $sectionId => $drawn) {
+    if (!$drawn && isset($itemFix[$sectionId])) {
+        $itemFix['sec-product'] = ($itemFix['sec-product'] ?? 0) + $itemFix[$sectionId];
+        unset($itemFix[$sectionId]);
+    }
 }
 $itemToc = array();
 

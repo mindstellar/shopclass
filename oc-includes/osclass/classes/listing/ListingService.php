@@ -165,16 +165,20 @@ final class ListingService
      * Save the listing form for a web, admin or plugin caller and flash the photo notices.
      * The caller puts the posted custom field values under 'meta' (see ListingInput::withMeta()).
      *
-     * @param array<string,mixed> $data
+     * @param array<string,mixed>                                                $data
+     * @param array<int,array{pointer:string,code:string,message:string}>|null $refused set to the refusal's errors, each with the field it names
+     * @param-out array<int,array{pointer:string,code:string,message:string}> $refused
      *
      * @return SavedListing|string what was saved, or the refusal's message
      */
-    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true): SavedListing|string
+    public function saveForm(array $data, Actor $actor, bool $isAdd, bool $import = false, bool $matchSecret = true, ?array &$refused = null): SavedListing|string
     {
+        $refused = array();
         try {
             $saved = $isAdd ? $this->create($data, $actor, $import) : $this->update($data, $actor, $import, $matchSecret);
         } catch (RefusedException $e) {
             ListingNotices::flash($e->notices(), $actor->isAdmin());
+            $refused = $e instanceof InvalidException ? $e->errors() : array();
 
             return $e->getMessage();
         }

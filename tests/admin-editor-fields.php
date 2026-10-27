@@ -403,6 +403,16 @@ function render_screen(string $screen): string
         $view->_exportVariableToView('editorErrors', array('contactEmail' => 'Write a full address.', 'title' => 'Add a title.'));
         $screen = substr($screen, 0, -4);
     }
+    // A refused save as the listing service words it: one line per fault, each naming its
+    // field by pointer, and the title per locale.
+    if (str_ends_with($screen, '-refused')) {
+        $view->_exportVariableToView('editorErrors', array(
+            'Description too short (English).', 'Description too short (Hindi).', 'Category invalid.', 'City too short.',
+            'title' => array('en_US' => 'English: this listing needs a title', 'summary' => 'Add a title in at least one language.'),
+        ));
+        $view->_exportVariableToView('editorErrorFields', array('/description', '/description', '/category_id', '/city'));
+        $screen = substr($screen, 0, -8);
+    }
     if (str_ends_with($screen, '-shop')) {
         $GLOBALS['fixtureShop'] = true;
         $screen                 = substr($screen, 0, -5);
@@ -909,6 +919,13 @@ pin('item-add-shop-err: so does Product', '1 to fix',
     trim((string)dom('item-add-shop-err')->query('//*[@id="sec-product"]//*[contains(@class,"widget-box-title-hint") and contains(@class,"is-error")]')->item(0)?->textContent));
 pin('item-add-shop-err: Price has nothing to fix', 0,
     dom('item-add-shop-err')->query('//*[@id="sec-price"]//*[contains(@class,"is-error")]')->length);
+
+$fixOf = static fn (string $screen, string $id): string => trim((string)dom($screen)->query('//*[@id="' . $id . '"]//*[contains(@class,"widget-box-title-hint") and contains(@class,"is-error")]')->item(0)?->textContent);
+check('item-add-shop-refused: the banner counts five', str_contains((string)dom('item-add-shop-refused')->query('//*[@id="error_list"]//strong')->item(0)?->textContent, '5 things'));
+pin('item-add-shop-refused: Product holds the title, both descriptions and the category', '4 to fix', $fixOf('item-add-shop-refused', 'sec-product'));
+pin('item-add-shop-refused: Location holds the city', '1 to fix', $fixOf('item-add-shop-refused', 'sec-location'));
+$location = dom('item-add-shop-refused')->query('//*[@id="sec-location"]')->item(0);
+check('item-add-shop-refused: so the folded Location opens', $location instanceof DOMElement && $location->hasAttribute('open'));
 
 harness_section('Sell online is a switch that still posts product[sell]');
 
