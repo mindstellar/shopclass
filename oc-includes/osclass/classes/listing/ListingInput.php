@@ -541,7 +541,8 @@ final class ListingInput
         }
 
         if ($aItem['currency'] == '') {
-            $aItem['currency'] = null;
+            // The form draws no currency field when prices are off, so a sold product takes the site's.
+            $aItem['currency'] = !empty($product['sell']) && (string) osc_currency() !== '' ? (string) osc_currency() : null;
         }
 
         return osc_apply_filter('item_prepare_data', $aItem);
