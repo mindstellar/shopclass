@@ -68,17 +68,7 @@ final class ListingValidator
      */
     public static function localeName(string $code): string
     {
-        try {
-            foreach (osc_get_locales() as $locale) {
-                if (($locale['pk_c_code'] ?? '') === $code && ($locale['s_name'] ?? '') !== '') {
-                    return (string) $locale['s_name'];
-                }
-            }
-        } catch (\Throwable) {
-            // no database: the code is all there is
-        }
-
-        return $code;
+        return osc_get_locale_name($code);
     }
 
     /**
