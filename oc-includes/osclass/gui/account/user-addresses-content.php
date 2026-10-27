@@ -44,7 +44,7 @@ $addrField = static function (string $name, string $label, string $autocomplete,
                name="<?php echo osc_esc_html($name); ?>" value="<?php echo osc_esc_html((string) ($addrForm[$name] ?? '')); ?>"
                maxlength="<?php echo $max; ?>" autocomplete="<?php echo osc_esc_html($autocomplete); ?>"<?php
             echo $required ? ' required' : '';
-            echo $error !== '' ? ' aria-invalid="true" aria-describedby="' . osc_esc_html($id) . '-err"' : ''; ?> />
+            echo $error !== '' ? ' aria-invalid="true" aria-describedby="' . osc_esc_html($id) . '-error"' : ''; ?> />
     <?php }, '', $error);
 };
 ?>
@@ -114,7 +114,7 @@ $addrField = static function (string $name, string $label, string $autocomplete,
                         $addrCountryError = (string) ($addrErrors['country'] ?? '');
                         osc_gui_field('oe-addr-country', _m('Country'), static function () use ($addrCountries, $addrCountry, $addrCountryError): void { ?>
                             <select class="oe-input" id="oe-addr-country" name="country" autocomplete="country"<?php
-                                echo $addrCountryError !== '' ? ' aria-invalid="true" aria-describedby="oe-addr-country-err"' : ''; ?>>
+                                echo $addrCountryError !== '' ? ' aria-invalid="true" aria-describedby="oe-addr-country-error"' : ''; ?>>
                                 <?php foreach ($addrCountries as $addrCode => $addrName) { ?>
                                     <option value="<?php echo osc_esc_html($addrCode); ?>"<?php echo $addrCode === $addrCountry ? ' selected' : ''; ?>><?php
                                         echo osc_esc_html($addrName); ?></option>

@@ -227,7 +227,7 @@ if (!function_exists('osc_gui_print_dialog_script')) {
 if (!function_exists('osc_gui_field')) {
     /**
      * Print a form row: label, input, then an optional hint and error. The hint gets the id
-     * "{$for}-hint" and the error "{$for}-err", so the input can point at them with aria-describedby.
+     * "{$for}-hint" and the error "{$for}-error", so the input can point at them with aria-describedby.
      *
      * @param string          $for   id of the input the label is for
      * @param string          $label plain text, escaped here
@@ -252,7 +252,7 @@ if (!function_exists('osc_gui_field')) {
             echo '<span class="oe-hint" id="' . osc_esc_html($for) . '-hint">' . osc_esc_html($hint) . '</span>' . "\n";
         }
         if ($error !== '') {
-            echo '<span class="oe-hint oe-field-error" id="' . osc_esc_html($for) . '-err">' . osc_esc_html($error) . '</span>' . "\n";
+            echo '<span class="oe-hint oe-field-error" id="' . osc_esc_html($for) . '-error">' . osc_esc_html($error) . '</span>' . "\n";
         }
         echo '</div>';
     }
