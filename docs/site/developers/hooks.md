@@ -891,7 +891,7 @@ Core fires 630 names. Generated from the source; do not edit by hand.
 | `user_login_form` | action | none | `oc-includes/osclass/gui/account/user-login-content.php` |
 | `user_login_form_after` | action | none | `oc-includes/osclass/gui/account/user-login-content.php` |
 | `user_menu` | action | none | `oc-includes/osclass/gui/account/nav.php` |
-| `user_menu_filter` | filter | `$navItems` | `oc-includes/osclass/gui/account/nav.php` |
+| `user_menu_filter` | filter | `$items` | `oc-includes/osclass/helpers/hUtils.php` |
 | `user_profile_form` | action | `$user` | `oc-admin/themes/modern/users/frm.php` |
 | `user_profile_info` | filter | `$aInfo['s_info'], $aUser['pk_i_id'], $aInfo['fk_c_locale_code']` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `user_register_completed` | action | `$userId` | `oc-includes/osclass/classes/user/AccountService.php` |

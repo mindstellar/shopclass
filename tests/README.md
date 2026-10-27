@@ -100,6 +100,23 @@ The architecture page lists them. Use `harness_code_only()` so comments do not c
 code does, run it. When you must read source, check one line or one method, not the
 text between two `case` labels: a harmless move then breaks the test.
 
+## Admin and form screens
+
+Tests for the admin and public form screens added in the UI polish work:
+
+| Test | Checks |
+|---|---|
+| `admin-form-labels.php` | form rows tie labels to controls; select-all boxes and the photo uploader are named |
+| `admin-mode-wording.php` | "products" in shop mode; goods-only settings hidden in classifieds |
+| `admin-orders-to-ship.php` | the to-ship count and its cache |
+| `admin-package-form-keep.php`, `admin-user-create-refused.php`, `menu-items-errors.php` | a refused save keeps what was typed and names the field |
+| `admin-login-page.php`, `admin-cleanup-page.php`, `admin-version-page.php`, `admin-email-labels.php`, `admin-captcha-help.php` | single admin screens: phone fit, headings, labels, help text |
+| `billing-order-list.php`, `billing-shop-credits.php` | the shared order list; credits hidden in a shop |
+| `item-form-sections.php` | the product form's sections and their show/hide script |
+| `listing-admin-errors.php`, `listing-store-address.php` | listing save errors; the store address fallback |
+| `public-form-errors.php`, `gui-markup-helpers.php`, `flash-dismiss.php` | inline field errors, markup helpers, flash dismiss |
+| `models/public-form-flows.php` | public forms keep what was typed and always answer |
+
 ## Pinned lists
 
 These tests compare the code with a list kept in `tests/fixtures/`. When you change a

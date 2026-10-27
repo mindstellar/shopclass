@@ -55,7 +55,9 @@ cancelled after **Cancel unpaid orders after (days)** (Settings → Billing → 
 
 ### Selling goods
 
-The **Shop** tab holds the settings a goods checkout needs:
+In shop mode the **Shop** tab holds the settings a goods checkout needs. On a classifieds
+site the same tab is called **Orders** and shows only **Cancel unpaid orders after (days)**
+and **Order number prefix**.
 
 - **Delivery charge** and **Free delivery from**: one "Standard delivery" method at a
   flat charge, free once the order reaches the amount (0 means never).
@@ -68,9 +70,9 @@ The **Shop** tab holds the settings a goods checkout needs:
   the buyer pays (15 by default, 5 to 120). Still unpaid then, it is cancelled with no mail
   to the buyer and the stock goes back on sale. On shared hosting the job queue runs on page
   visits, so the cancel may come a little late.
-- **Open unpaid orders per buyer**: the most orders one buyer may hold unpaid at once, card
-  orders included (3 by default, 0 for no limit). Past it, checkout asks them to
-  pay for or cancel an open order first.
+- **Open unpaid orders per buyer**: the most unpaid bank transfer orders one buyer may hold
+  at once (3 by default, 0 for no limit). Cash on delivery and card orders are not limited.
+  Past it, checkout asks them to pay for or cancel an open order first.
 - **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`.
 
 Every order takes its stock when placed, so two buyers cannot both order the last one. A
@@ -93,16 +95,16 @@ Test Payments hands out credits for nothing. It is for testing only.
 | **Highlight** | Visual emphasis in listing results, for a set number of days |
 | **Urgent** | An urgency marker, for a set number of days |
 | **Bump to top** | Back to the top of results, with a cooldown between bumps |
-| **Extra photos** | A raised photo cap on one listing |
+| **Sell extra photos** | A raised photo cap on one listing |
 | **Extra listing runtime** | More days than the category's limit allows |
-| **Extra slots** | More listings than the free allowance |
+| **Sell extra listing places** | More listings than the free allowance |
 | **Skip the posting wait** | Waives the flood-control delay between posts |
 
 Each is sold independently (turn on only what you actually want to sell) and
 each has its own price in credits and, where relevant, its own duration.
 
 Sellers buy listing upgrades from **My listings**, next to each listing. They buy account
-upgrades (extra slots, extra photos, longer listings, skip the posting wait) from their
+upgrades (extra listing places, extra photos, longer listings, skip the posting wait) from their
 **Credits** page, under "Upgrades for your account". That box shows only the upgrades you turn on.
 
 ### Credit bundles
@@ -152,19 +154,19 @@ Open an order in **Billing → Orders** to see its items, address and buyer. If 
 out after the order was paid, an **Oversold** note lists the short items. Use **Mark
 shipped** (carrier, tracking number and an optional https tracking link) and **Mark
 delivered** to move it along; the buyer is e-mailed when it ships. **Cancel order** closes
-an order that is not paid yet. **To ship** at the top of the list shows paid orders that
+a pending order, and a cash on delivery order that has not shipped. **Edit tracking** changes the carrier or tracking of a shipped order. Shipping with no tracking number asks you to confirm first. **To ship** at the top of the list shows paid orders that
 have not shipped.
 
 ### Seller limits
 
-**Free listings per seller** and the **photo cap** set what sellers get for
+**Free listings per seller** and **Photos allowed** set what sellers get for
 nothing. These are what make the upgrades worth buying: with unlimited free
-listings and no photo cap, nobody needs extra slots or extra photos.
+listings and no photo limit, nobody needs extra places or extra photos.
 
 Set the free allowance to what a casual seller needs and a dealer does not.
 
 **Take payment at the end of posting** (Settings → Billing → Pricing, on by default
-when extra slots are for sale). A seller over the limit fills in the whole form, the
+when **Sell extra listing places** is on). A seller over the limit fills in the whole form, the
 listing is saved hidden as **Waiting for payment**, and they pay on the last step with
 credits or a package. It is deleted after **Cancel unpaid orders after (days)** (Settings → Billing → Shop) if they never pay, and they
 get a reminder e-mail a day before (edit it in Settings → Emails). Turn the switch off

@@ -55,7 +55,7 @@ photos. This cannot be undone.* To take something down reversibly,
 
 ## Selling a listing
 
-In a shop, the **Price and stock** section of the product form has a **Sell online** switch. Turn it
+These fields exist in shop mode only. In a shop, the **Price and stock** section of the product form has a **Sell online** switch. Turn it
 on so buyers can add the product to a cart, then set:
 
 | Field | What it does |
@@ -74,6 +74,8 @@ Switch **Sell online** off to stop selling. Only admins see these fields. When *
 is set to shop, only admins can add listings at all.
 
 ## Reported listings
+
+In shop mode the menu says "products" where this page says "listings".
 
 **Listings → Reported listings** collects what visitors have flagged. Each
 entry shows the listing and how many reports it has drawn.
