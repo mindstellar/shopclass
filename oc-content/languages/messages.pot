@@ -606,9 +606,14 @@ msgid "Buying credits is not available on this site."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-addresses-content.php
+#: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/contact-message-content.php
 #: oc-includes/osclass/gui/user-delete_account-content.php
 msgid "Cancel"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Cancel order %s?"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -2009,6 +2014,10 @@ msgstr ""
 msgid "Only an order that is not paid yet can be cancelled"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "Only an unpaid bank transfer or cash on delivery order can be cancelled"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebAjax.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
 #: oc-includes/osclass/classes/listing/ListingService.php
@@ -2125,6 +2134,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/gateway/CashOnDeliveryGateway.php
 msgid "Order %s"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebBilling.php
+msgid "Order %s is cancelled"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/tabs.php
@@ -3008,6 +3021,7 @@ msgstr ""
 msgid "That order has no receipt"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "That order no longer exists"
 msgstr ""
