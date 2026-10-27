@@ -68,7 +68,11 @@ final class ListingValidator
      */
     public static function localeName(string $code): string
     {
-        return osc_get_locale_name($code);
+        try {
+            return osc_get_locale_name($code);
+        } catch (\Throwable) {
+            return $code;
+        }
     }
 
     /**
