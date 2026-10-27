@@ -80,7 +80,9 @@ class UserForm extends Form
     {
         parent::generic_input_text(
             'email',
-            isset($user['s_email']) ? $user['s_email'] : '',
+            (string) Session::getInstance()->_getForm('email') !== ''
+                ? Session::getInstance()->_getForm('email')
+                : (isset($user['s_email']) ? $user['s_email'] : ''),
             null,
             false
         );

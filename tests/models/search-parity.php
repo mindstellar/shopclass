@@ -1057,6 +1057,16 @@ $s->addFieldFilter($fields['DROPDOWN'], array('type' => 'DROPDOWN', 'op' => 'eq'
 $s->addFieldFilter($fields['DROPDOWN'], array('type' => 'DROPDOWN', 'op' => 'eq', 'value' => 'b'), $p . "t_item.pk_i_id > 1");
 pin('a second filter on one field makes it raw SQL', true, $s->filters()->rawSql);
 
+harness_section('a listing with no price sorts last');
+$admin->query("UPDATE {$p}t_item SET i_price = NULL WHERE pk_i_id = $tv");
+foreach (array('ASC', 'DESC') as $direction) {
+    $s = new Search();
+    $s->order('i_price', $direction);
+    $ids = $run($s)['ids'];
+    pin('price ' . $direction . ' ends with the priceless listing', 'tv', end($ids));
+}
+$admin->query("UPDATE {$p}t_item SET i_price = 150000000 WHERE pk_i_id = $tv");
+
 harness_section('the legacy $dao is built only when read');
 $built = static fn (DAO $model): bool => array_key_exists('dao', get_object_vars($model));
 $GLOBALS['daoDeprecations'] = array();

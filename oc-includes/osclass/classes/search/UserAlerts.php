@@ -171,7 +171,8 @@ final class UserAlerts
             $this->alerts->update(['fk_i_user_id' => $user['pk_i_id']], ['pk_i_id' => $id]);
         }
 
-        return $this->alerts->activate($id) === 1 ? self::ACTIVATED : self::FAILED;
+        // A second click on the link finds the alert already on, which is the state asked for.
+        return $this->alerts->activate($id) === 1 || !empty($alert['b_active']) ? self::ACTIVATED : self::FAILED;
     }
 
     /**

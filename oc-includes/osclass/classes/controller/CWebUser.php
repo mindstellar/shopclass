@@ -305,6 +305,8 @@ class CWebUser extends WebSecBaseModel
             osc_add_flash_error_message($e->getMessage());
             $this->redirectTo(osc_change_user_email_url());
         }
+        // The same answer whether or not the address was free, so it does not reveal who has an account.
+        osc_add_flash_ok_message(_m('If that address is free, we sent a link to it.'));
         $this->redirectTo(osc_user_profile_url());
     }
 
