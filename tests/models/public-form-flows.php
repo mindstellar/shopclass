@@ -43,22 +43,26 @@ if (!function_exists('osc_user_login_url')) {
     {
         return \mindstellar\auth\SignIn::linkWithReturn(osc_base_url() . 'index.php?page=login', (string) $return);
     }
-
+}
+if (!function_exists('osc_register_account_url')) {
     function osc_register_account_url($return = '')
     {
         return \mindstellar\auth\SignIn::linkWithReturn(osc_base_url() . 'index.php?page=register', (string) $return);
     }
-
+}
+if (!function_exists('osc_user_profile_url')) {
     function osc_user_profile_url()
     {
         return osc_base_url() . 'index.php?page=user&action=profile';
     }
-
+}
+if (!function_exists('osc_change_user_email_confirm_url')) {
     function osc_change_user_email_confirm_url($userId, $code)
     {
         return osc_base_url() . 'index.php?page=user&action=change_email_confirm&userId=' . (int) $userId . '&code=' . $code;
     }
-
+}
+if (!function_exists('osc_change_user_email_url')) {
     function osc_change_user_email_url()
     {
         return osc_base_url() . 'index.php?page=user&action=change_email';
