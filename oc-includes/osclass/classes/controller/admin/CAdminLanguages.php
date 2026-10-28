@@ -41,6 +41,7 @@ class CAdminLanguages extends AdminSecBaseModel
         'enable_bo_selected'  => 'enableAdminSelected',
         'disable_bo_selected' => 'disableAdminSelected',
         'delete'              => 'deleteSelected',
+        'make_default'        => 'makeDefault',
     );
 
     private OSCLocale $localeManager;
@@ -381,6 +382,22 @@ class CAdminLanguages extends AdminSecBaseModel
     }
 
     /**
+     * Make one language the site's default, the same setting as General settings.
+     */
+    private function makeDefault(): void
+    {
+        osc_csrf_check();
+        try {
+            $this->languages->makeDefault(Params::getParamString('id'));
+            osc_purge_page_cache('language');
+            osc_add_flash_ok_message(_m('The default language has been changed'), 'admin');
+        } catch (ConflictException $e) {
+            osc_add_flash_error_message($e->getMessage(), 'admin');
+        }
+        $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
      * Turn the selected languages on for the admin.
      */
     private function enableAdminSelected(): void
@@ -555,6 +572,12 @@ class CAdminLanguages extends AdminSecBaseModel
             $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=edit&amp;id='
                          . $l['pk_c_code']
                          . '">' . __('Edit') . '</a>';
+            $isDefault = $l['pk_c_code'] === osc_language();
+            if (!$isDefault && $l['b_enabled'] == 1) {
+                $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=make_default&amp;id='
+                             . $l['pk_c_code'] . '&amp;' . osc_csrf_token_url()
+                             . '">' . __('Make default') . '</a>';
+            }
             $options[] =
                 '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . ($l['b_enabled'] == 1
                     ? 'disable_selected' : 'enable_selected') . '&amp;id[]=' . $l['pk_c_code'] . '&amp;'
@@ -580,7 +603,13 @@ class CAdminLanguages extends AdminSecBaseModel
             }
             $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
-            $row[] = osc_esc_html($l['s_name']) . $actions;
+            $badge = '';
+            if ($isDefault) {
+                ob_start();
+                osc_admin_status('active', __('Default'));
+                $badge = ' ' . ob_get_clean();
+            }
+            $row[] = osc_esc_html($l['s_name']) . $badge . $actions;
             $row[] = osc_esc_html($l['s_short_name']);
             $row[] = osc_esc_html($l['s_description']);
             $row[] = ($l['b_enabled'] ? __('Yes') : __('No'));

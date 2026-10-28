@@ -93,6 +93,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Shop mode hides credit packages: the Packages and Credits menus, the buy-credits and pay-to-publish pages (404), the account credit links and `POST /listings/{id}/publish` (404). Switching back to classifieds brings them back.
 - The close button on a flash message works on every theme; core ships the script.
 - Core's own front pages use shared `.oe-*` classes (`.oe-panel`, `.oe-empty`, `.oe-pager`, `.oe-actions`) and the `osc_gui_field()`, `osc_gui_panel_open()`, `osc_gui_empty()` and `osc_gui_actions()` helpers; the old `.oe-bill-*` names still work.
+- Settings › Languages marks the default language and has a "Make default" action.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.

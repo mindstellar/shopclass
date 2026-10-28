@@ -137,6 +137,20 @@ final class LanguageService
     }
 
     /**
+     * Make a language the site's default. It must be on for the website.
+     *
+     * @throws ConflictException for a language that is missing or off for the website
+     */
+    public function makeDefault(string $code): void
+    {
+        $locale = $this->locales->findByCode($code)[0] ?? null;
+        if ($locale === null || (int) $locale['b_enabled'] !== 1) {
+            throw new ConflictException(_m('Turn the language on for the website before you make it the default'));
+        }
+        osc_set_preference('language', $code);
+    }
+
+    /**
      * Turn a language off for the website, or for oc-admin.
      *
      * @return int rows changed

@@ -99,6 +99,28 @@ try {
 check('the default language cannot be disabled', $refused !== null && str_contains($refused, 'aa_AA'));
 pin('...and stays on', '1', (string) $row('aa_AA')['b_enabled']);
 
+harness_section('Make default');
+
+$refusedDefault = static function (string $code) use ($service): bool {
+    try {
+        $service->makeDefault($code);
+    } catch (ConflictException $e) {
+        return true;
+    }
+
+    return false;
+};
+check('a language off for the website cannot be the default', $refusedDefault('cc_CC'));
+check('an unknown code cannot be the default', $refusedDefault('zz_ZZ'));
+osc_reset_preferences();
+pin('...and the default stays', 'aa_AA', osc_language());
+LocaleStore::update('bb_BB', array('b_enabled' => 1));
+$service->makeDefault('bb_BB');
+osc_reset_preferences();
+pin('a language on for the website becomes the default', 'bb_BB', osc_language());
+$service->makeDefault('aa_AA');
+osc_reset_preferences();
+
 harness_section('Delete');
 
 pin('the language the admin is using is refused', LanguageService::IS_CURRENT, $service->delete('bb_BB', 'bb_BB'));

@@ -3217,6 +3217,10 @@ msgid ""
 "another language."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "The default language has been changed"
+msgstr ""
+
 #: oc-includes/osclass/classes/webhook/WebhookService.php
 msgid "The description is too long. Use %d characters or fewer."
 msgstr ""
@@ -4044,6 +4048,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Tracking of order #%d is updated"
+msgstr ""
+
+#: oc-includes/osclass/classes/language/LanguageService.php
+msgid "Turn the language on for the website before you make it the default"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php

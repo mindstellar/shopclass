@@ -4439,6 +4439,10 @@ msgstr ""
 msgid "Decor & Lighting"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Default"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "Default comment settings"
 msgstr ""
@@ -8098,6 +8102,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Make backup"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Make default"
 msgstr ""
 
 #: oc-includes/osclass/classes/form/ItemForm.php
