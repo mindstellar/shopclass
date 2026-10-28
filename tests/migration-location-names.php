@@ -26,21 +26,21 @@ $p     = DB_TABLE_PREFIX;
 $mig   = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0088_location_names.php';
 
 $admin->query("DROP TABLE IF EXISTS {$p}t_location_name");
-// Other tables point at t_locale, and MariaDB refuses to retype a referenced column while it checks them.
-$admin->query('SET FOREIGN_KEY_CHECKS = 0');
+// MariaDB refuses to retype a column other tables point at, even with checks off, so this scratch copy drops those keys.
+$refs = $admin->query("SELECT DISTINCT TABLE_NAME, CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+    WHERE TABLE_SCHEMA = DATABASE() AND REFERENCED_TABLE_NAME = '{$p}t_locale'");
+foreach ($refs->fetch_all(MYSQLI_ASSOC) as $ref) {
+    $admin->query("ALTER TABLE `{$ref['TABLE_NAME']}` DROP FOREIGN KEY `{$ref['CONSTRAINT_NAME']}`");
+}
+$admin->query("ALTER TABLE {$p}t_locale MODIFY pk_c_code CHAR(5) CHARACTER SET latin1 NOT NULL");
 $msg = '';
 try {
-    $admin->query("ALTER TABLE {$p}t_locale MODIFY pk_c_code CHAR(5) CHARACTER SET latin1 NOT NULL");
-    try {
-        $mig->up($conn);
-    } catch (\Throwable $e) {
-        $msg = $e->getMessage();
-    }
-} finally {
-    $created = (int) $admin->query("SHOW TABLES LIKE '{$p}t_location_name'")->num_rows;
-    $admin->query("ALTER TABLE {$p}t_locale MODIFY pk_c_code CHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL");
-    $admin->query('SET FOREIGN_KEY_CHECKS = 1');
+    $mig->up($conn);
+} catch (\Throwable $e) {
+    $msg = $e->getMessage();
 }
+$created = (int) $admin->query("SHOW TABLES LIKE '{$p}t_location_name'")->num_rows;
+$admin->query("ALTER TABLE {$p}t_locale MODIFY pk_c_code CHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL");
 pin('a latin1 language table is refused in plain words', true, str_contains($msg, 'utf8mb4') && str_contains($msg, 't_locale'));
 pin('and nothing is created', 0, $created);
 
