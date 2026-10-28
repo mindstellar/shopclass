@@ -96,6 +96,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - The close button on a flash message works on every theme; core ships the script.
 - Core's own front pages use shared `.oe-*` classes (`.oe-panel`, `.oe-empty`, `.oe-pager`, `.oe-actions`) and the `osc_gui_field()`, `osc_gui_panel_open()`, `osc_gui_empty()` and `osc_gui_actions()` helpers; the old `.oe-bill-*` names still work.
 - Settings › Languages marks the site and admin default languages and can change either one.
+- When the saved site or admin default language is empty or its language folder is gone, core uses en_US, else the first language that is on.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.

@@ -146,6 +146,22 @@ pin('the admin default cannot be deleted', LanguageService::IS_DEFAULT, $service
 $service->makeDefault('aa_AA', true);
 osc_reset_preferences();
 
+harness_section('Default fallback');
+
+$setPref = static function (string $name, string $value) use ($admin): void {
+    $admin->query("UPDATE " . DB_TABLE_PREFIX . "t_preference SET s_value = '" . $admin->real_escape_string($value) . "' WHERE s_section = 'osclass' AND s_name = '" . $name . "'");
+    osc_reset_preferences();
+};
+$setPref('language', 'zz_ZZ');
+pin('a default that is not a language on falls back to the first one on', 'aa_AA', osc_language());
+$setPref('language', '');
+pin('...and so does an empty default', 'aa_AA', osc_language());
+$setPref('admin_language', 'zz_ZZ');
+pin('the admin default falls back the same way', 'aa_AA', osc_admin_language());
+$setPref('language', 'aa_AA');
+$setPref('admin_language', 'aa_AA');
+pin('a valid default is used as saved', array('aa_AA', 'aa_AA'), array(osc_language(), osc_admin_language()));
+
 harness_section('Delete');
 
 pin('the language the admin is using is refused', LanguageService::IS_CURRENT, $service->delete('bb_BB', 'bb_BB'));

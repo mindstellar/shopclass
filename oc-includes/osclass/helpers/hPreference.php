@@ -740,7 +740,7 @@ function osc_page_title()
  */
 function osc_language()
 {
-    return getPreference('language');
+    return _osc_enabled_locale((string) getPreference('language'), false);
 }
 
 /**
@@ -750,7 +750,30 @@ function osc_language()
  */
 function osc_admin_language()
 {
-    return getPreference('admin_language');
+    return _osc_enabled_locale((string) getPreference('admin_language'), true);
+}
+
+/**
+ * The saved default, unless it is empty or its language folder is gone: then en_US when that is
+ * on, else the first language that is on. A saved default with its folder costs no query.
+ *
+ * @internal
+ */
+function _osc_enabled_locale(string $code, bool $admin): string
+{
+    if (!function_exists('osc_translations_path') || ($code !== '' && is_dir(osc_translations_path() . $code))) {
+        return $code;
+    }
+    try {
+        $enabled = array_column(\OSCLocale::getInstance()->listAllEnabled($admin), 'pk_c_code');
+    } catch (\Throwable $e) {
+        return $code;
+    }
+    if ($enabled === array() || in_array($code, $enabled, true)) {
+        return $code;
+    }
+
+    return in_array('en_US', $enabled, true) ? 'en_US' : (string) $enabled[0];
 }
 
 /**
