@@ -2,6 +2,12 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.7
+
+### Fixed
+- The contact form no longer says a premium listing past its date has expired; premium listings stay live.
+- The admin listing screen no longer marks a premium listing past its date as expired.
+
 ## Shopclass 7.0.6
 
 Docker sites keep downloaded languages across a redeploy, and plugins can load their own texts on top of the site's texts. If you run Docker with your own compose file, add the `oc-content` volume shown in the Docker guide.
