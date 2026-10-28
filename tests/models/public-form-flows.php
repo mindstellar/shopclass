@@ -139,6 +139,24 @@ harness_section('register keeps the return path');
 final class FlowRedirect extends RuntimeException
 {
 }
+
+/** CWebUser with the redirect caught, so a test can read where it was sent. */
+final class ChangeEmailProbe extends CWebUser
+{
+    public string $sent = '';
+
+    public function __construct()
+    {
+        $this->ajax   = true;
+        $this->action = Params::getParamString('action');
+    }
+
+    public function redirectTo($url, $code = null)
+    {
+        $this->sent = (string) $url;
+        throw new FlowRedirect($url);
+    }
+}
 $asVisitor = static function (array $params): void {
     $csrf = new \mindstellar\security\Csrf();
     foreach (array('return', 'new_email', 's_email', 's_name', 's_username', 's_password', 's_password2', 'action') as $key) {
@@ -185,21 +203,7 @@ Session::getInstance()->_setEphemeral('userId', (string) $changer);
 $pending = static fn (): string => (string) (UserEmailTmp::getInstance()->findByPrimaryKey($changer)['s_new_email'] ?? '');
 $changeTo = static function (string $email) use ($asVisitor): array {
     $asVisitor(array('action' => 'change_email_post', 'new_email' => $email));
-    $web = new class () extends CWebUser {
-        public string $sent = '';
-
-        public function __construct()
-        {
-            $this->ajax   = true;
-            $this->action = Params::getParamString('action');
-        }
-
-        public function redirectTo($url, $code = null)
-        {
-            $this->sent = (string) $url;
-            throw new FlowRedirect($url);
-        }
-    };
+    $web = new ChangeEmailProbe();
     Session::getInstance()->_dropMessage('pubMessages');
     try {
         (new ReflectionMethod('CWebUser', 'changeEmailPost'))->invoke($web);
