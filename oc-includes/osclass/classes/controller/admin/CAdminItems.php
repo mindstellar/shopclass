@@ -29,6 +29,7 @@ use mindstellar\exception\RefusedException;
 use mindstellar\listing\ListingCounters;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStatus;
 use mindstellar\listing\PhotoService;
 use mindstellar\moderation\ListingModeration;
 
@@ -659,7 +660,7 @@ class CAdminItems extends AdminSecBaseModel
         $this->_exportVariableToView('itemStatus', $this->itemStatePills($item));
         $this->_exportVariableToView('itemActions', $this->itemStateMoves($item));
 
-        $expired = osc_isExpired($item['dt_expiration'] ?? '');
+        $expired = ListingStatus::isExpired($item);
         $this->_exportVariableToView('itemFacts', array(
             'published' => empty($item['dt_pub_date']) ? '' : osc_format_date($item['dt_pub_date']),
             // A listing that never expires carries the year-9999 sentinel, which is a date
@@ -706,7 +707,7 @@ class CAdminItems extends AdminSecBaseModel
         if (!empty($item['b_premium'])) {
             $pills[] = array('premium', __('Premium'));
         }
-        if (osc_isExpired($item['dt_expiration'] ?? '')) {
+        if (ListingStatus::isExpired($item)) {
             $pills[] = array('expired', __('Expired'));
         }
 

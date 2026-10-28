@@ -41,7 +41,7 @@ final class ListingMailService
     {
         $form = self::fields($form, array('yourName', 'yourEmail', 'phoneNumber', 'message'));
         $this->guard(MessageGuard::refusal($form['yourEmail'], $form['message'], array($form['yourName']), $form['phoneNumber']));
-        if (osc_isExpired($item['dt_expiration'] ?? '')) {
+        if (ListingStatus::isExpired($item)) {
             throw new ConflictException(_m("We're sorry, but the listing has expired. You can't contact the seller"));
         }
         // Contact only reaches the listing's own seller, so its default limit is looser.
