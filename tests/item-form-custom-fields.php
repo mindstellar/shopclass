@@ -207,7 +207,10 @@ foreach (['TEXT', 'TEXTAREA', 'DROPDOWN', 'RADIO', 'CHECKBOX', 'DATE', 'DATEINTE
     check($type . ': the label ends with the mark', str_contains($html, $mark), $html);
 }
 check('an optional field has no mark', !str_contains($render($field(40, 'opt', 'TEXT')), 'osc-required'));
-check('the search form shows no mark', !str_contains($render($field(41, 'find', 'TEXT', '', ['b_required' => 1]), true), 'osc-required'));
+$searched = $render($field(41, 'find', 'CHECKBOX', '', ['b_required' => 1]), true);
+check('the search form shows no mark', str_contains($searched, 'for="meta_find"') && !str_contains($searched, 'osc-required'), $searched);
+$named = $render($field(42, 'tagged', 'TEXT', '', ['b_required' => 1, 's_name' => '<b>Name</b>']));
+check('the label text stays escaped beside the mark', str_contains($named, '&lt;b&gt;Name&lt;/b&gt; ' . $mark), $named);
 
 harness_section('the #plugin-hook wrapper');
 
