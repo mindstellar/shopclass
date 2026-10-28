@@ -31,8 +31,19 @@ visitors, or to give your team an admin language your visitors don't have.
 
 ## Setting the default
 
-The default language is set in **Settings → General**. It is what visitors
+The site default language is set in **Settings → General**. It is what visitors
 see before they choose, and what content falls back to.
+
+**Settings › Languages** marks the **Site default** and the **Admin default**.
+Use **Make site default** or **Make admin default** on a language's row to
+change them. The admin default is the language the admin login offers first.
+
+Content language tabs list the site default first and open on it. Pages,
+e-mail templates and custom fields get a tab for each language that is on for
+the website.
+
+If the default is empty or its language folder is missing, Shopclass uses
+en_US, else the first language that is on.
 
 ## What you have to translate yourself
 
@@ -43,7 +54,7 @@ not translated by anyone but you:
 |---|---|
 | Category names | **Listings → Categories**: one name per active language |
 | Static pages | **Pages**: title and body per language |
-| Field and form labels | **Forms**: the admin requires a name for the default language |
+| Field and form labels | **Forms**: the admin requires a name for the site default language |
 | E-mail templates | **Settings → Email templates**: per language |
 
 :::caution[An empty translation shows as empty]

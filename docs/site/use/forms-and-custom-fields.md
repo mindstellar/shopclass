@@ -73,8 +73,8 @@ Editing a field opens its settings beside the form:
 
 ![A field's editor: locale tabs for its name, a type picker, a required checkbox, placeholder, help text, default value, a conditional-logic selector and an advanced options section.](../images/forms/forms-field-editor.png)
 
-- **Name** has a tab per active language. The default language is
-  required; see [languages](/docs/use/languages/).
+- **Name** has a tab per active language. The site default language
+  is required; see [languages](/docs/use/languages/).
 - **This field is required** makes it mandatory on the publish form.
 - **Placeholder**, **Help text** and **Default value** turn a bare input
   into one a seller can answer without guessing.
