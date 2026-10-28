@@ -18,6 +18,7 @@ oc-content/debug*.log
 oc-content/queries.log
 oc-content/explain_queries.log
 oc-content/uploads/*
+oc-content/custom-languages/
 
 # themes
 oc-content/themes/*
