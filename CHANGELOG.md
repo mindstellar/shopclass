@@ -105,7 +105,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - One listing's rating summary and stars come from one query.
 
 ### Fixed
-- Docker keeps downloaded languages across a redeploy: the compose files add an `oc-content` volume; languages downloaded before it must be downloaded again once.
+- Docker keeps downloaded languages across a redeploy.
 - A refused package or ship save keeps what was typed and marks the field.
 - A refused tax save stays under its own menu entry.
 - Goods refunds no longer say credits were taken back.
