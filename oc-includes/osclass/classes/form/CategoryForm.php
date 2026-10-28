@@ -228,7 +228,8 @@ class CategoryForm extends Form
     {
         $tabs    = array();
         $content = array();
-        $current_locale_code = osc_current_ui_locale();
+        $locales = \mindstellar\admin\ui\Field::siteFirst($locales);
+        $current_locale_code = \mindstellar\admin\ui\Field::openLocale(array_column($locales, 's_name', 'pk_c_code'));
         foreach ($locales as $locale) {
             $value         = isset($category['locale'][$locale['pk_c_code']])
                 ? $category['locale'][$locale['pk_c_code']]['s_name'] : '';

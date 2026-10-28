@@ -70,6 +70,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
 
 ### Changed
+- Content language tabs list the site's default language first and open on it, instead of the admin's own language.
 - Product form regrouped into sections; Location optional in shop mode with a store address fallback.
 - In shop mode a listing can be posted in a parent category, whatever the stored setting.
 - Searches ignore anything past 191 characters of a filter value, match a NUMBER or DATE range only on numeric values, and match a stored value without its leading spaces.

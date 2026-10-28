@@ -174,6 +174,12 @@ function unlisten(): void
     $GLOBALS['filters'] = array();
 }
 
+/** The site's default language; a test sets $GLOBALS['__siteLocale']. */
+function osc_language()
+{
+    return $GLOBALS['__siteLocale'] ?? '';
+}
+
 /** Validate::localeCode() checks membership of the enabled list, not only its width. */
 function osc_get_locales()
 {
@@ -889,6 +895,54 @@ pin(
     array(substr_count($other, 'data-osc-tab-mine'), array_values(translate_widgets($other)[0]['panels']))
 );
 
+// The site's default language opens and comes first; the admin's own is the fallback.
+$field = \mindstellar\admin\ui\Field::class;
+$GLOBALS['__adminLocale'] = 'es_ES';
+$GLOBALS['__siteLocale']  = 'en_US';
+$site = render_settings_page('multi');
+$GLOBALS['__siteLocale']  = 'es_ES';
+$siteEs = render_settings_page('multi');
+unset($GLOBALS['__adminLocale'], $GLOBALS['__siteLocale']);
+pin(
+    'the site default opens even when the admin language is another',
+    array(true, false),
+    array_values(translate_widgets($site)[0]['panels'])
+);
+pin(
+    'the site default tab comes first',
+    array('#field-s_title-es_ES', '#field-s_title-en_US'),
+    translate_widgets($siteEs)[0]['tabs']
+);
+pin(
+    'openLocale: site default, else admin, else first',
+    array('en_US', 'es_ES', 'fr_FR'),
+    (static function () use ($field) {
+        $list = array('fr_FR' => 'F', 'es_ES' => 'E', 'en_US' => 'N');
+        $GLOBALS['__siteLocale']  = 'en_US';
+        $GLOBALS['__adminLocale'] = 'es_ES';
+        $a = $field::openLocale($list);
+        $GLOBALS['__siteLocale'] = 'de_DE';
+        $b = $field::openLocale($list);
+        $GLOBALS['__adminLocale'] = 'pt_PT';
+        $c = $field::openLocale($list);
+        unset($GLOBALS['__adminLocale'], $GLOBALS['__siteLocale']);
+
+        return array($a, $b, $c);
+    })()
+);
+$GLOBALS['__siteLocale'] = 'es_ES';
+pin(
+    'siteFirst orders a code map and a list of rows, keeping the rest in order',
+    array(array('es_ES', 'en_US', 'fr_FR'), array('es_ES', 'en_US', 'fr_FR')),
+    array(
+        array_keys($field::siteFirst(array('en_US' => 'N', 'es_ES' => 'E', 'fr_FR' => 'F'))),
+        array_column($field::siteFirst(array(
+            array('pk_c_code' => 'en_US'), array('pk_c_code' => 'es_ES'), array('pk_c_code' => 'fr_FR'),
+        )), 'pk_c_code'),
+    )
+);
+
+unset($GLOBALS['__siteLocale']);
 $panelIds = array_merge(...array_map(static function ($widget) {
     return array_keys($widget['panels']);
 }, $widgets));

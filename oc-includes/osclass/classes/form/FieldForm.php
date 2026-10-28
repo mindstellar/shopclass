@@ -964,8 +964,8 @@ class FieldForm extends Form
      */
     public static function multiLangTitle($field)
     {
-        $locales       = osc_get_admin_locales();
-        $currentLocale = osc_current_admin_locale();
+        $locales       = PageForm::siteLocales();
+        $currentLocale = \mindstellar\admin\ui\Field::openLocale(array_column($locales, 's_name', 'pk_c_code'));
 
         echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
         echo '<ul>';

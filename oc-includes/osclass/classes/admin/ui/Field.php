@@ -463,6 +463,7 @@ class Field
         // strips on one screen can disagree, and a title in one language beside a body in
         // another is a mistake nothing on screen explains.
         $strip   = $tabs && ($spec['tabs'] ?? true);
+        $locales = self::siteFirst($locales);
         $open    = self::openLocale($locales);
 
         echo '<div class="field-translate">';
@@ -620,20 +621,20 @@ class Field
     }
 
     /**
-     * One tab of a locale strip. The admin's own language opens first by default, and its
-     * tab carries a marker saying so.
+     * One tab of a locale strip. The site's default language opens by default, and the
+     * admin's own language tab carries a marker saying so.
      *
      * @param string      $panel   the id of the panel the tab shows
      * @param string      $label   the locale's name
      * @param string      $code    the locale's code
-     * @param string|null $current the locale that opens first; the admin's own by default
+     * @param string|null $current the locale that opens first; the site default (else the admin's own) by default
      * @param string      $attrs   extra attributes for the <li>, already escaped
      *
      * @return string
      */
     public static function localeTab($panel, $label, $code, $current = null, $attrs = '')
     {
-        $current = $current ?? self::adminLocale();
+        $current = $current ?? (self::siteLocale() !== '' ? self::siteLocale() : self::adminLocale());
         $opens   = (string)$code === (string)$current;
         $marker  = '';
         if ((string)$code === self::adminLocale() && defined('OC_ADMIN') && OC_ADMIN) {
@@ -646,8 +647,8 @@ class Field
     }
 
     /**
-     * The locale a translated field opens on: the admin's own when the field offers it,
-     * otherwise the first one.
+     * The locale a translated field opens on: the site's default when the field offers it,
+     * else the admin's own, else the first one.
      *
      * @param array<string,string> $locales code => locale name
      *
@@ -655,9 +656,47 @@ class Field
      */
     public static function openLocale(array $locales)
     {
-        $admin = self::adminLocale();
+        foreach (array(self::siteLocale(), self::adminLocale()) as $code) {
+            if ($code !== '' && array_key_exists($code, $locales)) {
+                return $code;
+            }
+        }
 
-        return array_key_exists($admin, $locales) ? $admin : (string)array_key_first($locales);
+        return (string)array_key_first($locales);
+    }
+
+    /**
+     * A locale list with the site's default language first and the rest in their order.
+     * Takes a code => name map or a list of locale rows (with 'pk_c_code').
+     *
+     * @param array<int|string,mixed> $locales
+     *
+     * @return array<int|string,mixed>
+     */
+    public static function siteFirst(array $locales)
+    {
+        $site  = self::siteLocale();
+        $first = array();
+        $rest  = array();
+        foreach ($locales as $key => $value) {
+            $code = is_array($value) ? (string)($value['pk_c_code'] ?? $key) : (string)$key;
+            if ($site !== '' && $code === $site) {
+                $first[$key] = $value;
+            } else {
+                $rest[$key] = $value;
+            }
+        }
+        if (array_is_list($locales)) {
+            return array_merge($first, $rest);
+        }
+
+        return $first + $rest;
+    }
+
+    /** The site's default language, or '' when unknown. */
+    private static function siteLocale()
+    {
+        return function_exists('osc_language') ? (string)osc_language() : '';
     }
 
     /** The admin's own language, or '' outside the admin. */

@@ -32,10 +32,6 @@ class Item extends FormInputs
      */
     private $Session;
     /**
-     * @var string
-     */
-    private $adminLocaleCode;
-    /**
      * @var array
      */
     private $userLocales;
@@ -48,8 +44,7 @@ class Item extends FormInputs
     {
         parent::__construct($escape, $sanitize);
         $this->Session           = Session::getInstance();
-        $this->adminLocaleCode   = osc_current_admin_locale();
-        $this->userLocales       = osc_get_locales();
+        $this->userLocales       = \mindstellar\admin\ui\Field::siteFirst(osc_get_locales());
     }
 
     /**
@@ -79,13 +74,19 @@ class Item extends FormInputs
         echo '<div class="mb-3" id="multiLangTabsContent">';
 
         foreach ($this->userLocales as $locale) {
-            $hidden = ($locale['pk_c_code'] === $this->adminLocaleCode) ? '' : ' hidden';
+            $hidden = ($locale['pk_c_code'] === $this->openLocaleCode()) ? '' : ' hidden';
             echo '<div id="' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
             $this->printItemTitleInput($locale, $item);
             $this->printItemDescriptionInput($locale, $item);
             echo '</div>';
         }
         echo '</div>';
+    }
+
+    /** The locale the tabs open on: the site default, else the admin's own, else the first. */
+    private function openLocaleCode(): string
+    {
+        return \mindstellar\admin\ui\Field::openLocale(array_column($this->userLocales, 's_name', 'pk_c_code'));
     }
 
     /**
@@ -103,7 +104,7 @@ class Item extends FormInputs
                     $locale['pk_c_code'],
                     $locale['s_name'],
                     $locale['pk_c_code'],
-                    $this->adminLocaleCode
+                    $this->openLocaleCode()
                 );
             }
             echo '</ul>';
