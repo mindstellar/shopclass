@@ -93,8 +93,8 @@ class PageForm extends Form
         }
         echo '<div class="mb-3" id="multiLangTabsContent">';
 
-        $locales = self::siteLocales();
-        $open    = \mindstellar\admin\ui\Field::openLocale(array_column($locales, 's_name', 'pk_c_code'));
+        $locales = \mindstellar\admin\ui\Field::siteLocales();
+        $open    = \mindstellar\admin\ui\Field::openLocaleOf($locales);
         foreach ($locales as $locale) {
             $hidden = ($locale['pk_c_code'] === $open) ? '' : ' hidden';
             echo '<div id="' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
@@ -106,25 +106,15 @@ class PageForm extends Form
     }
 
     /**
-     * The languages on for the website, site default first. Pages hold site content.
-     *
-     * @return array<int,array<string,mixed>>
-     */
-    public static function siteLocales()
-    {
-        return \mindstellar\admin\ui\Field::siteFirst(osc_get_locales());
-    }
-
-    /**
      * Print MultiLang Tab
      *
      * @return void
      */
     public static function printMultiLangTab()
     {
-        $locales = self::siteLocales();
+        $locales = \mindstellar\admin\ui\Field::siteLocales();
         if (count($locales) > 1) {
-            $open = \mindstellar\admin\ui\Field::openLocale(array_column($locales, 's_name', 'pk_c_code'));
+            $open = \mindstellar\admin\ui\Field::openLocaleOf($locales);
             echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
             echo '<ul>';
             foreach ($locales as $locale) {

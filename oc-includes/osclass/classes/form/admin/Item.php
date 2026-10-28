@@ -44,7 +44,7 @@ class Item extends FormInputs
     {
         parent::__construct($escape, $sanitize);
         $this->Session           = Session::getInstance();
-        $this->userLocales       = \mindstellar\admin\ui\Field::siteFirst(osc_get_locales());
+        $this->userLocales       = \mindstellar\admin\ui\Field::siteLocales();
     }
 
     /**
@@ -86,7 +86,7 @@ class Item extends FormInputs
     /** The locale the tabs open on: the site default, else the admin's own, else the first. */
     private function openLocaleCode(): string
     {
-        return \mindstellar\admin\ui\Field::openLocale(array_column($this->userLocales, 's_name', 'pk_c_code'));
+        return \mindstellar\admin\ui\Field::openLocaleOf($this->userLocales);
     }
 
     /**

@@ -226,7 +226,7 @@ class UserForm extends Form
     public static function multilanguage_info($locales, $user = null)
     {
         $locales = \mindstellar\admin\ui\Field::siteFirst($locales);
-        $open    = \mindstellar\admin\ui\Field::openLocale(array_column($locales, 's_name', 'pk_c_code'));
+        $open    = \mindstellar\admin\ui\Field::openLocaleOf($locales);
         echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
         if (count($locales) > 1) {
             echo '<ul>';

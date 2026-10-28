@@ -634,7 +634,8 @@ class Field
      */
     public static function localeTab($panel, $label, $code, $current = null, $attrs = '')
     {
-        $current = $current ?? (self::siteLocale() !== '' ? self::siteLocale() : self::adminLocale());
+        $site    = self::siteLocale();
+        $current = $current ?? ($site !== '' ? $site : self::adminLocale());
         $opens   = (string)$code === (string)$current;
         $marker  = '';
         if ((string)$code === self::adminLocale() && defined('OC_ADMIN') && OC_ADMIN) {
@@ -663,6 +664,18 @@ class Field
         }
 
         return (string)array_key_first($locales);
+    }
+
+    /** openLocale() for a list of locale rows (with 'pk_c_code' and 's_name'). */
+    public static function openLocaleOf(array $localeRows): string
+    {
+        return self::openLocale(array_column($localeRows, 's_name', 'pk_c_code'));
+    }
+
+    /** The languages on for the website, site default first. */
+    public static function siteLocales(): array
+    {
+        return self::siteFirst(osc_get_locales());
     }
 
     /**

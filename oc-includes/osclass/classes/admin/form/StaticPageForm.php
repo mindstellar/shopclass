@@ -83,7 +83,7 @@ final class StaticPageForm
         }
 
         $locales = array();
-        foreach (\PageForm::siteLocales() as $locale) {
+        foreach (\mindstellar\admin\ui\Field::siteLocales() as $locale) {
             $locales[(string)$locale['pk_c_code']] = (string)$locale['s_name'];
         }
 
@@ -146,7 +146,7 @@ final class StaticPageForm
             return;
         }
         $titles = array();
-        foreach (\PageForm::siteLocales() as $locale) {
+        foreach (\mindstellar\admin\ui\Field::siteLocales() as $locale) {
             $titles[(string)$locale['pk_c_code']] = Params::getParamString($locale['pk_c_code'] . '#s_title');
         }
         $title = trim(strip_tags($titles[osc_language()] ?? ''));
@@ -194,7 +194,7 @@ final class StaticPageForm
     public static function emptyTitles(array $titles): array
     {
         $errors = array();
-        foreach (\PageForm::siteLocales() as $locale) {
+        foreach (\mindstellar\admin\ui\Field::siteLocales() as $locale) {
             $code = $locale['pk_c_code'];
             if (trim((string)($titles[$code] ?? '')) === '') {
                 $errors[$code] = sprintf(

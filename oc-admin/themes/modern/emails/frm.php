@@ -33,7 +33,7 @@ $emailName      = (string)($email['s_internal_name'] ?? '');
 $emailLocales  = array();
 $emailSubjects = array();
 $emailBodies   = array();
-foreach (PageForm::siteLocales() as $emailLocale) {
+foreach (\mindstellar\admin\ui\Field::siteLocales() as $emailLocale) {
     $code                 = $emailLocale['pk_c_code'];
     $emailLocales[$code]  = $emailLocale['s_name'];
     $emailSubjects[$code] = $emailSubmitted[$code]['s_title'] ?? $email['locale'][$code]['s_title'] ?? '';

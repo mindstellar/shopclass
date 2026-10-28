@@ -112,7 +112,7 @@ $pageInternalName = $page['s_internal_name'] ?? '';
 if (Session::getInstance()->_getForm('s_internal_name') != '') {
     $pageInternalName = Session::getInstance()->_getForm('s_internal_name');
 }
-foreach (PageForm::siteLocales() as $pageLocale) {
+foreach (\mindstellar\admin\ui\Field::siteLocales() as $pageLocale) {
     $code                = $pageLocale['pk_c_code'];
     $pageLocales[$code]  = $pageLocale['s_name'];
     // Named before the filter runs, because the hook reference is generated from these
