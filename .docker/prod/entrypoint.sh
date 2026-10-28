@@ -308,11 +308,13 @@ chown -R www-data:www-data /application/oc-content/languages 2>/dev/null || true
 # ships a newer version of, and never touch anything installed through the
 # market (see PackageReconciler). A no-op unless OSC_BUNDLED_CONTENT_PATH points
 # at the pristine copy this image bakes outside the volume.
-echo "entrypoint: reconciling bundled plugins/themes..."
+echo "entrypoint: reconciling bundled plugins, themes and languages..."
 if ! php "$CLI" package:reconcile; then
     echo "entrypoint: package:reconcile failed" >&2
     exit 1
 fi
+# Language files the reconcile step wrote belong to root; the site updates them as www-data.
+chown -R www-data:www-data /application/oc-content/languages 2>/dev/null || true
 
 # Apply any pending schema migrations (e.g. after pulling a newer image). No-op on
 # a fresh install (migrations were baselined) and on an up-to-date install.

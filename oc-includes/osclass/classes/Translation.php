@@ -106,6 +106,9 @@ class Translation
                     $this->_load($plugin_file, $domain);
                 }
             }
+
+            // Last, so a catalogue a plugin loads here replaces the texts above.
+            osc_run_hook('translation_load_after', $this, $locale);
         } else {
             $core_file = osc_translations_path() . osc_current_admin_locale() . '/core.mo';
             $this->_load($core_file, 'core');

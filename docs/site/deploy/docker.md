@@ -96,10 +96,11 @@ can run.
 
 ## Volumes
 
-Four paths must survive a redeploy:
+These paths must survive a redeploy:
 
 | Path | Holds |
 |---|---|
+| `oc-content` | Everything below that has no volume of its own, such as downloaded languages |
 | `oc-content/uploads` | Listing photos |
 | `oc-content/downloads` | Files served by download-type plugins |
 | `oc-content/plugins` | Plugins installed through the market |
@@ -108,6 +109,12 @@ Four paths must survive a redeploy:
 The last two matter more than they look. Without them, a package installed from
 the admin lives in the container's writable layer and is discarded on the next
 redeploy.
+
+The other four volumes sit inside the `oc-content` volume and keep their data. A
+language downloaded before the `oc-content` volume existed is lost on the first
+redeploy; download it again in Settings › Languages.
+On each start the image also refreshes the language files it ships, such as `en_US`,
+unless the site changed them.
 
 :::caution[Upgrading from an image released before the plugin/theme volumes existed]
 Copy `oc-content/plugins` and `oc-content/themes` out of the running container
@@ -133,7 +140,8 @@ survives a redeploy.
 On every start, the entrypoint (the script the container runs on startup)
 compares the volume against the packages baked into the new image: it installs
 any that are missing and refreshes any the image ships a newer version of,
-**without ever touching a package installed through the market**. You can run
+**without ever touching a package installed through the market**. It treats the
+language files the image ships the same way, and keeps any the site changed. You can run
 that step yourself:
 
 ```bash
