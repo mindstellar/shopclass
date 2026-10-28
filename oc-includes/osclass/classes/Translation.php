@@ -1,6 +1,8 @@
 <?php
 
 use Gettext\Translator;
+use mindstellar\boot\CoreServices;
+use mindstellar\language\event\TranslationLoaded;
 
 if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
@@ -106,6 +108,9 @@ class Translation
                     $this->_load($plugin_file, $domain);
                 }
             }
+
+            // Last, so a catalogue a plugin loads here replaces the texts above.
+            CoreServices::dispatcher()->dispatch(new TranslationLoaded($this, $locale));
         } else {
             $core_file = osc_translations_path() . osc_current_admin_locale() . '/core.mo';
             $this->_load($core_file, 'core');

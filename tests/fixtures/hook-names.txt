@@ -282,6 +282,7 @@ action settings_page_after_group
 action settings_page_saved
 action show_item
 action theme_activate
+action translation_load_after
 action uploaded_file
 action uploaded_resource
 action user_avatar_form

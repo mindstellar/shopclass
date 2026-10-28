@@ -208,6 +208,7 @@ final class CoreServices
             \mindstellar\listing\event\VariantPriceChanged::class,
             \mindstellar\listing\event\VariantStockChanged::class,
             \mindstellar\widgets\event\CustomiserPublished::class,
+            \mindstellar\language\event\TranslationLoaded::class,
         ];
     }
 }
