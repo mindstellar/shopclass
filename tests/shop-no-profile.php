@@ -135,6 +135,26 @@ harness_section('sitemap');
 $sitemap = harness_code_only((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Sitemap.php'));
 check('the sitemap builds no profile url', !str_contains($sitemap, 'profile'));
 
+harness_section('API: GET users/{id} in shop mode');
+
+$visible = new ReflectionMethod(\mindstellar\api\controller\UsersController::class, 'visible');
+$visible->setAccessible(true);
+$seen = static function (array $user, \mindstellar\apikey\Credential $who, bool $profiles) use ($visible): bool {
+    try {
+        $visible->invoke(null, $user, $who, $profiles);
+    } catch (\mindstellar\api\ProblemException $e) {
+        return false;
+    }
+
+    return true;
+};
+$live  = ['pk_i_id' => 7, 'b_enabled' => 1, 'b_active' => 1];
+$guest = \mindstellar\apikey\Credential::anonymous(['listings:read']);
+$self  = new \mindstellar\apikey\Credential(\mindstellar\apikey\CredentialKind::USER, ['listings:read'], 7);
+check('classifieds: a visitor sees a live user', $seen($live, $guest, true));
+check('shop mode: a visitor gets 404 for a live user', !$seen($live, $guest, false));
+check('shop mode: the user still sees themself', $seen($live, $self, false));
+
 exit(harness_result());
 
 /* file end: ./tests/shop-no-profile.php */

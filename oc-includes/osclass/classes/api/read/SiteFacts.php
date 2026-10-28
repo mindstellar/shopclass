@@ -33,7 +33,8 @@ final class SiteFacts
         private int $maxLimit = 50,
         private bool $keepOriginal = false,
         private bool $hidePhone = false,
-        private bool $contactNeedsSignIn = false
+        private bool $contactNeedsSignIn = false,
+        private bool $publicProfiles = true
     ) {
     }
 
@@ -58,7 +59,8 @@ final class SiteFacts
             $max,
             (bool) osc_keep_original_image(),
             $settings->hidePhone(),
-            (bool) osc_reg_user_can_contact()
+            (bool) osc_reg_user_can_contact(),
+            !osc_is_shop_mode()
         );
     }
 
@@ -95,6 +97,12 @@ final class SiteFacts
     public function usersEnabled(): bool
     {
         return $this->usersEnabled;
+    }
+
+    /** False in shop mode: shoppers have no public profile. */
+    public function publicProfiles(): bool
+    {
+        return $this->publicProfiles;
     }
 
     public function commentsEnabled(): bool

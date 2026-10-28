@@ -25,7 +25,7 @@ use mindstellar\user\UserStore;
 /**
  * `GET /users/{id}` and `GET /users/{id}/listings`. A disabled or unconfirmed account is 404
  * except to the user and to admin keys with `admin:users`; so is every user when the site
- * has no accounts.
+ * has no accounts, and in shop mode, which has no public profiles.
  */
 final class UsersController
 {
@@ -38,7 +38,7 @@ final class UsersController
         $credential = $call->credential();
         $context = $this->api->context($call->request(), $credential, 'user', UserSerializer::MEMBERS);
         $id      = $call->intArg();
-        $user    = self::visible($this->api->facts()->usersEnabled() ? $this->api->userQuery()->find($id) : null, $credential);
+        $user    = self::visible($this->api->facts()->usersEnabled() ? $this->api->userQuery()->find($id) : null, $credential, $this->api->facts()->publicProfiles());
 
         return Response::ok($this->api->userSerializer()->one($user, $context));
     }
@@ -47,22 +47,23 @@ final class UsersController
     {
         $credential = $call->credential();
         $id = $call->intArg();
-        self::visible($this->api->facts()->usersEnabled() ? $this->api->userQuery()->statusRow($id) : null, $credential);
+        self::visible($this->api->facts()->usersEnabled() ? $this->api->userQuery()->statusRow($id) : null, $credential, $this->api->facts()->publicProfiles());
 
         return $this->api->listingSearch()->run($call->request(), $credential, $id, 'users/' . $id . '/listings');
     }
 
     /**
-     * The user when the caller may see them: a live account, or one the caller may view in full.
+     * The user when the caller may see them: a live account (when the site has public profiles),
+     * or one the caller may view in full.
      *
      * @param array<string,mixed>|null $user a t_user row with pk_i_id, b_enabled and b_active
      *
      * @return array<string,mixed>
      * @throws ProblemException 404
      */
-    private static function visible(?array $user, Credential $credential): array
+    private static function visible(?array $user, Credential $credential, bool $publicProfiles = true): array
     {
-        $seen = $user !== null && (UserStore::isLive($user)
+        $seen = $user !== null && (($publicProfiles && UserStore::isLive($user))
             || ViewContext::viewOf($credential, Format::int($user['pk_i_id'] ?? 0), ViewContext::USERS_SCOPE) !== ViewContext::PUBLIC);
 
         return ProblemException::found($seen ? $user : null, 'user');

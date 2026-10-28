@@ -80,6 +80,7 @@ None.
 Changed in v1 on 2026-10-28.
 
 - In shop mode a user's and a listing seller's `url` is `""`, since a shop has no public profile.
+- In shop mode `GET /users/{id}` and `GET /users/{id}/listings` answer `404` except to the user and to admin keys with `admin:users`.
 
 ### v1: order bank details and open-order limit
 
