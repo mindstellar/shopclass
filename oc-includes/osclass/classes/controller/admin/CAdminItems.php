@@ -713,7 +713,7 @@ class CAdminItems extends AdminSecBaseModel
         $this->_exportVariableToView('itemProduct', ListingInput::productForm((int) ($item['pk_i_id'] ?? 0)));
         $this->_exportVariableToView('itemActions', $this->itemStateMoves($item));
 
-        $expired = osc_isExpired($item['dt_expiration'] ?? '');
+        $expired = ListingStatus::isExpired($item);
         $this->_exportVariableToView('itemFacts', array(
             // A held listing was never published, whatever dt_pub_date says.
             'published' => ListingStatus::isHeld($item) ? __('Waiting for payment')
@@ -764,7 +764,7 @@ class CAdminItems extends AdminSecBaseModel
         if (!empty($item['b_premium'])) {
             $pills[] = array('premium', __('Premium'));
         }
-        if (osc_isExpired($item['dt_expiration'] ?? '')) {
+        if (ListingStatus::isExpired($item)) {
             $pills[] = array('expired', __('Expired'));
         }
 
