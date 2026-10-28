@@ -74,6 +74,12 @@ Your changes are saved in `oc-content/plugin-data/translator/`. They survive
 core, theme and plugin updates. Keep that folder in your backups (see
 [backups and maintenance](/docs/use/backups-and-maintenance/)).
 
+**Import and export** on that screen uploads a `.po` file: **Add** merges it
+into your changes, **Replace** keeps only the texts in the file. **Undo last
+upload** puts your texts back once, also after **Remove all my changes**.
+**Export full** downloads the whole translation as `.po`; **Export all**
+gives every source as one `.zip`.
+
 Category names, pages, form labels and e-mail templates are content. They
 keep their own screens, as in the table above.
 
