@@ -126,7 +126,7 @@ php oc-cli.php help          # list every command
 | `db:upgrade` | Run pending migrations after an update. |
 | `db:doctor [--strict]` | Report where the database differs from what ShopClass declares, and whether the site is ready for strict SQL mode. Changes nothing. |
 | `db:repair [--dry-run]` | Add missing tables, columns, indexes and foreign keys, and correct column types and defaults. `--dry-run` only reports. |
-| `package:reconcile` | Install/refresh bundled plugins & themes onto a persistent `oc-content`. A no-op outside a container image. |
+| `package:reconcile` | Install/refresh bundled plugins, themes and language files onto a persistent `oc-content`. A no-op outside a container image. |
 | `cache:flush` | Flush the object cache. |
 | `sitemap:warm` | Pre-generate the XML sitemap into the cache. |
 | `user:create-admin --user= --email= [--password=] [--name=]` | Create an admin account. A password is generated and printed when `--password` is omitted. |
@@ -276,7 +276,8 @@ installed or updated from the admin market (or `oc-cli.php market:install` /
 `market:update`) survives a redeploy. On every start, the entrypoint reconciles that
 volume against the bundled packages baked into the new image. It installs any that
 are missing and refreshes any the image ships a newer version of, without ever
-touching a package installed through the market.
+touching a package installed through the market. It does the same for the language
+files the image ships, and keeps any the site changed.
 
 > **Upgrading from an image released before those two volumes existed:** copy
 > `oc-content/plugins` and `oc-content/themes` out of the running container before you
