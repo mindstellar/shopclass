@@ -141,8 +141,7 @@ final class FrontController
             \mindstellar\apikey\ApiAccess::maintenance();
         }
 
-        header('HTTP/1.1 503 Service Temporarily Unavailable');
-        header('Status: 503 Service Temporarily Unavailable');
+        http_response_code(503);
         header('Retry-After: 900');
         header('Cache-Control: no-store');
 

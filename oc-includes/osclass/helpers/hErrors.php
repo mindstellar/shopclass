@@ -54,7 +54,9 @@ function osc_die($title, $message, $options = array())
     );
 
     if (!headers_sent()) {
-        http_response_code(isset($options['status']) ? (int)$options['status'] : 500);
+        // A status line, not http_response_code(): PHP 8.6 warns when that follows an earlier header('HTTP/...').
+        $status = isset($options['status']) ? (int)$options['status'] : 500;
+        header(($_SERVER['SERVER_PROTOCOL'] ?? 'HTTP/1.1') . ' ' . $status, true, $status);
     }
     while (ob_get_level() > 0) {
         @ob_end_clean();
