@@ -166,6 +166,12 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `GET /cart/quote` returns `open_orders` for a signed-in buyer.
 - A refused listing, contact or send-to-friend form marks each wrong field with its own message.
 
+## Shopclass 7.0.7
+
+### Fixed
+- The contact form no longer says a premium listing past its date has expired; premium listings stay live.
+- The admin listing screen no longer marks a premium listing past its date as expired.
+
 ## Shopclass 7.0.6
 
 Docker sites keep downloaded languages across a redeploy, and plugins can load their own texts on top of the site's texts. If you run Docker with your own compose file, add the `oc-content` volume shown in the Docker guide.
