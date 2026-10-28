@@ -270,8 +270,8 @@ one instance can run.
 updates come from deploying a newer image tag; the container migrates its own
 schema on start, and the in-app core updater is off (`OSC_DISABLE_SELF_UPDATE=1`) so
 it can't write over itself only to lose the write on the next redeploy. Plugins and
-themes are different: `docker-compose.prod.yml` mounts `oc-content/plugins` and
-`oc-content/themes` as named volumes alongside `uploads`/`downloads`, so a package
+themes are different: `docker-compose.prod.yml` mounts `oc-content` as a named volume, with
+`plugins`, `themes`, `uploads` and `downloads` as their own volumes inside it, so a package
 installed or updated from the admin market (or `oc-cli.php market:install` /
 `market:update`) survives a redeploy. On every start, the entrypoint reconciles that
 volume against the bundled packages baked into the new image. It installs any that
