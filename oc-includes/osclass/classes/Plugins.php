@@ -105,7 +105,7 @@ class Plugins
         if (isset(self::$installed)) {
             return self::$installed;
         }
-        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
+        $plugins_list = self::storedList(osc_installed_plugins());
         if (is_array($plugins_list)) {
             self::$installed = $plugins_list;
 
@@ -144,8 +144,7 @@ class Plugins
         if (isset(self::$enabled)) {
             return self::$enabled;
         }
-        $stored       = (string) osc_active_plugins();
-        $plugins_list = $stored === '' ? array() : unserialize($stored, array('allowed_classes' => false));
+        $plugins_list = self::storedList(osc_active_plugins());
         if (is_array($plugins_list)) {
             self::$enabled = $plugins_list;
 
@@ -431,7 +430,7 @@ class Plugins
         osc_run_hook('before_plugin_install');
         self::resetOpcache();
 
-        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
+        $plugins_list = self::storedList(osc_installed_plugins());
 
         if (is_array($plugins_list) && in_array($path, $plugins_list)) {
             return array('error_code' => 'error_installed');
@@ -450,7 +449,7 @@ class Plugins
         }
 
         // A crash in an earlier install can leave the plugin active but not installed; finish that install.
-        $active = unserialize(osc_active_plugins(), array('allowed_classes' => false));
+        $active = self::storedList(osc_active_plugins());
         if (!(is_array($active) && in_array($path, $active, true)) && !self::activate($path)) {
             return array('error_code' => '');
         }
@@ -538,8 +537,7 @@ class Plugins
         osc_run_hook('before_plugin_activate');
         self::resetOpcache();
 
-        $stored       = (string) osc_active_plugins();
-        $plugins_list = $stored === '' ? array() : unserialize($stored, array('allowed_classes' => false));
+        $plugins_list = self::storedList(osc_active_plugins());
 
         if (is_array($plugins_list) && in_array($path, $plugins_list)) {
             return false;
@@ -633,6 +631,18 @@ class Plugins
         self::runAs($kind, $slug, static function () use ($file): void {
             include_once $file;
         });
+    }
+
+    /**
+     * Reads a stored plugin list; an empty preference is an empty list, not an unserialize warning.
+     *
+     * @return array|false
+     */
+    private static function storedList($stored)
+    {
+        $stored = (string) $stored;
+
+        return $stored === '' ? array() : unserialize($stored, array('allowed_classes' => false));
     }
 
     /**
@@ -736,10 +746,10 @@ class Plugins
         osc_run_hook('before_plugin_uninstall');
         self::resetOpcache();
 
-        $plugins_list = unserialize(osc_installed_plugins(), array('allowed_classes' => false));
+        $plugins_list = self::storedList(osc_installed_plugins());
 
         $path = str_replace(PLUGINS_PATH, '', $path);
-        if (!is_array($plugins_list)) {
+        if (!is_array($plugins_list) || $plugins_list === array()) {
             return false;
         }
 
@@ -780,8 +790,7 @@ class Plugins
         osc_run_hook('before_plugin_deactivate');
         self::resetOpcache();
 
-        $stored       = (string) osc_active_plugins();
-        $plugins_list = $stored === '' ? array() : unserialize($stored, array('allowed_classes' => false));
+        $plugins_list = self::storedList(osc_active_plugins());
 
         $path = str_replace(osc_plugins_path(), '', $path);
         // check if there is some plugin enabled
@@ -869,8 +878,7 @@ class Plugins
     {
         $plugin = str_replace(PLUGINS_PATH, '', $path);
         if (stripos($plugin, '.php') === false) {
-            $stored       = (string) osc_active_plugins();
-        $plugins_list = $stored === '' ? array() : unserialize($stored, array('allowed_classes' => false));
+            $plugins_list = self::storedList(osc_active_plugins());
             if (is_array($plugins_list)) {
                 foreach ($plugins_list as $p) {
                     $data = self::getInfo($p);
