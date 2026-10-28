@@ -601,43 +601,29 @@ $full = render(static function () {
 emits('the header actions sit in osc-panel-actions', $full, '<span class="osc-panel-actions">');
 omits('the helper prints no widget-box class', $full . $plain . $section, 'widget-box');
 
-harness_section('the panel styles cover both class names');
+harness_section('the panel has its own look');
 
-// Plugins still write .widget-box markup by hand, so every rule for it must also style the
-// helper's .osc-panel classes the same way.
+// .widget-box is for dashboard and stats widgets; the helper's .osc-panel is a quiet block
+// with a plain heading, so it must not pick up the widget's card and title-bar rules.
 $css = (string)@file_get_contents(ABS_PATH . 'oc-admin/themes/modern/css/main.css');
 check('main.css is built', $css !== '');
 $css = (string)preg_replace('~/\*.*?\*/~s', '', $css);
-$map = static fn (string $sel): string => strtr($sel, array(
-    'widget-box-title-hint'    => 'osc-panel-hint',
-    'widget-box-title-actions' => 'osc-panel-actions',
-    'widget-box-title'         => 'osc-panel-head',
-    'widget-box-content'       => 'osc-panel-body',
-    'widget-box'               => 'osc-panel',
-));
-$rules = 0;
+$preludes = array();
 preg_match_all('~([^{};]+)\{~', $css, $m);
 foreach ($m[1] as $prelude) {
-    $prelude = trim((string)preg_replace('~\s+~', ' ', $prelude));
-    // Dashboard-only parts that the helper never prints.
-    if ($prelude[0] === '@' || !preg_match('~\.widget-box(?!-selector|-content-no-wrapp)~', $prelude)) {
-        continue;
-    }
-    $rules++;
-    $sels = array_map('trim', preg_split('~,(?![^(]*\))~', $prelude));
-    foreach ($sels as $sel) {
-        if (!str_contains($sel, 'widget-box')) {
-            continue;
-        }
-        // An :is() list carries both names inside itself.
-        $ok = in_array($map($sel), $sels, true)
-            || (preg_match('~:is\(([^)]*\.widget-box[^)]*)\)~', $sel, $is) === 1
-                && preg_match_all('~\.widget-box[\w-]*~', $is[1], $tok) > 0
-                && array_diff(array_map($map, $tok[0]), array_map('trim', explode(',', $is[1]))) === array());
-        check('"' . $sel . '" also styles ' . $map($sel), $ok, $prelude);
-    }
+    $preludes[] = trim((string)preg_replace('~\s+~', ' ', $prelude));
 }
-check('the widget-box rules were found', $rules > 10, (string)$rules);
+$shared = array_filter($preludes, static fn (string $p): bool => str_contains($p, '.widget-box')
+    && preg_match('~(^|,\s*)\.osc-panel(-head|-body)?(\s|,|$|:)~', $p) === 1);
+check('no widget-box rule also styles the panel', $shared === array(), implode(' | ', $shared));
+$panel = '';
+if (preg_match('~(?:^|\})\s*\.osc-panel\s*\{([^}]*)\}~', $css, $pm) === 1) {
+    $panel = $pm[1];
+}
+check('the panel has a hairline border from the rule token', str_contains($panel, 'var(--osc-rule)'), $panel);
+check('the panel is flat', !str_contains($panel, 'box-shadow'), $panel);
+// The editor's fold-out .osc-section keeps its own warm head on purpose.
+check('the plain head is not a card header bar', !preg_match('~(?:^|[},])\s*\.osc-panel-head\s*[,{][^}]*background~', $css));
 
 // The panel and page-head helpers have one copy, in core; the stock theme must not redefine them.
 $theme = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/parts/ui.php');

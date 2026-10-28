@@ -98,7 +98,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Core's own front pages use shared `.oe-*` classes (`.oe-panel`, `.oe-empty`, `.oe-pager`, `.oe-actions`) and the `osc_gui_field()`, `osc_gui_panel_open()`, `osc_gui_empty()` and `osc_gui_actions()` helpers; the old `.oe-bill-*` names still work.
 - Settings › Languages marks the site and admin default languages and can change either one.
 - When the saved site or admin default language is empty or its language folder is gone, core uses en_US, else the first language that is on.
-- `osc_admin_panel_open()` prints `osc-panel` classes in place of `widget-box`; the `widget-box` styles stay for plugins that write that markup.
+- `osc_admin_panel_open()` prints a light `osc-panel` block (plain heading, thin border) in place of the dashboard `widget-box`; `widget-box` stays for dashboard and stats widgets.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.
