@@ -83,7 +83,12 @@ add this to your server block and reload nginx:
 location ^~ /oc-content/downloads/ {
     deny all;
 }
+location ^~ /oc-content/plugin-data/ {
+    deny all;
+}
 ```
+
+Plugins keep their own files in `oc-content/plugin-data/`, which the second block closes.
 
 The Backup and restore page checks once a day and warns when the folder answers
 on the web.

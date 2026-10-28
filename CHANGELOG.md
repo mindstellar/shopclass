@@ -64,6 +64,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Browser notifications for new messages: an admin switch, then each user turns them on per browser from the messages page. The notification carries no text; the browser asks the site what is new.
 - Shoppers keep up to 10 delivery addresses under Account → Addresses and pick one at checkout; `account/addresses` in the REST API, and `POST account/orders` takes `address.id` or `address.save`.
 - Search takes `bbox=west,south,east,north` to keep results to a map area, when distance search is on. Themes read it with `osc_search_bbox()`, saved searches keep it, and `GET /listings` takes it too.
+- `osc_plugin_data_path()` gives each plugin a private folder in `oc-content/plugin-data/`.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.

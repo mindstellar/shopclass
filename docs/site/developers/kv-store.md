@@ -139,3 +139,10 @@ osc_add_hook(osc_plugin_path(__FILE__) . '_uninstall', static function () {
     osc_kv_delete_group('acme');
 });
 ```
+
+## Files
+
+For files, not rows, use `osc_plugin_data_path('acme')`. It returns
+`oc-content/plugin-data/acme/` with a trailing slash. Core makes the folder on first use and
+closes it to the web. It keeps its contents through plugin updates. It returns `''` when the slug
+is not a plain folder name or the folder cannot be made.

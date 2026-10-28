@@ -510,3 +510,30 @@ function osc_plugin_folder($file)
 {
     return dirname(osc_plugin_relative_path($file)) . '/';
 }
+
+/**
+ * A plugin's own folder for files it writes, `oc-content/plugin-data/<slug>/`. It is made on
+ * first use and closed to the web, and it survives plugin updates.
+ *
+ * @param string $slug The plugin's folder name, e.g. `translator`
+ *
+ * @return string The path with a trailing slash, or '' for a bad slug or a folder that cannot be made
+ */
+function osc_plugin_data_path(string $slug): string
+{
+    if (preg_match('/^[a-z0-9][a-z0-9_-]{0,63}$/iD', $slug) !== 1) {
+        return '';
+    }
+    $root = CONTENT_PATH . 'plugin-data/';
+    $dir  = $root . $slug . '/';
+    if (!is_dir($dir)) {
+        @mkdir($dir, 0755, true);
+    }
+    if (!is_dir($dir) || !is_writable($dir)) {
+        return '';
+    }
+    \mindstellar\utility\FileSystem::protectFolder($root);
+    \mindstellar\utility\FileSystem::protectFolder($dir);
+
+    return $dir;
+}

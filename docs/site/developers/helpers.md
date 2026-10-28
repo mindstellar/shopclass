@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1260 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -842,7 +842,7 @@ Core defines 1260 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_search_pagination()` | Gets the pagination links of search pagination |
 | `osc_show_pagination_admin($aData)` | Print the admin list pager: the range line, a "go to page" form and the page links. osc_admin_pagination() and osc_admin_pager() both draw through this. |
 
-### hPlugins (29)
+### hPlugins (30)
 
 `oc-includes/osclass/helpers/hPlugins.php`
 
@@ -863,6 +863,7 @@ Core defines 1260 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_plugin_check_update($plugin)` | **Deprecated since 6.3.0 use mindstellar\market\PackageIndex::forPlugins()-&gt;pendingUpdates() instead.** Check if there's a new version of the plugin |
 | `osc_plugin_configure_url($plugin)` | Gets plugin's configure url |
 | `osc_plugin_configure_view($plugin)` | Show the default configure view for plugins (attach them to categories) |
+| `osc_plugin_data_path(string $slug)` | A plugin's own folder for files it writes, `oc-content/plugin-data/<slug>/`. It is made on first use and closed to the web, and it survives plugin updates. |
 | `osc_plugin_folder($file)` | Fix the problem of symbolics links in the path of the file |
 | `osc_plugin_get_info($plugin)` | Returns plugin's information |
 | `osc_plugin_has_icon($plugin = null)` | Whether a plugin has an icon asset on disk, as opposed to the fallback placeholder osc_plugin_icon_url() returns. |
