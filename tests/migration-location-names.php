@@ -26,6 +26,8 @@ $p     = DB_TABLE_PREFIX;
 $mig   = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0088_location_names.php';
 
 $admin->query("DROP TABLE IF EXISTS {$p}t_location_name");
+// Other tables point at t_locale, and MariaDB refuses to retype a referenced column while it checks them.
+$admin->query('SET FOREIGN_KEY_CHECKS = 0');
 $admin->query("ALTER TABLE {$p}t_locale MODIFY pk_c_code CHAR(5) CHARACTER SET latin1 NOT NULL");
 $msg = '';
 try {
@@ -37,6 +39,7 @@ pin('a latin1 language table is refused in plain words', true, str_contains($msg
 pin('and nothing is created', 0, (int) $admin->query("SHOW TABLES LIKE '{$p}t_location_name'")->num_rows);
 
 $admin->query("ALTER TABLE {$p}t_locale MODIFY pk_c_code CHAR(5) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL");
+$admin->query('SET FOREIGN_KEY_CHECKS = 1');
 $mig->up($conn);
 pin('a utf8mb4_unicode_ci language table gets a matching table', 1, (int) $admin->query("SHOW TABLES LIKE '{$p}t_location_name'")->num_rows);
 
