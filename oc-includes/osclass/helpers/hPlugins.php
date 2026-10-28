@@ -532,8 +532,8 @@ function osc_plugin_data_path(string $slug): string
     if (!is_dir($dir) || !is_writable($dir)) {
         return '';
     }
+    // One .htaccess on plugin-data/ closes every plugin folder under it.
     \mindstellar\utility\FileSystem::protectFolder($root);
-    \mindstellar\utility\FileSystem::protectFolder($dir);
 
     return $dir;
 }

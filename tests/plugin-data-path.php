@@ -29,8 +29,7 @@ mkdir($root);
 $dir = osc_plugin_data_path('translator');
 pin('a plugin gets its own folder', $root . 'plugin-data/translator/', $dir);
 check('...which exists', is_dir($dir));
-check('...closed to the web', is_file($dir . '.htaccess') && is_file($dir . 'index.php'));
-check('...and so is the folder above it', is_file($root . 'plugin-data/.htaccess') && is_file($root . 'plugin-data/index.php'));
+check('...under a plugin-data folder closed to the web', is_file($root . 'plugin-data/.htaccess') && is_file($root . 'plugin-data/index.php'));
 pin('a second call gives the same folder', $dir, osc_plugin_data_path('translator'));
 
 foreach (array('', '../uploads', 'a/b', '.hidden', "x\n", str_repeat('a', 65)) as $bad) {
