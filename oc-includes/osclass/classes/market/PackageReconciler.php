@@ -82,6 +82,65 @@ final class PackageReconciler
     }
 
     /**
+     * Refreshes the language files the image bundles, such as en_US, onto the live volume.
+     *
+     * A file is written only when it is missing or still holds what the last refresh wrote, so a
+     * language the owner downloaded or edited, and any file the image does not ship, is left alone.
+     * The hashes written are kept in .bundled.json in the live directory.
+     *
+     * @param string $pristineDir image-baked copy of oc-content/languages
+     * @param string $liveDir     the live oc-content/languages
+     *
+     * @return array<int, string> one line per file written or kept
+     */
+    public static function reconcileLanguages(string $pristineDir, string $liveDir): array
+    {
+        $pristineDir = rtrim($pristineDir, '/') . '/';
+        $liveDir     = rtrim($liveDir, '/') . '/';
+        if (!is_dir($pristineDir) || !is_dir($liveDir)) {
+            return [];
+        }
+
+        $manifestFile = $liveDir . '.bundled.json';
+        $manifest     = is_file($manifestFile) ? json_decode((string) file_get_contents($manifestFile), true) : [];
+        $manifest     = is_array($manifest) ? $manifest : [];
+        $log          = [];
+
+        $files = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($pristineDir, \FilesystemIterator::SKIP_DOTS));
+        foreach ($files as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+            $rel     = substr($file->getPathname(), strlen($pristineDir));
+            $target  = $liveDir . $rel;
+            $bundled = (string) sha1_file($file->getPathname());
+            $live    = is_file($target) ? (string) sha1_file($target) : null;
+
+            if ($live === $bundled) {
+                $manifest[$rel] = $bundled;
+                continue;
+            }
+            if ($live !== null && ($manifest[$rel] ?? null) !== $live) {
+                $log[] = 'kept language file ' . $rel . ' (changed on this site)';
+                continue;
+            }
+            if (!is_dir(dirname($target)) && !@mkdir(dirname($target), 0755, true) && !is_dir(dirname($target))) {
+                throw new \RuntimeException('Cannot create ' . dirname($target));
+            }
+            if (!@copy($file->getPathname(), $target)) {
+                throw new \RuntimeException('Cannot write ' . $target);
+            }
+            $manifest[$rel] = $bundled;
+            $log[]          = ($live === null ? 'installed' : 'refreshed') . ' language file ' . $rel;
+        }
+
+        ksort($manifest);
+        file_put_contents($manifestFile, json_encode($manifest, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) . "\n");
+
+        return $log;
+    }
+
+    /**
      * Slugs of the package directories the image bundles, ignoring index.php.
      *
      * @param string $pristinePath must end with a slash

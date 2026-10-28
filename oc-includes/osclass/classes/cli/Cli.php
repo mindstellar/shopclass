@@ -798,9 +798,12 @@ class Cli
             return 0;
         }
 
-        $actions = PackageReconciler::reconcile($pristineRoot, PLUGINS_PATH, THEMES_PATH);
+        $actions = array_merge(
+            PackageReconciler::reconcile($pristineRoot, PLUGINS_PATH, THEMES_PATH),
+            PackageReconciler::reconcileLanguages(rtrim($pristineRoot, '/') . '/languages', osc_translations_path())
+        );
         if ($actions === []) {
-            $this->out("Bundled plugins/themes already up to date.\n");
+            $this->out("Bundled plugins, themes and languages already up to date.\n");
 
             return 0;
         }
