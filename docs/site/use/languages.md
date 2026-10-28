@@ -63,6 +63,28 @@ visitors using it. Either translate everything, or do not enable the
 language yet.
 :::
 
+## Changing or translating a text
+
+The Translator plugin changes any text of the interface, your theme or a
+plugin, one language at a time. Install it from **Plugins → Browse** or
+upload the zip (see [plugins](/docs/use/plugins/)). It needs Shopclass 7.0.6
+or later. The screen is **Tools → Translator**.
+
+Your changes are saved in `oc-content/plugin-data/translator/`. They survive
+core, theme and plugin updates. Keep that folder in your backups (see
+[backups and maintenance](/docs/use/backups-and-maintenance/)).
+
+Category names, pages, form labels and e-mail templates are content. They
+keep their own screens, as in the table above.
+
+:::tip
+A mistake in an official translation is best fixed in
+[shopclass-i18n](https://github.com/mindstellar/shopclass-i18n), so everyone
+gets it. See [contributing](/docs/developers/contributing/). Use the plugin
+for wording that is only yours. Its
+[README](https://github.com/mindstellar/shopclass-plugin-translator) has the details.
+:::
+
 ## Deciding how many to run
 
 Each active language multiplies the content you maintain: every new
