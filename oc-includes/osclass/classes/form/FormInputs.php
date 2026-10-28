@@ -126,6 +126,7 @@ class FormInputs implements InputInterface
      *                                                          'inputDivClass' : css class for input field div container, default not set
      *                                                          'escapeHtml' : escape html for input attributes, default is true
      *                                                          'sanitize'   : sanitize method for input value, default is 'string'
+     *                                                          'required'   : true adds a * mark after the label
      *
      *                                              Throw exception if $name is not set
      *
@@ -163,7 +164,7 @@ class FormInputs implements InputInterface
                 if (isset($options['label'])) {
                     $groupLabelId = $labelFor . '-label';
                     $input        .= $labelDivStart;
-                    $input        .= $this->label($options['label'], null, null, $groupLabelId);
+                    $input        .= $this->label($options['label'], null, null, $groupLabelId, !empty($options['required']));
                     $input        .= $labelDivEnd;
                 }
                 if (isset($options['radioOptions'])) {
@@ -225,7 +226,7 @@ class FormInputs implements InputInterface
                 $input            .= $inputDivEnd;
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $labelFor);
+                    $input .= $this->label($options['label'], $labelFor, null, null, !empty($options['required']));
                     if (isset($options['inputHelp'])) {
                         $input .= '<p class="' . $this->helpTextClass . '">' . $options['inputHelp'] . '</p>';
                     }
@@ -238,7 +239,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $labelFor);
+                    $input .= $this->label($options['label'], $labelFor, null, null, !empty($options['required']));
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -268,7 +269,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $labelFor);
+                    $input .= $this->label($options['label'], $labelFor, null, null, !empty($options['required']));
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -285,7 +286,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $labelFor);
+                    $input .= $this->label($options['label'], $labelFor, null, null, !empty($options['required']));
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -302,7 +303,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $labelFor);
+                    $input .= $this->label($options['label'], $labelFor, null, null, !empty($options['required']));
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -319,7 +320,7 @@ class FormInputs implements InputInterface
                 //Add label if $options['label'] is set
                 if (isset($options['label'])) {
                     $input .= $labelDivStart;
-                    $input .= $this->label($options['label'], $labelFor);
+                    $input .= $this->label($options['label'], $labelFor, null, null, !empty($options['required']));
                     $input .= $labelDivEnd;
                 }
                 // $attributes to String
@@ -436,7 +437,7 @@ class FormInputs implements InputInterface
      *
      * @return string
      */
-    private function label(string $label, ?string $for, ?string $class = null, ?string $id = null): string
+    private function label(string $label, ?string $for, ?string $class = null, ?string $id = null, bool $required = false): string
     {
         if ($class === null) {
             $class = $this->labelClass;
@@ -448,7 +449,13 @@ class FormInputs implements InputInterface
         $idAttr  = $id === null || $id === '' ? '' : ' id="' . $id . '"';
 
         return '<label class="' . $class . '"' . $idAttr . $forAttr . '>'
-            . $this->escape::html($label) . '</label>';
+            . $this->escape::html($label) . ($required ? self::requiredMark() : '') . '</label>';
+    }
+
+    /** The mark after the label of a field that must be filled in. Themes style .osc-required. */
+    public static function requiredMark(): string
+    {
+        return ' <span class="osc-required" aria-hidden="true">*</span>';
     }
 
     /**

@@ -199,6 +199,19 @@ $num = $render($field(18, 'year', 'NUMBER'), true);
 check('a searched number range is a labelled group with From and To', str_contains($num, 'role="group" aria-labelledby="meta_year-label"') && str_contains($num, 'aria-label="From"') && str_contains($num, 'aria-label="To"'), $num);
 check('and its two inputs no longer share one id', substr_count($num, 'id="meta_year"') === 0, $num);
 
+harness_section('a required field is marked');
+
+$mark = '<span class="osc-required" aria-hidden="true">*</span></label>';
+foreach (['TEXT', 'TEXTAREA', 'DROPDOWN', 'RADIO', 'CHECKBOX', 'DATE', 'DATEINTERVAL', 'NUMBER'] as $i => $type) {
+    $html = $render($field(30 + $i, 'need' . $i, $type, '', ['b_required' => 1]));
+    check($type . ': the label ends with the mark', str_contains($html, $mark), $html);
+}
+check('an optional field has no mark', !str_contains($render($field(40, 'opt', 'TEXT')), 'osc-required'));
+$searched = $render($field(41, 'find', 'CHECKBOX', '', ['b_required' => 1]), true);
+check('the search form shows no mark', str_contains($searched, 'for="meta_find"') && !str_contains($searched, 'osc-required'), $searched);
+$named = $render($field(42, 'tagged', 'TEXT', '', ['b_required' => 1, 's_name' => '<b>Name</b>']));
+check('the label text stays escaped beside the mark', str_contains($named, '&lt;b&gt;Name&lt;/b&gt; ' . $mark), $named);
+
 harness_section('the #plugin-hook wrapper');
 
 ob_start();
