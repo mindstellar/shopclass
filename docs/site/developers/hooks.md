@@ -209,7 +209,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 564 names. Generated from the source; do not edit by hand.
+Core fires 565 names. Generated from the source; do not edit by hand.
 
 ### Admin (79)
 
@@ -503,7 +503,7 @@ Core fires 564 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/osclass/classes/search/query/PluginClauses.php` |
 
-### Other (221)
+### Other (222)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -720,6 +720,7 @@ Core fires 564 names. Generated from the source; do not edit by hand.
 | `style_url` | filter | `$css` | `oc-includes/osclass/classes/Styles.php` |
 | `template_candidates` | filter | `$candidates, $context` | `oc-includes/osclass/helpers/hTheme.php` |
 | `tinymce_config` | filter | `$config, $preset` | `oc-includes/osclass/helpers/hUtils.php` |
+| `translation_load_after` | action | `$this, $locale` | `oc-includes/osclass/classes/Translation.php` |
 | `upload_image_extension` | filter | `$imgres->getExt()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `upload_image_mime` | filter | `$imgres->getMime()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_file` | action | `$stored` | `oc-includes/osclass/classes/listing/PhotoService.php` |
