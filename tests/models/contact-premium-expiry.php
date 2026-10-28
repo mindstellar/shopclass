@@ -56,4 +56,6 @@ $outcome = static function (array $item) use ($form): string {
 pin('an expired listing is refused', 'expired', $outcome(array('pk_i_id' => 1, 'b_premium' => 0, 'dt_expiration' => $past)));
 pin('a premium listing past its date is still live', 'past the expiry check', $outcome(array('pk_i_id' => 1, 'b_premium' => 1, 'dt_expiration' => $past)));
 
-exit(harness_result());
+if (!defined('MODELS_RUNNER')) {
+    exit(harness_result());
+}
