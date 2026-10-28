@@ -125,7 +125,7 @@
 }
 
 // Inside a panel the cards become rows, so there is no card inside a card.
-:is(.card, .widget-box) .osc-catcards {
+:is(.card, .widget-box, .osc-panel) .osc-catcards {
   gap: 0;
 
   > .osc-catcard {
@@ -141,7 +141,7 @@
   }
 }
 
-:is(.card, .widget-box) .osc-catcards.osc-tree > li.osc-catcard:not(.osc-tree-parent) {
+:is(.card, .widget-box, .osc-panel) .osc-catcards.osc-tree > li.osc-catcard:not(.osc-tree-parent) {
   padding-inline-start: calc(var(--osc-catcard-toggle) + .5rem);
 }
 

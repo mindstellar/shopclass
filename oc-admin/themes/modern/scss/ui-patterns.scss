@@ -36,7 +36,8 @@
 }
 
 // ---- Panel additions --------------------------------------------------------
-.widget-box-title-actions {
+.widget-box-title-actions,
+.osc-panel-actions {
   display: inline-flex;
   gap: .5rem;
   inset-inline-end: 1rem;
