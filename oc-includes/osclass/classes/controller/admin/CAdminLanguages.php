@@ -593,7 +593,7 @@ class CAdminLanguages extends AdminSecBaseModel
             $isAdminDefault = $l['pk_c_code'] === osc_admin_language();
             $defaultLink    = static function (string $action, string $label) use ($l): string {
                 return '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . $action . '&amp;id='
-                    . $l['pk_c_code'] . '&amp;' . osc_csrf_token_url() . '">' . $label . '</a>';
+                    . osc_esc_html(urlencode($l['pk_c_code'])) . '&amp;' . osc_csrf_token_url() . '">' . $label . '</a>';
             };
             if (!$isDefault && $l['b_enabled'] == 1) {
                 $options[] = $defaultLink('make_default', __('Make site default'));
