@@ -166,6 +166,12 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `GET /cart/quote` returns `open_orders` for a signed-in buyer.
 - A refused listing, contact or send-to-friend form marks each wrong field with its own message.
 
+## Shopclass 7.0.8
+
+### Fixed
+- Required custom fields show a * after their label on the publish form.
+- A child theme loads its parent theme's translations, so the parent's templates show in the site language.
+
 ## Shopclass 7.0.7
 
 ### Fixed

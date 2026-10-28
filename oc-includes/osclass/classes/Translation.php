@@ -92,6 +92,7 @@ class Translation
             }
             if ($themed) {
                 $this->_load($theme_file, $domain);
+                $this->loadParentTheme($locale);
             }
 
             // load plugins
@@ -114,6 +115,26 @@ class Translation
         } else {
             $core_file = osc_translations_path() . osc_current_admin_locale() . '/core.mo';
             $this->_load($core_file, 'core');
+        }
+    }
+
+    /**
+     * A child theme's templates fall back to its parent's, and those ask for the parent's texts.
+     */
+    private function loadParentTheme(string $locale): void
+    {
+        $parent = WebThemes::getInstance()->parentOf((string) osc_apply_filter('theme', osc_theme()));
+        if ($parent === '') {
+            return;
+        }
+        $file = osc_apply_filter(
+            'mo_theme_path',
+            osc_themes_path() . $parent . '/languages/' . $locale . '/theme.mo',
+            $locale,
+            $parent
+        );
+        if (file_exists($file)) {
+            $this->_load($file, $parent);
         }
     }
 

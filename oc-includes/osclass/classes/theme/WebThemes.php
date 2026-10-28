@@ -67,12 +67,9 @@ class WebThemes extends Themes
             \Plugins::includeAs('theme', $this->theme, $functions_path);
         }
 
-        $info = $this->loadThemeInfo($this->theme);
-        if (isset($info['template']) && $info['template'] !== ''
-            && \mindstellar\utility\Validate::packageName((string) $info['template'])
-            && $info['template'] !== $this->theme
-        ) {
-            $parent_functions_path = osc_base_path() . 'oc-content/themes/' . $info['template'] . '/functions.php';
+        $parent = $this->parentOf((string) $this->theme);
+        if ($parent !== '') {
+            $parent_functions_path = osc_base_path() . 'oc-content/themes/' . $parent . '/functions.php';
             if (file_exists($parent_functions_path)) {
                 // The parent fills in what the child left unsaid. Its declarations run
                 // second, so without this marker the newest value wins and the parent
@@ -80,7 +77,7 @@ class WebThemes extends Themes
                 $supports = \mindstellar\theme\ThemeSupports::getInstance();
                 $supports->beginInherited();
                 try {
-                    \Plugins::includeAs('theme', (string) $info['template'], $parent_functions_path);
+                    \Plugins::includeAs('theme', $parent, $parent_functions_path);
                 } finally {
                     $supports->endInherited();
                 }
@@ -133,6 +130,17 @@ class WebThemes extends Themes
         }
 
         return null;
+    }
+
+    /**
+     * The parent a child theme names in its "Parent Theme:" header, or '' when it has none.
+     */
+    public function parentOf(string $theme): string
+    {
+        $info   = $this->loadThemeInfo($theme);
+        $parent = is_array($info) ? (string) ($info['template'] ?? '') : '';
+
+        return $parent !== $theme && \mindstellar\utility\Validate::packageName($parent) ? $parent : '';
     }
 
     /**
