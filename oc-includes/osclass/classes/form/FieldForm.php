@@ -322,6 +322,10 @@ class FieldForm extends Form
             $value            = $field['s_value'];
             $attributes['id'] = $id;
             $options = [];
+            $required = !$search && !empty($field['b_required']);
+            if ($required) {
+                $options['required'] = true;
+            }
 
             // Resolved field type (a registry type such as EMAIL maps its identity
             // here while e_type stays the storage primitive) and its per-field config
@@ -496,7 +500,8 @@ class FieldForm extends Form
                     if ($search) {
                         echo '<h6 id="' . $groupLabelId . '">' . osc_esc_html((string) $label) . '</h6>';
                     } else {
-                        echo '<label id="' . $groupLabelId . '">' . osc_esc_html((string) $label) . '</label>';
+                        echo '<label id="' . $groupLabelId . '">' . osc_esc_html((string) $label)
+                            . ($required ? \mindstellar\form\FormInputs::requiredMark() : '') . '</label>';
                     }
                     unset($attributes['id']);
                     echo self::getInstance()->hidden($name . '[from]', $value['from'], ['id' => $id . '_from']);
