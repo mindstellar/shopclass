@@ -34,13 +34,15 @@ scratchdb_session('osc_models_contact_premium_expiry');
 if (!defined('WEB_PATH')) {
     define('WEB_PATH', 'http://localhost/');
 }
-foreach (array('hPreference', 'hPlugins', 'hSecurity', 'hValidate', 'hUtils', 'hUsers', 'hLocale', 'hSanitize') as $helper) {
+require_once ABS_PATH . 'oc-includes/osclass/utils.php';
+// The contact checks read the ban list, the field rules and the login state.
+foreach (['hSecurity', 'hValidate', 'hUsers'] as $helper) {
     require_once ABS_PATH . 'oc-includes/osclass/helpers/' . $helper . '.php';
 }
 
 $past = date('Y-m-d H:i:s', time() - 86400);
 // A blank name stops the send at validation, after the expiry check has run.
-$form = array('yourName' => '', 'yourEmail' => 'buyer@example.com', 'phoneNumber' => '', 'message' => 'Is it still for sale?');
+$form = ['yourName' => '', 'yourEmail' => 'buyer@example.com', 'phoneNumber' => '', 'message' => 'Is it still for sale?'];
 $outcome = static function (array $item) use ($form): string {
     try {
         (new ListingMailService())->contactSeller($item, $form);
@@ -53,8 +55,8 @@ $outcome = static function (array $item) use ($form): string {
     return 'sent';
 };
 
-pin('an expired listing is refused', 'expired', $outcome(array('pk_i_id' => 1, 'b_premium' => 0, 'dt_expiration' => $past)));
-pin('a premium listing past its date is still live', 'past the expiry check', $outcome(array('pk_i_id' => 1, 'b_premium' => 1, 'dt_expiration' => $past)));
+pin('an expired listing is refused', 'expired', $outcome(['pk_i_id' => 1, 'b_premium' => 0, 'dt_expiration' => $past]));
+pin('a premium listing past its date is still live', 'past the expiry check', $outcome(['pk_i_id' => 1, 'b_premium' => 1, 'dt_expiration' => $past]));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
