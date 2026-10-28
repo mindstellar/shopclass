@@ -82,6 +82,10 @@ final class FieldAjax extends AjaxHandler
                     }
                 }
 
+                // The name shown in lists: the site language's, else the admin's, else any typed.
+                $fieldName = $aMetaNames[osc_language()] ?? $aMetaNames[$currentAdminLocale]
+                    ?? (string)(current(array_filter($aMetaNames)) ?: '');
+
                 $metaOptions = Params::getParamString('s_options');
 
                 // trim all csv options
@@ -103,7 +107,7 @@ final class FieldAjax extends AjaxHandler
 
                 // Group membership is only touched by the single-group editor, not builder mode.
                 $updateData = array(
-                    's_name'       => $aMetaNames[$currentAdminLocale],
+                    's_name'       => $fieldName,
                     'e_type'       => $storageType,
                     's_slug'       => $slug,
                     'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
@@ -152,7 +156,7 @@ final class FieldAjax extends AjaxHandler
             $typeSpec = osc_field_type($chosenType);
             $result   = array(
                 'ok'         => __('Saved'),
-                'text'       => $aMetaNames[$currentAdminLocale],
+                'text'       => $fieldName,
                 'field_id'   => Params::getParam('id'),
                 'type_label' => $typeSpec !== null ? __($typeSpec['label']) : $chosenType,
             );
@@ -206,7 +210,7 @@ final class FieldAjax extends AjaxHandler
         if (!in_array($type, FieldTypeRegistry::STORAGE_PRIMITIVES, true)) {
             $field->updateJsonMeta($fieldId, 'type', $type);
         }
-        $field->updateJsonMeta($fieldId, 'locale', array(osc_current_admin_locale() => array('s_name' => $name)));
+        $field->updateJsonMeta($fieldId, 'locale', array(osc_language() => array('s_name' => $name)));
         AjaxResponse::json(array(
             'error'      => 0,
             'field_id'   => $fieldId,

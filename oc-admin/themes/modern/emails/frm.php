@@ -33,7 +33,7 @@ $emailName      = (string)($email['s_internal_name'] ?? '');
 $emailLocales  = array();
 $emailSubjects = array();
 $emailBodies   = array();
-foreach (osc_get_admin_locales() as $emailLocale) {
+foreach (PageForm::siteLocales() as $emailLocale) {
     $code                 = $emailLocale['pk_c_code'];
     $emailLocales[$code]  = $emailLocale['s_name'];
     $emailSubjects[$code] = $emailSubmitted[$code]['s_title'] ?? $email['locale'][$code]['s_title'] ?? '';

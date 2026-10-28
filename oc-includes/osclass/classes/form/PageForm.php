@@ -106,13 +106,13 @@ class PageForm extends Form
     }
 
     /**
-     * The languages on for oc-admin, site default first.
+     * The languages on for the website, site default first. Pages hold site content.
      *
      * @return array<int,array<string,mixed>>
      */
     public static function siteLocales()
     {
-        return \mindstellar\admin\ui\Field::siteFirst(osc_get_admin_locales());
+        return \mindstellar\admin\ui\Field::siteFirst(osc_get_locales());
     }
 
     /**

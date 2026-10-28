@@ -180,6 +180,12 @@ function osc_language()
     return $GLOBALS['__siteLocale'] ?? '';
 }
 
+/** Languages on for oc-admin only: fewer than the website has. */
+function osc_get_admin_locales()
+{
+    return array(array('pk_c_code' => 'en_US', 's_name' => 'English'));
+}
+
 /** Validate::localeCode() checks membership of the enabled list, not only its width. */
 function osc_get_locales()
 {
@@ -942,7 +948,30 @@ pin(
     )
 );
 
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
+// Pages, custom fields and e-mail templates hold site content: a language that is on for
+// the website but not for oc-admin still gets a tab.
+$GLOBALS['locales'][] = array('pk_c_code' => 'fr_FR', 's_name' => 'Français');
+$GLOBALS['__siteLocale'] = 'en_US';
+ob_start();
+PageForm::printMultiLangTab();
+$pageTabs = (string)ob_get_clean();
+ob_start();
+FieldForm::multiLangTitle(null);
+$fieldTabs = (string)ob_get_clean();
 unset($GLOBALS['__siteLocale']);
+array_pop($GLOBALS['locales']);
+emits('a site-only language gets a tab on a page', $pageTabs, 'href="#fr_FR"');
+emits('a site-only language gets a tab on a custom field', $fieldTabs, 'href="#meta_fr_FR"');
+pin(
+    'the e-mail template form lists the website languages',
+    array(false, true),
+    array(
+        str_contains((string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/emails/frm.php'), 'osc_get_admin_locales'),
+        str_contains((string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/emails/frm.php'), 'siteLocales'),
+    )
+);
+
 $panelIds = array_merge(...array_map(static function ($widget) {
     return array_keys($widget['panels']);
 }, $widgets));

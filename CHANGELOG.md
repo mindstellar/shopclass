@@ -108,6 +108,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - One listing's rating summary and stars come from one query.
 
 ### Fixed
+- Static pages, custom fields and e-mail templates now get a language tab for every language on for the website, not only those on for oc-admin.
 - Docker keeps downloaded languages across a redeploy.
 - A refused package or ship save keeps what was typed and marks the field.
 - A refused tax save stays under its own menu entry.
