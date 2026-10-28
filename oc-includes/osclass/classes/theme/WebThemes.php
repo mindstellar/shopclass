@@ -137,9 +137,6 @@ class WebThemes extends Themes
      */
     public function parentOf(string $theme): string
     {
-        if (!\mindstellar\utility\Validate::packageName($theme)) {
-            return '';
-        }
         $info   = $this->loadThemeInfo($theme);
         $parent = is_array($info) ? (string) ($info['template'] ?? '') : '';
 

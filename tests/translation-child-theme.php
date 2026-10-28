@@ -42,6 +42,7 @@ $theme('kid', "Parent Theme: mum\n");
 $theme('mum', '');
 $theme('solo', '');
 $theme('loop', "Parent Theme: loop\n");
+$theme('stray', "Parent Theme: ../mum\n");
 mkdir($themes . 'mum/languages/' . $locale, 0755, true);
 $catalogue = new Gettext\Translations();
 $catalogue->setDomain('mum');
@@ -60,7 +61,7 @@ pin('a child names its parent', 'mum', $web->parentOf('kid'));
 pin('a theme with no parent has none', '', $web->parentOf('solo'));
 pin('a theme naming itself has none', '', $web->parentOf('loop'));
 pin('a missing theme has none', '', $web->parentOf('nope'));
-pin('a path is refused', '', $web->parentOf('../kid'));
+pin('a parent name with a path is refused', '', $web->parentOf('stray'));
 
 harness_section('the parent catalogue');
 Translation::init();
