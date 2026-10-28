@@ -53,6 +53,9 @@ services:
       OSC_CACHE_PASSWORD: shopclass
       # nchan shares live-message notes through Valkey when it is on; `OSC_LIVE: off` turns live delivery off.
     volumes:
+      # Everything in oc-content that has no volume of its own, such as downloaded languages.
+      # The volumes below sit inside it and keep their data as before.
+      - content:/application/oc-content
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads
       # Persist installed/updated plugins and themes across redeploys. A fresh
@@ -99,6 +102,7 @@ services:
 
 volumes:
   db-data:
+  content:
   uploads:
   downloads:
   plugins:

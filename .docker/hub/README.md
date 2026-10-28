@@ -32,6 +32,7 @@ services:
       WEB_PATH: http://localhost/
       OSC_ADMIN_EMAIL: you@example.com
     volumes:
+      - content:/application/oc-content
       - uploads:/application/oc-content/uploads
       - plugins:/application/oc-content/plugins
       - themes:/application/oc-content/themes
@@ -48,6 +49,7 @@ services:
       - db-data:/var/lib/mysql
 volumes:
   db-data:
+  content:
   uploads:
   plugins:
   themes:

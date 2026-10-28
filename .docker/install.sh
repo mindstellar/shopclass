@@ -367,6 +367,7 @@ services:
       SMTP_PASSWORD: \${SMTP_PASSWORD:-}
       SMTP_FROM: \${SMTP_FROM:-}$TLS_ENV
     volumes:
+      - content:/application/oc-content
       - uploads:/application/oc-content/uploads
       - downloads:/application/oc-content/downloads
       - plugins:/application/oc-content/plugins
@@ -401,6 +402,7 @@ services:
 
 volumes:
   db-data:
+  content:
   uploads:
   downloads:
   plugins:
