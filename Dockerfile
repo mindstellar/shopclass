@@ -99,7 +99,7 @@ RUN set -eu; \
     unzip -qq /tmp/storefront.zip -d /application/oc-content/themes/; \
     rm -f /tmp/storefront.zip
 
-# Pristine copy of the bundled plugins/themes, kept outside oc-content so it always
+# Pristine copy of the bundled plugins, themes and languages, kept outside oc-content so it always
 # reflects this image regardless of what a persistent volume mounted over
 # oc-content/plugins and oc-content/themes carries forward from an older one. The
 # entrypoint's `package:reconcile` step diffs against it on every start: installs
@@ -108,7 +108,8 @@ RUN set -eu; \
 # market install). See PackageReconciler.
 RUN mkdir -p /usr/src/shopclass/oc-content \
     && cp -a /application/oc-content/plugins /usr/src/shopclass/oc-content/plugins \
-    && cp -a /application/oc-content/themes /usr/src/shopclass/oc-content/themes
+    && cp -a /application/oc-content/themes /usr/src/shopclass/oc-content/themes \
+    && cp -a /application/oc-content/languages /usr/src/shopclass/oc-content/languages
 
 # Writable runtime dirs and ownership. oc-content is fully writable: uploads and
 # downloads always were, and plugins/themes join them now that a container

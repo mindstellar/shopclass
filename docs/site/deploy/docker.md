@@ -118,6 +118,8 @@ redeploy.
 The other four volumes sit inside the `oc-content` volume and keep their data. A
 language downloaded before the `oc-content` volume existed is lost on the first
 redeploy; download it again in Settings › Languages.
+On each start the image also refreshes the language files it ships, such as `en_US`,
+unless the site changed them.
 
 :::caution[Upgrading from an image released before the plugin/theme volumes existed]
 Copy `oc-content/plugins` and `oc-content/themes` out of the running container
