@@ -755,14 +755,25 @@ function osc_admin_language()
 
 /**
  * The saved default, unless it is empty or its language folder is gone: then en_US when that is
- * on, else the first language that is on. A saved default with its folder costs no query.
+ * on, else the first language that is on. A saved default with its folder costs no query, and a
+ * fallback is looked up once per request. osc_reset_preferences() clears it.
  *
  * @internal
  */
-function _osc_enabled_locale(string $code, bool $admin): string
+function _osc_enabled_locale(string $code, bool $admin, bool $reset = false): string
 {
+    static $memo = array();
+    if ($reset) {
+        $memo = array();
+
+        return $code;
+    }
     if (!function_exists('osc_translations_path') || ($code !== '' && is_dir(osc_translations_path() . $code))) {
         return $code;
+    }
+    $key = ($admin ? '1|' : '0|') . $code;
+    if (isset($memo[$key])) {
+        return $memo[$key];
     }
     try {
         $enabled = array_column(\OSCLocale::getInstance()->listAllEnabled($admin), 'pk_c_code');
@@ -770,10 +781,10 @@ function _osc_enabled_locale(string $code, bool $admin): string
         return $code;
     }
     if ($enabled === array() || in_array($code, $enabled, true)) {
-        return $code;
+        return $memo[$key] = $code;
     }
 
-    return in_array('en_US', $enabled, true) ? 'en_US' : (string) $enabled[0];
+    return $memo[$key] = in_array('en_US', $enabled, true) ? 'en_US' : (string) $enabled[0];
 }
 
 /**
@@ -1409,6 +1420,8 @@ function osc_delete_preference($key = '', $section = 'osclass')
  */
 function osc_reset_preferences()
 {
+    _osc_enabled_locale('', false, true);
+
     return Preference::getInstance()->toArray();
 }
 
