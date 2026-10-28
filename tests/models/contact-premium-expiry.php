@@ -36,6 +36,12 @@ if (!defined('WEB_PATH')) {
 }
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
 // The contact checks read the ban list, the field rules and the login state.
+if (!function_exists('osc_plugins_path')) {
+    function osc_plugins_path()
+    {
+        return ABS_PATH . 'oc-content/plugins/';
+    }
+}
 foreach (['hSecurity', 'hValidate', 'hUsers'] as $helper) {
     require_once ABS_PATH . 'oc-includes/osclass/helpers/' . $helper . '.php';
 }
