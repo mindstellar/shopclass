@@ -159,6 +159,20 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `GET /cart/quote` returns `open_orders` for a signed-in buyer.
 - A refused listing, contact or send-to-friend form marks each wrong field with its own message.
 
+## Shopclass 7.0.6
+
+Docker sites keep downloaded languages across a redeploy, and plugins can load their own texts on top of the site's texts. If you run Docker with your own compose file, add the `oc-content` volume shown in the Docker guide.
+
+### New
+- The `translation_load_after` hook fires after core, theme and plugin texts load, so a plugin can load its own texts on top.
+
+### Changed
+- Docker starts refresh the language files the image ships, unless the site changed them.
+
+### Fixed
+- Docker keeps downloaded languages across a redeploy. A language downloaded before 7.0.6 must be downloaded again once.
+- The installer reads the chosen country as text, so a crafted value cannot turn into the text "Array".
+
 ## Shopclass 7.0.5
 
 This release fixes the installer. On 7.0.4 and earlier the last setup step could fail, so a new site never finished installing.
