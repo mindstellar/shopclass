@@ -75,6 +75,12 @@ None.
 
 ## Changes
 
+### v1: no profile link in shop mode
+
+Changed in v1 on 2026-10-28.
+
+- In shop mode a user's and a listing seller's `url` is `""`, since a shop has no public profile.
+
 ### v1: order bank details and open-order limit
 
 Added to v1 on 2026-10-27.

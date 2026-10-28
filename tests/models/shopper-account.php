@@ -218,8 +218,8 @@ harness_section('shop mode, a shopper');
 $signIn($amy);
 check('Amy is a shopper', osc_is_shopper());
 foreach ($hidden as $name => [$class, $page, $action, $get, $post]) {
-    // A shop has no credits pages at all, so those are 404 rather than a redirect.
-    $billing = $class === 'TestShopperBilling';
+    // A shop has no credits pages and no public profile, so those are 404 rather than a redirect.
+    $billing = $class === 'TestShopperBilling' || $action === 'pub_profile';
     pin($billing ? "$name is 404" : "$name sends her to the dashboard", $billing ? '404' : $dashboard, $drive($class, $page, $action, $get, $post)['redirect']);
 }
 pin('the held listing is untouched', null, $admin->query("SELECT dt_first_pub_date FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0]);
@@ -248,7 +248,7 @@ check('the nav has Your orders and no Your listings', str_contains($html, 'opt_b
 
 harness_section('a guest in shop mode');
 $signIn(null);
-pin('a public profile sends a guest home', osc_base_url(), $drive('TestShopperPublic', 'user', 'pub_profile', ['id' => (string) $amy])['redirect']);
+pin('a public profile is 404 for a guest', '404', $drive('TestShopperPublic', 'user', 'pub_profile', ['id' => (string) $amy])['redirect']);
 
 harness_section('shop mode, with an admin session');
 $signIn($amy, $adm);
@@ -256,10 +256,10 @@ check('Amy with an admin session is no shopper', !osc_is_shopper());
 $r = $drive('TestShopperUser', 'user', 'items');
 pin('items renders', [null, 'user-items'], [$r['redirect'], $r['view']]);
 $r = $drive('TestShopperPublic', 'user', 'pub_profile', ['id' => (string) $amy]);
-pin('pub_profile renders', [null, 'user-public-profile'], [$r['redirect'], $r['view']]);
+pin('pub_profile is 404 for a shopper with an admin session', '404', $r['redirect']);
 $signIn(null, $adm);
 $r = $drive('TestShopperPublic', 'user', 'pub_profile', ['id' => (string) $amy]);
-pin('an admin alone sees the public profile', [null, 'user-public-profile'], [$r['redirect'], $r['view']]);
+pin('an admin alone gets a 404 for the public profile', '404', $r['redirect']);
 
 harness_section('classifieds mode');
 osc_set_preference('site_mode', 'classifieds', 'osclass', 'STRING');

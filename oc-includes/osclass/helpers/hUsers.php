@@ -416,10 +416,14 @@ function osc_logged_user_phone()
  *
  * @param int|null $id Defaults to the current user
  *
- * @return string Empty string when no user id is known
+ * @return string Empty string when no user id is known, and always in shop mode, which has no
+ *                public profile. Themes must check for '' before printing a link.
  */
 function osc_user_public_profile_url($id = null)
 {
+    if (osc_is_shop_mode()) {
+        return '';
+    }
     if ($id == null) {
         $id = osc_user_id();
     }
@@ -443,11 +447,14 @@ function osc_user_public_profile_url($id = null)
  * @param int|string $page
  * @param int|string|bool $itemsPerPage
  *
- * @return string
+ * @return string Empty string in shop mode, which has no public profile.
  */
 function osc_user_list_items_pub_profile_url($page = '', $itemsPerPage = false)
 {
     $path = osc_user_public_profile_url();
+    if ($path === '') {
+        return '';
+    }
 
     // On a friendly-URL install the query string is stripped before routing, so a
     // ?iPage= page number never reaches the controller. Carry the page as a path
@@ -1296,8 +1303,8 @@ const OSC_SHOPPER_HIDDEN_MENU = array(
 );
 
 /**
- * The account menu for a shopper: seller entries dropped and "Your orders" added when no one
- * else added it. Every other visitor gets the list untouched.
+ * The account menu in shop mode: no public profile entry for anyone. A shopper also loses the
+ * seller entries and gets "Your orders" when no one else added it.
  *
  * @param mixed $options the user_menu_filter list
  *
@@ -1305,13 +1312,19 @@ const OSC_SHOPPER_HIDDEN_MENU = array(
  */
 function osc_shopper_user_menu($options)
 {
-    if (!is_array($options) || !osc_is_shopper()) {
+    if (!is_array($options) || !osc_is_shop_mode()) {
         return $options;
     }
 
-    $options = array_values(array_filter($options, static function ($entry): bool {
-        return !in_array(is_array($entry) ? (string) ($entry['class'] ?? '') : '', OSC_SHOPPER_HIDDEN_MENU, true);
+    $shopper = osc_is_shopper();
+    $options = array_values(array_filter($options, static function ($entry) use ($shopper): bool {
+        $class = is_array($entry) ? (string) ($entry['class'] ?? '') : '';
+
+        return $class !== 'opt_publicprofile' && !($shopper && in_array($class, OSC_SHOPPER_HIDDEN_MENU, true));
     }));
+    if (!$shopper) {
+        return $options;
+    }
     if (osc_billing_enabled() && !in_array('opt_billing_orders', array_column($options, 'class'), true)) {
         $options[] = array('name' => _m('Your orders'), 'url' => osc_billing_orders_url(), 'class' => 'opt_billing_orders');
     }
