@@ -208,9 +208,9 @@ $panel = render(static function () {
     ));
 });
 
-emits('is a widget-box carrying the publish variant', $panel, '<div class="widget-box osc-publish">');
-emits('titles itself Status by default', $panel, '<div class="widget-box-title"><h3>Status</h3></div>');
-emits('opens the panel body', $panel, '<div class="widget-box-content">');
+emits('is an osc-panel carrying the publish variant', $panel, '<div class="osc-panel osc-publish">');
+emits('titles itself Status by default', $panel, '<div class="osc-panel-head"><h3>Status</h3></div>');
+emits('opens the panel body', $panel, '<div class="osc-panel-body">');
 emits('groups the state pills', $panel, '<div class="osc-publish-status">');
 emits('draws each pill through the shared status component', $panel,
     '<span class="osc-status status-active">Active</span>');
@@ -535,8 +535,8 @@ $plain = render(static function () {
     echo '<p>x</p>';
     osc_admin_panel_close();
 });
-pin('a plain panel is the markup it always was', '<div class="widget-box"><div class="widget-box-title"><h3>Seller</h3></div>'
-    . '<div class="widget-box-content"><p>x</p></div></div>', $plain);
+pin('a plain panel is an osc-panel with a head and a body', '<div class="osc-panel"><div class="osc-panel-head"><h3>Seller</h3></div>'
+    . '<div class="osc-panel-body"><p>x</p></div></div>', $plain);
 
 $section = render(static function () {
     osc_admin_panel_open('Price', array(
@@ -548,31 +548,31 @@ $section = render(static function () {
     osc_admin_panel_close();
 });
 emits('a section carries its id, class and attributes', $section,
-    '<div class="widget-box osc-section" id="sec-price" data-osc-needs-sell>');
+    '<div class="osc-panel osc-section" id="sec-price" data-osc-needs-sell>');
 emits('its hint sits in the title bar after the heading', $section,
-    '<h3>Price</h3><span class="widget-box-title-hint">What buyers pay</span>');
-emits('an error hint is marked', $section, '<span class="widget-box-title-hint is-error">1 to fix</span>');
+    '<h3>Price</h3><span class="osc-panel-hint">What buyers pay</span>');
+emits('an error hint is marked', $section, '<span class="osc-panel-hint is-error">1 to fix</span>');
 
 $single = render(static function () {
     osc_admin_panel_open('Product', array('hint' => '2 to fix', 'hint_state' => 'error'));
     osc_admin_panel_close();
 });
-emits('a single hint takes hint_state', $single, '<span class="widget-box-title-hint is-error">2 to fix</span>');
+emits('a single hint takes hint_state', $single, '<span class="osc-panel-hint is-error">2 to fix</span>');
 
 $folded = render(static function () {
     osc_admin_panel_open('Location', array('id' => 'sec-location', 'collapsible' => true, 'hint' => 'Optional'));
     echo '<p>x</p>';
     osc_admin_panel_close();
 });
-pin('a collapsible panel is a closed details, closed as one', '<details class="widget-box" id="sec-location">'
-    . '<summary class="widget-box-title"><h3>Location</h3><span class="widget-box-title-hint">Optional</span></summary>'
-    . '<div class="widget-box-content"><p>x</p></div></details>', $folded);
+pin('a collapsible panel is a closed details, closed as one', '<details class="osc-panel" id="sec-location">'
+    . '<summary class="osc-panel-head"><h3>Location</h3><span class="osc-panel-hint">Optional</span></summary>'
+    . '<div class="osc-panel-body"><p>x</p></div></details>', $folded);
 
 $unfolded = render(static function () {
     osc_admin_panel_open('Seller', array('collapsible' => true, 'open' => true));
     osc_admin_panel_close();
 });
-emits('open starts it expanded', $unfolded, '<details class="widget-box" open>');
+emits('open starts it expanded', $unfolded, '<details class="osc-panel" open>');
 
 $nested = render(static function () {
     osc_admin_panel_open('Outer', array('collapsible' => true));
@@ -588,6 +588,56 @@ $escaped = render(static function () {
 });
 omits('the hint is escaped', $escaped, '<b>h</b>');
 omits('and so is the id', $escaped, 'id=""x"');
+
+$full = render(static function () {
+    osc_admin_panel_open('Full', array(
+        'subtitle'    => 's',
+        'hint'        => array('h', array('text' => 'e', 'state' => 'error')),
+        'actions'     => array(array('label' => 'Go', 'url' => 'https://example.test/go')),
+        'collapsible' => true,
+    ));
+    osc_admin_panel_close();
+});
+emits('the header actions sit in osc-panel-actions', $full, '<span class="osc-panel-actions">');
+omits('the helper prints no widget-box class', $full . $plain . $section, 'widget-box');
+
+harness_section('the panel styles cover both class names');
+
+// Plugins still write .widget-box markup by hand, so every rule for it must also style the
+// helper's .osc-panel classes the same way.
+$css = (string)@file_get_contents(ABS_PATH . 'oc-admin/themes/modern/css/main.css');
+check('main.css is built', $css !== '');
+$css = (string)preg_replace('~/\*.*?\*/~s', '', $css);
+$map = static fn (string $sel): string => strtr($sel, array(
+    'widget-box-title-hint'    => 'osc-panel-hint',
+    'widget-box-title-actions' => 'osc-panel-actions',
+    'widget-box-title'         => 'osc-panel-head',
+    'widget-box-content'       => 'osc-panel-body',
+    'widget-box'               => 'osc-panel',
+));
+$rules = 0;
+preg_match_all('~([^{};]+)\{~', $css, $m);
+foreach ($m[1] as $prelude) {
+    $prelude = trim((string)preg_replace('~\s+~', ' ', $prelude));
+    // Dashboard-only parts that the helper never prints.
+    if ($prelude[0] === '@' || !preg_match('~\.widget-box(?!-selector|-content-no-wrapp)~', $prelude)) {
+        continue;
+    }
+    $rules++;
+    $sels = array_map('trim', preg_split('~,(?![^(]*\))~', $prelude));
+    foreach ($sels as $sel) {
+        if (!str_contains($sel, 'widget-box')) {
+            continue;
+        }
+        // An :is() list carries both names inside itself.
+        $ok = in_array($map($sel), $sels, true)
+            || (preg_match('~:is\(([^)]*\.widget-box[^)]*)\)~', $sel, $is) === 1
+                && preg_match_all('~\.widget-box[\w-]*~', $is[1], $tok) > 0
+                && array_diff(array_map($map, $tok[0]), array_map('trim', explode(',', $is[1]))) === array());
+        check('"' . $sel . '" also styles ' . $map($sel), $ok, $prelude);
+    }
+}
+check('the widget-box rules were found', $rules > 10, (string)$rules);
 
 // The panel and page-head helpers have one copy, in core; the stock theme must not redefine them.
 $theme = (string)file_get_contents(ABS_PATH . 'oc-admin/themes/modern/parts/ui.php');

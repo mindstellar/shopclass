@@ -857,7 +857,7 @@ if (!function_exists('osc_admin_panel_open')) {
         $tag = empty($opts['collapsible']) ? 'div' : 'details';
         $GLOBALS['osc_admin_panel_stack'][] = $tag;
 
-        echo '<' . $tag . ' class="widget-box'
+        echo '<' . $tag . ' class="osc-panel'
             . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '"'
             . (!empty($opts['id']) ? ' id="' . osc_esc_html($opts['id']) . '"' : '')
             . osc_admin_field_attrs($opts['attrs'] ?? array())
@@ -865,7 +865,7 @@ if (!function_exists('osc_admin_panel_open')) {
 
         if ($title !== '' || $tag === 'details') {
             $head = $tag === 'details' ? 'summary' : 'div';
-            echo '<' . $head . ' class="widget-box-title"><h3>' . osc_esc_html($title) . '</h3>';
+            echo '<' . $head . ' class="osc-panel-head"><h3>' . osc_esc_html($title) . '</h3>';
             $hints = $opts['hint'] ?? array();
             if (!is_array($hints)) {
                 $hints = array(array('text' => $hints, 'state' => $opts['hint_state'] ?? ''));
@@ -875,12 +875,12 @@ if (!function_exists('osc_admin_panel_open')) {
                 if ((string)($hint['text'] ?? '') === '') {
                     continue;
                 }
-                echo '<span class="widget-box-title-hint'
+                echo '<span class="osc-panel-hint'
                     . (($hint['state'] ?? '') === 'error' ? ' is-error' : '') . '">'
                     . osc_esc_html((string)$hint['text']) . '</span>';
             }
             if (!empty($opts['actions'])) {
-                echo '<span class="widget-box-title-actions">';
+                echo '<span class="osc-panel-actions">';
                 foreach ($opts['actions'] as $action) {
                     osc_admin_action_button($action);
                 }
@@ -889,7 +889,7 @@ if (!function_exists('osc_admin_panel_open')) {
             echo '</' . $head . '>';
         }
 
-        echo '<div class="widget-box-content">';
+        echo '<div class="osc-panel-body">';
 
         if (!empty($opts['subtitle'])) {
             echo '<p class="panel-subtitle">' . osc_esc_html($opts['subtitle']) . '</p>';

@@ -1,10 +1,12 @@
 // Flat at rest. A panel is still on the page when you stop interacting with it, so it
 // has no shadow — depth comes from the border and the surface tone beneath it.
-.widget-box {
+.widget-box,
+.osc-panel {
   @extend .card;
 }
 
-.widget-box-title select {
+.widget-box-title select,
+.osc-panel-head select {
   @extend .form-select;
   font-size: 0.875rem;
   margin-bottom: -.3rem;
@@ -15,7 +17,8 @@
   width: 50%;
 }
 
-.widget-box-title {
+.widget-box-title,
+.osc-panel-head {
   @extend .card-header;
   color: var(--osc-ink);
   font-size: 1.125rem;
@@ -26,23 +29,31 @@
 .widget-box-title h2,
 .widget-box-title h3,
 .widget-box-title h4,
-.widget-box-title h5 {
+.widget-box-title h5,
+.osc-panel-head h1,
+.osc-panel-head h2,
+.osc-panel-head h3,
+.osc-panel-head h4,
+.osc-panel-head h5 {
   font-size: 1.125rem;
   font-weight: normal;
   margin: 0;
 }
 
-.widget-box-title .select-box {
+.widget-box-title .select-box,
+.osc-panel-head .select-box {
   inset-inline-end: 0;
   top: 0;
   widows: 50%;
 }
 
-.widget-box-title .select-box-trigger {
+.widget-box-title .select-box-trigger,
+.osc-panel-head .select-box-trigger {
   background-color: var(--osc-bench);
 }
 
-.widget-box-content {
+.widget-box-content,
+.osc-panel-body {
   @extend .card-body;
   background-color: var(--osc-bench);
   // Standard panel padding: 1rem / 16px (DESIGN spacing.base).
@@ -56,14 +67,16 @@
   float: inline-end;
 }
 
-.widget-box h4 {
+.widget-box h4,
+.osc-panel h4 {
   border-bottom: 1px dotted var(--osc-ink-emphasis);
   color: var(--osc-ink-emphasis);
   font-size: 1rem;
   margin: 20px 0 10px;
 }
 
-.widget-box h4.first-title {
+.widget-box h4.first-title,
+.osc-panel h4.first-title {
   margin: 0 0 10px;
 }
 
@@ -78,7 +91,8 @@
   font-size: .875rem;
 }
 
-.widget-box .form-row {
+.widget-box .form-row,
+.osc-panel .form-row {
   margin-bottom: 15px;
 }
 

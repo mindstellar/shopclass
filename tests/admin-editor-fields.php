@@ -920,13 +920,13 @@ $location = dom('item-add-shop-err')->query('//*[@id="sec-location"]')->item(0);
 check('item-add-shop-err: Seller holds an error, so it is open', $seller instanceof DOMElement && $seller->hasAttribute('open'));
 check('item-add-shop-err: Location holds none, so it stays closed', $location instanceof DOMElement && !$location->hasAttribute('open'));
 pin('item-add-shop-err: Seller says how many to fix', '1 to fix',
-    trim((string)dom('item-add-shop-err')->query('//*[@id="sec-seller"]//*[contains(@class,"widget-box-title-hint") and contains(@class,"is-error")]')->item(0)?->textContent));
+    trim((string)dom('item-add-shop-err')->query('//*[@id="sec-seller"]//*[contains(@class,"osc-panel-hint") and contains(@class,"is-error")]')->item(0)?->textContent));
 pin('item-add-shop-err: so does Product', '1 to fix',
-    trim((string)dom('item-add-shop-err')->query('//*[@id="sec-product"]//*[contains(@class,"widget-box-title-hint") and contains(@class,"is-error")]')->item(0)?->textContent));
+    trim((string)dom('item-add-shop-err')->query('//*[@id="sec-product"]//*[contains(@class,"osc-panel-hint") and contains(@class,"is-error")]')->item(0)?->textContent));
 pin('item-add-shop-err: Price has nothing to fix', 0,
     dom('item-add-shop-err')->query('//*[@id="sec-price"]//*[contains(@class,"is-error")]')->length);
 
-$fixOf = static fn (string $screen, string $id): string => trim((string)dom($screen)->query('//*[@id="' . $id . '"]//*[contains(@class,"widget-box-title-hint") and contains(@class,"is-error")]')->item(0)?->textContent);
+$fixOf = static fn (string $screen, string $id): string => trim((string)dom($screen)->query('//*[@id="' . $id . '"]//*[contains(@class,"osc-panel-hint") and contains(@class,"is-error")]')->item(0)?->textContent);
 check('item-add-shop-refused: the banner counts five', str_contains((string)dom('item-add-shop-refused')->query('//*[@id="error_list"]//strong')->item(0)?->textContent, '5 things'));
 pin('item-add-shop-refused: Product holds the title, both descriptions and the category', '4 to fix', $fixOf('item-add-shop-refused', 'sec-product'));
 pin('item-add-shop-refused: Location holds the city', '1 to fix', $fixOf('item-add-shop-refused', 'sec-location'));

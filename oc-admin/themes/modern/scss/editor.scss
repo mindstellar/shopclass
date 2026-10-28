@@ -394,7 +394,8 @@
 }
 
 // Status panel.
-.osc-publish .widget-box-content {
+.osc-publish .widget-box-content,
+.osc-publish .osc-panel-body {
   padding-block-start: .75rem;
 }
 
@@ -451,7 +452,8 @@
 
 // Rail panels: fields stack, and every control fills the column rather than keeping the
 // width its type implies on a full-width settings row.
-.osc-editor-side .widget-box-content .osc-field:last-child {
+.osc-editor-side .widget-box-content .osc-field:last-child,
+.osc-editor-side .osc-panel-body .osc-field:last-child {
   margin-block-end: 0;
 }
 
@@ -804,7 +806,8 @@
   min-inline-size: 0;
 }
 
-.osc-section > .widget-box-title {
+.osc-section > .widget-box-title,
+.osc-section > .osc-panel-head {
   align-items: baseline;
   background: var(--osc-bench-warm);
   border-block-end: 1px solid var(--osc-rule);
@@ -815,21 +818,25 @@
   padding: .8rem 1.25rem;
 }
 
-.osc-section > .widget-box-content {
+.osc-section > .widget-box-content,
+.osc-section > .osc-panel-body {
   padding: 1.25rem;
 }
 
-.osc-section > .widget-box-content > :last-child {
+.osc-section > .widget-box-content > :last-child,
+.osc-section > .osc-panel-body > :last-child {
   margin-block-end: 0;
 }
 
-.widget-box-title-hint {
+.widget-box-title-hint,
+.osc-panel-hint {
   color: var(--osc-ink-muted);
   font-size: .875rem;
   font-weight: 400;
 }
 
-.widget-box-title-hint.is-error {
+.widget-box-title-hint.is-error,
+.osc-panel-hint.is-error {
   background: var(--osc-danger-tint);
   border-radius: 999px;
   color: var(--osc-danger);
@@ -870,7 +877,8 @@ details.osc-section:not([open]) > summary {
   border-radius: inherit;
 }
 
-details.osc-section > summary .widget-box-title-hint:not(.is-error) {
+details.osc-section > summary .widget-box-title-hint:not(.is-error),
+details.osc-section > summary .osc-panel-hint:not(.is-error) {
   margin-inline-start: auto;
 }
 

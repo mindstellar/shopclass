@@ -247,7 +247,7 @@ the title naming what is inside).
 ## A panel of your own
 
 The status panel is one shape of rail panel. For any other shape,
-`osc_admin_panel_open($title, $opts)` and `osc_admin_panel_close()` bracket a `.widget-box`
+`osc_admin_panel_open($title, $opts)` and `osc_admin_panel_close()` bracket an `.osc-panel`
 you fill yourself: fields, a definition list via `osc_admin_definition($rows)`, a pill via
 `osc_admin_status($state, $word)`, whatever the record needs.
 

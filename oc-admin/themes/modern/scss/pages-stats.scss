@@ -1,5 +1,6 @@
 // Chart cards line up at one height; a table card grows with its rows instead of spilling out.
-#stats-page .widget-box-content {
+#stats-page .widget-box-content,
+#stats-page .osc-panel-body {
   min-height: 225px;
   overflow-x: auto;
 }
