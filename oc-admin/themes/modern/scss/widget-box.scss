@@ -241,3 +241,12 @@ div.widget-box-content-no-wrapp li a {
 .osc-panel-head + .osc-panel-body {
   padding-top: 0.75rem;
 }
+
+// Stacked panels keep air between them. A grid or flex parent with its own gap sets this back to 0.
+.osc-panel + .osc-panel {
+  margin-block-start: 1rem;
+}
+
+.osc-editor-side > .osc-panel + .osc-panel {
+  margin-block-start: 0;
+}

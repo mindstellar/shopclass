@@ -622,6 +622,7 @@ if (preg_match('~(?:^|\})\s*\.osc-panel\s*\{([^}]*)\}~', $css, $pm) === 1) {
 }
 check('the panel has a hairline border from the rule token', str_contains($panel, 'var(--osc-rule)'), $panel);
 check('the panel is flat', !str_contains($panel, 'box-shadow'), $panel);
+check('stacked panels keep a gap between them', preg_match('~\\.osc-panel\\s*\\+\\s*\\.osc-panel\\s*\\{[^}]*margin-block-start:\\s*1rem~', $css) === 1);
 // The editor's fold-out .osc-section keeps its own warm head on purpose.
 check('the plain head is not a card header bar', !preg_match('~(?:^|[},])\s*\.osc-panel-head\s*[,{][^}]*background~', $css));
 
