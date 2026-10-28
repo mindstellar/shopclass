@@ -198,7 +198,8 @@ pin('...the link time is 15 minutes', 900, BackupBucket::LINK_TTL);
 $real = new S3Client(array('endpoint' => 'https://s3.example', 'region' => 'auto', 'accessKeyId' => 'AKIAFAKE', 'accessKeySecret' => 'not-a-secret', 'pathStyleEndpoint' => true));
 $url  = (new S3Storage(array('bucket' => 'shop-backups', 'client' => $real)))->downloadUrl('backups/' . $names[1], 900, $names[1]);
 parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
-pin('the real link is signed for 900 seconds', '900', $query['X-Amz-Expires'] ?? null);
+// The library counts the seconds left at signing time, so a clock tick in between gives 899.
+check('the real link is signed for 900 seconds', in_array($query['X-Amz-Expires'] ?? null, array('899', '900'), true), (string) ($query['X-Amz-Expires'] ?? ''));
 pin('...and saves under the backup name', 'attachment; filename="' . $names[1] . '"', $query['response-content-disposition'] ?? null);
 check('...and never carries the secret', strpos($url, 'not-a-secret') === false);
 $url = (new S3Storage(array('bucket' => 'b', 'client' => $real)))->downloadUrl('k', 999999, 'x.zip');
