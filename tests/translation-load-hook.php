@@ -31,12 +31,28 @@ foreach (array(
     }
 }
 
+// An enabled plugin with its own catalogue, so the test shows the hook runs after plugin texts too.
+$pluginMo = sys_get_temp_dir() . '/osc-translation-hook-' . getmypid() . '.mo';
+register_shutdown_function(static function () use ($pluginMo) {
+    @unlink($pluginMo);
+});
+$catalogue = new Gettext\Translations();
+$catalogue->setDomain('texts_fixture');
+$catalogue->insert('', 'Hello')->setTranslation('From the plugin');
+Gettext\Generators\Mo::toFile($catalogue, $pluginMo);
+(new ReflectionProperty('Plugins', 'enabled'))->setValue(null, array('texts_fixture/index.php'));
+osc_add_filter('mo_plugin_path', static fn ($path, $locale, $domain) => $domain === 'texts_fixture' ? $pluginMo : $path);
+
 $seen = array();
 osc_add_hook('translation_load_after', static function ($translation, $locale) use (&$seen) {
     $seen[] = array($translation, $locale);
     $translation->_get()->loadTranslations(array(
         'domain'   => 'core',
         'messages' => array('' => array('Edit' => array('Change'))),
+    ));
+    $translation->_get()->loadTranslations(array(
+        'domain'   => 'texts_fixture',
+        'messages' => array('' => array('Hello' => array('From the hook'))),
     ));
 });
 
@@ -53,6 +69,7 @@ pin('a callback that asks for the event gets it', array(array($t, osc_current_us
 $text = static fn (string $key): string => Translation::getInstance()->_get()->dgettext('core', $key);
 pin('a catalogue loaded in the hook replaces the core text', 'Change', $text('Edit'));
 pin('other texts are unchanged', 'Delete', $text('Delete'));
+pin('the hook runs after plugin texts, so its text wins', 'From the hook', Translation::getInstance()->_get()->dgettext('texts_fixture', 'Hello'));
 
 Translation::init();
 pin('a reload fires it again, so the layer is not lost', 2, count($seen));
