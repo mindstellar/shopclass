@@ -42,6 +42,7 @@ class CAdminLanguages extends AdminSecBaseModel
         'disable_bo_selected' => 'disableAdminSelected',
         'delete'              => 'deleteSelected',
         'make_default'        => 'makeDefault',
+        'make_admin_default'  => 'makeAdminDefault',
     );
 
     private OSCLocale $localeManager;
@@ -382,15 +383,31 @@ class CAdminLanguages extends AdminSecBaseModel
     }
 
     /**
-     * Make one language the site's default, the same setting as General settings.
+     * Make one language the website's default, the same setting as General settings.
      */
     private function makeDefault(): void
     {
+        $this->setDefault(false);
+    }
+
+    /**
+     * Make one language the default for oc-admin: the language the login screen offers first.
+     */
+    private function makeAdminDefault(): void
+    {
+        $this->setDefault(true);
+    }
+
+    private function setDefault(bool $admin): void
+    {
         osc_csrf_check();
         try {
-            $this->languages->makeDefault(Params::getParamString('id'));
-            osc_purge_page_cache('language');
-            osc_add_flash_ok_message(_m('The default language has been changed'), 'admin');
+            $this->languages->makeDefault(Params::getParamString('id'), $admin);
+            if (!$admin) {
+                osc_purge_page_cache('language');
+            }
+            osc_add_flash_ok_message($admin ? _m('The admin default language has been changed')
+                : _m('The default language has been changed'), 'admin');
         } catch (ConflictException $e) {
             osc_add_flash_error_message($e->getMessage(), 'admin');
         }
@@ -572,11 +589,17 @@ class CAdminLanguages extends AdminSecBaseModel
             $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=edit&amp;id='
                          . $l['pk_c_code']
                          . '">' . __('Edit') . '</a>';
-            $isDefault = $l['pk_c_code'] === osc_language();
+            $isDefault      = $l['pk_c_code'] === osc_language();
+            $isAdminDefault = $l['pk_c_code'] === osc_admin_language();
+            $defaultLink    = static function (string $action, string $label) use ($l): string {
+                return '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . $action . '&amp;id='
+                    . $l['pk_c_code'] . '&amp;' . osc_csrf_token_url() . '">' . $label . '</a>';
+            };
             if (!$isDefault && $l['b_enabled'] == 1) {
-                $options[] = '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=make_default&amp;id='
-                             . $l['pk_c_code'] . '&amp;' . osc_csrf_token_url()
-                             . '">' . __('Make default') . '</a>';
+                $options[] = $defaultLink('make_default', __('Make site default'));
+            }
+            if (!$isAdminDefault && $l['b_enabled_bo'] == 1) {
+                $options[] = $defaultLink('make_admin_default', __('Make admin default'));
             }
             $options[] =
                 '<a href="' . osc_admin_base_url(true) . '?page=languages&amp;action=' . ($l['b_enabled'] == 1
@@ -603,12 +626,16 @@ class CAdminLanguages extends AdminSecBaseModel
             }
             $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
-            $badge = '';
+            ob_start();
             if ($isDefault) {
-                ob_start();
-                osc_admin_status('active', __('Default'));
-                $badge = ' ' . ob_get_clean();
+                echo ' ';
+                osc_admin_status('active', __('Site default'));
             }
+            if ($isAdminDefault) {
+                echo ' ';
+                osc_admin_status('active', __('Admin default'));
+            }
+            $badge = (string) ob_get_clean();
             $row[] = osc_esc_html($l['s_name']) . $badge . $actions;
             $row[] = osc_esc_html($l['s_short_name']);
             $row[] = osc_esc_html($l['s_description']);

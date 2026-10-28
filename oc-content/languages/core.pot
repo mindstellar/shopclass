@@ -1650,6 +1650,10 @@ msgstr ""
 msgid "Admin account"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Admin default"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 msgid "Admin key: acts as you, with the scopes below"
 msgstr ""
@@ -4437,10 +4441,6 @@ msgstr ""
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Decor & Lighting"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "Default"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
@@ -8100,16 +8100,20 @@ msgstr ""
 msgid "Make a new signing secret for this endpoint?"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Make admin default"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Make backup"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "Make default"
-msgstr ""
-
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Make primary image"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Make site default"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
@@ -13034,6 +13038,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Site"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Site default"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php

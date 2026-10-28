@@ -137,31 +137,34 @@ final class LanguageService
     }
 
     /**
-     * Make a language the site's default. It must be on for the website.
+     * Make a language the default for the website, or for oc-admin. It must be on there.
      *
-     * @throws ConflictException for a language that is missing or off for the website
+     * @throws ConflictException for a language that is missing or off where it would be the default
      */
-    public function makeDefault(string $code): void
+    public function makeDefault(string $code, bool $admin = false): void
     {
         $locale = $this->locales->findByCode($code)[0] ?? null;
-        if ($locale === null || (int) $locale['b_enabled'] !== 1) {
-            throw new ConflictException(_m('Turn the language on for the website before you make it the default'));
+        if ($locale === null || (int) $locale[$admin ? 'b_enabled_bo' : 'b_enabled'] !== 1) {
+            throw new ConflictException($admin
+                ? _m('Turn the language on for oc-admin before you make it the admin default')
+                : _m('Turn the language on for the website before you make it the default'));
         }
-        osc_set_preference('language', $code);
+        osc_set_preference($admin ? 'admin_language' : 'language', $code);
     }
 
     /**
      * Turn a language off for the website, or for oc-admin.
      *
      * @return int rows changed
-     * @throws ConflictException for the site's default language
+     * @throws ConflictException for the default language of the website or of oc-admin
      */
     public function disable(string $code, bool $admin = false): int
     {
-        if (osc_language() == $code) {
-            throw new ConflictException(
-                sprintf(_m("%s can't be disabled because it's the default language"), osc_language())
-            );
+        $default = $admin ? osc_admin_language() : osc_language();
+        if ($default == $code) {
+            throw new ConflictException(sprintf($admin
+                ? _m("%s can't be disabled for oc-admin because it's the admin default language")
+                : _m("%s can't be disabled because it's the default language"), $code));
         }
 
         return LocaleStore::update($code, array($admin ? 'b_enabled_bo' : 'b_enabled' => 0));
@@ -169,7 +172,7 @@ final class LanguageService
 
     /**
      * Delete a language's rows and its translation folder. The language this admin is using
-     * and the default language are refused.
+     * and the default language of the website or of oc-admin are refused.
      *
      * @return string one of the outcome constants
      */
@@ -178,7 +181,7 @@ final class LanguageService
         if ($code === $adminLocale) {
             return self::IS_CURRENT;
         }
-        if ($code === osc_language()) {
+        if ($code === osc_language() || $code === osc_admin_language()) {
             return self::IS_DEFAULT;
         }
         if (!$this->locales->deleteLocale($code)) {

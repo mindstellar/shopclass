@@ -63,6 +63,8 @@ foreach (array('aa_AA', 'bb_BB', 'cc_CC', 'ee_EE') as $code) {
 }
 $admin->query("DELETE FROM " . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = 'language'");
 $admin->query("INSERT INTO " . DB_TABLE_PREFIX . "t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'language', 'aa_AA', 'STRING')");
+$admin->query("DELETE FROM " . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = 'admin_language'");
+$admin->query("INSERT INTO " . DB_TABLE_PREFIX . "t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'admin_language', 'aa_AA', 'STRING')");
 osc_reset_preferences();
 
 $row = static function (string $code) use ($admin, $table): ?array {
@@ -119,6 +121,29 @@ $service->makeDefault('bb_BB');
 osc_reset_preferences();
 pin('a language on for the website becomes the default', 'bb_BB', osc_language());
 $service->makeDefault('aa_AA');
+osc_reset_preferences();
+
+LocaleStore::update('bb_BB', array('b_enabled' => 0, 'b_enabled_bo' => 0));
+$refusedAdmin = false;
+try {
+    $service->makeDefault('bb_BB', true);
+} catch (ConflictException $e) {
+    $refusedAdmin = true;
+}
+check('a language off for oc-admin cannot be the admin default', $refusedAdmin);
+LocaleStore::update('bb_BB', array('b_enabled_bo' => 1));
+$service->makeDefault('bb_BB', true);
+osc_reset_preferences();
+pin('a language on for oc-admin becomes the admin default, the site default unchanged', array('bb_BB', 'aa_AA'), array(osc_admin_language(), osc_language()));
+$adminRefused = null;
+try {
+    $service->disable('bb_BB', true);
+} catch (ConflictException $e) {
+    $adminRefused = $e->getMessage();
+}
+check('the admin default cannot be disabled for oc-admin', $adminRefused !== null && str_contains($adminRefused, 'bb_BB'));
+pin('the admin default cannot be deleted', LanguageService::IS_DEFAULT, $service->delete('bb_BB', 'cc_CC'));
+$service->makeDefault('aa_AA', true);
 osc_reset_preferences();
 
 harness_section('Delete');
