@@ -237,8 +237,10 @@ class UsersDataTable extends DataTable
                 $options[] =
                     '<a onclick="return delete_dialog(\'' . $aRow['pk_i_id'] . '\');" href="' . osc_admin_base_url(true)
                     . '?page=users&action=delete&amp;id[]=' . $aRow['pk_i_id'] . '">' . __('Delete') . '</a>';
-                $options[] = '<a href="' . osc_user_public_profile_url($aRow['pk_i_id']) . '" target="_blank">'
-                    . __('Public profile') . '</a>';
+                if (!osc_is_shop_mode()) {
+                    $options[] = '<a href="' . osc_user_public_profile_url($aRow['pk_i_id']) . '" target="_blank">'
+                        . __('Public profile') . '</a>';
+                }
 
                 $options[] = '<a href="' . osc_admin_base_url(true) . '?page=users&action=user_login&id='
                     . $aRow['pk_i_id'] . '&' . $csrf_token_url . '" target="_blank">' . __('Log in as user') . '</a>';

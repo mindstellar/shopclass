@@ -125,9 +125,10 @@ $out = $run(['billing' => false], $noOrders);
 check('billing off adds no Your orders', !in_array('opt_billing_orders', $classes($out), true));
 
 harness_section('Everyone else');
-pin('an admin session keeps every entry', $classes($menu), $classes($run(['admin' => true], $menu)));
+$noProfile = array_values(array_filter($classes($menu), static fn ($c) => $c !== 'opt_publicprofile'));
+pin('an admin session in shop mode loses only the public profile entry', $noProfile, $classes($run(['admin' => true], $menu)));
 pin('classifieds mode keeps every entry', $classes($menu), $classes($run(['mode' => 'classifieds'], $menu)));
-pin('a guest in shop mode keeps every entry', $classes($menu), $classes($run(['user' => false], $menu)));
+pin('a guest in shop mode loses only the public profile entry', $noProfile, $classes($run(['user' => false], $menu)));
 pin('classifieds mode keeps two entries that share a class', count($twice), count($run(['mode' => 'classifieds'], $twice)));
 pin('an entry that is not an array is kept', 'x', $run([], ['x'])[0]);
 

@@ -146,11 +146,13 @@ class CWebUserNonSecure extends BaseModel
      */
     private function publicProfile(): void
     {
-        // Shop mode has no seller profiles: a shopper goes to the dashboard, a guest home.
-        $this->redirectShopperHome();
-        if (osc_is_shop_mode() && !osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
-            $this->redirectTo(osc_base_url());
+        // Shop mode has no seller profiles: the page is a 404 for everyone.
+        if (osc_is_shop_mode()) {
+            $this->do404();
+
+            return;
         }
+        $this->redirectShopperHome();
         if (Params::getParam('username') != '') {
             $user = User::getInstance()->findByUsername(Params::getParam('username'));
         } else {
@@ -218,7 +220,7 @@ class CWebUserNonSecure extends BaseModel
             return;
         }
         View::getInstance()->_exportVariableToView('user', $user);
-        $back = osc_user_public_profile_url((int) $user['pk_i_id']);
+        $back = osc_user_public_profile_url((int) $user['pk_i_id']) ?: osc_base_url();
 
         if (osc_reg_user_can_contact() && !osc_is_web_user_logged_in()) {
             osc_add_flash_warning_message(_m('Only registered users can send a message.'));

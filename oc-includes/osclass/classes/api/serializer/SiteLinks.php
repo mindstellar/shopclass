@@ -30,6 +30,10 @@ final class SiteLinks implements Links
 
     public function user(int $id, string $username): string
     {
+        if (osc_is_shop_mode()) {
+            return '';
+        }
+
         return osc_rewrite_enabled() && $username !== ''
             ? (string) osc_core_url('user_pub_profile', ['username' => $username])
             : (string) osc_core_url('user_pub_profile_id', ['id' => $id]);
