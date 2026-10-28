@@ -2,6 +2,12 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.8
+
+### Fixed
+- Required custom fields show a * after their label on the publish form.
+- A child theme loads its parent theme's translations, so the parent's templates show in the site language.
+
 ## Shopclass 7.0.7
 
 ### Fixed
