@@ -11,7 +11,7 @@
 /**
  * Pins the messages AJAX actions in CWebAjax: the three entries, CSRF before the service,
  * the POST-only send, the ETag and 304 on the poll check, the status map, typed reads, and the
- * live authorize check nchan calls before it opens a stream, and the four push actions.
+ * live authorize check nchan calls before it opens a stream, the typing signal and the four push actions.
  *
  * DB-free and source-level.  Usage: php tests/messages-ajax.php
  */
@@ -106,6 +106,21 @@ check('no body is sent', strpos($auth, 'echo') === false && strpos($auth, 'AjaxR
 check('no CSRF check (GET, no state)', strpos($auth, 'osc_csrf_check') === false);
 check('no flash, no redirect, no session, no log', !preg_match('/flash|redirect|Session::|error_log|_set\(/i', $auth));
 
+harness_section('typing');
+check('messages_typing is in the map', (bool) preg_match("/'messages_typing'\\s*=>\\s*'messagesTyping'/", $source));
+$typing = $method('messagesTyping');
+$tStore = strpos($typing, "header('Cache-Control: no-store')");
+$tPost  = strpos($typing, "!== 'POST'");
+$tWho   = strpos($typing, '$this->messagingActor()');
+$tCsrf  = strpos($typing, 'osc_csrf_check()');
+$tCall  = strpos($typing, '->typing(');
+check('no-store comes first', $tStore !== false && $tPost !== false && $tStore < $tPost);
+check('anything but POST is 405 with Allow: POST', $tPost !== false && strpos($typing, "header('Allow: POST')") !== false && strpos($typing, '405') !== false);
+check('then the visitor, then CSRF, then the service', $tPost < $tWho && $tWho < $tCsrf && $tCsrf < $tCall);
+check('the id is read as an int', strpos($typing, "->typing(Params::getParamInt('id'), \$actor)") !== false);
+check('a refusal goes through the shared map (404 for another thread)', strpos($typing, '$this->messagingRefusal($e)') !== false);
+check('otherwise 204, with no body', strpos($typing, 'http_response_code(204)') !== false && strpos($typing, 'echo') === false && substr_count($typing, 'AjaxResponse::') === 1);
+
 harness_section('push');
 foreach (array('push_worker' => 'pushWorker', 'push_subscribe' => 'pushSubscribe', 'push_unsubscribe' => 'pushUnsubscribe', 'push_status' => 'pushStatus') as $action => $name) {
     check("$action is in the map", (bool) preg_match("/'$action'\\s*=>\\s*'$name'/", $source));
@@ -148,7 +163,7 @@ $push = $gate . $subscribe . $method('pushUnsubscribe') . $status . $worker;
 check('no flash, no session, no log in the push actions', !preg_match('/flash|redirect|Session::|error_log|trigger_error|_set\(/i', $push));
 
 harness_section('no untyped reads');
-$all = $send . $check . $since . $actor . $refusal . $auth . $push;
+$all = $send . $check . $since . $actor . $refusal . $auth . $typing . $push;
 check('none of the messages actions calls getParam(', strpos($all, 'getParam(') === false);
 
 exit(harness_result());

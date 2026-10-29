@@ -102,7 +102,8 @@ final class CoreServices
             $c->get(ConversationStore::class),
             $c->get(MessageStore::class),
             $c->get(DispatcherInterface::class),
-            $c->get(Clock::class)
+            $c->get(Clock::class),
+            $c->get(LiveNotifier::class)
         ));
         $c->set(MessageModeration::class, static fn (Container $c): MessageModeration => new MessageModeration(
             $c->get(ConversationStore::class),
@@ -120,7 +121,7 @@ final class CoreServices
                 $c->get(LiveStatus::class)
             )
             : new NullPublisher());
-        $c->set(LiveNotifier::class, static fn (Container $c): LiveNotifier => new LiveNotifier($c->get(LivePublisher::class)));
+        $c->set(LiveNotifier::class, static fn (Container $c): LiveNotifier => new LiveNotifier($c->get(LivePublisher::class), $c->get(ConversationStore::class)));
         $events->listen(MessageSent::class, [LiveNotifier::class, 'onMessageSent']);
         $events->listen(MessageRead::class, [LiveNotifier::class, 'onMessageRead']);
         $c->set(HttpClient::class, static fn (): HttpClient => new CurlHttpClient());
