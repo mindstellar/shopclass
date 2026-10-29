@@ -169,6 +169,11 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - `GET /cart/quote` returns `open_orders` for a signed-in buyer.
 - A refused listing, contact or send-to-friend form marks each wrong field with its own message.
 
+## Shopclass 7.0.9
+
+### New
+- A release can set `OSCLASS_UPDATE_FROM`, the oldest version that may update straight to it. An older site is offered the newest release in between first, and the Update screen says which version it needs.
+
 ## Shopclass 7.0.8
 
 ### Fixed
