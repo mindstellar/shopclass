@@ -42,6 +42,20 @@ check('a signed-out GET remembers the page for after login', strpos($authFail, "
 $route = harness_method_source($file, 'doModel');
 check('a shopper is sent home', strpos($route, 'redirectShopperHome()') !== false);
 
+harness_section('the list rows');
+check('the inbox and the thread both build their rows with listRows()', strpos(harness_method_source($file, 'inbox'), '$this->listRows(') !== false
+    && strpos($thread, '$this->listRows(') !== false);
+check('the thread is read and marked read before the list is built', strpos($thread, '->markRead(') < strpos($thread, '$this->listRows('));
+$rows = harness_method_source($file, 'listRows');
+foreach (array('lastVisible(', '$this->listingFacts(', 'UserStore::displayNames(', "'preview_mine'", "'photo_url'", "'short_time'", "'initial'", "'listing_live'") as $needle) {
+    check("listRows() uses {$needle}", strpos($rows, $needle) !== false);
+}
+$loop = substr($rows, strpos($rows, 'foreach ('));
+check('no read sits inside the row loop', (bool) !preg_match('/lastVisible\(|ListingStore|UserStore|PhotoStore|Db::|listingFacts|service\(\)/', $loop));
+foreach (array('conversation', 'messages', 'names', 'title', 'item_url', 'can_send', 'my_block', 'their_block', 'conversations', 'older', 'role', 'their_unread') as $key) {
+    check("thread() still exports '{$key}'", strpos($thread, "_exportVariableToView('{$key}'") !== false);
+}
+
 harness_section('request reads');
 check('no untyped Params::getParam(', strpos($source, 'Params::getParam(') === false);
 check('a rate limit uses the shared wording', strpos(harness_method_source($file, 'sendPost'), 'osc_message_throttle_message($e->retryAfter())') !== false);
