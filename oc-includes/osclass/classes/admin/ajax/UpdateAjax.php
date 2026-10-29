@@ -60,11 +60,16 @@ final class UpdateAjax extends AjaxHandler
                     'checked'   => time(),
                     'available' => $upgrade_available,
                     'package'   => $package_json,
+                    'waiting'   => Osclass::lastWaiting(),
                 ));
                 AjaxResponse::json(array(
                     'error' => 0,
                     'msg'   => $upgrade_available ? __('Update available') : __('No update available'),
                 ));
+            } elseif (Osclass::lastWaiting() !== null) {
+                // GitHub answered, but every newer release needs a newer version first.
+                osc_update_check_save('core', array('checked' => time(), 'available' => false, 'waiting' => Osclass::lastWaiting()));
+                AjaxResponse::json(array('error' => 0, 'msg' => __('No update available')));
             } else {
                 // Only the stale cache, or nothing. Leave the stored result alone and retry
                 // in an hour rather than freezing the badge for a full day.
