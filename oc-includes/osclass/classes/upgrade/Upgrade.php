@@ -148,6 +148,26 @@ class Upgrade
     }
 
     /**
+     * The version a site must reach before it takes this package, when $installed is older.
+     * A core release states it as OSCLASS_UPDATE_FROM; any other package needs nothing.
+     *
+     * @param string $root      package root, see packageRoot()
+     * @param string $installed the site's version
+     *
+     * @return string|null
+     */
+    public static function versionNeeded(string $root, string $installed): ?string
+    {
+        $file = $root . '/oc-includes/osclass/default-constants.php';
+        $code = is_file($file) ? (string) file_get_contents($file) : '';
+        if (!preg_match("/define\\('OSCLASS_UPDATE_FROM',\\s*'(\\d+\\.\\d+\\.\\d+)'\\)/", $code, $m)) {
+            return null;
+        }
+
+        return version_compare($installed, $m[1], '<') ? $m[1] : null;
+    }
+
+    /**
      * Target paths the package would write but this PHP user cannot. A new file counts as
      * writable when its nearest existing parent folder is.
      *
@@ -353,6 +373,14 @@ class Upgrade
                     __('Nothing was changed. This update needs PHP %1$s or newer, and this server runs PHP %2$s. Ask your host to upgrade PHP, then update again.'),
                     $needs,
                     PHP_VERSION
+                ));
+            }
+
+            $first = self::versionNeeded($originDir, OSCLASS_VERSION);
+            if ($first !== null) {
+                throw new RuntimeException(sprintf(
+                    __('Nothing was changed. This update needs Shopclass %1$s or newer first. Update to %1$s, then update again.'),
+                    $first
                 ));
             }
 

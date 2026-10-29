@@ -9637,6 +9637,12 @@ msgid ""
 "runs PHP %2$s. Ask your host to upgrade PHP, then update again."
 msgstr ""
 
+#: oc-includes/osclass/classes/upgrade/Upgrade.php
+msgid ""
+"Nothing was changed. This update needs Shopclass %1$s or newer first. "
+"Update to %1$s, then update again."
+msgstr ""
+
 #: oc-includes/osclass/classes/backup/BackupService.php
 msgid "Nothing was saved."
 msgstr ""
@@ -12734,6 +12740,16 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid "Shopclass %1$s is available. You have %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid ""
+"Shopclass %1$s needs version %2$s or newer first. Update to %3$s now, then "
+"update again."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid "Shopclass %1$s needs version %2$s or newer first. You have %3$s."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/version.php

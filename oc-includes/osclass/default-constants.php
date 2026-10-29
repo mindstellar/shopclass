@@ -16,6 +16,12 @@ if (!defined('OSCLASS_VERSION')) {
     define('OSCLASS_VERSION', '7.1.0.dev2');
 }
 
+// The oldest version that may update straight to this release, or '' for any. An older site is
+// offered a release in between first. The release build copies it into the release notes.
+if (!defined('OSCLASS_UPDATE_FROM')) {
+    define('OSCLASS_UPDATE_FROM', '');
+}
+
 // Roughly where a search engine stops showing a description, and the budget
 // meta_description() fills — most distinguishing part first.
 if (!defined('OSC_META_DESCRIPTION_LENGTH')) {

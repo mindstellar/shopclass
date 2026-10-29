@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only admins post and shoppers get a buyer account. Over the limit, a seller now saves the listing and pays on the last step.
 
 ### New
+- A release can set `OSCLASS_UPDATE_FROM`, the oldest version that may update straight to it. An older site is offered the newest release in between first, and the Update screen says which version it needs.
 - The `TranslationLoaded` event (old name `translation_load_after`) fires after core, theme and plugin texts load, so a plugin can load its own texts on top.
 - Country, region and city edit drawers have a Names section: one name per enabled site language, blank falls back to the stored name; the admin API's `PATCH /admin/regions|cities` takes `names`.
 - Country, region and city names can be stored per language (`t_location_name`); listings, lists, search, autocomplete and the API show the visitor's language and fall back to the stored name.

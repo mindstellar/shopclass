@@ -10,8 +10,14 @@ if (!defined('OC_ADMIN')) {
 $updateJson    = osc_update_core_json();
 $isAvailable   = false;
 $remoteVersion = '';
+$waiting       = null;
 if (!empty($updateJson)) {
-    $osclassUpgrade = new Osclass(json_decode($updateJson, true));
+    $updateInfo = json_decode($updateJson, true);
+    // A newer release that needs this site on a newer version first.
+    if (!empty($updateInfo['s_waiting_version']) && !empty($updateInfo['s_waiting_from'])) {
+        $waiting = array('version' => (string) $updateInfo['s_waiting_version'], 'from' => (string) $updateInfo['s_waiting_from']);
+    }
+    $osclassUpgrade = new Osclass($updateInfo);
     $isAvailable    = $osclassUpgrade->isUpgradable();
     $remoteVersion  = (string) $osclassUpgrade->getNewVersion();
 }
@@ -245,6 +251,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         'tone' => 'info',
                         'text' => __('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.'),
                     )));
+                } elseif (!$isAvailable && $waiting !== null) {
+                    osc_admin_verdict(array(array(
+                        'tone' => 'info',
+                        'text' => sprintf(__('Shopclass %1$s needs version %2$s or newer first. You have %3$s.'), $waiting['version'], $waiting['from'], osc_get_preference('version')),
+                    )));
                 } elseif (!$isAvailable) {
                     osc_admin_verdict(array(), sprintf(__('Shopclass is up to date. You have version %s.'), osc_get_preference('version')));
                 } elseif ($running) { ?>
@@ -256,7 +267,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </div>
                     </div>
                 <?php } else {
-                    osc_admin_verdict(array(array(
+                    $issues = array(array(
                         'tone'   => 'info',
                         'text'   => sprintf(__('Shopclass %1$s is available. You have %2$s.'), $remoteVersion, osc_get_preference('version')),
                         'action' => array(
@@ -264,7 +275,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             'variant' => 'primary',
                             'attrs'   => array('data-osc-dialog-open' => '#upgrade-dialog'),
                         ),
-                    )));
+                    ));
+                    if ($waiting !== null) {
+                        $issues[] = array(
+                            'tone' => 'info',
+                            'text' => sprintf(__('Shopclass %1$s needs version %2$s or newer first. Update to %3$s now, then update again.'), $waiting['version'], $waiting['from'], $remoteVersion),
+                        );
+                    }
+                    osc_admin_verdict($issues);
                     osc_admin_confirm_dialog(array(
                         'id'        => 'upgrade-dialog',
                         'tone'      => 'plain',

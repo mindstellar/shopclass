@@ -227,6 +227,16 @@ jobs:
           if [ ! -s release_notes.md ]; then
             echo "See the commit history for changes in this release." > release_notes.md
           fi
+          # Updaters read this exact line to offer a release in between first; see OSCLASS_UPDATE_FROM.
+          FROM=$(grep -oP "(?<=define\('OSCLASS_UPDATE_FROM', ')[^']*" oc-includes/osclass/default-constants.php)
+          if [ -n "$FROM" ]; then
+            if ! [[ "$FROM" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] \
+              || ! php -r 'exit(version_compare($argv[1], $argv[2], "<") ? 0 : 1);' "$FROM" "$OSCLASS_VERSION"; then
+              echo "OSCLASS_UPDATE_FROM must be X.Y.Z and older than ${OSCLASS_VERSION}: ${FROM}" >&2
+              exit 1
+            fi
+            printf '\n\nUpdate from %s or newer.\n' "$FROM" >> release_notes.md
+          fi
           # Link the tag, not the branch: the branch ref moves, but "${OSCLASS_VERSION}"
           # is tagged by this same run, so the link keeps resolving to the notes for
           # exactly this release.
