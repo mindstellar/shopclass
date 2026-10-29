@@ -21,27 +21,6 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/push-optin-render.php';
 
-function test_browser(): string
-{
-    foreach (array((string) getenv('CHROME'), '/opt/google/chrome/chrome', 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser') as $c) {
-        if ($c === '') {
-            continue;
-        }
-        if (strpos($c, '/') !== false) {
-            if (is_executable($c)) {
-                return $c;
-            }
-            continue;
-        }
-        $found = trim((string) shell_exec('command -v ' . escapeshellarg($c) . ' 2>/dev/null'));
-        if ($found !== '' && is_executable($found)) {
-            return $found;
-        }
-    }
-
-    return '';
-}
-
 $chrome = test_browser();
 if ($chrome === '' && (string) getenv('CI') !== '') {
     check('a browser is available to drive the scripts', false, 'no Chrome or Chromium, so the browser assertions did not run');
