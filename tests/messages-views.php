@@ -25,6 +25,8 @@ $guiDir = ABS_PATH . 'oc-includes/osclass/gui/';
 $files  = array(
     'inbox'  => $guiDir . 'account/user-messages-content.php',
     'thread' => $guiDir . 'account/user-conversation-content.php',
+    'list'   => $guiDir . 'account/parts/messenger-list.php',
+    'chat'   => $guiDir . 'account/parts/messenger-chat.php',
 );
 $script = ABS_PATH . 'oc-includes/assets/osclass/messages.js';
 $style  = (string) file_get_contents($guiDir . 'page-style.php');
@@ -41,41 +43,45 @@ foreach ($files as $name => $file) {
 }
 
 harness_section('the forms');
-$thread = $src['thread'];
+$thread = $src['chat'];
+$inbox  = $src['list'];
 check('the compose form posts send_post', strpos($thread, 'name="action" value="send_post"') !== false
     && strpos($thread, 'class="oe-compose" method="post"') !== false);
 check('the compose box is capped by MessageGuard::maxLength()', strpos($thread, 'MessageGuard::maxLength()') !== false);
 check('the report form is a POST to report_post', strpos($thread, 'name="action" value="report_post"') !== false);
-check('block and unblock are POST row actions', strpos($thread, "'action' => 'block_post'") !== false
-    && strpos($thread, "'action' => 'unblock_post'") !== false
-    && substr_count($thread, "'method' => 'post'") + substr_count($thread, "'method'  => 'post'") >= 2);
+check('block and unblock are POST forms with the CSRF token', strpos($thread, "\$postForm('block_post'") !== false
+    && strpos($thread, "\$postForm('unblock_post'") !== false
+    && strpos($thread, 'method="post"') !== false && strpos($thread, 'osc_csrf_token_form()') !== false);
 check('a report offers the reasons the policy accepts', strpos($thread, 'MessagePolicy::REPORT_REASONS') !== false);
-check('the thread script is loaded with defer', (bool) preg_match('/<script src="[^"]*"\s+defer><\/script>/', $thread)
-    && strpos($thread, "osclass/messages.js") !== false);
+foreach (array('inbox', 'thread') as $page) {
+    check("the {$page} page loads messages.js with defer", (bool) preg_match('/<script src="[^"]*"\s+defer><\/script>/', $src[$page])
+        && strpos($src[$page], 'osclass/messages.js') !== false);
+}
 check('a message body is escaped and keeps its line breaks in CSS', strpos($thread, "osc_esc_html((string) \$convoMsg['s_body'])") !== false
-    && strpos($style, '.oe-message-body{overflow-wrap:anywhere;white-space:pre-wrap;}') !== false);
+    && (bool) preg_match('/\.oe-message-body\{[^}]*white-space:pre-wrap/', $style));
 
 harness_section('live delivery');
-foreach (array('thread' => 'data-osc-messages', 'inbox' => 'data-osc-inbox') as $name => $marker) {
-    check("the {$name} partial prints the live URL", strpos($src[$name], 'data-live-url="<?php echo osc_esc_html(osc_messaging_live_url()); ?>"') !== false);
+foreach (array('chat' => 'data-osc-messages', 'list' => 'data-osc-inbox') as $name => $marker) {
+    check("the {$name} partial prints the live URL", strpos($src[$name], 'data-live-url="<?php echo osc_esc_html(') !== false);
     check("the {$name} partial prints the check URL", strpos($src[$name], 'data-check-url="') !== false);
     check("the {$name} partial has the {$marker} hook", strpos($src[$name], $marker) !== false);
 }
-check('the inbox loads messages.js with defer', (bool) preg_match('/<script src="[^"]*"\s+defer><\/script>/', $src['inbox'])
-    && strpos($src['inbox'], 'osclass/messages.js') !== false);
 
 harness_section('web push');
 require_once __DIR__ . '/lib/push-optin-render.php';
-foreach ($files as $name => $file) {
-    check("the {$name} page includes the push partial", strpos($src[$name], "require __DIR__ . '/parts/push-optin.php';") !== false);
+check('the list pane includes the push partial as the bell', (bool) preg_match(
+    "/\\\$pushVariant = 'bell';\\s*require __DIR__ \\. '\\/push-optin\\.php';/",
+    $src['list']
+));
+foreach (array('inbox', 'thread') as $name) {
     check("the {$name} page loads push.js with defer only while push is on", (bool) preg_match(
-        '#<\?php if \(osc_push_enabled\(\)\) \{ \?>\s*<script src="[^"]*osclass/push\.js[^"]*"\s+defer></script>#',
+        '#<\\?php if \\(osc_push_enabled\\(\\)\\) \\{ \\?>\\s*<script src="[^"]*osclass/push\\.js[^"]*"\\s+defer></script>#',
         $src[$name]
     ));
     check("the {$name} page loads push.js after messages.js", strpos($src[$name], 'osclass/messages.js') < strpos($src[$name], 'osclass/push.js'));
 }
-check('the compose box comes before the push partial in the thread', strpos($thread, 'class="oe-compose"') < strpos($thread, 'parts/push-optin.php'));
-check('the push partial sits outside the refreshed inbox list', strpos($src['inbox'], 'parts/push-optin.php') < strpos($src['inbox'], '<div data-osc-inbox'));
+check('the Notify menu item is the push toggle', strpos($thread, 'data-osc-push-toggle') !== false);
+check('the push bell sits outside the refreshed inbox list', strpos($inbox, 'push-optin.php') < strpos($inbox, '<div data-osc-inbox'));
 $optinSrc = (string) file_get_contents($guiDir . 'account/parts/push-optin.php');
 check('the push partial has no HTML comment', strpos($optinSrc, '<!--') === false);
 $optin = push_optin_render(true);
@@ -91,6 +97,38 @@ check('the push form names the inbox', strpos($optin, 'data-inbox-url="https://e
 check('the site name is escaped into the worker URL', strpos($optin, 'title=Shop%20%26%20Co') !== false);
 pin('the push partial prints nothing while push is off', '', trim(push_optin_render(false)));
 pin('nor when the site has no push key (OpenSSL without EC)', '', trim(push_optin_render(true, false)));
+
+harness_section('the messenger markup');
+$all = implode("\n", $src);
+foreach (array(
+    'oe-messenger', 'oe-messenger-list', 'oe-messenger-chat', 'oe-list-head', 'oe-list-filter', 'oe-list-tabs', 'is-unread',
+    'is-current', 'oe-thread-link', 'oe-thread-photo', 'oe-thread-initial', 'oe-thread-name', 'oe-thread-time', 'oe-thread-preview',
+    'oe-thread-flag', 'oe-chat-head', 'oe-chat-back', 'oe-chat-name', 'oe-chat-role', 'oe-menu', 'oe-menu-panel', 'oe-menu-item',
+    'oe-listing-card', 'oe-listing-photo', 'oe-listing-title', 'oe-listing-price', 'oe-listing-link', 'is-removed', 'oe-day',
+    'is-first', 'is-last', 'oe-seen', 'oe-held', 'oe-typing', 'oe-compose-row', 'oe-compose-send', 'oe-compose-foot',
+    'oe-compose-hint', 'oe-compose-counter', 'oe-stopbar', 'oe-chat-empty', 'is-chat', 'is-empty',
+    'oe-threads', 'oe-thread-title', 'oe-unread', 'oe-messages', 'oe-message', 'oe-message-body', 'oe-message-meta',
+    'oe-compose', 'oe-thread-actions',
+) as $class) {
+    check("the markup uses .{$class}", strpos($all, $class) !== false);
+}
+foreach (array('data-osc-inbox', 'data-osc-messages', 'data-server-now', 'data-their-unread', 'data-typing-url', 'data-check-url',
+    'data-since-url', 'data-send-url', 'data-last-id', 'data-me=', 'data-conversation', 'id="oe-list-filter"', 'id="oe-compose-body"',
+    'name="body"', 'data-filter="all"', 'data-filter="unread"', 'aria-current="page"') as $attr) {
+    check("the markup carries {$attr}", strpos($all, $attr) !== false);
+}
+check('the typing URL prints only while live delivery is on', (bool) preg_match('/<\?php if \(\$liveUrl !== \'\'\) \{ \?>data-typing-url=/', $thread));
+check('the typing bubble prints only while live delivery is on', (bool) preg_match('/<\?php if \(\$liveUrl !== \'\'\) \{ \?>\s*<div class="oe-typing" hidden>/', $thread));
+check('the chat pane opens with the thread, the empty pane only without one', strpos($src['thread'], 'oe-messenger is-chat') !== false
+    && strpos($src['inbox'], 'oe-messenger is-chat') === false && strpos($src['inbox'], 'oe-chat-empty') !== false);
+check('the filter and the tabs start hidden', (bool) preg_match('/class="oe-list-filter" hidden/', $inbox) && (bool) preg_match('/class="oe-list-tabs"[\\s\\S]*?\\s+hidden>/', $inbox));
+check('a preview, a name and a title are escaped', strpos($inbox, "osc_esc_html(\$rowPreview)") !== false
+    && strpos($inbox, "osc_esc_html((string) \$listRow['other_name'])") !== false && strpos($inbox, "osc_esc_html((string) \$listRow['title'])") !== false);
+check('"You: " prefixes my own last message', strpos($inbox, "\$listRow['preview_mine'] ? _m('You') . ': '") !== false);
+check('Seen needs their unread count at 0', strpos($thread, '$theirUnread === 0') !== false);
+check('the account hooks stay in both pages', substr_count($src['inbox'] . $src['thread'], "osc_run_hook('account_page_before'") === 2
+    && substr_count($src['inbox'] . $src['thread'], "osc_run_hook('account_page_after'") === 2);
+check('both pages still include the account nav', substr_count($src['inbox'] . $src['thread'], "/nav.php") === 2);
 
 harness_section('the stylesheet');
 foreach (array(
