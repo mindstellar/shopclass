@@ -18,13 +18,22 @@ use mindstellar\messaging\event\MessageRead;
 use mindstellar\messaging\event\MessageSent;
 
 /**
- * Nudges a user's open pages when a message arrives or their unread count drops. Notes carry ids
- * only. A held message publishes nothing: the recipient must not learn of it.
+ * Nudges a user's open pages when a message arrives, their unread count drops, or the other
+ * side reads. Notes carry ids only. A held message publishes nothing: the recipient
+ * must not learn of it.
  */
 final class LiveNotifier
 {
-    public function __construct(private LivePublisher $live)
+    public function __construct(private LivePublisher $live, private ConversationStore $conversations)
     {
+    }
+
+    /**
+     * Whether notes reach anyone; false while live delivery is off.
+     */
+    public function isOn(): bool
+    {
+        return $this->live->mode() !== 'off';
     }
 
     public function onMessageSent(MessageSent $event): void
@@ -40,6 +49,23 @@ final class LiveNotifier
     {
         $this->live->publish(LiveChannel::forUser($event->readerId()), [
             'kind'         => 'read',
+            'conversation' => $event->conversationId(),
+        ]);
+        if (!$this->isOn()) {
+            return;
+        }
+        $conversation = $this->conversations->find($event->conversationId());
+        $side         = $conversation !== null ? ConversationStore::sideOf($conversation, $event->readerId()) : null;
+        if ($side === null) {
+            return;
+        }
+        $otherSide = $side === ConversationStore::SIDE_BUYER ? ConversationStore::SIDE_SELLER : ConversationStore::SIDE_BUYER;
+        if ($otherSide === ConversationStore::SIDE_SELLER && (string) $conversation['s_state'] === 'held') {
+            // The seller does not see a held thread.
+            return;
+        }
+        $this->live->publish(LiveChannel::forUser((int) $conversation['fk_i_' . $otherSide . '_id']), [
+            'kind'         => 'seen',
             'conversation' => $event->conversationId(),
         ]);
     }

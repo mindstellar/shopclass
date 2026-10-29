@@ -10,8 +10,8 @@
 
 /**
  * Live notes from the messaging service: one note to the recipient of a sent or released
- * message, none for a held one, one to the reader on markRead, always after commit and ids
- * only. A stalled nchan cannot slow a send past about a second. Off by default; the status
+ * message, none for a held one, on markRead one to the reader and one to the other side,
+ * always after commit and ids only. A stalled nchan cannot slow a send past about a second. Off by default; the status
  * row written by LiveStatus flips only when the outcome flips.
  *
  * Usage:  php tests/models/messaging-live.php      (standalone, own scratch database)
@@ -149,7 +149,10 @@ pin('a reply notes the buyer', ['user-' . $buyer], array_column($recorder->sent,
 
 $recorder->sent = [];
 pin('markRead clears the seller side', 1, $svc->markRead($res->conversationId(), $asSeller));
-pin('one read note, to the reader', [['channel' => 'user-' . $seller, 'note' => ['kind' => 'read', 'conversation' => $res->conversationId()]]], array_map(
+pin('a read note to the reader, a seen note to the other side', [
+    ['channel' => 'user-' . $seller, 'note' => ['kind' => 'read', 'conversation' => $res->conversationId()]],
+    ['channel' => 'user-' . $buyer, 'note' => ['kind' => 'seen', 'conversation' => $res->conversationId()]],
+], array_map(
     static fn (array $r): array => ['channel' => $r['channel'], 'note' => $r['note']],
     $recorder->sent
 ));
