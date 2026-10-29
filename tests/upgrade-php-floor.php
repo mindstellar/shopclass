@@ -9,8 +9,8 @@
  */
 
 /**
- * The updater must refuse a release whose PHP floor is above the server's PHP before it
- * changes any file, reading the floor from the Composer platform check the release ships.
+ * The updater must refuse a release whose PHP floor is above the server's PHP, or that needs a
+ * newer Shopclass first (OSCLASS_UPDATE_FROM), before it changes any file.
  *
  * Usage: php tests/upgrade-php-floor.php
  */
@@ -72,6 +72,16 @@ $zip->addFile($serve . '/shopclass/index.php', 'shopclass/index.php');
 $zip->addFile($serve . '/shopclass/oc-includes/vendor/composer/platform_check.php', 'shopclass/oc-includes/vendor/composer/platform_check.php');
 $zip->close();
 
+// A second release that needs Shopclass 7.2.0 first; this site runs 7.1.0.
+mkdir($serve . '/next/shopclass/oc-includes/osclass', 0755, true);
+file_put_contents($serve . '/next/shopclass/index.php', 'the next release');
+file_put_contents($serve . '/next/shopclass/oc-includes/osclass/default-constants.php', "<?php\ndefine('OSCLASS_UPDATE_FROM', '7.2.0');\n");
+$zip = new ZipArchive();
+$zip->open($serve . '/next.zip', ZipArchive::CREATE);
+$zip->addFile($serve . '/next/shopclass/index.php', 'shopclass/index.php');
+$zip->addFile($serve . '/next/shopclass/oc-includes/osclass/default-constants.php', 'shopclass/oc-includes/osclass/default-constants.php');
+$zip->close();
+
 $port = 18000 + random_int(0, 999);
 $server = proc_open([PHP_BINARY, '-S', '127.0.0.1:' . $port, '-t', $serve], [['pipe', 'r'], ['file', '/dev/null', 'w'], ['file', '/dev/null', 'w']], $pipes);
 for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) {
@@ -81,30 +91,40 @@ for ($i = 0; $i < 50 && !@fsockopen('127.0.0.1', $port); $i++) {
 mkdir($site . '/oc-content', 0755, true);
 file_put_contents($site . '/index.php', 'old');
 touch($site . '/index.php', time() - 3600);
-$package = new class (array(
-    's_title'             => 'Shopclass 99',
-    's_source_url'        => 'http://127.0.0.1:' . $port . '/release.zip',
-    's_new_version'       => '99.0.0',
-    's_installed_version' => '7.1.0',
-    's_short_name'        => 'shopclass',
-    's_target_directory'  => $site . '/',
-)) extends UpgradePackage {
-    public function afterProcessUpgrade()
-    {
-        return true;
+$update = static function (string $zipName, string $version) use ($port, $site): string {
+    $package = new class (array(
+        's_title'             => 'Shopclass ' . $version,
+        's_source_url'        => 'http://127.0.0.1:' . $port . '/' . $zipName,
+        's_new_version'       => $version,
+        's_installed_version' => '7.1.0',
+        's_short_name'        => 'shopclass',
+        's_target_directory'  => $site . '/',
+    )) extends UpgradePackage {
+        public function afterProcessUpgrade()
+        {
+            return true;
+        }
+    };
+    try {
+        (new Upgrade($package))->doUpgrade();
+    } catch (RuntimeException $e) {
+        return $e->getMessage();
     }
+
+    return '';
 };
 
-$error = '';
-try {
-    (new Upgrade($package))->doUpgrade();
-} catch (RuntimeException $e) {
-    $error = $e->getMessage();
-}
-proc_terminate($server);
+$error = $update('release.zip', '99.0.0');
 check('the update is refused naming the PHP it needs', strpos($error, 'needs PHP 99.0.0 or newer') !== false);
 pin('the site files are untouched', 'old', file_get_contents($site . '/index.php'));
 pin('no maintenance flag is left behind', false, file_exists($site . '/.maintenance'));
+
+harness_section('a release that needs a newer version first changes nothing');
+$error = $update('next.zip', '7.3.0');
+check('the update is refused naming the version it needs first', strpos($error, 'needs Shopclass 7.2.0 or newer first') !== false);
+pin('the site files are still untouched', 'old', file_get_contents($site . '/index.php'));
+pin('no maintenance flag is left behind either', false, file_exists($site . '/.maintenance'));
+proc_terminate($server);
 
 (new mindstellar\utility\FileSystem())->remove($root);
 (new mindstellar\utility\FileSystem())->remove($site);
