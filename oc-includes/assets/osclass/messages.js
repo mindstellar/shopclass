@@ -130,7 +130,7 @@
                 }
                 var seen = document.createElement('span');
                 seen.className = 'oe-seen';
-                seen.textContent = list.dataset.seenLabel || seenLabel || 'Seen';
+                seen.textContent = list.dataset.seenLabel || seenLabel;
                 meta.append(seen);
                 return;
             }
@@ -694,9 +694,9 @@
                     }
                     return;
                 }
-                showError(result.data.msg || form.dataset.errorText || 'Could not send the message.');
+                showError(result.data.msg || form.dataset.errorText || '');
             }).catch(function () {
-                showError(form.dataset.errorText || 'Could not send the message.');
+                showError(form.dataset.errorText || '');
             }).finally(function () {
                 sending = false;
                 update();
@@ -732,7 +732,7 @@
         var close = document.createElement('button');
         close.type = 'button';
         close.className = 'oe-dialog-close';
-        close.setAttribute('aria-label', labels.dialogClose || 'Close');
+        close.setAttribute('aria-label', labels.dialogClose || '');
         close.textContent = '×';
         head.append(heading, close);
 
@@ -748,7 +748,7 @@
         var cancel = document.createElement('button');
         cancel.type = 'button';
         cancel.className = 'oe-btn oe-secondary';
-        cancel.textContent = labels.dialogCancel || 'Cancel';
+        cancel.textContent = labels.dialogCancel || '';
         [close, cancel].forEach(function (button) {
             button.addEventListener('click', function () {
                 dialog.close();

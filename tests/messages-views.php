@@ -159,6 +159,11 @@ check("the script drops the form's page and action so the AJAX action runs", str
     && strpos($js, "fields.delete('action')") !== false && strpos($js, 'body: fields') !== false);
 check('the script sets message text with textContent', strpos($js, 'body.textContent = row.body') !== false
     && strpos($js, 'innerHTML') === false);
+check('every label in the script comes from the markup, with no English fallback', preg_match("/\\|\\|\\s*'[A-Z][a-z]/", $js) === 0);
+pin('and the markup carries those labels', array(), array_values(array_filter(
+    array('data-seen-label=', 'data-error-text=', 'data-dialog-close=', 'data-dialog-cancel=', 'data-held-label=', 'data-typing-label='),
+    static fn (string $attr): bool => strpos($all, $attr) === false
+)));
 check('the script keeps appendMessage exported', strpos($js, 'window.oscMessages = {appendMessage: appendMessage}') !== false);
 
 exit(harness_result());
