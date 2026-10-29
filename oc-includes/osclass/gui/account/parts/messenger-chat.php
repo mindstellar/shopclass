@@ -119,7 +119,7 @@ $blockConfirm = _m('Block this conversation? Neither of you can write until it i
                         <summary class="oe-menu-item"><?php echo osc_esc_html(_m('Report')); ?></summary>
                         <form method="post" action="<?php echo osc_esc_html($postUrl); ?>"
                               data-dialog-title="<?php echo osc_esc_html(_m('Report conversation')); ?>"
-                              data-dialog-text="<?php echo osc_esc_html(_m('The site team reviews it. Neither of you can write while it is under review.')); ?>
+                              data-dialog-text="<?php echo osc_esc_html(_m('The site team reviews it. Neither of you can write while it is under review.')); ?>"
                               data-dialog-cancel="<?php echo osc_esc_html(_m('Cancel')); ?>"
                               data-dialog-close="<?php echo osc_esc_html(_m('Close')); ?>">
                             <input type="hidden" name="page" value="messages">
