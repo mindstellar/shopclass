@@ -52,5 +52,13 @@ check('the messenger block is found', $start !== false && $end !== false && $end
 $block = substr($style, (int) $start, (int) $end - (int) $start);
 check('the messenger block has no raw hex colour', preg_match('/#[0-9a-fA-F]{3,8}\b/', $block) === 0);
 check('the messenger block has no rgb()/rgba() literal', preg_match('/\brgba?\(/', $block) === 0);
+check('the messenger block has no hsl()/hwb()/lab() literal', preg_match('/\b(?:hsla?|hwb|lab|lch|oklab|oklch)\(/', $block) === 0);
+$named = 'black|white|red|green|blue|gray|grey|silver|maroon|purple|fuchsia|lime|olive|yellow|navy|teal|aqua|orange|pink|brown|'
+    . 'gold|beige|ivory|khaki|coral|salmon|tomato|crimson|indigo|violet|cyan|magenta|tan|wheat|linen|snow|azure|lavender|'
+    . 'whitesmoke|gainsboro|lightgray|lightgrey|darkgray|darkgrey|dimgray|dimgrey|darkred|darkgreen|darkblue|lightblue';
+check('the messenger block has no named colour', preg_match(
+    '/(?:^|[;{\s])(?:color|background(?:-color)?|border(?:-[a-z-]+)?|outline(?:-color)?|fill|stroke|box-shadow|text-decoration-color|caret-color)\s*:[^;}]*?(?<![\w-])(?:' . $named . ')(?![\w-])/i',
+    $block
+) === 0);
 
 exit(harness_result());
