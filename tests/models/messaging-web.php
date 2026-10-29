@@ -391,6 +391,12 @@ $html = $render('parts/messenger-chat.php');
 check('the chat pane renders', strpos($html, 'ERR') !== 0 && strpos($html, 'class="oe-messages"') !== false, substr($html, 0, 300));
 check('the typed markup stays text', strpos($html, '<b>two</b>') === false && strpos($html, '&lt;b&gt;two&lt;/b&gt;') !== false);
 check('live off prints no typing URL', strpos($html, 'data-typing-url') === false && strpos($html, 'class="oe-typing"') === false);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0 WHERE pk_i_id = $bike");
+$threadFor($mia, $miaThread);
+$html = $render('parts/messenger-chat.php');
+check('a listing visitors cannot see shows as removed, with no link to it', strpos($html, 'oe-listing-card is-removed') !== false
+    && strpos($html, 'class="oe-listing-link"') === false && strpos($html, 'href="' . osc_esc_html(osc_item_url_ns($bike)) . '"') === false);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1 WHERE pk_i_id = $bike");
 
 harness_section('contact form');
 // The hook fires on both paths; only the e-mail path is stopped here, before it sends.

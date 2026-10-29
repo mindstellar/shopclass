@@ -31,6 +31,7 @@ $convoNames  = (array) $convoView->_get('names');
 $convoTitle  = (string) $convoView->_get('title');
 $convoItem   = $convoView->_get('item_url');
 $convoPhoto  = (string) $convoView->_get('listing_photo');
+$convoLive   = !empty($convoItem) && (bool) $convoView->_get('listing_live');
 $convoPrice  = (string) $convoView->_get('listing_price');
 $convoRole   = (string) $convoView->_get('role');
 $theirUnread = (int) $convoView->_get('their_unread');
@@ -133,13 +134,13 @@ $blockConfirm = _m('Block this conversation? Neither of you can write until it i
         </details>
     </div>
 
-    <div class="oe-listing-card<?php echo empty($convoItem) ? ' is-removed' : ''; ?>">
+    <div class="oe-listing-card<?php echo $convoLive ? '' : ' is-removed'; ?>">
         <?php if ($convoPhoto !== '') { ?>
             <img class="oe-listing-photo" src="<?php echo osc_esc_html($convoPhoto); ?>" alt="" loading="lazy">
         <?php } else { ?>
             <span class="oe-listing-photo" aria-hidden="true"></span>
         <?php }
-        if (!empty($convoItem)) { ?>
+        if ($convoLive) { ?>
             <a class="oe-listing-title" href="<?php echo osc_esc_html((string) $convoItem); ?>"><?php echo osc_esc_html($convoTitle); ?></a>
             <span class="oe-listing-price"><?php echo osc_esc_html($convoPrice); ?></span>
             <a class="oe-listing-link" href="<?php echo osc_esc_html((string) $convoItem); ?>" tabindex="-1" aria-hidden="true"><?php
