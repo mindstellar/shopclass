@@ -62,6 +62,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - The REST API gains `/account/conversations` and `/admin/conversations`, `/admin/messages`, and the webhooks `message.created` and `conversation.reported`; scopes `conversations:read`, `conversations:write`, `admin:conversations`.
 - New messages show up without a reload: every site checks every 15 s while the tab is open; the Docker image streams them through nchan (`OSC_LIVE`), sharing through Valkey when the cache is on.
 - Browser notifications for new messages: an admin switch, then each user turns them on per browser from the messages page. The notification carries no text; the browser asks the site what is new.
+- The messages pages are a two-pane messenger with a conversation menu, grouped messages, Seen marks and, with live delivery on, a typing indicator.
 - Shoppers keep up to 10 delivery addresses under Account → Addresses and pick one at checkout; `account/addresses` in the REST API, and `POST account/orders` takes `address.id` or `address.save`.
 - Search takes `bbox=west,south,east,north` to keep results to a map area, when distance search is on. Themes read it with `osc_search_bbox()`, saved searches keep it, and `GET /listings` takes it too.
 - `osc_plugin_data_path()` gives each plugin a private folder in `oc-content/plugin-data/`.
