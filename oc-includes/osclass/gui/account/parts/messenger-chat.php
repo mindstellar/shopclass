@@ -49,6 +49,7 @@ $liveUrl     = osc_messaging_live_url();
 
 $otherName    = (string) $convoView->_get('other_name');
 $otherInitial = (string) $convoView->_get('other_initial');
+$otherHue     = (int) $convoView->_get('other_hue');
 $seenAt       = $convoView->_exists('seen_at') ? (int) $convoView->_get('seen_at') : -1;
 $postUrl      = osc_base_url(true);
 
@@ -83,7 +84,7 @@ $blockConfirm = _m('Block this conversation? Neither of you can write until it i
            aria-label="<?php echo osc_esc_html(_m('All messages')); ?>">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="m15 18-6-6 6-6"/></svg>
         </a>
-        <span class="oe-thread-initial" aria-hidden="true"><?php echo osc_esc_html($otherInitial); ?></span>
+        <span class="oe-thread-initial" style="--oe-hue:<?php echo (int) $otherHue; ?>" aria-hidden="true"><?php echo osc_esc_html($otherInitial); ?></span>
         <h2 class="oe-chat-name" id="oe-chat-name"><?php echo osc_esc_html($otherName); ?></h2>
         <div class="oe-chat-role" data-role="<?php echo osc_esc_html($convoRole); ?>"><?php echo osc_esc_html($convoRole); ?></div>
         <details class="oe-menu">

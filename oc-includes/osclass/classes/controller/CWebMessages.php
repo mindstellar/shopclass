@@ -174,6 +174,7 @@ class CWebMessages extends WebSecBaseModel
         $this->_exportVariableToView('names', $names);
         $this->_exportVariableToView('other_name', $otherName);
         $this->_exportVariableToView('other_initial', InboxQuery::initial($otherName));
+        $this->_exportVariableToView('other_hue', InboxQuery::hue(ConversationStore::otherParty($conversation, $userId)));
         $this->_exportVariableToView('seen_at', InboxQuery::seenAt($data['messages'], $userId, $theirUnread));
         $this->_exportVariableToView('title', $item['title'] ?? _m('Removed listing'));
         $this->_exportVariableToView('item_url', $item === null ? null : $item['url']);

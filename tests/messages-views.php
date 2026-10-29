@@ -101,6 +101,32 @@ check('the site name is escaped into the worker URL', strpos($optin, 'title=Shop
 pin('the push partial prints nothing while push is off', '', trim(push_optin_render(false)));
 pin('nor when the site has no push key (OpenSSL without EC)', '', trim(push_optin_render(true, false)));
 
+harness_section('the avatar hue');
+pin('the same user always gets the same hue', InboxQuery::hue(41), InboxQuery::hue(41));
+check('every hue is from the palette', in_array(InboxQuery::hue(7), InboxQuery::HUES, true) && in_array(InboxQuery::hue(0), InboxQuery::HUES, true));
+check('different users spread over the palette', count(array_unique(array_map(InboxQuery::hue(...), range(1, 8)))) === 8);
+$lum = static function (array $rgb): float {
+    $c = array_map(static fn (float $v): float => $v <= 0.03928 ? $v / 12.92 : (($v + 0.055) / 1.055) ** 2.4, $rgb);
+
+    return 0.2126 * $c[0] + 0.7152 * $c[1] + 0.0722 * $c[2];
+};
+$hslToRgb = static function (int $h, float $s, float $l): array {
+    $a = $s * min($l, 1 - $l);
+    $f = static function (int $n) use ($h, $l, $a): float {
+        $k = fmod($n + $h / 30, 12);
+
+        return $l - $a * max(-1, min($k - 3, 9 - $k, 1));
+    };
+
+    return array($f(0), $f(8), $f(4));
+};
+foreach (InboxQuery::HUES as $hue) {
+    $ratio = 1.05 / ($lum($hslToRgb($hue, 0.45, 0.34)) + 0.05);
+    check("white on hue {$hue} is readable (4.5:1)", $ratio >= 4.5, (string) round($ratio, 2));
+}
+check('the list prints the hue on the initial', (bool) preg_match('/oe-thread-initial" style="--oe-hue:<\?php echo \(int\)/', $src['list'] ?? ''));
+check('the chat head prints the hue on the initial', (bool) preg_match('/oe-thread-initial" style="--oe-hue:<\?php echo \(int\)/', $src['chat'] ?? ''));
+
 harness_section('the messenger markup');
 $all = implode("\n", $src);
 foreach (array(

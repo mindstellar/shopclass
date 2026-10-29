@@ -52,7 +52,10 @@ check('the messenger block is found', $start !== false && $end !== false && $end
 $block = substr($style, (int) $start, (int) $end - (int) $start);
 check('the messenger block has no raw hex colour', preg_match('/#[0-9a-fA-F]{3,8}\b/', $block) === 0);
 check('the messenger block has no rgb()/rgba() literal', preg_match('/\brgba?\(/', $block) === 0);
-check('the messenger block has no hsl()/hwb()/lab() literal', preg_match('/\b(?:hsla?|hwb|lab|lch|oklab|oklch)\(/', $block) === 0);
+// The one allowed form is the avatar hue: hsl(var(--oe-hue) S% L%), with no literal hue.
+$blockNoHue = preg_replace('/hsl\(var\(--oe-hue\) \d+% \d+%\)/', '', $block);
+check('the messenger block has no hsl()/hwb()/lab() literal', preg_match('/\b(?:hsla?|hwb|lab|lch|oklab|oklch)\(/', (string) $blockNoHue) === 0);
+check('the avatar colour uses the tokenised hue form', strpos($block, 'hsl(var(--oe-hue) 45% 34%)') !== false);
 $named = 'black|white|red|green|blue|gray|grey|silver|maroon|purple|fuchsia|lime|olive|yellow|navy|teal|aqua|orange|pink|brown|'
     . 'gold|beige|ivory|khaki|coral|salmon|tomato|crimson|indigo|violet|cyan|magenta|tan|wheat|linen|snow|azure|lavender|'
     . 'whitesmoke|gainsboro|lightgray|lightgrey|darkgray|darkgrey|dimgray|dimgrey|darkred|darkgreen|darkblue|lightblue';

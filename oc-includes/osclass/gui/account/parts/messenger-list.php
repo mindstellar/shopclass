@@ -77,7 +77,7 @@ $listUnread  = count(array_filter($listRows, static fn ($r): bool => (int) ($r['
                         <?php } else { ?>
                             <span class="oe-thread-photo" aria-hidden="true"></span>
                         <?php } ?>
-                        <span class="oe-thread-initial" aria-hidden="true"><?php echo osc_esc_html((string) $listRow['initial']); ?></span>
+                        <span class="oe-thread-initial" style="--oe-hue:<?php echo (int) $listRow['other_hue']; ?>" aria-hidden="true"><?php echo osc_esc_html((string) $listRow['initial']); ?></span>
                         <span class="oe-thread-name"><?php echo osc_esc_html((string) $listRow['other_name']); ?></span>
                         <time class="oe-thread-time oe-thread-last" datetime="<?php
                             echo osc_esc_html((string) $listRow['dt_last_message']); ?>"><?php

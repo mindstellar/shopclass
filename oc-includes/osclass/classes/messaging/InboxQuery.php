@@ -48,6 +48,7 @@ final class InboxQuery
             $item = $facts[(int) $row['fk_i_item_id']] ?? null;
             $side = (string) ConversationStore::sideOf($row, $userId);
             $name = $names[ConversationStore::otherParty($row, $userId)] ?? _m('Former user');
+            $row['other_hue']    = self::hue(ConversationStore::otherParty($row, $userId));
             $last = $previews[$id] ?? null;
             $row['title']        = $item['title'] ?? _m('Removed listing');
             $row['other_name']   = $name;
@@ -92,6 +93,15 @@ final class InboxQuery
             'photo_url' => $item['photo_url'],
             'price'     => (string) osc_format_price($item['price'], $symbol),
         );
+    }
+
+    /** Avatar hues. White text on hsl(hue 45% 34%) keeps a contrast of 4.5:1 or better for each one. */
+    public const HUES = array(8, 32, 100, 160, 200, 250, 290, 330);
+
+    /** A fixed hue for a user, so the same person always gets the same avatar colour. */
+    public static function hue(int $userId): int
+    {
+        return self::HUES[abs($userId) % count(self::HUES)];
     }
 
     /** The first letter of a name, upper case, for the avatar badge. */

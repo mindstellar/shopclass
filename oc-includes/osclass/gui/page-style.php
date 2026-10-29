@@ -359,6 +359,7 @@ if (!defined('ABS_PATH')) {
     background:var(--oe-teal);color:var(--oe-on-teal);font-size:.75rem;font-weight:700;line-height:1;
     box-shadow:0 0 0 2px var(--oe-bench);
   }
+  .oe-page .oe-thread-initial[style*="--oe-hue"]{background:hsl(var(--oe-hue) 45% 34%);}
   .oe-page .oe-thread-name{grid-column:2;grid-row:1;min-inline-size:0;font-size:.875rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
   .oe-page .oe-thread-time{grid-column:3;grid-row:1;font-size:.75rem;color:var(--oe-ink-muted);font-variant-numeric:tabular-nums;white-space:nowrap;}
   .oe-page .oe-messenger .oe-thread-title{

@@ -341,6 +341,7 @@ pin('one row for one thread', 1, count($miaRows));
 pin('the preview is the last message, one line, raw text', 'Mine now', $row['preview'] ?? null);
 check('my own last message is flagged mine', ($row['preview_mine'] ?? false) === true);
 pin('the initial is the other person\'s', 'S', $row['initial'] ?? null);
+pin('the hue is the other person\'s', \mindstellar\messaging\InboxQuery::hue($seller), $row['other_hue'] ?? null);
 check('the photo is the thumbnail URL', strpos((string) ($row['photo_url'] ?? ''), $photoOf . '_thumbnail.jpg') !== false, (string) ($row['photo_url'] ?? ''));
 pin('the price is raw micros', 19500000, $row['price'] ?? null);
 check('the listing is live', ($row['listing_live'] ?? false) === true);
