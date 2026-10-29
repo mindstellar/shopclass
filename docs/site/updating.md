@@ -20,8 +20,16 @@ easier to undo when you can put them back.
 
 1. Open **Admin → Tools → Upgrade Shopclass**.
 2. If a release is available, the page offers it with its changelog.
-3. Press update and wait. The updater downloads the package, replaces core
-   files, and runs any pending database migrations.
+3. Press update and wait. The updater downloads the package and replaces the core
+   files. The page then moves on by itself and runs any pending database migrations.
+
+On a new X.Y release (7.1 to 7.2), `oc-admin` and `oc-includes` are replaced whole, so
+files the release dropped are gone. Keep your own files in `oc-content`. A patch
+release (7.1.0 to 7.1.1) copies the files over the old ones.
+
+Some releases need a newer version first. The page then says, for example, "Shopclass
+7.2.0 needs version 7.1.0 or newer first", and offers the newest release you can take
+now. Update to it, then update again.
 
 That is the whole procedure on a healthy install.
 
@@ -51,7 +59,8 @@ changes anything.
   security release for the version you run (6.4.1 on a 6.4.0 site, never 6.5.0) once
   it is a day old, and e-mails the contact address whether it worked. A failed
   attempt is not repeated; update from the admin instead. If your cron runs from the
-  command line, restart PHP-FPM after the e-mail arrives.
+  command line, restart PHP-FPM after the e-mail arrives. A release that needs a newer
+  version first is never installed this way.
 
 ## Upgrading to 7.1.0 specifically
 
