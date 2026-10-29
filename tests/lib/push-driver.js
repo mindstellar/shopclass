@@ -8,6 +8,7 @@
     var page = window.__page;
     var workerSource = window.__worker;
     var stageHtml = window.__stage;
+    var bellHtml = window.__bellStage;
 
     async function settle() {
         for (var i = 0; i < 8; i++) {
@@ -103,7 +104,7 @@
             return respond(opts.route(f));
         };
         e.start = async function () {
-            document.getElementById('stage').innerHTML = stageHtml;
+            document.getElementById('stage').innerHTML = (opts.bell ? bellHtml : stageHtml) + (opts.toggle ? '<button type="button" id="menu-toggle" data-osc-push-toggle>Menu</button>' : '');
             e.form = document.querySelector('form[data-osc-push]');
             e.button = e.form.querySelector('button');
             e.note = e.form.querySelector('[data-osc-push-note]');
@@ -117,8 +118,17 @@
             e.clicking = false;
             await settle();
         };
+        e.clickToggle = async function () {
+            e.clicking = true;
+            document.getElementById('menu-toggle').click();
+            e.clicking = false;
+            await settle();
+        };
         e.state = function () {
-            return {hidden: e.form.hidden, label: e.button.textContent, disabled: e.button.disabled, note: e.note.textContent};
+            return {
+                hidden: e.form.hidden, label: e.button.textContent, disabled: e.button.disabled, note: e.note.textContent,
+                pressed: e.button.getAttribute('aria-pressed'), aria: e.button.getAttribute('aria-label'), title: e.button.title
+            };
         };
         return e;
     }
@@ -255,6 +265,27 @@
         }});
         await e.start();
         out.denied = {state: e.state(), fetches: e.fetches.length};
+
+        // The bell variant: an icon button that flips aria-pressed and its label, not its text.
+        e = pageEnv({supported: true, bell: true, route: function () {
+            return json(200, {ok: true});
+        }});
+        await e.start();
+        out.bellFresh = e.state();
+        await e.click();
+        out.bellOn = e.state();
+        e.log = [];
+        await e.click();
+        out.bellOff = e.state();
+        out.bellOffLog = e.log;
+
+        // A menu item with data-osc-push-toggle clicks the form's button.
+        e = pageEnv({supported: true, bell: true, toggle: true, route: function () {
+            return json(200, {ok: true});
+        }});
+        await e.start();
+        await e.clickToggle();
+        out.toggled = {state: e.state(), subscribes: e.subscribes.length, fetches: e.fetches.length, asks: e.asks};
 
         // The worker. Its own URL carries its texts; the scope is a sub-directory.
         var scope = 'https://example.test/sub/';

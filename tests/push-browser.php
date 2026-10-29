@@ -52,6 +52,13 @@ if ($chrome === '') {
 }
 
 $stage  = push_optin_render(true);
+$pushVariant = 'bell';
+$bellStage = (static function () use ($pushVariant): string {
+    ob_start();
+    require ABS_PATH . 'oc-includes/osclass/gui/account/parts/push-optin.php';
+
+    return (string) ob_get_clean();
+})();
 $assets = ABS_PATH . 'oc-includes/assets/osclass/';
 $dir    = sys_get_temp_dir() . '/osc-push-browser-' . getmypid();
 @mkdir($dir, 0700, true);
@@ -59,6 +66,7 @@ $fixture = $dir . '/page.html';
 file_put_contents($fixture, '<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>'
     . '<div id="stage"></div><pre id="osc-out"></pre>'
     . '<script>window.__stage = ' . json_encode($stage) . ';'
+    . 'window.__bellStage = ' . json_encode($bellStage) . ';'
     . 'window.__page = ' . json_encode((string) file_get_contents($assets . 'push.js')) . ';'
     . 'window.__worker = ' . json_encode((string) file_get_contents($assets . 'push-worker.js')) . ';</script>'
     . '<script>' . file_get_contents(__DIR__ . '/lib/push-driver.js') . '</script>'
@@ -142,6 +150,27 @@ pin('blocked: the note says so and the button is disabled', array(
     'disabled' => $r['denied']['state']['disabled'] ?? null,
     'note'     => $r['denied']['state']['note'] ?? null,
     'fetches'  => $r['denied']['fetches'] ?? null,
+));
+
+harness_section('the bell variant');
+pin('the default variant has a text button and no pressed state', array(null, null), array($r['fresh']['state']['pressed'] ?? null, $r['fresh']['state']['aria'] ?? null));
+pin('the bell is an icon button with no text', array('', true), array(
+    trim($r['bellFresh']['label'] ?? 'x'),
+    strpos($bellStage, '<svg') !== false && strpos($bellStage, 'oe-icon-btn') !== false,
+));
+pin('the bell starts off: not pressed, labelled and titled', array('false', $off, $off), array(
+    $r['bellFresh']['pressed'] ?? null, $r['bellFresh']['aria'] ?? null, $r['bellFresh']['title'] ?? null,
+));
+pin('subscribing presses it and relabels it, still no text', array('true', $on, $on, ''), array(
+    $r['bellOn']['pressed'] ?? null, $r['bellOn']['aria'] ?? null, $r['bellOn']['title'] ?? null, trim($r['bellOn']['label'] ?? 'x'),
+));
+pin('unsubscribing flips it back', array('false', $off, $off), array(
+    $r['bellOff']['pressed'] ?? null, $r['bellOff']['aria'] ?? null, $r['bellOff']['title'] ?? null,
+));
+pin('the note stays in the page for screen readers', true,
+    strpos($bellStage, 'class="oe-sr-only" data-osc-push-note aria-live="polite"') !== false);
+pin('a [data-osc-push-toggle] click subscribes from inside the click', array(1, 1, array('in-click'), 'true'), array(
+    $r['toggled']['subscribes'] ?? null, $r['toggled']['fetches'] ?? null, $r['toggled']['asks'] ?? null, $r['toggled']['state']['pressed'] ?? null,
 ));
 
 harness_section('the worker');
