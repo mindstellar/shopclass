@@ -220,7 +220,6 @@ class Upgrade
      */
     public static function swapFolder(string $originDir, string $targetDir, string $name): bool
     {
-        $fs     = new FileSystem();
         $source = rtrim($originDir, '/\\') . '/' . $name;
         $live   = rtrim($targetDir, '/\\') . '/' . $name;
         $staged = $live . '.new';
@@ -230,46 +229,66 @@ class Upgrade
         }
 
         // Spare folders from an earlier run that stopped; the live folder is whole.
-        $tidy = static function (array $paths) use ($fs): void {
-            try {
-                $fs->remove($paths);
-            } catch (\Throwable $e) {
-                error_log('upgrade: not removed: ' . implode(', ', $paths) . ': ' . $e->getMessage());
-            }
-        };
-        $tidy([$staged, $old]);
+        self::removeQuietly([$staged, $old]);
 
         // The package usually sits on the same disk, so a rename is enough; else copy it next to the site.
         $moved = @rename($source, $staged);
-        // On a failure the package folder must be whole again, for the file-by-file copy.
-        $undo = static function () use ($fs, $tidy, $moved, $source, $staged): bool {
-            if ($moved && !@rename($staged, $source)) {
-                $fs->sync($staged, $source);
-            }
-            $tidy([$staged]);
-
-            return false;
-        };
         try {
             if (!$moved) {
-                $fs->sync($source, $staged);
+                (new FileSystem())->sync($source, $staged);
             }
         } catch (\Throwable $e) {
-            return $undo();
+            return self::unstage($moved, $source, $staged);
         }
         if (!@rename($live, $old)) {
-            return $undo();
+            return self::unstage($moved, $source, $staged);
         }
         if (!@rename($staged, $live)) {
             // Should this fail too, the sync after us builds the live folder from the package.
             @rename($old, $live);
 
-            return $undo();
+            return self::unstage($moved, $source, $staged);
         }
         // The new folder is live; what cannot be removed now goes at the next update.
-        $tidy([$old, $source]);
+        self::removeQuietly([$old, $source]);
 
         return true;
+    }
+
+    /**
+     * Put the package folder back whole after a failed swap, for the file-by-file copy.
+     *
+     * @param bool   $moved  whether the package folder was renamed to $staged
+     * @param string $source
+     * @param string $staged
+     *
+     * @return bool always false, for swapFolder() to return
+     * @throws \Exception when the folder cannot be copied back either
+     */
+    private static function unstage(bool $moved, string $source, string $staged): bool
+    {
+        if ($moved && !@rename($staged, $source)) {
+            (new FileSystem())->sync($staged, $source);
+        }
+        self::removeQuietly([$staged]);
+
+        return false;
+    }
+
+    /**
+     * Remove paths, logging instead of failing when one cannot go.
+     *
+     * @param array<string> $paths
+     *
+     * @return void
+     */
+    private static function removeQuietly(array $paths): void
+    {
+        try {
+            (new FileSystem())->remove($paths);
+        } catch (\Throwable $e) {
+            error_log('upgrade: not removed: ' . implode(', ', $paths) . ': ' . $e->getMessage());
+        }
     }
 
     /**
