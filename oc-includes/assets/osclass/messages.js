@@ -333,6 +333,19 @@
         });
     };
 
+    // The count on the Unread tab: how many loaded threads have something unread.
+    var countUnread = function () {
+        var badge = document.querySelector('[data-unread-threads]');
+        if (!badge || !inbox) {
+            return;
+        }
+        var count = Array.from(inbox.querySelectorAll('li.oe-thread')).filter(function (row) {
+            return Number(row.dataset.unread) > 0;
+        }).length;
+        badge.textContent = String(count);
+        badge.hidden = count === 0;
+    };
+
     var swapInbox = function (fresh) {
         if (!inbox || !fresh) {
             return;
@@ -344,6 +357,7 @@
             markCurrent();
             applyFilter();
         }
+        countUnread();
         paintTyping();
     };
 

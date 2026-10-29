@@ -338,6 +338,8 @@ if (!defined('ABS_PATH')) {
     font:inherit;font-size:.8125rem;font-weight:600;cursor:pointer;
   }
   .oe-page .oe-list-tabs button[aria-pressed=true]{background:var(--oe-bench);color:var(--oe-teal);}
+  .oe-page .oe-list-tabs-count{margin-inline-start:6px;font-variant-numeric:tabular-nums;}
+  .oe-page .oe-list-tabs-count[hidden]{display:none;}
   .oe-page .oe-messenger .oe-threads{flex:1;min-block-size:0;overflow-y:auto;padding:0 8px 8px;}
   .oe-page .oe-messenger .oe-thread{margin:0;}
   .oe-page .oe-messenger .oe-thread + .oe-thread{margin-block-start:2px;}

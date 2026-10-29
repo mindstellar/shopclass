@@ -386,6 +386,11 @@ require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 $html = $render('parts/messenger-list.php');
 check('the list pane renders', strpos($html, 'ERR') !== 0 && strpos($html, 'class="oe-thread-link"') !== false, substr($html, 0, 200));
 check('the preview text is escaped', strpos($html, '<b>') === false);
+[, $sellerRows] = $inboxFor($seller);
+$sellerUnread = count(array_filter($sellerRows, static fn (array $r): bool => (int) $r['unread'] > 0));
+$html = $render('parts/messenger-list.php');
+check('the Unread tab counts the unread threads', $sellerUnread > 0
+    && preg_match('/data-filter="unread"[^>]*>[^<]*<span class="oe-list-tabs-count" data-unread-threads>' . $sellerUnread . '</', $html) === 1, (string) $sellerUnread);
 $threadFor($mia, $miaThread);
 $html = $render('parts/messenger-chat.php');
 check('the chat pane renders', strpos($html, 'ERR') !== 0 && strpos($html, 'class="oe-messages"') !== false, substr($html, 0, 300));

@@ -21,6 +21,7 @@ if (!defined('ABS_PATH')) {
 $listRows    = (array) View::getInstance()->_get('conversations');
 $listOlder   = View::getInstance()->_get('older');
 $listCurrent = (int) View::getInstance()->_get('current_id');
+$listUnread  = count(array_filter($listRows, static fn ($r): bool => (int) ($r['unread'] ?? 0) > 0));
 ?>
 <section class="oe-messenger-list" aria-labelledby="oe-list-title">
     <div class="oe-list-head">
@@ -34,7 +35,8 @@ $listCurrent = (int) View::getInstance()->_get('current_id');
         </div>
         <div class="oe-list-tabs" role="group" aria-label="<?php echo osc_esc_html(_m('Show')); ?>" hidden>
             <button type="button" data-filter="all" aria-pressed="true"><?php echo osc_esc_html(_m('All')); ?></button>
-            <button type="button" data-filter="unread" aria-pressed="false"><?php echo osc_esc_html(_m('Unread')); ?></button>
+            <button type="button" data-filter="unread" aria-pressed="false"><?php echo osc_esc_html(_m('Unread')); ?>
+                <span class="oe-list-tabs-count" data-unread-threads<?php echo $listUnread > 0 ? '' : ' hidden'; ?>><?php echo (int) $listUnread; ?></span></button>
         </div>
     </div>
     <div data-osc-inbox
