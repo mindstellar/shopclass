@@ -469,6 +469,8 @@ redirect to the dashboard.
 | `conversation` | The stored row. `s_state` is `open`, `held`, `reported` or `closed`. |
 | `messages` | Messages oldest first. Each has `pk_i_id`, `fk_i_sender_id`, `s_body` (plain text, escape it), `s_state` and `dt_created`. The viewer's own held messages are in the list; the other side's are not. |
 | `names` | User id to display name. |
+| `other_name`, `other_initial` | The other person's display name and its first letter. |
+| `seen_at` | Index in `messages` of the message that shows "Seen", or `-1`. |
 | `title`, `item_url` | The listing's title and link; `item_url` is `null` once the listing is gone. |
 | `can_send` | `''` when the viewer may write, else `blocked`, `closed` or `not_party`. |
 | `my_block`, `their_block` | Who blocked the conversation. |
@@ -502,6 +504,7 @@ The list pane:
 | `.oe-list-head` | the pane's top: the "Messages" heading, the bell, the filter and the tabs |
 | `.oe-list-filter` | the search box; `hidden` until `messages.js` runs |
 | `.oe-list-tabs` | the All and Unread buttons; `hidden` until `messages.js` runs |
+| `.oe-list-tabs-count` | the number of unread conversations on the Unread button; `hidden` at none |
 | `.oe-thread-link` | the link that wraps a whole row |
 | `.oe-thread-photo` | the listing photo in a row; an empty `<span>` when there is none |
 | `.oe-thread-initial` | the other person's first letter; also in the chat head |
@@ -522,6 +525,7 @@ The chat pane:
 | `.oe-menu` | the options menu: a `<details>` |
 | `.oe-menu-panel` | the open menu; also carries `.oe-thread-actions` |
 | `.oe-menu-item` | one menu entry: Notify, Block, Unblock or Report |
+| `.oe-menu-note` | why Notify is missing when the browser blocks notifications; `hidden` otherwise |
 | `.oe-menu-report` | the Report entry; opens the report form |
 | `.oe-listing-card` | the listing strip under the head; `.is-removed` once the listing is gone |
 | `.oe-listing-photo` | the listing photo |
