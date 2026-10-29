@@ -20,30 +20,6 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 
 require_once __DIR__ . '/lib/harness.php';
 
-function test_browser(): string
-{
-    if (!function_exists('shell_exec')) {
-        return '';
-    }
-    foreach (array((string) getenv('CHROME'), '/opt/google/chrome/chrome', 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser') as $c) {
-        if ($c === '') {
-            continue;
-        }
-        if (strpos($c, '/') !== false) {
-            if (is_executable($c)) {
-                return $c;
-            }
-            continue;
-        }
-        $found = trim((string) shell_exec('command -v ' . escapeshellarg($c) . ' 2>/dev/null'));
-        if ($found !== '' && is_executable($found)) {
-            return $found;
-        }
-    }
-
-    return '';
-}
-
 /** @return array<int,array{0:string,1:bool}>|null */
 function drive_form(string $chrome, string $hash): ?array
 {

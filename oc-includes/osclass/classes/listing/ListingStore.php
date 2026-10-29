@@ -138,6 +138,37 @@ final class ListingStore extends Model
     }
 
     /**
+     * What an inbox row needs from each listing, in one read. A listing that is gone is left out.
+     * "live" is true when visitors can see it.
+     *
+     * @param int[] $ids
+     *
+     * @return array<int,array{price:?int,currency:?string,live:bool}>
+     * @throws \mindstellar\database\DbException
+     */
+    public static function cards(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $ids), static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return [];
+        }
+        $rows = self::table()
+            ->select('pk_i_id', 'i_price', 'fk_c_currency_code', 'b_enabled', 'b_active', 'b_spam', 'b_premium', 'dt_expiration', 'dt_first_pub_date')
+            ->whereIn('pk_i_id', $ids)
+            ->get();
+        $cards = [];
+        foreach ($rows as $row) {
+            $cards[(int) $row['pk_i_id']] = [
+                'price'    => $row['i_price'] === null ? null : (int) $row['i_price'],
+                'currency' => $row['fk_c_currency_code'] === null ? null : (string) $row['fk_c_currency_code'],
+                'live'     => ListingStatus::isLive($row),
+            ];
+        }
+
+        return $cards;
+    }
+
+    /**
      * The columns a premium change decides on, or null. $lock holds the row (FOR UPDATE) until the
      * transaction ends.
      *

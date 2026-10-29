@@ -20,58 +20,9 @@
 define('ABS_PATH', dirname(__DIR__) . '/');
 
 require_once __DIR__ . '/lib/harness.php';
+require_once __DIR__ . '/lib/messages-browser.php';
 
-function test_browser(): string
-{
-    foreach (array((string) getenv('CHROME'), '/opt/google/chrome/chrome', 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser') as $c) {
-        if ($c === '') {
-            continue;
-        }
-        if (strpos($c, '/') !== false) {
-            if (is_executable($c)) {
-                return $c;
-            }
-            continue;
-        }
-        $found = trim((string) shell_exec('command -v ' . escapeshellarg($c) . ' 2>/dev/null'));
-        if ($found !== '' && is_executable($found)) {
-            return $found;
-        }
-    }
-
-    return '';
-}
-
-$chrome = test_browser();
-if ($chrome === '' && (string) getenv('CI') !== '') {
-    check('a browser is available to drive the script', false, 'no Chrome or Chromium, so the browser assertions did not run');
-}
-if ($chrome === '') {
-    echo "  (skipped: no Chrome or Chromium on this machine)\n";
-    exit(harness_result());
-}
-
-$dir = sys_get_temp_dir() . '/osc-messages-live-' . getmypid();
-@mkdir($dir, 0700, true);
-$fixture = $dir . '/page.html';
-file_put_contents($fixture, '<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>'
-    . '<div id="stage"></div><pre id="osc-out"></pre>'
-    . '<script>window.__script = ' . json_encode((string) file_get_contents(ABS_PATH . 'oc-includes/assets/osclass/messages.js')) . ';</script>'
-    . '<script>' . file_get_contents(__DIR__ . '/lib/messages-live-driver.js') . '</script>'
-    . '</body></html>');
-
-$out = (string) shell_exec('TZ=UTC ' . escapeshellarg($chrome)
-    . ' --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage'
-    . ' --user-data-dir=' . escapeshellarg($dir . '/profile')
-    . ' --virtual-time-budget=20000 --dump-dom ' . escapeshellarg('file://' . $fixture) . ' 2>/dev/null');
-shell_exec('rm -rf ' . escapeshellarg($dir));
-
-$r = null;
-if (preg_match('#<pre id="osc-out">([A-Za-z0-9+/=]*)</pre>#', $out, $m) && $m[1] !== '') {
-    $r = json_decode((string) base64_decode($m[1], true), true);
-}
-check('the browser run produced a reading', is_array($r) && !isset($r['error']), is_array($r) ? (string) ($r['error'] ?? '') : substr($out, 0, 400));
-$r = is_array($r) ? $r : array();
+$r = messages_browser_run(__DIR__ . '/lib/messages-live-driver.js');
 
 harness_section('polling');
 pin('no check before 15 s', 0, $r['pollEarly'] ?? null);

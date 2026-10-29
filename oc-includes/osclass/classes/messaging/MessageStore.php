@@ -147,6 +147,37 @@ final class MessageStore
     }
 
     /**
+     * The newest message each thread shows the viewer, for the inbox preview. The body is cut
+     * to 160 characters as s_preview. A thread with nothing visible is left out.
+     *
+     * @param int[] $conversationIds
+     *
+     * @return array<int,array<string,mixed>> rows by conversation id
+     * @throws \mindstellar\database\DbException
+     */
+    public function lastVisible(array $conversationIds, int $viewerId): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $conversationIds), static fn (int $id): bool => $id > 0)));
+        if ($ids === []) {
+            return [];
+        }
+        $one = '(SELECT pk_i_id, fk_i_conversation_id, fk_i_sender_id, s_state, dt_created, LEFT(s_body, 160) AS s_preview FROM '
+            . DB_TABLE_PREFIX . "t_message WHERE fk_i_conversation_id = ? AND (s_state = 'sent' OR (s_state = 'held' AND fk_i_sender_id = ?))"
+            . ' ORDER BY pk_i_id DESC LIMIT 1)';
+        $params = [];
+        foreach ($ids as $id) {
+            $params[] = $id;
+            $params[] = $viewerId;
+        }
+        $last = [];
+        foreach (Db::select(implode(' UNION ALL ', array_fill(0, count($ids), $one)), $params) as $row) {
+            $last[(int) $row['fk_i_conversation_id']] = $row;
+        }
+
+        return $last;
+    }
+
+    /**
      * Sent messages, and the viewer's own held ones.
      */
     private static function visibleTo(\mindstellar\database\QueryBuilder $query, int $viewerId): \mindstellar\database\QueryBuilder

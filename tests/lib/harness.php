@@ -642,4 +642,33 @@ if (!function_exists('harness_result')) {
     }
 }
 
+if (!function_exists('test_browser')) {
+    /**
+     * A Chrome or Chromium binary this machine has ($CHROME first), or '' when it has none.
+     */
+    function test_browser(): string
+    {
+        if (!function_exists('shell_exec')) {
+            return '';
+        }
+        foreach (array((string) getenv('CHROME'), '/opt/google/chrome/chrome', 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser') as $c) {
+            if ($c === '') {
+                continue;
+            }
+            if (strpos($c, '/') !== false) {
+                if (is_executable($c)) {
+                    return $c;
+                }
+                continue;
+            }
+            $found = trim((string) shell_exec('command -v ' . escapeshellarg($c) . ' 2>/dev/null'));
+            if ($found !== '' && is_executable($found)) {
+                return $found;
+            }
+        }
+
+        return '';
+    }
+}
+
 /* file end: ./tests/lib/harness.php */

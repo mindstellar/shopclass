@@ -297,6 +297,113 @@ pin('a party sees the thread', array(null, $open), array($r['redirect'], (int) (
 check('in the conversation template', strpos((string) $r['view'], 'user-conversation') !== false, (string) $r['view']);
 pin('and it is marked read for them', '0', explode('/', $unread($open))[1]);
 
+harness_section('messenger rows and query count');
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hResources.php';
+$mia = seed_user($admin, 'mia', 'mia@example.test');
+$lou = seed_user($admin, 'lou', 'lou@example.test');
+$photoOf = seed_photo($admin, $bike, array('s_name' => 'bike'));
+$louFirst = 0;
+for ($i = 0; $i < 20; $i++) {
+    $it = seed_item($admin, $cat, $seller, 'Thing ' . $i);
+    $cv = $svc->start($it, 'hello ' . $i, Actor::user($lou, '10.0.0.4'))->conversationId();
+    $louFirst = $louFirst ?: $cv;
+}
+$miaThread = $svc->start($bike, "  Line one\n<b>two</b>  ", Actor::user($mia, '10.0.0.3'))->conversationId();
+$svc->reply($miaThread, 'Yes, still here.', Actor::user($seller, '10.0.0.2'));
+$svc->reply($miaThread, 'Mine now', Actor::user($mia, '10.0.0.3'));
+$inboxFor = static function (int $userId): array {
+    web_sign_in($userId);
+    web_request('GET', array('page' => 'messages'));
+    $run = web_page(static fn () => new WebMessages());
+
+    return array($run, (array) View::getInstance()->_get('conversations'));
+};
+$threadFor = static function (int $userId, int $id): array {
+    web_sign_in($userId);
+    web_request('GET', array('page' => 'messages', 'id' => $id));
+
+    return web_page(static fn () => new WebMessages());
+};
+// The page's own reads: the user is signed in and every cache warmed first.
+$pageReads = static function (int $userId, ?int $id) {
+    $run = static function () use ($id): void {
+        web_request('GET', $id === null ? array('page' => 'messages') : array('page' => 'messages', 'id' => $id));
+        web_page(static fn () => new WebMessages());
+    };
+    web_sign_in($userId);
+    $run();
+
+    return harness_query_count($run);
+};
+[, $miaRows] = $inboxFor($mia);
+$row = $miaRows[0] ?? array();
+pin('one row for one thread', 1, count($miaRows));
+pin('the preview is the last message, one line, raw text', 'Mine now', $row['preview'] ?? null);
+check('my own last message is flagged mine', ($row['preview_mine'] ?? false) === true);
+pin('the initial is the other person\'s', 'S', $row['initial'] ?? null);
+pin('the hue is the other person\'s', \mindstellar\messaging\InboxQuery::hue($seller), $row['other_hue'] ?? null);
+check('the photo is the thumbnail URL', strpos((string) ($row['photo_url'] ?? ''), $photoOf . '_thumbnail.jpg') !== false, (string) ($row['photo_url'] ?? ''));
+pin('the price is raw micros', 19500000, $row['price'] ?? null);
+check('the listing is live', ($row['listing_live'] ?? false) === true);
+check('the short time is a clock time today', preg_match('/^\d\d:\d\d$/', (string) ($row['short_time'] ?? '')) === 1, (string) ($row['short_time'] ?? ''));
+[, $sellerRows] = $inboxFor($seller);
+$theirs = array_values(array_filter($sellerRows, static fn (array $r): bool => (int) $r['pk_i_id'] === $miaThread))[0] ?? array();
+pin('the seller sees the buyer\'s words, not mine', array('Mine now', false), array($theirs['preview'] ?? null, $theirs['preview_mine'] ?? null));
+$one  = $pageReads($mia, null);
+$many = $pageReads($lou, null);
+[, $louRows] = $inboxFor($lou);
+pin('twenty rows come back for the second user', 20, count($louRows));
+pin('the inbox reads the same number of times for 1 row and 20', $one, $many);
+check('and that number is the six reads of the plan or fewer', $one > 0 && $one <= 8, (string) $one);
+$one  = $pageReads($mia, $miaThread);
+$many = $pageReads($lou, $louFirst);
+pin('the thread page reads the same number of times either way', $one, $many);
+$r = $threadFor($mia, $miaThread);
+pin('and a party sees the chat and the list', array(null, true), array($r['redirect'], count((array) View::getInstance()->_get('conversations')) === 1));
+pin('their unread count reaches the view', 'integer', gettype(View::getInstance()->_get('their_unread')));
+check('the current row is marked', (View::getInstance()->_get('conversations')[0]['is_current'] ?? false) === true);
+pin('a buyer is told who they ask', _m('Seller'), View::getInstance()->_get('role'));
+$threadFor($seller, $miaThread);
+pin('a seller is told they are asked', _m('Asking about your listing'), View::getInstance()->_get('role'));
+
+$render = static function (string $file): string {
+    ob_start();
+    try {
+        require ABS_PATH . 'oc-includes/osclass/gui/account/' . $file;
+    } catch (Throwable $e) {
+        ob_end_clean();
+        return 'ERR ' . $e->getMessage();
+    }
+
+    return (string) ob_get_clean();
+};
+foreach (array('osc_push_enabled' => false, 'osc_push_public_key' => '', 'osc_search_url' => 'https://example.test/search', 'osc_show_flash_message' => null) as $fn => $ret) {
+    if (!function_exists($fn)) {
+        $GLOBALS['stubs'][$fn] = static fn () => $ret;
+        eval('function ' . $fn . '(...$a) { return ($GLOBALS["stubs"]["' . $fn . '"])(...$a); }');
+    }
+}
+require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
+$html = $render('parts/messenger-list.php');
+check('the list pane renders', strpos($html, 'ERR') !== 0 && strpos($html, 'class="oe-thread-link"') !== false, substr($html, 0, 200));
+check('the preview text is escaped', strpos($html, '<b>') === false);
+[, $sellerRows] = $inboxFor($seller);
+$sellerUnread = count(array_filter($sellerRows, static fn (array $r): bool => (int) $r['unread'] > 0));
+$html = $render('parts/messenger-list.php');
+check('the Unread tab counts the unread threads', $sellerUnread > 0
+    && preg_match('/data-filter="unread"[^>]*>[^<]*<span class="oe-list-tabs-count" data-unread-threads>' . $sellerUnread . '</', $html) === 1, (string) $sellerUnread);
+$threadFor($mia, $miaThread);
+$html = $render('parts/messenger-chat.php');
+check('the chat pane renders', strpos($html, 'ERR') !== 0 && strpos($html, 'class="oe-messages"') !== false, substr($html, 0, 300));
+check('the typed markup stays text', strpos($html, '<b>two</b>') === false && strpos($html, '&lt;b&gt;two&lt;/b&gt;') !== false);
+check('live off prints no typing URL', strpos($html, 'data-typing-url') === false && strpos($html, 'class="oe-typing"') === false);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0 WHERE pk_i_id = $bike");
+$threadFor($mia, $miaThread);
+$html = $render('parts/messenger-chat.php');
+check('a listing visitors cannot see shows as removed, with no link to it', strpos($html, 'oe-listing-card is-removed') !== false
+    && strpos($html, 'class="oe-listing-link"') === false && strpos($html, 'href="' . osc_esc_html(osc_item_url_ns($bike)) . '"') === false);
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1 WHERE pk_i_id = $bike");
+
 harness_section('contact form');
 // The hook fires on both paths; only the e-mail path is stopped here, before it sends.
 $mails = $hooks = 0;

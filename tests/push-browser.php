@@ -21,27 +21,6 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/push-optin-render.php';
 
-function test_browser(): string
-{
-    foreach (array((string) getenv('CHROME'), '/opt/google/chrome/chrome', 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser') as $c) {
-        if ($c === '') {
-            continue;
-        }
-        if (strpos($c, '/') !== false) {
-            if (is_executable($c)) {
-                return $c;
-            }
-            continue;
-        }
-        $found = trim((string) shell_exec('command -v ' . escapeshellarg($c) . ' 2>/dev/null'));
-        if ($found !== '' && is_executable($found)) {
-            return $found;
-        }
-    }
-
-    return '';
-}
-
 $chrome = test_browser();
 if ($chrome === '' && (string) getenv('CI') !== '') {
     check('a browser is available to drive the scripts', false, 'no Chrome or Chromium, so the browser assertions did not run');
@@ -52,6 +31,13 @@ if ($chrome === '') {
 }
 
 $stage  = push_optin_render(true);
+$pushVariant = 'bell';
+$bellStage = (static function () use ($pushVariant): string {
+    ob_start();
+    require ABS_PATH . 'oc-includes/osclass/gui/account/parts/push-optin.php';
+
+    return (string) ob_get_clean();
+})();
 $assets = ABS_PATH . 'oc-includes/assets/osclass/';
 $dir    = sys_get_temp_dir() . '/osc-push-browser-' . getmypid();
 @mkdir($dir, 0700, true);
@@ -59,6 +45,7 @@ $fixture = $dir . '/page.html';
 file_put_contents($fixture, '<!doctype html><html lang="en"><head><meta charset="utf-8"></head><body>'
     . '<div id="stage"></div><pre id="osc-out"></pre>'
     . '<script>window.__stage = ' . json_encode($stage) . ';'
+    . 'window.__bellStage = ' . json_encode($bellStage) . ';'
     . 'window.__page = ' . json_encode((string) file_get_contents($assets . 'push.js')) . ';'
     . 'window.__worker = ' . json_encode((string) file_get_contents($assets . 'push-worker.js')) . ';</script>'
     . '<script>' . file_get_contents(__DIR__ . '/lib/push-driver.js') . '</script>'
@@ -142,6 +129,35 @@ pin('blocked: the note says so and the button is disabled', array(
     'disabled' => $r['denied']['state']['disabled'] ?? null,
     'note'     => $r['denied']['state']['note'] ?? null,
     'fetches'  => $r['denied']['fetches'] ?? null,
+));
+
+harness_section('the bell variant');
+pin('the default variant has a text button and no pressed state', array(null, null), array($r['fresh']['state']['pressed'] ?? null, $r['fresh']['state']['aria'] ?? null));
+pin('the bell is an icon button with no text', array('', true), array(
+    trim($r['bellFresh']['label'] ?? 'x'),
+    strpos($bellStage, '<svg') !== false && strpos($bellStage, 'oe-icon-btn') !== false,
+));
+pin('the bell starts off: not pressed, labelled and titled', array('false', $off, $off), array(
+    $r['bellFresh']['pressed'] ?? null, $r['bellFresh']['aria'] ?? null, $r['bellFresh']['title'] ?? null,
+));
+pin('subscribing presses it and relabels it, still no text', array('true', $on, $on, ''), array(
+    $r['bellOn']['pressed'] ?? null, $r['bellOn']['aria'] ?? null, $r['bellOn']['title'] ?? null, trim($r['bellOn']['label'] ?? 'x'),
+));
+pin('unsubscribing flips it back', array('false', $off, $off), array(
+    $r['bellOff']['pressed'] ?? null, $r['bellOff']['aria'] ?? null, $r['bellOff']['title'] ?? null,
+));
+pin('the note stays in the page for screen readers', true,
+    strpos($bellStage, 'class="oe-sr-only" data-osc-push-note aria-live="polite"') !== false);
+pin('a [data-osc-push-toggle] click subscribes from inside the click', array(1, 1, array('in-click'), 'true'), array(
+    $r['toggled']['subscribes'] ?? null, $r['toggled']['fetches'] ?? null, $r['toggled']['asks'] ?? null, $r['toggled']['state']['pressed'] ?? null,
+));
+pin('the menu item shows once push works, with the off label', array(false, $off),
+    array($r['toggleReady']['toggleHidden'] ?? null, $r['toggleReady']['toggleText'] ?? null));
+pin('and flips to the on label after a subscribe', $on, $r['toggled']['state']['toggleText'] ?? null);
+pin('without push support the menu item stays hidden', array(true, true),
+    array($r['toggleUnsupported']['toggleHidden'] ?? null, $r['toggleUnsupported']['menuNoteHidden'] ?? null));
+pin('blocked: the menu hides the item and shows the note', array(true, false, 'Notifications are blocked in this browser. Allow them in its site settings first.'), array(
+    $r['toggleDenied']['toggleHidden'] ?? null, $r['toggleDenied']['menuNoteHidden'] ?? null, $r['toggleDenied']['menuNote'] ?? null,
 ));
 
 harness_section('the worker');

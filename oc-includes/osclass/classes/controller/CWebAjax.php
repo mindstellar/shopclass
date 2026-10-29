@@ -60,6 +60,7 @@ class CWebAjax extends BaseModel
         'messages_check'              => 'messagesCheck',
         'messages_since'              => 'messagesSince',
         'messages_live_auth'          => 'messagesLiveAuth',
+        'messages_typing'             => 'messagesTyping',
         'push_worker'                 => 'pushWorker',
         'push_subscribe'              => 'pushSubscribe',
         'push_unsubscribe'            => 'pushUnsubscribe',
@@ -535,6 +536,34 @@ class CWebAjax extends BaseModel
             'state'    => (string) $thread['s_state'],
             'blocked'  => (int) $thread['b_buyer_blocked'] === 1 || (int) $thread['b_seller_blocked'] === 1,
         ));
+    }
+
+    /**
+     * The visitor is typing in a thread: tell the other side. 204 whether a note went or not, so
+     * the reply says nothing about the thread; 404 for a thread the visitor is not in.
+     */
+    private function messagesTyping(): void
+    {
+        header('Cache-Control: no-store');
+        if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
+            header('Allow: POST');
+            AjaxResponse::json(array('error' => 'method_not_allowed', 'msg' => __('Use POST')), 405);
+
+            return;
+        }
+        $actor = $this->messagingActor();
+        if ($actor === null) {
+            return;
+        }
+        osc_csrf_check();
+        try {
+            Container::root()->get(MessagingService::class)->typing(Params::getParamInt('id'), $actor);
+        } catch (RefusedException $e) {
+            $this->messagingRefusal($e);
+
+            return;
+        }
+        http_response_code(204);
     }
 
     /**

@@ -14,8 +14,8 @@ use mindstellar\container\Container;
 use mindstellar\exception\BlockedException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
-use mindstellar\listing\ListingStore;
 use mindstellar\messaging\ConversationStore;
+use mindstellar\messaging\InboxQuery;
 use mindstellar\messaging\MessagePolicy;
 use mindstellar\messaging\MessagingService;
 use mindstellar\user\UserStore;
@@ -102,11 +102,9 @@ class CWebMessages extends WebSecBaseModel
         $before     = Params::getParamString('before');
         $beforeDate = preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $before) === 1 ? $before : null;
         $beforeId   = $beforeDate !== null ? Params::getParamInt('before_id') : null;
-        $actor      = Actor::visitor();
-        $userId     = (int) $actor->userId();
 
         try {
-            $rows = $this->service()->inbox($actor, self::PER_PAGE + 1, $beforeDate, $beforeId);
+            [$rows, $older] = $this->listRows(Actor::visitor(), $beforeDate, $beforeId, 0);
         } catch (RefusedException $e) {
             osc_add_flash_error_message($e->getMessage());
             $this->redirectTo(osc_user_dashboard_url());
@@ -114,6 +112,21 @@ class CWebMessages extends WebSecBaseModel
             return;
         }
 
+        $this->_exportVariableToView('conversations', $rows);
+        $this->_exportVariableToView('older', $older);
+        $this->_exportVariableToView('current_id', 0);
+        $this->doView(osc_locate_template(array('user-messages.php'), 'user-messages'));
+    }
+
+    /**
+     * One page of inbox rows, ready to print, and the link to the next page (or null).
+     *
+     * @return array{0:array<int,array<string,mixed>>,1:?string}
+     * @throws RefusedException
+     */
+    private function listRows(Actor $actor, ?string $beforeDate, ?int $beforeId, int $currentId): array
+    {
+        $rows  = $this->service()->inbox($actor, self::PER_PAGE + 1, $beforeDate, $beforeId);
         $older = null;
         if (count($rows) > self::PER_PAGE) {
             $rows  = array_slice($rows, 0, self::PER_PAGE);
@@ -122,24 +135,7 @@ class CWebMessages extends WebSecBaseModel
                 . 'before=' . urlencode((string) $last['dt_last_message']) . '&before_id=' . (int) $last['pk_i_id'];
         }
 
-        $titles = ListingStore::titles(array_map('intval', array_column($rows, 'fk_i_item_id')));
-        $names  = UserStore::displayNames(array_map(
-            static fn (array $row): int => ConversationStore::otherParty($row, $userId),
-            $rows
-        ));
-        foreach ($rows as &$row) {
-            $side            = (string) ConversationStore::sideOf($row, $userId);
-            $row['title']      = $titles[(int) $row['fk_i_item_id']] ?? _m('Removed listing');
-            $row['other_name'] = $names[ConversationStore::otherParty($row, $userId)] ?? _m('Former user');
-            $row['side']       = $side;
-            $row['unread']     = (int) $row[$side === ConversationStore::SIDE_BUYER ? 'i_buyer_unread' : 'i_seller_unread'];
-            $row['url']        = osc_messaging_thread_url((int) $row['pk_i_id']);
-        }
-        unset($row);
-
-        $this->_exportVariableToView('conversations', $rows);
-        $this->_exportVariableToView('older', $older);
-        $this->doView(osc_locate_template(array('user-messages.php'), 'user-messages'));
+        return array($this->query()->rows($rows, (int) $actor->userId(), $currentId), $older);
     }
 
     /**
@@ -154,6 +150,7 @@ class CWebMessages extends WebSecBaseModel
         try {
             $data = $this->service()->thread($id, $actor);
             $this->service()->markRead($id, $actor);
+            [$rows, $older] = $this->listRows($actor, null, null, $id);
         } catch (RefusedException $e) {
             osc_add_flash_error_message($e->getMessage());
             $this->redirectTo(osc_messaging_inbox_url());
@@ -162,23 +159,37 @@ class CWebMessages extends WebSecBaseModel
         }
 
         $conversation = $data['conversation'];
-        $itemId       = (int) $conversation['fk_i_item_id'];
-        $titles       = ListingStore::titles(array($itemId));
-        $listing      = ListingStore::find($itemId, array('pk_i_id'));
+        $item         = $this->query()->listing((int) $conversation['fk_i_item_id']);
         $side         = (string) ConversationStore::sideOf($conversation, $userId);
         $theirs       = $side === ConversationStore::SIDE_BUYER ? 'b_seller_blocked' : 'b_buyer_blocked';
+        $theirUnread  = (int) $conversation[$side === ConversationStore::SIDE_BUYER ? 'i_seller_unread' : 'i_buyer_unread'];
+        $names        = UserStore::displayNames(array(
+            (int) $conversation['fk_i_buyer_id'],
+            (int) $conversation['fk_i_seller_id'],
+        ));
+        $otherName    = (string) ($names[ConversationStore::otherParty($conversation, $userId)] ?? _m('Former user'));
 
         $this->_exportVariableToView('conversation', $conversation);
         $this->_exportVariableToView('messages', $data['messages']);
-        $this->_exportVariableToView('names', UserStore::displayNames(array(
-            (int) $conversation['fk_i_buyer_id'],
-            (int) $conversation['fk_i_seller_id'],
-        )));
-        $this->_exportVariableToView('title', $titles[$itemId] ?? _m('Removed listing'));
-        $this->_exportVariableToView('item_url', $listing === null ? null : osc_item_url_ns($itemId));
+        $this->_exportVariableToView('names', $names);
+        $this->_exportVariableToView('other_name', $otherName);
+        $this->_exportVariableToView('other_initial', InboxQuery::initial($otherName));
+        $this->_exportVariableToView('other_hue', InboxQuery::hue(ConversationStore::otherParty($conversation, $userId)));
+        $this->_exportVariableToView('seen_at', InboxQuery::seenAt($data['messages'], $userId, $theirUnread));
+        $this->_exportVariableToView('title', $item['title'] ?? _m('Removed listing'));
+        $this->_exportVariableToView('item_url', $item === null ? null : $item['url']);
+        $this->_exportVariableToView('listing_live', $item !== null && $item['live']);
+        $this->_exportVariableToView('listing_photo', $item['photo_url'] ?? '');
+        $this->_exportVariableToView('listing_price', $item['price'] ?? '');
+        $this->_exportVariableToView('role', $side === ConversationStore::SIDE_SELLER ? _m('Asking about your listing') : _m('Seller'));
+        $this->_exportVariableToView('their_unread', $theirUnread);
+        $this->_exportVariableToView('server_now', time());
         $this->_exportVariableToView('can_send', MessagePolicy::canSend($conversation, $userId));
         $this->_exportVariableToView('my_block', (int) $conversation['b_' . $side . '_blocked'] === 1);
         $this->_exportVariableToView('their_block', (int) $conversation[$theirs] === 1);
+        $this->_exportVariableToView('conversations', $rows);
+        $this->_exportVariableToView('older', $older);
+        $this->_exportVariableToView('current_id', $id);
         $this->doView(osc_locate_template(array('user-conversation.php'), 'user-conversation'));
     }
 
@@ -257,6 +268,11 @@ class CWebMessages extends WebSecBaseModel
     private function service(): MessagingService
     {
         return Container::root()->get(MessagingService::class);
+    }
+
+    private function query(): InboxQuery
+    {
+        return Container::root()->get(InboxQuery::class);
     }
 
     /**

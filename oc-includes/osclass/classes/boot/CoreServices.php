@@ -57,6 +57,7 @@ use mindstellar\messaging\event\MessageHeld;
 use mindstellar\messaging\event\MessageRead;
 use mindstellar\messaging\event\MessageSending;
 use mindstellar\messaging\event\MessageSent;
+use mindstellar\messaging\InboxQuery;
 use mindstellar\messaging\LiveNotifier;
 use mindstellar\messaging\MessageNotifier;
 use mindstellar\messaging\MessageStore;
@@ -98,11 +99,13 @@ final class CoreServices
         $c->set(LocationNames::class, static fn (Container $c): LocationNames => new LocationNames($c->get(LocationNameStore::class)));
         $c->set(MessageStore::class, static fn (): MessageStore => new MessageStore());
         $c->set(ConversationStore::class, static fn (Container $c): ConversationStore => new ConversationStore($c->get(MessageStore::class)));
+        $c->set(InboxQuery::class, static fn (Container $c): InboxQuery => new InboxQuery($c->get(MessageStore::class)));
         $c->set(MessagingService::class, static fn (Container $c): MessagingService => new MessagingService(
             $c->get(ConversationStore::class),
             $c->get(MessageStore::class),
             $c->get(DispatcherInterface::class),
-            $c->get(Clock::class)
+            $c->get(Clock::class),
+            $c->get(LiveNotifier::class)
         ));
         $c->set(MessageModeration::class, static fn (Container $c): MessageModeration => new MessageModeration(
             $c->get(ConversationStore::class),
@@ -120,7 +123,7 @@ final class CoreServices
                 $c->get(LiveStatus::class)
             )
             : new NullPublisher());
-        $c->set(LiveNotifier::class, static fn (Container $c): LiveNotifier => new LiveNotifier($c->get(LivePublisher::class)));
+        $c->set(LiveNotifier::class, static fn (Container $c): LiveNotifier => new LiveNotifier($c->get(LivePublisher::class), $c->get(ConversationStore::class)));
         $events->listen(MessageSent::class, [LiveNotifier::class, 'onMessageSent']);
         $events->listen(MessageRead::class, [LiveNotifier::class, 'onMessageRead']);
         $c->set(HttpClient::class, static fn (): HttpClient => new CurlHttpClient());

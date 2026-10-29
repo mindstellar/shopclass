@@ -279,33 +279,6 @@ function set_locales(array $locales): void
     osc_settings_locales(true);
 }
 
-/** A Chrome or Chromium binary this machine has, or '' when it has none. */
-function test_browser(): string
-{
-    if (!function_exists('shell_exec')) {
-        return '';
-    }
-
-    $candidates = array((string)getenv('CHROME'), 'google-chrome', 'google-chrome-stable', 'chromium', 'chromium-browser');
-    foreach ($candidates as $candidate) {
-        if ($candidate === '') {
-            continue;
-        }
-        if (strpos($candidate, '/') !== false) {
-            if (is_executable($candidate)) {
-                return $candidate;
-            }
-            continue;
-        }
-        $found = trim((string)shell_exec('command -v ' . escapeshellarg($candidate) . ' 2>/dev/null'));
-        if ($found !== '' && is_executable($found)) {
-            return $found;
-        }
-    }
-
-    return '';
-}
-
 /**
  * Load a rendered settings page in a real browser, with the real ui-osc.js and the
  * committed stylesheet beside it, run one of the drivers in tests/lib/ over it, and hand
