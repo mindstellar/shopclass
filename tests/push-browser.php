@@ -172,6 +172,14 @@ pin('the note stays in the page for screen readers', true,
 pin('a [data-osc-push-toggle] click subscribes from inside the click', array(1, 1, array('in-click'), 'true'), array(
     $r['toggled']['subscribes'] ?? null, $r['toggled']['fetches'] ?? null, $r['toggled']['asks'] ?? null, $r['toggled']['state']['pressed'] ?? null,
 ));
+pin('the menu item shows once push works, with the off label', array(false, $off),
+    array($r['toggleReady']['toggleHidden'] ?? null, $r['toggleReady']['toggleText'] ?? null));
+pin('and flips to the on label after a subscribe', $on, $r['toggled']['state']['toggleText'] ?? null);
+pin('without push support the menu item stays hidden', array(true, true),
+    array($r['toggleUnsupported']['toggleHidden'] ?? null, $r['toggleUnsupported']['menuNoteHidden'] ?? null));
+pin('blocked: the menu hides the item and shows the note', array(true, false, 'Notifications are blocked in this browser. Allow them in its site settings first.'), array(
+    $r['toggleDenied']['toggleHidden'] ?? null, $r['toggleDenied']['menuNoteHidden'] ?? null, $r['toggleDenied']['menuNote'] ?? null,
+));
 
 harness_section('the worker');
 pin('a push fetches messages_check under the scope, with the cookies', array(array(

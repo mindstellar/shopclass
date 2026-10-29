@@ -104,7 +104,7 @@
             return respond(opts.route(f));
         };
         e.start = async function () {
-            document.getElementById('stage').innerHTML = (opts.bell ? bellHtml : stageHtml) + (opts.toggle ? '<button type="button" id="menu-toggle" data-osc-push-toggle>Menu</button>' : '');
+            document.getElementById('stage').innerHTML = (opts.bell ? bellHtml : stageHtml) + (opts.toggle ? '<button type="button" id="menu-toggle" data-osc-push-toggle hidden>Menu</button><p id="menu-note" data-osc-push-menu-note hidden></p>' : '');
             e.form = document.querySelector('form[data-osc-push]');
             e.button = e.form.querySelector('button');
             e.note = e.form.querySelector('[data-osc-push-note]');
@@ -127,7 +127,11 @@
         e.state = function () {
             return {
                 hidden: e.form.hidden, label: e.button.textContent, disabled: e.button.disabled, note: e.note.textContent,
-                pressed: e.button.getAttribute('aria-pressed'), aria: e.button.getAttribute('aria-label'), title: e.button.title
+                pressed: e.button.getAttribute('aria-pressed'), aria: e.button.getAttribute('aria-label'), title: e.button.title,
+                toggleHidden: opts.toggle ? document.getElementById('menu-toggle').hidden : null,
+                toggleText: opts.toggle ? document.getElementById('menu-toggle').textContent : null,
+                menuNote: opts.toggle ? document.getElementById('menu-note').textContent : null,
+                menuNoteHidden: opts.toggle ? document.getElementById('menu-note').hidden : null
             };
         };
         return e;
@@ -284,8 +288,23 @@
             return json(200, {ok: true});
         }});
         await e.start();
+        out.toggleReady = e.state();
         await e.clickToggle();
         out.toggled = {state: e.state(), subscribes: e.subscribes.length, fetches: e.fetches.length, asks: e.asks};
+
+        // No push in this browser: the menu item stays hidden.
+        e = pageEnv({supported: false, bell: true, toggle: true, route: function () {
+            return json(200, {});
+        }});
+        await e.start();
+        out.toggleUnsupported = e.state();
+
+        // Blocked: the menu shows why, and no item that cannot work.
+        e = pageEnv({supported: true, bell: true, toggle: true, permission: 'denied', route: function () {
+            return json(200, {});
+        }});
+        await e.start();
+        out.toggleDenied = e.state();
 
         // The worker. Its own URL carries its texts; the scope is a sub-directory.
         var scope = 'https://example.test/sub/';

@@ -92,8 +92,9 @@ $blockConfirm = _m('Block this conversation? Neither of you can write until it i
             </summary>
             <div class="oe-menu-panel oe-thread-actions">
                 <?php if (osc_push_enabled() && osc_push_public_key() !== '') { ?>
-                    <button type="button" class="oe-menu-item" data-osc-push-toggle><?php
+                    <button type="button" class="oe-menu-item" data-osc-push-toggle hidden><?php
                         echo osc_esc_html(_m('Notify me on this device')); ?></button>
+                    <p class="oe-menu-note" data-osc-push-menu-note hidden></p>
                 <?php }
                 if ($myBlock) {
                     $postForm('unblock_post', _m('Unblock'), 'oe-menu-item');

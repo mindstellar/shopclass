@@ -24,6 +24,27 @@
     var workerUrl = new URL(data.workerUrl, location.href).href;
     var active = false;
     var busy = false;
+    var ready = false;
+    var isBlocked = false;
+
+    // The menu items that work this switch and the menu's note: hidden until push works here.
+    // Synced again when a menu opens, since a chat pane can be swapped in after load.
+    var syncMenus = function () {
+        document.querySelectorAll('[data-osc-push-toggle]').forEach(function (toggle) {
+            toggle.hidden = !ready || isBlocked;
+            toggle.textContent = active ? data.onLabel : data.offLabel;
+        });
+        document.querySelectorAll('[data-osc-push-menu-note]').forEach(function (menuNote) {
+            menuNote.textContent = isBlocked ? data.blockedNote : '';
+            menuNote.hidden = !isBlocked;
+        });
+    };
+
+    var reveal = function () {
+        form.hidden = false;
+        ready = true;
+        syncMenus();
+    };
 
     var keyBytes = function (text) {
         var b64 = String(text).replace(/-/g, '+').replace(/_/g, '/');
@@ -45,6 +66,7 @@
         } else {
             button.textContent = text;
         }
+        syncMenus();
     };
 
     var show = function (on, text) {
@@ -55,6 +77,7 @@
 
     var blocked = function () {
         active = false;
+        isBlocked = true;
         label(false);
         button.disabled = true;
         note.textContent = data.blockedNote;
@@ -210,9 +233,11 @@
         }
     });
 
+    document.addEventListener('toggle', syncMenus, true);
+
     if (Notification.permission === 'denied') {
         blocked();
-        form.hidden = false;
+        reveal();
         return;
     }
 
@@ -235,7 +260,5 @@
         show(on);
     }, function () {
         show(false);
-    }).then(function () {
-        form.hidden = false;
-    });
+    }).then(reveal);
 }());

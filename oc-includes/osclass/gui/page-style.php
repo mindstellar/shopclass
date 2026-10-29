@@ -399,6 +399,8 @@ if (!defined('ABS_PATH')) {
   }
   .oe-page .oe-menu-item:hover,.oe-page .oe-menu-item:focus-visible{background:var(--oe-bench-sunk);}
   .oe-page .oe-menu-item.oe-danger-link{color:var(--oe-danger);}
+  .oe-page .oe-menu-item[hidden],.oe-page .oe-menu-note[hidden]{display:none;}
+  .oe-page .oe-menu-note{max-inline-size:16rem;margin:4px 12px 8px;font-size:.8125rem;line-height:1.4;color:var(--oe-ink-muted);}
   .oe-page .oe-menu-report > summary{list-style:none;cursor:pointer;}
   .oe-page .oe-menu-report > summary::-webkit-details-marker{display:none;}
   .oe-page .oe-menu-report > form{padding:8px 12px;}
