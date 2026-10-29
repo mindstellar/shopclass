@@ -15,12 +15,11 @@ if (!defined('ABS_PATH')) {
  * The chat pane of the messenger: the person and listing, the messages oldest first, and the
  * composer or the line that replaces it -- markup only.
  *
- * Reads the `conversation`, `messages`, `names`, `title`, `item_url`, `listing_live`, `listing_photo`,
- * `listing_price`, `role`, `their_unread`, `server_now`, `can_send`, `my_block` and `their_block`
- * view variables.
+ * Reads the `conversation`, `messages`, `names`, `other_name`, `other_initial`, `seen_at`, `title`,
+ * `item_url`, `listing_live`, `listing_photo`, `listing_price`, `role`, `their_unread`, `server_now`,
+ * `can_send`, `my_block` and `their_block` view variables.
  */
 
-use mindstellar\messaging\ConversationStore;
 use mindstellar\messaging\MessagePolicy;
 use mindstellar\messaging\MessageTime;
 use mindstellar\security\MessageGuard;
@@ -47,8 +46,9 @@ $convoFmt    = osc_date_format() . ' ' . osc_time_format();
 $lastId      = $convoMsgs === array() ? 0 : (int) end($convoMsgs)['pk_i_id'];
 $liveUrl     = osc_messaging_live_url();
 
-$otherName    = (string) ($convoNames[ConversationStore::otherParty($convo, $meId)] ?? _m('Former user'));
-$otherInitial = mb_strtoupper(mb_substr(trim($otherName), 0, 1));
+$otherName    = (string) $convoView->_get('other_name');
+$otherInitial = (string) $convoView->_get('other_initial');
+$seenAt       = $convoView->_exists('seen_at') ? (int) $convoView->_get('seen_at') : -1;
 $postUrl      = osc_base_url(true);
 
 $stopLine = '';
@@ -62,21 +62,6 @@ if ($convoCan === MessagePolicy::CLOSED) {
     $stopLine = _m('The other person blocked this conversation.');
 }
 $canUnblock = $myBlock && $convoCan !== MessagePolicy::CLOSED && $convoState !== 'reported';
-
-// "Seen" goes under my last delivered message when nothing from them follows it.
-$seenAt = -1;
-if ($theirUnread === 0) {
-    foreach ($convoMsgs as $i => $m) {
-        if ((int) $m['fk_i_sender_id'] === $meId && (string) $m['s_state'] !== 'held') {
-            $seenAt = $i;
-        }
-    }
-    for ($i = $seenAt + 1; $seenAt >= 0 && $i < count($convoMsgs); $i++) {
-        if ((int) $convoMsgs[$i]['fk_i_sender_id'] !== $meId) {
-            $seenAt = -1;
-        }
-    }
-}
 
 $postForm = static function (string $action, string $label, string $class, string $confirm = '') use ($convoId, $postUrl): void { ?>
     <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html($postUrl); ?>">

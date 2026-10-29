@@ -49,6 +49,7 @@ use mindstellar\location\LocationNameStore;
 use mindstellar\mail\CoreEmails;
 use mindstellar\mail\event\MailComposing;
 use mindstellar\messaging\ConversationStore;
+use mindstellar\messaging\InboxQuery;
 use mindstellar\messaging\event\ConversationBlocked;
 use mindstellar\messaging\event\ConversationReported;
 use mindstellar\messaging\event\ConversationStarted;
@@ -98,6 +99,7 @@ final class CoreServices
         $c->set(LocationNames::class, static fn (Container $c): LocationNames => new LocationNames($c->get(LocationNameStore::class)));
         $c->set(MessageStore::class, static fn (): MessageStore => new MessageStore());
         $c->set(ConversationStore::class, static fn (Container $c): ConversationStore => new ConversationStore($c->get(MessageStore::class)));
+        $c->set(InboxQuery::class, static fn (Container $c): InboxQuery => new InboxQuery($c->get(MessageStore::class)));
         $c->set(MessagingService::class, static fn (Container $c): MessagingService => new MessagingService(
             $c->get(ConversationStore::class),
             $c->get(MessageStore::class),

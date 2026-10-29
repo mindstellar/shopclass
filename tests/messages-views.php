@@ -20,6 +20,9 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/messaging/InboxQuery.php';
+
+use mindstellar\messaging\InboxQuery;
 
 $guiDir = ABS_PATH . 'oc-includes/osclass/gui/';
 $files  = array(
@@ -125,7 +128,15 @@ check('the filter and the tabs start hidden', (bool) preg_match('/class="oe-list
 check('a preview, a name and a title are escaped', strpos($inbox, "osc_esc_html(\$rowPreview)") !== false
     && strpos($inbox, "osc_esc_html((string) \$listRow['other_name'])") !== false && strpos($inbox, "osc_esc_html((string) \$listRow['title'])") !== false);
 check('"You: " prefixes my own last message', strpos($inbox, "\$listRow['preview_mine'] ? _m('You') . ': '") !== false);
-check('Seen needs their unread count at 0', strpos($thread, '$theirUnread === 0') !== false);
+$seenMsgs = static fn (array $rows): array => array_map(
+    static fn (array $r): array => array('fk_i_sender_id' => $r[0], 's_state' => $r[1]),
+    $rows
+);
+pin('Seen goes under my last delivered message', 1, InboxQuery::seenAt($seenMsgs(array(array(2, 'sent'), array(1, 'sent'), array(1, 'held'))), 1, 0));
+pin('Seen needs their unread count at 0', -1, InboxQuery::seenAt($seenMsgs(array(array(2, 'sent'), array(1, 'sent'))), 1, 1));
+pin('no Seen when they wrote after me', -1, InboxQuery::seenAt($seenMsgs(array(array(1, 'sent'), array(2, 'sent'))), 1, 0));
+pin('no Seen when all mine are held', -1, InboxQuery::seenAt($seenMsgs(array(array(1, 'held'))), 1, 0));
+check('the chat partial takes Seen from the view, not its own loop', strpos($thread, "_get('seen_at')") !== false && strpos($thread, 'foreach ($convoMsgs as $i => $m)') === false);
 check('the account hooks stay in both pages', substr_count($src['inbox'] . $src['thread'], "osc_run_hook('account_page_before'") === 2
     && substr_count($src['inbox'] . $src['thread'], "osc_run_hook('account_page_after'") === 2);
 check('both pages still include the account nav', substr_count($src['inbox'] . $src['thread'], "/nav.php") === 2);
