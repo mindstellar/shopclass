@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\messaging;
 
+use mindstellar\currency\CurrencyStore;
 use mindstellar\listing\ListingStore;
 use mindstellar\listing\PhotoStore;
 use mindstellar\user\UserStore;
@@ -81,8 +82,7 @@ final class InboxQuery
         }
         $symbol = '';
         if ($item['currency'] !== null) {
-            $currency = \Currency::getInstance()->findByPrimaryKey($item['currency']);
-            $symbol   = is_array($currency) ? (string) $currency['s_description'] : '';
+            $symbol = (string) (CurrencyStore::find($item['currency'])['s_description'] ?? '');
         }
 
         return array(

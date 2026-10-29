@@ -46,12 +46,15 @@ harness_section('the list rows');
 check('the inbox and the thread both build their rows with listRows()', strpos(harness_method_source($file, 'inbox'), '$this->listRows(') !== false
     && strpos($thread, '$this->listRows(') !== false);
 check('the thread is read and marked read before the list is built', strpos($thread, '->markRead(') < strpos($thread, '$this->listRows('));
-$rows = harness_method_source($file, 'listRows');
-foreach (array('lastVisible(', '$this->listingFacts(', 'UserStore::displayNames(', "'preview_mine'", "'photo_url'", "'short_time'", "'initial'", "'listing_live'") as $needle) {
-    check("listRows() uses {$needle}", strpos($rows, $needle) !== false);
+check('listRows() hands the shaping to InboxQuery', strpos(harness_method_source($file, 'listRows'), '$this->query()->rows(') !== false);
+$queryFile = __DIR__ . '/../oc-includes/osclass/classes/messaging/InboxQuery.php';
+$rows      = harness_method_source($queryFile, 'rows');
+foreach (array('lastVisible(', '$this->listings(', 'UserStore::displayNames(', "'preview_mine'", "'photo_url'", "'short_time'", "'initial'", "'listing_live'") as $needle) {
+    check("InboxQuery::rows() uses {$needle}", strpos($rows, $needle) !== false);
 }
 $loop = substr($rows, strpos($rows, 'foreach ('));
-check('no read sits inside the row loop', (bool) !preg_match('/lastVisible\(|ListingStore|UserStore|PhotoStore|Db::|listingFacts|service\(\)/', $loop));
+check('no read sits inside the row loop', (bool) !preg_match('/lastVisible\(|ListingStore|UserStore|PhotoStore|Db::|listings\(|service\(\)/', $loop));
+check('InboxQuery only reads', (bool) !preg_match('/->(?:insert|update|delete|upsert)\(|Db::(?:insert|update|delete|transaction)/', (string) file_get_contents($queryFile)));
 foreach (array('conversation', 'messages', 'names', 'title', 'item_url', 'can_send', 'my_block', 'their_block', 'conversations', 'older', 'role', 'their_unread') as $key) {
     check("thread() still exports '{$key}'", strpos($thread, "_exportVariableToView('{$key}'") !== false);
 }
