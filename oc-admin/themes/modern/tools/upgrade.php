@@ -82,6 +82,10 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
                     // A fatal error or a timeout mid-run answers with something other than JSON.
                     if (!json || typeof json !== 'object') {
                         report(verdict('warning', t.noReply));
+                    } else if (json.error == 0 && typeof json.next === 'string') {
+                        // The database step runs on its own page, in a request that loads the new files.
+                        report(verdict('success', json.message));
+                        window.location.assign(json.next);
                     } else if (json.error == 0) {
                         report(verdict('success', t.upgraded, {label: t.notes, url: t.notesUrl}));
                     } else {

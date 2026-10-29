@@ -71,6 +71,7 @@ Shopclass 7.1 adds a shop mode and pay at the end of posting. In shop mode only 
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
 
 ### Changed
+- An update to a new X.Y release now replaces `oc-admin` and `oc-includes` whole, so files the new release dropped are gone; a patch release, or a server that cannot rename them, copies as before. The database step runs in its own request after the files.
 - In shop mode there is no public user profile: the page and `GET /users/{id}` (with its listings) are a 404 except to the user and admin keys, and the profile URL helpers and the API user link are empty.
 - Content language tabs list the site's default language first and open on it, instead of the admin's own language.
 - Product form regrouped into sections; Location optional in shop mode with a store address fallback.

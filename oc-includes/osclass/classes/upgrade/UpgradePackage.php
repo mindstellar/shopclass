@@ -197,6 +197,16 @@ abstract class UpgradePackage
     }
 
     /**
+     * Top-level folders the update replaces whole, so files a release dropped go with them.
+     *
+     * @return array<string>
+     */
+    public function getSwapFolders(): array
+    {
+        return [];
+    }
+
+    /**
      * Package Source download url
      *
      * @return string

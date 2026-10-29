@@ -593,7 +593,35 @@ class Cli
 
         $this->out("Files updated. Updating the database...\n");
 
-        return $this->cmdDbUpgrade([]);
+        // A new process, so the migrations load the new files and not this process's class map.
+        $code = function_exists('proc_open') ? $this->runChild(['db:upgrade']) : null;
+        if ($code === null) {
+            $this->err("Now run: php oc-cli.php db:upgrade\n");
+
+            return 1;
+        }
+
+        return $code;
+    }
+
+    /**
+     * Run another oc-cli.php command in its own PHP process, sharing this one's terminal.
+     *
+     * @param array<string> $args
+     *
+     * @return int|null its exit code, or null when it could not start
+     */
+    private function runChild(array $args): ?int
+    {
+        $command = array_merge(array(PHP_BINARY, ABS_PATH . 'oc-cli.php'), $args);
+        $process = proc_open($command, array(STDIN, STDOUT, STDERR), $pipes);
+        if (!is_resource($process)) {
+            $this->err('Could not start ' . implode(' ', $command) . "\n");
+
+            return null;
+        }
+
+        return proc_close($process);
     }
 
     /**
@@ -946,14 +974,7 @@ class Cli
         if ($listen) {
             // Each pass is its own process, so no cached data or memory outlives it.
             $spawn = function (string ...$args): void {
-                $command = array_merge(array(PHP_BINARY, ABS_PATH . 'oc-cli.php'), $args);
-                $process = proc_open($command, array(STDIN, STDOUT, STDERR), $pipes);
-                if (!is_resource($process)) {
-                    $this->err('Could not start ' . implode(' ', $command) . "\n");
-
-                    return;
-                }
-                proc_close($process);
+                $this->runChild($args);
             };
             \mindstellar\job\JobWorker::listen(
                 $maxSeconds,

@@ -110,54 +110,42 @@ final class UpdateAjax extends AjaxHandler
     /** Upgrade to the available release. */
     public function upgrade(): void
     {
-        $result = self::refusal();
-        if ($result === null) {
-            $osclassUpgradeObj = new Osclass(Osclass::getPackageInfo());
-            $upgradeOsclass    = new Upgrade($osclassUpgradeObj);
-            try {
-                $upgradeOsclass->doUpgrade();
-                $db_upgrade_result = json_decode((string) $osclassUpgradeObj::upgradeDB(), true);
-                $result            = [
-                    'error'   => $db_upgrade_result['error'],
-                    'message' => $db_upgrade_result['message'],
-                ];
-            } catch (Exception $e) {
-                $result = ['error' => 1, 'message' => $e->getMessage()];
-                osc_add_flash_error_message($e->getMessage(), 'admin');
-            }
-            if (isset($db_upgrade_result) && $db_upgrade_result['error'] == 1) {
-                $result = ['error' => 5, 'message' => $db_upgrade_result['message']];
-                osc_add_flash_warning_message(__('Error occurred while upgrading osclass Database.'), 'admin');
-            }
-        }
-        AjaxResponse::json($result);
+        AjaxResponse::json(self::replaceFiles(false));
     }
 
     /** Reinstall the current release over itself. */
     public function reinstall(): void
     {
+        AjaxResponse::json(self::replaceFiles(true));
+    }
+
+    /**
+     * Put the release files in place and send the screen on to the database step. That step runs
+     * in its own request, so it loads the new files and not the class map this one started with.
+     *
+     * @param bool $force reinstall the current release
+     *
+     * @return array{error:int, message:string, next?:string}
+     */
+    private static function replaceFiles(bool $force): array
+    {
         $result = self::refusal();
-        if ($result === null) {
-            $osclassUpgradeObj = new Osclass(Osclass::getPackageInfo(), true);
-            $upgradeOsclass    = new Upgrade($osclassUpgradeObj);
-            try {
-                $upgradeOsclass->doUpgrade();
-                $db_upgrade_result = json_decode((string) $osclassUpgradeObj::upgradeDB(), true);
-                $result            = [
-                    'error'   => 0,
-                    'message' => __('Shopclass upgraded successfully.'),
-                ];
-            } catch (Exception $e) {
-                $result = ['error' => 1, 'message' => $e->getMessage()];
-                osc_add_flash_error_message($e->getMessage(), 'admin');
-            }
-            // upgradeDB() reports through 'error'; it has no 'status' key.
-            if (isset($db_upgrade_result) && (int) $db_upgrade_result['error'] !== 0) {
-                $result = ['error' => 5, 'message' => $db_upgrade_result['message']];
-                osc_add_flash_warning_message(__('Error occurred while upgrading osclass Database.'), 'admin');
-            }
+        if ($result !== null) {
+            return $result;
         }
-        AjaxResponse::json($result);
+        try {
+            (new Upgrade(new Osclass(Osclass::getPackageInfo(), $force)))->doUpgrade();
+        } catch (Exception $e) {
+            osc_add_flash_error_message($e->getMessage(), 'admin');
+
+            return ['error' => 1, 'message' => $e->getMessage()];
+        }
+
+        return [
+            'error'   => 0,
+            'message' => __('The new files are in place. Updating the database...'),
+            'next'    => osc_admin_base_url(true) . '?page=upgrade',
+        ];
     }
 
     /** Run the database migrations and echo their JSON report. */

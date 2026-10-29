@@ -5500,10 +5500,6 @@ msgstr ""
 msgid "Error loading theme custom file"
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
-msgid "Error occurred while upgrading osclass Database."
-msgstr ""
-
 #: oc-admin/themes/modern/settings/api.php
 msgid "Event"
 msgstr ""
@@ -12837,10 +12833,6 @@ msgid ""
 "without an error."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
-msgid "Shopclass upgraded successfully."
-msgstr ""
-
 #: oc-admin/themes/modern/main/index.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Shopclass version"
@@ -14129,6 +14121,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "The name or address of %s itself changes."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/ajax/UpdateAjax.php
+msgid "The new files are in place. Updating the database..."
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php

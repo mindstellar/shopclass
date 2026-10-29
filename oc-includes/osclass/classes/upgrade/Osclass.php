@@ -53,6 +53,32 @@ class Osclass extends UpgradePackage
     }
 
     /**
+     * Core owns these folders; nothing else may write in them. A patch release or a reinstall
+     * copies file by file instead, since it often runs unattended.
+     *
+     * @return array<string>
+     */
+    public function getSwapFolders(): array
+    {
+        return self::newMinor(OSCLASS_VERSION, $this->getNewVersion()) ? ['oc-admin', 'oc-includes'] : [];
+    }
+
+    /**
+     * Whether $to starts a new X.Y line: 7.1.4 to 7.2.0 does, 7.1.0 to 7.1.1 does not.
+     *
+     * @param string $from
+     * @param string $to
+     *
+     * @return bool
+     */
+    public static function newMinor(string $from, string $to): bool
+    {
+        $line = static fn (string $v): string => implode('.', array_slice(explode('.', $v), 0, 2));
+
+        return $line($from) !== $line($to);
+    }
+
+    /**
      * The core version the database records; a legacy three-digit one (390) reads as 3.9.0.
      *
      * @return string

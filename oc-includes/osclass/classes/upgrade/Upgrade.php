@@ -188,6 +188,71 @@ class Upgrade
     }
 
     /**
+     * Replace $targetDir/$name with $originDir/$name whole, or change nothing and return false.
+     * On success the package folder is gone, so a later sync() does not copy it again.
+     *
+     * @param string $originDir the unpacked package
+     * @param string $targetDir the site
+     * @param string $name      a top-level folder, e.g. oc-includes
+     *
+     * @return bool true when the folder was swapped
+     * @throws \Exception
+     */
+    public static function swapFolder(string $originDir, string $targetDir, string $name): bool
+    {
+        $fs     = new FileSystem();
+        $source = rtrim($originDir, '/\\') . '/' . $name;
+        $live   = rtrim($targetDir, '/\\') . '/' . $name;
+        $staged = $live . '.new';
+        $old    = $live . '.old';
+        if (!is_dir($source) || is_link($source) || !is_dir($live) || is_link($live)) {
+            return false;
+        }
+
+        // Spare folders from an earlier run that stopped; the live folder is whole.
+        $tidy = static function (array $paths) use ($fs): void {
+            try {
+                $fs->remove($paths);
+            } catch (\Throwable $e) {
+                error_log('upgrade: not removed: ' . implode(', ', $paths) . ': ' . $e->getMessage());
+            }
+        };
+        $tidy([$staged, $old]);
+
+        // The package usually sits on the same disk, so a rename is enough; else copy it next to the site.
+        $moved = @rename($source, $staged);
+        // On a failure the package folder must be whole again, for the file-by-file copy.
+        $undo = static function () use ($fs, $tidy, $moved, $source, $staged): bool {
+            if ($moved && !@rename($staged, $source)) {
+                $fs->sync($staged, $source);
+            }
+            $tidy([$staged]);
+
+            return false;
+        };
+        try {
+            if (!$moved) {
+                $fs->sync($source, $staged);
+            }
+        } catch (\Throwable $e) {
+            return $undo();
+        }
+        if (!@rename($live, $old)) {
+            return $undo();
+        }
+        if (!@rename($staged, $live)) {
+            // Should this fail too, the sync after us builds the live folder from the package.
+            @rename($old, $live);
+
+            return $undo();
+        }
+        // The new folder is live; what cannot be removed now goes at the next update.
+        $tidy([$old, $source]);
+
+        return true;
+    }
+
+    /**
      * Make sure the downloads folder exists and this PHP user can write to it.
      *
      * @param string $path
@@ -305,6 +370,10 @@ class Upgrade
             $this->FileSystem->writeToFile(ABS_PATH . '.maintenance', OSC_MAINTENANCE_UPGRADE_MARKER);
 
             if ($this->FileSystem->exists($originDir)) {
+                // A folder that cannot be swapped is copied file by file by the sync below.
+                foreach ($this->objPackage->getSwapFolders() as $folder) {
+                    self::swapFolder($originDir, $this->objPackage->getTargetDirectory(), $folder);
+                }
                 $this->FileSystem->sync(
                     $originDir . '/',
                     $this->objPackage->getTargetDirectory(),

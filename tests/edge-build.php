@@ -115,7 +115,8 @@ check('the toolbar offers no new version on edge', strpos($functions, '!empty($c
 check('the admin footer does not poll on edge', strpos($footer, '> (24 * 3600) && !\\mindstellar\\upgrade\\BuildInfo::isEdge()') !== false);
 check('the automatic security install stops when updates are off', strpos($auto, '|| osc_self_update_disabled()) {') !== false);
 check('the in-app upgrade refuses when updates are off', strpos($ajax, 'if (osc_self_update_disabled()) {') !== false
-    && substr_count($ajax, '$result = self::refusal();') === 2);
+    && substr_count($ajax, '$result = self::refusal();') === 1
+    && substr_count($ajax, 'AjaxResponse::json(self::replaceFiles(') === 2);
 $edgeAt = strpos($upgrade, 'if (BuildInfo::isEdge()) {');
 check('the update screen says how an edge build updates, ahead of the container message', $edgeAt !== false
     && strpos($upgrade, "__('This is an edge build. Update it by pulling the :edge image.')", $edgeAt) !== false
