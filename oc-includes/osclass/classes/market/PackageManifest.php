@@ -35,9 +35,7 @@ final class PackageManifest
     {
         $json = self::json($dir);
 
-        $modes = array_key_exists('modes', $json)
-            ? self::cleanModes($json['modes'])
-            : self::cleanModes(self::headerLine($header, 'Modes'));
+        $modes = self::modes($json, self::headerLine($header, 'Modes'));
 
         $plugins = ['required' => [], 'recommended' => []];
         if (isset($json['plugins']) && is_array($json['plugins'])) {
@@ -48,6 +46,18 @@ final class PackageManifest
         }
 
         return ['modes' => $modes, 'plugins' => $plugins];
+    }
+
+    /**
+     * The modes from a shopclass.json array, else from the `Modes:` header value; `classifieds` when neither has one.
+     *
+     * @param array<string,mixed> $json
+     *
+     * @return list<string>
+     */
+    public static function modes(array $json, string $headerModes): array
+    {
+        return self::cleanModes(array_key_exists('modes', $json) ? $json['modes'] : $headerModes);
     }
 
     /**

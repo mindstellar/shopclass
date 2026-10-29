@@ -62,6 +62,7 @@ const PLUGIN_FIELDS = [
     'requires'          => 'Requires Shopclass',
     'tested_up_to'      => 'Tested up to',
     'requires_php'      => 'Requires PHP',
+    'modes'             => 'Modes',
 ];
 
 /** Header fields read out of a theme's index.php, per PACKAGE-SPEC §3.3. Mirrors tools/package-lint.php. */
@@ -75,6 +76,7 @@ const THEME_FIELDS = [
     'requires'         => 'Requires Shopclass',
     'tested_up_to'     => 'Tested up to',
     'requires_php'     => 'Requires PHP',
+    'modes'            => 'Modes',
 ];
 
 function printUsage(): void
@@ -554,20 +556,22 @@ function readZipTextFile(string $bytes, string $slugDir, string $relPath): ?stri
     return $data === false ? null : $data;
 }
 
-// The README and CHANGELOG renderer is core's own, so the admin's detail dialog and this
-// catalog agree. In the package-ci bundle it sits beside this file; in a checkout, in core.
-$markdownClass = null;
-foreach ([__DIR__ . '/Markdown.php', __DIR__ . '/../../oc-includes/osclass/classes/market/Markdown.php'] as $candidate) {
-    if (is_file($candidate)) {
-        $markdownClass = $candidate;
-        break;
+// The README and CHANGELOG renderer and the modes reader are core's own, so the admin and
+// this catalog agree. In the package-ci bundle they sit beside this file; in a checkout, in core.
+foreach (['Markdown.php', 'PackageManifest.php'] as $coreClass) {
+    $found = null;
+    foreach ([__DIR__ . '/' . $coreClass, __DIR__ . '/../../oc-includes/osclass/classes/market/' . $coreClass] as $candidate) {
+        if (is_file($candidate)) {
+            $found = $candidate;
+            break;
+        }
     }
+    if ($found === null) {
+        fwrite(STDERR, "build-catalog: {$coreClass} not found beside this script or in core.\n");
+        exit(2);
+    }
+    require_once $found;
 }
-if ($markdownClass === null) {
-    fwrite(STDERR, "build-catalog: Markdown.php not found beside this script or in core.\n");
-    exit(2);
-}
-require_once $markdownClass;
 
 function renderMarkdownSafe(?string $markdown, ?string $baseUrl = null): string
 {
@@ -1104,6 +1108,17 @@ function buildPackageEntry(
 
     $range = packageSupportedRange($versionsOut);
 
+    // An in-repo manifest is the package's own shopclass.json; an external one is the
+    // registry entry, so the package's own copy is read out of its newest zip.
+    $packageJson = $manifest;
+    if ($source !== 'in-repo') {
+        $zipJson = $resolution['artwork']['bytes'] !== null && $resolution['artwork']['slug_dir'] !== null
+            ? readZipTextFile($resolution['artwork']['bytes'], $resolution['artwork']['slug_dir'], 'shopclass.json')
+            : null;
+        $packageJson = $zipJson !== null && is_array($decoded = json_decode($zipJson, true)) ? $decoded : [];
+    }
+    $modes = \mindstellar\market\PackageManifest::modes($packageJson, (string) ($header['modes'] ?? ''));
+
     $categories = array_values(array_unique(array_map('strval', $manifest['categories'] ?? [])));
     sort($categories, SORT_STRING);
     $tags = array_values(array_unique(array_map('strval', $manifest['tags'] ?? [])));
@@ -1127,6 +1142,7 @@ function buildPackageEntry(
         'license'          => $manifest['license'] ?? null,
         'categories'       => $categories,
         'tags'             => $tags,
+        'modes'            => $modes,
         'icon'             => $icon,
         'screenshots'      => $screenshots,
         'latest_version'   => $newest['version'] ?? null,
@@ -1189,6 +1205,7 @@ function buildIndexJson(array $packages): array
             'icon'             => $pkg['icon'],
             'categories'       => $pkg['categories'],
             'tags'             => $pkg['tags'],
+            'modes'            => $pkg['modes'],
             'updated_at'       => $pkg['updated_at'],
             'downloads'        => $pkg['downloads'],
             'requires_min'     => $pkg['requires_min'],

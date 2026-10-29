@@ -8,4 +8,5 @@ tools/ci/annotate.php                               annotate.php
 tools/ci/smoke-install.sh                           smoke-install.sh
 tools/ci/build-catalog.php                          build-catalog.php
 oc-includes/osclass/classes/market/Markdown.php     Markdown.php
+oc-includes/osclass/classes/market/PackageManifest.php PackageManifest.php
 tools/ci/deprecation-collector/index.php            deprecation-collector/index.php
