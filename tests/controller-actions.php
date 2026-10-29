@@ -183,6 +183,7 @@ $controllers = array(
         'messages_live_auth'          => 'messagesLiveAuth',
         'messages_send'               => 'messagesSend',
         'messages_since'              => 'messagesSince',
+        'messages_typing'             => 'messagesTyping',
         'push_status'                 => 'pushStatus',
         'push_subscribe'              => 'pushSubscribe',
         'push_unsubscribe'            => 'pushUnsubscribe',

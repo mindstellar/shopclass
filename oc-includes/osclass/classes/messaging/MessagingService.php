@@ -34,6 +34,7 @@ use mindstellar\messaging\event\MessageSending;
 use mindstellar\messaging\event\MessageSent;
 use mindstellar\security\ActionThrottle;
 use mindstellar\security\MessageGuard;
+use mindstellar\security\RateLimit;
 use mindstellar\security\SpamCheck;
 use mindstellar\user\UserStore;
 use mindstellar\utility\Clock;
@@ -59,6 +60,10 @@ final class MessagingService
     public const HELD_AKISMET = 'akismet';
     public const HELD_THREAD  = 'thread';
 
+    /** The rate limit on typing notes: one per user and thread every TYPING_EVERY seconds. */
+    public const TYPING_CONTEXT = 'message_typing';
+    public const TYPING_EVERY   = 3;
+
     private const DUPLICATE_KEY  = 1062;
     private const MAX_BODY_BYTES = 65535;
 
@@ -66,7 +71,8 @@ final class MessagingService
         private ConversationStore $conversations,
         private MessageStore $messages,
         private DispatcherInterface $events,
-        private Clock $clock
+        private Clock $clock,
+        private ?LiveNotifier $live = null
     ) {
     }
 
@@ -126,6 +132,38 @@ final class MessagingService
         $sellerId = (int) $conversation['fk_i_seller_id'];
 
         return $this->send($user, $actor, $conversation, (int) $conversation['fk_i_item_id'], $buyerId, $sellerId, $body, null);
+    }
+
+    /**
+     * Tell the other party the actor is typing. False, with nothing sent, while live delivery is
+     * off (before any query), in a thread that is not open or is blocked, and within
+     * TYPING_EVERY seconds of the last note. Nothing is stored but the rate count.
+     *
+     * @throws ForbiddenException messaging off, a guest, an account that is not live
+     * @throws NotFoundException  a thread the actor is not part of, or may not see
+     */
+    public function typing(int $conversationId, Actor $actor): bool
+    {
+        if ($this->live === null || !$this->live->isOn()) {
+            return false;
+        }
+        $this->sender($actor);
+        $conversation = $this->conversations->find($conversationId);
+        if ($conversation === null || !MessagePolicy::isParty($conversation, $actor) || !MessagePolicy::canView($conversation, $actor)) {
+            throw new NotFoundException(_m('No such conversation'));
+        }
+        $userId = (int) $actor->userId();
+        if ((string) $conversation['s_state'] !== 'open' || MessagePolicy::canSend($conversation, $userId) !== MessagePolicy::ALLOWED) {
+            return false;
+        }
+        $now = $this->clock->now();
+        if (!RateLimit::hit(self::TYPING_CONTEXT, $userId . ':' . $conversationId, 1, self::TYPING_EVERY, true, $now)) {
+            return false;
+        }
+        $buyerId = (int) $conversation['fk_i_buyer_id'];
+        $this->live->typing($conversationId, $userId === $buyerId ? (int) $conversation['fk_i_seller_id'] : $buyerId, $now);
+
+        return true;
     }
 
     /**

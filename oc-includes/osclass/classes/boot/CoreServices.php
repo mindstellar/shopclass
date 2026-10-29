@@ -102,7 +102,8 @@ final class CoreServices
             $c->get(ConversationStore::class),
             $c->get(MessageStore::class),
             $c->get(DispatcherInterface::class),
-            $c->get(Clock::class)
+            $c->get(Clock::class),
+            $c->get(LiveNotifier::class)
         ));
         $c->set(MessageModeration::class, static fn (Container $c): MessageModeration => new MessageModeration(
             $c->get(ConversationStore::class),

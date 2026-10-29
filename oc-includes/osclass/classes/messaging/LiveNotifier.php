@@ -19,7 +19,7 @@ use mindstellar\messaging\event\MessageSent;
 
 /**
  * Nudges a user's open pages when a message arrives, their unread count drops, or the other
- * side reads. Notes carry ids only. A held message publishes nothing: the recipient
+ * side reads or types. Notes carry ids only. A held message publishes nothing: the recipient
  * must not learn of it.
  */
 final class LiveNotifier
@@ -34,6 +34,18 @@ final class LiveNotifier
     public function isOn(): bool
     {
         return $this->live->mode() !== 'off';
+    }
+
+    /**
+     * Tell the user the other side is typing in the thread. $at is the server's Unix time.
+     */
+    public function typing(int $conversationId, int $toUserId, int $at): void
+    {
+        $this->live->publish(LiveChannel::forUser($toUserId), [
+            'kind'         => 'typing',
+            'conversation' => $conversationId,
+            'at'           => $at,
+        ]);
     }
 
     public function onMessageSent(MessageSent $event): void
