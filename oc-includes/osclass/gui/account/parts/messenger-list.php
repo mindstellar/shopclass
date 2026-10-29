@@ -39,7 +39,8 @@ $listCurrent = (int) View::getInstance()->_get('current_id');
     </div>
     <div data-osc-inbox
          data-check-url="<?php echo osc_esc_html(osc_base_url(true) . '?page=ajax&action=messages_check'); ?>"
-         data-live-url="<?php echo osc_esc_html(osc_messaging_live_url()); ?>">
+         data-live-url="<?php echo osc_esc_html(osc_messaging_live_url()); ?>"
+         data-typing-label="<?php echo osc_esc_html(_m('typing…')); ?>">
     <?php if ($listRows === array()) { ?>
         <p class="oe-muted"><?php echo osc_esc_html(_m('No conversations yet. When you contact a seller, or someone asks about your listing, the conversation shows here.')); ?>
             <a href="<?php echo osc_esc_html(osc_search_url()); ?>"><?php echo osc_esc_html(_m('Browse listings')); ?></a></p>

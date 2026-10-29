@@ -85,7 +85,7 @@ $postForm = static function (string $action, string $label, string $class, strin
         <input type="hidden" name="action" value="<?php echo osc_esc_html($action); ?>">
         <input type="hidden" name="id" value="<?php echo (int) $convoId; ?>">
         <button type="submit" class="<?php echo osc_esc_html($class); ?>"<?php
-            echo $confirm !== '' ? ' data-osc-confirm="' . osc_esc_html($confirm) . '"' : ''; ?>><?php
+            echo $confirm !== '' ? ' data-osc-confirm="' . osc_esc_html($confirm) . '"' . ' data-dialog-cancel="' . osc_esc_html(_m('Cancel')) . '" data-dialog-close="' . osc_esc_html(_m('Close')) . '"' : ''; ?>><?php
             echo osc_esc_html($label); ?></button>
     </form>
 <?php };
@@ -119,7 +119,9 @@ $blockConfirm = _m('Block this conversation? Neither of you can write until it i
                         <summary class="oe-menu-item"><?php echo osc_esc_html(_m('Report')); ?></summary>
                         <form method="post" action="<?php echo osc_esc_html($postUrl); ?>"
                               data-dialog-title="<?php echo osc_esc_html(_m('Report conversation')); ?>"
-                              data-dialog-text="<?php echo osc_esc_html(_m('The site team reviews it. Neither of you can write while it is under review.')); ?>">
+                              data-dialog-text="<?php echo osc_esc_html(_m('The site team reviews it. Neither of you can write while it is under review.')); ?>
+                              data-dialog-cancel="<?php echo osc_esc_html(_m('Cancel')); ?>"
+                              data-dialog-close="<?php echo osc_esc_html(_m('Close')); ?>">
                             <input type="hidden" name="page" value="messages">
                             <input type="hidden" name="action" value="report_post">
                             <input type="hidden" name="id" value="<?php echo (int) $convoId; ?>">
@@ -176,6 +178,8 @@ $blockConfirm = _m('Block this conversation? Neither of you can write until it i
         <?php } ?>data-server-now="<?php echo (int) $serverNow; ?>"
         data-their-unread="<?php echo (int) $theirUnread; ?>"
         data-held-label="<?php echo osc_esc_html(_m('Awaiting review')); ?>"
+        data-seen-label="<?php echo osc_esc_html(_m('Seen')); ?>"
+        data-typing-label="<?php echo osc_esc_html(_m('typing…')); ?>"
         data-other-label="<?php echo osc_esc_html($otherName); ?>"
         data-me-label="<?php echo osc_esc_html(_m('You')); ?>">
         <?php foreach ($convoMsgs as $i => $convoMsg) {
@@ -251,7 +255,9 @@ $blockConfirm = _m('Block this conversation? Neither of you can write until it i
             </div>
             <div class="oe-compose-foot">
                 <span class="oe-compose-hint"><?php echo osc_esc_html(_m('Enter to send · Shift + Enter for a new line')); ?></span>
-                <span class="oe-compose-counter" aria-live="polite"></span>
+                <span class="oe-compose-counter" aria-live="polite" data-label="<?php
+                    /* translators: %d is the number of characters left */
+                    echo osc_esc_html(_m('%d left')); ?>"></span>
             </div>
         </form>
     <?php } ?>
