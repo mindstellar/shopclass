@@ -213,8 +213,20 @@ foreach (array(
     'osc_is_change_password_page' => 'change-password',
     'osc_is_change_username_page' => 'change-username',
     'osc_is_static_page'          => 'static-page',
+    'osc_is_messages_page'        => 'messages',
 ) as $fn => $page) {
     eval('function ' . $fn . '() { return $GLOBALS["page"] === ' . var_export($page, true) . '; }');
+}
+
+if (!class_exists('Params')) {
+    // The one read the body class makes: the conversation id in the request.
+    class Params
+    {
+        public static function getParamInt($key)
+        {
+            return (int) ($GLOBALS['paramId'] ?? 0);
+        }
+    }
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hTheme.php';
@@ -362,6 +374,18 @@ foreach (array('dashboard', 'profile', 'items', 'alerts', 'change-email', 'chang
 }
 $GLOBALS['page'] = 'item';
 check('a listing is not', !in_array('user', osc_body_class_list(), true));
+
+harness_section('osc_body_class(): the messages pages');
+$GLOBALS['page']    = 'messages';
+$GLOBALS['paramId'] = 0;
+$classes            = osc_body_class_list();
+check('the inbox is in the account area and tagged messages', in_array('user', $classes, true) && in_array('messages', $classes, true));
+check('the inbox is not a chat', !in_array('messages-chat', $classes, true));
+$GLOBALS['paramId'] = 7;
+check('a conversation is also messages-chat', in_array('messages-chat', osc_body_class_list(), true));
+$GLOBALS['paramId'] = 0;
+$GLOBALS['page']    = 'item';
+check('other pages carry neither', array_intersect(array('messages', 'messages-chat'), osc_body_class_list()) === array());
 
 harness_section('osc_body_class(): a static page carries its slug');
 $GLOBALS['page']     = 'static-page';

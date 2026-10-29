@@ -680,6 +680,14 @@ function osc_body_class_list($class = ''): array
         }
     }
 
+    if (function_exists('osc_is_messages_page') && osc_is_messages_page()) {
+        $classes[] = 'user';
+        $classes[] = 'messages';
+        if (Params::getParamInt('id') > 0) {
+            $classes[] = 'messages-chat';
+        }
+    }
+
     if (osc_is_static_page()) {
         $classes[] = 'page';
         $slug = (string) osc_static_page_field('s_internal_name');
