@@ -133,7 +133,7 @@ afterwards. Zip installs are unaffected.
 
 The image carries [nchan](https://nchan.io), an nginx module, and streams new on-site messages to the browser. A note holds ids only, never message text. When the object cache is Valkey or Redis, nchan shares notes through it, so more than one instance works. Set `OSC_LIVE=off` to turn it off.
 
-If nchan is off or its stream fails, nothing breaks: pages check for new messages every 15 seconds while the tab is open, the same as on shared hosting. While the stream is open, pages still check once a minute, so a lost note delays a message by a minute at most. System info → Server shows the mode and the last publish.
+If nchan is off or its stream fails, nothing breaks: pages check for new messages every 15 seconds while the tab is open, the same as on shared hosting. While the stream is open, pages still check once a minute, so a lost note delays a message by a minute at most. System info → Server shows the mode and the last publish. The same stream carries "typing" and "Seen" notes; with it off, those are not shown.
 
 ## Web push
 

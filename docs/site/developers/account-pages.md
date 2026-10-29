@@ -480,6 +480,76 @@ of `spam`, `scam`, `offensive` or `other`. All carry the CSRF token. Core's scri
 `.oe-messages` list; a theme that wants the same loads it and keeps the `data-osc-messages`
 attributes. It exposes `window.oscMessages.appendMessage(row)`.
 
+### The messenger markup
+
+Both pages print one `.oe-messenger` block: the list pane (`parts/messenger-list.php`) and the chat
+pane (`parts/messenger-chat.php`). A conversation page adds `.is-chat` to `.oe-messenger`, so a
+phone shows only the chat; an inbox with no conversations adds `.is-empty`. The `<body>` carries
+`user` and `messages` on both pages, plus `messages-chat` on a conversation. Style these; do not
+copy the markup.
+
+| Class | What it is |
+|---|---|
+| `.oe-messenger` | the whole two-pane block |
+| `.oe-messenger-list` | the left pane: head, filter and conversations |
+| `.oe-messenger-chat` | the right pane: one conversation |
+| `.oe-chat-empty` | the right pane on the inbox when no conversation is open |
+
+The list pane:
+
+| Class | What it is |
+|---|---|
+| `.oe-list-head` | the pane's top: the "Messages" heading, the bell, the filter and the tabs |
+| `.oe-list-filter` | the search box; `hidden` until `messages.js` runs |
+| `.oe-list-tabs` | the All and Unread buttons; `hidden` until `messages.js` runs |
+| `.oe-thread-link` | the link that wraps a whole row |
+| `.oe-thread-photo` | the listing photo in a row; an empty `<span>` when there is none |
+| `.oe-thread-initial` | the other person's first letter; also in the chat head |
+| `.oe-thread-name` | the other person's name in a row |
+| `.oe-thread-time` | the time of the last message |
+| `.oe-thread-preview` | the last message, cut short; starts with "You: " when it is yours |
+| `.oe-thread-flag` | a state word on a row: Closed, Reported, Awaiting review, Blocked or Removed |
+
+The chat pane:
+
+| Class | What it is |
+|---|---|
+| `.oe-chat-head` | the top bar of a conversation |
+| `.oe-chat-back` | the link back to the list; shown on phones |
+| `.oe-chat-name` | the other person's name, the pane's heading |
+| `.oe-chat-role` | "Buyer" or "Seller" under the name |
+| `.oe-icon-btn` | a round icon-only button; the menu toggle |
+| `.oe-menu` | the options menu: a `<details>` |
+| `.oe-menu-panel` | the open menu; also carries `.oe-thread-actions` |
+| `.oe-menu-item` | one menu entry: Notify, Block, Unblock or Report |
+| `.oe-menu-report` | the Report entry; opens the report form |
+| `.oe-listing-card` | the listing strip under the head; `.is-removed` once the listing is gone |
+| `.oe-listing-photo` | the listing photo |
+| `.oe-listing-title` | the listing title, a link while the listing exists |
+| `.oe-listing-price` | the listing price |
+| `.oe-listing-link` | the "View listing" link |
+| `.oe-day` | a date line between messages |
+| `.oe-held` | the "Awaiting review" tag on your own held message |
+| `.oe-seen` | the "Seen" tag under your last message, once they have read it |
+| `.oe-typing` | the typing indicator after the message list; `hidden` until a note arrives, and printed only while live delivery is on |
+| `.oe-typing-bubble` | the dots inside `.oe-typing` |
+| `.oe-stopbar` | the line that replaces the composer when nobody can write |
+| `.oe-compose-row` | the textarea and the send button |
+| `.oe-compose-send` | the icon-only send button |
+| `.oe-compose-foot` | the line under the composer |
+| `.oe-compose-hint` | the "Enter to send" hint |
+| `.oe-compose-counter` | the characters left; filled by `messages.js` |
+| `.oe-sr-only` | text for screen readers only |
+
+`.oe-message` also gets `.is-first` and `.is-last` for the first and last message of a run by one
+person (same sender, same day, within ten minutes). The meta line shows only under the last one.
+
+Besides `send_post`, `block_post`, `unblock_post` and `report_post`, `messages.js` calls these AJAX
+actions: `messages_send`, `messages_since`, `messages_check` and `messages_typing`. `messages_typing`
+is a POST with `id` and the CSRF token; it tells the other person you are typing, answers 204 and
+does nothing while live delivery is off. The page prints `data-typing-url` on `.oe-messages` only
+when live delivery is on.
+
 Both messages pages print the partial `oc-includes/osclass/gui/account/parts/push-optin.php`: a
 `<form class="oe-push" data-osc-push hidden>` that prints nothing while `osc_push_enabled()` is
 false. Core's `oc-includes/assets/osclass/push.js` reads its attributes, reveals it when the

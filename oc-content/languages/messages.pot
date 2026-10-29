@@ -66,6 +66,10 @@ msgid_plural "%d keywords have been imported"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+msgid "%d left"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "%d log entry has been removed"
 msgid_plural "%d log entries have been removed"
@@ -84,8 +88,8 @@ msgid_plural "%d more listings live at once"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 #: oc-includes/osclass/gui/account/parts/push-optin.php
-#: oc-includes/osclass/gui/account/user-messages-content.php
 msgid "%d new message"
 msgid_plural "%d new messages"
 msgstr[0] ""
@@ -415,6 +419,7 @@ msgstr ""
 msgid "Alerts"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "All"
 msgstr ""
@@ -423,7 +428,7 @@ msgstr ""
 msgid "All listings"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "All messages"
 msgstr ""
 
@@ -470,6 +475,10 @@ msgid ""
 "scripts. End any you do not recognise."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Asking about your listing"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-forgot_password-content.php
 #: oc-includes/osclass/gui/account/user-signin-content.php
 msgid "At least %d characters."
@@ -483,8 +492,8 @@ msgstr ""
 msgid "Awaiting payment"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
-#: oc-includes/osclass/gui/account/user-messages-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 msgid "Awaiting review"
 msgstr ""
 
@@ -557,16 +566,16 @@ msgstr ""
 msgid "Billing settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Block"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Block this conversation? Neither of you can write until it is unblocked."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
-#: oc-includes/osclass/gui/account/user-messages-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 msgid "Blocked"
 msgstr ""
 
@@ -574,6 +583,7 @@ msgstr ""
 msgid "Both rules can not be empty"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 #: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "Browse listings"
 msgstr ""
@@ -609,6 +619,7 @@ msgstr ""
 msgid "Buying credits is not available on this site."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/contact-message-content.php
@@ -678,6 +689,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
 msgid "Choose 1 to %d of each item."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-messages-content.php
+msgid "Choose a conversation"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -760,11 +775,12 @@ msgstr ""
 msgid "Cleanup started. It runs in the background until nothing matches."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Close"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-messages-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 msgid "Closed"
 msgstr ""
 
@@ -821,6 +837,7 @@ msgstr ""
 msgid "Continue to payment"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-messages-content.php
 #: oc-includes/osclass/helpers/hTheme.php
 msgid "Conversation"
 msgstr ""
@@ -829,8 +846,16 @@ msgstr ""
 msgid "Conversation blocked"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+msgid "Conversation options"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebMessages.php
 msgid "Conversation unblocked"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
+msgid "Conversations"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
@@ -1158,6 +1183,10 @@ msgid ""
 "https://example.com/webhooks."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+msgid "Enter to send · Shift + Enter for a new line"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingMailService.php
 msgid "Enter your name"
 msgstr ""
@@ -1247,7 +1276,7 @@ msgid "Forgotten your password?"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebMessages.php
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Former user"
 msgstr ""
 
@@ -1613,6 +1642,8 @@ msgstr ""
 msgid "Message settings have been updated"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 #: oc-includes/osclass/helpers/hTheme.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Messages"
@@ -1727,6 +1758,12 @@ msgstr ""
 msgid "No comments yet."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
+msgid ""
+"No conversations yet. When you contact a seller, or someone asks about your "
+"listing, the conversation shows here."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "No country was selected"
 msgstr ""
@@ -1755,11 +1792,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "No listings with this status."
-msgstr ""
-
-#: oc-includes/osclass/gui/account/user-conversation-content.php
-#: oc-includes/osclass/gui/account/user-messages-content.php
-msgid "No messages yet."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
@@ -1923,6 +1955,7 @@ msgstr ""
 msgid "Notifications could not be changed. Try again."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 #: oc-includes/osclass/gui/account/parts/push-optin.php
 msgid "Notify me on this device"
 msgstr ""
@@ -1931,7 +1964,7 @@ msgstr ""
 msgid "Number of decimals must only contain numeric characters"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Offensive or abusive"
 msgstr ""
 
@@ -1945,7 +1978,7 @@ msgstr ""
 msgid "Old price must be a positive number."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-messages-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 #: oc-includes/osclass/gui/parts/pager.php
 msgid "Older"
 msgstr ""
@@ -2512,7 +2545,8 @@ msgstr ""
 msgid "Remove the current picture"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 msgid "Removed"
 msgstr ""
 
@@ -2534,7 +2568,7 @@ msgstr ""
 msgid "Repeat the new password"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Report"
 msgstr ""
 
@@ -2544,7 +2578,7 @@ msgid ""
 "days. The site admin can see and undo this."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Report conversation"
 msgstr ""
 
@@ -2554,7 +2588,7 @@ msgstr ""
 msgid "Report the sender"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-messages-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 msgid "Reported"
 msgstr ""
 
@@ -2622,12 +2656,16 @@ msgstr ""
 msgid "Save this search"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Scam or fraud"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
 msgid "Search alert settings have been updated"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
+msgid "Search by name or listing"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
@@ -2636,6 +2674,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 msgid "See all of your orders"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+msgid "Seen"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -2658,11 +2700,15 @@ msgstr ""
 msgid "Selected languages have been enabled for the website"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebMessages.php
+msgid "Seller"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
 msgid "Seller limit settings have been updated"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
 msgid "Send"
 msgstr ""
@@ -2716,6 +2762,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
 msgid "Shopclass has been updated to %s"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
+msgid "Show"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-login-content.php
@@ -2814,7 +2864,7 @@ msgstr ""
 msgid "Someone, hopefully you, wrote a message on %s and gave this e-mail address."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Something else"
 msgstr ""
 
@@ -2846,7 +2896,7 @@ msgstr ""
 msgid "Sorry, your submission could not be saved. Please try again."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Spam"
 msgstr ""
 
@@ -3425,7 +3475,7 @@ msgid ""
 "available."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "The message could not be sent. Try again."
 msgstr ""
 
@@ -3463,7 +3513,7 @@ msgstr ""
 msgid "The order changes to refunded when the payment provider finishes it."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "The other person blocked this conversation."
 msgstr ""
 
@@ -3590,6 +3640,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "The site is open again. Check the database below."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+msgid "The site team reviews it. Neither of you can write while it is under review."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
@@ -3831,7 +3885,7 @@ msgstr ""
 msgid "This conversation is closed"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "This conversation is closed."
 msgstr ""
 
@@ -3847,7 +3901,7 @@ msgstr ""
 msgid "This conversation was already reported"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "This conversation was reported and is waiting for review."
 msgstr ""
 
@@ -4018,6 +4072,10 @@ msgstr ""
 msgid "Titles can be 1 to %d characters."
 msgstr ""
 
+#: oc-includes/osclass/classes/messaging/MessageTime.php
+msgid "Today"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingService.php
 msgid "Too fast. You should wait a little to publish your ad."
 msgstr ""
@@ -4074,7 +4132,11 @@ msgstr ""
 msgid "Two-step sign-in is on."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+msgid "Typing"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Unblock"
 msgstr ""
 
@@ -4084,6 +4146,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "Unknown widget type"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
+msgid "Unread"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -4202,6 +4268,10 @@ msgstr ""
 msgid "Variant %d:"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+msgid "View listing"
+msgstr ""
+
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "View your listing"
 msgstr ""
@@ -4278,7 +4348,7 @@ msgid ""
 "checkout."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Why are you reporting this conversation?"
 msgstr ""
 
@@ -4303,6 +4373,7 @@ msgid "With photos only"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingMailService.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Write a message"
 msgstr ""
 
@@ -4316,7 +4387,12 @@ msgstr ""
 msgid "Write to %s"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/classes/messaging/MessageTime.php
+msgid "Yesterday"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
 msgid "You"
 msgstr ""
 
@@ -4370,7 +4446,7 @@ msgstr ""
 msgid "You are writing as %s. The seller answers in your messages."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "You blocked this conversation."
 msgstr ""
 
@@ -4683,7 +4759,7 @@ msgstr ""
 msgid "Your listings and messages are removed with it. This cannot be undone."
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-conversation-content.php
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Your message"
 msgstr ""
 
@@ -4882,4 +4958,9 @@ msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "to leave a comment."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/parts/messenger-chat.php
+#: oc-includes/osclass/gui/account/parts/messenger-list.php
+msgid "typing…"
 msgstr ""
