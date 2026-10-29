@@ -127,6 +127,8 @@ foreach (InboxQuery::HUES as $hue) {
 check('the list prints the hue on the initial', (bool) preg_match('/oe-thread-initial" style="--oe-hue:<\?php echo \(int\)/', $src['list'] ?? ''));
 check('the chat head prints the hue on the initial', (bool) preg_match('/oe-thread-initial" style="--oe-hue:<\?php echo \(int\)/', $src['chat'] ?? ''));
 
+check('the search box carries a hidden search icon', (bool) preg_match('/oe-list-filter" hidden>\s*<svg class="oe-list-filter-icon"[^>]*aria-hidden="true"/', $src['list'] ?? ''));
+
 harness_section('the messenger markup');
 $all = implode("\n", $src);
 foreach (array(

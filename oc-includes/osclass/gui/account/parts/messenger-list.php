@@ -29,6 +29,7 @@ $listUnread  = count(array_filter($listRows, static fn ($r): bool => (int) ($r['
         <?php $pushVariant = 'bell';
         require __DIR__ . '/push-optin.php'; ?>
         <div class="oe-list-filter" hidden>
+            <svg class="oe-list-filter-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
             <label class="oe-sr-only" for="oe-list-filter"><?php echo osc_esc_html(_m('Search by name or listing')); ?></label>
             <input id="oe-list-filter" type="search" autocomplete="off"
                    placeholder="<?php echo osc_esc_html(_m('Search by name or listing')); ?>">

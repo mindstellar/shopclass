@@ -31,7 +31,7 @@ $newClasses = array(
     'oe-listing-title', 'oe-listing-price', 'oe-listing-link', 'is-removed', 'oe-day', 'is-first', 'is-last',
     'oe-seen', 'oe-held', 'oe-typing', 'is-typing', 'oe-compose-row', 'oe-compose-send', 'oe-compose-foot',
     'oe-compose-hint', 'oe-compose-counter', 'is-tight', 'oe-stopbar', 'oe-dialog', 'oe-chat-empty',
-    'oe-icon-btn', 'oe-sr-only',
+    'oe-icon-btn', 'oe-sr-only', 'oe-list-filter-icon',
 );
 $oldClasses = array(
     'oe-threads', 'oe-thread', 'oe-thread-title', 'oe-unread', 'oe-messages', 'oe-message', 'is-mine', 'is-held',

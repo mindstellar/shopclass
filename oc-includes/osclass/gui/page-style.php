@@ -325,9 +325,10 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-list-head h2{margin:0;font-size:1.25rem;}
   .oe-page .oe-list-head > :first-child{display:flex;align-items:center;justify-content:space-between;gap:8px;}
   .oe-page .oe-list-head .oe-push{margin:0;}
-  .oe-page .oe-list-filter{display:block;}
+  .oe-page .oe-list-filter{display:block;position:relative;}
+  .oe-page .oe-list-filter-icon{position:absolute;inset-inline-start:12px;inset-block-start:50%;translate:0 -50%;color:var(--oe-ink-muted);pointer-events:none;}
   .oe-page .oe-list-filter input{
-    inline-size:100%;max-inline-size:none;min-block-size:40px;padding:8px 10px;font:inherit;font-size:.875rem;
+    inline-size:100%;max-inline-size:none;min-block-size:40px;padding:8px 10px;padding-inline-start:36px;font:inherit;font-size:.875rem;
     background:var(--oe-bench-warm);color:var(--oe-ink);border:1px solid var(--oe-rule);border-radius:6px;
   }
   .oe-page .oe-list-filter input:focus-visible{outline:2px solid var(--oe-teal);outline-offset:1px;}
