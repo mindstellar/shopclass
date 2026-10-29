@@ -19,6 +19,7 @@
 
     var data = form.dataset;
     var button = form.querySelector('button[type="submit"]');
+    var iconOnly = button.textContent.trim() === '';
     var note = form.querySelector('[data-osc-push-note]');
     var workerUrl = new URL(data.workerUrl, location.href).href;
     var active = false;
@@ -35,15 +36,26 @@
         return bytes;
     };
 
+    var label = function (on) {
+        var text = on ? data.onLabel : data.offLabel;
+        if (iconOnly) {
+            button.setAttribute('aria-pressed', on ? 'true' : 'false');
+            button.setAttribute('aria-label', text);
+            button.title = text;
+        } else {
+            button.textContent = text;
+        }
+    };
+
     var show = function (on, text) {
         active = on;
-        button.textContent = on ? data.onLabel : data.offLabel;
+        label(on);
         note.textContent = text || (on ? data.onNote : '');
     };
 
     var blocked = function () {
         active = false;
-        button.textContent = data.offLabel;
+        label(false);
         button.disabled = true;
         note.textContent = data.blockedNote;
     };
@@ -188,6 +200,14 @@
                 button.disabled = false;
             }
         });
+    });
+
+    document.addEventListener('click', function (event) {
+        var toggle = event.target.closest && event.target.closest('[data-osc-push-toggle]');
+        if (toggle && !form.hidden && !button.disabled) {
+            event.preventDefault();
+            button.click();
+        }
     });
 
     if (Notification.permission === 'denied') {

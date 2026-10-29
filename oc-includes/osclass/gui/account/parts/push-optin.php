@@ -14,8 +14,11 @@ if (!defined('ABS_PATH')) {
 /**
  * The per-browser switch for new-message notifications, driven by assets/push.js. Prints
  * nothing while web push is off or the site has no push key; hidden until the script knows
- * the browser supports it.
+ * the browser supports it. With $pushVariant = 'bell' the button is an icon button, and the
+ * note stays for screen readers only.
  */
+
+$pushBell = ($pushVariant ?? '') === 'bell';
 
 $pushKey = osc_push_public_key();
 if ($pushKey !== '') {
@@ -47,7 +50,16 @@ if ($pushKey !== '') {
           data-blocked-note="<?php echo osc_esc_html(_m('Notifications are blocked in this browser. Allow them in its site settings first.')); ?>"
           data-error-note="<?php echo osc_esc_html(_m('Notifications could not be changed. Try again.')); ?>">
         <?php echo osc_csrf_token_form(); ?>
-        <button class="oe-btn oe-secondary" type="submit"><?php echo osc_esc_html(_m('Notify me on this device')); ?></button>
-        <p class="oe-muted" data-osc-push-note aria-live="polite"></p>
+        <?php if ($pushBell) { ?>
+            <button class="oe-btn oe-icon-btn" type="submit" aria-pressed="false"
+                    aria-label="<?php echo osc_esc_html(_m('Notify me on this device')); ?>"
+                    title="<?php echo osc_esc_html(_m('Notify me on this device')); ?>">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            </button>
+            <p class="oe-sr-only" data-osc-push-note aria-live="polite"></p>
+        <?php } else { ?>
+            <button class="oe-btn oe-secondary" type="submit"><?php echo osc_esc_html(_m('Notify me on this device')); ?></button>
+            <p class="oe-muted" data-osc-push-note aria-live="polite"></p>
+        <?php } ?>
     </form>
 <?php }
