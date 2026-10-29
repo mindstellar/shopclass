@@ -1276,6 +1276,7 @@ msgid "Forgotten your password?"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebMessages.php
+#: oc-includes/osclass/classes/messaging/InboxQuery.php
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Former user"
 msgstr ""
@@ -2556,6 +2557,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebMessages.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
+#: oc-includes/osclass/classes/messaging/InboxQuery.php
 msgid "Removed listing"
 msgstr ""
 
