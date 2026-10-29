@@ -82,8 +82,8 @@ final class ReleaseChannel
     }
 
     /**
-     * The newest release the channel allows that the site cannot take yet, when it is newer than
-     * what pick() gives, so the screen can say which version to update to first.
+     * The newest release the channel allows, when the site cannot take it yet, so the screen
+     * can say which version to update to first.
      *
      * @param array<int,mixed> $releases
      * @param string           $channel
@@ -93,19 +93,16 @@ final class ReleaseChannel
      */
     public static function waiting(array $releases, string $channel, string $installed): ?array
     {
-        $picked  = self::pick($releases, $channel, $installed);
-        $waiting = null;
+        $newest = null;
         foreach (self::offered($releases, $channel) as $release) {
-            $from = self::needsFirst($release, $installed);
-            if ($from !== null
-                && ($picked === null || version_compare(self::version($release), self::version($picked), '>'))
-                && ($waiting === null || version_compare(self::version($release), $waiting['version'], '>'))
-            ) {
-                $waiting = array('version' => self::version($release), 'from' => $from);
+            if ($newest === null || version_compare(self::version($release), self::version($newest), '>')) {
+                $newest = $release;
             }
         }
+        // Only the newest can wait: were it free to take, pick() would give it.
+        $from = $newest === null ? null : self::needsFirst($newest, $installed);
 
-        return $waiting;
+        return $from === null ? null : array('version' => self::version($newest), 'from' => $from);
     }
 
     /**

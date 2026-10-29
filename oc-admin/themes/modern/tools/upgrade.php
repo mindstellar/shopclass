@@ -10,14 +10,11 @@ if (!defined('OC_ADMIN')) {
 $updateJson    = osc_update_core_json();
 $isAvailable   = false;
 $remoteVersion = '';
-$waiting       = null;
+// A newer release that needs this site on a newer version first.
+$waiting = osc_update_check_state('core')['waiting'] ?? null;
+$waiting = is_array($waiting) && !empty($waiting['version']) && !empty($waiting['from']) ? $waiting : null;
 if (!empty($updateJson)) {
-    $updateInfo = json_decode($updateJson, true);
-    // A newer release that needs this site on a newer version first.
-    if (!empty($updateInfo['s_waiting_version']) && !empty($updateInfo['s_waiting_from'])) {
-        $waiting = array('version' => (string) $updateInfo['s_waiting_version'], 'from' => (string) $updateInfo['s_waiting_from']);
-    }
-    $osclassUpgrade = new Osclass($updateInfo);
+    $osclassUpgrade = new Osclass(json_decode($updateJson, true));
     $isAvailable    = $osclassUpgrade->isUpgradable();
     $remoteVersion  = (string) $osclassUpgrade->getNewVersion();
 }

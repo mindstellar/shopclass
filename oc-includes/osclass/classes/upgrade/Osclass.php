@@ -28,6 +28,9 @@ use Throwable;
  */
 class Osclass extends UpgradePackage
 {
+    /** @var array{version:string,from:string}|null */
+    private static ?array $waiting = null;
+
     /**
      * Osclass constructor.
      *
@@ -269,9 +272,10 @@ class Osclass extends UpgradePackage
             // the list is not in version order, so the channel picks the highest it allows.
             $json = (new FileSystem())->getContents('https://api.github.com/repos/mindstellar/shopclass/releases');
             $list = $json ? json_decode($json, true) : null;
+            self::$waiting = null;
             if (is_array($list)) {
-                $aSelfPackage = ReleaseChannel::pick($list, ReleaseChannel::current(), OSCLASS_VERSION);
-                $waiting      = ReleaseChannel::waiting($list, ReleaseChannel::current(), OSCLASS_VERSION);
+                $aSelfPackage  = ReleaseChannel::pick($list, ReleaseChannel::current(), OSCLASS_VERSION);
+                self::$waiting = ReleaseChannel::waiting($list, ReleaseChannel::current(), OSCLASS_VERSION);
             }
 
             // Require a real release payload: a GitHub error body (404 "Not Found", a rate-limit
@@ -298,10 +302,6 @@ class Osclass extends UpgradePackage
                 $package_info['s_target_directory']  = ABS_PATH;
                 $package_info['a_filtered_files']    = ['oc-content', 'config.php'];
                 $package_info['s_prerelease']        = $aSelfPackage['prerelease'] ?? false;
-                if (!empty($waiting)) {
-                    $package_info['s_waiting_version'] = $waiting['version'];
-                    $package_info['s_waiting_from']    = $waiting['from'];
-                }
                 $isFresh                             = true;
             }
         }
@@ -310,6 +310,17 @@ class Osclass extends UpgradePackage
         }
 
         return Plugins::applyFilter('osclass_upgrade_package', $package_info);
+    }
+
+    /**
+     * The newer release the last live check found that needs this site on a newer version
+     * first, also when no release can be taken now.
+     *
+     * @return array{version:string,from:string}|null
+     */
+    public static function lastWaiting(): ?array
+    {
+        return self::$waiting;
     }
 
     /**
@@ -355,7 +366,8 @@ class Osclass extends UpgradePackage
      */
     public function afterProcessUpgrade()
     {
-        osc_update_check_save('core', array('checked' => (int) osc_update_check_state('core')['checked']));
+        // Check again on the next admin page, so a release that needed this one first is offered.
+        osc_update_check_save('core', array('checked' => 0));
 
         return true;
     }
