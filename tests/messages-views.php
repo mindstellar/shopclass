@@ -113,7 +113,7 @@ foreach (array(
     'oe-threads', 'oe-thread-title', 'oe-unread', 'oe-messages', 'oe-message', 'oe-message-body', 'oe-message-meta',
     'oe-compose', 'oe-thread-actions',
 ) as $class) {
-    check("the markup uses .{$class}", strpos($all, $class) !== false);
+    check("the markup uses .{$class}", preg_match('/(?<![\\w-])' . preg_quote($class, '/') . '(?![\\w-])/', $all) === 1);
 }
 foreach (array('data-osc-inbox', 'data-osc-messages', 'data-server-now', 'data-their-unread', 'data-typing-url', 'data-check-url',
     'data-since-url', 'data-send-url', 'data-last-id', 'data-me=', 'data-conversation', 'id="oe-list-filter"', 'id="oe-compose-body"',
@@ -146,7 +146,7 @@ foreach (array(
     'oe-threads', 'oe-thread', 'oe-thread-title', 'oe-thread-last', 'oe-unread', 'oe-messages', 'oe-message',
     'is-mine', 'is-held', 'oe-message-body', 'oe-message-meta', 'oe-compose', 'oe-thread-actions',
 ) as $class) {
-    check("page-style.php styles .{$class}", strpos($style, '.' . $class) !== false);
+    check("page-style.php styles .{$class}", preg_match('/\\.' . preg_quote($class, '/') . '(?![\\w-])/', $style) === 1);
 }
 
 harness_section('messages.js');
