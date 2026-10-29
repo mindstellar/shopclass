@@ -271,6 +271,15 @@ $svc->reply($threads['seen'], 'Again', $asSeller);
 $recorder->sent = [];
 $svc->markRead($threads['seen'], $asBuyer);
 pin('live off: no seen note', [], array_values(array_filter(array_column(array_column($recorder->sent, 'note'), 'kind'), static fn ($k) => $k === 'seen')));
+$c   = $fresh();
+$svc = $c->get(MessagingService::class);
+$admin->query("UPDATE {$p}t_conversation SET i_buyer_unread = 1 WHERE pk_i_id = " . $threads['held']);
+scratchdb_forget_cache();
+$recorder->sent = [];
+pin('the buyer reads a held thread', 1, $svc->markRead($threads['held'], $asBuyer));
+pin('only the read note to the buyer: the seller learns nothing of a held thread', [
+    ['channel' => 'user-' . $buyer, 'note' => ['kind' => 'read', 'conversation' => $threads['held']]],
+], $recorder->sent);
 
 harness_section('no CSRF token');
 $c = $fresh();
