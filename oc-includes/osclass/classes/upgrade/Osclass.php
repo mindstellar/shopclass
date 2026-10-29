@@ -244,7 +244,8 @@ class Osclass extends UpgradePackage
             $json = (new FileSystem())->getContents('https://api.github.com/repos/mindstellar/shopclass/releases');
             $list = $json ? json_decode($json, true) : null;
             if (is_array($list)) {
-                $aSelfPackage = ReleaseChannel::pick($list, ReleaseChannel::current());
+                $aSelfPackage = ReleaseChannel::pick($list, ReleaseChannel::current(), OSCLASS_VERSION);
+                $waiting      = ReleaseChannel::waiting($list, ReleaseChannel::current(), OSCLASS_VERSION);
             }
 
             // Require a real release payload: a GitHub error body (404 "Not Found", a rate-limit
@@ -271,6 +272,10 @@ class Osclass extends UpgradePackage
                 $package_info['s_target_directory']  = ABS_PATH;
                 $package_info['a_filtered_files']    = ['oc-content', 'config.php'];
                 $package_info['s_prerelease']        = $aSelfPackage['prerelease'] ?? false;
+                if (!empty($waiting)) {
+                    $package_info['s_waiting_version'] = $waiting['version'];
+                    $package_info['s_waiting_from']    = $waiting['from'];
+                }
                 $isFresh                             = true;
             }
         }

@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.9
+
+### New
+- A release can set `OSCLASS_UPDATE_FROM`, the oldest version that may update straight to it. An older site is offered the newest release in between first, and the Update screen says which version it needs.
+
 ## Shopclass 7.0.8
 
 ### Fixed
