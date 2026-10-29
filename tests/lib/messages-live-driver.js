@@ -1,111 +1,11 @@
 /*
- * Drives assets/osclass/messages.js for tests/messages-live.php. A fake clock, fetch recorder
- * and EventSource are installed before each run of the script, so no real time passes.
+ * Drives assets/osclass/messages.js for tests/messages-live.php, on the fake clock, fetch and
+ * EventSource from messages-fake-env.js.
  */
 (function () {
-    var realSetTimeout = window.setTimeout.bind(window);
+    var env = window.oscFakeEnv;
+    var flush = window.oscFlush;
     var source = window.__script;
-    var realAdd = document.addEventListener.bind(document);
-    var realRemove = document.removeEventListener.bind(document);
-
-    function flush() {
-        return new Promise(function (resolve) {
-            realSetTimeout(resolve, 0);
-        });
-    }
-
-    function env(opts) {
-        var e = {now: 0, timers: [], nextTimer: 1, fetches: [], sources: [], listeners: [], visible: 'visible'};
-
-        window.setTimeout = function (fn, ms) {
-            var id = e.nextTimer++;
-            e.timers.push({id: id, at: e.now + ms, fn: fn});
-            return id;
-        };
-        window.clearTimeout = function (id) {
-            e.timers = e.timers.filter(function (t) {
-                return t.id !== id;
-            });
-        };
-        Date.now = function () {
-            return e.now;
-        };
-        Object.defineProperty(document, 'visibilityState', {get: function () {
-            return e.visible;
-        }, configurable: true});
-        document.addEventListener = function (type, fn, o) {
-            if (type === 'visibilitychange') {
-                e.listeners.push(fn);
-            }
-            return realAdd(type, fn, o);
-        };
-        window.fetch = function (url, init) {
-            var headers = (init && init.headers) || {};
-            e.fetches.push({url: String(url), inm: headers['If-None-Match'] || null});
-            var r = opts.route(String(url), e);
-            return Promise.resolve(new Response(r.body === undefined ? null : r.body, {status: r.status, headers: r.headers || {}}));
-        };
-        window.EventSource = function (url) {
-            var self = this;
-            this.url = url;
-            this.closed = false;
-            this.readyState = 0;
-            this.handlers = {};
-            this.addEventListener = function (type, fn) {
-                (self.handlers[type] = self.handlers[type] || []).push(fn);
-            };
-            this.close = function () {
-                self.closed = true;
-                self.readyState = 2;
-            };
-            this.emit = function (type) {
-                (self.handlers[type] || []).forEach(function (fn) {
-                    fn({data: '{"kind":"sent","conversation":7,"message":9}'});
-                });
-            };
-            e.sources.push(this);
-        };
-        window.EventSource.CLOSED = 2;
-        e.advance = async function (ms) {
-            var target = e.now + ms;
-            for (;;) {
-                var due = e.timers.filter(function (t) {
-                    return t.at <= target;
-                }).sort(function (a, b) {
-                    return a.at - b.at;
-                })[0];
-                if (!due) {
-                    break;
-                }
-                e.timers = e.timers.filter(function (t) {
-                    return t !== due;
-                });
-                e.now = due.at;
-                due.fn();
-                await flush();
-            }
-            e.now = target;
-            await flush();
-        };
-        e.setVisible = async function (state) {
-            e.visible = state;
-            document.dispatchEvent(new Event('visibilitychange'));
-            await flush();
-        };
-        e.start = async function (html) {
-            document.getElementById('stage').innerHTML = html;
-            (0, eval)(source);
-            await flush();
-        };
-        e.stop = function () {
-            e.listeners.forEach(function (fn) {
-                realRemove('visibilitychange', fn);
-            });
-            document.getElementById('stage').innerHTML = '';
-        };
-
-        return e;
-    }
 
     var row = function (id) {
         return JSON.stringify({messages: [{id: id, conversation: 7, sender: 2, body: 'hi ' + id, at: '2026-01-01 10:00:00'}], state: 'open', blocked: false});
