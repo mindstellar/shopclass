@@ -183,14 +183,16 @@
         await flush();
         await flush();
         before = e.fetches.length;
+        out.seenBefore = document.querySelectorAll('.oe-seen').length;
+        note(e, {kind: 'seen', conversation: 99});
+        await flush();
+        out.seenOther = [document.querySelectorAll('.oe-seen').length, document.querySelector('ol.oe-messages').dataset.theirUnread];
         note(e, {kind: 'seen', conversation: 7});
         await flush();
         out.seen = Array.from(document.querySelectorAll('.oe-seen')).map(function (s) {
             return s.closest('li').dataset.id;
         });
         out.seenFetches = e.fetches.length - before;
-        note(e, {kind: 'seen', conversation: 99});
-        out.seenOther = document.querySelectorAll('.oe-seen').length;
         e.stop();
 
         // Typing POSTs: at most one per 3 s, only with data-typing-url, none after blur or send.
@@ -272,6 +274,11 @@
         out.groups = classes();
         out.appendText = document.querySelector('li.oe-message[data-id="4"] .oe-message-body').textContent;
         out.appendTwice = add({id: 4, sender: 2, body: 'b', at: '2026-01-05 12:30:00'}, false);
+        window.__pwned = 0;
+        add({id: 9, sender: 2, body: '<b>x</b><img src="x" onerror="window.__pwned=1">', at: '2026-01-06 08:01:00'}, false);
+        await flush();
+        var hostile = document.querySelector('li.oe-message[data-id="9"] .oe-message-body');
+        out.hostile = [hostile.children.length, hostile.textContent, window.__pwned];
         e.stop();
 
         // Old days get Yesterday and the date, as MessageTime::day does.

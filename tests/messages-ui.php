@@ -32,7 +32,8 @@ pin('a note older than 5 s is ignored', false, $r['staleNote'] ?? null);
 pin('their new message hides the indicator', false, $r['theirMessageHides'] ?? null);
 pin('a seen note puts Seen under my last message', array('6'), $r['seen'] ?? null);
 pin('a seen note causes no fetch', 0, $r['seenFetches'] ?? null);
-pin('a seen note for another thread changes nothing', 1, $r['seenOther'] ?? null);
+pin('no Seen mark before the note', 0, $r['seenBefore'] ?? null);
+pin('a seen note for another thread changes nothing', array(0, '1'), $r['seenOther'] ?? null);
 
 harness_section('the typing signal');
 pin('typing posts once at once, with the CSRF field and id but no body', array(array('POST', array('csrf', 'id'))), $r['typingPost'] ?? null);
@@ -67,6 +68,7 @@ pin('they join groups and start day lines like the server', array(
     '5:is-mine,is-first,is-last,is-held:08:00Awaiting review',
 ), $r['groups'] ?? null);
 pin('message text is set as text', 'b', $r['appendText'] ?? null);
+pin('markup in a message stays text and makes no elements', array(0, '<b>x</b><img src="x" onerror="window.__pwned=1">', 0), $r['hostile'] ?? null);
 pin('a message already shown is not added again', false, $r['appendTwice'] ?? null);
 pin('day lines read the date, Yesterday and Today', array('January 2', 'Yesterday', 'Today'), $r['dayLabels'] ?? null);
 pin('the thread opens scrolled to the newest message', true, $r['scrolled'] ?? null);
