@@ -503,11 +503,12 @@ The list pane:
 |---|---|
 | `.oe-list-head` | the pane's top: the "Messages" heading, the bell, the filter and the tabs |
 | `.oe-list-filter` | the search box; `hidden` until `messages.js` runs |
+| `.oe-list-filter-icon` | the magnifier inside the search box |
 | `.oe-list-tabs` | the All and Unread buttons; `hidden` until `messages.js` runs |
 | `.oe-list-tabs-count` | the number of unread conversations on the Unread button; `hidden` at none |
 | `.oe-thread-link` | the link that wraps a whole row |
 | `.oe-thread-photo` | the listing photo in a row; an empty `<span>` when there is none |
-| `.oe-thread-initial` | the other person's first letter; also in the chat head |
+| `.oe-thread-initial` | the other person's first letter; also in the chat head; `--oe-hue` on it is the avatar hue |
 | `.oe-thread-name` | the other person's name in a row |
 | `.oe-thread-time` | the time of the last message |
 | `.oe-thread-preview` | the last message, cut short; starts with "You: " when it is yours |
