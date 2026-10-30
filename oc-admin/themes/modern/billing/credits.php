@@ -65,7 +65,7 @@ $base = osc_admin_base_url(true) . '?page=billing&action=credits';
                     <tr>
                         <td>
                             <a href="<?php echo osc_esc_html($walletUrl); ?>">
-                                <?php echo osc_esc_html($wallet['s_username'] ?: $wallet['s_name']); ?>
+                                <?php echo osc_esc_html($wallet['s_name'] ?: $wallet['s_username']); ?>
                             </a>
                         </td>
                         <td class="text-muted"><?php echo osc_esc_html($wallet['s_email']); ?></td>

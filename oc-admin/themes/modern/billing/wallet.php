@@ -25,7 +25,7 @@ $perPage = (int)__get('perPage');
 $userId    = (int)$user['pk_i_id'];
 $base      = osc_admin_base_url(true) . '?page=billing';
 $actionUrl = osc_admin_base_url(true);
-$name      = $user['s_username'] ?: $user['s_name'];
+$name      = $user['s_name'] ?: $user['s_username'];
 
 $reasonWords = array(
     'purchase' => __('Purchase'),
