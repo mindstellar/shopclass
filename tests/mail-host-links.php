@@ -197,7 +197,8 @@ if (isset($argv[1])) {
         osc_sendMail(array('to' => 'a@b.example', 'subject' => 's', 'body' => $body, 'secret_link' => $secret));
         $out[$kind] = RecordingMailer::$last;
     }
-    $out['errors'] = $errors;
+    $out['errors']  = $errors;
+    $out['blocked'] = \mindstellar\mail\Mailer::secretLinksBlocked();
     echo json_encode($out);
     exit(0);
 }
@@ -213,12 +214,14 @@ $r = $run('config-file');
 check('a mail with a secret link goes out', is_array($r['secret'] ?? null));
 check('...with its links unchanged', strpos($r['secret']['Body'] ?? '', 'http://example.com/user/recover/1/abc') !== false);
 pin('...and no warning', array(), $r['errors'] ?? null);
+pin('secret-link mails are not blocked', false, $r['blocked'] ?? null);
 
 harness_section('address from the Host header, no OSC_CLI_URL');
 $r = $run('host-only');
 pin('a mail with a secret link is not sent', null, array_key_exists('secret', $r) ? $r['secret'] : 'missing');
 check('...and a warning is logged', count($r['errors'] ?? array()) === 1 && strpos($r['errors'][0], 'OSC_CLI_URL') !== false);
 check('a mail without one still goes out, though it links to www.example.com', is_array($r['plain'] ?? null));
+pin('the site can tell secret-link mails are blocked', true, $r['blocked'] ?? null);
 
 harness_section('address from the Host header, OSC_CLI_URL set');
 $r = $run('cli-url');
@@ -227,5 +230,6 @@ check('...linking to OSC_CLI_URL', strpos($r['secret']['Body'] ?? '', 'https://s
 check('...and no longer to the request address', strpos(($r['secret']['Body'] ?? '') . ($r['secret']['AltBody'] ?? ''), 'http://example.com/') === false);
 check('a different host that contains it is left alone', strpos($r['secret']['Body'] ?? '', 'http://www.example.com/x') !== false);
 pin('no warning', array(), $r['errors'] ?? null);
+pin('and they are not blocked', false, $r['blocked'] ?? null);
 
 exit(harness_result());

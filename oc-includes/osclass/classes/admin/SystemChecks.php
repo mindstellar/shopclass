@@ -46,6 +46,7 @@ final class SystemChecks
 
     public const DOCS_LIVE = 'https://mindstellar.com/docs/deploy/docker/#live-messages';
     public const DOCS_PUSH = 'https://mindstellar.com/docs/deploy/docker/#web-push';
+    public const DOCS_ADDRESS = 'https://mindstellar.com/docs/deploy/docker/#configuration';
 
     public const DOCS_BACKUPS = 'https://mindstellar.com/docs/deploy/security/#the-backups-folder';
 
@@ -401,6 +402,9 @@ final class SystemChecks
                 $photos,
                 $maxFiles
             ), array('label' => __('Settings'), 'url' => (string) ($env['admin_url'] ?? '') . '?page=items&action=settings'));
+        }
+        if (!empty($env['secret_mail_blocked'])) {
+            $issues[] = self::issue('secret_mail_blocked', 'danger', __('The site address comes from each visitor\'s request, so account activation and password reset e-mails are not sent. Set WEB_PATH or OSC_CLI_URL to the site address.'), array('label' => __('Site address'), 'url' => self::DOCS_ADDRESS));
         }
         if (array_key_exists('opcache', $env) && !$env['opcache']) {
             $issues[] = self::issue('opcache_off', 'warning', __('OPcache is off, so PHP recompiles every file on every request.'), $help);

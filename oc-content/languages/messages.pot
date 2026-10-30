@@ -3706,6 +3706,12 @@ msgid "The user has been created successfully"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebRegister.php
+msgid ""
+"The user has been created, but the activation email could not be sent. "
+"Please contact the site."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebRegister.php
 msgid "The user has been created. An activation email has been sent"
 msgstr ""
 

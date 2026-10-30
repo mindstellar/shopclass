@@ -333,12 +333,27 @@ final class Mailer
         if (empty($params['secret_link'])) {
             return true;
         }
+        if (!self::secretLinksBlocked()) {
+            return true;
+        }
         trigger_error(
             'E-mail not sent: it carries a secret link, and the site address comes from the request Host header. Set WEB_PATH or OSC_CLI_URL to the site address.',
             E_USER_WARNING
         );
 
         return false;
+    }
+
+    /**
+     * Whether mails with a secret link are refused: the site address comes from the request Host
+     * header and OSC_CLI_URL gives no trusted one.
+     *
+     * @return bool
+     */
+    public static function secretLinksBlocked(): bool
+    {
+        return defined('OSC_WEB_PATH_FROM_REQUEST') && OSC_WEB_PATH_FROM_REQUEST && defined('WEB_PATH')
+            && !defined('OSC_TRUSTED_WEB_PATH');
     }
 
     /**

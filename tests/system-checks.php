@@ -146,6 +146,7 @@ $cases = array(
     'uploads_below_photos' => array('server', array('max_files' => 5), 'warning', $base . '?page=items&action=settings'),
     'opcache_off'          => array('server', array('opcache' => false), 'warning', '#server-help'),
     'debug_on'             => array('server', array('debug' => true), 'warning', '#server-help'),
+    'secret_mail_blocked'  => array('server', array('secret_mail_blocked' => true), 'danger', SystemChecks::DOCS_ADDRESS),
     'disk_low'             => array('server', array('free_disk' => 100 * 1024 * 1024), 'warning', null),
     'maintenance_on'       => array('server', array('maintenance' => 'locked'), 'warning', $base . '?page=tools&action=maintenance'),
     'htaccess_no_authorization' => array('server', array('htaccess_auth' => false), 'warning', null),

@@ -13052,6 +13052,10 @@ msgstr ""
 msgid "Site"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid "Site address"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Site default"
 msgstr ""
@@ -14324,6 +14328,13 @@ msgstr ""
 msgid ""
 "The signing secret of %s. Copy it now and keep it somewhere safe: it is not "
 "shown again."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/SystemChecks.php
+msgid ""
+"The site address comes from each visitor's request, so account activation "
+"and password reset e-mails are not sent. Set WEB_PATH or OSC_CLI_URL to the "
+"site address."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/Restorer.php

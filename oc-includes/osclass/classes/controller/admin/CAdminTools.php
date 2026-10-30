@@ -1222,6 +1222,7 @@ class CAdminTools extends AdminSecBaseModel
             'free_disk'        => is_numeric($free) ? (int) $free : null,
             'config_writable'  => @is_writable(ABS_PATH . 'config.php'),
             'debug'            => defined('OSC_DEBUG') && OSC_DEBUG,
+            'secret_mail_blocked' => \mindstellar\mail\Mailer::secretLinksBlocked(),
             'maintenance'      => $maintenance,
             'htaccess_auth'    => $htaccessAuth,
             'reserved_slugs'   => $reservedSlugs,

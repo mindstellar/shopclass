@@ -58,7 +58,11 @@ class CWebRegister extends BaseModel
                 $userActions = new UserActions(false);
                 $success     = $userActions->add();
                 if ($success == 1) {
-                    osc_add_flash_ok_message(_m('The user has been created. An activation email has been sent'));
+                    if (\mindstellar\mail\Mailer::secretLinksBlocked()) {
+                        osc_add_flash_warning_message(_m('The user has been created, but the activation email could not be sent. Please contact the site.'));
+                    } else {
+                        osc_add_flash_ok_message(_m('The user has been created. An activation email has been sent'));
+                    }
                     // A checkout or listing page sent them here; the validate link takes them back.
                     $return = osc_login_return_path();
                     if ($return !== '') {
