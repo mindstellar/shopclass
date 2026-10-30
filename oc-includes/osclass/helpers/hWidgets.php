@@ -45,7 +45,8 @@ function osc_widget_types()
  *      -- labelled, described, ordered, and declarable conditionally.
  *   2. the `Widgets:` line in the theme's index.php, each slug standing in as its
  *      own label. This is what every theme written before the declaration existed
- *      does, and it keeps behaving exactly as it did.
+ *      does, and it keeps behaving exactly as it did. A child theme with no such
+ *      line uses its parent's.
  *   3. neither -- no sections.
  *
  * A plugin adds one through the `widget_locations` filter, which sees the merged
@@ -58,12 +59,16 @@ function osc_widget_locations()
 {
     $locations = _osc_widget_locations_normalize(osc_theme_supports('widget_locations'));
 
-    if ($locations === array()) {
-        $info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
+    // A child theme with no `Widgets:` line offers its parent's sections.
+    $theme = $locations === array() ? osc_theme() : '';
+    while ($theme !== '') {
+        $themes = WebThemes::getInstance();
+        $info   = $themes->loadThemeInfo($theme);
         $header = (is_array($info) && isset($info['locations']) && is_array($info['locations']))
             ? $info['locations']
             : array();
         $locations = _osc_widget_locations_normalize($header);
+        $theme     = $locations === array() && $theme === osc_theme() ? $themes->parentOf($theme) : '';
     }
 
     $filtered = osc_apply_filter('widget_locations', $locations);
