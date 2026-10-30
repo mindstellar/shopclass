@@ -21,6 +21,7 @@ use Item;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
+use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\boot\CoreServices;
 use mindstellar\container\Container;
@@ -2133,11 +2134,21 @@ final class CoreEmails
         } elseif ($kind === 'order_refunded') {
             $extra = array('{REFUND_AMOUNT}' => osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())));
         }
+        $howToPay = $kind === 'order_placed' ? PaymentGatewayRegistry::getInstance()->instructions($order) : null;
+        if ($howToPay !== null) {
+            $extra['{PAYMENT_INSTRUCTIONS}'] = '<p><strong>' . osc_esc_html(__('How to pay')) . '</strong><br>' . nl2br(osc_esc_html($howToPay)) . '</p>';
+        }
         $mail = self::orderMail($order, $kind === 'admin_new_order', $extra);
         if ($mail === null) {
             return;
         }
         [$title, $body] = self::orderTemplates($kind, $order);
+        if ($howToPay !== null) {
+            // The bank details go above the order lines, or last when a translation has none.
+            $body = str_contains($body, '{ORDER_LINES}')
+                ? str_replace('{ORDER_LINES}', '{PAYMENT_INSTRUCTIONS}{ORDER_LINES}', $body)
+                : $body . '{PAYMENT_INSTRUCTIONS}';
+        }
         $this->deliver(new MailComposing($kind, $mail['to'], $mail['toName'], $title, $body, $mail['words'], $mail['htmlWords'], $order, null, null, array($order)));
     }
 

@@ -45,7 +45,7 @@ seed_country($admin, 'US', 'United States');
 $cat = seed_category($admin, 'Goods', null, $locale);
 $sue = seed_user($admin, 'sue', 'sue@example.test');
 $tom = seed_user($admin, 'tom', 'tom@example.test');
-foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD', 'contactEmail' => 'owner@shop.test'] as $k => $v) {
+foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'billing_enabled' => '1', 'billing_currency' => 'USD', 'contactEmail' => 'owner@shop.test', 'billing_offline_enabled' => '1', 'billing_offline_instructions' => "Bank: First Bank\nAccount 12345"] as $k => $v) {
     Preference::getInstance()->set($k, $v);
 }
 scratchdb_forget_cache();
@@ -85,7 +85,7 @@ final class MailsRecorder extends PHPMailer
             throw new \PHPMailer\PHPMailer\Exception('SMTP Error: could not connect');
         }
         $to = $this->getToAddresses();
-        self::$sent[] = ['to' => (string) ($to[0][0] ?? ''), 'subject' => $this->Subject, 'body' => $this->Body];
+        self::$sent[] = ['to' => (string) ($to[0][0] ?? ''), 'subject' => $this->Subject, 'body' => $this->Body, 'text' => $this->AltBody];
 
         return true;
     }
@@ -189,6 +189,8 @@ CoreServices::dispatcher()->dispatch(new OrderPlaced($held->getId(), $tom));
 $sent = $mails();
 pin('a bank-transfer order tells the buyer and the owner', ['tom@example.test', 'owner@shop.test'], array_column($sent, 'to'));
 check('the placed mail lists the lines', str_contains($sent[0]['body'], 'TEE-M') && str_contains($sent[0]['body'], '1 Main St'));
+check('the placed mail gives the bank details and the reference', str_contains($sent[0]['body'], 'First Bank<br />') && str_contains($sent[0]['body'], 'Account 12345') && str_contains($sent[0]['body'], 'Reference: ' . osc_billing_order_number($held->getId())));
+check('in the text part too', str_contains($sent[0]['text'], 'Account 12345'));
 CoreServices::dispatcher()->dispatch(new OrderPlaced($held->getId(), $tom));
 pin('firing it again sends nothing', [], $mails());
 Billing::markPaid(OrderStore::find($held->getId()), null);
@@ -197,7 +199,8 @@ pin('paying it later sends the confirmation, not a second owner mail', ['tom@exa
 
 $cod = $make('cod');
 CoreServices::dispatcher()->dispatch(new OrderPlaced($cod->getId(), $tom));
-pin('cash on delivery is held too', 2, count($mails()));
+$sent = $mails();
+pin('cash on delivery is held too, with no bank details', [2, false], [count($sent), str_contains($sent[0]['body'], 'First Bank')]);
 
 $checkout = new GoodsCheckout();
 $tee   = seed_item($admin, $cat, $sue, 'Tee', 699.0);
