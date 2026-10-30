@@ -240,6 +240,10 @@ interface PaymentGateway
 
 `CallbackResult` carries `{orderId, status, externalRef, amount, currency}`.
 
+A gateway is offered only for an order in one of its supported currencies. A gateway with no
+exchange of money online (core's bank transfer and cash on delivery) can add a public
+`acceptsAnyCurrency(): bool` method that returns true; it is then offered in any currency.
+
 **Core re-verifies `amount` and `currency` against the stored order before fulfilling, and
 refuses the callback on mismatch.** A callback is attacker-reachable input; treating its
 numbers as authoritative is how tampered-IPN bugs get shipped. Signature verification is
