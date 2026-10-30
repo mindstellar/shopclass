@@ -13,7 +13,7 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '7.1.0.beta1');
+    define('OSCLASS_VERSION', '7.1.0.beta2');
 }
 
 // The oldest version that may update straight to this release, or '' for any. An older site is

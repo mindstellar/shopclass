@@ -2,7 +2,7 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.beta1
+## Shopclass 7.1.0.beta2
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
@@ -52,6 +52,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
 - `GET /listings` takes `page`, `ids`, `option[name][]`, `bbox`, `in_stock=true` and `on_sale=true`, and answers `compare_at`, `on_sale`, `low_stock` and `meta.total_capped`.
 - `GET /categories` takes `roots=true` and `include=cover`. `PATCH /admin/regions|cities` takes `names`.
+- Every bundled theme reads Appearance → Menus, and a child theme takes its parent's menu places, widget sections and route files.
+- The pay step shows the amount, bank details with Copy buttons and the deletion date; the post form says Save and pay when a listing will wait for payment.
+- Shop admin: one test-mode notice for all payment methods, filter chips, a Waiting for payment tab, and courier suggestions on the order page (`admin_billing_carriers`).
+- Tests also run as a shop site in CI.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
@@ -76,6 +80,14 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
 - Core's front pages use shared `.oe-*` classes and the `osc_gui_*()` helpers; the old `.oe-bill-*` names still work.
 - `osc_admin_panel_open()` prints a light `osc-panel` block instead of `widget-box`; `widget-box` stays for dashboard and stats widgets.
+- Cart discounts are worked out before tax, so a tax plugin taxes the discounted price.
+- A cart stays in the site currency; an item in another currency is refused with a reason.
+- When the chosen delivery method is not offered, the quote uses the first offered one instead of free delivery.
+- Cash on delivery and bank transfer take any currency, and the COD fee follows the cart currency.
+- Amounts read in one style everywhere ("₹1,234", "−₹150"), including the API's display strings.
+- Once a listing waiting for payment goes live, its other open orders are cancelled.
+- A language package can set its thousands separator and decimal point.
+- Themes that turn off core's styles should style the new pay step classes (`oe-bill-*`, `oe-callout`, `oe-copy*`).
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.
@@ -83,6 +95,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ### Performance
 - Option filter counts on 232,000 listings: 446 to 53 ms on MariaDB, 526 to 208 ms on MySQL; number and date ranges under 5 ms.
 - API calls a theme makes on one page share their work, and API listing searches are cached, so a home page runs about half the queries.
+- Deep admin order pages use a deferred join (page 500 of 100,000 orders: about 100 ms to 2 ms).
+- Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
 - Static pages, custom fields and e-mail templates get a language tab for every website language, not only the admin ones.
@@ -100,3 +114,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The buy-credits page lists only the payment methods that take the billing currency.
 - `osc_user_login_url()` and `osc_register_account_url()` take an optional same-site `return` path.
 - A title or description with "&", "<" or ">" is no longer refused as too long.
+- Search keeps option filters through redirects and pages past the count limit.
+- API: page numbers work over HTTP, and Accept-Language picks the site language.
+- The filter index rebuilds itself when it is empty.
+- Titles keep their punctuation, and mail subjects no longer show `&amp;`.
+- The order number keeps the prefix it was placed with.
+- Sign-up no longer says an activation mail was sent when mail is blocked.
