@@ -31,7 +31,7 @@ use mindstellar\user\AddressBook;
  * Prices a cart from the database. The request names variants and quantities only; every unit
  * price, stock check and total is read or worked out here. Three queries (variants, listings,
  * photos), then the cart filters in this order: `cart_needs_shipping`, `cart_shipping_methods`,
- * `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`, `cart_free_over`,
+ * `cart_shipping_lines`, `cart_discount_lines`, `cart_tax_lines`, `cart_totals`, `cart_free_over`,
  * `cart_problems`. A cart that needs no shipping (all downloads) skips the shipping filters and
  * `cart_free_over`. A filter adds lines; the sums are always core's, so no filter can change an
  * item's price. Only discount lines take off, a tax line marked `included` is shown but not added,
@@ -172,10 +172,11 @@ final class CartPricer
         $extra                   = array();
         $extra['shipping']       = $cart['needs_shipping'] ? self::extra($this->events()->dispatch(new CartShippingLines($cart, $default))->rawLines(), 'shipping', $currency) : array();
         $cart['shipping_lines']  = $extra['shipping'];
-        $extra['tax']            = self::extra($this->events()->dispatch(new CartTaxLines($cart))->rawLines(), 'tax', $currency);
-        $cart['tax_lines']       = $extra['tax'];
+        // Discounts first, so tax is worked out on what the buyer pays.
         $extra['discount']       = self::extra($this->events()->dispatch(new CartDiscountLines($cart))->rawLines(), 'discount', $currency);
         $cart['discount_lines']  = $extra['discount'];
+        $extra['tax']            = self::extra($this->events()->dispatch(new CartTaxLines($cart))->rawLines(), 'tax', $currency);
+        $cart['tax_lines']       = $extra['tax'];
 
         $extra['fee'] = $this->fees($cart, $subtotal, $extra);
         $totals       = self::sum($subtotal, $extra);

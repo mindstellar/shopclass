@@ -184,7 +184,7 @@ $shipLines = static function ($lines, $cart) use (&$seen) {
     return $lines;
 };
 $tax = static function ($lines, $cart) use (&$seen, $m) {
-    $seen[]  = 'tax:' . count($cart['shipping_lines']);
+    $seen[]  = 'tax:' . count($cart['shipping_lines']) . ':' . count($cart['discount_lines'] ?? []);
     $lines[] = ['id' => 'gst', 'label' => 'GST', 'amount' => $m(10), 'meta' => ['rate' => 18]];
     $lines[] = ['label' => 'Wrong currency', 'amount' => $m(1), 'currency' => 'EUR'];
     $lines[] = ['label' => 'Not a number', 'amount' => 'lots'];
@@ -211,7 +211,7 @@ osc_add_filter('cart_tax_lines', $tax);
 osc_add_filter('cart_discount_lines', $discount);
 osc_add_filter('cart_totals', $fee);
 $q = $quote([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => 'express']);
-pin('the filters run in order, each seeing the lines before it', ['methods', 'shipping:express', 'tax:1', 'discount', 'totals:' . $m(9 + 99 + 10 - 5)], $seen);
+pin('the filters run in order, each seeing the lines before it; tax sees the discounts', ['methods', 'shipping:express', 'discount', 'tax:1:1', 'totals:' . $m(9 + 99 + 10 - 5)], $seen);
 pin('a malformed method is dropped', ['standard', 'express'], array_column($q->shippingMethods(), 'id'));
 pin('the chosen method prices the shipping line', $m(99), $q->totals()['shipping']);
 pin('a bad tax line is dropped', [['id' => 'gst', 'label' => 'GST', 'amount' => $m(10), 'currency' => 'USD', 'meta' => ['rate' => 18], 'included' => false]], $q->extraLines('tax'));

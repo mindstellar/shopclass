@@ -705,7 +705,7 @@ A listing waiting for payment fires `posted_item` (and the `listing.created` web
 
 `CartPricer::quote()` fires the filters in table order on every quote and placement.
 `$cart` is `{lines, address, shipping_method, gateway, currency, user_id, subtotal, coupon, needs_shipping}`; later
-filters also see `shipping_lines`, `tax_lines` and `discount_lines`. A line is
+filters also see `shipping_lines`, `discount_lines` and `tax_lines`, so tax can be worked out on the discounted prices. A line is
 `{id, label, amount (micros), currency, meta}`; one in another currency is dropped, and so is
 one below zero unless it is a discount. A filter
 adds lines; core sums them, so no filter sets an item's price. `cart_totals` adds fee lines
@@ -720,8 +720,8 @@ core's `PUT account/cart`, once for each variant new to the saved cart, with the
 | `cart_needs_shipping` | filter | `($needs, $cart)` false when nothing in the cart is sent: no address, delivery or cash on delivery |
 | `cart_shipping_methods` | filter | `($methods, $cart)` the shipping methods on offer |
 | `cart_shipping_lines` | filter | `($lines, $cart)` the shipping lines |
-| `cart_tax_lines` | filter | `($lines, $cart)` the tax lines |
 | `cart_discount_lines` | filter | `($lines, $cart)` the discount lines |
+| `cart_tax_lines` | filter | `($lines, $cart)` the tax lines |
 | `cart_totals` | filter | `($totals, $cart)` the totals |
 | `cart_free_over` | filter | `($freeOver, $cart)` `{amount, remaining}` to replace the free-delivery meter, null for none; core works out `remaining` |
 | `cart_problems` | filter | `($problems, $cart)` entries `{code, pointer, message}` that stop the order |
