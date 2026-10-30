@@ -69,6 +69,14 @@ check('it gates on canView', $gate !== false);
 check('a refused visitor gets the 404', strpos($after, '$this->do404()') !== false);
 check('the gate runs before the view is counted', $gate !== false && $gate < (int)strpos($view, 'ListingCounters::addView('));
 
+harness_section('the item page shows its status notice once');
+$full     = harness_method_source(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebItem.php', 'showItem');
+$redirect = strpos($full, '$this->redirectTo(osc_base_url() . $itemURI, 301)');
+$beforeRedirect = $redirect === false ? '' : substr($full, 0, $redirect);
+check('the URL redirect was found', $redirect !== false);
+check('no notice is queued before the redirect', strpos($beforeRedirect, 'osc_add_flash_') === false && strpos($beforeRedirect, 'flashStatusNotice(') === false);
+check('the notice is queued after the redirect', $redirect !== false && (int) strpos($full, '$this->flashStatusNotice($item)') > $redirect);
+
 harness_section('contact and send-to-friend use it');
 preg_match('/private function notFoundIfHidden.*?\n    }/s', $webSrc, $h);
 $helper = $h[0] ?? '';

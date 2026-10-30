@@ -24,6 +24,7 @@ use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\ItemSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
+use mindstellar\billing\ListingCheckout;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
@@ -278,12 +279,13 @@ class CAdminItems extends AdminSecBaseModel
             return false;
         }
 
-        if ((new ListingService())->publish($id, Actor::admin((int) osc_logged_admin_id()))) {
+        if (ListingCheckout::publishFree($id, Actor::admin((int) osc_logged_admin_id()))) {
             osc_add_flash_ok_message(_m('The listing is published; the seller was not charged'), 'admin');
         } else {
             osc_add_flash_error_message(_m('The listing is not waiting for payment'), 'admin');
         }
-        $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
+        $back = (string) Params::getServerParam('HTTP_REFERER', false, false);
+        $this->redirectTo($back !== '' ? $back : osc_admin_base_url(true) . '?page=items');
 
         return null;
     }
@@ -606,6 +608,7 @@ class CAdminItems extends AdminSecBaseModel
         $this->_exportVariableToView('aData', $aData);
         $this->_exportVariableToView('countries', Country::getInstance()->listAll());
         $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
+        $this->_exportVariableToView('filterChips', ItemsDataTable::filterChips($params));
         $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
         $sample        = new SampleData();
         $samplePresent = !osc_is_moderator() && $sample->present();
@@ -811,17 +814,20 @@ class CAdminItems extends AdminSecBaseModel
         $danger = array(
             !empty($item['b_enabled'])
                 ? array(
-                    'label' => __('Block listing'),
+                    'label' => osc_mode_text(__('Block listing'), __('Block product')),
                     'url'   => $url('status', 'DISABLE'),
                     'attrs' => array(
-                        'data-osc-confirm'        => __('The listing is hidden from the site and from'
+                        'data-osc-confirm'        => osc_mode_text(
+                            __('The listing is hidden from the site and from'
                             . " the seller's account until it is unblocked."),
-                        'data-osc-confirm-title'  => __('Block this listing?'),
-                        'data-osc-confirm-label'  => __('Block listing'),
+                            __('The product is hidden from the shop until it is unblocked.')
+                        ),
+                        'data-osc-confirm-title'  => osc_mode_text(__('Block this listing?'), __('Block this product?')),
+                        'data-osc-confirm-label'  => osc_mode_text(__('Block listing'), __('Block product')),
                         'data-osc-confirm-cancel' => __('Cancel'),
                     ),
                 )
-                : array('label' => __('Unblock listing'), 'url' => $url('status', 'ENABLE')),
+                : array('label' => osc_mode_text(__('Unblock listing'), __('Unblock product')), 'url' => $url('status', 'ENABLE')),
             empty($item['b_spam'])
                 ? array(
                     'label' => __('Mark as spam'),

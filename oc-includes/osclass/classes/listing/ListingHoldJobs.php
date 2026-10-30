@@ -87,7 +87,10 @@ final class ListingHoldJobs
     public static function remind(array $row): void
     {
         try {
-            \mindstellar\mail\CoreEmails::listingUnpaidReminder($row);
+            // Logged, not retried: a mailer that is down would only fail again.
+            if (\mindstellar\mail\CoreEmails::listingUnpaidReminder($row) === false) {
+                error_log('Reminder for unpaid listing ' . ($row['pk_i_id'] ?? '?') . ' was not sent: the mailer refused it');
+            }
         } catch (\Throwable $e) {
             error_log('Reminder for unpaid listing ' . ($row['pk_i_id'] ?? '?') . ' was not sent: ' . $e->getMessage());
         }

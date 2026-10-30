@@ -146,7 +146,7 @@ final class ProductAlerts
             ) {
                 continue;
             }
-            \mindstellar\mail\CoreEmails::productAlert($row, $item, $kind, $price);
+            \mindstellar\mail\CoreEmails::productAlert($row, $item, $kind, $price, $variant);
             \Alerts::getInstance()->unsub((int) $row['pk_i_id']);
         }
         if (count($rows) === self::BATCH) {

@@ -39,10 +39,9 @@ final class ProductAlertQuery
     }
 
     /**
-     * The live product alerts of one kind on a listing, by id after $after. The range is on
-     * idx_type (e_type, b_active, dt_unsub_date), so the LIKE reads product alerts only, never the
-     * saved searches; ordering by the index's columns keeps the planner on it, since ORDER BY
-     * pk_i_id alone made it walk the primary key through the whole table.
+     * The live product alerts of one kind on a listing, by id after $after. Only that listing's
+     * alerts are read, through idx_item; the LIKE picks the kind. Without the hint the planner
+     * also walked idx_type over every live product alert to intersect the two.
      *
      * @return array<int,array<string,mixed>>
      * @throws \mindstellar\database\DbException
@@ -50,9 +49,9 @@ final class ProductAlertQuery
     public static function waiting(string $kind, int $itemId, int $after, int $limit): array
     {
         return Db::select(
-            'SELECT * FROM ' . DB_TABLE_PREFIX . 't_alerts WHERE e_type = ? AND b_active = 1 AND dt_unsub_date IS NULL'
-            . ' AND s_search LIKE ? AND pk_i_id > ? ORDER BY e_type, b_active, dt_unsub_date, pk_i_id LIMIT ' . max(1, $limit),
-            array(\Alerts::PRODUCT, AlertEnvelope::productPattern($itemId, $kind), $after)
+            'SELECT * FROM ' . DB_TABLE_PREFIX . 't_alerts USE INDEX (idx_item) WHERE fk_i_item_id = ? AND pk_i_id > ? AND e_type = ? AND b_active = 1'
+            . ' AND dt_unsub_date IS NULL AND s_search LIKE ? ORDER BY pk_i_id LIMIT ' . max(1, $limit),
+            array($itemId, $after, \Alerts::PRODUCT, AlertEnvelope::productPattern($itemId, $kind))
         );
     }
 }

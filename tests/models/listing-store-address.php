@@ -86,7 +86,8 @@ pin('an edit keeps a typed city', array('United States', 'Ohio', 'Dayton', (stri
 pin('an edit with the location cleared takes the store address', array('United States', 'Texas', 'Austin', (string) $austin), $edit([]));
 
 harness_section('classifieds');
-$set(['site_mode' => 'classifieds']);
+osc_set_preference('site_mode', 'classifieds');
+$set([]);
 pin('a classifieds site has no store address to give', null, LocationService::storeAddress());
 
 exit(harness_result());

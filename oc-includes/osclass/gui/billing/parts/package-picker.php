@@ -12,7 +12,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\currency\Money;
+use mindstellar\currency\CurrencyService;
 
 /**
  * A package and payment-method form, shared by the buy page and the pay step. Expects
@@ -46,7 +46,7 @@ use mindstellar\currency\Money;
                                     <?php echo osc_esc_html(sprintf(_m('%s credits'), number_format((int) $package['i_credits']))); ?>
                                 </span>
                                 <span class="oe-bill-pkg-price">
-                                    <?php echo osc_esc_html(Money::format((int) $package['i_amount'], (string) $package['s_currency'])); ?>
+                                    <?php echo osc_esc_html(CurrencyService::make()->money((int) $package['i_amount'], (string) $package['s_currency'])); ?>
                                 </span>
                             </label>
                         </div>

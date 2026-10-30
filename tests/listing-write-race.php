@@ -26,6 +26,7 @@ use mindstellar\security\ActionThrottle;
 use mindstellar\security\RateLimit;
 
 $admin = api_admin_boot('osc_listing_write_race');
+scratchdb_pin_site_mode($admin, 'classifieds');
 $p     = DB_TABLE_PREFIX;
 $db    = (string) $admin->query('SELECT DATABASE()')->fetch_row()[0];
 

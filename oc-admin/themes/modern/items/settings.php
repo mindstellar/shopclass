@@ -17,8 +17,11 @@ $form = __get('item_form');
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
-    'title'   => __('Listing Settings'),
-    'help'    => __('Modify the general settings for your listings. Decide if users have to register in order to publish something, the number of pictures allowed for each listing, etc.'),
+    'title'   => osc_mode_text(__('Listing Settings'), __('Product Settings')),
+    'help'    => osc_mode_text(
+        __('Modify the general settings for your listings. Decide if users have to register in order to publish something, the number of pictures allowed for each listing, etc.'),
+        __('General settings for your products: moderation, notifications, text lengths and the number of photos per product.')
+    ),
 ));
 
 //customize Head

@@ -123,7 +123,7 @@ function drive(string $action, array $query = array(), bool $token = true): arra
         $threw = $e;
     }
 
-    return array('flashes' => $GLOBALS['flashes'], 'threw' => $threw, 'aData' => __get('aData'));
+    return array('flashes' => $GLOBALS['flashes'], 'threw' => $threw, 'aData' => __get('aData'), 'filterChips' => __get('filterChips'));
 }
 
 $GLOBALS['adminId'] = $adminId;
@@ -190,10 +190,23 @@ check('the held link is the publish_free action for that row', (bool) preg_match
 pin('the filter returns only the held listing', array($held), $ids(drive('', array('status' => 'unpaid'))['aData']));
 pin('the raw Block filter is untouched: both rows', array($blocked, $held), $ids(drive('', array('b_enabled' => '0'))['aData']));
 
+harness_section('active filters');
+$chips = drive('', array('status' => 'unpaid', 'catId' => (string) $cat, 'b_enabled' => '0', 'iDisplayLength' => '25'))['filterChips'];
+pin('each applied filter is a chip, the status tab is not', array('Category: Cars', 'Block: ON'), array_map(static fn (array $c): string => $c['label'] . ': ' . $c['value'], $chips));
+check('removing a chip keeps the tab, the page length and the other filter', str_contains($chips[0]['url'], 'status=unpaid') && str_contains($chips[0]['url'], 'iDisplayLength=25')
+    && str_contains($chips[0]['url'], 'b_enabled=0') && !str_contains($chips[0]['url'], 'catId'));
+pin('no filters, no chips', array(), drive('', array('status' => 'unpaid'))['filterChips']);
+$loc = ItemsDataTable::filterChips(array('countryId' => 'US', 'region' => 'Texas', 'regionId' => '4', 'city' => 'Austin', 'cityId' => '9'));
+check('dropping the country drops its region and city', !str_contains($loc[0]['url'], 'region') && !str_contains($loc[0]['url'], 'city'));
+
 harness_section('Publish without payment');
+$bank = \mindstellar\billing\OrderStore::create($tom, 'offline', 2000000, 'USD', 5, array('_kind' => \mindstellar\billing\Order::KIND_LISTING, '_item' => $held));
+\mindstellar\billing\OrderStore::linkListing($held, $bank->getId(), time() + 86400);
 $page = drive('publish_free', array('id' => $held));
+pin("the seller's pending order is cancelled and unlinked", [\mindstellar\billing\Order::STATUS_CANCELLED, null], [\mindstellar\billing\OrderStore::find($bank->getId())->getStatus(), \mindstellar\billing\OrderStore::listingOrder($held)]);
 $log  = $admin->query("SELECT s_who FROM {$p}t_log WHERE s_section = 'item' AND s_action = 'publish' AND fk_i_id = {$held}")->fetch_assoc();
 pin('the listing is live, one posted_item, logged as the admin', ['1/1/0', 1, 'admin'], array($state($held), $posted, $log['s_who'] ?? null));
+pin('with no referrer it goes back to the listings list', array(osc_admin_base_url(true) . '?page=items'), $GLOBALS['redirects']);
 check('the flash says it is published and the seller was not charged', in_array('ok:The listing is published; the seller was not charged', $page['flashes'], true));
 pin('no ledger row', 0, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_ledger")->fetch_row()[0]);
 $exp = strtotime((string) $admin->query("SELECT dt_expiration FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0]);
@@ -217,7 +230,7 @@ $admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_d
 ListingHoldJobs::queue($held2, 7);
 $src = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminItems.php', 'publishFree');
 $csrf = strpos($src, 'osc_csrf_check()');
-$gone = strpos($src, '->publish(');
+$gone = strpos($src, 'ListingCheckout::publishFree(');
 check('osc_csrf_check() runs before the listing is touched', $csrf !== false && $gone !== false && $csrf < $gone);
 check('and is the first statement', (bool) preg_match('/\{\s*osc_csrf_check\(\);/', $src));
 
@@ -236,7 +249,7 @@ pin('the only danger move is spam', array('Mark as spam'), array_column($moves['
 pin('it shows no publish date, only that it waits for payment', 'Waiting for payment', __get('itemFacts')['published'] ?? null);
 drive('item_edit', array('id' => $live));
 $moves = __get('itemActions');
-pin('a live listing keeps Deactivate, Mark as premium, Block listing, Mark as spam', array('Deactivate', 'Mark as premium', 'Block listing', 'Mark as spam'), array_merge(array_column($moves['routine'], 'label'), array_column($moves['danger'], 'label')));
+pin('a live listing keeps Deactivate, Mark as premium, Block listing, Mark as spam', array('Deactivate', 'Mark as premium', osc_mode_text('Block listing', 'Block product'), 'Mark as spam'), array_merge(array_column($moves['routine'], 'label'), array_column($moves['danger'], 'label')));
 pin('and its first pill is active', 'active', __get('itemStatus')[0][0] ?? null);
 pin('a live listing shows its publish date', osc_format_date('2020-01-01 00:00:00'), __get('itemFacts')['published'] ?? null);
 

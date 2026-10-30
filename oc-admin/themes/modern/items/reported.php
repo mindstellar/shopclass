@@ -14,7 +14,7 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => osc_mode_text(__('Reported listings'), __('Reported products')),
     'help'    => __('From here, you can edit or delete the listings reported by users (spam, misclassified, duplicate, expired, offensive). You can also delete the report if you consider it mistaken.'),
 ));
@@ -52,7 +52,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                    echo osc_admin_base_url(true); ?>?page=items&action=items_reported"><?php _e('Reset filters'); ?></a>
             <?php } ?>
             <?php osc_admin_per_page(array(
-                'label'   => __('%d Listings'),
+                'label'   => osc_mode_text(__('%d Listings'), __('%d Products')),
                 'options' => array(10, 25, 50, 100),
                 'current' => (int) Params::getParam('iDisplayLength'),
             )); ?>
@@ -111,8 +111,8 @@ osc_admin_pagination($aData);
     'id'      => 'deleteModal',
     'method'  => 'post',
     'fields'  => array('page' => 'items', 'action' => 'delete', 'id[]' => ''),
-    'title'   => __('Delete listing'),
-    'text'    => __('This permanently deletes the listing and its photos. This cannot be undone.'),
+    'title'   => osc_mode_text(__('Delete listing'), __('Delete product')),
+    'text'    => osc_mode_text(__('This permanently deletes the listing and its photos. This cannot be undone.'), __('This permanently deletes the product and its photos. This cannot be undone.')),
     'confirm' => __('Delete'),
 )); ?>
 <?php osc_admin_bulk_confirm_dialog(); ?>

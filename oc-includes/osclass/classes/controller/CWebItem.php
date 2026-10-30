@@ -29,6 +29,7 @@ use mindstellar\listing\ListingNotices;
 use mindstellar\listing\ListingPolicy;
 use mindstellar\listing\ListingQuery;
 use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingStatus;
 use mindstellar\listing\PhotoService;
 use mindstellar\listing\UploadTmpStore;
 use mindstellar\messaging\MessagingService;
@@ -368,6 +369,12 @@ class CWebItem extends BaseModel
                 // Uploads were consumed by the successful edit; drop the session
                 // mapping so it can't bleed into a later listing.
                 UploadTmpStore::removeOwner(UploadTmpStore::formOwner());
+                if (isset($saved) && $saved->unpaid()) {
+                    osc_add_flash_info_message(_m('Your changes are saved. Pay for the listing to publish it.'));
+                    $this->redirectTo(osc_billing_publish_url((int) $item['pk_i_id']));
+
+                    return null;
+                }
                 if (osc_moderate_admin_edit()) {
                     osc_add_flash_ok_message(_m('Your listing will be published after an admin approves the changes.'));
                 } else {
@@ -884,6 +891,42 @@ class CWebItem extends BaseModel
     }
 
     /**
+     * Tell an owner or admin why the listing they opened is not public.
+     *
+     * @param array<string,mixed> $item
+     */
+    private function flashStatusNotice(array $item): void
+    {
+        if (ListingStatus::isHeld($item)) {
+            $payLink = (int) $item['fk_i_user_id'] > 0 && (int) $item['fk_i_user_id'] === (int) osc_logged_user_id()
+                ? ' <a href="' . osc_esc_html(osc_billing_publish_url((int) $item['pk_i_id'])) . '">' . osc_esc_html(_m('Pay to publish it')) . '</a>'
+                : '';
+            $deadline = empty($item['dt_expiration']) ? '' : ' ' . osc_esc_html(sprintf(
+                _m('If it is not paid for by %s, this listing will be deleted.'),
+                osc_format_date((string) $item['dt_expiration'])
+            ));
+            // A state, not news: it stays until the listing is paid for.
+            osc_add_flash_info_message(osc_esc_html(_m('This listing is waiting for payment and is not public yet.')) . $deadline . $payLink, 'pubMessages', false);
+        } elseif ($item['b_active'] != 1) {
+            osc_add_flash_warning_message(
+                _m("The listing hasn't been validated. Please validate it in order to make it public")
+            );
+        } elseif ($item['b_enabled'] == 0 || ($item['b_spam'] ?? 0) == 1) {
+            if (osc_is_admin_user_logged_in()) {
+                osc_add_flash_warning_message(
+                    $item['b_enabled'] == 0
+                        ? _m("The listing hasn't been enabled. Please enable it in order to make it public")
+                        : _m('The listing is marked as spam. Unmark it in order to make it public')
+                );
+            } else {
+                osc_add_flash_warning_message(
+                    _m('The listing has been blocked or is awaiting moderation from the admin')
+                );
+            }
+        }
+    }
+
+    /**
      * The listing's page.
      */
     private function showItem(): void
@@ -917,24 +960,6 @@ class CWebItem extends BaseModel
             $this->do404();
 
             return;
-        }
-
-        if ($item['b_active'] != 1) {
-            osc_add_flash_warning_message(
-                _m("The listing hasn't been validated. Please validate it in order to make it public")
-            );
-        } elseif ($item['b_enabled'] == 0 || ($item['b_spam'] ?? 0) == 1) {
-            if (osc_is_admin_user_logged_in()) {
-                osc_add_flash_warning_message(
-                    $item['b_enabled'] == 0
-                        ? _m("The listing hasn't been enabled. Please enable it in order to make it public")
-                        : _m('The listing is marked as spam. Unmark it in order to make it public')
-                );
-            } else {
-                osc_add_flash_warning_message(
-                    _m('The listing has been blocked or is awaiting moderation from the admin')
-                );
-            }
         }
 
         // Neither the admin nor the listing's own owner counts as a view. The final
@@ -1003,6 +1028,9 @@ class CWebItem extends BaseModel
         if ($itemURI != $URI) {
             $this->redirectTo(osc_base_url() . $itemURI, 301);
         }
+
+        // After the redirect, so a moved URL does not queue the notice twice.
+        $this->flashStatusNotice($item);
 
         // Self-referential canonical so parameterised or duplicate variants of the
         // listing consolidate onto the one indexable URL (SEO).

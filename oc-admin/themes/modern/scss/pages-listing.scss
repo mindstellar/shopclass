@@ -363,19 +363,152 @@
   gap: .5rem;
 }
 
+.osc-variant-frame {
+  position: relative;
+
+  // A fade at the trailing edge says the grid scrolls sideways; it goes once the end is in view.
+  &::after {
+    background: linear-gradient(to var(--osc-variant-fade-to, left), var(--osc-bench), transparent);
+    content: "";
+    inset-block: 0;
+    inset-inline-end: 0;
+    inline-size: 2.5rem;
+    opacity: 0;
+    pointer-events: none;
+    position: absolute;
+    transition: opacity .15s ease-out;
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+  }
+
+  &.has-more::after {
+    opacity: 1;
+  }
+
+  [dir="rtl"] & {
+    --osc-variant-fade-to: right;
+  }
+}
+
 .osc-variant-table {
   margin-bottom: 0;
 
+  th,
   td {
     vertical-align: middle;
+    white-space: nowrap;
   }
 
   input.form-control-sm {
-    min-width: 5.5rem;
+    min-width: 4.75rem;
+  }
+
+  [data-field="sku"],
+  [data-field="shippingClass"] {
+    min-width: 6.5rem !important;
   }
 
   select.form-select-sm {
-    min-width: 8rem;
+    min-width: 7rem;
+  }
+
+  // The option columns stay put while the rest scrolls; the script sets each one's offset.
+  [data-option-head],
+  [data-option-cell] {
+    background-color: var(--osc-bench);
+    font-weight: 600;
+    inset-inline-start: var(--osc-pin, 0);
+    position: sticky;
+    z-index: 1;
+  }
+
+  .osc-variant-pin-edge {
+    border-inline-end: 1px solid var(--osc-rule);
+  }
+
+  .is-scrolled & .osc-variant-pin-edge {
+    border-inline-end-color: var(--osc-rule-strong);
+  }
+
+}
+
+// On a phone each row is a card: the option values as its title, then one labelled field
+// per line, and Remove at the end.
+@media (max-width: 575.98px) {
+  .osc-variant-frame::after {
+    content: none;
+  }
+
+  .osc-variant-scroll {
+    overflow: visible !important;
+  }
+
+  .osc-variant-table {
+    &,
+    tbody {
+      display: block;
+    }
+
+    thead {
+      display: none;
+    }
+
+    tr[data-row] {
+      border: 1px solid var(--osc-rule);
+      border-radius: $border-radius;
+      display: grid;
+      gap: .5rem .75rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-block-end: .75rem;
+      padding: .75rem;
+    }
+
+    td {
+      border: 0;
+      display: block;
+      padding: 0;
+      white-space: normal;
+
+      &[data-col-name]::before {
+        color: var(--osc-ink-muted);
+        content: attr(data-col-name);
+        display: block;
+        font-size: .8125rem;
+        margin-block-end: .125rem;
+      }
+    }
+
+    [data-option-cell] {
+      font-weight: 600;
+      position: static;
+
+      &::before {
+        font-weight: 400;
+      }
+    }
+
+    input.form-control-sm,
+    select.form-select-sm,
+    [data-field] {
+      min-width: 0 !important;
+      width: 100%;
+    }
+
+    .osc-variant-remove {
+      align-self: end;
+      text-align: end;
+    }
+
+    .osc-variant-pin-edge {
+      border-inline-end: 0;
+    }
+
+    tr.osc-variant-error {
+      display: block;
+      margin-block: -.5rem .75rem;
+    }
   }
 }
 
@@ -384,4 +517,64 @@
   color: var(--osc-danger);
   margin: 0;
   padding-inline-start: 1.25rem;
+}
+
+// The filters a list is narrowed by, each one removable on its own.
+.osc-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem .5rem;
+  list-style: none;
+  margin: 0 0 .75rem;
+  padding: 0;
+}
+
+.osc-filter-chip {
+  align-items: center;
+  background-color: var(--osc-bronze-tint);
+  border: 1px solid var(--osc-bronze);
+  border-radius: $border-radius;
+  color: var(--osc-ink);
+  display: inline-flex;
+  font-size: .8125rem;
+  gap: .125rem;
+  max-inline-size: 100%;
+  padding-block: .125rem;
+  padding-inline: .5rem .125rem;
+
+  > span {
+    overflow-wrap: anywhere;
+  }
+
+  a {
+    align-items: center;
+    border-radius: $border-radius;
+    color: var(--osc-bronze);
+    display: inline-flex;
+    justify-content: center;
+    min-block-size: 1.5rem;
+    min-inline-size: 1.5rem;
+    text-decoration: none;
+
+    &:hover {
+      background-color: var(--osc-bench);
+      color: var(--osc-danger);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: 1px;
+    }
+  }
+}
+
+.osc-filter-chip-label {
+  color: var(--osc-ink-muted);
+}
+
+.osc-filter-chips-clear {
+  align-items: center;
+  display: inline-flex;
+  font-size: .8125rem;
+  min-block-size: 1.75rem;
 }

@@ -46,6 +46,7 @@ if (!function_exists('osc_core_url')) {
 }
 
 $admin = api_admin_boot('osc_models_listing_hold');
+scratchdb_pin_site_mode($admin, 'classifieds');
 $p     = DB_TABLE_PREFIX;
 seed_locale($admin);
 seed_currency($admin);
@@ -135,8 +136,13 @@ final class HoldMailRecorder extends PHPMailer
     /** @var array<int,array<string,string>> */
     public static array $sent = [];
 
+    public static bool $refuse = false;
+
     public function send()
     {
+        if (self::$refuse) {
+            throw new \PHPMailer\PHPMailer\Exception('mail server down');
+        }
         $to           = $this->getToAddresses();
         self::$sent[] = ['to' => (string) ($to[0][0] ?? ''), 'subject' => $this->Subject, 'body' => $this->Body];
 
@@ -245,6 +251,19 @@ HoldMailRecorder::$sent = [];
 $runReminder($other);
 pin('a listener that suppresses stops the mail', 0, count(HoldMailRecorder::$sent));
 $dispatcher->remove(MailComposing::class, $off);
+
+$logFile = tempnam(sys_get_temp_dir(), 'holdlog');
+$oldLog  = ini_set('error_log', $logFile);
+HoldMailRecorder::$refuse = true;
+set_error_handler(static fn (): bool => true, E_USER_WARNING);
+$runReminder($other);
+restore_error_handler();
+HoldMailRecorder::$refuse = false;
+ini_set('error_log', (string) $oldLog);
+$logged = (string) file_get_contents($logFile);
+@unlink($logFile);
+check('a reminder the mailer refuses is logged', str_contains($logged, 'Reminder for unpaid listing ' . $other . ' was not sent'), $logged);
+pin('and the job is not retried', 0, $queue->count(JobQueue::STATUS_PENDING));
 $clear();
 
 harness_section('Migration 0082: the template row, by name');

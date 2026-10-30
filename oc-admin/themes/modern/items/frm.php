@@ -294,7 +294,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     $headActions = array();
     if ($itemViewUrl !== '') {
         $headActions[] = array(
-            'label' => __('View listing'),
+            'label' => osc_mode_text(__('View listing'), __('View product')),
             'url'   => $itemViewUrl,
             'icon'  => 'bi-box-arrow-up-right',
             'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
@@ -504,7 +504,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         if ($itemShop) {
             echo '<div data-osc-needs-sell><div data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
-            $itemSellField('compareAt', __('Compare-at price'), 'decimal', 0, __('Shown crossed out next to the price. Leave empty when not on sale.'));
+            $itemSellField('compareAt', __('Old price'), 'decimal', 0, __('Shown crossed out next to the price. Leave empty when not on sale.'));
             echo '</div></div>';
         }
         echo '</div>';
@@ -517,7 +517,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             $itemSellField('stock', __('Stock'), 'numeric', 0, __('Leave empty to sell without counting.'));
             echo '</div>';
             echo '<p class="form-text" data-variant-with-options' . ($hasOptions ? '' : ' hidden') . '>'
-                . osc_esc_html(__('Each option row below has its own SKU, price, compare-at price and stock. A row with no price sells at this price.')) . '</p>';
+                . osc_esc_html(__('Each option row below has its own SKU, price, old price and stock. A row with no price sells at this price.')) . '</p>';
             echo '</div>';
             echo '<p class="form-text" data-osc-not-selling' . ($sellValues['sell'] ? ' hidden' : '') . '>'
                 . osc_esc_html(__('Not for sale online. Buyers see the price and contact you.')) . '</p>';
@@ -536,7 +536,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         echo '<div class="form-text">' . osc_esc_html(__('Like sizes or colours, each with its own stock.')) . '</div>';
         echo '</div>';
 
+        $variantCols = array(
+            'sku'           => __('SKU'),
+            'price'         => __('Price'),
+            'compareAt'     => __('Old price'),
+            'stock'         => __('Stock'),
+            'weight'        => __('Weight (g)'),
+            'shippingClass' => __('Shipping class'),
+            'photoId'       => __('Photo'),
+        );
         $variantI18n = array(
+            'cols'        => $variantCols,
             'optionName'  => __('Option name, such as Colour'),
             'valueInput'  => __('Add a value, then press Enter'),
             'removeValue' => __('Remove %s'),
@@ -584,15 +594,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         echo '<button type="button" class="btn btn-dim btn-sm" data-generate>' . osc_esc_html(__('Generate combinations')) . '</button>';
         echo '</div>';
         echo '<p class="form-text" data-variant-note>' . osc_esc_html(__('One row per combination. Generating again keeps the rows you filled in.'))
-            . ' ' . osc_esc_html(__('A row with no price sells at the listing price.'))
-            . ($sellValues['photos'] === array() ? ' ' . osc_esc_html(__('Save the listing with photos to pick a photo per row.')) : '') . '</p>';
+            . ' ' . osc_esc_html(__('A row with no price sells at the product price.'))
+            . ($sellValues['photos'] === array() ? ' ' . osc_esc_html(__('Save the product with photos to pick a photo per row.')) : '') . '</p>';
 
-        echo '<div class="table-responsive"><table class="table osc-variant-table">';
+        echo '<div class="osc-variant-frame" data-variant-frame><div class="table-responsive osc-variant-scroll" data-variant-scroll><table class="table osc-variant-table">';
         echo '<thead><tr data-variant-head>';
         foreach ($sellValues['options'] as $variantOption) {
             echo '<th scope="col" data-option-head>' . osc_esc_html($variantOption['name']) . '</th>';
         }
-        foreach (array(__('SKU'), __('Price'), __('Old price'), __('Stock'), __('Weight (g)'), __('Photo')) as $variantHead) {
+        foreach ($variantCols as $variantHead) {
             echo '<th scope="col">' . osc_esc_html($variantHead) . '</th>';
         }
         echo '<th scope="col"><span class="visually-hidden">' . osc_esc_html($variantI18n['remove']) . '</span></th>';
@@ -601,33 +611,32 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             $variantBase = 'product[variants][' . (int) $n . ']';
             echo '<tr data-row>';
             foreach ($variantRow['values'] as $k => $variantValue) {
-                echo '<td data-option-cell><input type="hidden" name="' . $variantBase . '[options][' . (int) $k . ']" value="' . osc_esc_html($variantValue) . '" data-field="options">'
+                echo '<td data-option-cell data-col-name="' . osc_esc_html($sellValues['options'][$k]['name'] ?? '') . '"><input type="hidden" name="' . $variantBase . '[options][' . (int) $k . ']" value="' . osc_esc_html($variantValue) . '" data-field="options">'
                     . '<span data-option-text>' . osc_esc_html($variantValue) . '</span></td>';
             }
-            foreach (array('sku' => array('text', 64, ''), 'price' => array('text', 0, 'decimal'), 'compareAt' => array('text', 0, 'decimal'), 'stock' => array('text', 0, 'numeric'), 'weight' => array('text', 0, 'numeric')) as $variantKey => $variantSpec) {
-                echo '<td><input type="text" class="form-control form-control-sm" name="' . $variantBase . '[' . $variantKey . ']" value="' . osc_esc_html($variantRow[$variantKey]) . '"'
-                    . ' data-field="' . $variantKey . '" autocomplete="off"'
+            foreach (array('sku' => array('text', 64, ''), 'price' => array('text', 0, 'decimal'), 'compareAt' => array('text', 0, 'decimal'), 'stock' => array('text', 0, 'numeric'), 'weight' => array('text', 0, 'numeric'), 'shippingClass' => array('text', 40, '')) as $variantKey => $variantSpec) {
+                echo '<td data-col-name="' . osc_esc_html($variantCols[$variantKey]) . '"><input type="text" class="form-control form-control-sm" name="' . $variantBase . '[' . $variantKey . ']" value="' . osc_esc_html($variantRow[$variantKey]) . '"'
+                    . ' data-field="' . $variantKey . '" autocomplete="off" aria-label="' . osc_esc_html($variantCols[$variantKey]) . '"'
                     . ($variantSpec[1] > 0 ? ' maxlength="' . $variantSpec[1] . '"' : '')
                     . ($variantSpec[2] !== '' ? ' inputmode="' . $variantSpec[2] . '"' : '') . '></td>';
             }
-            echo '<td><input type="hidden" name="' . $variantBase . '[shippingClass]" value="' . osc_esc_html($variantRow['shippingClass']) . '" data-field="shippingClass">';
-            echo '<select class="form-select form-select-sm" name="' . $variantBase . '[photoId]" data-field="photoId">';
+            echo '<td data-col-name="' . osc_esc_html($variantCols['photoId']) . '"><select class="form-select form-select-sm" name="' . $variantBase . '[photoId]" data-field="photoId" aria-label="' . osc_esc_html($variantCols['photoId']) . '">';
             echo '<option value="">' . osc_esc_html($variantI18n['none']) . '</option>';
             foreach ($sellValues['photos'] as $photoId => $photoLabel) {
                 echo '<option value="' . (int) $photoId . '"' . ((string) $photoId === $variantRow['photoId'] ? ' selected' : '') . '>' . osc_esc_html($photoLabel) . '</option>';
             }
             echo '</select></td>';
-            echo '<td><button type="button" class="btn btn-dim btn-sm" data-row-remove>' . osc_esc_html($variantI18n['remove']) . '</button></td>';
+            echo '<td class="osc-variant-remove"><button type="button" class="btn btn-dim btn-sm" data-row-remove>' . osc_esc_html($variantI18n['remove']) . '</button></td>';
             echo '</tr>';
             if (!empty($sellValues['errors'][$n])) {
-                echo '<tr class="osc-variant-error" data-row-error><td colspan="' . (count($variantRow['values']) + 7) . '"><ul role="alert">';
+                echo '<tr class="osc-variant-error" data-row-error><td colspan="' . (count($variantRow['values']) + 8) . '"><ul role="alert">';
                 foreach ($sellValues['errors'][$n] as $variantError) {
                     echo '<li>' . osc_esc_html($variantError) . '</li>';
                 }
                 echo '</ul></td></tr>';
             }
         }
-        echo '</tbody></table></div>';
+        echo '</tbody></table></div></div>';
         echo '</div>';
         osc_admin_panel_close();
 
@@ -635,14 +644,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         // delivers it marks its output, and the form script swaps the fields for one line.
         $itemSection('sec-shipping', __('Shipping'), __('Used to work out delivery cost'), array('attrs' => array('data-osc-needs-sell' => true)));
         echo '<div data-osc-physical-only>';
-        echo '<div class="osc-editor-cols">';
-        echo '<div data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
+        echo '<div class="osc-editor-cols" data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
         $itemSellField('weight', _x('Weight', 'product weight'), 'numeric', 0, '', _x('g', 'unit: grams'));
-        echo '</div>';
         $itemSellField('shippingClass', __('Shipping class'), '', 40, __('A name the Shipping plugin groups items by, such as bulky.'));
         echo '</div>';
         echo '<p class="form-text" data-variant-with-options' . ($hasOptions ? '' : ' hidden') . '>'
-            . osc_esc_html(__('Weight is set per row in Options.')) . '</p>';
+            . osc_esc_html(__('Weight and shipping class are set per row in Options.')) . '</p>';
         echo '</div>';
         echo '<p class="form-text" data-osc-digital-only hidden>'
             . osc_esc_html(__('No shipping. Products in a digital category are delivered as downloads.')) . '</p>';

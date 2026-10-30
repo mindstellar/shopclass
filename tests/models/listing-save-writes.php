@@ -35,6 +35,7 @@ use mindstellar\listing\ListingService;
 use mindstellar\model\Resource;
 
 $admin = api_admin_boot('osc_models_listing_save_writes');
+scratchdb_pin_site_mode($admin, 'classifieds');
 if (!function_exists('osc_item_map_type')) {
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 }

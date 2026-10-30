@@ -14,6 +14,8 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
+use mindstellar\billing\PaymentGatewayRegistry;
+use mindstellar\currency\CurrencyService;
 
 /**
  * The pay step of a listing held at the end of posting -- markup only: no page chrome, no
@@ -48,6 +50,8 @@ if ($payReady) {
     $payFields   = array('page' => 'billing', 'action' => 'publish', 'itemId' => $payItemId);
     $payFailed   = $payStep === 'failed' ? (string) ($payState['failed']['reason'] ?? '') : '';
     $payRefused  = $payFailed === 'refused';
+    $payOrder    = $payStep === 'waiting' && ($payState['order'] ?? null) instanceof Order ? $payState['order'] : null;
+    $payHowTo    = $payOrder === null ? null : PaymentGatewayRegistry::getInstance()->instructions($payOrder);
 }
 ?>
 <div class="oe-account">
@@ -66,6 +70,15 @@ if ($payReady) {
     <?php if ($checkoutHtml !== '' && $order !== null) { ?>
         <?php osc_gui_panel_open(sprintf(_m('Order #%d'), $order->getId()), 'oe-bill-card', '', 'div'); ?>
             <div class="oe-bill-instructions"><?php echo $checkoutHtml; /* gateway-authored, see CheckoutIntent::html() */ ?></div>
+        <?php osc_gui_panel_close('div'); ?>
+    <?php } elseif ($payHowTo !== null) { ?>
+        <?php osc_gui_panel_open(sprintf(_m('Order #%d'), $payOrder->getId()), 'oe-bill-card', '', 'div'); ?>
+            <?php $payMoney = CurrencyService::make()->money($payOrder->getAmount(), $payOrder->getCurrency()); ?>
+            <div class="oe-bill-amount" role="group" aria-label="<?php echo osc_esc_html(sprintf(_m('Amount to pay: %s'), $payMoney)); ?>">
+                <p class="oe-bill-amount-label"><?php echo osc_esc_html(_m('Amount to pay')); ?></p>
+                <p class="oe-figure oe-bill-amount-figure"><?php echo osc_esc_html($payMoney); ?></p>
+            </div>
+            <div class="oe-bill-instructions"><p><?php echo osc_gui_payment_text($payHowTo, array(osc_billing_order_number($payOrder->getId()))); ?></p></div>
         <?php osc_gui_panel_close('div'); ?>
     <?php } ?>
 
@@ -99,22 +112,46 @@ if ($payReady) {
                     } ?></p>
             <?php } ?>
 
-            <p class="oe-meta"><?php echo osc_esc_html($payCredits === 0
-                ? _m('This listing is free to publish now.')
-                : sprintf(
+            <?php if ($payCredits === 0) { ?>
+                <p class="oe-meta"><?php echo osc_esc_html(_m('This listing is free to publish now.')); ?></p>
+            <?php } elseif ($payHowTo !== null || $checkoutHtml !== '') { ?>
+                <p class="oe-meta"><?php echo osc_esc_html(sprintf(
                     _m('This listing costs %1$s. You have %2$s.'),
                     sprintf(_mn('%d credit', '%d credits', $payCredits), $payCredits),
                     sprintf(_mn('%d credit', '%d credits', $payBalance), $payBalance)
                 )); ?></p>
+            <?php } else {
+                $payFrom = $payShort > 0 && $payPackages !== array() ? $payPackages[0] : null; ?>
+                <div class="oe-bill-amount">
+                    <p class="oe-bill-amount-label"><?php echo osc_esc_html(_m('Price to publish')); ?></p>
+                    <p class="oe-figure oe-bill-amount-figure"><?php echo osc_esc_html(sprintf(_mn('%d credit', '%d credits', $payCredits), $payCredits)); ?></p>
+                    <p class="oe-muted"><?php echo osc_esc_html(sprintf(_m('You have %s.'), sprintf(_mn('%d credit', '%d credits', $payBalance), $payBalance)));
+                    if ($payFrom !== null) {
+                        echo ' ' . osc_esc_html(sprintf(
+                            _m('Credit packages that cover it start at %s.'),
+                            CurrencyService::make()->money((int) $payFrom['i_amount'], (string) $payFrom['s_currency'])
+                        ));
+                    } ?></p>
+                </div>
+            <?php } ?>
+            <?php if (!empty($payState['deadline'])) { ?>
+                <p class="oe-callout oe-bill-deadline" role="note"><?php echo osc_esc_html(sprintf(
+                    _m('If it is not paid for by %s, this listing will be deleted.'),
+                    osc_format_date((string) $payState['deadline'])
+                )); ?></p>
+            <?php } ?>
             <?php if ($payHeld && $payShort === 0 && !$payRefused) { ?>
                 <form class="oe-inline-form nocsrf oe-bill-actions" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
                     <?php echo osc_csrf_token_form(); ?>
                     <?php foreach ($payFields + array('do' => 'credits') as $payName => $payValue) { ?>
                         <input type="hidden" name="<?php echo osc_esc_html((string) $payName); ?>" value="<?php echo osc_esc_html((string) $payValue); ?>"/>
                     <?php } ?>
-                    <button type="submit" class="oe-btn oe-btn--primary oe-bill-btn"><?php echo osc_esc_html($payCredits > 0
-                        ? sprintf(_mn('Use %d credit and publish', 'Use %d credits and publish', $payCredits), $payCredits)
-                        : _m('Publish for free')); ?></button>
+                    <button type="submit" class="oe-btn oe-btn--primary oe-bill-btn"><?php echo osc_esc_html(match (true) {
+                        $payCredits > 0 && osc_moderate_admin_post() => sprintf(_mn('Use %d credit and send for review', 'Use %d credits and send for review', $payCredits), $payCredits),
+                        $payCredits > 0                               => sprintf(_mn('Use %d credit and publish', 'Use %d credits and publish', $payCredits), $payCredits),
+                        osc_moderate_admin_post()                     => _m('Send for review'),
+                        default                                       => _m('Publish for free'),
+                    }); ?></button>
                 </form>
             <?php } ?>
         <?php } ?>
@@ -122,7 +159,11 @@ if ($payReady) {
 
     <?php if ($payHeld) { ?>
         <?php if ($payShort > 0) { ?>
-        <?php osc_gui_panel_open($payStep === 'waiting' ? _m('Pay again') : '', 'oe-bill-card', '', 'div'); ?>
+        <?php if ($payStep === 'waiting') { ?>
+        <details class="oe-bill-other">
+            <summary><?php echo osc_esc_html(_m('Pay another way')); ?></summary>
+        <?php } ?>
+        <?php osc_gui_panel_open('', 'oe-bill-card', '', 'div'); ?>
             <?php if ($payPackages === array()) { ?>
                 <p class="oe-meta"><?php echo osc_esc_html(sprintf(_mn('No package covers %d credit.', 'No package covers %d credits.', $payShort), $payShort)); ?></p>
                 <div class="oe-bill-actions">
@@ -141,20 +182,23 @@ if ($payReady) {
                 ?>
             <?php } ?>
         <?php osc_gui_panel_close('div'); ?>
+        <?php if ($payStep === 'waiting') { ?>
+        </details>
+        <?php } ?>
         <?php } ?>
 
         <div class="oe-actions oe-bill-publish-more">
-            <a href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Pay later')); ?></a>
-            <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
-                <?php echo osc_csrf_token_form(); ?>
-                <input type="hidden" name="page" value="item"/>
-                <input type="hidden" name="action" value="item_delete"/>
-                <input type="hidden" name="id" value="<?php echo $payItemId; ?>"/>
-                <button type="submit" class="oe-link-btn oe-danger-link" data-osc-confirm="<?php
-                    echo osc_esc_html(sprintf(_m('Delete "%s"? This cannot be undone.'), (string) $payItem['title'])); ?>"><?php
-                    echo osc_esc_html(_m('Delete this listing')); ?></button>
-            </form>
+            <a class="oe-secondary" href="<?php echo osc_esc_html(osc_user_list_items_url()); ?>"><?php echo osc_esc_html(_m('Pay later')); ?></a>
         </div>
+        <form class="oe-inline-form nocsrf oe-bill-delete-form" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
+            <?php echo osc_csrf_token_form(); ?>
+            <input type="hidden" name="page" value="item"/>
+            <input type="hidden" name="action" value="item_delete"/>
+            <input type="hidden" name="id" value="<?php echo $payItemId; ?>"/>
+            <button type="submit" class="oe-link-btn oe-danger-link oe-bill-delete" data-osc-confirm="<?php
+                echo osc_esc_html(sprintf(_m('Delete "%s"? This cannot be undone.'), (string) $payItem['title'])); ?>"><?php
+                echo osc_esc_html(_m('Delete this listing')); ?></button>
+        </form>
         <?php osc_gui_print_confirm_script(); ?>
     <?php } ?>
 <?php } ?>

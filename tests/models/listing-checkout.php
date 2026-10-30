@@ -44,6 +44,45 @@ use mindstellar\billing\Wallet;
 use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 
+/** A gateway paid by hand, with instructions to show again. */
+final class WireListingGateway implements \mindstellar\billing\PaymentGateway
+{
+    public function getId(): string
+    {
+        return 'lcwire';
+    }
+
+    public function getName(): string
+    {
+        return 'Wire';
+    }
+
+    public function getSupportedCurrencies(): array
+    {
+        return array('USD');
+    }
+
+    public function isConfigured(): bool
+    {
+        return true;
+    }
+
+    public function createCheckout(Order $order): \mindstellar\billing\CheckoutIntent
+    {
+        return \mindstellar\billing\CheckoutIntent::html('<p>Wire it</p>');
+    }
+
+    public function instructions(Order $order): ?string
+    {
+        return $order->isPending() ? 'Wire it' : null;
+    }
+
+    public function handleCallback(array $request): \mindstellar\billing\CallbackResult
+    {
+        return \mindstellar\billing\CallbackResult::ignored();
+    }
+}
+
 $userId = seed_user($admin, 'seller', 'seller@example.test');
 
 harness_section('Orders: listing kind');
@@ -404,6 +443,38 @@ $order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
 \mindstellar\database\Db::execute("UPDATE {$p}t_billing_order SET s_status = 'paid' WHERE pk_i_id = ?", [$order->getId()]);
 (new \mindstellar\listing\ListingService())->delete($held, $secret($held), Actor::user($uid));
 pin('a paid order stays paid', [Order::STATUS_PAID, null], [OrderStore::find($order->getId())->getStatus(), OrderStore::listingOrder($held)]);
+
+[$uid, , $held] = $seller(0);
+$first  = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+$second = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+(new \mindstellar\listing\ListingService())->delete($held, $secret($held), Actor::user($uid));
+pin('every pending order for the deleted listing is cancelled, not just the linked one', [Order::STATUS_CANCELLED, Order::STATUS_CANCELLED], [OrderStore::find($first->getId())->getStatus(), OrderStore::find($second->getId())->getStatus()]);
+
+harness_section('Listing order: a bank transfer is reused');
+
+PaymentGatewayRegistry::getInstance()->register(new WireListingGateway());
+[$uid, , $held] = $seller(0);
+$first = ListingCheckout::startOrder($held, $uid, $pkg, 'lcwire');
+$again = ListingCheckout::startOrder($held, $uid, $pkg, 'lcwire');
+pin('the same package and method reuse the open order', [$first['order']->getId(), false], [$again['order']->getId(), $again['next']->isRedirect()]);
+pin('one order only', 1, count(OrderStore::pendingForListing($uid, $held)));
+$other = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+pin('another method starts its own order', true, $other->getId() !== $first['order']->getId());
+
+harness_section('Listing order: live by another path');
+
+[$uid, , $held] = $seller(0);
+$wire = ListingCheckout::startOrder($held, $uid, $pkg, 'lcwire')['order'];
+Wallet::credit($uid, 5, Wallet::REASON_GRANT);
+pin('paid with credits: published', true, ListingCheckout::publish($held, Actor::user($uid))['published']);
+pin('and the bank transfer order is cancelled, its link gone', [Order::STATUS_CANCELLED, null], [OrderStore::find($wire->getId())->getStatus(), OrderStore::listingOrder($held)]);
+
+[$uid, , $held] = $seller(0);
+$card = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
+$wire = ListingCheckout::startOrder($held, $uid, $pkg, 'lcwire')['order'];
+Billing::markPaid($wire);
+pin('bank transfer marked paid: published', true, $row($held)['dt_first_pub_date'] !== null);
+pin('it stays paid and the card order is cancelled', [Order::STATUS_PAID, Order::STATUS_CANCELLED], [OrderStore::find($wire->getId())->getStatus(), OrderStore::find($card->getId())->getStatus()]);
 
 harness_section('Listing order: paid, not published');
 

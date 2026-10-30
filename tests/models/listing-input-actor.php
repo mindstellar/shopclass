@@ -21,6 +21,7 @@ require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_listing_input_actor');
+scratchdb_pin_site_mode($admin, 'classifieds');
 
 foreach (array('_m', '__') as $translate) {
     if (!function_exists($translate)) {

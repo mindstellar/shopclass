@@ -55,6 +55,7 @@ register_shutdown_function(static function () use ($lhRoot): void {
 require_once __DIR__ . '/../lib/scratchdb.php';
 
 $admin = scratchdb_session('osc_models_listing_hooks');
+scratchdb_pin_site_mode($admin, 'classifieds');
 
 foreach (array(
     'OSC_CACHE_TTL'   => 60,

@@ -101,6 +101,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <button type="submit" class="btn btn-link btn-sm p-0 align-baseline"><?php _e('Remove sample data'); ?></button>
     </form>
 <?php } ?>
+<?php
+$filterChips = is_array(__get('filterChips')) ? __get('filterChips') : array();
+$unpaidTab   = Params::getParamString('status') === 'unpaid';
+// "Waiting for payment" is a state, not a filter, so it is a tab: shown while pay-at-post is
+// on, or while a bookmarked link still asks for it.
+if (osc_billing_pay_at_post() || $unpaidTab) {
+    $tabBase = osc_admin_base_url(true) . '?page=items&iDisplayLength=' . (int) $iDisplayLength;
+    osc_admin_tab_nav(array(
+        array('label' => __('All'), 'url' => $tabBase, 'active' => !$unpaidTab),
+        array('label' => __('Waiting for payment'), 'url' => $tabBase . '&status=unpaid', 'active' => $unpaidTab),
+    ));
+}
+?>
 <div class="relative">
     <?php osc_admin_list_filter(array(
             'page'     => 'items',
@@ -151,8 +164,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'options' => __get('bulk_options'),
                 'form'    => 'datatablesForm',
             ),
-            'per_page' => array('label' => __('%d Listings'), 'current' => $iDisplayLength),
+            'per_page' => array('label' => osc_mode_text(__('%d Listings'), __('%d Products')), 'current' => $iDisplayLength),
         )); ?>
+    <?php if ($filterChips !== array()) { ?>
+        <ul class="osc-filter-chips" aria-label="<?php echo osc_esc_html(__('Active filters')); ?>">
+            <?php foreach ($filterChips as $chip) { ?>
+                <li class="osc-filter-chip">
+                    <span><span class="osc-filter-chip-label"><?php echo osc_esc_html($chip['label']); ?>:</span> <?php echo osc_esc_html($chip['value']); ?></span>
+                    <a href="<?php echo osc_esc_html($chip['url']); ?>" aria-label="<?php echo osc_esc_html(sprintf(__('Remove filter: %s'), $chip['label'])); ?>"><i class="bi bi-x" aria-hidden="true"></i></a>
+                </li>
+            <?php } ?>
+            <?php if (count($filterChips) > 1) { ?>
+                <li><a class="osc-filter-chips-clear" href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=items' . ($unpaidTab ? '&status=unpaid' : '')); ?>"><?php _e('Clear all'); ?></a></li>
+            <?php } ?>
+        </ul>
+    <?php } ?>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="items" />
         <input type="hidden" name="action" value="bulk_actions" />
@@ -188,10 +214,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 <?php } ?>
                             </tr>
                         <?php } ?>
-                    <?php } elseif ($withFilters) {
+                    <?php } elseif ($unpaidTab && $filterChips === array()) {
+                        osc_admin_table_empty(count($columns), array(
+                            'icon'  => 'bi-hourglass',
+                            'title' => __('Nothing is waiting for payment'),
+                            'text'  => __('A listing posted under pay-at-post waits here until its fee is paid.'),
+                        ));
+                    } elseif ($withFilters) {
                         osc_admin_table_empty(count($columns), array(
                             'icon'   => 'bi-filter',
-                            'title'  => __('No listings match these filters'),
+                            'title'  => osc_mode_text(__('No listings match these filters'), __('No products match these filters')),
+                            'text'   => __('Remove a filter above to widen the search.'),
                             'action' => array(
                                 'label' => __('Reset filters'),
                                 'url'   => osc_admin_base_url(true) . '?page=items',
@@ -332,13 +365,9 @@ osc_admin_pagination($aData);
                                                                 : '') ?>><?php _e('OFF'); ?></option>
                                     </select>
                             <?php osc_admin_form_row_close(); ?>
-                            <?php osc_admin_form_row_open(__('Payment'), array('for' => 'status')); ?>
-                                    <select class="form-select" id="status" name="status">
-                                        <option value=""><?php _e('Choose an option'); ?></option>
-                                        <option value="unpaid" <?php echo (Params::getParamString('status') === 'unpaid'
-                                                                ? 'selected="selected"' : '') ?>><?php _e('Waiting for payment'); ?></option>
-                                    </select>
-                            <?php osc_admin_form_row_close(); ?>
+                            <?php if ($unpaidTab) { ?>
+                                <input type="hidden" name="status" value="unpaid" />
+                            <?php } ?>
                         </div>
                     </div>
                     <?php osc_run_hook('filters_manage_item_search'); ?>
@@ -355,8 +384,8 @@ osc_admin_pagination($aData);
     'id'      => 'itemDeleteModal',
     'method'  => 'post',
     'fields'  => array('page' => 'items', 'action' => 'delete', 'id[]' => ''),
-    'title'   => __('Delete listing'),
-    'text'    => __('This permanently deletes the listing and its photos. This cannot be undone.'),
+    'title'   => osc_mode_text(__('Delete listing'), __('Delete product')),
+    'text'    => osc_mode_text(__('This permanently deletes the listing and its photos. This cannot be undone.'), __('This permanently deletes the product and its photos. This cannot be undone.')),
     'confirm' => __('Delete'),
 )); ?>
 <?php osc_admin_bulk_confirm_dialog(); ?>

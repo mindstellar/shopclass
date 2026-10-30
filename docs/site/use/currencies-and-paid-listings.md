@@ -73,7 +73,7 @@ and **Order number prefix**.
 - **Open unpaid orders per buyer**: the most unpaid bank transfer orders one buyer may hold
   at once (3 by default, 0 for no limit). Cash on delivery and card orders are not limited.
   Past it, checkout asks them to pay for or cancel an open order first.
-- **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`.
+- **Order number prefix**: `KC-` makes order 1042 read `#KC-1042`. Orders already placed keep their number.
 
 Every order takes its stock when placed, so two buyers cannot both order the last one. A
 card payment that arrives after its order was cancelled is refunded by the payment plugin.

@@ -34,6 +34,69 @@ class ItemsDataTable extends DataTable
     private $withFilters = false;
 
     /**
+     * The filters a request applies, each with the link that drops it. The status tab is not
+     * one of them: the tab strip already shows it.
+     *
+     * @param array<string,mixed> $params       the request's parameters
+     * @param callable|null       $categoryName category id => its name
+     *
+     * @return list<array{label: string, value: string, url: string}>
+     * @since 7.1.0
+     */
+    public static function filterChips(array $params, ?callable $categoryName = null): array
+    {
+        $text = static fn (string $key): string => isset($params[$key]) && is_scalar($params[$key]) ? trim((string) $params[$key]) : '';
+        $flag = static fn (string $key, bool $on): string => $text($key) === ($on ? '1' : '0') ? __('ON') : __('OFF');
+        $categoryName ??= static function (string $id): string {
+            $row = \Category::getInstance()->findByPrimaryKey((int) $id);
+
+            return is_array($row) ? (string) ($row['s_name'] ?? $id) : $id;
+        };
+
+        // Each filter: its label, the shown value, and every parameter that goes with it.
+        $filters = array(
+            array(__('Pattern'), $text('sSearch'), array('sSearch')),
+            array(__('Category'), $text('catId') === '' ? '' : $categoryName($text('catId')), array('catId')),
+            array(__('Country'), $text('country') !== '' ? $text('country') : $text('countryId'), array('country', 'countryId', 'region', 'regionId', 'city', 'cityId')),
+            array(__('Region'), $text('region') !== '' ? $text('region') : $text('regionId'), array('region', 'regionId', 'city', 'cityId')),
+            array(__('City'), $text('city') !== '' ? $text('city') : $text('cityId'), array('city', 'cityId')),
+            array(__('Email'), $text('user'), array('user', 'userId')),
+            array(__('Item ID'), $text('itemId'), array('itemId')),
+            array(__('Premium'), $text('b_premium') === '' ? '' : $flag('b_premium', true), array('b_premium')),
+            array(__('Active'), $text('b_active') === '' ? '' : $flag('b_active', true), array('b_active')),
+            array(__('Block'), $text('b_enabled') === '' ? '' : $flag('b_enabled', false), array('b_enabled')),
+            array(__('Spam'), $text('b_spam') === '' ? '' : $flag('b_spam', true), array('b_spam')),
+        );
+        $keep = array('page' => 'items');
+        foreach (array('status', 'iDisplayLength', 'sort', 'direction', 'shortcut-filter') as $key) {
+            if ($text($key) !== '') {
+                $keep[$key] = $text($key);
+            }
+        }
+        foreach ($filters as $filter) {
+            foreach ($filter[2] as $key) {
+                if ($text($key) !== '') {
+                    $keep[$key] = $text($key);
+                }
+            }
+        }
+
+        $chips = array();
+        foreach ($filters as [$label, $value, $keys]) {
+            if ($value === '') {
+                continue;
+            }
+            $chips[] = array(
+                'label' => $label,
+                'value' => $value,
+                'url'   => osc_admin_base_url(true) . '?' . http_build_query(array_diff_key($keep, array_flip($keys))),
+            );
+        }
+
+        return $chips;
+    }
+
+    /**
      * Registers the row_class() filter so each listing row gets its status class.
      */
     public function __construct()

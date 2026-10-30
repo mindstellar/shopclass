@@ -67,7 +67,8 @@ final class ListingCheckout
      * Spend the credits and put the listing live. Nothing is spent when it is not held, the
      * balance is short or a plugin refuses it through `billing_can_publish` (reason `refused`).
      * Locking the seller makes two simultaneous calls, for one listing or two, spend once.
-     * `landing` is where the listing stands afterwards (see landing()).
+     * `landing` is where the listing stands afterwards (see landing()). Once it commits, the
+     * seller's other orders still waiting to pay for the listing are cancelled.
      *
      * @return array{published: bool, reason: ?string, landing: string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}}
      *
@@ -108,8 +109,8 @@ final class ListingCheckout
             if (!(new ListingService())->publish($itemId, $actor)) {
                 throw new RuntimeException('Listing #' . $itemId . ' could not be published');
             }
-            Db::afterCommit(static function () use ($itemId): void {
-                OrderStore::unlinkListing($itemId);
+            Db::afterCommit(static function () use ($itemId, $userId): void {
+                self::closeOrders($itemId, $userId);
             });
 
             $after = ListingStore::find($itemId, self::STATUS_COLUMNS);
@@ -119,23 +120,57 @@ final class ListingCheckout
     }
 
     /**
-     * Put a held listing live without charging anyone, as an admin may. Like publish(), it
-     * drops the listing's order link once that commits.
+     * Put a held listing live without charging anyone, as an admin may. The admin screen and
+     * the API both come here. Once that commits, the seller's orders still waiting to pay for
+     * it are cancelled and its order link dropped.
      *
      * @return bool whether this call published it
      */
     public static function publishFree(int $itemId, Actor $actor): bool
     {
-        return (bool) Db::transaction(static function () use ($itemId, $actor): bool {
+        $ownerId = ListingStore::ownerId($itemId);
+
+        return (bool) Db::transaction(static function () use ($itemId, $actor, $ownerId): bool {
             if (!(new ListingService())->publish($itemId, $actor)) {
                 return false;
             }
-            Db::afterCommit(static function () use ($itemId): void {
-                OrderStore::unlinkListing($itemId);
+            Db::afterCommit(static function () use ($itemId, $ownerId): void {
+                self::closeOrders($itemId, $ownerId);
             });
 
             return true;
         });
+    }
+
+    /**
+     * Cancel the listing's open orders, without the cancelled mail, and drop its order link.
+     * Runs once the listing goes live or is deleted.
+     */
+    private static function closeOrders(int $itemId, int $sellerId): void
+    {
+        $linked = OrderStore::listingOrder($itemId);
+        OrderStore::unlinkListing($itemId);
+        foreach (self::openOrders($itemId, $sellerId, $linked) as $order) {
+            OrderStore::markMailSent($order->getId(), Receipts::MAIL_CANCELLED);
+            OrderStore::cancel($order->getId());
+        }
+    }
+
+    /**
+     * The seller's orders still waiting to pay for the listing, and its linked order when that
+     * one is still waiting too.
+     *
+     * @return Order[]
+     */
+    private static function openOrders(int $itemId, int $sellerId, ?Order $linked): array
+    {
+        $orders = OrderStore::pendingForListing($sellerId, $itemId);
+        $ids    = array_map(static fn (Order $o): int => $o->getId(), $orders);
+        if ($linked !== null && $linked->isPending() && !in_array($linked->getId(), $ids, true)) {
+            $orders[] = $linked;
+        }
+
+        return $orders;
     }
 
     /**
@@ -166,14 +201,22 @@ final class ListingCheckout
             throw new InvalidException('/gateway', 'unavailable', _m('That payment method is not available'));
         }
 
+        $deadline = ListingStore::find($itemId, array('dt_expiration'))['dt_expiration'] ?? null;
+        $ends     = ($deadline === null ? time() + osc_billing_hold_days() * 86400 : (int) strtotime((string) $deadline)) + 86400;
+        $reused   = self::openManualOrder($itemId, $userId, $gatewayId, $package);
+        $intent   = $reused === null ? null : Billing::checkout($reused);
+        if ($reused !== null && $intent !== null) {
+            OrderStore::linkListing($itemId, $reused->getId(), $ends);
+
+            return array('order' => $reused, 'next' => $intent);
+        }
+
         $order = OrderStore::create($userId, $gatewayId, (int) $package['i_amount'], $currency, (int) $package['i_credits'], array(
             '_kind'  => Order::KIND_LISTING,
             '_item'  => $itemId,
             '_label' => mb_substr(sprintf(_m('Listing: %s'), self::title($itemId)), 0, 200, 'UTF-8'),
         ));
         // Linked before the gateway runs, so a buyer who never comes back still leaves the link.
-        $deadline = ListingStore::find($itemId, array('dt_expiration'))['dt_expiration'] ?? null;
-        $ends     = ($deadline === null ? time() + osc_billing_hold_days() * 86400 : (int) strtotime((string) $deadline)) + 86400;
         $previous = OrderStore::listingOrder($itemId);
         OrderStore::linkListing($itemId, $order->getId(), $ends);
 
@@ -226,8 +269,8 @@ final class ListingCheckout
     }
 
     /**
-     * A deleted listing drops its order link and cancels the order still waiting for payment,
-     * whatever deleted it. Runs on `delete_item`, once the delete commits.
+     * A deleted listing drops its order link and cancels every order still waiting to pay for
+     * it, whatever deleted it. Runs on `delete_item`, once the delete commits.
      *
      * @param int|string $itemId
      */
@@ -235,13 +278,32 @@ final class ListingCheckout
     {
         $itemId = (int) $itemId;
         Db::afterCommit(static function () use ($itemId): void {
-            $order = OrderStore::listingOrder($itemId);
-            OrderStore::unlinkListing($itemId);
-            if ($order !== null && $order->isPending()) {
-                OrderStore::markMailSent($order->getId(), Receipts::MAIL_CANCELLED);
-                OrderStore::cancel($order->getId());
-            }
+            // The listing row is gone, so its linked order names the seller.
+            self::closeOrders($itemId, OrderStore::listingOrder($itemId)?->getUserId() ?? 0);
         });
+    }
+
+    /**
+     * The seller's open order for the listing through a gateway paid by hand (one that can
+     * show its instructions again) for the same package, so choosing it twice places one order.
+     *
+     * @param array<string,mixed> $package
+     */
+    private static function openManualOrder(int $itemId, int $userId, string $gatewayId, array $package): ?Order
+    {
+        $registry = PaymentGatewayRegistry::getInstance();
+        foreach (OrderStore::pendingForListing($userId, $itemId) as $order) {
+            if ($order->getGateway() === $gatewayId
+                && $order->getAmount() === (int) $package['i_amount']
+                && $order->getCurrency() === (string) $package['s_currency']
+                && $order->getCredits() === (int) $package['i_credits']
+                && $registry->instructions($order) !== null
+            ) {
+                return $order;
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -249,9 +311,9 @@ final class ListingCheckout
      * note a paid order carries when its listing could not be published. `step` is one of
      * `published`, `validation` (waits for the seller's e-mail check), `moderation` (waits for
      * an admin), `closed` (expired, spam), `waiting` (order pending), `failed` (order paid,
-     * listing still held) or `pay`.
+     * listing still held) or `pay`. `deadline` is when a held listing is deleted unless paid.
      *
-     * @return array{step: string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}, order: ?Order, failed: ?array}
+     * @return array{step: string, quote: array{held: bool, live: bool, slots: int, credits: int, balance: int, shortfall: int}, order: ?Order, failed: ?array, deadline: ?string}
      *
      * @throws ForbiddenException when the listing is not the user's
      */
@@ -279,7 +341,9 @@ final class ListingCheckout
             $step = 'pay';
         }
 
-        return array('step' => $step, 'quote' => $quote, 'order' => $order, 'failed' => $failed);
+        $deadline = $quote['held'] && !empty($row['dt_expiration']) ? (string) $row['dt_expiration'] : null;
+
+        return array('step' => $step, 'quote' => $quote, 'order' => $order, 'failed' => $failed, 'deadline' => $deadline);
     }
 
     /**

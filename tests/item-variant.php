@@ -28,6 +28,7 @@ use mindstellar\listing\ListingValidator;
 use mindstellar\listing\VariantStore;
 
 $admin = api_admin_boot('osc_item_variant');
+scratchdb_pin_site_mode($admin, 'classifieds');
 $p     = DB_TABLE_PREFIX;
 
 $locale = seed_locale($admin);

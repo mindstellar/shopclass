@@ -690,7 +690,24 @@ function osc_item_is_unpaid()
 }
 
 /**
- * Marks a held listing in the seller's own list.
+ * The pay step of the current item when it is held and the viewer owns it, else ''.
+ * Themes show a Pay button beside the owner's Edit and Delete with it.
+ *
+ * @return string
+ */
+function osc_item_pay_url(): string
+{
+    $item  = (array) osc_item();
+    $owner = (int) ($item['fk_i_user_id'] ?? 0);
+    if ($owner <= 0 || $owner !== (int) osc_logged_user_id() || !\mindstellar\listing\ListingStatus::isHeld($item)) {
+        return '';
+    }
+
+    return osc_billing_publish_url((int) $item['pk_i_id']);
+}
+
+/**
+ * Marks a held listing in the seller's own list, with the date it is deleted unless paid.
  *
  * @param array<string,mixed> $badges
  * @param mixed               $item
@@ -703,13 +720,16 @@ function osc_listing_row_unpaid_badge($badges, $item, $context = '')
     $badges = (array) $badges;
     if ($context === 'user_items' && is_array($item) && \mindstellar\listing\ListingStatus::isHeld($item)) {
         $badges['status'] = array('label' => _m('Waiting for payment'), 'class' => 'pending');
+        if (!empty($item['dt_expiration'])) {
+            $badges['deadline'] = array('label' => sprintf(_m('Deleted on %s if not paid'), osc_format_date((string) $item['dt_expiration'])), 'class' => 'refunded');
+        }
     }
 
     return $badges;
 }
 
 /**
- * Gives a held listing a Publish link to the pay step and takes away its upgrade links.
+ * Gives a held listing a Publish button to the pay step, marked 'primary', and takes away its upgrade links.
  *
  * @param array<string,mixed> $actions
  * @param mixed               $item
@@ -729,10 +749,12 @@ function osc_listing_row_unpaid_actions($actions, $item, $context = '')
     $quote ??= osc_billing_next_listing_quote();
     $credits = (int) $quote['credits'];
     $publish = array(
-        'label' => $credits > 0
+        'label'   => $credits > 0
             ? sprintf(_mn('Publish (%d credit)', 'Publish (%d credits)', $credits), $credits)
             : _m('Publish for free'),
-        'url'   => osc_billing_publish_url((int) ($item['pk_i_id'] ?? 0)),
+        'url'     => osc_billing_publish_url((int) ($item['pk_i_id'] ?? 0)),
+        'class'   => 'oe-btn oe-btn--primary oe-row-primary',
+        'primary' => true,
     );
 
     $kept = array();
@@ -1711,23 +1733,7 @@ function osc_format_price($price, $symbol = null)
         $symbol = osc_item_currency_symbol();
     }
 
-    $price /= \mindstellar\currency\Money::MICROS;
-
-    // Drop the fractional part when the price is whole at the locale's precision,
-    // so 1234.00 renders as "1,234" while 1234.50 keeps its decimals.
-    $locale   = _osc_user_locale_row();
-    $decimals = (int) $locale['i_num_dec'];
-    $rounded  = round($price, $decimals);
-    if ($decimals > 0 && $rounded == floor($rounded)) {
-        $decimals = 0;
-    }
-
-    $currencyFormat = str_replace(
-        '{NUMBER}',
-        number_format($price, $decimals, $locale['s_dec_point'], $locale['s_thousands_sep']),
-        $locale['s_currency_format']
-    );
-    $currencyFormat = str_replace('{CURRENCY}', $symbol, $currencyFormat);
+    $currencyFormat = \mindstellar\currency\Money::display((int) round((float) $price), (string) $symbol);
 
     return osc_apply_filter('item_price', $currencyFormat);
 }

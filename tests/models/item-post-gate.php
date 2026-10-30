@@ -57,6 +57,7 @@ if (!function_exists('osc_search_category_url')) {
 
 $_SESSION = [];
 $admin = api_admin_boot('osc_models_item_post_gate');
+scratchdb_pin_site_mode($admin, 'classifieds');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hMessages.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
@@ -180,6 +181,8 @@ $open = $drive('item_add');
 pin('the switch on lets the seller in', null, $open['redirect']);
 pin('the form is told what the listing costs', 3, $open['quote']['credits'] ?? null);
 check('the notice says so', $flashed($open, 'This listing will cost 3 credits. You pay on the last step.'));
+check('the form knows the post is held', osc_item_post_held());
+pin('so the submit button says Save and pay', 'Save and pay', osc_item_post_submit_label());
 
 osc_set_preference('billing_pay_at_post', '0', 'osclass', 'BOOLEAN');
 osc_reset_preferences();
@@ -199,6 +202,8 @@ $signIn(null, $adm);
 $asAdmin = $drive('item_add');
 pin('an admin is never metered', null, $asAdmin['redirect']);
 pin('and gets no cost notice', [], $asAdmin['flashes']);
+check('nor a held post', !osc_item_post_held());
+pin('so the submit button says Publish', 'Publish', osc_item_post_submit_label());
 
 harness_section('posting at the limit');
 $redirects = 0;
@@ -217,6 +222,19 @@ pin('the seller goes to the pay step', osc_core_url('billing_publish', ['itemId'
 check('the saved notice is flashed', $flashed($posted, 'Your listing is saved. Pay for it on the next page to publish it.'));
 check('no published notice', !$flashed($posted, 'Your listing has been published'));
 pin('item_post_redirect_url never saw the held listing', 0, $redirects);
+
+harness_section('the held listing\'s own page');
+Session::getInstance()->_dropMessage('pubMessages');
+$notice = new ReflectionMethod('CWebItem', 'flashStatusNotice');
+$notice->setAccessible(true);
+$heldRow = Item::getInstance()->findByPrimaryKey($held);
+$notice->invoke((new ReflectionClass('TestGateItem'))->newInstanceWithoutConstructor(), $heldRow);
+$note = (array) (Session::getInstance()->_getMessage('pubMessages')[0] ?? []);
+pin('the owner gets an info notice, not a warning', 'info', $note['type'] ?? null);
+check('that cannot be dismissed', ($note['dismissible'] ?? true) === false);
+check('with the deadline', str_contains((string) ($note['msg'] ?? ''), 'If it is not paid for by ' . osc_format_date((string) $heldRow['dt_expiration'])));
+check('and the pay link', str_contains((string) ($note['msg'] ?? ''), osc_esc_html(osc_billing_publish_url($held))));
+Session::getInstance()->_dropMessage('pubMessages');
 
 harness_section('posting within the limit');
 $signIn(seed_user($admin, 'bob', 'bob@example.test'));
