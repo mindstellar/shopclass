@@ -73,6 +73,9 @@
         active = on;
         label(on);
         note.textContent = text || (on ? data.onNote : '');
+        if (iconOnly && text) {
+            button.title = text;
+        }
     };
 
     var blocked = function () {
@@ -81,6 +84,9 @@
         label(false);
         button.disabled = true;
         note.textContent = data.blockedNote;
+        if (iconOnly) {
+            button.title = data.blockedNote;
+        }
     };
 
     var failed = function (wasOn) {

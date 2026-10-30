@@ -82,7 +82,7 @@ $drawerActions = static function (string $submit) use ($back): void { ?>
     </div>
 <?php };
 
-$namesSection = static function (array $fields): void {
+$namesSection = static function (array $fields, string $fallback = ''): void {
     if ($fields === array()) {
         return;
     } ?>
@@ -101,6 +101,7 @@ $namesSection = static function (array $fields): void {
                 <input class="form-control" id="<?php echo osc_esc_html($fieldId); ?>" type="text"
                        name="names[<?php echo osc_esc_html($field['code']); ?>]" maxlength="100"
                        value="<?php echo osc_esc_html($field['value']); ?>" autocomplete="off"
+                       <?php echo $fallback !== '' ? 'placeholder="' . osc_esc_html($fallback) . '"' : ''; ?>
                        <?php echo $field['rtl'] ? 'dir="rtl"' : ''; ?>/>
             </div>
         <?php } ?>
@@ -279,7 +280,7 @@ switch ($form['kind']) {
                         <?php _e('Used in the address of search pages. Leave blank to make one from the name; a slug already taken gets a number added.'); ?>
                     </p>
                 </div>
-                <?php $namesSection($form['names'] ?? array());
+                <?php $namesSection($form['names'] ?? array(), (string) ($record['name'] ?? ''));
                 osc_run_hook('admin_locations_drawer_fields', $level, $record); ?>
                 <section class="loc-facts" aria-labelledby="loc-facts-title"
                          data-loc-record-level="<?php echo osc_esc_html($level); ?>"

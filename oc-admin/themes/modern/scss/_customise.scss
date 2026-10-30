@@ -376,6 +376,21 @@
   &.is-error {
     color: var(--osc-danger);
   }
+
+  &.is-draft {
+    color: var(--osc-ink);
+
+    &::before {
+      background-color: var(--osc-warning);
+      border-radius: 50%;
+      content: "";
+      display: inline-block;
+      height: .5rem;
+      margin-inline-end: .375rem;
+      vertical-align: .0625rem;
+      width: .5rem;
+    }
+  }
 }
 
 .cz-actions {

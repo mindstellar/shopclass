@@ -328,6 +328,8 @@ if (!defined('ABS_PATH')) {
   }
   .oe-btn.oe-icon-btn:hover{background:var(--oe-bench-sunk);color:var(--oe-ink);}
   .oe-btn.oe-icon-btn[aria-pressed=true]{color:var(--oe-teal);}
+  .oe-btn.oe-icon-btn[aria-pressed=true] svg{fill:currentColor;}
+  .oe-btn.oe-icon-btn:disabled{opacity:.45;cursor:not-allowed;background:transparent;}
   .oe-btn.oe-icon-btn svg{inline-size:20px;block-size:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
   .oe-btn:focus-visible,.oe-menu summary:focus-visible,.oe-thread-link:focus-visible{outline:2px solid var(--oe-teal);outline-offset:2px;}
   .oe-page .oe-messenger{

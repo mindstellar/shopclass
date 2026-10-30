@@ -33,6 +33,7 @@
     var sectionFields = document.getElementById('cz-section-fields');
     var look = document.getElementById('cz-look');
     var statusEl = document.getElementById('cz-status');
+    var discardBtn = document.getElementById('cz-discard');
     var frameBox = document.getElementById('cz-frame');
     var frame = document.getElementById('cz-preview');
     var pageSelect = document.getElementById('cz-page');
@@ -74,9 +75,16 @@
         }
     }
 
+    // A draft waiting to be published gets a marked status; with nothing unpublished, Discard has nothing to do.
     function setStatus(text, isError) {
         statusEl.textContent = text;
         statusEl.classList.toggle('is-error', !!isError);
+        statusEl.classList.toggle('is-draft', !isError && (text === t.saved || text === t.kept || text === t.saving));
+        if (text === t.clean || text === t.published) {
+            discardBtn.disabled = true;
+        } else if (text === t.saved || text === t.kept) {
+            discardBtn.disabled = false;
+        }
     }
 
     function current() {
