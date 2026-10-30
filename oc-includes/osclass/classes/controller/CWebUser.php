@@ -32,7 +32,7 @@ class CWebUser extends WebSecBaseModel
 {
     use \mindstellar\base\ActionMap;
 
-    /** Each action and the method that answers it; any other named action is a 404. */
+    /** Each action and the method that answers it; any other named action nothing answered is a 404. */
     private const ACTIONS = array(
         'dashboard'            => 'dashboard',
         'profile'              => 'profile',
@@ -81,7 +81,8 @@ class CWebUser extends WebSecBaseModel
     {
         $method = $this->actionMethod(null);
         if ($method === null) {
-            if (is_string($this->action) && $this->action !== '') {
+            // A plugin may answer its own action from the init_user hook; only an action nothing answered is a 404.
+            if (is_string($this->action) && $this->action !== '' && !headers_sent() && (int) ob_get_length() === 0) {
                 $this->do404();
             }
 

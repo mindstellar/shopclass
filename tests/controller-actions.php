@@ -317,6 +317,7 @@ foreach ($controllers as $class => [$file, $expected, $fallback]) {
     }
     if ($class === 'CWebUser') {
         check('an unknown account page is a 404, not a blank page', strpos($dispatch, '$this->do404()') !== false);
+        check('a plugin that already printed its own account page keeps it', strpos($dispatch, 'ob_get_length()') !== false && strpos($dispatch, 'headers_sent()') !== false);
     }
 }
 /** A controller with a two-action map, to drive ActionMap directly. */
