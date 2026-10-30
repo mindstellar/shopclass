@@ -474,7 +474,7 @@ final class FormSpec
      *
      * @param string               $name
      * @param string               $label
-     * @param array<string,string> $options value => label
+     * @param array<string,string|array<string,string>> $options value => label, or value => ['label' => …, 'custom_html' => …]
      * @param string               $help
      *
      * @return self

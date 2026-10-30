@@ -354,6 +354,7 @@ class CWebItem extends BaseModel
             $data     = $this->listingData($formData);
             // Save to the listing that passed the owner check, never a second reading of the id.
             $data['idItem'] = (int) $item['pk_i_id'];
+            $saved          = null;
             try {
                 $saved   = $listings->update($data, Actor::visitor());
                 $success = $saved->rows();
@@ -369,7 +370,7 @@ class CWebItem extends BaseModel
                 // Uploads were consumed by the successful edit; drop the session
                 // mapping so it can't bleed into a later listing.
                 UploadTmpStore::removeOwner(UploadTmpStore::formOwner());
-                if (isset($saved) && $saved->unpaid()) {
+                if ($saved !== null && $saved->unpaid()) {
                     osc_add_flash_info_message(_m('Your changes are saved. Pay for the listing to publish it.'));
                     $this->redirectTo(osc_billing_publish_url((int) $item['pk_i_id']));
 

@@ -255,7 +255,7 @@ if (!function_exists('osc_gui_payment_text')) {
      */
     function osc_gui_payment_text(string $text, array $values = array()): string
     {
-        $parts = array_filter(array_map(static fn ($v) => preg_quote((string) $v, '/'), $values), 'strlen');
+        $parts = array_filter(array_map(static fn ($v) => preg_quote((string) $v, '/'), $values), static fn (string $v): bool => $v !== '');
         $parts[] = '\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{1,4}){3,8}\b';
         $html = '';
         $pos  = 0;

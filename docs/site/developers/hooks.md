@@ -739,7 +739,7 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `mail_from` | filter | `$from, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
 | `mail_from_name` | filter | `$from_name, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
 | `mail_layout` | filter | `$html !== '' ? $html : $body, $mail, $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
-| `mail_layout_vars` | filter | `array( 'body' => $body, 'subject' => (string) ($params['subject'] ?? ''), 'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', self::plainText($body))), 0, 120), 'site_name' => osc_page_title(), 'site_url' => osc_base_url(), 'logo_url' => '', 'accent' => '#0b7269', 'footer' => sprintf(__('You received this e-mail from %s.'), osc_page_title()), ), $params` | `oc-includes/osclass/classes/mail/Mailer.php` |
+| `mail_layout_vars` | filter | `array( 'body' => '', 'subject' => '', 'preheader' => '', 'site_name' => osc_page_title(), 'site_url' => osc_base_url(), 'logo_url' => '', 'accent' => '#0b7269', 'footer' => '', ), array()` | `oc-includes/osclass/classes/billing/Receipts.php` |
 | `market_allowed_package_hosts` | filter | `$defaultHosts` | `oc-includes/osclass/classes/utility/FileSystem.php` |
 | `market_catalog_mirror_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `market_catalog_primary_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
