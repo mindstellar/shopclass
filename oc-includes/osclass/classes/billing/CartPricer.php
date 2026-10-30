@@ -81,7 +81,7 @@ final class CartPricer
         $listings = self::listings(array_values(array_unique(array_map(static fn (array $v): int => (int) $v['fk_i_item_id'], $variants))), (string) ($ctx['locale'] ?? ''));
         $photos   = self::photos(array_keys($listings));
 
-        $currency = '';
+        $currency = self::cartCurrency($wanted, $variants, $listings);
         $items    = array();
         $subtotal = 0;
         foreach ($wanted as $variantId => [$position, $qty]) {
@@ -89,11 +89,18 @@ final class CartPricer
             $listing = $variant === null ? null : ($listings[(int) $variant['fk_i_item_id']] ?? null);
             $unit    = $variant === null ? null : ($variant['i_price'] ?? $listing['i_price'] ?? null);
             $lineCur = $listing === null ? '' : strtoupper((string) ($listing['fk_c_currency_code'] ?? ''));
-            if ($listing === null || !is_numeric($unit) || $lineCur === '' || ($currency !== '' && $lineCur !== $currency)) {
+            if ($listing === null || !is_numeric($unit) || $lineCur === '') {
                 $problems[] = array('line' => $position, 'code' => 'not_buyable');
                 continue;
             }
-            $currency  = $lineCur;
+            if ($lineCur !== $currency) {
+                $problems[] = array('line' => $position, 'code' => 'not_buyable', 'pointer' => null, 'message' => sprintf(
+                    _m('This item is priced in %1$s and your cart is in %2$s. Check out or empty your cart first.'),
+                    $lineCur,
+                    $currency
+                ));
+                continue;
+            }
             $unit      = (int) $unit;
             $stock     = is_numeric($variant['i_stock'] ?? null) ? (int) $variant['i_stock'] : null;
             $available = $stock === null || $stock >= $qty;
@@ -132,9 +139,6 @@ final class CartPricer
             if ($available) {
                 $subtotal += $unit * $qty;
             }
-        }
-        if ($currency === '') {
-            $currency = strtoupper((string) osc_currency());
         }
         usort($problems, static fn (array $a, array $b): int => $a['line'] <=> $b['line']);
         $problems = array_map(static fn (array $p): array => $p + array('pointer' => null, 'message' => null), $problems);
@@ -184,6 +188,34 @@ final class CartPricer
         $problems     = array_merge($problems, self::problems($this->events()->dispatch(new CartProblems($cart))->rawProblems()));
 
         return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $freeOver, $problems, $cart);
+    }
+
+    /**
+     * The one currency a cart is in: the site currency when a priced line is in it, else the
+     * first priced line's. A line added in another currency is then the one refused.
+     *
+     * @param array<int,array{0:int,1:int}>   $wanted   qty and position by variant id
+     * @param array<int,array<string,mixed>>  $variants
+     * @param array<int,array<string,mixed>>  $listings
+     */
+    private static function cartCurrency(array $wanted, array $variants, array $listings): string
+    {
+        $site  = strtoupper((string) osc_currency());
+        $first = '';
+        foreach (array_keys($wanted) as $variantId) {
+            $variant = $variants[$variantId] ?? null;
+            $listing = $variant === null ? null : ($listings[(int) $variant['fk_i_item_id']] ?? null);
+            $code    = $listing === null ? '' : strtoupper((string) ($listing['fk_c_currency_code'] ?? ''));
+            if ($code === '' || !is_numeric($variant['i_price'] ?? $listing['i_price'] ?? null)) {
+                continue;
+            }
+            if ($code === $site) {
+                return $site;
+            }
+            $first = $first === '' ? $code : $first;
+        }
+
+        return $first !== '' ? $first : $site;
     }
 
     /**

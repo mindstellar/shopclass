@@ -3925,6 +3925,12 @@ msgstr ""
 msgid "This item is no longer for sale."
 msgstr ""
 
+#: oc-includes/osclass/classes/billing/CartPricer.php
+msgid ""
+"This item is priced in %1$s and your cart is in %2$s. Check out or empty "
+"your cart first."
+msgstr ""
+
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
 msgid "This key cannot hold: %s"
 msgstr ""

@@ -147,7 +147,11 @@ pin('hidden, unknown, priceless and malformed lines are problems, not errors', [
 ], $q->problems());
 pin('and the good line is still priced', [1, $m(699)], [count($q->lines()), $q->total()]);
 $q = $quote([['variant' => $md, 'qty' => 1], ['variant' => $euroV, 'qty' => 1]]);
-pin('a line in another currency is not buyable', [['line' => 1, 'code' => 'not_buyable', 'pointer' => null, 'message' => null]], $q->problems());
+$otherCurrency = 'This item is priced in EUR and your cart is in USD. Check out or empty your cart first.';
+pin('a line in another currency is not buyable, and says why', [['line' => 1, 'code' => 'not_buyable', 'pointer' => null, 'message' => $otherCurrency]], $q->problems());
+$q = $quote([['variant' => $euroV, 'qty' => 1], ['variant' => $md, 'qty' => 1]]);
+pin('a new line in another currency, put first, is the one refused; the site currency stays', ['USD', [$md], [['line' => 0, 'code' => 'not_buyable', 'pointer' => null, 'message' => $otherCurrency]]], [$q->currency(), array_column($q->lines(), 'variant'), $q->problems()]);
+pin('a cart all in another currency is in that currency', ['EUR', []], [$quote([['variant' => $euroV, 'qty' => 1]])->currency(), $quote([['variant' => $euroV, 'qty' => 1]])->problems()]);
 $q = $quote([['variant' => $s, 'qty' => 1], ['variant' => $md, 'qty' => 4]]);
 pin('lines short of stock are out of stock', [['line' => 0, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null], ['line' => 1, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null]], $q->problems());
 pin('with what is left', [0, 3], [$q->lines()[0]['stock_left'], $q->lines()[1]['stock_left']]);

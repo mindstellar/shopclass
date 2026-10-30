@@ -91,7 +91,7 @@ final class GoodsCheckout
         $errors = array();
         foreach ($quote->problems() as $problem) {
             $errors[] = $problem['pointer'] === null
-                ? array('pointer' => '/lines/' . $problem['line'], 'code' => $problem['code'], 'message' => self::problemText($problem['code']))
+                ? array('pointer' => '/lines/' . $problem['line'], 'code' => $problem['code'], 'message' => $problem['message'] ?? self::problemText($problem['code']))
                 : array('pointer' => $problem['pointer'], 'code' => 'rejected', 'message' => (string) $problem['message']);
         }
         if ($errors === array() && $quote->lines() === array()) {
