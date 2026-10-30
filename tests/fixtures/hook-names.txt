@@ -311,6 +311,7 @@ filter actions_manage_keyword_block
 filter actions_manage_rules
 filter actions_manage_users
 filter admin_base_url
+filter admin_billing_carriers
 filter admin_body_class
 filter admin_bulk_filter
 filter admin_date_format
@@ -323,6 +324,7 @@ filter admin_locations_row_actions
 filter admin_page_description
 filter admin_page_routes
 filter admin_page_title
+filter admin_payment_test_modes
 filter admin_title
 filter admin_user_profile_info
 filter alert_email_daily_description

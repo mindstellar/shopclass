@@ -1068,7 +1068,7 @@ return array(
       16 => 'export search_bbox = null',
       17 => 'export search_pattern = string("")',
       18 => 'export search_from_user = string("")',
-      19 => 'export search_total_pages = float(2)',
+      19 => 'export search_total_pages = float(4)',
       20 => 'export search_page = int(2)',
       21 => 'export search_has_pic = int(0)',
       22 => 'export search_only_premium = int(0)',

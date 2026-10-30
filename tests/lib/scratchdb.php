@@ -179,6 +179,70 @@ if (!function_exists('scratchdb_create')) {
         }
 
         $admin->query('SET FOREIGN_KEY_CHECKS = 0');
+        scratchdb_site_mode($admin);
+    }
+}
+
+if (!function_exists('scratchdb_site_mode')) {
+    /**
+     * Put the site in the mode OSC_TEST_SITE_MODE names (classifieds or shop), so CI can run
+     * every test in both. Unset leaves the preference out, which reads as classifieds.
+     *
+     * @param mysqli $admin
+     * @param bool   $memory Also set preferences already loaded, which are read from memory
+     */
+    function scratchdb_site_mode(mysqli $admin, bool $memory = true): void
+    {
+        $mode = (string) ($GLOBALS['scratchdbSiteMode'] ?? getenv('OSC_TEST_SITE_MODE'));
+        if ($mode === '') {
+            return;
+        }
+        if (!in_array($mode, array('classifieds', 'shop'), true)) {
+            fwrite(STDERR, "OSC_TEST_SITE_MODE must be classifieds or shop, not '$mode'\n");
+            exit(2);
+        }
+        $admin->query(
+            'REPLACE INTO ' . DB_TABLE_PREFIX . "t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', 'site_mode', '$mode', 'STRING')"
+        );
+        if ($memory && class_exists('Preference', false) && (new ReflectionProperty('Preference', 'instance'))->getValue() !== null) {
+            Preference::getInstance()->set('site_mode', $mode);
+        }
+    }
+}
+
+if (!function_exists('scratchdb_pin_site_mode')) {
+    /**
+     * Run the rest of this test file in $mode, whatever OSC_TEST_SITE_MODE says. For a test
+     * whose checks only hold in one mode.
+     *
+     * @param mysqli $admin
+     * @param string $mode  classifieds or shop
+     */
+    function scratchdb_pin_site_mode(mysqli $admin, string $mode): void
+    {
+        $GLOBALS['scratchdbSiteMode'] = $mode;
+        scratchdb_site_mode($admin);
+    }
+}
+
+if (!function_exists('scratchdb_install_sql')) {
+    /**
+     * basic_data.sql and pages.sql as a fresh install runs them, keeping the site mode the
+     * harness set: its row is already in t_preference, so the installer's one is left out.
+     */
+    function scratchdb_install_sql(): string
+    {
+        $dir = ABS_PATH . 'oc-includes/osclass/installer/';
+        $sql = str_replace(
+            array('/*TABLE_PREFIX*/', '/*OSCLASS_VERSION*/'),
+            array(DB_TABLE_PREFIX, OSCLASS_VERSION),
+            file_get_contents($dir . 'basic_data.sql') . file_get_contents($dir . 'pages.sql')
+        );
+        if ((string) ($GLOBALS['scratchdbSiteMode'] ?? getenv('OSC_TEST_SITE_MODE')) !== '') {
+            $sql = str_replace(",('osclass', 'site_mode', 'classifieds', 'STRING')", '', $sql);
+        }
+
+        return $sql;
     }
 }
 
@@ -190,6 +254,18 @@ if (!function_exists('scratchdb_truncate_all')) {
      * @param mysqli $admin
      */
     function scratchdb_truncate_all(mysqli $admin): void
+    {
+        scratchdb_empty_tables($admin);
+        // A test may have switched the mode in memory on purpose; the table is what it reset.
+        scratchdb_site_mode($admin, false);
+    }
+}
+
+if (!function_exists('scratchdb_empty_tables')) {
+    /**
+     * @param mysqli $admin
+     */
+    function scratchdb_empty_tables(mysqli $admin): void
     {
         scratchdb_forget_cache();
         $admin->query('SET FOREIGN_KEY_CHECKS = 0');
@@ -304,7 +380,9 @@ if (!function_exists('scratchdb_session')) {
             $admin = scratchdb_bootstrap(MODELS_RUNNER_DB);
             scratchdb_register_services();
             $admin->select_db(MODELS_RUNNER_DB);
+            unset($GLOBALS['scratchdbSiteMode']);
             scratchdb_truncate_all($admin);
+            scratchdb_site_mode($admin);
 
             return $admin;
         }

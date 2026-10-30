@@ -22,6 +22,9 @@ Point them at it with `DRIFT_DB_HOST`, `DRIFT_DB_PORT`, `DRIFT_DB_USER` and
 `DRIFT_DB_PASS` (default `127.0.0.1:33061`, `root`/`root`). Each test creates its own
 database and drops it when it ends.
 
+`OSC_TEST_SITE_MODE=shop` runs the database tests with the site in shop mode, as CI does in a
+second run. A test whose checks hold in one mode only calls `scratchdb_pin_site_mode()`.
+
 ## Two kinds of test
 
 | Kind | Where | Database | Use it for |

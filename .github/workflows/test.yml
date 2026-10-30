@@ -222,3 +222,53 @@ jobs:
         run: php tests/run-unit.php -j 4
       - name: Model contracts
         run: php tests/run-models.php
+
+  # The same suites with the site in shop mode, on one server and one PHP. The jobs above run
+  # the default, classifieds. A test that only holds in one mode pins it.
+  shop-mode:
+    name: shop mode (mariadb:11, PHP 8.3)
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+          --tmpfs /var/lib/mysql
+    env:
+      OSC_TEST_SITE_MODE: shop
+      DRIFT_DB_HOST: 127.0.0.1
+      DRIFT_DB_PORT: 3306
+      DRIFT_DB_USER: root
+      DRIFT_DB_PASS: root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: mysqli
+      - name: Install PHP dependencies
+        run: composer install --no-dev --no-interaction --prefer-dist
+      - name: Fast scratch database
+        run: php -r '$db = new mysqli("127.0.0.1", "root", "root", "", 3306); $db->query("SET GLOBAL innodb_flush_log_at_trx_commit = 0"); $db->query("SET GLOBAL sync_binlog = 0");'
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - name: Build admin assets
+        run: |
+          npm ci
+          npm run build
+      - name: Unit and contract tests
+        run: php tests/run-unit.php -j 4
+      - name: Model contracts
+        run: php tests/run-models.php
