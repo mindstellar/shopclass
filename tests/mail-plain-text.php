@@ -277,6 +277,11 @@ pin(
     'your listing Blue bike (https://example.com/i42):',
     _osc_mail_text('your listing <a href="https://example.com/i42">Blue bike</a के बारे में >:')
 );
+pin(
+    'table cells stay apart, and empty ones leave no gap',
+    "Item | Qty | Amount\nTee\nSKU AIS-03915 | 1 | 539.00 USD\nStandard delivery | 49.00 USD",
+    _osc_mail_text('<table><tr><th>Item</th><th>Qty</th><th>Amount</th></tr><tr><td><strong>Tee</strong><br><span>SKU AIS-03915</span></td><td>1</td><td>539.00 USD</td></tr><tr><td>Standard delivery</td><td></td><td>49.00 USD</td></tr></table>')
+);
 pin('an empty body has no plain copy', '', _osc_mail_text(''));
 pin('a body of only markup has no plain copy', '', _osc_mail_text('<p></p><br/>'));
 

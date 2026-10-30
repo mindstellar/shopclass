@@ -465,9 +465,11 @@ final class Mailer
                     '#<br\s*/?>#i',
                     '#<li\b[^>]*>#i',
                     '#</\s*li\s*>#i',
-                    '#</\s*(p|div|h[1-6]|tr|table|blockquote|ul|ol)\s*>#i',
+                    '#</\s*(p|div|h[1-6]|table|blockquote|ul|ol)\s*>#i',
+                    '#</\s*tr\s*>#i',
+                    '#</\s*t[dh]\s*>#i',
                 ),
-                array("\n", "\n- ", '', "\n\n"),
+                array("\n", "\n- ", '', "\n\n", "\n", "\x1F"),
                 $text
             );
         }
@@ -484,7 +486,9 @@ final class Mailer
 
         $lines = array();
         foreach (explode("\n", $text) as $line) {
-            $lines[] = trim((string) preg_replace('/[ \t]+/', ' ', $line));
+            // Table cells are joined by " | ", leaving out empty ones.
+            $cells   = array_filter(array_map('trim', explode("\x1F", (string) preg_replace('/[ \t]+/', ' ', $line))), static fn (string $c): bool => $c !== '');
+            $lines[] = implode(' | ', $cells);
         }
 
         return trim((string) preg_replace("/\n{3,}/", "\n\n", implode("\n", $lines)));
