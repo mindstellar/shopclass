@@ -24,15 +24,24 @@
             lineWidth: 2,
             legend: { textStyle: { color: muted } },
             titleTextStyle: { color: muted, bold: false },
-            chartArea: { left: 40, top: 16, width: '88%', height: '74%' },
+            // Room on the right so the last date label is not cut.
+            chartArea: { left: 40, right: 36, top: 16, bottom: 28 },
             hAxis: {
                 textStyle: { color: muted, fontSize: 10 },
                 gridlines: { color: rule },
                 baselineColor: rule,
-                slantedText: false
+                slantedText: false,
+                // One row of dates; the chart skips some rather than stacking a second row.
+                maxAlternation: 1
             },
             vAxis: {
+                // Counts never go below zero. With every value zero the chart would centre
+                // on 0 and draw -1, so the range always reaches at least 4.
                 minValue: 0,
+                maxValue: 4,
+                viewWindowMode: 'explicit',
+                viewWindow: { min: 0 },
+                minorGridlines: { count: 0 },
                 textStyle: { color: muted },
                 gridlines: { color: rule },
                 baselineColor: rule

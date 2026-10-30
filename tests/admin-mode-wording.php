@@ -19,6 +19,7 @@ require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\admin\form\BillingSettingsScreen;
 use mindstellar\admin\form\ItemSettingsScreen;
+use mindstellar\admin\form\MainSettingsScreen;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\settings\SettingsPageRegistry;
 
@@ -80,6 +81,18 @@ $itemSettings = static function (): string {
 
     return (string) json_encode(array(osc_settings_page(ItemSettingsScreen::PAGE_ID), $registry->fields(ItemSettingsScreen::PAGE_ID)));
 };
+$mainSettings = static function (): string {
+    $registry = SettingsPageRegistry::getInstance();
+    $entries  = new ReflectionProperty($registry, 'entries');
+    $all      = $entries->getValue($registry);
+    unset($all[MainSettingsScreen::PAGE_ID]);
+    $entries->setValue($registry, $all);
+    MainSettingsScreen::register();
+    $json = (string) json_encode($registry->fields(MainSettingsScreen::PAGE_ID));
+
+    // The site-mode picker describes both modes, so its classifieds line is expected.
+    return str_replace('Users sign up and post listings.', '', $json);
+};
 $menuLabels = static function (): string {
     $menu = new AdminMenu();
     $menu->init();
@@ -95,6 +108,7 @@ pin('the Orders group has hold days and the prefix only', array('billing_hold_da
 check('reports say listings', str_contains($menuLabels(), 'Reported listings') && !str_contains($menuLabels(), 'Reported products'));
 check('statistics name listings', str_contains($menuLabels(), '"Listings"') && !str_contains($menuLabels(), '"Products"'));
 check('listing settings say listings', str_contains($itemSettings(), 'Listing Settings') && !str_contains($itemSettings(), 'Product Settings'));
+check('general settings name the map on listings', str_contains($mainSettings(), 'Map on listings'));
 
 harness_section('shop');
 $setMode('shop');
@@ -105,6 +119,26 @@ check('the menu never says Listings', !str_contains($menuLabels(), '"Listings"')
 $shopSettings = $itemSettings();
 check('product settings say products', str_contains($shopSettings, 'Product Settings') && str_contains($shopSettings, 'Images per product'));
 check('product settings never say listing', stripos($shopSettings, 'listing') === false);
+$shopMain = $mainSettings();
+check('general settings name the map on products', str_contains($shopMain, 'Map on products'));
+check('general settings never say listing', stripos($shopMain, 'listing') === false);
+
+harness_section('admin views pick wording by mode');
+// Each view keeps its classifieds text and adds a shop variant through osc_mode_text().
+foreach (array(
+    'settings/index.php' => array('how lists of products are displayed'),
+    'items/index.php'    => array('Manage all the products in your shop'),
+    'items/frm.php'      => array('The product belongs to', 'Show the e-mail address on the product'),
+    'stats/items.php'    => array('new products have been added', 'Product views', 'Total number of product views'),
+    'stats/users.php'    => array('%s products per user'),
+    'stats/comments.php' => array('comments the products in your shop'),
+    'stats/reports.php'  => array('products from your shop have been reported'),
+) as $file => $needles) {
+    $src = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/' . $file);
+    foreach ($needles as $needle) {
+        check($file . ' has the shop text: ' . $needle, str_contains($src, $needle));
+    }
+}
 
 harness_section('widget sections');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';

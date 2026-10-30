@@ -714,6 +714,15 @@
   }
 }
 
+// A named danger action at the row end, such as Delete on a widget row.
+.chip-btn.chip-btn-text {
+  font-size: .8125rem;
+  font-weight: 600;
+  gap: .3125rem;
+  padding-inline: .5rem;
+  width: auto;
+}
+
 // The remove (✕) control exists in every chip but is meaningful only inside a
 // form, so it is hidden in the palette — a palette chip cloned into a form then
 // reveals it for free.

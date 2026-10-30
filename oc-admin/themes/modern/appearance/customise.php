@@ -64,6 +64,7 @@ $czState = array(
         'remove'      => __('Remove %s'),
         'removeConfirm' => __('Press again to remove %s'),
         'removeShort' => __('Remove?'),
+        'removeText'  => __('Remove'),
         'noFields'    => __('This section has no settings.'),
         'noRows'      => __('No sections yet. Add one below.'),
         'pickRow'     => __('Pick a section to edit it.'),

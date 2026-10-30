@@ -549,6 +549,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'cols'        => $variantCols,
             'optionName'  => __('Option name, such as Colour'),
             'valueInput'  => __('Add a value, then press Enter'),
+            'valueHint'   => __('Add a value'),
             'removeValue' => __('Remove %s'),
             'remove'      => __('Remove'),
             'removeOpt'   => __('Remove option'),
@@ -583,7 +584,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     . '<button type="button" class="osc-variant-chip-x" aria-label="' . osc_esc_html(sprintf($variantI18n['removeValue'], $variantValue)) . '" data-chip-remove>&times;</button></span>';
             }
             echo '<input type="text" class="osc-variant-chip-input" maxlength="' . \mindstellar\listing\VariantStore::MAX_VALUE . '"'
-                . ' aria-label="' . osc_esc_html($variantI18n['valueInput']) . '" placeholder="' . osc_esc_html($variantI18n['valueInput']) . '" data-chip-input>';
+                . ' aria-label="' . osc_esc_html($variantI18n['valueInput']) . '" placeholder="' . osc_esc_html($variantI18n['valueHint']) . '" data-chip-input>';
             echo '</div>';
             echo '<button type="button" class="btn btn-dim btn-sm" data-option-remove>' . osc_esc_html($variantI18n['removeOpt']) . '</button>';
             echo '</div>';
@@ -626,7 +627,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 echo '<option value="' . (int) $photoId . '"' . ((string) $photoId === $variantRow['photoId'] ? ' selected' : '') . '>' . osc_esc_html($photoLabel) . '</option>';
             }
             echo '</select></td>';
-            echo '<td class="osc-variant-remove"><button type="button" class="btn btn-dim btn-sm" data-row-remove>' . osc_esc_html($variantI18n['remove']) . '</button></td>';
+            echo '<td class="osc-variant-remove"><button type="button" class="btn btn-dim btn-sm" data-row-remove title="' . osc_esc_html($variantI18n['remove']) . '">'
+                . '<i class="bi bi-x-lg" aria-hidden="true"></i><span class="osc-variant-remove-text">' . osc_esc_html($variantI18n['remove']) . '</span></button></td>';
             echo '</tr>';
             if (!empty($sellValues['errors'][$n])) {
                 echo '<tr class="osc-variant-error" data-row-error><td colspan="' . (count($variantRow['values']) + 8) . '"><ul role="alert">';
@@ -706,8 +708,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'user'   => $itemUser,
         'id'     => 'userPicker',
         'label'  => $itemUser === null ? __('Find a registered user') : __('Change the seller'),
-        'help'   => __('Picking a user fills the contact fields below. The listing belongs to'
-                       . ' whichever account matches the contact e-mail.'),
+        'help'   => osc_mode_text(
+            __('Picking a user fills the contact fields below. The listing belongs to'
+               . ' whichever account matches the contact e-mail.'),
+            __('Picking a user fills the contact fields below. The product belongs to'
+               . ' whichever account matches the contact e-mail.')
+        ),
         'source' => osc_admin_base_url(true) . '?page=ajax&action=userajax',
         'fields' => array('name' => 'contactName', 'email' => 'contactEmail'),
     ));
@@ -754,7 +760,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'id'      => 'showEmail',
         'value'   => '1',
         'checked' => $showEmail,
-        'label'   => __('Show the e-mail address on the listing'),
+        'label'   => osc_mode_text(__('Show the e-mail address on the listing'), __('Show the e-mail address on the product')),
     ));
 
     if (!$new_item) {

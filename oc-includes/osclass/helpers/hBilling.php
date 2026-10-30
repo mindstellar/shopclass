@@ -1698,7 +1698,7 @@ function osc_admin_payment_test_notice(array $query, string $hidden = ''): strin
     return '<div class="flashmessage flashmessage-warning osc-pay-test-notice" role="status"'
         . ' data-osc-hide-cookie="' . OSC_PAY_TEST_COOKIE . '" data-osc-hide-value="' . $key . '">'
         . '<a class="btn ico btn-mini ico-close" data-oc-close-label="' . osc_esc_html(__('Hide for 7 days')) . '">x</a>'
-        . osc_esc_html(sprintf(
+        . '<span class="osc-pay-test-text">' . osc_esc_html(sprintf(
             _n(
                 '%s is in test mode: no real money is taken. Switch it to live mode before the site takes payments.',
                 '%s are in test mode: no real money is taken. Switch them to live mode before the site takes payments.',
@@ -1706,8 +1706,8 @@ function osc_admin_payment_test_notice(array $query, string $hidden = ''): strin
             ),
             implode(', ', $names)
         ))
-        . ($links === array() ? '' : ' ' . implode(' · ', $links))
-        . '</div>';
+        . ($links === array() ? '' : ' <span class="osc-pay-test-links">' . implode(' · ', $links) . '</span>')
+        . '</span></div>';
 }
 
 /* file end: ./oc-includes/osclass/helpers/hBilling.php */

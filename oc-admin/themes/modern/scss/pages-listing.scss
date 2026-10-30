@@ -304,6 +304,25 @@
 
   @media (max-width: 575.98px) {
     grid-template-columns: 1fr;
+
+    // Each option is its own group, so Remove option never reads as part of the next name.
+    & + & {
+      border-block-start: 1px solid var(--osc-rule);
+      padding-block-start: .75rem;
+    }
+
+    [data-option-remove] {
+      justify-self: end;
+    }
+  }
+}
+
+.osc-variant-options {
+  display: grid;
+  gap: .5rem;
+
+  @media (max-width: 575.98px) {
+    gap: .75rem;
   }
 }
 
@@ -397,21 +416,48 @@
 
   th,
   td {
+    padding-inline: .3125rem;
     vertical-align: middle;
     white-space: nowrap;
   }
 
+  // Headers may wrap so a long label such as Shipping class never widens its column.
+  thead th {
+    line-height: 1.2;
+    vertical-align: bottom;
+    white-space: normal;
+  }
+
   input.form-control-sm {
-    min-width: 4.75rem;
+    min-width: 4rem;
   }
 
   [data-field="sku"],
   [data-field="shippingClass"] {
-    min-width: 6.5rem !important;
+    min-width: 5.5rem !important;
   }
 
   select.form-select-sm {
-    min-width: 7rem;
+    min-width: 5.5rem;
+  }
+
+  // Desktop shows Remove as an icon; its name stays for screen readers and phones.
+  .osc-variant-remove .btn {
+    line-height: 1;
+    padding: .375rem .5rem;
+  }
+
+  .osc-variant-remove-text {
+    block-size: 1px;
+    clip-path: inset(50%);
+    inline-size: 1px;
+    overflow: hidden;
+    position: absolute;
+    white-space: nowrap;
+  }
+
+  .osc-variant-summary {
+    display: none;
   }
 
   // The option columns stay put while the rest scrolls; the script sets each one's offset.
@@ -499,6 +545,61 @@
     .osc-variant-remove {
       align-self: end;
       text-align: end;
+
+      .btn {
+        align-items: center;
+        display: inline-flex;
+        gap: .375rem;
+      }
+    }
+
+    .osc-variant-remove-text {
+      block-size: auto;
+      clip-path: none;
+      inline-size: auto;
+      position: static;
+    }
+
+    td.osc-variant-summary {
+      display: block;
+      grid-column: 1 / -1;
+    }
+
+    .osc-variant-summary-btn {
+      align-items: center;
+      background: none;
+      border: 0;
+      color: var(--osc-ink);
+      display: flex;
+      font-weight: 600;
+      gap: .5rem;
+      inline-size: 100%;
+      justify-content: space-between;
+      padding: 0;
+      text-align: start;
+
+      .bi {
+        color: var(--osc-ink-muted);
+        transition: transform .15s ease-out;
+
+        @media (prefers-reduced-motion: reduce) {
+          transition: none;
+        }
+      }
+    }
+
+    tr[data-row].is-open .osc-variant-summary-btn .bi {
+      transform: rotate(180deg);
+    }
+
+    // A folded card shows only its summary line.
+    tr[data-row]:not(.is-open) > td:not(.osc-variant-summary) {
+      display: none;
+    }
+
+    tr[data-row]:not(.is-open) {
+      margin-block-end: .5rem;
+      padding-block: .625rem;
     }
 
     .osc-variant-pin-edge {

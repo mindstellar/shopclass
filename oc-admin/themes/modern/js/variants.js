@@ -119,6 +119,9 @@
                 row.querySelectorAll('[data-option-cell]').forEach(function (cell, k) {
                     cell.setAttribute('data-col-name', names[k] || '');
                 });
+                if (row.querySelector('.osc-variant-summary')) {
+                    summarise(row);
+                }
             });
             pin();
         }
@@ -179,7 +182,7 @@
             var box = el('div', {'class': 'osc-variant-chips', 'data-chips': ''});
             var input = el('input', {type: 'text', 'class': 'osc-variant-chip-input', maxlength: String(max.value), 'data-chip-input': ''});
             input.setAttribute('aria-label', i18n.valueInput || '');
-            input.setAttribute('placeholder', i18n.valueInput || '');
+            input.setAttribute('placeholder', i18n.valueHint || i18n.valueInput || '');
             box.appendChild(input);
             option.appendChild(name);
             option.appendChild(box);
@@ -233,9 +236,53 @@
             td.appendChild(select);
             row.appendChild(td);
             var last = el('td', {'class': 'osc-variant-remove'});
-            last.appendChild(el('button', {type: 'button', 'class': 'btn btn-dim btn-sm', 'data-row-remove': ''}, i18n.remove || 'Remove'));
+            var remove = el('button', {type: 'button', 'class': 'btn btn-dim btn-sm', 'data-row-remove': '', title: i18n.remove || 'Remove'});
+            remove.appendChild(el('i', {'class': 'bi bi-x-lg', 'aria-hidden': 'true'}));
+            remove.appendChild(el('span', {'class': 'osc-variant-remove-text'}, i18n.remove || 'Remove'));
+            last.appendChild(remove);
             row.appendChild(last);
+            summarise(row);
             return row;
+        }
+
+        // On a phone each row is a card that folds to one line: its options, price and stock.
+        function summarise(row) {
+            var cell = row.querySelector('.osc-variant-summary');
+            if (!cell) {
+                cell = el('td', {'class': 'osc-variant-summary'});
+                var button = el('button', {type: 'button', 'class': 'osc-variant-summary-btn', 'aria-expanded': 'true', 'data-row-toggle': ''});
+                button.appendChild(el('span', {'data-summary-text': ''}));
+                button.appendChild(el('i', {'class': 'bi bi-chevron-down', 'aria-hidden': 'true'}));
+                cell.appendChild(button);
+                row.insertBefore(cell, row.firstChild);
+            }
+            var cols = i18n.cols || {};
+            var names = Array.prototype.map.call(row.querySelectorAll('[data-option-cell] [data-field="options"]'), function (input) {
+                return input.value || '—';
+            });
+            var parts = [names.join(' / ')];
+            ['price', 'stock'].forEach(function (field) {
+                var input = row.querySelector('[data-field="' + field + '"]');
+                if (input && input.value.trim() !== '') {
+                    parts.push((cols[field] || field) + ' ' + input.value.trim());
+                }
+            });
+            cell.querySelector('[data-summary-text]').textContent = parts.join(' · ');
+        }
+
+        function fold(row, open) {
+            row.classList.toggle('is-open', open);
+            row.querySelector('[data-row-toggle]').setAttribute('aria-expanded', open ? 'true' : 'false');
+        }
+
+        // More than three rows start folded, except one the server sent back with an error.
+        function foldAll() {
+            var list = rows();
+            list.forEach(function (row) {
+                summarise(row);
+                var error = row.nextElementSibling;
+                fold(row, list.length <= 3 || !!(error && error.hasAttribute('data-row-error')));
+            });
         }
 
         function rowKey(row) {
@@ -283,6 +330,7 @@
             });
             body.textContent = '';
             body.appendChild(fresh);
+            foldAll();
             say('');
             renumber();
             syncHead();
@@ -324,6 +372,9 @@
                 });
                 syncHead();
                 renumber();
+            } else if (target.closest('[data-row-toggle]')) {
+                var folded = target.closest('[data-row]');
+                fold(folded, !folded.classList.contains('is-open'));
             } else if (target.closest('[data-row-remove]')) {
                 var row = target.closest('[data-row]');
                 var error = row.nextElementSibling;
@@ -364,6 +415,8 @@
         editor.addEventListener('input', function (event) {
             if (event.target.closest('[data-option-name]')) {
                 syncHead();
+            } else if (event.target.matches('[data-field="price"], [data-field="stock"]')) {
+                summarise(event.target.closest('[data-row]'));
             }
         });
 
@@ -375,6 +428,7 @@
             phone.addEventListener('change', pin);
         }
         renumber();
+        foldAll();
         show();
     }
 

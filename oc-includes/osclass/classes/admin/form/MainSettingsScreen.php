@@ -153,8 +153,8 @@ final class MainSettingsScreen extends SettingsScreen
             ->group(__('Category settings'))
             ->checkbox(
                 'selectable_parent_categories',
-                __('Allow users to select a parent category as a category
-                            when inserting or editing a listing ')
+                osc_mode_text(__('Allow users to select a parent category as a category
+                            when inserting or editing a listing '), __('Allow a parent category to be picked for a product'))
             )
                 ->rowLabel(__('Parent categories'))
                 ->disabled($shop)
@@ -187,11 +187,11 @@ final class MainSettingsScreen extends SettingsScreen
                     __('It is <b>recommended</b> to have this option enabled, because some features require it.')
                 )
             ->group(__('Maps'))
-            ->select('map_type', __('Map on listings'), array(
+            ->select('map_type', osc_mode_text(__('Map on listings'), __('Map on products')), array(
                 '0'          => __('None'),
                 'google'     => __('Google Maps'),
                 'openstreet' => __('OpenStreetMap'),
-            ), __('The map your theme shows on a listing page. It does not find addresses.'))
+            ), osc_mode_text(__('The map your theme shows on a listing page. It does not find addresses.'), __('The map your theme shows on a product page. It does not find addresses.')))
                 ->default('0')
             // Not a secret: a Maps JavaScript key is public by design -- it ships in the
             // page source -- so masking it would only hide it from the administrator who
@@ -202,7 +202,10 @@ final class MainSettingsScreen extends SettingsScreen
                 \mindstellar\location\GeocodeProviderRegistry::PREF,
                 __('Address lookup'),
                 self::geocodeProviders(),
-                __('A plugin that finds the exact map position of a listing from its street address. It works with any map. Without one, a listing is placed at its city centre.')
+                osc_mode_text(
+                    __('A plugin that finds the exact map position of a listing from its street address. It works with any map. Without one, a listing is placed at its city centre.'),
+                    __('A plugin that finds the exact map position of a product from its street address. It works with any map. Without one, a product is placed at its city centre.')
+                )
             )
                 ->default('')
             ->group(__('Software updates'))

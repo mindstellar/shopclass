@@ -33,6 +33,7 @@ $dash = $at('');
 pin('the dashboard shows one notice', 1, substr_count($dash, 'flashmessage-warning'));
 check('it names both methods', str_contains($dash, 'PayPal, Razorpay are in test mode'));
 check('it links both settings pages', str_contains($dash, 'PayPal settings') && str_contains($dash, 'Razorpay settings'));
+check('the links sit together in one block after the text', (bool) preg_match('~<span class="osc-pay-test-text">[^<]*<span class="osc-pay-test-links"><a [^>]*>PayPal settings</a> · <a ~u', $dash));
 check('it can be hidden', str_contains($dash, 'data-osc-hide-cookie="' . OSC_PAY_TEST_COOKIE . '"'));
 check('the orders list shows it', $at('billing') !== '');
 check('billing settings show it', $at('settings', 'billing') !== '');

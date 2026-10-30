@@ -249,7 +249,7 @@ osc_admin_page_head(__('User Statistics'), array(), array(
                 <div class="widget-box-title"><h3><?php _e('Avg. items per user'); ?></h3></div>
                 <div class="widget-box-content">
                     <div class="stats-detail">
-                        <?php printf(__('%s listings per user'), number_format($item, 2)); ?>
+                        <?php printf(osc_mode_text(__('%s listings per user'), __('%s products per user')), number_format($item, 2)); ?>
                     </div>
                 </div>
             </div>

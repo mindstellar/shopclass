@@ -40,7 +40,7 @@ function render_offset()
 osc_admin_page(array(
     'section' => __('Statistics'),
     'title'   => __('Report Statistics'),
-    'help'    => __('See how many listings from your site have been reported as spam, expired, duplicate, etc.'),
+    'help'    => osc_mode_text(__('See how many listings from your site have been reported as spam, expired, duplicate, etc.'), __('See how many products from your shop have been reported as spam, expired, duplicate, etc.')),
 ));
 
 /**

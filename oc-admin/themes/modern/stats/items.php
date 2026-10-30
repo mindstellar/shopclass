@@ -51,7 +51,10 @@ function render_offset()
 osc_admin_page(array(
     'section' => __('Statistics'),
     'title'   => osc_mode_text(__('Listing Statistics'), __('Product Statistics')),
-    'help'    => __('Quickly find out how many new listings have been published on your site and how many visits each of the listings gets.'),
+    'help'    => osc_mode_text(
+        __('Quickly find out how many new listings have been published on your site and how many visits each of the listings gets.'),
+        __('Quickly find out how many new products have been added to your shop and how many visits each product gets.')
+    ),
 ));
 
 /**
@@ -210,10 +213,10 @@ osc_admin_page_head(osc_mode_text(__('Listing Statistics'), __('Product Statisti
         <div class="col-md-6">
             <div class="widget-box">
                 <div class="widget-box-title">
-                    <h3><?php _e('Listings\' views'); ?></h3>
+                    <h3><?php echo osc_mode_text(__('Listings\' views'), __('Product views')); ?></h3>
                 </div>
                 <div class="widget-box-content">
-                    <b class="stats-title"><?php _e("Total number of listings' views"); ?></b>
+                    <b class="stats-title"><?php echo osc_mode_text(__("Total number of listings' views"), __('Total number of product views')); ?></b>
                     <div id="placeholder_total" class="graph-placeholder" style="height:150px">
                         <?php if (count($reports) == 0) {
                             _e("There are no statistics yet");

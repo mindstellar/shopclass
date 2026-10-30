@@ -194,6 +194,7 @@
             var eye = button('cz-mini', 'eye', fmt(row.enabled ? t.hide : t.show, name), row.enabled ? 'eye' : 'eye-slash',
                 {'aria-pressed': row.enabled ? 'false' : 'true'});
             var rm = button('cz-mini', 'remove', fmt(t.remove, name), 'x-lg');
+            rm.textContent = t.removeText || t.remove;
             li.appendChild(up);
             li.appendChild(down);
             li.appendChild(eye);
@@ -256,7 +257,7 @@
         var li = btn.closest('[data-ref]');
         var i = li ? find(li.getAttribute('data-ref')) : -1;
         btn.classList.remove('is-armed');
-        btn.innerHTML = icon('x-lg');
+        btn.textContent = t.removeText || t.remove;
         if (i !== -1) {
             btn.setAttribute('aria-label', fmt(t.remove, labelOf(current()[i])));
             btn.title = btn.getAttribute('aria-label');

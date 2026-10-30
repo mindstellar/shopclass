@@ -147,7 +147,10 @@
   grid-auto-flow: column;
   inline-size: auto;
   margin-inline-start: .375rem;
+  font-size: .8125rem;
+  font-weight: 600;
   min-inline-size: 1.75rem;
+  padding-inline: .5rem;
   position: relative;
 
   &::before {
@@ -169,9 +172,6 @@
     outline: 1px solid var(--osc-danger);
     outline-offset: -1px;
     color: var(--osc-danger);
-    font-size: .8125rem;
-    font-weight: 600;
-    padding-inline: .5rem;
   }
 }
 

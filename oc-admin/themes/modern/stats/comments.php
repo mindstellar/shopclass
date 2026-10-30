@@ -43,7 +43,7 @@ function render_offset()
 osc_admin_page(array(
     'section' => __('Statistics'),
     'title'   => __('Comment Statistics'),
-    'help'    => __('See how many comments the listings published on your site have received.'),
+    'help'    => osc_mode_text(__('See how many comments the listings published on your site have received.'), __('See how many comments the products in your shop have received.')),
 ));
 
 /**

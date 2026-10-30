@@ -158,10 +158,10 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                                                 data-widget-id="<?php echo $wid; ?>"
                                                 data-location="<?php echo osc_esc_html($location); ?>"
                                                 title="<?php echo osc_esc_html(__('Edit widget')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
-                                        <button type="button" class="chip-btn chip-danger"
+                                        <button type="button" class="chip-btn chip-danger chip-btn-text"
                                                 onclick="return delete_dialog('<?php echo $wid; ?>');"
                                                 title="<?php echo osc_esc_html(__('Delete widget')); ?>"
-                                                aria-label="<?php echo osc_esc_html(__('Delete widget')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+                                                aria-label="<?php echo osc_esc_html(sprintf(__('Delete %s'), $label)); ?>"><i class="bi bi-trash" aria-hidden="true"></i><span><?php _e('Delete'); ?></span></button>
                                     </span>
                                 </div>
                                 <div class="field-chip-editor edit" hidden></div>
@@ -290,6 +290,8 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         toggleFailed: '<?php echo osc_esc_js(__('Could not change the widget. Reload and try again.')); ?>',
         show:    '<?php echo osc_esc_js(__('Show widget')); ?>',
         hide:    '<?php echo osc_esc_js(__('Hide widget')); ?>',
+        del:      '<?php echo osc_esc_js(__('Delete widget')); ?>',
+        delShort: '<?php echo osc_esc_js(__('Delete')); ?>',
         misfit:  '<?php echo osc_esc_js(__('This widget cannot be placed in that section.')); ?>'
     };
 
@@ -427,7 +429,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                 + '  <span class="chip-actions">'
                 + '    <button type="button" class="chip-btn js-widget-toggle" data-widget-id="' + o.id + '" aria-pressed="false" title="' + TXT.hide + '" aria-label="' + TXT.hide + '"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>'
                 + '    <button type="button" class="chip-btn js-widget-edit" data-widget-id="' + o.id + '" data-location="' + (section.getAttribute('data-location') || '') + '"><i class="bi bi-pencil-fill"></i></button>'
-                + '    <button type="button" class="chip-btn chip-danger" onclick="return delete_dialog(\'' + o.id + '\');"><i class="bi bi-trash-fill"></i></button>'
+                + '    <button type="button" class="chip-btn chip-danger chip-btn-text" onclick="return delete_dialog(\'' + o.id + '\');" title="' + TXT.del + '"><i class="bi bi-trash" aria-hidden="true"></i><span>' + TXT.delShort + '</span></button>'
                 + '  </span>'
                 + '</div>'
                 + '<div class="field-chip-editor edit" hidden></div>';

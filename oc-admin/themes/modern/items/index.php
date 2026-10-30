@@ -16,7 +16,10 @@
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => osc_mode_text(__('Manage listings'), __('Manage products')),
-    'help'    => __('Manage all the listings on your site: edit, delete or block the latest listings published. You can also filter by several parameters: user, region, city, etc.'),
+    'help'    => osc_mode_text(
+        __('Manage all the listings on your site: edit, delete or block the latest listings published. You can also filter by several parameters: user, region, city, etc.'),
+        __('Manage all the products in your shop: edit, delete or block the latest products added. You can also filter by several parameters: user, region, city, etc.')
+    ),
     'actions' => array(
         array(
             'icon'  => 'bi-plus-circle-fill',

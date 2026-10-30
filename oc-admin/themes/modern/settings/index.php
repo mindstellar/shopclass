@@ -137,9 +137,14 @@ osc_add_hook('admin_header', 'customHead', 10);
 osc_admin_page(array(
     'section' => __('Settings'),
     'title'   => __('General Settings'),
-    'help'    => __("Change the basic configuration of your Shopclass. From here, you can modify variables such as the site’s name, "
-                    . "the default currency or how lists of listings are displayed. <strong>Be careful</strong> when modifying default "
-                    . "values if you're not sure what you're doing!"),
+    'help'    => osc_mode_text(
+        __("Change the basic configuration of your Shopclass. From here, you can modify variables such as the site’s name, "
+            . "the default currency or how lists of listings are displayed. <strong>Be careful</strong> when modifying default "
+            . "values if you're not sure what you're doing!"),
+        __("Change the basic configuration of your Shopclass. From here, you can modify variables such as the site’s name, "
+            . "the default currency or how lists of products are displayed. <strong>Be careful</strong> when modifying default "
+            . "values if you're not sure what you're doing!")
+    ),
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>

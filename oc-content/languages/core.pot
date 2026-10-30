@@ -691,6 +691,10 @@ msgid_plural "%s orders"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/stats/users.php
+msgid "%s products per user"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -1136,6 +1140,13 @@ msgid ""
 "city centre."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid ""
+"A plugin that finds the exact map position of a product from its street "
+"address. It works with any map. Without one, a product is placed at its "
+"city centre."
+msgstr ""
+
 #: oc-includes/osclass/classes/install/ShopSetup.php
 msgid ""
 "A plugin the Aisle theme needs is missing, so the site stays a classifieds "
@@ -1441,6 +1452,10 @@ msgstr ""
 msgid ""
 "Add a second step to sign-in: a 6-digit code from an authenticator app on "
 "your phone."
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Add a value"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -1923,6 +1938,10 @@ msgid ""
 "rel=\"noopener\">cron</a>"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Allow a parent category to be picked for a product"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid "Allow apps to sign in with a password"
 msgstr ""
@@ -1986,6 +2005,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/billing/Receipts.php
+#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Amount"
 msgstr ""
 
@@ -4587,6 +4607,7 @@ msgstr ""
 msgid "Delete \"%s\"?"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/widgets.php
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "Delete %s"
@@ -7129,6 +7150,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/billing/Receipts.php
+#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Item"
 msgstr ""
 
@@ -8268,6 +8290,13 @@ msgid ""
 "region, city, etc."
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid ""
+"Manage all the products in your shop: edit, delete or block the latest "
+"products added. You can also filter by several parameters: user, region, "
+"city, etc."
+msgstr ""
+
 #: oc-admin/themes/modern/users/ban.php
 msgid "Manage ban rules"
 msgstr ""
@@ -8360,6 +8389,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "Map on listings"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Map on products"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingGeocode.php
@@ -10725,6 +10758,10 @@ msgstr ""
 msgid "Picking a user fills the contact fields below. The listing belongs to"
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid "Picking a user fills the contact fields below. The product belongs to"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Place price in credits"
 msgstr ""
@@ -10916,6 +10953,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/osclass/classes/form/admin/Item.php
+#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Price"
 msgstr ""
 
@@ -10991,6 +11029,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
 msgid "Product statistics"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Product views"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -11124,6 +11166,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/billing/Receipts.php
+#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Qty"
 msgstr ""
 
@@ -11169,6 +11212,12 @@ msgstr ""
 msgid ""
 "Quickly find out how many new listings have been published on your site and "
 "how many visits each of the listings gets."
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid ""
+"Quickly find out how many new products have been added to your shop and how "
+"many visits each product gets."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -11522,6 +11571,7 @@ msgstr ""
 msgid "Remote downloads (allow_url_fopen)"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/functions.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/messages/index.php
@@ -12435,9 +12485,19 @@ msgstr ""
 msgid "See how many comments the listings published on your site have received."
 msgstr ""
 
+#: oc-admin/themes/modern/stats/comments.php
+msgid "See how many comments the products in your shop have received."
+msgstr ""
+
 #: oc-admin/themes/modern/stats/reports.php
 msgid ""
 "See how many listings from your site have been reported as spam, expired, "
+"duplicate, etc."
+msgstr ""
+
+#: oc-admin/themes/modern/stats/reports.php
+msgid ""
+"See how many products from your shop have been reported as spam, expired, "
 "duplicate, etc."
 msgstr ""
 
@@ -13139,6 +13199,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
 msgid "Show the e-mail address on the listing"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "Show the e-mail address on the product"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/iframe.php
@@ -14348,6 +14412,10 @@ msgstr ""
 msgid "The map your theme shows on a listing page. It does not find addresses."
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "The map your theme shows on a product page. It does not find addresses."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "The memory limit is %s. Resizing a large photo needs at least 128 MB."
 msgstr ""
@@ -15377,11 +15445,16 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/billing/Receipts.php
+#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Total"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
 msgid "Total number of listings' views"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Total number of product views"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/reports.php
