@@ -698,6 +698,22 @@
   }
 }
 
+// Delete sits apart from the routine actions, after a rule, in the danger colour.
+.chip-actions > .chip-danger {
+  color: var(--osc-danger);
+  margin-inline-start: .5rem;
+  position: relative;
+
+  &::before {
+    background-color: var(--osc-rule);
+    content: "";
+    inline-size: 1px;
+    inset-block: .25rem;
+    inset-inline-start: -.3125rem;
+    position: absolute;
+  }
+}
+
 // The remove (✕) control exists in every chip but is meaningful only inside a
 // form, so it is hidden in the palette — a palette chip cloned into a form then
 // reveals it for free.

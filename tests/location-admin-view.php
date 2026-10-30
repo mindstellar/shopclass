@@ -210,6 +210,10 @@ function _n($one, $many, $n)
 {
     return (int) $n === 1 ? $one : $many;
 }
+function osc_mode_text(string $classifieds, string $shop): string
+{
+    return $classifieds;
+}
 function osc_run_hook($name, ...$args)
 {
     $GLOBALS['hooks'][] = array($name, $args);

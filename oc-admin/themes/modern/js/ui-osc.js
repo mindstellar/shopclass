@@ -472,14 +472,23 @@ function oscEnhanceFlash(root) {
 
 // Delegated, so it also covers flash messages shown after load (e.g. #jsMessage on
 // an AJAX result), not just those present at DOMContentLoaded.
+// A notice carrying [data-osc-hide-cookie] stays hidden for 7 days once dismissed.
+function oscCloseFlash(close) {
+    var fm = close.closest('.flashmessage');
+    if (fm.dataset.oscHideCookie) {
+        document.cookie = fm.dataset.oscHideCookie + '=' + encodeURIComponent(fm.dataset.oscHideValue || '1')
+            + '; max-age=604800; path=/; SameSite=Lax';
+    }
+    oscDismissFlash(fm);
+}
 document.addEventListener('click', function (e) {
     var close = e.target.closest ? e.target.closest('.flashmessage .ico-close') : null;
-    if (close) { e.preventDefault(); oscDismissFlash(close.closest('.flashmessage')); }
+    if (close) { e.preventDefault(); oscCloseFlash(close); }
 });
 document.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter' && e.key !== ' ' && e.key !== 'Spacebar') { return; }
     var close = e.target.closest ? e.target.closest('.flashmessage .ico-close') : null;
-    if (close) { e.preventDefault(); oscDismissFlash(close.closest('.flashmessage')); }
+    if (close) { e.preventDefault(); oscCloseFlash(close); }
 });
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -488,6 +497,33 @@ document.addEventListener('DOMContentLoaded', function () {
     oscEnhanceFlash(document);
 
     oscInitTabs(document);
+});
+
+// A control marked [data-osc-needs="<name>"] is disabled while that checkbox in its form is
+// off, so a setting that cannot work on its own never looks active.
+function oscSyncNeeds(root) {
+    (root || document).querySelectorAll('[data-osc-needs]').forEach(function (el) {
+        var scope = el.form || document;
+        var master = scope.querySelector('[name="' + el.getAttribute('data-osc-needs').replace(/"/g, '\\"') + '"]');
+        if (!master) {
+            return;
+        }
+        var on = master.type === 'checkbox' ? master.checked : master.value !== '';
+        el.disabled = !on;
+        var row = el.closest('.form-label-checkbox, .form-row');
+        if (row) {
+            row.classList.toggle('is-unavailable', !on);
+        }
+    });
+}
+document.addEventListener('change', function (e) {
+    var name = e.target && e.target.name;
+    if (name && document.querySelector('[data-osc-needs="' + name.replace(/"/g, '\\"') + '"]')) {
+        oscSyncNeeds(document);
+    }
+});
+document.addEventListener('DOMContentLoaded', function () {
+    oscSyncNeeds(document);
 });
 
 // A form marked [data-osc-confirm-empty="#dialogId"] asks first when every visible field is
@@ -507,6 +543,21 @@ document.addEventListener('submit', function (e) {
         e.preventDefault();
         dialog.showModal();
     }
+});
+
+// A button with [data-osc-fill="#field"] puts its [data-osc-fill-value] into that field.
+document.addEventListener('click', function (e) {
+    var chip = e.target.closest ? e.target.closest('[data-osc-fill]') : null;
+    var field = chip ? document.querySelector(chip.getAttribute('data-osc-fill')) : null;
+    if (!field) {
+        return;
+    }
+    field.value = chip.getAttribute('data-osc-fill-value') || '';
+    field.dispatchEvent(new Event('input', {bubbles: true}));
+    chip.parentNode.querySelectorAll('[data-osc-fill]').forEach(function (other) {
+        other.setAttribute('aria-pressed', other === chip ? 'true' : 'false');
+    });
+    field.focus();
 });
 
 // Shared behaviour for native <dialog class="osc-dialog">: a click on any

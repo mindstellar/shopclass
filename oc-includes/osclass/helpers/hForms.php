@@ -173,7 +173,7 @@ function osc_form_context_from_widget($widgetRow)
 }
 
 /*
- * Core "Form" widget — places a custom form (Listings → Custom forms) into any
+ * Core "Form" widget — places a custom form (Forms → Manage forms) into any
  * widget area: a static page, a page-builder canvas, a sidebar. Registered
  * unconditionally so the block always exists once a form is flagged placeable. The
  * form picker lists only placeable forms and is resolved lazily (callable options)
@@ -182,7 +182,7 @@ function osc_form_context_from_widget($widgetRow)
  */
 osc_register_widget('core.form', array(
     'label'       => 'Form',
-    'description' => 'Place a custom form (built in Listings → Custom forms) on this page.',
+    'description' => 'Place a custom form (built in Forms → Manage forms) on this page.',
     'fields'      => array(
         array('name' => 'form_id', 'label' => 'Form', 'type' => 'select', 'options' => 'osc_form_widget_options'),
         array('name' => 'success_text', 'label' => 'Success message', 'type' => 'text'),

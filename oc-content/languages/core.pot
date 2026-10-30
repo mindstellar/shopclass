@@ -13,6 +13,10 @@ msgstr ""
 msgid " is available"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "\"%s\" is already in this menu."
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "%1$d admin signs in with a password only: %2$s."
 msgid_plural "%1$d admins sign in with a password only: %2$s."
@@ -202,6 +206,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
 msgid "%d Plugins"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/items/reported.php
+msgid "%d Products"
 msgstr ""
 
 #: oc-admin/themes/modern/users/index.php
@@ -580,6 +589,16 @@ msgstr ""
 msgid "%s is corrupt or broken!"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid ""
+"%s is in test mode: no real money is taken. Switch it to live mode before "
+"the site takes payments."
+msgid_plural ""
+"%s are in test mode: no real money is taken. Switch them to live mode "
+"before the site takes payments."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hFields.php
 msgid "%s is invalid."
 msgstr ""
@@ -689,6 +708,7 @@ msgid "%s set differently"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SettingsSearch.php
+#: oc-includes/osclass/helpers/hBilling.php
 msgid "%s settings"
 msgstr ""
 
@@ -742,6 +762,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "0 means every listing needs validation."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "0 means every product needs validation."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
@@ -984,6 +1008,10 @@ msgid ""
 "then, it is cancelled and the stock goes back on sale. 5 to 120."
 msgstr ""
 
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A category is in this menu more than once."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info.php
 msgid ""
 "A checked view of your site: what needs doing, background jobs, security, "
@@ -1037,6 +1065,10 @@ msgstr ""
 msgid "A link needs an address that starts with http://, https:// or /."
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "A listing posted under pay-at-post waits here until its fee is paid."
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-includes/osclass/classes/menu/MenuItems.php
 msgid "A menu can hold at most %d items."
@@ -1084,6 +1116,10 @@ msgstr ""
 msgid ""
 "A package is what a buyer picks at checkout. Add one to start selling "
 "credits."
+msgstr ""
+
+#: oc-includes/osclass/classes/menu/MenuItems.php
+msgid "A page is in this menu more than once."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -1153,7 +1189,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/items/frm.php
-msgid "A row with no price sells at the listing price."
+msgid "A row with no price sells at the product price."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -1235,6 +1271,12 @@ msgstr ""
 msgid ""
 "Above this number, search shows the limit with a + sign, which is faster on "
 "big sites. 0 counts every listing."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"Above this number, search shows the limit with a + sign, which is faster on "
+"big sites. 0 counts every product."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -1349,6 +1391,10 @@ msgstr ""
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Active"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+msgid "Active filters"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
@@ -1807,6 +1853,7 @@ msgstr ""
 msgid "Alerts notify a user by email when a new listing matches their saved search."
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
@@ -1860,6 +1907,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "All the checks below pass."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/dependencies.php
+msgid "All the plugins this theme needs are active."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-shop.php
@@ -2033,6 +2084,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Osclass.php
 msgid "Another upgrade is already running. Wait for it to finish, then try again."
+msgstr ""
+
+#: oc-includes/osclass/classes/form/FieldForm.php
+msgid "Any"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
@@ -2668,6 +2723,10 @@ msgstr ""
 msgid "Block listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Block product"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Block sign-ins after too many failures"
 msgstr ""
@@ -2678,6 +2737,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Block this listing?"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Block this product?"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -3353,6 +3416,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "City"
 msgstr ""
 
@@ -3455,6 +3519,10 @@ msgstr ""
 #: oc-admin/themes/modern/items/reported.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Clear Spam"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+msgid "Clear all"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
@@ -3673,6 +3741,10 @@ msgstr ""
 msgid "Commercial coffee machine, two group"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Common carriers"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Community"
 msgstr ""
@@ -3688,10 +3760,6 @@ msgstr ""
 #: oc-includes/osclass/classes/form/UserForm.php
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Company"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "Compare-at price"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -4042,6 +4110,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Country"
 msgstr ""
@@ -4657,6 +4726,11 @@ msgstr ""
 msgid "Delete page"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/items/reported.php
+msgid "Delete product"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "Delete region"
 msgstr ""
@@ -5138,8 +5212,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
 msgid ""
-"Each option row below has its own SKU, price, compare-at price and stock. A "
-"row with no price sells at this price."
+"Each option row below has its own SKU, price, old price and stock. A row "
+"with no price sells at this price."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -5301,6 +5375,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Email"
 msgstr ""
 
@@ -5337,6 +5412,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Emails the seller this many days before the listing expires. 0 sends none."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Emails the seller this many days before the product expires. 0 sends none."
 msgstr ""
 
 #: oc-includes/osclass/classes/job/CategoryJobs.php
@@ -6046,6 +6125,7 @@ msgstr ""
 msgid "Fragrance"
 msgstr ""
 
+#: oc-includes/osclass/classes/currency/CurrencyService.php
 #: oc-includes/osclass/helpers/hItems.php
 msgid "Free"
 msgstr ""
@@ -6201,6 +6281,12 @@ msgstr ""
 #: oc-admin/themes/modern/settings/index.php
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid "General Settings"
+msgstr ""
+
+#: oc-admin/themes/modern/items/settings.php
+msgid ""
+"General settings for your products: moderation, notifications, text lengths "
+"and the number of photos per product."
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -6376,6 +6462,10 @@ msgstr ""
 msgid "Hide %s"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Hide for 7 days"
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Hide password"
 msgstr ""
@@ -6417,7 +6507,15 @@ msgid "Hold edited listings for admin moderation"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Hold edited products for admin moderation"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Hold new listings for admin moderation"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Hold new products for admin moderation"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -6627,6 +6725,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Images per listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Images per product"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -7031,6 +7133,7 @@ msgid "Item"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Item ID"
 msgstr ""
 
@@ -7952,6 +8055,10 @@ msgstr ""
 msgid "Logged in users don't need to validate their listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Logged in users don't need to validate their products"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/logs.php
 msgid "Logging"
 msgstr ""
@@ -8855,7 +8962,9 @@ msgid "Needs %s or newer"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
-msgid "Needs HTTPS. Users turn it on per browser from their messages page."
+msgid ""
+"Needs HTTPS and \"Users can message sellers\" on. Users turn it on per "
+"browser from their messages page."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Compatibility.php
@@ -9035,6 +9144,14 @@ msgstr ""
 msgid ""
 "New plugins show up here as they are published. You can also upload one "
 "yourself."
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "New products"
+msgstr ""
+
+#: oc-admin/themes/modern/main/index.php
+msgid "New products/users"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
@@ -9331,6 +9448,10 @@ msgstr ""
 msgid "No plugins match your search."
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "No products match these filters"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "No region has the id %s. It may have been deleted."
 msgstr ""
@@ -9594,6 +9715,10 @@ msgstr ""
 msgid "Nothing here yet"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "Nothing is waiting for payment"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "Nothing is waiting."
 msgstr ""
@@ -9669,6 +9794,10 @@ msgstr ""
 msgid "Notify admin when a new listing is added"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Notify admin when a new product is added"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Nov"
 msgstr ""
@@ -9705,12 +9834,20 @@ msgstr ""
 msgid "Number of moderated listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Number of moderated products"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/items.php
 msgid "Number of new alerts"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
 msgid "Number of new listings"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Number of new products"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
@@ -9724,12 +9861,14 @@ msgstr ""
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/tools/maintenance.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "OFF"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/tools/maintenance.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "ON"
 msgstr ""
 
@@ -9885,6 +10024,10 @@ msgstr ""
 msgid "Only allow registered users to share listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Only allow registered users to share products"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/group_iframe.php
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Only alphanumeric characters are allowed [a-z0-9_-]"
@@ -9898,6 +10041,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Only logged in users can post listings"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Only logged in users can post products"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -10366,6 +10513,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Pattern"
 msgstr ""
 
@@ -10383,10 +10531,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid "Pay at post"
-msgstr ""
-
-#: oc-admin/themes/modern/items/index.php
-msgid "Payment"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -10728,6 +10872,10 @@ msgid "Press Repair to fix them. Take a backup first."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
+msgid "Press again to remove %s"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
 msgid "Press the up or down arrow key to move this section."
 msgstr ""
 
@@ -10813,9 +10961,24 @@ msgstr ""
 msgid "Process queue now"
 msgstr ""
 
+#: oc-admin/themes/modern/comments/frm.php
+#: oc-admin/themes/modern/main/index.php
+#: oc-admin/themes/modern/messages/index.php
+msgid "Product"
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 msgctxt "item for sale"
 msgid "Product"
+msgstr ""
+
+#: oc-admin/themes/modern/items/settings.php
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Product Settings"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Product Statistics"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ProductAlerts.php
@@ -10826,10 +10989,28 @@ msgstr ""
 msgid "Product details"
 msgstr ""
 
+#: oc-admin/themes/modern/main/index.php
+msgid "Product statistics"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+#: oc-admin/themes/modern/comments/index.php
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/items/reported.php
 #: oc-admin/themes/modern/items/settings.php
+#: oc-admin/themes/modern/main/index.php
+#: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/messages/thread.php
+#: oc-admin/themes/modern/settings/currencies.php
+#: oc-admin/themes/modern/settings/locations.php
+#: oc-admin/themes/modern/settings/locations/form.php
+#: oc-admin/themes/modern/settings/locations/list.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Products"
+msgstr ""
+
+#: oc-admin/themes/modern/main/index.php
+msgid "Products by category"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
@@ -11099,7 +11280,6 @@ msgid "Receipt e-mail"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/Receipts.php
-#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Receipt number"
 msgstr ""
 
@@ -11260,6 +11440,7 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php
 #: oc-includes/osclass/classes/admin/ui/Picker.php
+#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Region"
 msgstr ""
 
@@ -11358,8 +11539,16 @@ msgstr ""
 msgid "Remove %s"
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "Remove a filter above to widen the search."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Remove credits"
+msgstr ""
+
+#: oc-admin/themes/modern/items/index.php
+msgid "Remove filter: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -11400,6 +11589,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/PhotoGrid.php
 msgid "Remove {file}"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Remove?"
 msgstr ""
 
 #: oc-admin/themes/modern/messages/thread.php
@@ -11932,7 +12125,7 @@ msgid "Save the latest user searches"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
-msgid "Save the listing with photos to pick a photo per row."
+msgid "Save the product with photos to pick a photo per row."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/searches.php
@@ -12475,6 +12668,10 @@ msgstr ""
 msgid "Send admin a copy to \"share listing\" email"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Send admin a copy to \"share product\" email"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/UserSettingsScreen.php
 msgid "Send browser notifications for new messages"
 msgstr ""
@@ -12687,6 +12884,10 @@ msgstr ""
 msgid "Share listing"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Share product"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 msgid "Ship order #%d without a tracking number?"
 msgstr ""
@@ -12749,6 +12950,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid "Shopclass %1$s is available. You have %2$s."
+msgstr ""
+
+#: oc-includes/osclass/classes/upgrade/BuildInfo.php
+msgid "Shopclass %1$s is available. You have %2$s. Deploy the image %3$s."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
@@ -12821,6 +13026,7 @@ msgid "Shopclass is already installed here."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
+#: oc-includes/osclass/classes/upgrade/BuildInfo.php
 msgid "Shopclass is up to date. You have version %s."
 msgstr ""
 
@@ -12917,6 +13123,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "Show reCAPTCHA in add/edit listing form"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Show reCAPTCHA in add/edit product form"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -13311,7 +13521,7 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
 "Standard delivery at one charge. With the Shipping plugin on, its zones set "
-"the charge instead. Amounts are in the listings' currency."
+"the charge instead. Amounts are in the products' currency."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
@@ -13537,6 +13747,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/footer.php
 msgid "Switch to light mode"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid ""
+"Switching changes the wording, the admin menus, cart and checkout, and who "
+"can post. Your theme and plugins say which of these they work for."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/currencies.php
@@ -14221,6 +14437,10 @@ msgstr ""
 msgid "The plugin folder is not writable on your server so you cannot upload "
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The product is hidden from the shop until it is unblocked."
+msgstr ""
+
 #: oc-admin/themes/modern/messages/index.php
 msgid "The recipient will get this message and the new-message e-mail."
 msgstr ""
@@ -14511,6 +14731,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/widgets/Customiser.php
 msgid "There are no changes to publish."
+msgstr ""
+
+#: oc-admin/themes/modern/main/index.php
+msgid "There are no products yet"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php
@@ -14828,6 +15052,11 @@ msgid ""
 "for every enabled rule. It runs in the background. This can't be undone."
 msgstr ""
 
+#: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/items/reported.php
+msgid "This permanently deletes the product and its photos. This cannot be undone."
+msgstr ""
+
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "This permanently deletes the submission. Continue?"
 msgstr ""
@@ -14898,6 +15127,12 @@ msgstr ""
 msgid ""
 "This site already has database settings in config.php. Enter the same ones, "
 "or delete config.php to use a different database."
+msgstr ""
+
+#: oc-admin/themes/modern/tools/upgrade.php
+msgid ""
+"This site runs from a container image. It is updated by deploying a newer "
+"image, not from this screen."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -15432,6 +15667,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Unblock listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Unblock product"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -15994,6 +16233,10 @@ msgstr ""
 msgid "Users have to validate their listings"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Users have to validate their products"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "Users must be registered and logged in to comment"
 msgstr ""
@@ -16008,6 +16251,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/stats/users.php
 msgid "Users per region"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid ""
+"Users sign up and post listings. Buyers contact the seller; there is no "
+"cart."
 msgstr ""
 
 #: oc-admin/themes/modern/users/ban.php
@@ -16115,6 +16364,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "View payment"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgid "View product"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/ui/Picker.php
@@ -16357,7 +16610,7 @@ msgid "Weight (g)"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
-msgid "Weight is set per row in Options."
+msgid "Weight and shipping class are set per row in Options."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -16616,6 +16869,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Yoga mat"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "You add the products. Buyers pay through a cart and checkout."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
@@ -16920,10 +17177,6 @@ msgstr ""
 msgid "Your site is ready."
 msgstr ""
 
-#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
-msgid "Your theme and plugins say which of these they work for."
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/menus.php
 msgid ""
 "Your theme does not show saved menus by itself. Add the Menu widget to a "
@@ -17164,6 +17417,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "images per listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "images per product"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hAdminUi.php
@@ -17529,6 +17786,10 @@ msgstr ""
 msgid "seconds between two listings from one user"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "seconds between two products from one user"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "set"
 msgstr ""
@@ -17612,6 +17873,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
 msgid "validated listings the user doesn't need to validate the listings any more"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "validated products the user doesn't need to validate the products any more"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php

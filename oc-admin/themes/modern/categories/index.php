@@ -27,7 +27,7 @@ $add_button = array(
 );
 
 osc_admin_page(array(
-    'section' => __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Categories'),
     'actions' => array(
         $add_button,

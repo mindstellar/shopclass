@@ -129,6 +129,9 @@ function customHead()
                 head.appendChild(h);
                 if (!failed && data.version) {
                     head.appendChild(el('p', 'upgrade-report-sub', 'Shopclass ' + data.version));
+                    // This page can be served by the old code, so the footer would show the old version.
+                    var footerVersion = document.querySelector('.admin-footer-version strong');
+                    if (footerVersion) { footerVersion.textContent = 'Shopclass ' + data.version; }
                 }
                 section.appendChild(head);
 

@@ -71,7 +71,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - A subclass of `Search` that overrides `addCondition()`, `addFieldFilter()` or `countMatches()` must accept the new optional last argument.
 - `sql_search_conditions` runs twice per search, once for the page list and once for the count.
 - Raw SQL writes to `t_item_meta` need Rebuild filter index under System info → Database.
-- `GET /listings` reads at most 10 `option[name][]` names.
+- `GET /listings` reads at most 3 `option[name][]` names.
 - `item_increase_stat` and `item_decrease_stat` fire after the commit, so they now come after `posted_item` and `edited_item`.
 - `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
 - Core's front pages use shared `.oe-*` classes and the `osc_gui_*()` helpers; the old `.oe-bill-*` names still work.

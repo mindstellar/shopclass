@@ -50,7 +50,7 @@ function render_offset()
 
 osc_admin_page(array(
     'section' => __('Statistics'),
-    'title'   => __('Listing Statistics'),
+    'title'   => osc_mode_text(__('Listing Statistics'), __('Product Statistics')),
     'help'    => __('Quickly find out how many new listings have been published on your site and how many visits each of the listings gets.'),
 ));
 
@@ -178,7 +178,7 @@ $stats_ranges = array(
     'day'   => __('Last 10 days'),
 );
 $active_range = $type ?: 'day';
-osc_admin_page_head(__('Listing Statistics'), array(), array(
+osc_admin_page_head(osc_mode_text(__('Listing Statistics'), __('Product Statistics')), array(), array(
     'actions_html' => static function () use ($stats_ranges, $active_range) {
         $links = array();
         foreach ($stats_ranges as $key => $label) {
@@ -195,10 +195,10 @@ osc_admin_page_head(__('Listing Statistics'), array(), array(
         <div class="col-md-6">
             <div class="widget-box">
                 <div class="widget-box-title">
-                    <h3><?php _e('New listing'); ?></h3>
+                    <h3><?php echo osc_mode_text(__('New listing'), __('New products')); ?></h3>
                 </div>
                 <div class="widget-box-content">
-                    <b class="stats-title"><?php _e('Number of new listings'); ?></b>
+                    <b class="stats-title"><?php echo osc_mode_text(__('Number of new listings'), __('Number of new products')); ?></b>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($items) == 0) {
                             _e("There are no statistics yet");

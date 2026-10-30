@@ -38,6 +38,11 @@ foreach (['upgrade', 'reinstall'] as $action) {
 $screen = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/upgrade.php');
 pin('the update screen follows next', true, str_contains($screen, 'window.location.assign(json.next)'));
 
+$dbScreen = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/upgrade/index.php');
+pin('the database page shows the new version in the footer', true, (bool) preg_match(
+    "/if \\(!failed && data\\.version\\) \\{[^}]*querySelector\\('\\.admin-footer-version strong'\\)[^}]*\\{ footerVersion\\.textContent = 'Shopclass ' \\+ data\\.version; \\}/",
+    $dbScreen
+));
 $cli = $body(mindstellar\cli\Cli::class, 'cmdCoreUpdate');
 pin('core:update does not migrate in its own process', false, str_contains($cli, 'cmdDbUpgrade('));
 pin('core:update starts db:upgrade as a new process', true, str_contains($cli, "runChild(['db:upgrade'])"));

@@ -122,6 +122,20 @@ check('the update screen says how an edge build updates, ahead of the container 
     && strpos($upgrade, "__('This is an edge build. Update it by pulling the :edge image.')", $edgeAt) !== false
     && $edgeAt < strpos($upgrade, '} elseif ($selfUpdateOff) {'));
 
+harness_section('the update screen on a container image');
+
+pin('a newer release names the image tag to deploy',
+    'Shopclass 7.1.0 is available. You have 7.0.9. Deploy the image ghcr.io/mindstellar/shopclass:7.1.0.',
+    BuildInfo::imageUpdateText('7.0.9', '7.1.0'));
+pin('no newer release: up to date', 'Shopclass is up to date. You have version 7.1.0.', BuildInfo::imageUpdateText('7.1.0', ''));
+$intro = strpos($upgrade, 'if ($selfUpdateOff) {');
+check('with updates off the screen does not offer the auto-upgrade', $intro !== false
+    && $intro < strpos($upgrade, 'can be auto-upgraded')
+    && $intro < strpos($upgrade, '} else {', $intro)
+    && strpos($upgrade, 'can be auto-upgraded') > strpos($upgrade, '} else {', $intro));
+check('the container message uses the image wording', strpos($upgrade, 'BuildInfo::imageUpdateText(') !== false);
+check('and keeps the translated container sentence', strpos($upgrade, "__('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.')") !== false);
+
 array_map('unlink', glob($dir . '/*.php'));
 @rmdir($dir);
 

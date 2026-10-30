@@ -29,7 +29,7 @@ if (isset($comment['pk_i_id'])) {
 }
 
 osc_admin_page(array(
-    'section' => __('Listing'),
+    'section' => osc_mode_text(__('Listing'), __('Product')),
     'title'   => __('Edit comment'),
 ));
 

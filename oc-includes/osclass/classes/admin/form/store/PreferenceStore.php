@@ -25,7 +25,8 @@ use Preference;
  * is its declared default rather than the stored value. A field declaring 'column' is
  * stored under that key rather than under its own name, which is what lets a control keep
  * the name its page's script already knows while the value goes on living under the key
- * every reader uses. A field declaring 'persist' => false is stored nowhere at all.
+ * every reader uses. A field declaring 'persist' => false is stored nowhere at all, and a
+ * disabled one keeps its stored value.
  *
  * @package mindstellar\admin\form\store
  */
@@ -156,7 +157,8 @@ final class PreferenceStore implements Store
                 continue;
             }
             $persist = $field['persist'] ?? null;
-            if ($persist === false) {
+            // A disabled control posts nothing, so its stored value is kept.
+            if ($persist === false || !empty($field['disabled'])) {
                 continue;
             }
             $key = self::key($name, $field);

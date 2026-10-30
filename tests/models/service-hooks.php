@@ -24,6 +24,7 @@ if (api_admin_isolated(__FILE__)) {
 }
 
 $admin = api_admin_boot('osc_models_service_hooks');
+scratchdb_pin_site_mode($admin, 'classifieds');
 if (!function_exists('osc_change_user_email_confirm_url')) {
     function osc_change_user_email_confirm_url($userId, $code)
     {

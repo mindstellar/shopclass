@@ -34,7 +34,7 @@ final class ItemSettingsScreen extends SettingsScreen
     {
         $moderated = osc_moderate_items();
 
-        $form = CoreSettings::page(self::PAGE_ID, __('Listing Settings'))
+        $form = CoreSettings::page(self::PAGE_ID, osc_mode_text(__('Listing Settings'), __('Product Settings')))
             // The two lengths are one rule with its own wording, checked together.
             ->onValidate(static function (array $values) {
                 $errors = \ItemActions::lengthSettingErrors(
@@ -44,23 +44,23 @@ final class ItemSettingsScreen extends SettingsScreen
 
                 return array_values(array_filter(explode(PHP_EOL, $errors)));
             })
-            ->group(__('Listing Settings'));
+            ->group(osc_mode_text(__('Listing Settings'), __('Product Settings')));
 
         self::rowOpen($form, 'settings', __('Settings'));
         $form
-            ->checkbox('reg_user_post', __('Only logged in users can post listings'))
+            ->checkbox('reg_user_post', osc_mode_text(__('Only logged in users can post listings'), __('Only logged in users can post products')))
                 ->set('row', false)
             ->number('items_wait_time', __('Wait time'), __('0 means no wait.'))
                 ->set('row', false)
                 ->prefix(__('Wait'))
-                ->suffix(__('seconds between two listings from one user'))
+                ->suffix(osc_mode_text(__('seconds between two listings from one user'), __('seconds between two products from one user')))
                 ->clampMin(0)
                 ->default(0)
-            ->checkbox('moderate_admin_post', __('Hold new listings for admin moderation'))
+            ->checkbox('moderate_admin_post', osc_mode_text(__('Hold new listings for admin moderation'), __('Hold new products for admin moderation')))
                 ->set('row', false)
-            ->checkbox('moderate_admin_edit', __('Hold edited listings for admin moderation'))
+            ->checkbox('moderate_admin_edit', osc_mode_text(__('Hold edited listings for admin moderation'), __('Hold edited products for admin moderation')))
                 ->set('row', false)
-            ->checkbox('moderate_items', __('Users have to validate their listings'))
+            ->checkbox('moderate_items', osc_mode_text(__('Users have to validate their listings'), __('Users have to validate their products')))
                 ->set('row', false)
                 ->persist(static function ($value, array $values) {
                     return $value ? (string)($values['num_moderate_items'] ?? 0) : (string)self::MODERATION_OFF;
@@ -74,23 +74,23 @@ final class ItemSettingsScreen extends SettingsScreen
                 ->set('row', false)
             ->number(
                 'num_moderate_items',
-                __('Number of moderated listings'),
-                __('0 means every listing needs validation.')
+                osc_mode_text(__('Number of moderated listings'), __('Number of moderated products')),
+                osc_mode_text(__('0 means every listing needs validation.'), __('0 means every product needs validation.'))
             )
                 ->set('row', false)
                 ->prefix(__('After'))
-                ->suffix(__("validated listings the user doesn't need to validate the listings any more"))
+                ->suffix(osc_mode_text(__("validated listings the user doesn't need to validate the listings any more"), __("validated products the user doesn't need to validate the products any more")))
                 ->clampMin(0)
                 // Not stored: it is the value the switch above stores.
                 ->persist(false)
                 ->default($moderated === self::MODERATION_OFF ? 0 : $moderated)
-            ->checkbox('logged_user_item_validation', __("Logged in users don't need to validate their listings"))
+            ->checkbox('logged_user_item_validation', osc_mode_text(__("Logged in users don't need to validate their listings"), __("Logged in users don't need to validate their products")))
                 ->set('row', false)
             ->custom('moderated_close', static function () {
                 echo '</div>';
             })
                 ->set('row', false)
-            ->checkbox('enabled_recaptcha_items', __('Show reCAPTCHA in add/edit listing form'), __('Needs reCAPTCHA keys first.'))
+            ->checkbox('enabled_recaptcha_items', osc_mode_text(__('Show reCAPTCHA in add/edit listing form'), __('Show reCAPTCHA in add/edit product form')), __('Needs reCAPTCHA keys first.'))
                 ->set('row', false);
         self::rowClose($form, 'settings');
 
@@ -102,7 +102,7 @@ final class ItemSettingsScreen extends SettingsScreen
                 ->set('row', false);
         self::rowClose($form, 'contact');
 
-        self::rowOpen($form, 'share', __('Share listing'));
+        self::rowOpen($form, 'share', osc_mode_text(__('Share listing'), __('Share product')));
         $form
             ->checkbox(
                 'enable_send_friend',
@@ -110,7 +110,7 @@ final class ItemSettingsScreen extends SettingsScreen
                 __('Off by default: it can be abused to send spam.')
             )
                 ->set('row', false)
-            ->checkbox('reg_user_can_send_friend', __('Only allow registered users to share listings'))
+            ->checkbox('reg_user_can_send_friend', osc_mode_text(__('Only allow registered users to share listings'), __('Only allow registered users to share products')))
                 ->set('row', false)
                 // Never saved reads as on: only an explicit '0' turns it off.
                 ->default(true);
@@ -118,11 +118,11 @@ final class ItemSettingsScreen extends SettingsScreen
 
         self::rowOpen($form, 'notify', __('Notifications'));
         $form
-            ->checkbox('notify_new_item', __('Notify admin when a new listing is added'))
+            ->checkbox('notify_new_item', osc_mode_text(__('Notify admin when a new listing is added'), __('Notify admin when a new product is added')))
                 ->set('row', false)
             ->checkbox('notify_contact_item', __('Send admin a copy of the "contact publisher" email'))
                 ->set('row', false)
-            ->checkbox('notify_contact_friends', __('Send admin a copy to "share listing" email'))
+            ->checkbox('notify_contact_friends', osc_mode_text(__('Send admin a copy to "share listing" email'), __('Send admin a copy to "share product" email')))
                 ->set('row', false);
         self::rowClose($form, 'notify');
 
@@ -130,7 +130,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->number(
                 'warn_expiration',
                 __('Warn about expiration'),
-                __('Emails the seller this many days before the listing expires. 0 sends none.')
+                osc_mode_text(__('Emails the seller this many days before the listing expires. 0 sends none.'), __('Emails the seller this many days before the product expires. 0 sends none.'))
             )
                 ->suffix(__('days'))
                 ->clampMin(0)
@@ -138,7 +138,7 @@ final class ItemSettingsScreen extends SettingsScreen
             ->number(
                 'search_count_cap',
                 __('Search count limit'),
-                __('Above this number, search shows the limit with a + sign, which is faster on big sites. 0 counts every listing.')
+                osc_mode_text(__('Above this number, search shows the limit with a + sign, which is faster on big sites. 0 counts every listing.'), __('Above this number, search shows the limit with a + sign, which is faster on big sites. 0 counts every product.'))
             )
                 ->suffix(__('matches'))
                 ->set('min', 0)
@@ -174,12 +174,12 @@ final class ItemSettingsScreen extends SettingsScreen
                 ->set('row', false)
             ->number(
                 'numImages@items',
-                __('Images per listing'),
+                osc_mode_text(__('Images per listing'), __('Images per product')),
                 __('0 means no limit.')
             )
                 ->set('row', false)
                 ->prefix(__('Attach'))
-                ->suffix(__('images per listing'))
+                ->suffix(osc_mode_text(__('images per listing'), __('images per product')))
                 ->clampMin(0)
                 ->default(0);
         self::rowClose($form, 'optional');

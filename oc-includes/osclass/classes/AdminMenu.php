@@ -266,7 +266,7 @@ class AdminMenu
         );
         $this->add_submenu(
             'stats',
-            __('Listings'),
+            osc_mode_text(__('Listings'), __('Products')),
             osc_admin_base_url(true) . '?page=stats&action=items',
             'stats_items',
             'moderator'

@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\boot;
 
 use mindstellar\billing\CartPricer;
+use mindstellar\billing\event\CarriersListing;
 use mindstellar\billing\event\CartDiscountLines;
 use mindstellar\billing\event\CartFees;
 use mindstellar\billing\event\CartFreeOver;
@@ -29,6 +30,7 @@ use mindstellar\billing\event\OrderPaid;
 use mindstellar\billing\event\OrderPlaced;
 use mindstellar\billing\event\OrderReturnUrlResolving;
 use mindstellar\billing\event\OrderShipped;
+use mindstellar\billing\event\PaymentTestModes;
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\billing\GoodsCheckout;
@@ -197,6 +199,8 @@ final class CoreServices
             OrderDelivered::class,
             OrderCancelled::class,
             TrackingUrlResolving::class,
+            CarriersListing::class,
+            PaymentTestModes::class,
             ReceiptComposing::class,
             OrderReturnUrlResolving::class,
             MailComposing::class,

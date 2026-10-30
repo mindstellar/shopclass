@@ -238,7 +238,7 @@ switch ($form['kind']) {
         if ($level !== 'city') {
             $facts[] = array('label' => __('Cities'), 'value' => $count('cities'), 'html' => true);
         }
-        $facts[] = array('label' => __('Listings'), 'value' => $count('listings'), 'html' => true);
+        $facts[] = array('label' => osc_mode_text(__('Listings'), __('Products')), 'value' => $count('listings'), 'html' => true);
         $facts[] = array('label' => __('Users'), 'value' => $count('users'), 'html' => true);
         if ($record['lat'] !== null && $record['long'] !== null) {
             $facts[] = array(

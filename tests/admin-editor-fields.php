@@ -419,6 +419,10 @@ function render_screen(string $screen): string
         $view->_exportVariableToView('editorErrorFields', array('/description', '/description', '/category_id', '/city'));
         $screen = substr($screen, 0, -8);
     }
+    if (str_ends_with($screen, '-variants')) {
+        $GLOBALS['fixtureVariants'] = true;
+        $screen                     = substr($screen, 0, -9);
+    }
     if (str_ends_with($screen, '-shop')) {
         $GLOBALS['fixtureShop'] = true;
         $screen                 = substr($screen, 0, -5);
@@ -434,7 +438,13 @@ function render_screen(string $screen): string
         } else {
             $view->_exportVariableToView('resources', array());
             if (!empty($GLOBALS['fixtureShop'])) {
-                $view->_exportVariableToView('itemProduct', mindstellar\listing\ListingInput::productForm(0));
+                $product = mindstellar\listing\ListingInput::productForm(0);
+                if (!empty($GLOBALS['fixtureVariants'])) {
+                    $product = array('hasOptions' => true, 'options' => array(array('name' => 'Size', 'values' => array('S'))), 'variants' => array(array(
+                        'values' => array('S'), 'photoId' => '', 'sku' => 'T-S', 'price' => '', 'compareAt' => '', 'stock' => '', 'weight' => '', 'shippingClass' => 'bulky',
+                    ))) + $product;
+                }
+                $view->_exportVariableToView('itemProduct', $product);
             }
         }
 
@@ -964,6 +974,17 @@ foreach (array('item-add-shop', 'item-edit-shop') as $screen) {
     check("$screen: a line for a digital product", dom($screen)->query('//*[@id="sec-shipping"]//*[@data-osc-digital-only]')->length === 1);
     check("$screen: notes for a product with options", dom($screen)->query('//*[@data-variant-with-options]')->length === 2);
 }
+
+harness_section('each option row has its own shipping class');
+
+$ship = controls('item-add-shop-variants', 'product[variants][0][shippingClass]');
+pin('item-add-shop-variants: a visible text box holds the row\'s class', array(1, 'text', 'bulky', '40'), array(
+    count($ship), $ship[0]?->getAttribute('type'), $ship[0]?->getAttribute('value'), $ship[0]?->getAttribute('maxlength'),
+));
+check('item-add-shop-variants: the rows have a Shipping class column',
+    dom('item-add-shop-variants')->query('//table[contains(@class,"osc-variant-table")]//th[.="Shipping class"]')->length === 1);
+check('a row added in the browser gets the same box',
+    preg_match("/var FIELDS = \\[[^\\]]*'shippingClass'/", (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/js/variants.js')) === 1);
 
 exit(harness_result());
 

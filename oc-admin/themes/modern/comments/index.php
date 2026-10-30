@@ -14,7 +14,7 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Comments'),
     'help'    => __('Manage the comments that users publish on the listings on your site.'
                     . ' You can also edit, delete, activate or block comments.'),

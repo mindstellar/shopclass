@@ -74,6 +74,21 @@ function admin_broken_plugin_notice()
 // Early, so the warning is queued before the page prints its flash messages.
 osc_add_hook('admin_page_header', 'admin_broken_plugin_notice', 1);
 
+/**
+ * Print the one payment test-mode notice where it belongs (dashboard and billing screens).
+ *
+ * @return void
+ */
+function admin_payment_test_notice()
+{
+    echo osc_admin_payment_test_notice(
+        array('page' => Params::getParam('page'), 'action' => Params::getParam('action'), 'id' => Params::getParam('id')),
+        (string) ($_COOKIE[OSC_PAY_TEST_COOKIE] ?? '')
+    );
+}
+
+osc_add_hook('admin_page_header', 'admin_payment_test_notice', 10);
+
 // favicons
 /**
  * Emit the admin favicon and manifest <link> tags, after the `admin_favicons` filter.

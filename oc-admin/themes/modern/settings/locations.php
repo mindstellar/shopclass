@@ -19,7 +19,7 @@ $locationTab  = __get('locationTab') === 'data' ? 'data' : 'browse';
 $locationData = __get('locationData');
 
 osc_admin_page(array(
-    'section' => __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Locations'),
     'help'    => __("Add, edit or delete the countries, regions and cities installed on your Shopclass. "
                     . '<strong>Be careful</strong>: modifying locations can cause your statistics to be incorrect '

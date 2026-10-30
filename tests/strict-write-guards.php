@@ -45,6 +45,7 @@ require_once __DIR__ . '/lib/scratchdb.php';
 require_once __DIR__ . '/lib/harness.php';
 
 $admin = scratchdb_session('osc_strict_write_guards');
+scratchdb_pin_site_mode($admin, 'classifieds');
 
 /*
  * Stand-ins the action classes reach through, all guarded. They are the same ones

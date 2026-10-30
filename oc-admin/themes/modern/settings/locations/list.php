@@ -294,7 +294,7 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                         <?php } elseif ($level === 'region') { ?>
                             <th scope="col" class="col-numeric"><?php _e('Cities'); ?></th>
                         <?php } ?>
-                        <th scope="col" class="col-numeric"><?php _e('Listings'); ?></th>
+                        <th scope="col" class="col-numeric"><?php echo osc_mode_text(__('Listings'), __('Products')); ?></th>
                         <?php if ($level !== 'country') { ?>
                             <th scope="col"><?php _e('Status'); ?></th>
                         <?php } ?>
@@ -359,7 +359,7 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                                     <?php echo number_format((int) $row['cities']); ?>
                                 </td>
                             <?php } ?>
-                            <td class="col-numeric loc-col-count" data-col-name="<?php echo osc_esc_html(__('Listings')); ?>">
+                            <td class="col-numeric loc-col-count" data-col-name="<?php echo osc_esc_html(osc_mode_text(__('Listings'), __('Products'))); ?>">
                                 <?php echo number_format((int) $row['listings']); ?>
                             </td>
                             <?php if ($level !== 'country') { ?>

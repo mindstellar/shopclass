@@ -164,6 +164,65 @@ select.field-select {
   }
 }
 
+// A setting that needs another one switched on first: greyed, and its hint says which.
+.form-label-checkbox.is-unavailable > label {
+  color: var(--osc-ink-muted);
+  cursor: not-allowed;
+}
+
+// Options that carry a line of explanation are drawn as cards, side by side where they fit.
+.field-choices:has(.field-choice-desc) {
+  display: grid;
+  gap: .75rem;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr));
+  max-inline-size: 44rem;
+}
+
+.field-choice:has(.field-choice-desc) {
+  align-items: start;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: $border-radius;
+  display: grid;
+  gap: .25rem .625rem;
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: .75rem .875rem;
+  transition: border-color .15s ease-out, background-color .15s ease-out;
+
+  input[type="radio"] {
+    margin-block-start: .2rem;
+  }
+
+  > span:not(.field-choice-desc) {
+    font-weight: 600;
+  }
+
+  &:hover {
+    border-color: var(--osc-bronze);
+  }
+
+  &:has(input:checked) {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+  }
+
+  &:has(input:focus-visible) {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.field-choice-desc {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  grid-column: 2;
+  line-height: 1.45;
+}
+
 // An image field: the stored image, the picker, and the box that clears it.
 .field-image {
   align-items: flex-start;

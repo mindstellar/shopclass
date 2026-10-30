@@ -77,10 +77,18 @@ final class MainSettingsScreen extends SettingsScreen
         }
 
         $form
-            ->select('site_mode', __('Site is a'), array(
-                SiteMode::CLASSIFIEDS => __('Classifieds site'),
-                SiteMode::SHOP        => __('Shop (only admins add products)'),
-            ), __('Your theme and plugins say which of these they work for.'))
+            ->radio('site_mode', __('Site is a'), array(
+                SiteMode::CLASSIFIEDS => array(
+                    'label'       => __('Classifieds site'),
+                    'custom_html' => '<span class="field-choice-desc">'
+                        . osc_esc_html(__('Users sign up and post listings. Buyers contact the seller; there is no cart.')) . '</span>',
+                ),
+                SiteMode::SHOP        => array(
+                    'label'       => __('Shop (only admins add products)'),
+                    'custom_html' => '<span class="field-choice-desc">'
+                        . osc_esc_html(__('You add the products. Buyers pay through a cart and checkout.')) . '</span>',
+                ),
+            ), __('Switching changes the wording, the admin menus, cart and checkout, and who can post. Your theme and plugins say which of these they work for.'))
                 ->default(SiteMode::CLASSIFIEDS);
         // Under "Site is a": for each mode, who does not say they work with it. The shared
         // dependsOn() shows the one for the chosen mode, before anything is saved.

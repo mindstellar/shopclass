@@ -33,6 +33,8 @@ $root  = Actor::admin(1, '192.0.2.80');
 Preference::getInstance()->set('reg_user_post', '0');
 
 harness_section('the setting');
+$admin->query("DELETE FROM {$p}t_preference WHERE s_name = 'site_mode'");
+$mode('');
 pin('unset reads classifieds', ['classifieds', false], [osc_site_mode(), osc_is_shop_mode()]);
 $mode('shop');
 pin('shop', ['shop', true], [osc_site_mode(), osc_is_shop_mode()]);
@@ -69,7 +71,11 @@ pin('nothing lacks when nothing is active', [], SiteMode::lacking('shop', []));
 
 harness_section('the settings screen and the API');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
+// Drawn as a shop, the way the save that switches the site back to classifieds sees it.
+$mode('shop');
 \mindstellar\admin\form\MainSettingsScreen::register();
+$parentField = \mindstellar\settings\SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\MainSettingsScreen::PAGE_ID)['selectable_parent_categories'];
+$mode('classifieds');
 $modeField = \mindstellar\settings\SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\MainSettingsScreen::PAGE_ID)['site_mode'];
 pin('the site type select offers two options', ['classifieds', 'shop'], array_keys($modeField['options']));
 $siteEnum = \mindstellar\api\schema\Schema::components()['Site']['properties']['mode']['enum'];
@@ -96,6 +102,10 @@ check('shop: a parent category is accepted', (new \mindstellar\utility\Validate(
 Preference::getInstance()->set('selectable_parent_categories', '1');
 $mode('classifieds');
 check('classifieds: the stored on is kept', (bool) osc_selectable_parent_categories());
+(new \mindstellar\admin\form\store\PreferenceStore('osclass'))->save(['selectable_parent_categories' => $parentField], ['selectable_parent_categories' => ''], []);
+scratchdb_forget_cache();
+osc_reset_preferences();
+check('switching a shop to classifieds keeps the stored value of the box it drew disabled', (bool) osc_selectable_parent_categories());
 Preference::getInstance()->set('selectable_parent_categories', '0');
 $admin->query("DELETE FROM {$p}t_category WHERE pk_i_id = {$parent}");
 

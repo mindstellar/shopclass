@@ -1067,6 +1067,7 @@ function osc_expire_premium_items()
     return \mindstellar\billing\Premium::expire();
 }
 osc_add_hook('cron_hourly', 'osc_expire_premium_items');
+osc_add_hook('cron_hourly', array(\mindstellar\search\FacetIndex::class, 'heal'));
 
 /**
  * Print the maintenance-mode banner while maintenance mode is on.

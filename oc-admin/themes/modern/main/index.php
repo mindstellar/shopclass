@@ -85,7 +85,7 @@ function chartJs()
             var bronze = oscCssVar('--osc-bronze', '#a9703f');
             var info   = oscCssVar('--osc-info', '#3a8fbf');
             return {
-                title: '<?php echo osc_esc_js(__('New listings/users')); ?>',
+                title: '<?php echo osc_esc_js(osc_mode_text(__('New listings/users'), __('New products/users'))); ?>',
                 titleTextStyle: { color: muted, fontSize: 14, bold: false },
                 // Transparent so the chart sits on the widget's surface in either
                 // theme instead of baking in a white fill.
@@ -117,7 +117,7 @@ function chartJs()
 
         function drawChartListing() {
             oscListingData = google.visualization.arrayToDataTable([
-                ['<?php echo osc_esc_js(__('Date')); ?>', '<?php echo osc_esc_js(__('Listings')); ?>', '<?php echo osc_esc_js(__('Users')); ?>'],
+                ['<?php echo osc_esc_js(__('Date')); ?>', '<?php echo osc_esc_js(osc_mode_text(__('Listings'), __('Products'))); ?>', '<?php echo osc_esc_js(__('Users')); ?>'],
                 <?php foreach ($items as $k => $v) {
                     echo "['" . osc_esc_js($k) . "', " . (int)$v . ', ' . (int)$users[$k] . '],';
                 } ?>
@@ -161,7 +161,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <span class="dash-stat-icon dash-stat-icon-bronze"><i class="bi bi-card-list" aria-hidden="true"></i></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-value"><?php echo number_format((int) $numItems); ?></span>
-                <span class="dash-stat-label"><?php _e('Listings'); ?></span>
+                <span class="dash-stat-label"><?php echo osc_mode_text(__('Listings'), __('Products')); ?></span>
             </span>
         </a>
         <a class="dash-stat" href="<?php echo osc_admin_base_url(true); ?>?page=users">
@@ -201,7 +201,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <ul class="dash-system">
                             <?php foreach ($toShip['orders'] as ['order' => $order, 'buyer' => $buyer]) { ?>
                                 <li class="dash-system-row dash-ship-row">
-                                    <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()); ?>"><?php echo osc_esc_html(osc_billing_order_number($order->getId())); ?></a>
+                                    <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()); ?>"><?php echo osc_esc_html(\mindstellar\billing\Receipts::number($order)); ?></a>
                                     <span class="dash-system-label"><?php echo osc_esc_html($buyer); ?></span>
                                     <span class="dash-system-value"><?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?></span>
                                     <span class="dash-ship-age"><?php echo osc_esc_html(osc_admin_duration(time() - (int) strtotime($order->getDate()))); ?></span>
@@ -217,7 +217,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <div class="col-lg-4 col-md-6">
             <div class="widget-box h-100">
                 <div class="widget-box-title">
-                    <h3><?php _e('Listings by category'); ?></h3>
+                    <h3><?php echo osc_mode_text(__('Listings by category'), __('Products by category')); ?></h3>
                 </div>
                 <div class="widget-box-content dash-category-scroll">
                     <?php
@@ -241,7 +241,7 @@ if (!empty($numItemsPerCategory)) { ?>
                                                                                      $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_name']); ?></a>
                                         </td>
                                         <td><?php echo $c['i_num_items'] . '&nbsp;' . (($c['i_num_items'] == 1)
-                 ? __('Listing') : __('Listings')); ?></td>
+                 ? osc_mode_text(__('Listing'), __('Product')) : osc_mode_text(__('Listings'), __('Products'))); ?></td>
                                         </tr>
                                         <?php foreach ($c['categories'] as $subc) { ?>
                                             <tr<?php if ($even == true) {
@@ -253,7 +253,7 @@ if (!empty($numItemsPerCategory)) { ?>
                                                 <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
                                                 </td>
                                                 <td><?php echo $subc['i_num_items'] . ' ' . (($subc['i_num_items'] == 1)
-                                                     ? __('Listing') : __('Listings')); ?></td>
+                                                     ? osc_mode_text(__('Listing'), __('Product')) : osc_mode_text(__('Listings'), __('Products'))); ?></td>
                                                 </tr>
                                             <?php
                                             $countEvent++;
@@ -266,7 +266,7 @@ if (!empty($numItemsPerCategory)) { ?>
                             </tbody>
                         </table>
                     <?php } else { ?>
-                        <?php _e("There aren't any uploaded listing yet"); ?>
+                        <?php echo osc_mode_text(__("There aren't any uploaded listing yet"), __('There are no products yet')); ?>
                     <?php } ?>
                 </div>
             </div>
@@ -279,7 +279,7 @@ if (!empty($numItemsPerCategory)) { ?>
                 <div class="widget-box-content widget-box-content-stats">
                     <div id="widget-box-stats-listings" class="widget-box-stats">
                         <div id="placeholder-listing" class="graph-placeholder" height="120"></div>
-                        <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=items" class="btn btn-sm btn-dim"><?php _e('Listing statistics'); ?></a>
+                        <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=items" class="btn btn-sm btn-dim"><?php echo osc_mode_text(__('Listing statistics'), __('Product statistics')); ?></a>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=users" class="btn btn-sm btn-dim"><?php _e('User statistics'); ?></a>
                     </div>
                 </div>

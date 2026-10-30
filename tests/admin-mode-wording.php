@@ -18,6 +18,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\admin\form\BillingSettingsScreen;
+use mindstellar\admin\form\ItemSettingsScreen;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\settings\SettingsPageRegistry;
 
@@ -31,7 +32,7 @@ seed_locale($admin);
 seed_currency($admin);
 
 $setMode = static function (string $mode): void {
-    Preference::getInstance()->set('site_mode', $mode);
+    osc_set_preference('site_mode', $mode);
     scratchdb_forget_cache();
     osc_reset_preferences();
 };
@@ -69,6 +70,16 @@ $shopFields = static function () {
 
     return array_keys(SettingsPageRegistry::getInstance()->fields(BillingSettingsScreen::PAGE_SHOP));
 };
+$itemSettings = static function (): string {
+    $registry = SettingsPageRegistry::getInstance();
+    $entries  = new ReflectionProperty($registry, 'entries');
+    $all      = $entries->getValue($registry);
+    unset($all[ItemSettingsScreen::PAGE_ID]);
+    $entries->setValue($registry, $all);
+    ItemSettingsScreen::register();
+
+    return (string) json_encode(array(osc_settings_page(ItemSettingsScreen::PAGE_ID), $registry->fields(ItemSettingsScreen::PAGE_ID)));
+};
 $menuLabels = static function (): string {
     $menu = new AdminMenu();
     $menu->init();
@@ -82,12 +93,18 @@ pin('cash on delivery stays registered for old orders', true, in_array('cod', $g
 pin('bank transfer stays', true, in_array('offline', $gatewayIds(), true));
 pin('the Orders group has hold days and the prefix only', array('billing_hold_days', 'billing_order_prefix'), $shopFields());
 check('reports say listings', str_contains($menuLabels(), 'Reported listings') && !str_contains($menuLabels(), 'Reported products'));
+check('statistics name listings', str_contains($menuLabels(), '"Listings"') && !str_contains($menuLabels(), '"Products"'));
+check('listing settings say listings', str_contains($itemSettings(), 'Listing Settings') && !str_contains($itemSettings(), 'Product Settings'));
 
 harness_section('shop');
 $setMode('shop');
 pin('cash on delivery is offered', true, in_array('cod', $gatewayIds(), true));
 check('the card hold and open-order limit are settings', in_array('billing_open_hold_orders', $shopFields(), true));
 check('reports say products', str_contains($menuLabels(), 'Reported products') && !str_contains($menuLabels(), 'Reported listings'));
+check('the menu never says Listings', !str_contains($menuLabels(), '"Listings"'));
+$shopSettings = $itemSettings();
+check('product settings say products', str_contains($shopSettings, 'Product Settings') && str_contains($shopSettings, 'Images per product'));
+check('product settings never say listing', stripos($shopSettings, 'listing') === false);
 
 harness_section('widget sections');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
@@ -115,5 +132,23 @@ include ABS_PATH . 'oc-admin/themes/modern/appearance/widgets.php';
 $drawn = (string) ob_get_clean();
 check('a section carries its label', str_contains($drawn, 'data-label="Footer"'));
 check('a stored section the theme dropped is named Unused', str_contains($drawn, 'data-label="Unused: home"'));
+
+harness_section('shop dashboard');
+foreach (array('numItemsPerCategory' => array(array('pk_i_id' => 1, 's_name' => 'Fashion', 'i_num_items' => 2, 'categories' => array())), 'numItems' => 41, 'numUsers' => 3,
+    'numPendingComments' => 0, 'numReportedItems' => 0, 'aFeatured' => array(), 'toShip' => null) as $k => $v) {
+    View::newInstance()->_exportVariableToView($k, $v);
+}
+ob_start();
+include ABS_PATH . 'oc-admin/themes/modern/main/index.php';
+$dash = (string) ob_get_clean();
+check('the dashboard counts products', str_contains($dash, '41</span>') && str_contains($dash, '>Products</span>'));
+check('the dashboard names products by category', str_contains($dash, 'Products by category') && str_contains($dash, 'Product statistics'));
+check('the dashboard never says listing', stripos(strip_tags($dash), 'listing') === false);
+
+harness_section('form widget');
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hForms.php';
+$formWidget = (string) json_encode(osc_widget_types()['core.form'] ?? null);
+check('the form widget names the real menu path', str_contains($formWidget, 'Forms \u2192 Manage forms') && !str_contains($formWidget, 'Custom forms'));
 
 exit(harness_result());

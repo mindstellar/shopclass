@@ -1268,6 +1268,10 @@ $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shippi
 pin('an amount that is not a number is refused', array('warning:Enter an amount, e.g. 49 or 49.50.'), flashed($run));
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
 pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
+pin('the shop tab heads each of its sections', array(1, 1, 1, 1), array_map(static fn ($t) => preg_match('#<h3[^>]*>' . preg_quote($t, '#') . '</h3>#', $run['drawn']), array('Delivery', 'Cash on delivery', 'Store address', 'Orders')));
+check('the areas search is a combobox over a listbox', str_contains($run['drawn'], 'role="combobox"') && str_contains($run['drawn'], 'aria-controls="cod-areas-results"') && str_contains($run['drawn'], 'id="cod-areas-results" role="listbox"'));
+$codJs = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/js/cod-areas.js');
+check('and its script picks a result with the arrow keys and Enter', str_contains($codJs, "'ArrowDown'") && str_contains($codJs, "setAttribute('role', 'option')") && str_contains($codJs, 'aria-activedescendant'));
 check('the shop tab loads the cash on delivery areas script, with no inline script', in_array('admin-cod-areas', $GLOBALS['enqueued'] ?? array(), true) && !str_contains($run['drawn'], 'data-cod-chips]\')') && str_contains($run['drawn'], 'data-store="billing_cod_areas"'));
 
 seed_pref($admin, 'site_mode', 'classifieds');
@@ -1276,6 +1280,8 @@ $forgetShopPage();
 drive('CAdminSettingsBilling', 'billing');
 $classifiedsShop = array_keys(SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP));
 pin('classifieds declares the Orders group only', array('billing_hold_days', 'billing_order_prefix'), $classifiedsShop);
+$oneGroup = drive('CAdminSettingsBilling', 'billing', array('tab' => 'shop'));
+pin('a tab of one section is named by the tab, not a heading', ['shop', 0], [__get('billing_tab'), preg_match('#<h3[^>]*>Orders</h3>#', $oneGroup['drawn'])]);
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_hold_days' => '5'));
 pin('and a save there leaves delivery and cash on delivery as stored', array(array('49500000', 'STRING'), array('1', 'BOOLEAN'), array('5', 'INTEGER')), array(pref($admin, 'billing_shipping_flat'), pref($admin, 'billing_cod_enabled'), pref($admin, 'billing_hold_days')));
 $forgetShopPage();

@@ -18,6 +18,9 @@ final class BuildInfo
 {
     public const EDGE = 'edge';
 
+    /** The published container image; each release is tagged with its version. */
+    public const IMAGE = 'ghcr.io/mindstellar/shopclass';
+
     /** @var array{channel:string,revision:string,built:string}|null */
     private static ?array $info = null;
 
@@ -71,6 +74,28 @@ final class BuildInfo
     public static function isEdge(): bool
     {
         return (self::current()['channel'] ?? '') === self::EDGE;
+    }
+
+    /**
+     * What a site running from a container image is told on the upgrade screen.
+     *
+     * @param string $installed the version this site runs
+     * @param string $available the newer release, or '' when there is none
+     *
+     * @return string
+     */
+    public static function imageUpdateText(string $installed, string $available): string
+    {
+        if ($available === '') {
+            return sprintf(__('Shopclass is up to date. You have version %s.'), $installed);
+        }
+
+        return sprintf(
+            __('Shopclass %1$s is available. You have %2$s. Deploy the image %3$s.'),
+            $available,
+            $installed,
+            self::IMAGE . ':' . $available
+        );
     }
 
     /**

@@ -229,11 +229,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="upgrade-tool">
         <p class="form-intro">
             <?php
-            printf(
-                osc_esc_html(__('Your Shopclass installation can be auto-upgraded. %1$s: the database and oc-content. You can also upgrade Shopclass manually, more information in the %2$s.')),
-                '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">' . osc_esc_html(__('Back up first')) . '</a>',
-                '<a href="https://docs.mindstellar.com/">' . osc_esc_html(__('Documentation')) . '</a>'
-            );
+            if ($selfUpdateOff) {
+                _e('This site runs from a container image. It is updated by deploying a newer image, not from this screen.');
+            } else {
+                printf(
+                    osc_esc_html(__('Your Shopclass installation can be auto-upgraded. %1$s: the database and oc-content. You can also upgrade Shopclass manually, more information in the %2$s.')),
+                    '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">' . osc_esc_html(__('Back up first')) . '</a>',
+                    '<a href="https://docs.mindstellar.com/">' . osc_esc_html(__('Documentation')) . '</a>'
+                );
+            }
             ?>
         </p>
         <div id="steps_div">
@@ -246,7 +250,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 } elseif ($selfUpdateOff) {
                     osc_admin_verdict(array(array(
                         'tone' => 'info',
-                        'text' => __('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.'),
+                        'text' => __('This installation runs from a container image. Update by deploying a newer image tag; the database is migrated automatically when the container starts.')
+                            . ' ' . BuildInfo::imageUpdateText((string) osc_get_preference('version'), $isAvailable ? $remoteVersion : ''),
                     )));
                 } elseif (!$isAvailable && $waiting !== null) {
                     osc_admin_verdict(array(array(
