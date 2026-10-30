@@ -91,7 +91,9 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
                             <div class="text-muted osc-mono"><?php echo osc_esc_html($gateway->getId()); ?></div>
                         </td>
                         <td><?php echo osc_esc_html(
-                            implode(', ', $gateway->getSupportedCurrencies()) ?: __('None declared')
+                            \mindstellar\billing\PaymentGatewayRegistry::anyCurrency($gateway)
+                                ? __('Any currency')
+                                : (implode(', ', $gateway->getSupportedCurrencies()) ?: __('None declared'))
                         ); ?></td>
                         <td>
                             <?php osc_admin_status(

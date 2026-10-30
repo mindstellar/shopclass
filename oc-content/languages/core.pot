@@ -2044,6 +2044,10 @@ msgstr ""
 msgid "Any country"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/billing.php
+msgid "Any currency"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "Any distance"
 msgstr ""

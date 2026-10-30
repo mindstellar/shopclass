@@ -116,13 +116,27 @@ final class PaymentGatewayRegistry extends Registry
             if ($id === gateway\CashOnDeliveryGateway::ID && !osc_is_shop_mode()) {
                 continue;
             }
-            if ($currency !== null && !in_array($currency, $gateway->getSupportedCurrencies(), true)) {
+            if ($currency !== null && !self::anyCurrency($gateway) && !in_array($currency, $gateway->getSupportedCurrencies(), true)) {
                 continue;
             }
             $out[$id] = $gateway;
         }
 
         return $out;
+    }
+
+    /**
+     * Whether a gateway takes money in any currency, as a bank transfer or cash does. A gateway
+     * opts in with an acceptsAnyCurrency() method; getSupportedCurrencies() then lists only what
+     * credit packages are sold in.
+     *
+     * @param PaymentGateway $gateway
+     *
+     * @return bool
+     */
+    public static function anyCurrency(PaymentGateway $gateway): bool
+    {
+        return method_exists($gateway, 'acceptsAnyCurrency') && $gateway->acceptsAnyCurrency() === true;
     }
 
     /**

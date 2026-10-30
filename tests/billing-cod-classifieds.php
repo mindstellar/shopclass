@@ -148,5 +148,7 @@ pin('it can still be cancelled', ['cancelled', true], [OrderStore::find($toCance
 harness_section('shop mode');
 $setMode('shop');
 pin('checkout offers it again', true, isset($registry->available('USD')['cod']));
+pin('a cart in another currency can pay by bank transfer or cash', [true, true], [isset($registry->available('INR')['offline']), isset($registry->available('INR')['cod'])]);
+pin('credit purchases still pay in the billing currency only', ['USD'], $registry->get('offline')->getSupportedCurrencies());
 
 exit(harness_result());

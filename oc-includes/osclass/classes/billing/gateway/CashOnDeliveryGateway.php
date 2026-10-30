@@ -46,6 +46,16 @@ final class CashOnDeliveryGateway implements PaymentGateway
         return array(osc_billing_currency());
     }
 
+    /**
+     * Money is paid by hand, so a cart in any currency can pay this way.
+     *
+     * @return bool
+     */
+    public function acceptsAnyCurrency(): bool
+    {
+        return true;
+    }
+
     public function isConfigured(): bool
     {
         return osc_billing_cod_enabled();

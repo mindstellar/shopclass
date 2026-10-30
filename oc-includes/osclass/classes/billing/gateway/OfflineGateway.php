@@ -48,13 +48,23 @@ final class OfflineGateway implements PaymentGateway
     }
 
     /**
-     * Only the site's own billing currency: an offline transfer has no conversion.
+     * The billing currency, which credit packages are sold in. Carts in any currency pay this way too.
      *
      * @return string[]
      */
     public function getSupportedCurrencies(): array
     {
         return array(osc_billing_currency());
+    }
+
+    /**
+     * Money is paid by hand, so a cart in any currency can pay this way.
+     *
+     * @return bool
+     */
+    public function acceptsAnyCurrency(): bool
+    {
+        return true;
     }
 
     /**
