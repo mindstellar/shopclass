@@ -488,6 +488,7 @@ msgid_plural "%d writes were refused by strict SQL mode in the last 7 days."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/billing/Receipts.php
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "%s (included)"

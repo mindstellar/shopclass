@@ -288,7 +288,9 @@ foreach ($order->getMeta() as $key => $value) {
                                     <td><?php echo osc_esc_html((string) $line['sku']); ?></td>
                                     <td class="col-numeric"><?php echo $isItem ? (int) $line['qty'] : ''; ?></td>
                                     <td class="col-numeric"><?php echo $isItem ? osc_esc_html(osc_admin_money($line['unit'], $order->getCurrency())) : ''; ?></td>
-                                    <td class="col-numeric"><?php echo osc_esc_html(osc_admin_money($line['amount'], $order->getCurrency())); ?></td>
+                                    <td class="col-numeric"><?php echo osc_esc_html($line['kind'] === 'tax' && ($line['meta']['included'] ?? false) === true
+                                        ? sprintf(__('%s (included)'), osc_admin_money($line['unit'], $order->getCurrency()))
+                                        : osc_admin_money($line['amount'], $order->getCurrency())); ?></td>
                                 </tr>
                             <?php } ?>
                             <tr>

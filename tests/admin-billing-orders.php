@@ -159,6 +159,9 @@ check('a seller title is escaped', str_contains($html, 'Tee &lt;script&gt;x&lt;/
 check('a pending goods order offers mark paid and cancel, not shipping', str_contains($html, 'value="order_paid"') && str_contains($html, 'order-cancel-dialog') && str_contains($html, 'order_cancel') && !str_contains($html, 'value="order_ship"'));
 check('no credit ledger for goods', !str_contains($html, 'Credit movements'));
 check('no oversold pill yet', !str_contains($html, 'Oversold'));
+$taxed = $make('offline');
+OrderLineStore::add($taxed->getId(), [['kind' => 'tax', 'title' => 'CGST 9%', 'unit' => $m(82.22), 'amount' => 0, 'meta' => ['included' => true]]]);
+check('an included tax line shows its tax, marked included', str_contains(drive('order', [], ['id' => $taxed->getId()])['drawn'], '82.22') && str_contains(drive('order', [], ['id' => $taxed->getId()])['drawn'], '(included)'));
 
 harness_section('cancel');
 $page = drive('order_cancel', ['id' => $id]);
