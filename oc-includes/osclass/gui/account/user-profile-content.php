@@ -24,6 +24,8 @@ if (!defined('ABS_PATH')) {
 
 $profileUser   = osc_user();
 $profileLocale = osc_current_user_locale();
+// A shop's shoppers do not sell: the seller fields are not shown, and their stored values are posted back unchanged.
+$profileSeller = !osc_is_shop_mode();
 // The current language first; the others go behind a disclosure.
 $profileLocales = array($profileLocale => '');
 foreach (osc_get_locales() as $locale) {
@@ -87,9 +89,14 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
                     <?php osc_gui_field('s_name', _m('Name'), static function () use ($profileUser): void {
                         UserForm::name_text($profileUser);
                     }); ?>
-                    <?php osc_gui_field('b_company', _m('Account type'), static function () use ($profileUser): void {
-                        UserForm::is_company_select($profileUser, _m('Private seller'), _m('Business'));
-                    }); ?>
+                    <?php if ($profileSeller) {
+                        osc_gui_field('b_company', _m('Account type'), static function () use ($profileUser): void {
+                            UserForm::is_company_select($profileUser, _m('Private seller'), _m('Business'));
+                        });
+                    } else { ?>
+                        <input type="hidden" name="b_company" value="<?php echo empty($profileUser['b_company']) ? '0' : '1'; ?>" />
+                        <input type="hidden" name="s_website" value="<?php echo osc_esc_html((string) ($profileUser['s_website'] ?? '')); ?>" />
+                    <?php } ?>
                 </div>
             </fieldset>
 
@@ -103,9 +110,11 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
                         UserForm::phone_land_text($profileUser);
                     }); ?>
                 </div>
-                <?php osc_gui_field('s_website', _m('Website'), static function () use ($profileUser): void {
-                    UserForm::website_text($profileUser);
-                }); ?>
+                <?php if ($profileSeller) {
+                    osc_gui_field('s_website', _m('Website'), static function () use ($profileUser): void {
+                        UserForm::website_text($profileUser);
+                    });
+                } ?>
             </fieldset>
 
             <fieldset class="oe-group" data-location-cascade>
@@ -138,6 +147,7 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
                 </div>
             </fieldset>
 
+            <?php if ($profileSeller) { ?>
             <fieldset class="oe-group">
                 <legend><?php echo osc_esc_html(_m('About you')); ?></legend>
                 <?php $profileInfoField($profileLocale, _m('Description'));
@@ -150,6 +160,7 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
                     </details>
                 <?php } ?>
             </fieldset>
+            <?php } ?>
 
             <?php osc_run_hook('user_profile_form', $profileUser); ?>
             <?php osc_run_hook('user_form', $profileUser); ?>
@@ -183,9 +194,10 @@ $profileInfoField = static function (string $code, string $label) use ($profileU
         if ($deleteUrl !== '') { ?>
             <section class="oe-danger">
                 <h2 class="oe-panel__title"><?php echo osc_esc_html(_m('Delete your account')); ?></h2>
-                <p class="oe-muted"><?php echo osc_esc_html(
-                    _m('Your listings and messages are removed with it. This cannot be undone.')
-                ); ?></p>
+                <p class="oe-muted"><?php echo osc_esc_html(osc_mode_text(
+                    _m('Your listings and messages are removed with it. This cannot be undone.'),
+                    _m('Your saved addresses, cart and messages are removed with it. This cannot be undone.')
+                )); ?></p>
                 <a class="oe-btn oe-btn-danger" href="<?php echo osc_esc_html($deleteUrl); ?>"><?php
                     echo osc_esc_html(_m('Delete your account')); ?></a>
             </section>

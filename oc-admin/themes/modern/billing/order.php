@@ -27,14 +27,24 @@ $entries = __get('entries');
 $typed   = is_array(__get('typed')) ? __get('typed') : array();
 $errors  = is_array(__get('errors')) ? __get('errors') : array();
 // The carrier, tracking number and link boxes, shared by the ship and edit-tracking forms.
-$trackingFields = static function (string $prefix, array $values) use ($errors): void {
+$carriers = is_array(__get('carriers')) ? __get('carriers') : array();
+$trackingFields = static function (string $prefix, array $values) use ($errors, $carriers): void {
+    echo '<div class="order-tracking-fields">';
     osc_admin_text(array(
         'id'    => $prefix . '-carrier',
         'name'  => 'carrier',
         'label' => __('Carrier'),
         'value' => (string) ($values['carrier'] ?? ''),
-        'attrs' => array('maxlength' => 100),
+        'attrs' => array('maxlength' => 100) + ($carriers === array() ? array() : array('list' => 'order-carriers', 'autocomplete' => 'off')),
     ));
+    if ($carriers !== array()) {
+        echo '<div class="order-carrier-chips" role="group" aria-label="' . osc_esc_html(__('Common carriers')) . '">';
+        foreach ($carriers as $carrierName) {
+            echo '<button type="button" class="order-carrier-chip" data-osc-fill="#' . osc_esc_html($prefix) . '-carrier" data-osc-fill-value="'
+                . osc_esc_html((string) $carrierName) . '">' . osc_esc_html((string) $carrierName) . '</button>';
+        }
+        echo '</div>';
+    }
     osc_admin_text(array(
         'id'    => $prefix . '-number',
         'name'  => 'tracking',
@@ -51,6 +61,7 @@ $trackingFields = static function (string $prefix, array $values) use ($errors):
         'attrs' => array('maxlength' => 500, 'placeholder' => 'https://'),
         'help'  => __('Optional. Must start with https://'),
     ));
+    echo '</div>';
 };
 $balance = (int)__get('balance');
 $refundable = (bool)__get('refundable');
@@ -220,7 +231,7 @@ foreach ($order->getMeta() as $key => $value) {
 
     <div class="billing-detail-grid">
         <div>
-            <?php osc_admin_panel_open(_x('Order', 'purchase order')); ?>
+            <?php osc_admin_panel_open(_x('Order', 'purchase order'), array('class' => 'billing-detail-summary')); ?>
                 <?php osc_admin_definition($rows); ?>
             <?php osc_admin_panel_close(); ?>
 
@@ -359,8 +370,15 @@ foreach ($order->getMeta() as $key => $value) {
         </div>
 
         <div>
+            <?php if ($carriers !== array()) {
+                echo '<datalist id="order-carriers">';
+                foreach ($carriers as $carrierName) {
+                    echo '<option value="' . osc_esc_html((string) $carrierName) . '"></option>';
+                }
+                echo '</datalist>';
+            } ?>
             <?php if ($order->canShip()) { ?>
-                <?php osc_admin_panel_open(__('Ship this order')); ?>
+                <?php osc_admin_panel_open(__('Ship this order'), array('class' => 'billing-detail-next')); ?>
                     <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>"
                           id="order-ship-form" data-osc-confirm-empty="#order-ship-dialog">
                         <input type="hidden" name="page" value="billing"/>
@@ -373,7 +391,7 @@ foreach ($order->getMeta() as $key => $value) {
             <?php } ?>
 
             <?php if ($isGoods && $order->getStatus() === Order::STATUS_SHIPPED) { ?>
-                <?php osc_admin_panel_open(__('Delivery')); ?>
+                <?php osc_admin_panel_open(__('Delivery'), array('class' => 'billing-detail-next')); ?>
                     <p class="panel-subtitle"><?php echo osc_esc_html($order->awaitsCash()
                         ? __('Mark this delivered once the courier has collected the cash. That also marks it paid.')
                         : __('Mark this delivered once the parcel has arrived.')); ?></p>

@@ -23,8 +23,8 @@ if (!defined('ABS_PATH')) {
  * @var string              $backLabel
  */
 
+// The title carries the number, so no row repeats it under another name.
 $rows = array(
-    __('Receipt number')  => $receipt['label'],
     __('Date paid')       => $receipt['date'],
     __('What was bought') => $receipt['credits'],
     __('Amount paid')     => $receipt['amount'],

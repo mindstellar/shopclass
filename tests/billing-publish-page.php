@@ -31,6 +31,7 @@ use mindstellar\billing\Wallet;
 use mindstellar\database\Db;
 
 $admin = api_admin_boot('osc_billing_publish_page');
+scratchdb_pin_site_mode($admin, 'classifieds');
 $p     = DB_TABLE_PREFIX;
 
 foreach (array('error', 'ok', 'warning', 'info') as $kind) {
@@ -136,8 +137,13 @@ final class PayPageBilling extends CWebBilling
 /** A gateway that sends the buyer away, or shows its instructions in the page. */
 final class PayPageGateway implements PaymentGateway
 {
-    public function __construct(private string $id, private bool $inPage = false)
+    public function __construct(private string $id, private bool $inPage = false, private bool $wire = false)
     {
+    }
+
+    public function instructions(Order $order): ?string
+    {
+        return $this->wire && $order->isPending() ? "Pay into account 42\nReference: " . osc_billing_order_number($order->getId()) : null;
     }
 
     public function getId(): string
@@ -174,6 +180,7 @@ final class PayPageGateway implements PaymentGateway
 }
 PaymentGatewayRegistry::getInstance()->register(new PayPageGateway('ppgw'));
 PaymentGatewayRegistry::getInstance()->register(new PayPageGateway('ppbank', true));
+PaymentGatewayRegistry::getInstance()->register(new PayPageGateway('ppwire', true, true));
 $five = PackageStore::create(array('s_name' => 'Five pack', 'i_amount' => 2_000_000, 's_currency' => 'USD', 'i_credits' => 5));
 $two  = PackageStore::create(array('s_name' => 'Two pack', 'i_amount' => 900_000, 's_currency' => 'USD', 'i_credits' => 2));
 
@@ -235,9 +242,10 @@ harness_section('enough credits');
 $r = pay($uid, $held);
 pin('the page is the pay step', array(null, 'user-billing-publish.php'), array($r['redirect'], $GLOBALS['view']));
 check('it offers the credits', str_contains($r['drawn'], 'Use 3 credits and publish') && str_contains($r['drawn'], 'value="credits"'));
-check('with the price and the balance', str_contains($r['drawn'], 'This listing costs 3 credits. You have 5 credits.'));
+check('the price is the headline, then the balance', str_contains($r['drawn'], '<p class="oe-figure oe-bill-amount-figure">3 credits</p>') && str_contains($r['drawn'], 'You have 5 credits.'));
 check('no package picker', !str_contains($r['drawn'], 'name="packageId"'));
 check('pay later and delete', str_contains($r['drawn'], 'Pay later') && str_contains($r['drawn'], 'value="item_delete"') && str_contains($r['drawn'], 'data-osc-confirm'));
+check('delete sits below pay later, as a quiet link', strpos($r['drawn'], 'Pay later') < strpos($r['drawn'], 'item_delete') && str_contains($r['drawn'], 'class="oe-link-btn oe-danger-link oe-bill-delete"'));
 
 $r = pay($uid, $held, array('do' => 'credits'));
 pin('paying publishes and goes to the listing', array(WEB_PATH . 'listing/' . $held, '1', '1'), array($r['redirect'], $row($held)['b_enabled'], $row($held)['b_active']));
@@ -256,8 +264,12 @@ harness_section('short of credits');
 $r = pay($uid, $held);
 check('the covering package is offered', str_contains($r['drawn'], 'Five pack') && str_contains($r['drawn'], 'value="' . $five . '"'));
 check('the one that does not cover it is not', !str_contains($r['drawn'], 'Two pack'));
+check('its price as orders show it', str_contains($r['drawn'], osc_esc_html(\mindstellar\currency\CurrencyService::make()->money(2_000_000, 'USD'))) && !str_contains($r['drawn'], '20.00 USD'));
 check('with the gateways and the order button', str_contains($r['drawn'], 'value="ppgw"') && str_contains($r['drawn'], 'value="order"') && str_contains($r['drawn'], 'Continue to payment'));
 check('no credits button', !str_contains($r['drawn'], 'value="credits"'));
+check('the price in money, from the cheapest covering package', str_contains($r['drawn'], 'Credit packages that cover it start at ' . osc_esc_html(\mindstellar\currency\CurrencyService::make()->money(2_000_000, 'USD')) . '.'));
+$deadline = (string) $admin->query("SELECT dt_expiration FROM {$p}t_item WHERE pk_i_id = {$held}")->fetch_row()[0];
+check('the page says when an unpaid listing is deleted, in a callout', str_contains($r['drawn'], 'class="oe-callout oe-bill-deadline"') && str_contains($r['drawn'], 'If it is not paid for by ' . osc_format_date($deadline) . ', this listing will be deleted.'));
 check('the title is escaped', str_contains($r['drawn'], 'Red &lt;i&gt;car&lt;/i&gt;') && !str_contains($r['drawn'], '<i>car'));
 
 $before = $orders($uid);
@@ -275,7 +287,7 @@ pin('a listing order with the package amount', array(true, $held, 2_000_000, 5),
 
 $r = pay($uid, $held);
 check('back from the gateway it waits for the payment', str_contains($r['drawn'], 'Waiting for the payment to be confirmed.') && str_contains($r['drawn'], 'Refresh'));
-check('and offers to pay again', str_contains($r['drawn'], 'Pay again') && str_contains($r['drawn'], 'Continue to payment'));
+check('and offers to pay another way, folded away', str_contains($r['drawn'], '<summary>Pay another way</summary>') && str_contains($r['drawn'], 'Continue to payment'));
 
 Billing::markPaid(OrderStore::find($order->getId()));
 $r = pay($uid, $held);
@@ -291,6 +303,21 @@ check('the gateway instructions are shown', str_contains($r['drawn'], '<p class=
 check('beside the waiting step', str_contains($r['drawn'], 'Waiting for the payment to be confirmed.'));
 $r = pay($uid, $held);
 check('a plain visit shows no instructions', !str_contains($r['drawn'], 'Pay into account 42'));
+
+harness_section('a bank transfer: post, redirect, get');
+
+[$uid, $held] = $seller(0);
+$r     = pay($uid, $held, array('do' => 'order', 'packageId' => $five, 'gateway' => 'ppwire'));
+$order = OrderStore::listingOrder($held);
+pin('the order is placed and the seller sent back to the pay step', array(true, osc_billing_publish_url($held)), array($order !== null && $order->isPending(), $r['redirect']));
+$r = pay($uid, $held);
+check('the pay step shows how to pay the open order, with its reference', str_contains($r['drawn'], 'Pay into account 42') && str_contains($r['drawn'], osc_billing_order_number($order->getId())));
+check('and the amount to pay as the headline, as orders show it', str_contains($r['drawn'], '<p class="oe-figure oe-bill-amount-figure">' . osc_esc_html(\mindstellar\currency\CurrencyService::make()->money(2_000_000, 'USD')) . '</p>') && !str_contains($r['drawn'], '20.00 USD'));
+check('the reference can be copied', str_contains($r['drawn'], '<code class="oe-copy-value">' . osc_esc_html(osc_billing_order_number($order->getId())) . '</code>') && str_contains($r['drawn'], 'data-osc-copy="' . osc_esc_html(osc_billing_order_number($order->getId())) . '"'));
+check('another way to pay is folded away', str_contains($r['drawn'], '<summary>Pay another way</summary>') && !str_contains($r['drawn'], 'Pay again'));
+$count = $orders($uid);
+$r     = pay($uid, $held, array('do' => 'order', 'packageId' => $five, 'gateway' => 'ppwire'));
+pin('the same choice again reuses the open order', array($count, $order->getId(), osc_billing_publish_url($held)), array($orders($uid), OrderStore::listingOrder($held)?->getId(), $r['redirect']));
 
 harness_section('paid, not published');
 
@@ -349,6 +376,14 @@ pin('held for an admin: to My listings', array(WEB_PATH . 'osc_user_list_items_u
 check('with the approval flash', str_contains($r['flashes'], 'ok:Your listing will be published after an admin approves it.'));
 $r = pay($uid, $held);
 check('the pay step says it waits for an admin', str_contains($r['drawn'], 'after an admin approves it') && !str_contains($r['drawn'], 'not waiting for payment'));
+
+osc_set_preference('moderate_admin_post', '1', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
+[$uid, $held] = $seller(5);
+$r = pay($uid, $held);
+check('with admin review on, the credits button says it sends for review', str_contains($r['drawn'], 'Use 3 credits and send for review') && !str_contains($r['drawn'], 'Use 3 credits and publish'));
+osc_set_preference('moderate_admin_post', '0', 'osclass', 'BOOLEAN');
+osc_reset_preferences();
 
 harness_section('billing switched off');
 

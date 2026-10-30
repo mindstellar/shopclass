@@ -30,6 +30,7 @@ $setMode = static function (string $mode): void {
     foreach (['site_mode' => $mode, 'billing_enabled' => '1', 'billing_currency' => 'USD', 'billing_cod_enabled' => '1', 'billing_offline_enabled' => '1', 'billing_offline_instructions' => 'Pay to account 123'] as $k => $v) {
         Preference::getInstance()->set($k, $v);
     }
+    osc_set_preference('site_mode', $mode);
     scratchdb_forget_cache();
     osc_reset_preferences();
 };

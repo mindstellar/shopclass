@@ -47,6 +47,9 @@ final class OrderStore extends Model
     /** s_meta key core sets once the order's receipt e-mail went out. */
     public const RECEIPT_SENT = '_receipt_sent';
 
+    /** s_meta key core sets on a new order: the order number prefix it was placed with. */
+    public const NUMBER_PREFIX = '_number_prefix';
+
     /** s_meta key core sets when an order was paid but its listing could not be published. */
     public const PUBLISH_FAILED = '_publish_failed';
 
@@ -88,8 +91,9 @@ final class OrderStore extends Model
             throw new InvalidArgumentException('Orders: currency must be an ISO 4217 code');
         }
 
-        $now = date('Y-m-d H:i:s');
-        $id  = self::table()->insert(array(
+        $meta += array(self::NUMBER_PREFIX => osc_billing_order_prefix());
+        $now   = date('Y-m-d H:i:s');
+        $id    = self::table()->insert(array(
             'fk_i_user_id'   => $userId,
             's_gateway'      => $gateway,
             's_external_ref' => null,
@@ -97,7 +101,7 @@ final class OrderStore extends Model
             's_currency'     => $currency,
             'i_credits'      => $credits,
             's_status'       => Order::STATUS_PENDING,
-            's_meta'         => $meta === array() ? null : json_encode($meta),
+            's_meta'         => json_encode($meta),
             'dt_date'        => $now,
         ));
         self::forgetToShip();
@@ -144,6 +148,30 @@ final class OrderStore extends Model
         $data = $row === null || $row['value'] === null ? null : json_decode($row['value'], true);
 
         return is_array($data) && isset($data['order']) ? self::find((int) $data['order']) : null;
+    }
+
+    /**
+     * The seller's orders for one listing that still wait for payment, oldest first.
+     * Reads idx_user_status.
+     *
+     * @return Order[]
+     */
+    public static function pendingForListing(int $userId, int $itemId): array
+    {
+        if ($userId <= 0 || $itemId <= 0) {
+            return array();
+        }
+        $rows = self::table()
+            ->where('fk_i_user_id', $userId)
+            ->where('s_status', Order::STATUS_PENDING)
+            ->where('i_credits', '>', 0)
+            ->orderBy('pk_i_id', 'ASC')
+            ->get();
+
+        return array_values(array_filter(
+            array_map(static fn (array $row): Order => Order::fromRow($row), $rows),
+            static fn (Order $order): bool => $order->listingId() === $itemId
+        ));
     }
 
     /**
@@ -791,12 +819,12 @@ final class OrderStore extends Model
      */
     public static function recent(int $limit = 25, int $offset = 0, ?string $status = null): array
     {
-        $q = self::table()->orderBy('dt_date', 'DESC')->limit($limit)->offset($offset);
+        $q = self::table();
         if ($status !== null) {
             $q = $q->where('s_status', $status);
         }
 
-        return array_map(static fn (array $row): Order => Order::fromRow($row), $q->get());
+        return self::newestPage($q, $limit, $offset);
     }
 
     /**
@@ -831,12 +859,23 @@ final class OrderStore extends Model
         if (!empty($filters['to_ship']) && empty($filters['status'])) {
             return self::toShip($filters, $limit, $offset);
         }
-        $rows = self::filtered($filters)
-            ->orderBy('dt_date', 'DESC')
-            ->orderBy('pk_i_id', 'DESC')
-            ->limit($limit)
-            ->offset($offset)
-            ->get();
+        return self::newestPage(self::filtered($filters), $limit, $offset);
+    }
+
+    /**
+     * One page of $query, newest first and the higher id first in a tie. The page's ids are read
+     * from the index alone and then joined back for the rows, so a deep page sorts no whole rows.
+     *
+     * @return Order[]
+     * @throws DbException
+     */
+    private static function newestPage(QueryBuilder $query, int $limit, int $offset): array
+    {
+        $ids  = $query->select('pk_i_id')->orderBy('dt_date', 'DESC')->orderBy('pk_i_id', 'DESC')->limit($limit)->offset($offset);
+        $rows = Db::select(
+            'SELECT o.* FROM ' . self::tableName() . ' o JOIN (' . $ids->toSql() . ') k ON k.pk_i_id = o.pk_i_id ORDER BY o.dt_date DESC, o.pk_i_id DESC',
+            $ids->getBindings()
+        );
 
         return array_map(static fn (array $row): Order => Order::fromRow($row), $rows);
     }
@@ -955,13 +994,14 @@ final class OrderStore extends Model
      * Totals for the orders header, over the current filter rather than over everything —
      * a figure that ignores the filter above it is a figure that gets misread.
      *
-     * @param array $filters Same keys as search()
+     * @param array    $filters Same keys as search()
+     * @param int|null $count   searchCount($filters) when the caller has it already
      *
      * @return array{count:int, paid:int, pending:int}
      */
-    public static function summary(array $filters): array
+    public static function summary(array $filters, ?int $count = null): array
     {
-        $count  = self::searchCount($filters);
+        $count ??= self::searchCount($filters);
         $status = (string) ($filters['status'] ?? '');
         if ($status !== '') {
             // The status filter already narrows the count; paid and pending are what it matches.

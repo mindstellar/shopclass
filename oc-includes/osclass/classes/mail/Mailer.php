@@ -223,7 +223,8 @@ final class Mailer
                 $mail->addReplyTo($params['reply_to']);
             }
 
-            $mail->Subject = $params['subject'];
+            // Stored titles are HTML-escaped; a subject is plain text.
+            $mail->Subject = html_entity_decode((string) $params['subject'], ENT_QUOTES | ENT_HTML5, 'UTF-8');
             $mail->Body    = self::layout((string) $params['body'], $params);
 
             if (array_key_exists('attachment', $params)) {

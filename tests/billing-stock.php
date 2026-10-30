@@ -470,13 +470,21 @@ $pricer = new CartPricer();
 $q      = $pricer->quote([['variant' => $u, 'qty' => 1]], ['gateway' => 'cod']);
 pin('the fee is a fee line', [['id' => 'fee.cod', 'label' => 'Cash on delivery fee', 'amount' => $m(2), 'currency' => 'USD', 'meta' => []]], $q->extraLines('fee'));
 pin('and in the total', [$m(2), $m(7)], [$q->totals()['fee'], $q->total()]);
+Preference::getInstance()->set('billing_currency', 'EUR');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$q = $pricer->quote([['variant' => $u, 'qty' => 1]], ['gateway' => 'cod']);
+pin('a billing currency other than the cart\'s still charges the fee, in the cart\'s currency', [$m(2), 'USD', $m(7)], [$q->totals()['fee'], $q->extraLines('fee')[0]['currency'] ?? null, $q->total()]);
+Preference::getInstance()->set('billing_currency', 'USD');
+scratchdb_forget_cache();
+osc_reset_preferences();
 pin('another gateway pays no fee', [[], $m(5)], [$pricer->quote([['variant' => $u, 'qty' => 1]], ['gateway' => 'offline'])->extraLines('fee'), $pricer->quote([['variant' => $u, 'qty' => 1]], ['gateway' => 'offline'])->total()]);
 $placed = $checkout->place($tom, [['variant' => $u, 'qty' => 1]], $address, 'standard', 'cod');
 $lines  = OrderLineStore::ofOrder($placed['order']->getId());
 pin('a placed order carries the fee line and charges it', [$m(7), 'fee', 'Cash on delivery fee', $m(2)], [$placed['order']->getAmount(), end($lines)['kind'], end($lines)['title'], end($lines)['amount']]);
 pin('the checkout tells the buyer what to pay', [CheckoutIntent::KIND_HTML, true, true], [
     $placed['next']->getKind(),
-    str_contains($placed['next']->getPayload(), 'Pay 7.00 USD when it arrives.'),
+    str_contains($placed['next']->getPayload(), 'Pay ' . \mindstellar\currency\CurrencyService::make()->money(7000000, 'USD') . ' when it arrives.'),
     str_contains($placed['next']->getPayload(), 'Order #' . $placed['order']->getId()),
 ]);
 
@@ -506,13 +514,21 @@ Preference::getInstance()->set('billing_order_prefix', 'KC-<b>');
 scratchdb_forget_cache();
 osc_reset_preferences();
 pin('the order number takes the prefix, cleaned', '#KC-b42', osc_billing_order_number(42));
-$prefixed = OrderStore::find($placed['order']->getId());
+$prefixed = OrderStore::find($checkout->place($tom, [['variant' => $u, 'qty' => 1]], $address, 'standard', 'cod')['order']->getId());
 $offline  = PaymentGatewayRegistry::getInstance()->get('offline')->createCheckout($prefixed)->getPayload();
 pin('mails, receipts and the bank reference use it too', ['#KC-b' . $prefixed->getId(), true, true, true], [
     \mindstellar\billing\Receipts::number($prefixed),
     str_contains($offline, 'Reference: #KC-b' . $prefixed->getId()),
     str_contains(\mindstellar\billing\Receipts::emailBody(\mindstellar\billing\Receipts::vars($prefixed)), '#KC-b' . $prefixed->getId()),
     \mindstellar\api\serializer\OrderSerializer::number($prefixed->getId()) === osc_billing_order_number($prefixed->getId()),
+]);
+Preference::getInstance()->set('billing_order_prefix', '');
+scratchdb_forget_cache();
+osc_reset_preferences();
+pin('a changed prefix leaves placed orders their number', ['#KC-b' . $prefixed->getId(), '#' . $placed['order']->getId(), true], [
+    \mindstellar\billing\Receipts::number(OrderStore::find($prefixed->getId())),
+    \mindstellar\billing\Receipts::number(OrderStore::find($placed['order']->getId())),
+    str_contains(PaymentGatewayRegistry::getInstance()->get('offline')->createCheckout(OrderStore::find($prefixed->getId()))->getPayload(), 'Reference: #KC-b' . $prefixed->getId()),
 ]);
 pin('a cash on delivery callback is ignored', CallbackResult::OUTCOME_IGNORED, Billing::handleCallback('cod', ['order' => $placed['order']->getId()])->getOutcome());
 Preference::getInstance()->set('billing_cod_enabled', '0');

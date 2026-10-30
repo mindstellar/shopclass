@@ -17,7 +17,7 @@ use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
-use mindstellar\currency\Money;
+use mindstellar\currency\CurrencyService;
 
 require_once dirname(__DIR__, 2) . '/page-fn.php';
 
@@ -53,6 +53,7 @@ $col = array(
     'credits' => _m('Credits'),
     'status'  => _m('Status'),
 );
+$currencies = CurrencyService::make();
 ?>
 <div class="oe-scroll">
 <table class="oe-table">
@@ -71,7 +72,7 @@ $col = array(
     <tbody>
     <?php foreach ($orders as $order) { ?>
         <tr>
-            <td data-label="<?php echo osc_esc_html($col['number']); ?>"><?php echo osc_esc_html(osc_billing_order_number($order->getId())); ?>
+            <td data-label="<?php echo osc_esc_html($col['number']); ?>"><?php echo osc_esc_html(Receipts::number($order)); ?>
                 <?php if ($order->isGoods()) { ?><br><span class="oe-muted"><?php echo osc_esc_html($order->getLabel()); ?></span><?php } ?>
             </td>
             <td data-label="<?php echo osc_esc_html($col['date']); ?>"><?php echo osc_esc_html(osc_format_date($order->getDate())); ?></td>
@@ -82,13 +83,9 @@ $col = array(
                     $link   = $state === 'held' ? osc_billing_publish_url($itemId) : ($state === 'live' ? osc_item_url_ns($itemId) : ''); ?>
                     <br><span class="oe-muted"><?php if ($link !== '') { ?><a href="<?php echo osc_esc_html($link); ?>"><?php echo osc_esc_html($order->getLabel()); ?></a><?php } else { echo osc_esc_html($order->getLabel()); } ?></span>
                 <?php } ?>
-                <?php $howToPay = PaymentGatewayRegistry::getInstance()->instructions($order);
-                if ($howToPay !== null) { ?>
-                    <br><span class="oe-muted"><?php echo nl2br(osc_esc_html($howToPay)); ?></span>
-                <?php } ?>
             </td>
             <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['amount']); ?>">
-                <?php echo osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())); ?>
+                <?php echo osc_esc_html($currencies->money($order->getAmount(), $order->getCurrency())); ?>
             </td>
             <?php if ($showCredits) { ?>
             <td class="oe-num oe-bill-num" data-label="<?php echo osc_esc_html($col['credits']); ?>"><?php echo osc_esc_html(number_format($order->getCredits())); ?></td>
@@ -103,7 +100,7 @@ $col = array(
                     echo osc_esc_html($word); ?>
                 </span>
                 <?php if (Receipts::available($order)) { ?>
-                    <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Receipt')); ?></a>
+                    <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Invoice')); ?></a>
                 <?php } ?>
                 <?php if ($order->buyerMayCancel()) { ?>
                     <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">
@@ -112,13 +109,19 @@ $col = array(
                         <input type="hidden" name="action" value="cancel"/>
                         <input type="hidden" name="id" value="<?php echo (int) $order->getId(); ?>"/>
                         <button type="submit" class="oe-link-btn oe-danger-link" data-osc-confirm="<?php
-                            echo osc_esc_html(sprintf(_m('Cancel order %s?'), osc_billing_order_number($order->getId()))); ?>"><?php
+                            echo osc_esc_html(sprintf(_m('Cancel order %s?'), Receipts::number($order))); ?>"><?php
                             echo osc_esc_html(_m('Cancel')); ?></button>
                     </form>
                     <?php osc_gui_print_confirm_script(); ?>
                 <?php } ?>
             </td>
         </tr>
+        <?php $howToPay = PaymentGatewayRegistry::getInstance()->instructions($order);
+        if ($howToPay !== null) { ?>
+        <tr class="oe-bill-howto">
+            <td colspan="<?php echo $showCredits ? 6 : 5; ?>" class="oe-muted"><?php echo osc_gui_payment_text($howToPay, array(Receipts::number($order))); ?></td>
+        </tr>
+        <?php } ?>
     <?php } ?>
     </tbody>
 </table>

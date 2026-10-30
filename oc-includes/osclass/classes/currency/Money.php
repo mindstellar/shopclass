@@ -21,11 +21,34 @@ final class Money
 
     /**
      * Two decimals in the site's locale and the currency code: "1,234.50 EUR".
+     *
+     * @deprecated since 7.1.0 use CurrencyService::money() instead, which shows amounts as orders and receipts do
      */
     public static function format(int $micros, string $currency): string
     {
         return number_format($micros / self::MICROS, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
                . ' ' . strtoupper($currency);
+    }
+
+    /**
+     * An amount as the shop shows it, in the locale's currency format: "₹1,234", "₹1,234.50",
+     * "-₹150", "₹0". Whole amounts drop their decimals; zero is never "Free".
+     */
+    public static function display(int $micros, string $symbol): string
+    {
+        $value    = abs($micros) / self::MICROS;
+        $decimals = (int) osc_locale_num_dec();
+        $rounded  = round($value, $decimals);
+        if ($decimals > 0 && $rounded == floor($rounded)) {
+            $decimals = 0;
+        }
+        $text = str_replace(
+            array('{NUMBER}', '{CURRENCY}'),
+            array(number_format($value, $decimals, osc_locale_dec_point(), osc_locale_thousands_sep()), $symbol),
+            (string) osc_locale_currency_format()
+        );
+
+        return ($micros < 0 && $rounded > 0 ? '-' : '') . $text;
     }
 
     /**

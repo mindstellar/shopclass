@@ -15,8 +15,9 @@
 (function () {
     'use strict';
 
-    var FIELDS = ['sku', 'price', 'compareAt', 'stock', 'weight'];
-    var MODES = {sku: '', price: 'decimal', compareAt: 'decimal', stock: 'numeric', weight: 'numeric'};
+    var FIELDS = ['sku', 'price', 'compareAt', 'stock', 'weight', 'shippingClass'];
+    var MODES = {sku: '', price: 'decimal', compareAt: 'decimal', stock: 'numeric', weight: 'numeric', shippingClass: ''};
+    var LENGTHS = {sku: 64, shippingClass: 40};
 
     function init() {
         var editor = document.querySelector('[data-variant-editor]');
@@ -31,6 +32,9 @@
         var body = editor.querySelector('[data-variant-rows]');
         var note = editor.querySelector('[data-variant-note]');
         var noteText = note ? note.textContent : '';
+        var frame = editor.querySelector('[data-variant-frame]');
+        var scroller = editor.querySelector('[data-variant-scroll]');
+        var phone = window.matchMedia('(max-width: 575.98px)');
         var max = {
             options: parseInt(editor.getAttribute('data-max-options'), 10) || 3,
             values: parseInt(editor.getAttribute('data-max-values'), 10) || 30,
@@ -105,10 +109,51 @@
                 th.remove();
             });
             var first = head.firstChild;
-            options().forEach(function (option) {
-                var name = clean(option.querySelector('[data-option-name]').value);
+            var names = options().map(function (option) {
+                return clean(option.querySelector('[data-option-name]').value);
+            });
+            names.forEach(function (name) {
                 head.insertBefore(el('th', {scope: 'col', 'data-option-head': ''}, name), first);
             });
+            rows().forEach(function (row) {
+                row.querySelectorAll('[data-option-cell]').forEach(function (cell, k) {
+                    cell.setAttribute('data-col-name', names[k] || '');
+                });
+            });
+            pin();
+        }
+
+        // The option columns stay in view while the grid scrolls sideways: each one is pinned
+        // after the ones before it.
+        function pin() {
+            var heads = head.querySelectorAll('[data-option-head]');
+            var at = 0;
+            var offsets = [];
+            heads.forEach(function (th) {
+                offsets.push(at);
+                at += phone.matches ? 0 : th.getBoundingClientRect().width;
+            });
+            editor.querySelectorAll('.osc-variant-pin-edge').forEach(function (cell) {
+                cell.classList.remove('osc-variant-pin-edge');
+            });
+            [heads].concat(rows().map(function (row) {
+                return row.querySelectorAll('[data-option-cell]');
+            })).forEach(function (cells) {
+                cells.forEach(function (cell, k) {
+                    cell.style.setProperty('--osc-pin', (offsets[k] || 0) + 'px');
+                    cell.classList.toggle('osc-variant-pin-edge', k === cells.length - 1);
+                });
+            });
+            cue();
+        }
+
+        function cue() {
+            if (!frame || !scroller) {
+                return;
+            }
+            var left = Math.abs(scroller.scrollLeft);
+            frame.classList.toggle('is-scrolled', left > 1);
+            frame.classList.toggle('has-more', left + scroller.clientWidth < scroller.scrollWidth - 1);
         }
 
         function addChip(option, value) {
@@ -153,7 +198,7 @@
         }
 
         function optionCell(value) {
-            var td = el('td', {'data-option-cell': ''});
+            var td = el('td', {'data-option-cell': '', 'data-col-name': ''});
             var hidden = el('input', {type: 'hidden', 'data-field': 'options'});
             hidden.value = value;
             td.appendChild(hidden);
@@ -166,11 +211,12 @@
             values.forEach(function (value) {
                 row.appendChild(optionCell(value));
             });
+            var cols = i18n.cols || {};
             FIELDS.forEach(function (field) {
-                var td = el('td');
-                var input = el('input', {type: 'text', 'class': 'form-control form-control-sm', autocomplete: 'off', 'data-field': field});
-                if (field === 'sku') {
-                    input.setAttribute('maxlength', '64');
+                var td = el('td', {'data-col-name': cols[field] || ''});
+                var input = el('input', {type: 'text', 'class': 'form-control form-control-sm', autocomplete: 'off', 'data-field': field, 'aria-label': cols[field] || ''});
+                if (LENGTHS[field]) {
+                    input.setAttribute('maxlength', String(LENGTHS[field]));
                 }
                 if (MODES[field]) {
                     input.setAttribute('inputmode', MODES[field]);
@@ -178,17 +224,15 @@
                 td.appendChild(input);
                 row.appendChild(td);
             });
-            var td = el('td');
-            var ship = el('input', {type: 'hidden', 'data-field': 'shippingClass'});
-            td.appendChild(ship);
-            var select = el('select', {'class': 'form-select form-select-sm', 'data-field': 'photoId'});
+            var td = el('td', {'data-col-name': cols.photoId || ''});
+            var select = el('select', {'class': 'form-select form-select-sm', 'data-field': 'photoId', 'aria-label': cols.photoId || ''});
             select.appendChild(el('option', {value: ''}, i18n.none || ''));
             Object.keys(photos).forEach(function (id) {
                 select.appendChild(el('option', {value: id}, photos[id]));
             });
             td.appendChild(select);
             row.appendChild(td);
-            var last = el('td');
+            var last = el('td', {'class': 'osc-variant-remove'});
             last.appendChild(el('button', {type: 'button', 'class': 'btn btn-dim btn-sm', 'data-row-remove': ''}, i18n.remove || 'Remove'));
             row.appendChild(last);
             return row;
@@ -241,6 +285,7 @@
             body.appendChild(fresh);
             say('');
             renumber();
+            syncHead();
         }
 
         function show() {
@@ -254,6 +299,7 @@
             if (toggle.checked && options().length === 0) {
                 addOption();
             }
+            pin();
         }
 
         toggle.addEventListener('change', show);
@@ -321,6 +367,13 @@
             }
         });
 
+        if (scroller) {
+            scroller.addEventListener('scroll', cue, {passive: true});
+        }
+        window.addEventListener('resize', pin);
+        if (phone.addEventListener) {
+            phone.addEventListener('change', pin);
+        }
         renumber();
         show();
     }

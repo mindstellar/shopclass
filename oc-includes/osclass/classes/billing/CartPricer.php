@@ -155,12 +155,13 @@ final class CartPricer
         );
 
         $shipping = $this->events()->dispatch(new CartShipping($cart));
-        $cart['needs_shipping'] = $shipping->needsShipping();
+        $cart['needs_shipping'] = $cart['lines'] !== array() && $shipping->needsShipping();
         $methods = $cart['needs_shipping'] ? self::methods($shipping->rawMethods(), $currency) : array();
         $asked   = (string) ($ctx['shipping_method'] ?? '');
-        $chosen  = null;
+        // A method that is not offered (any more) falls back to the first one, never to free delivery.
+        $chosen  = $methods[0] ?? null;
         foreach ($methods as $method) {
-            if ($asked === '' ? $chosen === null : $method['id'] === $asked) {
+            if ($method['id'] === $asked) {
                 $chosen = $method;
             }
         }

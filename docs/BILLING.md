@@ -546,11 +546,11 @@ Preferences live in the `osclass` group with const keys, per the standardised la
 | `billing_shipping_flat` | `0` | "Standard delivery" charge for goods orders, micros |
 | `billing_free_over` | `0` | Subtotal from which delivery is free, micros; 0 = never |
 | `billing_cod_enabled` | `0` | Whether cash on delivery is offered at checkout |
-| `billing_cod_fee` | `0` | Fee added to a cash on delivery order, micros |
+| `billing_cod_fee` | `0` | Fee added to a cash on delivery order, micros, in the cart's currency |
 | `billing_hold_days` | `7` | Days an unpaid bank transfer or cash on delivery order holds its stock |
 | `billing_card_hold_minutes` | `15` | Minutes an unpaid card goods order holds its stock before `billing.card_hold_expire` cancels it; 5 to 120 |
 | `billing_open_hold_orders` | `3` | Most pending goods orders one buyer may hold, every gateway; 0 = no limit. Past it `place()` refuses `/gateway` `too_many_open` |
-| `billing_order_prefix` | *(empty)* | Printed before the id in an order number (`osc_billing_order_number()`) |
+| `billing_order_prefix` | *(empty)* | Printed before the id in an order number (`osc_billing_order_number()`). An order keeps the prefix it was placed with |
 
 **Default off.** An existing install that upgrades sees no behaviour change whatsoever:
 posting stays unlimited and free, premium stays admin-only. Nothing in this layer activates
@@ -845,6 +845,11 @@ past their deadline whose delete job is still waiting.
 publishes the listing from `onOrderPaid()`. `ListingService::publish()` is the go-live and
 fires `posted_item`. `ListingCheckout::publishFree()` publishes without charging. The web pay
 step and both API routes call the same methods.
+
+The pay step shows the date the listing is deleted if it is not paid for. Choosing the same
+package and a pay-by-hand gateway (such as bank transfer) again reuses the open order instead of
+placing a second one. When the listing goes live, by any path, the seller's other open orders
+for it are cancelled without the cancelled mail.
 
 **API.** A held listing answers `status: "unpaid"`. `POST /listings/{id}/publish` pays and
 publishes it; `POST /admin/listings/{id}/publish` publishes it free. See the

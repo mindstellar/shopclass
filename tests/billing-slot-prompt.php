@@ -61,7 +61,7 @@ function osc_billing_next_listing_quote($id = null)
     global $S;
     return array(
         'slots'     => (int) max(0, ceil(($S['used'] - $S['limit'] + 1) / $S['qty'])),
-        'credits'   => 0,
+        'credits'   => 5 * (int) max(0, ceil(($S['used'] - $S['limit'] + 1) / $S['qty'])),
         'balance'   => $S['credits'],
         'shortfall' => 0,
     );
@@ -70,6 +70,15 @@ function osc_billing_slot_quantity()
 {
     global $S;
     return $S['qty'];
+}
+function osc_billing_pay_at_post()
+{
+    global $S;
+    return $S['pay'];
+}
+function osc_item_post_url()
+{
+    return 'https://s.test/post';
 }
 function osc_billing_can_buy()
 {
@@ -121,7 +130,7 @@ function _mn($one, $many, $n)
 
 $render = static function (string $file, array $state, array $vars = array()): string {
     global $S;
-    $S = $state + array('limit' => 3, 'used' => 3, 'credits' => 0, 'qty' => 1, 'canBuy' => true, 'in' => true, 'on' => true);
+    $S = $state + array('limit' => 3, 'used' => 3, 'credits' => 0, 'qty' => 1, 'canBuy' => true, 'in' => true, 'on' => true, 'pay' => false);
     extract($vars);
     ob_start();
     require ABS_PATH . 'oc-includes/osclass/gui/billing/' . $file;
@@ -152,6 +161,21 @@ check('2-slot purchases round up: 2 over the limit needs 2', strpos($box, 'Buy t
 $box = $render('slot-prompt.php', array('used' => 5, 'credits' => 10, 'qty' => 3));
 check('a 3-slot purchase covers 2 over the limit', strpos($box, 'over your listing limit') === false && strpos($box, 'name="next" value="post"') !== false);
 
+harness_section('slot box with pay at the end of posting');
+
+$box = $render('slot-prompt.php', array('used' => 4, 'credits' => 0, 'pay' => true));
+check('the price is the next listing price, not one slot', strpos($box, 'Your next listing costs 10 credits') !== false && strpos($box, '5 credits') === false);
+check('no advice to buy slots several times', strpos($box, 'Buy this') === false);
+check('it sends the seller to the post form', strpos($box, 'href="https://s.test/post"') !== false && strpos($box, 'upgrade/listing.slot') === false);
+
+harness_section('slot box inside the My listings notice');
+
+$box = $render('slot-prompt.php', array('used' => 4, 'credits' => 0, 'pay' => true), array('slotInline' => true));
+check('it gives the price as a line', strpos($box, 'Your next listing costs 10 credits') !== false);
+check('with no card and no second Post a listing button', strpos($box, 'oe-panel') === false && strpos($box, 'https://s.test/post') === false);
+$box = $render('slot-prompt.php', array('credits' => 10), array('slotInline' => true));
+check('buying a slot keeps its button, without the card', strpos($box, 'Use 5 credits and post') !== false && strpos($box, 'oe-panel') === false);
+
 harness_section('credits tabs');
 
 $tabs = $render('tabs.php', array(), array('billingTab' => 'orders'));
@@ -166,6 +190,7 @@ foreach (array('wallet', 'buy', 'orders') as $page) {
 }
 
 $items = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/account/user-items-content.php');
-check('My listings shows the limit message only without the slot box', strpos($items, "if (\$slotBox === '') { ?>") !== false);
+check('My listings shows the limit message only without the slot box', strpos($items, "if (\$slotBox === '') {") !== false);
+check('the limits share one notice', substr_count($items, 'oe-limit-notice') === 1 && strpos($items, '$slotInline = true;') !== false);
 
 exit(harness_result());

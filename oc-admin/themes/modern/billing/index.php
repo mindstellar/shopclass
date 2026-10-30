@@ -78,7 +78,7 @@ $isFiltered = $toShip
                     'id'          => 'fGateway',
                     'label'       => __('Payment method'),
                     'placeholder' => __('Any payment method'),
-                    'options'     => array_combine($gateways, $gateways),
+                    'options'     => array_combine($gateways, array_map('osc_billing_gateway_name', $gateways)),
                     'value'       => (string) ($filters['gateway'] ?? ''),
                 ),
             ))),

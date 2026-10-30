@@ -14,7 +14,7 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Currencies'),
     'help'    => __("Add new currencies or edit existing currencies so users can publish listings in their country's currency."),
     'actions' => array(

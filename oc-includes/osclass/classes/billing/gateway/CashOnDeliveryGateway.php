@@ -18,7 +18,8 @@ use mindstellar\billing\event\CartFees;
 use mindstellar\billing\event\Line;
 use mindstellar\billing\Order;
 use mindstellar\billing\PaymentGateway;
-use mindstellar\currency\Money;
+use mindstellar\billing\Receipts;
+use mindstellar\currency\CurrencyService;
 
 /**
  * Cash on delivery: the buyer pays the courier. The admin ships the order unpaid, and marking
@@ -64,8 +65,8 @@ final class CashOnDeliveryGateway implements PaymentGateway
     public function createCheckout(Order $order): CheckoutIntent
     {
         $html  = '<div class="billing-cod-instructions">';
-        $html .= '<p>' . osc_esc_html(sprintf(_m('Pay %s when it arrives.'), Money::format($order->getAmount(), $order->getCurrency()))) . '</p>';
-        $html .= '<p><strong>' . osc_esc_html(sprintf(_m('Order %s'), osc_billing_order_number($order->getId()))) . '</strong></p>';
+        $html .= '<p>' . osc_esc_html(sprintf(_m('Pay %s when it arrives.'), CurrencyService::make()->money($order->getAmount(), $order->getCurrency()))) . '</p>';
+        $html .= '<p><strong>' . osc_esc_html(sprintf(_m('Order %s'), Receipts::number($order))) . '</strong></p>';
         $html .= '</div>';
 
         return CheckoutIntent::html($html);
@@ -81,15 +82,14 @@ final class CashOnDeliveryGateway implements PaymentGateway
 
     /**
      * Core's `cart_totals` listener: the cash on delivery fee as a fee line when the cart pays
-     * by cash on delivery in the billing currency.
+     * by cash on delivery. Like the delivery charge, the fee is an amount in the cart's currency.
      */
     public static function feeLine(CartFees $event): void
     {
         $fee  = osc_billing_cod_fee();
         $cart = $event->cart();
         if (
-            $fee <= 0 || !osc_billing_cod_enabled() || $cart->gateway() !== self::ID
-            || $cart->currency() !== osc_billing_currency() || !$cart->needsShipping()
+            $fee <= 0 || !osc_billing_cod_enabled() || $cart->gateway() !== self::ID || !$cart->needsShipping()
         ) {
             return;
         }

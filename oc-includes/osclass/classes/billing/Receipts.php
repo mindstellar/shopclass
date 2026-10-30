@@ -13,7 +13,7 @@ namespace mindstellar\billing;
 
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\boot\CoreServices;
-use mindstellar\currency\Money;
+use mindstellar\currency\CurrencyService;
 use mindstellar\mail\CoreEmails;
 use RuntimeException;
 use Throwable;
@@ -418,7 +418,7 @@ final class Receipts
             'date'     => osc_format_date($paid),
             'credits'  => $order->isGoods() ? $order->getLabel() : sprintf(__('%s credits'), number_format($order->getCredits())),
             'for'      => $order->isListing() ? $order->getLabel() : '',
-            'amount'   => Money::format($order->getAmount(), $order->getCurrency()),
+            'amount'   => CurrencyService::make()->money($order->getAmount(), $order->getCurrency()),
             'method'   => osc_billing_gateway_name($order->getGateway()),
             'ref'      => (string) $order->getExternalRef(),
             'email'    => (string) ($user['s_email'] ?? ''),
@@ -432,7 +432,8 @@ final class Receipts
     }
 
     /**
-     * The order's number as the shop shows it.
+     * The order's number as the shop shows it, with the prefix it was placed with. An order
+     * from before prefixes were kept takes today's prefix.
      *
      * @param Order $order
      *
@@ -440,7 +441,9 @@ final class Receipts
      */
     public static function number(Order $order): string
     {
-        return osc_billing_order_number($order->getId());
+        $prefix = $order->meta(OrderStore::NUMBER_PREFIX);
+
+        return osc_billing_order_number($order->getId(), is_string($prefix) ? $prefix : null);
     }
 
     /**
@@ -456,8 +459,10 @@ final class Receipts
     public static function details(Order $order): array
     {
         $currency = $order->getCurrency();
+        $money    = CurrencyService::make();
         $lines    = array();
         foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+            $ship    = $line['kind'] === OrderLineStore::KIND_SHIPPING;
             $options = array();
             foreach ((array) ($line['options'] ?? array()) as $name => $value) {
                 $options[] = $name . ': ' . $value;
@@ -468,8 +473,8 @@ final class Receipts
                 'options' => implode(', ', $options),
                 'sku'     => (string) ($line['sku'] ?? ''),
                 'qty'     => (string) $line['qty'],
-                'unit'     => Money::format($line['unit'], $currency),
-                'amount'   => Money::format($line['amount'], $currency),
+                'unit'     => $money->money((int) $line['unit'], $currency, $ship),
+                'amount'   => $money->money((int) $line['amount'], $currency, $ship),
                 'included' => $line['kind'] === OrderLineStore::KIND_TAX && ($line['meta']['included'] ?? false) === true,
             );
         }
@@ -488,7 +493,7 @@ final class Receipts
             'carrier'      => (string) ($fulfilment['carrier'] ?? ''),
             'tracking'     => (string) ($fulfilment['tracking'] ?? ''),
             'tracking_url' => self::httpsUrl((string) ($fulfilment['tracking_url'] ?? '')),
-            'total'        => Money::format($order->getAmount(), $currency),
+            'total'        => $money->money($order->getAmount(), $currency),
             'note'         => is_string($note) ? $note : '',
             'title'        => __('Receipt'),
             'extra'        => array(),

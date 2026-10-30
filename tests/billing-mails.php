@@ -176,6 +176,8 @@ check('the owner mail links the admin order', str_contains($sent[1]['body'], 'pa
 harness_section('the receipt page data');
 $vars = Receipts::vars($row);
 pin('lines, address and delivery are on the receipt', [3, ['Tom', '5550100', '1 Main St', 'Austin', 'TX', '73301', 'US'], 'Standard delivery'], [count($vars['details']['lines']) + 1, $vars['details']['address'], $vars['details']['shipping']]);
+$shownAs = static fn (int $micros): string => \mindstellar\currency\Money::display($micros, \mindstellar\currency\CurrencyService::make()->symbol($row->getCurrency()));
+pin('amounts read as on the orders page, in the currency symbol', [$shownAs($row->getAmount()), $shownAs($row->getAmount()), $shownAs((int) \mindstellar\billing\OrderLineStore::ofOrder($row->getId())[0]['amount'])], [$vars['amount'], $vars['details']['total'], $vars['details']['lines'][0]['amount']]);
 check('the page prints them', (static function () use ($row): bool {
     ob_start();
     Receipts::render($row, 'https://example.test/', 'Back');
@@ -248,7 +250,7 @@ $mails();
 Billing::refund(OrderStore::find($gone->getId()));
 $sent = $mails();
 pin('refunding tells the buyer', ['tom@example.test'], array_column($sent, 'to'));
-check('with the amount, the method and the wait', str_contains($sent[0]['subject'], 'was refunded') && str_contains($sent[0]['body'], '1447.00 USD') && str_contains($sent[0]['body'], 'Fake') && str_contains($sent[0]['body'], '3-5 working days'));
+check('with the amount, the method and the wait', str_contains($sent[0]['subject'], 'was refunded') && str_contains($sent[0]['body'], \mindstellar\currency\CurrencyService::make()->money($gone->getAmount(), 'USD')) && str_contains($sent[0]['body'], 'Fake') && str_contains($sent[0]['body'], '3-5 working days'));
 Receipts::afterRefunded($gone->getId(), $tom, 0);
 pin('a second refund hook sends nothing', [], $mails());
 $unpaid = $make('fake');

@@ -35,6 +35,7 @@ require_once __DIR__ . '/../lib/scratchdb.php';
 require_once __DIR__ . '/../lib/harness.php';
 
 $admin = scratchdb_session('osc_models_billing');
+scratchdb_pin_site_mode($admin, 'classifieds');
 
 // Premium::expire() and Item::updateExpirationDate() read osc_item_is_counted() and osc_isExpired().
 require_once ABS_PATH . 'oc-includes/osclass/utils.php';
@@ -346,6 +347,23 @@ pin('amount is stored in micros', 9990000, $order->getAmount());
 pin('metadata round-trips', 'credits-100', OrderStore::find($order->getId())->meta('sku'));
 pin('search filters by status and gateway', true, in_array($order->getId(), array_map(static fn ($o) => $o->getId(), OrderStore::search(array('status' => Order::STATUS_PENDING, 'gateway' => 'fake'), 50)), true));
 
+// Seven orders, some placed in the same second: every page is newest first, then the higher id first.
+$paged = array();
+foreach (array('2026-01-03 10:00:00', '2026-01-05 10:00:00', '2026-01-05 10:00:00', '2026-01-04 10:00:00', '2026-01-05 10:00:00', '2026-01-01 10:00:00', '2026-01-04 10:00:00') as $when) {
+    $paged[] = $id = OrderStore::create($userId, 'pager', 1_000_000, 'USD', 1)->getId();
+    $admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_billing_order SET dt_date = '$when' WHERE pk_i_id = $id");
+}
+$expected = array_map('intval', array_column($admin->query('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . "t_billing_order WHERE s_gateway = 'pager' ORDER BY dt_date DESC, pk_i_id DESC")->fetch_all(MYSQLI_ASSOC), 'pk_i_id'));
+$pages    = array();
+foreach (array(0, 3, 6) as $offset) {
+    $pages = array_merge($pages, array_map(static fn (Order $o): int => $o->getId(), OrderStore::search(array('gateway' => 'pager'), 3, $offset)));
+}
+pin('search pages hold every order once, newest first and the higher id first in a tie', $expected, $pages);
+pin('a page holds whole orders', array('pager', 1_000_000), array(OrderStore::search(array('gateway' => 'pager'), 1, 2)[0]->getGateway(), OrderStore::search(array('gateway' => 'pager'), 1, 2)[0]->getAmount()));
+pin('a page past the end is empty', array(), OrderStore::search(array('gateway' => 'pager'), 3, 7));
+pin('recent() orders the same way', $expected, array_map(static fn (Order $o): int => $o->getId(), array_values(array_filter(OrderStore::recent(50), static fn (Order $o): bool => $o->getGateway() === 'pager'))));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_billing_order WHERE s_gateway = 'pager'");
+
 check('settling a pending order succeeds', OrderStore::settle($order->getId(), Order::STATUS_PAID, 'ext_1'));
 check('re-settling the same order is refused', OrderStore::settle($order->getId(), Order::STATUS_PAID, 'ext_1') === false);
 pin('settled order reads back as paid', Order::STATUS_PAID, OrderStore::find($order->getId())->getStatus());
@@ -588,7 +606,7 @@ Billing::markPaid($withMeta, 'ext_meta');
 check('the sent mark can be set', OrderStore::markRefundRequested($withMeta->getId()));
 pin('the plugin\'s own meta is kept', 'cs_keep', OrderStore::find($withMeta->getId())->meta('session'));
 check('and cleared', OrderStore::markRefundRequested($withMeta->getId(), false));
-pin('clearing keeps the plugin\'s meta', array('session' => 'cs_keep'), OrderStore::find($withMeta->getId())->getMeta());
+pin('clearing keeps the plugin\'s meta', array('session' => 'cs_keep', OrderStore::NUMBER_PREFIX => ''), OrderStore::find($withMeta->getId())->getMeta());
 check('a pending order cannot be marked', !OrderStore::markRefundRequested(OrderStore::create($userId, 'refundy', 1, 'USD', 1)->getId()));
 
 $threw   = $paidRefundy();
@@ -753,12 +771,12 @@ harness_section('Orders: setMeta');
 $metaOrder = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1, array('session' => 'cs_1'));
 $metaOf    = static fn (): array => OrderStore::find($metaOrder->getId())->getMeta();
 check('a value is set', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', false));
-pin('it reads back typed, other keys kept', array('session' => 'cs_1', 'stripe_livemode' => false), $metaOf());
+pin('it reads back typed, other keys kept', array('session' => 'cs_1', OrderStore::NUMBER_PREFIX => '', 'stripe_livemode' => false), $metaOf());
 check('a value is overwritten', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', true));
 pin('the new value reads back', true, OrderStore::find($metaOrder->getId())->meta('stripe_livemode'));
 check('setting the same value again reports success', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', true));
 check('null removes the key', OrderStore::setMeta($metaOrder->getId(), 'stripe_livemode', null));
-pin('only the other key is left', array('session' => 'cs_1'), $metaOf());
+pin('only the other key is left', array('session' => 'cs_1', OrderStore::NUMBER_PREFIX => ''), $metaOf());
 check('a reserved key is refused', !OrderStore::setMeta($metaOrder->getId(), OrderStore::REFUND_REQUESTED, 'x'));
 check('any key starting with _ is refused', !OrderStore::setMeta($metaOrder->getId(), '_mine', 1));
 check('an upper-case key is refused', !OrderStore::setMeta($metaOrder->getId(), 'Mode', 1));
@@ -766,7 +784,7 @@ check('a key over 64 characters is refused', !OrderStore::setMeta($metaOrder->ge
 check('an array value is refused', !OrderStore::setMeta($metaOrder->getId(), 'list', array(1)));
 check('a string over 255 characters is refused', !OrderStore::setMeta($metaOrder->getId(), 'long', str_repeat('x', 256)));
 check('a missing order is refused', !OrderStore::setMeta(999999, 'k', 1));
-pin('nothing refused was written', array('session' => 'cs_1'), $metaOf());
+pin('nothing refused was written', array('session' => 'cs_1', OrderStore::NUMBER_PREFIX => ''), $metaOf());
 
 $markedOrder = OrderStore::create($userId, 'refundy', 1_000_000, 'USD', 1);
 Billing::markPaid($markedOrder, 'ext_marked');
@@ -2763,7 +2781,7 @@ Billing::markPaid($bought, 'pi_receipt_1');
 pin('paying an order sends one receipt', 1, count($mails));
 pin('to the buyer', 'buyer@example.test', $mails[0]['to'] ?? null);
 check('the subject names the order', strpos((string) ($mails[0]['subject'] ?? ''), '#' . $bought->getId()) !== false);
-check('the body has the amount', strpos((string) ($mails[0]['body'] ?? ''), '2.50 USD') !== false);
+check('the body has the amount', strpos((string) ($mails[0]['body'] ?? ''), osc_esc_html(\mindstellar\currency\CurrencyService::make()->money(2_500_000, 'USD'))) !== false);
 check('the body has the credits', strpos((string) ($mails[0]['body'] ?? ''), '30 credits') !== false);
 check('the body has the provider reference', strpos((string) ($mails[0]['body'] ?? ''), 'pi_receipt_1') !== false);
 check('the order records the receipt as sent', OrderStore::find($bought->getId())->meta(OrderStore::RECEIPT_SENT) !== null);
@@ -2913,6 +2931,7 @@ foreach (array('Site', 'Date', 'Credits', 'Amount', 'Gateway', 'Ref', 'Mail', 'B
     check('the page escapes the ' . strtolower($what) . ' value', strpos($hostilePage, $what . ' &lt;b&gt;x&lt;/b&gt;&amp;') !== false);
 }
 check('the page has no raw tag from a value', strpos($hostilePage, '<b>x') === false);
+check('the page names its number once, in the title', strpos($hostilePage, 'Receipt number') === false);
 check('the page escapes the back link', strpos($hostilePage, 'href="https://example.test/back?a=1&amp;b=&quot;2&quot;"') !== false);
 
 osc_set_preference(Receipts::PREF_BUSINESS, '', Billing::PREF_GROUP);

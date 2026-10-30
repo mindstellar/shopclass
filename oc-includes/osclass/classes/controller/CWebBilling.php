@@ -227,7 +227,7 @@ class CWebBilling extends WebSecBaseModel
         if ($order === null || $order->getUserId() !== (int) osc_logged_user_id()) {
             osc_add_flash_error_message(_m('That order no longer exists'));
         } elseif ($order->buyerMayCancel() && OrderStore::cancel($order->getId(), Order::STATUS_PENDING)) {
-            osc_add_flash_ok_message(sprintf(_m('Order %s is cancelled'), osc_billing_order_number($order->getId())));
+            osc_add_flash_ok_message(sprintf(_m('Order %s is cancelled'), Receipts::number($order)));
         } else {
             osc_add_flash_warning_message(_m('Only an unpaid bank transfer or cash on delivery order can be cancelled'));
         }
@@ -474,6 +474,10 @@ class CWebBilling extends WebSecBaseModel
                     );
                     if ($started['next']->isRedirect()) {
                         $this->redirectTo($started['next']->getPayload());
+                    }
+                    // A gateway that can show its instructions again gets them on the pay step, so a reload places no second order.
+                    if (PaymentGatewayRegistry::getInstance()->instructions($started['order']) !== null) {
+                        $this->redirectTo($back);
                     }
                     $this->publishView(array('checkoutHtml' => $started['next']->getPayload(), 'order' => $started['order']));
 

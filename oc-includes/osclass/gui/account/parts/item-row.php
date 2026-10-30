@@ -20,7 +20,8 @@ if (!defined('ABS_PATH')) {
  *
  * Badges are ['label', 'class']; meta entries are ['text'] with an optional 'url' or
  * 'datetime'; actions are ['label', 'url', 'class', 'confirm'], plus 'method' => 'post'
- * with 'fields' for a form, and 'group' => 'promote' for the paid upgrades line.
+ * with 'fields' for a form, 'group' => 'promote' for the paid upgrades line, and
+ * 'primary' => true for the one action the row should lead with.
  */
 
 $rowOwned   = isset($rowOwned) ? (bool) $rowOwned : true;

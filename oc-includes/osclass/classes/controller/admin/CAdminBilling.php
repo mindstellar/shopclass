@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\ListPaging;
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
+use mindstellar\billing\event\CarriersListing;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\OrderStore;
@@ -23,6 +24,7 @@ use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\billing\Wallet;
+use mindstellar\boot\CoreServices;
 use mindstellar\currency\Money;
 use mindstellar\utility\Utils;
 
@@ -156,7 +158,7 @@ class CAdminBilling extends AdminSecBaseModel
 
         $this->_exportVariableToView('orders', $orders);
         $this->_exportVariableToView('users', $this->usersFor($orders));
-        $this->_exportVariableToView('summary', OrderStore::summary($filters));
+        $this->_exportVariableToView('summary', OrderStore::summary($filters, $total));
         $this->_exportVariableToView('gateways', OrderStore::knownGateways());
         $this->_exportVariableToView('filters', $filters);
         $this->_exportVariableToView('toShip', $toShip);
@@ -196,6 +198,7 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('entries', $this->ledgerForOrder($order->getId()));
         $this->_exportVariableToView('balance', Wallet::balance($order->getUserId()));
         $this->_exportVariableToView('lines', $order->isGoods() ? OrderLineStore::ofOrder($order->getId()) : array());
+        $this->_exportVariableToView('carriers', $order->isGoods() ? CoreServices::dispatcher()->dispatch(new CarriersListing())->names() : array());
 
         $this->doView('billing/order.php');
     }

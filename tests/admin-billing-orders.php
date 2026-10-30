@@ -189,6 +189,12 @@ pin('a pending order cannot ship', ['pending', true], [$status($pid), str_contai
 Billing::markPaid(OrderStore::find($pid), null);
 $page = drive('order', [], ['id' => $pid]);
 check('a paid goods order offers shipping with the three fields', str_contains($page['drawn'], 'value="order_ship"') && str_contains($page['drawn'], 'name="carrier"') && str_contains($page['drawn'], 'name="tracking"') && str_contains($page['drawn'], 'name="trackingUrl"'));
+check('without a carrier list the carrier box offers no suggestions', !str_contains($page['drawn'], '<datalist'));
+$carriers = static fn (array $names): array => array_merge($names, ['Blue Dart', 'A&B "Express"']);
+osc_add_filter('admin_billing_carriers', $carriers);
+$page = drive('order', [], ['id' => $pid]);
+osc_remove_filter('admin_billing_carriers', $carriers);
+check('the carrier box suggests the carriers a plugin lists, escaped', str_contains($page['drawn'], 'list="order-carriers"') && str_contains($page['drawn'], '<datalist id="order-carriers"><option value="Blue Dart"></option><option value="A&amp;B &quot;Express&quot;"></option></datalist>'));
 foreach (['http://track.test/1', 'javascript:alert(1)', 'ftp://x.test/1', 'https://a.test/"x"'] as $bad) {
     $page = drive('order_ship', ['id' => $pid, 'carrier' => 'DHL', 'trackingUrl' => $bad]);
     pin("the link $bad is refused", ['paid', true], [$status($pid), str_contains($page['drawn'], 'full https:// address')]);
@@ -277,6 +283,7 @@ $sum = OrderStore::summary(['status' => 'shipped', 'goods' => false]);
 pin('a shipped filter reports no paid or pending', [0, 0], [$sum['paid'], $sum['pending']]);
 $sum = OrderStore::summary(['status' => '']);
 check('no filter still counts both', $sum['paid'] >= 1 && $sum['count'] >= $sum['paid']);
+pin('a count the list already has is not read again', [$sum['count'], 999], [OrderStore::summary(['status' => ''], $sum['count'])['count'], OrderStore::summary(['status' => ''], 999)['count']]);
 $page = drive('index', [], ['status' => 'shipped']);
 check('the shipped list shows one count, not paid and awaiting', str_contains($page['drawn'], 'billing-summary') && !str_contains($page['drawn'], 'awaiting payment'));
 $page = drive('index', [], []);
@@ -392,6 +399,10 @@ $page = drive('order_tracking', ['id' => $tr->getId(), 'carrier' => 'UPS', 'trac
 pin('a bad link is refused', 'NEW2', OrderStore::find($tr->getId())->fulfilment()['tracking']);
 $unshipped = $make('fake');
 pin('an unshipped order cannot take tracking', false, OrderStore::setTracking($unshipped->getId(), 'DHL', 'X', ''));
+
+harness_section('the order list');
+$list = drive('', [], [])['drawn'];
+check('the payment method filter names each gateway', (bool) preg_match('#<option value="offline"\s*>\s*Bank transfer\s*</option>#', $list));
 
 harness_section('the buyer\'s display name');
 pin('the full name first', 'Asha Rao', \mindstellar\user\UserStore::displayName(array('s_name' => 'Asha Rao', 's_username' => '10')));

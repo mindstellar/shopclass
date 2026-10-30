@@ -14,7 +14,11 @@ if (!defined('ABS_PATH')) {
 /**
  * The next step for a seller at their listing limit: buy an extra listing slot and go
  * straight to the post form, or buy credits first. A seller who needs several slots buys
- * them one at a time. Renders nothing otherwise.
+ * them one at a time. With pay at the end of posting it gives the next listing's price and
+ * links to the post form. Renders nothing otherwise.
+ *
+ * With $slotInline true it prints only the lines and any buy button, for a notice that
+ * already sits next to a Post a listing button.
  */
 
 require_once dirname(__DIR__) . '/page-fn.php';
@@ -23,6 +27,7 @@ if (!osc_is_web_user_logged_in() || !osc_billing_credits_enabled() || osc_user_c
     return;
 }
 
+$slotInline = !empty($slotInline);
 $slotUserId = (int) osc_logged_user_id();
 $slotOffer  = array_column(osc_account_upgrade_offers($slotUserId), null, 'feature')['listing.slot'] ?? null;
 $slotLimit  = osc_user_listing_limit($slotUserId);
@@ -33,14 +38,37 @@ if ($slotOffer === null || $slotLimit === -1) {
 $slotQuote   = osc_billing_next_listing_quote($slotUserId);
 $slotsNeeded = $slotQuote['slots'];
 
+// With pay at the end of posting the seller posts and pays on the pay step, at the price it charges.
+if (osc_billing_pay_at_post()) {
+    $slotNext = (int) $slotQuote['credits'];
+    if (!$slotInline) {
+        osc_gui_panel_open(_m('Post another listing'), 'oe-bill-card oe-slot-prompt', '', 'div');
+    } ?>
+    <p class="oe-meta"><?php echo osc_esc_html($slotNext > 0 ? sprintf(
+        _m('Your next listing costs %1$s, paid when you post it. You have %2$s.'),
+        sprintf(_mn('%d credit', '%d credits', $slotNext), $slotNext),
+        sprintf(_mn('%d credit', '%d credits', (int) $slotQuote['balance']), (int) $slotQuote['balance'])
+    ) : _m('Your next listing is free to post.')); ?></p>
+    <?php if (!$slotInline) { ?>
+    <div class="oe-actions">
+        <a class="oe-btn oe-btn--primary" href="<?php echo osc_esc_html(osc_item_post_url()); ?>"><?php echo osc_esc_html(_m('Post a listing')); ?></a>
+    </div>
+        <?php osc_gui_panel_close('div');
+    }
+
+    return;
+}
+
 $slotPrice   = (int) $slotOffer['credits'];
 $slotCredits = $slotQuote['balance'];
 $slotCanPay  = $slotCredits >= $slotPrice;
 if (!$slotCanPay && !osc_billing_can_buy()) {
     return;
 }
+if (!$slotInline) {
+    osc_gui_panel_open(_m('Post another listing'), 'oe-bill-card oe-slot-prompt', '', 'div');
+}
 ?>
-<?php osc_gui_panel_open(_m('Post another listing'), 'oe-bill-card oe-slot-prompt', '', 'div'); ?>
     <p class="oe-meta"><?php echo osc_esc_html(sprintf(
         _m('%1$s: %2$s. You have %3$s.'),
         (string) $slotOffer['label'],
@@ -73,4 +101,6 @@ if (!$slotCanPay && !osc_billing_can_buy()) {
                 echo osc_esc_html(_m('Buy credits')); ?></a>
         <?php } ?>
     </div>
-<?php osc_gui_panel_close('div'); ?>
+<?php if (!$slotInline) {
+    osc_gui_panel_close('div');
+}

@@ -37,6 +37,12 @@ foreach (array('error', 'ok', 'warning', 'info') as $kind) {
     }
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
+if (!function_exists('osc_item_post_url')) {
+    function osc_item_post_url()
+    {
+        return WEB_PATH . 'post';
+    }
+}
 if (!function_exists('_mn')) {
     function _mn($single, $plural, $n)
     {

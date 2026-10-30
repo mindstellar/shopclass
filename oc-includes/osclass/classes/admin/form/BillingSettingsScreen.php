@@ -371,7 +371,7 @@ final class BillingSettingsScreen
             $page
                 ->group(
                     __('Delivery'),
-                    __('Standard delivery at one charge. With the Shipping plugin on, its zones set the charge instead. Amounts are in the listings\' currency.')
+                    __('Standard delivery at one charge. With the Shipping plugin on, its zones set the charge instead. Amounts are in the products\' currency.')
                 )
                 ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
                 ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
@@ -485,8 +485,9 @@ final class BillingSettingsScreen
      data-chips="<?php echo osc_esc_html((string) json_encode($chips)); ?>" data-i18n="<?php echo osc_esc_html((string) json_encode($i18n)); ?>">
     <ul class="cod-areas-chips" data-cod-chips></ul>
     <input type="search" class="form-control" data-cod-search autocomplete="off" placeholder="<?php echo osc_esc_html(__('Search a country, region or city')); ?>"
-           aria-label="<?php echo osc_esc_html(__('Cash on delivery only in')); ?>">
-    <ul class="cod-areas-results" data-cod-results hidden></ul>
+           aria-label="<?php echo osc_esc_html(__('Cash on delivery only in')); ?>"
+           role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="cod-areas-results">
+    <ul class="cod-areas-results" id="cod-areas-results" role="listbox" aria-label="<?php echo osc_esc_html(__('Cash on delivery only in')); ?>" data-cod-results hidden></ul>
 </div>
         <?php
     }

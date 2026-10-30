@@ -26,6 +26,7 @@ require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/Plugins.php';
 require_once __DIR__ . '/lib/harness.php';
 
+use mindstellar\billing\event\CarriersListing;
 use mindstellar\billing\event\OrderCancelled;
 use mindstellar\billing\event\OrderDelivered;
 use mindstellar\billing\event\OrderEvent;
@@ -119,6 +120,16 @@ Plugins::addHook('billing_tracking_url', static function (TrackingUrlResolving $
 $e = $events->dispatch(new TrackingUrlResolving('DHL', 'AB1'));
 pin('a typed listener sets an https page', 'https://track.example/DHL/AB1', $e->url());
 
+harness_section('Carriers');
+
+$events = $fresh();
+Plugins::addHook('admin_billing_carriers', static fn ($names) => array_merge($names, ['Blue Dart', ' ', 'Blue Dart', 7]), 5);
+Plugins::addHook('admin_billing_carriers', static function (CarriersListing $e): void {
+    $e->add('Delhivery');
+    $e->add('<b>India Post</b>');
+}, 10);
+pin('old and typed callbacks add carrier names, each once, blanks and non-text left out', ['Blue Dart', 'Delhivery', '<b>India Post</b>'], $events->dispatch(new CarriersListing())->names());
+
 harness_section('Return URL');
 
 $events = $fresh();
@@ -175,7 +186,7 @@ harness_section('Ownership');
 
 $bridge = HookBridge::active();
 $owners = $bridge === null ? [] : $bridge->owners();
-foreach (['billing_order_placed', 'billing_order_paid', 'billing_order_failed', 'billing_order_shipped', 'billing_order_delivered', 'billing_order_cancelled', 'billing_tracking_url', 'billing_receipt_details', 'billing_order_return_url'] as $name) {
+foreach (['billing_order_placed', 'billing_order_paid', 'billing_order_failed', 'billing_order_shipped', 'billing_order_delivered', 'billing_order_cancelled', 'billing_tracking_url', 'admin_billing_carriers', 'billing_receipt_details', 'billing_order_return_url'] as $name) {
     check($name . ' is owned by an event', isset($owners[$name]));
 }
 check('billing_order_refunded stays an old hook', !isset($owners['billing_order_refunded']));

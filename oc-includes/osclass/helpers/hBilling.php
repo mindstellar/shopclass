@@ -278,13 +278,14 @@ function osc_billing_order_prefix(): string
 /**
  * An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix.
  *
- * @param int $orderId
+ * @param int         $orderId
+ * @param string|null $prefix  the prefix the order was placed with; null takes today's setting
  *
  * @return string
  */
-function osc_billing_order_number(int $orderId): string
+function osc_billing_order_number(int $orderId, ?string $prefix = null): string
 {
-    return '#' . osc_billing_order_prefix() . $orderId;
+    return '#' . ($prefix ?? osc_billing_order_prefix()) . $orderId;
 }
 
 /**
@@ -609,6 +610,29 @@ function osc_billing_next_listing_quote(?int $userId = null): array
     }
 
     return \mindstellar\billing\ListingCheckout::nextListing((int) $userId);
+}
+
+/**
+ * Whether the listing on the post form will be held until paid for, as core decided when it
+ * opened the form. False on the edit form.
+ *
+ * @return bool
+ */
+function osc_item_post_held(): bool
+{
+    return View::getInstance()->_exists('listingPostQuote');
+}
+
+/**
+ * The post form's submit label: "Save and pay" when the listing is held for payment, else "Publish".
+ *
+ * @return string
+ */
+function osc_item_post_submit_label(): string
+{
+    $quote = osc_item_post_held() ? (array) View::getInstance()->_get('listingPostQuote') : array();
+
+    return (int) ($quote['credits'] ?? 0) > 0 ? _m('Save and pay') : _m('Publish');
 }
 
 /**
@@ -1625,5 +1649,65 @@ osc_add_hook('user_menu_filter', static function (array $options): array {
 
     return $options;
 });
+
+/** The cookie that hides the payment test-mode notice for one admin browser. */
+const OSC_PAY_TEST_COOKIE = 'osc_pay_test_hidden';
+
+/**
+ * One notice naming every payment method still in test mode, for the dashboard, the billing
+ * screens and those methods' own settings pages. Empty anywhere else, when none is in test
+ * mode, or when the admin hid it for this set of methods. Plugins add themselves through the
+ * PaymentTestModes event or the `admin_payment_test_modes` filter.
+ *
+ * @param array<string,mixed> $query  the request's page, action and id
+ * @param string              $hidden the hide cookie's value
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_admin_payment_test_notice(array $query, string $hidden = ''): string
+{
+    $page   = (string) ($query['page'] ?? '');
+    $action = (string) ($query['action'] ?? '');
+    $modes  = \mindstellar\boot\CoreServices::dispatcher()->dispatch(new \mindstellar\billing\event\PaymentTestModes())->all();
+    if ($modes === array()) {
+        return '';
+    }
+
+    $here = in_array($page, array('', 'main', 'billing'), true) || ($page === 'settings' && $action === 'billing');
+    foreach ($modes as $url) {
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $own);
+        if ($own !== array() && $page === ($own['page'] ?? null) && $action === ($own['action'] ?? '')
+            && (string) ($query['id'] ?? '') === (string) ($own['id'] ?? '')) {
+            $here = true;
+        }
+    }
+    $key = substr(hash('sha256', implode("\0", array_keys($modes))), 0, 16);
+    if (!$here || hash_equals($key, $hidden)) {
+        return '';
+    }
+
+    $names = array_keys($modes);
+    $links = array();
+    foreach ($modes as $name => $url) {
+        if ($url !== '') {
+            $links[] = '<a href="' . osc_esc_html($url) . '">' . osc_esc_html(sprintf(__('%s settings'), $name)) . '</a>';
+        }
+    }
+
+    return '<div class="flashmessage flashmessage-warning osc-pay-test-notice" role="status"'
+        . ' data-osc-hide-cookie="' . OSC_PAY_TEST_COOKIE . '" data-osc-hide-value="' . $key . '">'
+        . '<a class="btn ico btn-mini ico-close" data-oc-close-label="' . osc_esc_html(__('Hide for 7 days')) . '">x</a>'
+        . osc_esc_html(sprintf(
+            _n(
+                '%s is in test mode: no real money is taken. Switch it to live mode before the site takes payments.',
+                '%s are in test mode: no real money is taken. Switch them to live mode before the site takes payments.',
+                count($names)
+            ),
+            implode(', ', $names)
+        ))
+        . ($links === array() ? '' : ' ' . implode(' · ', $links))
+        . '</div>';
+}
 
 /* file end: ./oc-includes/osclass/helpers/hBilling.php */

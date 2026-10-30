@@ -15,6 +15,7 @@ use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\Order;
 use mindstellar\billing\PaymentGateway;
+use mindstellar\billing\Receipts;
 
 /**
  * Core's reference gateway: bank transfer or cash, settled by hand from the admin
@@ -91,7 +92,7 @@ final class OfflineGateway implements PaymentGateway
     {
         $html  = '<div class="billing-offline-instructions">';
         $html .= '<p>' . nl2br(osc_esc_html(osc_billing_offline_instructions())) . '</p>';
-        $html .= '<p><strong>' . osc_esc_html(sprintf(_m('Reference: %s'), osc_billing_order_number($order->getId()))) . '</strong></p>';
+        $html .= '<p><strong>' . osc_esc_html(sprintf(_m('Reference: %s'), Receipts::number($order))) . '</strong></p>';
         $html .= '</div>';
 
         return CheckoutIntent::html($html);
@@ -112,7 +113,7 @@ final class OfflineGateway implements PaymentGateway
             return null;
         }
 
-        return $text . "\n" . sprintf(_m('Reference: %s'), osc_billing_order_number($order->getId()));
+        return $text . "\n" . sprintf(_m('Reference: %s'), Receipts::number($order));
     }
 
     /**

@@ -29,6 +29,81 @@
   margin-block-start: 1.25rem;
 }
 
+// On a narrow screen the panels make one column, with the next step (ship, deliver) first
+// rather than below the address and the items.
+@media (max-width: 991.98px) {
+  .billing-detail-grid {
+    display: flex;
+    flex-direction: column;
+
+    > div {
+      display: contents;
+    }
+
+    :is(.widget-box, .osc-panel) + :is(.widget-box, .osc-panel) {
+      margin-block-start: 0;
+    }
+
+    .billing-detail-next {
+      order: -2;
+    }
+
+    .billing-detail-summary {
+      order: -1;
+    }
+  }
+}
+
+.order-tracking-fields {
+  display: grid;
+  gap: .875rem;
+  grid-template-columns: minmax(0, 1fr);
+  margin-block-end: 1rem;
+
+  .form-row {
+    margin: 0;
+  }
+}
+
+.order-carrier-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .375rem;
+  margin-block-start: -.375rem;
+}
+
+.order-carrier-chip {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: $border-radius;
+  color: var(--osc-ink);
+  font-size: .8125rem;
+  line-height: 1.4;
+  padding: .25rem .625rem;
+  transition: background-color .15s ease-out, border-color .15s ease-out;
+
+  &:hover {
+    background-color: var(--osc-bench-warm);
+    border-color: var(--osc-bronze);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 2px;
+  }
+
+  &[aria-pressed="true"] {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+    color: var(--osc-bronze);
+    font-weight: 600;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
 // The counts beside the filters: "128 orders · 96 paid · 12 awaiting payment".
 .billing-summary {
   color: var(--osc-ink-muted);
@@ -155,8 +230,7 @@
 }
 
 .cod-result {
-  background: none;
-  border: 0;
+  cursor: pointer;
   display: flex;
   gap: .5rem;
   justify-content: space-between;
@@ -165,7 +239,7 @@
   width: 100%;
 
   &:hover,
-  &:focus-visible {
+  &[aria-selected="true"] {
     background: var(--bs-secondary-bg);
   }
 }

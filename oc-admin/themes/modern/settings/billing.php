@@ -57,7 +57,9 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
     ), array_keys($tabs), $tabs)); ?>
 
     <?php if ($tab !== 'methods') {
-        osc_admin_settings_form($forms[$tab]['id'], array('titles' => false) + $forms[$tab]);
+        // The tab names a form of one section; a form of several heads each one.
+        $groups = (array) (osc_settings_page($forms[$tab]['id'])['groups'] ?? array());
+        osc_admin_settings_form($forms[$tab]['id'], array('titles' => count($groups) > 1) + $forms[$tab]);
     } elseif (empty($gateways)) {
         osc_admin_empty(array(
             'icon'   => 'bi-credit-card',

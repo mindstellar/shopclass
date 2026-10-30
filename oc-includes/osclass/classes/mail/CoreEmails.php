@@ -25,7 +25,7 @@ use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\boot\CoreServices;
 use mindstellar\container\Container;
-use mindstellar\currency\Money;
+use mindstellar\currency\CurrencyService;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\listing\ListingStatus;
 use mindstellar\mail\event\MailComposing;
@@ -1909,11 +1909,11 @@ final class CoreEmails
      *
      * @param array<string,mixed> $item the held listing row; only its id is read
      *
-     * @return void
+     * @return bool false when the mailer refused the mail
      */
     public static function listingUnpaidReminder($item)
     {
-        self::instance()->mailListingUnpaidReminder($item);
+        return self::instance()->mailListingUnpaidReminder($item);
     }
 
     /**
@@ -1922,13 +1922,14 @@ final class CoreEmails
      * @param array<string,mixed> $alert t_alerts row; fk_i_user_id and s_email are read
      * @param array<string,mixed> $item  the listing row, with its title
      * @param string              $kind  stock or price
-     * @param int|null            $price for a price alert, the new price in micros
+     * @param int|null            $price   for a price alert, the new price in micros
+     * @param int|null            $variant the variant that changed; its options follow the title
      *
      * @return void
      */
-    public static function productAlert($alert, $item, $kind, $price = null)
+    public static function productAlert($alert, $item, $kind, $price = null, $variant = null)
     {
-        self::instance()->mailProductAlert($alert, $item, (string) $kind, $price);
+        self::instance()->mailProductAlert($alert, $item, (string) $kind, $price, $variant === null ? null : (int) $variant);
     }
 
     /**
@@ -2007,7 +2008,7 @@ final class CoreEmails
      * @param array<string,mixed> $alert
      * @param array<string,mixed> $item
      */
-    public function mailProductAlert(array $alert, array $item, string $kind, ?int $price = null): void
+    public function mailProductAlert(array $alert, array $item, string $kind, ?int $price = null, ?int $variant = null): void
     {
         $user = !empty($alert['fk_i_user_id']) ? User::getInstance()->findByPrimaryKey((int) $alert['fk_i_user_id']) : false;
         $to   = is_array($user) && !empty($user['s_email']) ? (string) $user['s_email'] : (string) ($alert['s_email'] ?? '');
@@ -2030,7 +2031,7 @@ final class CoreEmails
         [$words, $htmlWords] = self::words(
             array(
                 '{USER_NAME}'  => $name,
-                '{ITEM_TITLE}' => (string) ($item['s_title'] ?? ''),
+                '{ITEM_TITLE}' => (string) ($item['s_title'] ?? '') . self::variantOptions($variant),
                 '{ITEM_PRICE}' => $price === null ? '' : osc_format_price($price),
                 '{ITEM_URL}'   => $url,
                 '{ITEM_LINK}'  => '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($url) . '</a>',
@@ -2038,6 +2039,24 @@ final class CoreEmails
             array('{USER_NAME}', '{ITEM_TITLE}', '{ITEM_PRICE}')
         );
         $this->deliver(new MailComposing('product_alert', $to, $name, $title, $body, $words, $htmlWords, null, $alert, $item, array($alert, $item, $kind)));
+    }
+
+    /**
+     * A variant's options as " (Size: M, Colour: Blue)", or '' for none.
+     */
+    private static function variantOptions(?int $variant): string
+    {
+        $row     = $variant !== null && $variant > 0 ? (\mindstellar\listing\VariantStore::byIds(array($variant))[$variant] ?? null) : null;
+        $options = is_array($row) && is_string($row['s_options'] ?? null) ? json_decode($row['s_options'], true) : null;
+        if (!is_array($options) || $options === array()) {
+            return '';
+        }
+        $parts = array();
+        foreach ($options as $name => $value) {
+            $parts[] = $name . ': ' . $value;
+        }
+
+        return ' (' . implode(', ', $parts) . ')';
     }
 
     /**
@@ -2072,27 +2091,29 @@ final class CoreEmails
 
     /**
      * @param array<string,mixed> $item
+     *
+     * @return bool false when the mailer refused the mail; true when it was sent or not due
      */
-    public function mailListingUnpaidReminder(array $item): void
+    public function mailListingUnpaidReminder(array $item): bool
     {
         $itemId = (int) ($item['pk_i_id'] ?? 0);
         // Read fresh: a listing paid or deleted since the caller read it gets no reminder.
         $item = $itemId > 0 ? Item::getInstance()->findByPrimaryKey($itemId) : null;
         // Without credits (billing off, or a shop) there is no pay step to link to.
         if (!is_array($item) || !ListingStatus::isHeld($item) || !osc_billing_credits_enabled()) {
-            return;
+            return true;
         }
         $ownerId = (int) ($item['fk_i_user_id'] ?? 0);
         $user    = $ownerId > 0 ? User::getInstance()->findByPrimaryKey($ownerId) : false;
         if (!is_array($user) || empty($user['s_email'])) {
-            return;
+            return true;
         }
         $to   = (string) $user['s_email'];
         $name = (string) ($user['s_name'] ?? '');
 
         $content = self::template('email_listing_unpaid_reminder');
         if (null === $content) {
-            return;
+            return true;
         }
         $title = $content['s_title'];
         $body  = $content['s_text'];
@@ -2112,7 +2133,7 @@ final class CoreEmails
             ),
             array('{USER_NAME}', '{ITEM_TITLE}')
         );
-        $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item)));
+        return $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item)));
     }
 
     public function mailOrder(string $kind, Order $order): void
@@ -2132,7 +2153,7 @@ final class CoreEmails
             }
             $extra = array('{ORDER_PRODUCTS}' => $rate === '' ? '' : '<ul>' . $rate . '</ul>');
         } elseif ($kind === 'order_refunded') {
-            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(Money::format($order->getAmount(), $order->getCurrency())));
+            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(CurrencyService::make()->money($order->getAmount(), $order->getCurrency())));
         }
         $howToPay = $kind === 'order_placed' ? PaymentGatewayRegistry::getInstance()->instructions($order) : null;
         if ($howToPay !== null) {
@@ -2203,12 +2224,14 @@ final class CoreEmails
     /**
      * Let listeners shape the mail, send it unless one suppressed it, and announce the result. A
      * failed order mail is flagged for the caller.
+     *
+     * @return bool false when the mailer refused it
      */
-    private function deliver(MailComposing $composing): void
+    private function deliver(MailComposing $composing): bool
     {
         $composing = $this->events->dispatch($composing);
         if ($composing->isSuppressed()) {
-            return;
+            return true;
         }
         $mail = $composing->render();
         $sent = (bool) osc_sendMail(array(
@@ -2222,6 +2245,8 @@ final class CoreEmails
             self::$orderMailFailed = true;
         }
         $this->events->dispatch(new MailSent($composing->kind(), $composing->order(), $composing->recipient(), $mail['subject'], $mail['body'], $sent));
+
+        return $sent;
     }
 
     /**

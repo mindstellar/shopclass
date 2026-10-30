@@ -169,12 +169,12 @@ Billing::markPaid($bank, null);
 pin('paying an order adds it at once', 2, OrderStore::toShipCount());
 
 harness_section('the menu badge');
-Preference::getInstance()->set('site_mode', 'classifieds');
+osc_set_preference('site_mode', 'classifieds');
 scratchdb_forget_cache();
 osc_reset_preferences();
 [$billing, $orders, $url, $nBilling, $nOrders] = $menu();
 pin('classifieds mode: no badge is computed', [0, 0], [$nBilling, $nOrders]);
-Preference::getInstance()->set('site_mode', 'shop');
+osc_set_preference('site_mode', 'shop');
 scratchdb_forget_cache();
 osc_reset_preferences();
 [$billing, $orders, $url, $nBilling, $nOrders, $paths] = $menu();
@@ -187,7 +187,7 @@ foreach ([$bank, $cod] as $o) {
 pin('nothing waits now', 0, OrderStore::toShipCount());
 [$billing, $orders, $url, $nBilling, $nOrders] = $menu();
 check('at zero there is no badge and Orders opens the plain list', $nBilling === 0 && $nOrders === 0 && !str_contains($url, 'toShip'));
-Preference::getInstance()->set('site_mode', 'classifieds');
+osc_set_preference('site_mode', 'classifieds');
 scratchdb_forget_cache();
 osc_reset_preferences();
 
@@ -202,7 +202,7 @@ $credits = static function (): array {
 pin('classifieds: Orders, Packages and Credits', [true, true, true], $credits());
 
 harness_section('the dashboard card');
-Preference::getInstance()->set('site_mode', 'shop');
+osc_set_preference('site_mode', 'shop');
 scratchdb_forget_cache();
 osc_reset_preferences();
 pin('shop mode: Orders stays, Packages and Credits are hidden', [true, false, false], $credits());

@@ -35,6 +35,15 @@ function osc_current_user_locale()
 {
     return 'en_US';
 }
+$GLOBALS['money'] = array('{CURRENCY}{NUMBER}', 2);
+function osc_locale_currency_format()
+{
+    return $GLOBALS['money'][0];
+}
+function osc_locale_num_dec()
+{
+    return $GLOBALS['money'][1];
+}
 
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
@@ -56,6 +65,13 @@ pin('parse refuses what is not a number', null, Money::parse('12 EUR'));
 $GLOBALS['sep'] = array('.', ',');
 pin('parse with a comma decimal point', 1234500000, Money::parse('1.234,5'));
 pin('format with a comma decimal point', '1.234,50 USD', Money::format(1234500000, 'USD'));
+$GLOBALS['sep'] = array(',', '.');
+pin('display uses the locale\'s currency format and drops whole decimals', ['₹1,234', '₹1,234.50'], [Money::display(1234000000, '₹'), Money::display(1234500000, '₹')]);
+pin('display puts the minus before the whole amount', ['-₹150', '-₹119.70'], [Money::display(-150000000, '₹'), Money::display(-119700000, '₹')]);
+pin('display shows zero as an amount, not "Free"', '₹0', Money::display(0, '₹'));
+$GLOBALS['money'] = array('{NUMBER} {CURRENCY}', 2);
+pin('display with the symbol after the number', '-12.50 €', Money::display(-12500000, '€'));
+$GLOBALS['money'] = array('{CURRENCY}{NUMBER}', 2);
 
 harness_section('byte sizes');
 

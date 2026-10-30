@@ -52,6 +52,26 @@ final class CurrencyService
     }
 
     /**
+     * The symbol the shop shows for a currency, e.g. "₹"; the code when it has none.
+     */
+    public function symbol(string $code): string
+    {
+        $code   = strtoupper($code);
+        $symbol = trim(html_entity_decode((string) ($this->findMany(array($code))[$code]['s_description'] ?? ''), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        return $symbol !== '' ? $symbol : $code;
+    }
+
+    /**
+     * An order amount as the shop shows it, e.g. "₹448" or "-₹150". Only a zero delivery
+     * charge reads "Free".
+     */
+    public function money(int $micros, string $code, bool $delivery = false): string
+    {
+        return $delivery && $micros === 0 ? __('Free') : Money::display($micros, $this->symbol($code));
+    }
+
+    /**
      * The rows of some currencies by upper-cased code. The enabled list is cached, so a page
      * of listings in enabled currencies costs no query.
      *

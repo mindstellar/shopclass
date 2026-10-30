@@ -352,6 +352,11 @@ pin(
     RecordingMailer::$last['AltBody']
 );
 
+// A stored listing title is HTML-escaped; the subject is plain text, so it is decoded.
+RecordingMailer::$last = null;
+osc_sendMail(array('subject' => 'Edit Tom &amp; Jerry &quot;q&quot; it&#039;s &lt; 5') + $base);
+pin('the subject is sent as plain text, without HTML entities', 'Edit Tom & Jerry "q" it\'s < 5', RecordingMailer::$last['Subject']);
+
 RecordingMailer::$last = null;
 osc_sendMail($base);
 pin(

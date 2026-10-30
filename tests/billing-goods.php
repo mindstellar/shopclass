@@ -170,7 +170,8 @@ pin('with the free-delivery meter', ['amount' => $m(999), 'remaining' => $m(990)
 pin('one shipping line', [['id' => 'shipping.standard', 'label' => 'Standard delivery', 'amount' => $m(49), 'currency' => 'USD', 'meta' => ['method' => 'standard']]], $q->extraLines('shipping'));
 $q = $quote([['variant' => $md, 'qty' => 2]]);
 pin('free over the amount', [0, $m(1398)], [$q->totals()['shipping'], $q->total()]);
-pin('an unknown method is not chosen', null, $quote([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => 'teleport'])->shipping());
+$q = $quote([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => 'teleport']);
+pin('a method not offered falls back to the first one offered, and says so', ['standard', $m(49), $m(58), 'standard'], [$q->shipping()['id'] ?? null, $q->totals()['shipping'], $q->total(), $q->cart()['shipping_method']]);
 
 harness_section('the cart filters');
 $seen    = [];
@@ -229,6 +230,11 @@ $huge = static function ($lines) {
 osc_add_filter('cart_discount_lines', $huge);
 pin('a discount bigger than the cart leaves a total of zero', 0, $quote([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => 'express'])->total());
 osc_remove_filter('cart_discount_lines', $huge);
+$noExpress = static fn ($methods) => array_values(array_filter($methods, static fn ($x) => $x['id'] !== 'express'));
+osc_add_filter('cart_shipping_methods', $noExpress, 20);
+$q = $quote([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => 'express']);
+pin('express asked where it is not offered prices the first method, never free delivery', ['standard', $m(49), [$m(49)]], [$q->shipping()['id'] ?? null, $q->totals()['shipping'], array_column($q->extraLines('shipping'), 'amount')]);
+osc_remove_filter('cart_shipping_methods', $noExpress);
 foreach (['cart_shipping_methods' => $express, 'cart_shipping_lines' => $shipLines, 'cart_tax_lines' => $tax, 'cart_discount_lines' => $discount, 'cart_totals' => $fee] as $hook => $fn) {
     osc_remove_filter($hook, $fn);
 }
@@ -535,7 +541,7 @@ pin('the included one is stored with amount 0 and the tax as its unit', [[0, $m(
 pin('so the lines still add up to the total', OrderStore::find($taxed->getId())->getAmount(), (int) array_sum(array_column(OrderLineStore::ofOrder($taxed->getId()), 'amount')));
 $receipt = Receipts::details(OrderStore::find($taxed->getId()));
 $vatRow  = array_values(array_filter($receipt['lines'], static fn ($x) => $x['title'] === 'VAT 20%'))[0];
-check('the receipt and its mail show the tax as included', $vatRow['included'] === true && str_contains(Receipts::linesHtml($receipt), '>1.50 USD (included)<'), Receipts::linesHtml($receipt));
+check('the receipt and its mail show the tax as included', $vatRow['included'] === true && str_contains(Receipts::linesHtml($receipt), '>' . osc_esc_html(\mindstellar\currency\CurrencyService::make()->money($m(1.5), 'USD')) . ' (included)<'), Receipts::linesHtml($receipt));
 osc_remove_filter('cart_tax_lines', $taxes);
 OrderStore::cancel($taxed->getId());
 
