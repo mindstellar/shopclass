@@ -45,6 +45,10 @@ class WebThemes
     public static string $path = '';
     /** @var string[] what the theme's `Widgets:` line parses to */
     public static array $headerLocations = array();
+    /** @var string the parent the fixture theme names, '' for none */
+    public static string $parent = '';
+    /** @var string[] what the parent's `Widgets:` line parses to */
+    public static array $parentLocations = array();
 
     public static function getInstance(): self
     {
@@ -68,7 +72,12 @@ class WebThemes
      */
     public function loadThemeInfo($theme)
     {
-        return array('locations' => self::$headerLocations);
+        return array('locations' => $theme === 'parent' ? self::$parentLocations : self::$headerLocations);
+    }
+
+    public function parentOf(string $theme): string
+    {
+        return $theme === 'fixture' ? self::$parent : '';
     }
 }
 
@@ -219,6 +228,23 @@ harness_section('widget zones: a theme with neither has none');
 $supports->reset();
 WebThemes::$headerLocations = array();
 pin('no zones', array(), osc_widget_locations());
+
+harness_section('widget zones: a child theme with no `Widgets:` line takes its parent\'s');
+WebThemes::$parent = 'parent';
+WebThemes::$parentLocations = array('footer', 'item_sidebar');
+pin(
+    'the parent header answers',
+    array(
+        'footer'       => array('label' => 'footer', 'description' => ''),
+        'item_sidebar' => array('label' => 'item_sidebar', 'description' => ''),
+    ),
+    osc_widget_locations()
+);
+WebThemes::$headerLocations = array('header');
+pin('the child header wins', array('header' => array('label' => 'header', 'description' => '')), osc_widget_locations());
+WebThemes::$headerLocations = array();
+WebThemes::$parent = '';
+WebThemes::$parentLocations = array();
 
 harness_section('widget zones: the shapes a declaration arrives in');
 WebThemes::$headerLocations = array();
