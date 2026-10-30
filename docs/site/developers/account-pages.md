@@ -73,6 +73,7 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-bill` | a shopper's order table on the dashboard, the same table as the orders page | holds one `.oe-scroll` and its `<table>` |
 | `.oe-row-actions` | a record's action links | also carries `.oe-meta`; `.oe-danger-link` marks the destructive one |
 | `.oe-row-promote` | the paid-upgrades line under a listing | also carries `.oe-row-actions` |
+| `.oe-row-primary` | the one action a row leads with, such as Publish on a listing waiting for payment | also carries `.oe-btn` and `.oe-btn--primary`; the action array has `'primary' => true` |
 | `.oe-link-btn` | a button that looks like a link | inside an `.oe-inline-form` |
 | `.oe-inline-form` | a one-button form in a line of links | `display: inline` |
 | `.oe-tabs` | a status filter over a list | a `<nav>` of links; the current one carries `aria-current="page"` |
@@ -99,6 +100,10 @@ you override. A bare `.oe-list-item {}` loses to core's `.oe-page .oe-list-item 
 | `.oe-panel` | a bordered block grouping related content | also used by the credits pages and the checkout address picker |
 | `.oe-panel__title` | a panel's heading | an `<h2>`; also on `.oe-dashboard-title` and `.oe-thread-title` |
 | `.oe-table` | a table of records, such as orders or credit history | a `<table>`; on the credits pages it sits in `.oe-bill` and stacks on a phone |
+| `.oe-bill-howto` | how to pay a pending order, such as bank details | a `<tr>` under the order's row, one cell across every column |
+| `.oe-copy` | a value to copy by hand, such as an IBAN or a payment reference | holds an `.oe-copy-value` `<code>` and an `.oe-copy-btn` that stays `hidden` until the browser can copy |
+| `.oe-callout` | a short notice that must be read, such as a payment deadline or the listing limit | a `<p>` or `<div>`; not dismissible |
+| `.oe-limit-notice` | My listings' one notice for the listing limit, the next listing's price and paused bumps | a `<div>` of `.oe-muted` and `.oe-meta` lines; also carries `.oe-callout` when the seller cannot post for free |
 | `.oe-muted` | secondary prose | a paragraph, not a control |
 | `.oe-address` | one saved address on the addresses page | also carries `.oe-panel`; holds an `<h2>` (with an `.oe-badge` on the default), `.oe-address-lines` and the row actions |
 | `.oe-address-lines` | a saved address on one line | a `<p>` |
@@ -638,8 +643,10 @@ token and `do`: `credits` (spend the balance and publish) or `order` (with `pack
 `gateway`). The price always comes from the server. Delete is the listing's own delete
 (`page=item&action=item_delete&id=N`).
 
-The page adds `.oe-bill-publish`, `.oe-bill-publish-card`, `.oe-bill-publish-status` and
-`.oe-bill-publish-more` to the billing classes. Its package form is
+The page adds `.oe-bill-publish`, `.oe-bill-publish-card`, `.oe-bill-publish-status`,
+`.oe-bill-publish-more`, `.oe-bill-amount` (with `.oe-bill-amount-label` and the
+`.oe-bill-amount-figure` headline), `.oe-bill-deadline` (an `.oe-callout`) and
+`.oe-bill-delete-form` with its `.oe-bill-delete` link to the billing classes. Its package form is
 `gui/billing/parts/package-picker.php`, the same one the Buy credits page uses.
 
 An admin sees the same listing as Waiting for payment and can publish it free. A reminder

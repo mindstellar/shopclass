@@ -36,6 +36,7 @@ require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeViews.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/widgets/WidgetRegistry.php';
+require_once ABS_PATH . 'oc-includes/osclass/classes/security/PluginAjaxFile.php';
 
 $themeRoot = sys_get_temp_dir() . '/osc-theme-views-' . getmypid() . '/';
 
@@ -84,6 +85,13 @@ class WebThemes
 function osc_theme(): string
 {
     return 'fixture';
+}
+
+$themesDir = sys_get_temp_dir() . '/osc-theme-routes-' . getmypid() . '/';
+
+function osc_themes_path(): string
+{
+    return $GLOBALS['themesDir'];
 }
 
 /** Minimal filter bus: only `widget_locations` is exercised here. */
@@ -284,6 +292,30 @@ pin("the plugin's zone is added", array('label' => 'Sidebar', 'description' => '
 $GLOBALS['testFilter'] = static fn (): string => 'not-a-map';
 pin('a filter returning junk is ignored', array('header' => array('label' => 'header', 'description' => '')), osc_widget_locations());
 $GLOBALS['testFilter'] = null;
+
+harness_section('route files: a child theme falls back to its parent');
+foreach (array('fixture/plugins', 'parent/plugins', 'parent/cart') as $dir) {
+    mkdir($themesDir . $dir, 0777, true);
+}
+$routeFiles = array('parent/cart/checkout.php', 'parent/plugins/box.php', 'parent/both.php', 'fixture/both.php');
+foreach ($routeFiles as $routeFile) {
+    file_put_contents($themesDir . $routeFile, '<?php');
+}
+$real = static fn (string $path): string => (string) realpath($themesDir . $path);
+WebThemes::$parent = 'parent';
+pin("a parent's route file resolves", $real('parent/cart/checkout.php'), osc_theme_route_file('cart/checkout.php'));
+pin("a parent's plugins/ file resolves", $real('parent/plugins/box.php'), osc_theme_route_file('box.php', false));
+pin("the child's own copy wins", $real('fixture/both.php'), osc_theme_route_file('both.php'));
+pin('a theme-root file needs a route', null, osc_theme_route_file('cart/checkout.php', false));
+pin('a missing file is refused', null, osc_theme_route_file('nope.php'));
+WebThemes::$parent = '';
+pin('no parent, no fallback', null, osc_theme_route_file('cart/checkout.php'));
+foreach ($routeFiles as $routeFile) {
+    unlink($themesDir . $routeFile);
+}
+foreach (array('fixture/plugins', 'parent/plugins', 'parent/cart', 'fixture', 'parent', '') as $dir) {
+    rmdir($themesDir . $dir);
+}
 
 @unlink($themeRoot . 'user-profile.php');
 @rmdir($themeRoot);

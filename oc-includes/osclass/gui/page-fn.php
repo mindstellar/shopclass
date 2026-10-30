@@ -224,6 +224,78 @@ if (!function_exists('osc_gui_print_dialog_script')) {
     }
 }
 
+if (!function_exists('osc_gui_copy_value')) {
+    /**
+     * A value to copy by hand, such as a bank account or payment reference: monospace text
+     * plus a Copy button that shows only when the browser can copy.
+     *
+     * @param string $value plain text, escaped here
+     *
+     * @since 7.1.0
+     */
+    function osc_gui_copy_value(string $value): string
+    {
+        osc_gui_print_copy_script();
+
+        return '<span class="oe-copy"><code class="oe-copy-value">' . osc_esc_html($value) . '</code>'
+            . '<button type="button" class="oe-link-btn oe-copy-btn" data-osc-copy="' . osc_esc_html($value) . '"'
+            . ' data-osc-copied="' . osc_esc_html(_m('Copied')) . '" hidden>' . osc_esc_html(_m('Copy')) . '</button></span>';
+    }
+}
+
+if (!function_exists('osc_gui_payment_text')) {
+    /**
+     * Payment instructions as HTML: the text escaped, with each IBAN and each of $values
+     * shown through osc_gui_copy_value().
+     *
+     * @param string   $text   plain text
+     * @param string[] $values exact strings to make copyable, such as the order reference
+     *
+     * @since 7.1.0
+     */
+    function osc_gui_payment_text(string $text, array $values = array()): string
+    {
+        $parts = array_filter(array_map(static fn ($v) => preg_quote((string) $v, '/'), $values), 'strlen');
+        $parts[] = '\b[A-Z]{2}\d{2}(?: ?[A-Z0-9]{1,4}){3,8}\b';
+        $html = '';
+        $pos  = 0;
+        if (preg_match_all('/' . implode('|', $parts) . '/', $text, $found, PREG_OFFSET_CAPTURE)) {
+            foreach ($found[0] as [$match, $at]) {
+                $bare = str_replace(' ', '', $match);
+                if (!in_array($match, $values, true) && (strlen($bare) < 15 || strlen($bare) > 34)) {
+                    continue;
+                }
+                $html .=osc_esc_html(substr($text, $pos, $at - $pos)) . osc_gui_copy_value($match);
+                $pos   = $at + strlen($match);
+            }
+        }
+
+        return nl2br($html . osc_esc_html(substr($text, $pos)), false);
+    }
+}
+
+if (!function_exists('osc_gui_print_copy_script')) {
+    /**
+     * Show and wire every [data-osc-copy] button once the page has loaded.
+     */
+    function osc_gui_print_copy_script(): void
+    {
+        static $printed = false;
+        if ($printed) {
+            return;
+        }
+        $printed = true;
+
+        echo '<script>(function(){if(!navigator.clipboard){return;}'
+            . 'function show(){document.querySelectorAll("[data-osc-copy]").forEach(function(b){b.hidden=false;});}'
+            . 'if(document.readyState==="loading"){document.addEventListener("DOMContentLoaded",show);}else{show();}'
+            . 'document.addEventListener("click",function(e){var b=e.target.closest&&e.target.closest("[data-osc-copy]");if(!b){return;}'
+            . 'navigator.clipboard.writeText(b.getAttribute("data-osc-copy")).then(function(){'
+            . 'var t=b.textContent;b.textContent=b.getAttribute("data-osc-copied");setTimeout(function(){b.textContent=t;},1500);});});'
+            . '})();</script>';
+    }
+}
+
 if (!function_exists('osc_gui_field')) {
     /**
      * Print a form row: label, input, then an optional hint and error. The hint gets the id

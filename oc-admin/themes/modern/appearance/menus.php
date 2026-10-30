@@ -79,6 +79,7 @@ $meState = array(
         'full'       => __('A menu can hold at most %d items.'),
         'needLink'   => __('A link needs a label and an address.'),
         'badAddress' => __('A link needs an address that starts with http://, https:// or /.'),
+        'already'    => __('"%s" is already in this menu.'),
         'leave'      => __('You have unsaved changes to this menu.'),
         'hidden1'    => __('1 item is deeper than your theme shows here and will not show.'),
         'hiddenN'    => __('%d items are deeper than your theme shows here and will not show.'),

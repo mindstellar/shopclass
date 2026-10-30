@@ -163,6 +163,28 @@ if (!defined('ABS_PATH')) {
   .oe-page .oe-bill-pkg-credits{color:var(--oe-ink-muted);font-size:.875rem;}
   .oe-page .oe-bill-pkg-price{margin-left:auto;font-weight:600;white-space:nowrap;}
   .oe-page .oe-bill-instructions{white-space:pre-line;}
+  .oe-page .oe-bill-amount{margin:0 0 16px;}
+  .oe-page .oe-bill-amount > p{margin:0;}
+  .oe-page .oe-bill-amount-label{font-size:.8125rem;font-weight:600;color:var(--oe-ink-muted);}
+  .oe-page .oe-bill-amount-figure{line-height:1.2;font-variant-numeric:tabular-nums;}
+  .oe-page .oe-bill-amount .oe-muted{margin-top:4px;}
+  .oe-page .oe-callout{
+    margin:16px 0 0;padding:10px 14px;border-radius:6px;color:var(--oe-ink);
+    background:color-mix(in srgb,var(--oe-warning) 10%,var(--oe-bench));
+    border:1px solid color-mix(in srgb,var(--oe-warning) 35%,var(--oe-bench));
+  }
+  .oe-page .oe-copy{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:4px 8px;}
+  .oe-page .oe-copy-value{
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.9375em;
+    background:var(--oe-bench-sunk);border-radius:4px;padding:1px 6px;overflow-wrap:anywhere;user-select:all;
+  }
+  .oe-page .oe-copy-btn{font-size:.8125rem;}
+  .oe-page .oe-bill-delete-form{display:block;margin-top:16px;}
+  .oe-page .oe-bill-delete{font-size:.875rem;}
+  .oe-page .oe-limit-notice{margin:0 0 16px;}
+  .oe-page .oe-limit-notice > :first-child{margin-top:0;}
+  .oe-page .oe-limit-notice .oe-actions{margin-top:8px;}
+  .oe-page .oe-row-actions .oe-row-primary{padding:4px 12px;font-size:.875rem;color:var(--oe-on-teal);}
   .oe-page .oe-account{
     display:grid; gap:32px; align-items:start;
     grid-template-columns:minmax(0,1fr) minmax(13rem,16rem);

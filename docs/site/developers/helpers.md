@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1266 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -178,7 +178,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (87)
+### hBilling (90)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -186,6 +186,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_account_upgrade_offers(?int $userId = null)` | Upgrades a seller can buy for their account with credits: each is ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`. With $userId, extra photos and runtime that seller already holds are left out: they raise a limit to a level, so buying them again would only stack it. |
 | `osc_account_upgrade_url(string $feature)` | The POST target for buying the account upgrade $feature. |
+| `osc_admin_payment_test_notice(array $query, string $hidden = '')` | One notice naming every payment method still in test mode, for the dashboard, the billing screens and those methods' own settings pages. Empty anywhere else, when none is in test mode, or when the admin hid it for this set of methods. Plugins add themselves through the PaymentTestModes event or the `admin_payment_test_modes` filter. |
 | `osc_billing_bump_cooldown_hours()` | Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. |
 | `osc_billing_bump_credits()` | Credit price of a bump. 0 with billing_bump_enabled on means free, not off. |
 | `osc_billing_bump_enabled()` | Whether bump-to-top is registered as a purchasable upgrade at all. |
@@ -217,7 +218,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_billing_offline_enabled()` | Whether the bundled bank-transfer gateway is switched on. |
 | `osc_billing_offline_instructions()` | Admin-authored payment instructions shown on the offline checkout screen. |
 | `osc_billing_open_hold_orders()` | Most unpaid goods orders one buyer may hold at once, every gateway together. 0 means no limit. |
-| `osc_billing_order_number(int $orderId)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
+| `osc_billing_order_number(int $orderId, ?string $prefix = null)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
 | `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
 | `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
@@ -250,6 +251,8 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_has_upgrade(string $upgrade, ?array $item = null)` | Whether an item currently holds $upgrade. Defaults to the item in view. |
 | `osc_item_is_highlighted(?array $item = null)` | Whether an item currently holds the item.highlight upgrade. Defaults to the item in view. |
 | `osc_item_is_urgent(?array $item = null)` | Whether an item currently holds the item.urgent upgrade. Defaults to the item in view. |
+| `osc_item_post_held()` | Whether the listing on the post form will be held until paid for, as core decided when it opened the form. False on the edit form. |
+| `osc_item_post_submit_label()` | The post form's submit label: "Save and pay" when the listing is held for payment, else "Publish". |
 | `osc_item_premium_expiration(?array $item = null)` | Raw expiration datetime of a featured listing, or null when it is not currently featured. Defaults to the item currently in view, the same convention osc_item_field() uses, so it drops straight into an item loop. |
 | `osc_item_upgrade_expiration(string $upgrade, ?array $item = null)` | Raw expiration datetime of an item's $upgrade row, or null when there is no row at all -- the same "raw value regardless of active state" convention osc_item_premium_expiration() follows. |
 | `osc_item_upgrade_offers(?array $item = null)` | The paid upgrades the logged-in owner can buy for an item right now, as data: each entry is ['feature', 'label', 'credits']. Empty unless the item is the owner's own and is live (enabled, active, not expired). |
@@ -532,7 +535,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (124)
+### hItems (125)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -616,6 +619,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_meta_slug()` | Gets item meta slug |
 | `osc_item_meta_value()` | Gets item meta value |
 | `osc_item_mod_date()` | Gets modification date of current item |
+| `osc_item_pay_url()` | The pay step of the current item when it is held and the viewer owns it, else ''. Themes show a Pay button beside the owner's Edit and Delete with it. |
 | `osc_item_price()` | Gets price of current item |
 | `osc_item_pub_date()` | Gets publication date of current item |
 | `osc_item_region()` | Gets region of current item |
@@ -632,8 +636,8 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_list_items_per_page()` | Gets number of items per page for current pagination |
 | `osc_list_page()` | Current page of the search pagination. |
 | `osc_list_total_pages()` | Total number of pages in the search pagination. |
-| `osc_listing_row_unpaid_actions($actions, $item, $context = '')` | Gives a held listing a Publish link to the pay step and takes away its upgrade links. |
-| `osc_listing_row_unpaid_badge($badges, $item, $context = '')` | Marks a held listing in the seller's own list. |
+| `osc_listing_row_unpaid_actions($actions, $item, $context = '')` | Gives a held listing a Publish button to the pay step, marked 'primary', and takes away its upgrade links. |
+| `osc_listing_row_unpaid_badge($badges, $item, $context = '')` | Marks a held listing in the seller's own list, with the date it is deleted unless paid. |
 | `osc_priv_count_item_resources()` | **Deprecated since 2.4.** Gets number of item resources |
 | `osc_priv_count_items()` | **Deprecated since 2.4.** Gets number of items |
 | `osc_query_item($params = null)` | Perform a search based on custom filters and conditions export the results to a variable to be able to manage it from custom_items' helpers |
@@ -788,7 +792,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | Helper | What it does |
 |---|---|
 | `osc_add_flash_error_message($msg, $section = 'pubMessages')` | Adds an ephemeral message to the session. (error style) |
-| `osc_add_flash_info_message($msg, $section = 'pubMessages')` | Adds an ephemeral message to the session. (info style) |
+| `osc_add_flash_info_message($msg, $section = 'pubMessages', bool $dismissible = true)` | Adds an ephemeral message to the session. (info style) |
 | `osc_add_flash_message($msg, $section = 'pubMessages')` | Adds an ephemeral message to the session. (error style) |
 | `osc_add_flash_ok_message($msg, $section = 'pubMessages')` | Adds an ephemeral message to the session. (ok style) |
 | `osc_add_flash_warning_message($msg, $section = 'pubMessages')` | Adds an ephemeral message to the session. (warning style) |
@@ -1290,7 +1294,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_register_storage_adapter($adapter)` | Register a storage adapter with the storage manager. |
 | `osc_storage_register_remote()` | Register the bundled S3-compatible adapter from saved preferences, when an install has filled in all four connection settings. Idempotent and cheap — it returns immediately once the adapter is registered for this request, and register() keys by id — so it is safe to call from the `init` hook, from the upload hooks, and before the worker runs. |
 
-### hTheme (40)
+### hTheme (41)
 
 `oc-includes/osclass/helpers/hTheme.php`
 
@@ -1330,6 +1334,7 @@ Core defines 1261 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_theme_chrome()` | The active theme's page chrome: the view that opens the document and the one that closes it, as absolute paths, or null when the theme has none. |
 | `osc_theme_has_chrome()` | Whether the active theme can wrap a core-rendered page. |
 | `osc_theme_has_screenshot($theme = null)` | Whether a theme has a screenshot on disk, as opposed to the fallback placeholder osc_theme_screenshot_url() returns. |
+| `osc_theme_route_file(string $file, bool $root = true)` | Absolute path of a theme's route or render file: the active theme first, then its parent. The theme's plugins/ folder is always searched; the theme root only when $root is true. |
 | `osc_theme_screenshot_url($theme = null)` | Public URL of a theme's screenshot, or a bundled placeholder when it has none. Checks screenshot.png, then screenshot.jpg, then screenshot.webp on disk, in that order — themes in the wild ship all three. |
 | `osc_theme_supports(string $feature)` | Arguments the active theme declared for $feature, or false when it declared nothing. Callers must treat false as "do what we did before", never as an error. |
 | `osc_theme_template_paths()` | The theme stack a view is resolved against, as absolute directory paths: active theme, then its parent when it declares one, then the bundled fallback theme core keeps for views nobody else supplies. |

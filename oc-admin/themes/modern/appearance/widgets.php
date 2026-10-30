@@ -160,7 +160,8 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                                                 title="<?php echo osc_esc_html(__('Edit widget')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
                                         <button type="button" class="chip-btn chip-danger"
                                                 onclick="return delete_dialog('<?php echo $wid; ?>');"
-                                                title="<?php echo osc_esc_html(__('Delete widget')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
+                                                title="<?php echo osc_esc_html(__('Delete widget')); ?>"
+                                                aria-label="<?php echo osc_esc_html(__('Delete widget')); ?>"><i class="bi bi-trash-fill" aria-hidden="true"></i></button>
                                     </span>
                                 </div>
                                 <div class="field-chip-editor edit" hidden></div>

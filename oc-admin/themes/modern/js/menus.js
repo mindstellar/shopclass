@@ -412,6 +412,14 @@
                 url.value = '';
             } else {
                 item.ref = Number(document.getElementById('menu-add-' + type).value);
+                var already = items.some(function (other) {
+                    return other.type === type && Number(other.ref) === item.ref;
+                });
+                if (already) {
+                    addError.textContent = fmt(t.already, names[type][item.ref] || '#' + item.ref);
+                    addError.hidden = false;
+                    return;
+                }
             }
             items.push(item);
             changed();

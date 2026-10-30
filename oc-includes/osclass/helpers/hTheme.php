@@ -514,6 +514,11 @@ function osc_gui_view(string $themeView, string $contentFile, array $opts = arra
 function osc_gui_custom_heading(): string
 {
     $title = trim((string) Rewrite::getInstance()->get_title());
+    if ($title === '' || $title === 'Custom') {
+        // Opened as ?page=custom&route=<id>, no friendly URL matched, so the title is the route's own.
+        $routes = Rewrite::getInstance()->getRoutes();
+        $title  = trim((string) ($routes[Params::getParamString('route')]['title'] ?? ''));
+    }
 
     return ($title === '' || $title === 'Custom') ? _m('Your account') : $title;
 }
@@ -900,6 +905,29 @@ function osc_render_target(string $id): ?string
 }
 
 /**
+ * Absolute path of a theme's route or render file: the active theme first, then its parent.
+ * The theme's plugins/ folder is always searched; the theme root only when $root is true.
+ *
+ * @param string $file path relative to the theme folder
+ * @param bool   $root also accept a file in the theme root (routes registered in PHP only)
+ *
+ * @return string|null
+ */
+function osc_theme_route_file(string $file, bool $root = true): ?string
+{
+    foreach (array_filter(array(osc_theme(), WebThemes::getInstance()->parentOf(osc_theme()))) as $theme) {
+        $dir  = osc_themes_path() . $theme . '/';
+        $path = \mindstellar\security\PluginAjaxFile::resolve($file, $dir . 'plugins/')
+            ?? ($root ? \mindstellar\security\PluginAjaxFile::resolve($file, $dir) : null);
+        if ($path !== null) {
+            return $path;
+        }
+    }
+
+    return null;
+}
+
+/**
  * Render the specified file
  *
  * @param string $file must be a relative path, from PLUGINS_PATH, or a registered
@@ -924,8 +952,8 @@ function osc_render_file($file = '')
         return;
     }
 
-    // Only a .php file inside the theme's plugins folder or the plugins folder is included.
-    $path = \mindstellar\security\PluginAjaxFile::resolve($file, osc_themes_path() . osc_theme() . '/plugins/')
+    // Only a .php file inside the theme's (or its parent's) plugins folder or the plugins folder is included.
+    $path = osc_theme_route_file((string) $file, false)
         ?? \mindstellar\security\PluginAjaxFile::resolve($file, osc_plugins_path());
     if ($path !== null) {
         include $path;

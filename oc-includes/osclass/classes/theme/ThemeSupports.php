@@ -37,6 +37,9 @@ final class ThemeSupports
     /** True while a parent theme's functions.php is being loaded. */
     private bool $inherited = false;
 
+    /** The active child theme's parent, '' when there is none. */
+    private string $parent = '';
+
     /**
      * Singleton: obtain the registry through instance().
      */
@@ -70,7 +73,7 @@ final class ThemeSupports
         // A parent theme fills gaps; it does not overrule the child that chose it. The
         // child's functions.php is required first, so without this the newest value wins
         // and every contested feature goes to the parent.
-        if ($this->inherited && array_key_exists($feature, $this->features)) {
+        if (($this->inherited || $this->parentIsRunning()) && array_key_exists($feature, $this->features)) {
             return;
         }
         $this->features[$feature] = $args;
@@ -85,6 +88,15 @@ final class ThemeSupports
     public function beginInherited(): void
     {
         $this->inherited = true;
+    }
+
+    /**
+     * Name the active child's parent. Its later declarations, such as those its `init`
+     * hook makes, also fill gaps only.
+     */
+    public function inheritFrom(string $theme): void
+    {
+        $this->parent = $theme;
     }
 
     /**
@@ -139,6 +151,15 @@ final class ThemeSupports
     {
         $this->features  = [];
         $this->inherited = false;
+        $this->parent    = '';
+    }
+
+    /**
+     * Whether the code running now is the parent theme's, such as a hook it added.
+     */
+    private function parentIsRunning(): bool
+    {
+        return $this->parent !== '' && class_exists('Plugins', false) && \Plugins::currentOwner() === ['theme', $this->parent];
     }
 
     /**

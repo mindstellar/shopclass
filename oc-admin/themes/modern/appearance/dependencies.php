@@ -46,10 +46,12 @@ $states = array(
 );
 
 $requiredOpen = 0;
+$open         = 0;
 $actionable   = 0;
 foreach (array_merge($deps['required'], $deps['recommended']) as $row) {
-    if ($row['required'] && $row['status'] !== PluginDependencies::ACTIVE) {
-        $requiredOpen++;
+    if ($row['status'] !== PluginDependencies::ACTIVE) {
+        $open++;
+        $requiredOpen += $row['required'] ? 1 : 0;
     }
     if ($row['action'] !== 'none') {
         $actionable++;
@@ -117,15 +119,17 @@ osc_current_admin_theme_path('parts/header.php'); ?>
          'optionalFailed' => __('A recommended plugin could not be installed.'),
          'activateAnyway' => __('Activate the theme without it'),
      ))); ?>'>
-    <?php osc_admin_page_head($isActiveTheme
+    <?php osc_admin_page_head(($isActiveTheme && $requiredOpen > 0)
         ? sprintf(__('%s needs these plugins'), $themeName)
-        : sprintf(__('Before %s goes live'), $themeName)); ?>
+        : ($isActiveTheme ? $themeName : sprintf(__('Before %s goes live'), $themeName))); ?>
 
     <p>
-        <?php if ($isActiveTheme) {
+        <?php if ($isActiveTheme && $requiredOpen > 0) {
             _e('Your active theme needs a plugin that is missing or turned off. The parts that use it stay hidden until it is back.');
         } elseif ($requiredOpen > 0) {
             _e('This theme needs the required plugins below. It goes live once they are installed and active. Recommended ones are optional.');
+        } elseif ($open === 0) {
+            _e('All the plugins this theme needs are active.');
         } else {
             _e('This theme works better with the plugins below. They are optional.');
         } ?>

@@ -37,6 +37,17 @@ pin('a missing label names the address', ['The link to "https://example.test/a" 
 $menu->clean([['type' => 'link', 'url' => '/sale', 'label' => ['en_US' => 'Sale']]]);
 pin('a good link has no error', [], $menu->errors());
 
+harness_section('a page or category once per menu');
+$menu->clean([['type' => 'page', 'ref' => 3], ['type' => 'link', 'url' => '/a', 'label' => ['en_US' => 'A'], 'children' => [['type' => 'page', 'ref' => 3]]]]);
+pin('the same page twice is refused, nested too', ['A page is in this menu more than once.'], $menu->errors());
+pin('so is the same category', ['A category is in this menu more than once.'], (static function () use ($menu): array {
+    $menu->clean([['type' => 'category', 'ref' => 5], ['type' => 'category', 'ref' => 5]]);
+
+    return $menu->errors();
+})());
+pin('a page and a category with the same id are fine', [['type' => 'page', 'ref' => 4], ['type' => 'category', 'ref' => 4]], $menu->clean([['type' => 'page', 'ref' => 4], ['type' => 'category', 'ref' => 4]]));
+pin('two links to one address are fine', 2, count((array) $menu->clean([['type' => 'link', 'url' => '/a', 'label' => ['en_US' => 'A']], ['type' => 'link', 'url' => '/a', 'label' => ['en_US' => 'B']]])));
+
 harness_section('draft');
 $draft = $menu->draft([
     ['type' => 'link', 'url' => 'not-a-url', 'label' => ['en_US' => '<b>Hello</b>', 'xx_XX' => 'Dropped'], 'children' => [['type' => 'page', 'ref' => '7']]],

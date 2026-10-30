@@ -210,6 +210,10 @@ command line too. Its one argument is the list of reasons, such as `array('theme
 Clear your cache there. Do not print, send headers or read the session. To ask for one yourself,
 call `osc_purge_page_cache('my_reason')`. See [the caching contract](/docs/developers/caching/).
 
+`admin_billing_carriers` (7.1+) lists the carriers the admin order screen suggests in its Carrier
+box. A typed listener takes a `CarriersListing` and calls `add('Blue Dart')`; an old filter gets
+the list of names and returns it. Blank names and repeats are dropped.
+
 `item_increase_stat` and `item_decrease_stat` fire after the transaction commits, when the
 caller is in one. They come after `posted_item` and `edited_item`, not before, and a post or edit
 that is rolled back never fires them. Do not rely on their order against those hooks.
@@ -220,14 +224,15 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 631 names. Generated from the source; do not edit by hand.
+Core fires 633 names. Generated from the source; do not edit by hand.
 
-### Admin (79)
+### Admin (81)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
 | `admin_alerts_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `admin_base_url` | filter | `$path, $with_index` | `oc-includes/osclass/helpers/hDefines.php` |
+| `admin_billing_carriers` | event | `CarriersListing` | `oc-includes/osclass/classes/billing/event/CarriersListing.php` |
 | `admin_body_class` | filter | `array()` | `oc-admin/themes/modern/parts/header.php` |
 | `admin_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
 | `admin_comments_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/CommentsDataTable.php` |
@@ -262,6 +267,7 @@ Core fires 631 names. Generated from the source; do not edit by hand.
 | `admin_page_routes` | filter | `$core` | `oc-includes/osclass/classes/routing/PageDispatcher.php` |
 | `admin_page_title` | filter | `$title, $page, $pageLocale` | `oc-admin/themes/modern/pages/frm.php` |
 | `admin_pages_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
+| `admin_payment_test_modes` | event | `PaymentTestModes` | `oc-includes/osclass/classes/billing/event/PaymentTestModes.php` |
 | `admin_post` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 | `admin_profile_form` | action | `__get('admin')` | `oc-includes/osclass/classes/admin/form/AdminAccountForm.php` |
 | `admin_rules_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |

@@ -248,6 +248,26 @@
         structural();
     }
 
+    var armTimer = null;
+    function disarm(btn) {
+        if (!btn.classList.contains('is-armed')) {
+            return;
+        }
+        var li = btn.closest('[data-ref]');
+        var i = li ? find(li.getAttribute('data-ref')) : -1;
+        btn.classList.remove('is-armed');
+        btn.innerHTML = icon('x-lg');
+        if (i !== -1) {
+            btn.setAttribute('aria-label', fmt(t.remove, labelOf(current()[i])));
+            btn.title = btn.getAttribute('aria-label');
+        }
+    }
+    list.addEventListener('focusout', function (e) {
+        if (e.target.classList && e.target.classList.contains('is-armed')) {
+            disarm(e.target);
+        }
+    });
+
     list.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-act]');
         var li = btn ? btn.closest('[data-ref]') : null;
@@ -268,7 +288,17 @@
             current()[i].enabled = !current()[i].enabled;
             renderList({ref: ref, act: 'eye'});
             structural();
+        } else if (act === 'remove' && !btn.classList.contains('is-armed')) {
+            list.querySelectorAll('.is-armed').forEach(disarm);
+            btn.classList.add('is-armed');
+            btn.setAttribute('aria-label', fmt(t.removeConfirm || t.remove, labelOf(current()[i])));
+            btn.title = btn.getAttribute('aria-label');
+            btn.textContent = t.removeShort || t.remove;
+            armTimer = setTimeout(function () {
+                disarm(btn);
+            }, 4000);
         } else if (act === 'remove') {
+            clearTimeout(armTimer);
             var all = current();
             all.splice(i, 1);
             if (selected === ref) {

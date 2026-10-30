@@ -264,4 +264,9 @@ foreach (array('fresh', 'off') as $dir) {
 }
 rmdir($pluginsDir);
 
+harness_section('the theme plugins page');
+$view = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/appearance/dependencies.php');
+check('the missing-plugin warning needs an open required plugin', (bool) preg_match('/\\$isActiveTheme && \\$requiredOpen > 0\\)\\s*\\?\\s*sprintf\\(__\\(\'%s needs these plugins\'\\)/', $view));
+check('with nothing open it says all are active', str_contains($view, "_e('All the plugins this theme needs are active.')"));
+
 exit(harness_result());

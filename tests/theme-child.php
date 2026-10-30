@@ -109,6 +109,18 @@ class WebThemes
     }
 }
 
+/** Stands in for the hook registry: only whose code is running matters here. */
+class Plugins
+{
+    /** @var array{0:string,1:string}|null */
+    public static ?array $owner = null;
+
+    public static function currentOwner(): ?array
+    {
+        return self::$owner;
+    }
+}
+
 // osc_base_url() runs its result through a filter; the walk does not depend on plugins,
 // so the registry stands in as a pass-through rather than being loaded.
 if (!function_exists('osc_apply_filter')) {
@@ -255,6 +267,23 @@ $supports->beginInherited();
 $supports->add('views', array('from-parent'));
 $supports->endInherited();
 pin('with no child declaration the parent stands', array('from-parent'), $supports->get('views'));
+
+// A theme declares on `init`, after both functions.php files have loaded, so the
+// marker is down by then; the parent's hook still runs as the parent's code.
+$supports->reset();
+$supports->inheritFrom('parent');
+Plugins::$owner = array('theme', 'child');
+$supports->add('menus', array('from-child'));
+Plugins::$owner = array('theme', 'parent');
+$supports->add('menus', array('from-parent'));
+$supports->add('widgets', array('parent-only'));
+Plugins::$owner = null;
+pin('a later declaration by the parent\'s hook leaves the child\'s', array('from-child'), $supports->get('menus'));
+pin('a later declaration by the parent\'s hook fills a gap', array('parent-only'), $supports->get('widgets'));
+Plugins::$owner = array('plugin', 'parent');
+$supports->add('widgets', array('a-plugin'));
+Plugins::$owner = null;
+pin('a plugin that shares the parent\'s name is not the parent', array('a-plugin'), $supports->get('widgets'));
 
 $supports->reset();
 $supports->add('views', array('first'));

@@ -72,10 +72,9 @@ class CWebCustom extends BaseModel
         // admin-folder guard above applies to every branch. $file may also name a registered
         // render target (see osc_register_render_target()): the request supplies only an id
         // there, never a path, so it carries none of the traversal risk the checks above guard.
-        $themeRoot = osc_themes_path() . osc_theme() . '/';
+        // A child theme falls back to its parent's file.
         if (PluginAjaxFile::resolve($file, osc_plugins_path()) === null
-            && PluginAjaxFile::resolve($file, $themeRoot . 'plugins/') === null
-            && !($fromRoute && PluginAjaxFile::resolve($file, $themeRoot) !== null)
+            && osc_theme_route_file($file, $fromRoute) === null
             && osc_render_target($file) === null
         ) {
             $this->do404();

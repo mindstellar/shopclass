@@ -75,6 +75,7 @@ class WebThemes extends Themes
                 // second, so without this marker the newest value wins and the parent
                 // overrules the child on everything they both declare.
                 $supports = \mindstellar\theme\ThemeSupports::getInstance();
+                $supports->inheritFrom($parent);
                 $supports->beginInherited();
                 try {
                     \Plugins::includeAs('theme', $parent, $parent_functions_path);

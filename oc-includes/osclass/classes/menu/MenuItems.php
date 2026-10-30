@@ -31,6 +31,9 @@ final class MenuItems
 
     private int $count = 0;
 
+    /** @var array<string,true> "type:ref" of the pages and categories seen so far */
+    private array $seen = [];
+
     /**
      * @param string[]                $locales     the site's language codes; labels in others are dropped
      * @param \Closure(int):bool      $categoryExists
@@ -51,6 +54,7 @@ final class MenuItems
     {
         $this->errors = [];
         $this->count  = 0;
+        $this->seen   = [];
         if (!is_array($items) || !array_is_list($items)) {
             $this->fail(__('The menu could not be read.'));
 
@@ -190,6 +194,12 @@ final class MenuItems
 
             return null;
         }
+        if (isset($this->seen[$type . ':' . $ref])) {
+            $this->fail($type === 'category' ? __('A category is in this menu more than once.') : __('A page is in this menu more than once.'));
+
+            return null;
+        }
+        $this->seen[$type . ':' . $ref] = true;
         $row = ['type' => $type, 'ref' => $ref];
         if ($labels !== []) {
             $row['label'] = $labels;

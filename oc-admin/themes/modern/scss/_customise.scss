@@ -81,7 +81,7 @@
   display: grid;
   font-size: .875rem;
   gap: .25rem;
-  grid-template-columns: 1.75rem minmax(0, 1fr) repeat(4, 1.75rem);
+  grid-template-columns: 1.75rem minmax(0, 1fr) repeat(3, 1.75rem) auto;
   padding: .25rem;
   transition: background-color var(--osc-duration-fast) var(--osc-ease), border-color var(--osc-duration-fast) var(--osc-ease);
 
@@ -137,6 +137,42 @@
 
 .cz-grip {
   cursor: grab;
+}
+
+// Remove sits apart from the routine controls, in the danger colour, and asks once: the
+// first press arms it, the second removes.
+.cz-mini[data-act="remove"] {
+  color: var(--osc-danger);
+  gap: .25rem;
+  grid-auto-flow: column;
+  inline-size: auto;
+  margin-inline-start: .375rem;
+  min-inline-size: 1.75rem;
+  position: relative;
+
+  &::before {
+    background-color: var(--osc-rule);
+    content: "";
+    inline-size: 1px;
+    inset-block: .25rem;
+    inset-inline-start: -.25rem;
+    position: absolute;
+  }
+
+  &:hover:not(:disabled) {
+    background-color: var(--osc-danger-tint);
+    color: var(--osc-danger);
+  }
+
+  &.is-armed {
+    background-color: var(--osc-danger-tint);
+    outline: 1px solid var(--osc-danger);
+    outline-offset: -1px;
+    color: var(--osc-danger);
+    font-size: .8125rem;
+    font-weight: 600;
+    padding-inline: .5rem;
+  }
 }
 
 .cz-grip:focus-visible,
