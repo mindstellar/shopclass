@@ -144,6 +144,15 @@ pin('a capped page past the cap ends at its own rows', 12, $end($rows(2), 10, tr
 pin('a capped page before the cap ends at its own rows too', 5, $end($rows(5), 10, true, 0));
 pin('an uncounted page ends at its own rows', 8, $end($rows(3), null, false, 1));
 
+harness_section('the page count');
+$pages = static fn (array $items, ?int $total, bool $capped, int $page): int => (new \mindstellar\search\SearchResult($items, $total, new Search(), null, $capped))->pageCount($page, 5);
+pin('exact: from the total', 3, $pages($rows(5), 12, false, 0));
+pin('uncounted: none', 0, $pages($rows(5), null, false, 0));
+pin('capped, first page: the pages under the cap', 2, $pages($rows(5), 10, true, 0));
+pin('capped, a full last page under the cap: one more page', 3, $pages($rows(5), 10, true, 1));
+pin('capped, a full page past the cap: one more page', 5, $pages($rows(5), 10, true, 3));
+pin('capped, a short page: it is the last one', 3, $pages($rows(2), 10, true, 2));
+
 harness_section('theme helpers');
 View::getInstance()->_exportVariableToView('search_total_items', 1000);
 View::getInstance()->_exportVariableToView('search_total_capped', true);

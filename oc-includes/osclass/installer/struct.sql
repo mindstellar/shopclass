@@ -506,11 +506,13 @@ CREATE TABLE /*TABLE_PREFIX*/t_alerts (
     e_type enum('INSTANT','HOURLY','DAILY','WEEKLY','CUSTOM') NOT NULL,
     dt_date DATETIME NULL,
     dt_unsub_date DATETIME NULL DEFAULT NULL,
+    fk_i_item_id INT UNSIGNED NULL,
 
     PRIMARY KEY (pk_i_id),
     INDEX idx_type (e_type, b_active, dt_unsub_date),
     INDEX idx_user (fk_i_user_id),
     INDEX idx_email (s_email),
+    INDEX idx_item (fk_i_item_id),
     FOREIGN KEY (fk_i_user_id) REFERENCES /*TABLE_PREFIX*/t_user (pk_i_id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 

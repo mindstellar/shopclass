@@ -142,7 +142,7 @@ class CWebSearch extends BaseModel
     private function redirectToCanonical(array $uriParams, bool $preview = false)
     {
         $searchUri = osc_search_url($uriParams);
-        if ($this->uri !== 'feed' && !$preview) {
+        if ($this->uri !== 'feed' && !$preview && !self::carriesLists($uriParams)) {
             $_base_url = WEB_PATH;
             if (str_replace('%20', '+', $searchUri) !== str_replace('%20', '+', $_base_url . $this->uri)
             ) {
@@ -248,7 +248,8 @@ class CWebSearch extends BaseModel
 
         $this->_exportVariableToView('search_pattern', $criteria->pattern());
         $this->_exportVariableToView('search_from_user', $criteria->users());
-        $this->_exportVariableToView('search_total_pages', ceil($iTotalItems / $pageSize));
+        // A float, as ceil() gave before.
+        $this->_exportVariableToView('search_total_pages', (float) $result->pageCount($page, $pageSize));
         $this->_exportVariableToView('search_page', $page);
         $this->_exportVariableToView('search_has_pic', $criteria->withPicture() ? 1 : 0);
         $this->_exportVariableToView('search_only_premium', $criteria->onlyPremium() ? 1 : 0);
@@ -541,6 +542,25 @@ class CWebSearch extends BaseModel
         }
 
         return is_array($category) ? $category : array();
+    }
+
+    /**
+     * True when a param is a list the friendly URL cannot carry, such as a theme's
+     * opt[Size][]=M; redirecting would drop the choice.
+     *
+     * @param array<string,mixed> $params
+     *
+     * @return bool
+     */
+    public static function carriesLists(array $params)
+    {
+        foreach ($params as $key => $value) {
+            if (is_array($value) && $value !== array() && !in_array($key, array('sCategory', 'sUser', 'meta'), true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

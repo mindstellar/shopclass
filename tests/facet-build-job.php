@@ -144,6 +144,22 @@ FacetIndex::buildStep($ids[0] - 1, 1);
 pin('the flag is on', '1', $pref('facet_ready'));
 check('the build time is set', (int) $pref('facet_built_at') > 0);
 
+harness_section('a variant with no option rows');
+$admin->query("INSERT INTO {$p}t_item_variant (fk_i_item_id, s_options, i_position) VALUES ($last, '{\"Size\":\"M\"}', 0)");
+pin('the drift check counts a newest listing\'s variant with no rows', 1, FacetIndex::missingRows());
+$admin->query("DELETE FROM {$p}t_job_queue");
+FacetIndex::heal();
+pin('heal() turns searches off the index', '0', $pref('facet_ready'));
+pin('and queues a full build', 1, count($jobs(FacetIndex::JOB_BUILD)));
+FacetJobs::reindex(0, static function (): void {
+});
+pin('the build writes the variant\'s row and nothing is missing', 0, FacetIndex::missingRows());
+pin('and turns the flag back on', '1', $pref('facet_ready'));
+$admin->query("DELETE FROM {$p}t_job_queue");
+FacetIndex::heal();
+pin('with nothing missing heal() queues nothing', [], $jobs(FacetIndex::JOB_BUILD));
+$admin->query("DELETE FROM {$p}t_item_variant WHERE fk_i_item_id = $last");
+
 harness_section('a failed pack retries later');
 osc_job_ensure(FacetIndex::JOB_PACK);
 $admin->query("RENAME TABLE $facet TO {$facet}_away");

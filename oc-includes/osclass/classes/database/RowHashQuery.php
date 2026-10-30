@@ -65,6 +65,8 @@ final class RowHashQuery extends Model
         't_category'       => ['i_num_items'],
         't_region'         => ['i_num_items'],
         't_city'           => ['i_num_items'],
+        // The listing a product alert waits on is read from s_search, which is hashed.
+        't_alerts'         => ['fk_i_item_id'],
     ];
 
     /**

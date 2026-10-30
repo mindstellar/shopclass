@@ -148,7 +148,7 @@ pin('table name is unchanged', $table, $model->getTableName());
 pin('primary key is unchanged', 'pk_i_id', $model->getPrimaryKey());
 pin(
     'field allowlist is unchanged',
-    array('pk_i_id', 's_email', 'fk_i_user_id', 's_search', 's_secret', 'b_active', 'e_type', 'dt_date', 'dt_unsub_date'),
+    array('pk_i_id', 's_email', 'fk_i_user_id', 's_search', 's_secret', 'b_active', 'e_type', 'dt_date', 'dt_unsub_date', 'fk_i_item_id'),
     $model->getFields()
 );
 pin(
@@ -251,7 +251,7 @@ check('a user with alerts returns an array', is_array($aliceDefault), describe($
 pin('both of Alice\'s (non-unsub) alerts are returned', 2, count($aliceDefault));
 pin(
     'a row carries every schema column (SELECT *)',
-    array('pk_i_id', 's_email', 'fk_i_user_id', 's_search', 's_secret', 'b_active', 'e_type', 'dt_date', 'dt_unsub_date'),
+    array('pk_i_id', 's_email', 'fk_i_user_id', 's_search', 's_secret', 'b_active', 'e_type', 'dt_date', 'dt_unsub_date', 'fk_i_item_id'),
     array_keys($aliceDefault[0])
 );
 pin('fk_i_user_id round-trips as a string, not an int (C4)', (string)$uAlice, $aliceDefault[0]['fk_i_user_id']);

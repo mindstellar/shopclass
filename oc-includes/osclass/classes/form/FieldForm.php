@@ -456,7 +456,7 @@ class FieldForm extends Form
 
                     if (isset($field['s_options']) || $cascadeUnion !== null) {
                         $options['selectOptions']     = $cascadeUnion !== null ? $cascadeUnion : $field['s_options'];
-                        $options['selectPlaceholder'] = __('Select');
+                        $options['selectPlaceholder'] = $search ? __('Any') : __('Select');
                         echo self::getInstance()->select($name, $value, $attributes, $options);
                     }
                     break;

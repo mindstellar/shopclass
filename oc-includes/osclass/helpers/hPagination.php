@@ -34,6 +34,8 @@ function osc_search_pagination()
     } else {
         $params['first_url'] = osc_update_search_url(array('iPage' => null));
     }
+    // A capped count does not know the last page.
+    $params['show_last'] = !osc_search_total_capped();
     $pagination = new Pagination($params);
 
     return $pagination->doPagination();
@@ -131,6 +133,7 @@ function osc_pagination_items($extraParams = array(), $field = false)
  *          "{PAGE}" on the page variable. Example
  *          http://www.example.com/index.php?page=search&amp;sCategory=2&amp; (default
  *          osc_update_search_url(array('iPage' => null))
+ *          'show_last' => false drops the last link, for a list whose end is not known (default true)
  *
  * @param array<string,mixed>|null $params
  *

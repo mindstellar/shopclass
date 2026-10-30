@@ -283,21 +283,48 @@ final class FacetIndex
     }
 
     /**
-     * Choice and checkbox values of the newest $listings listings that have no index row, in one
-     * bounded query. More than 0 means a write reached t_item_meta without passing the writers.
+     * Choice and checkbox values and variant options of the newest $listings listings that have
+     * no index row, in two bounded queries. More than 0 means a write reached t_item_meta or
+     * t_item_variant without passing the writers.
      *
      * @throws DbException
      */
     public static function missingRows(int $listings = 200): int
     {
-        return (int) Db::scalar(
+        $newest = 'SELECT COALESCE(MAX(pk_i_id), 0) - ? FROM ' . DB_TABLE_PREFIX . 't_item';
+        $fields = (int) Db::scalar(
             'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item_meta m JOIN ' . DB_TABLE_PREFIX . 't_meta_fields f ON f.pk_i_id = m.fk_i_field_id'
-            . ' WHERE m.fk_i_item_id > (SELECT COALESCE(MAX(pk_i_id), 0) - ? FROM ' . DB_TABLE_PREFIX . "t_item) AND m.s_multi = ''"
+            . ' WHERE m.fk_i_item_id > (' . $newest . ") AND m.s_multi = ''"
             . " AND ((f.e_type IN ('DROPDOWN', 'RADIO') AND TRIM(m.s_value) <> '') OR (f.e_type = 'CHECKBOX' AND TRIM(m.s_value) = '1'))"
             . ' AND NOT EXISTS (SELECT 1 FROM ' . self::tableName() . ' x JOIN ' . FacetTerms::tableName() . ' t ON t.pk_i_id = x.fk_i_term_id'
             . " WHERE x.fk_i_item_id = m.fk_i_item_id AND t.s_key = CONCAT('f', m.fk_i_field_id))",
             [max(1, $listings)]
         );
+        $variants = (int) Db::scalar(
+            'SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . 't_item_variant v WHERE v.fk_i_item_id > (' . $newest . ")"
+            . " AND v.s_options REGEXP ':\"[^\"]'"
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . self::tableName() . ' x WHERE x.fk_i_item_id = v.fk_i_item_id AND x.fk_i_variant_id = v.pk_i_id)',
+            [max(1, $listings)]
+        );
+
+        return $fields + $variants;
+    }
+
+    /**
+     * The hourly drift check: when searches use the index and rows are missing, turn them off it
+     * and queue a full build, which turns them back on.
+     */
+    public static function heal(): void
+    {
+        try {
+            if (self::ready() && self::missingRows() > 0) {
+                error_log('Listing filter index is missing rows, rebuild queued.');
+                self::markStale(true);
+                osc_job_ensure(self::JOB_BUILD, ['after' => 0]);
+            }
+        } catch (DbException $e) {
+            error_log('Listing filter index drift check failed, the next run checks again: ' . $e->getMessage());
+        }
     }
 
     private static function tableExists(): bool

@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\search\AlertEnvelope;
 
 /**
  * Alerts DAO
@@ -44,7 +45,8 @@ class Alerts extends DAO
             'b_active',
             'e_type',
             'dt_date',
-            'dt_unsub_date'
+            'dt_unsub_date',
+            'fk_i_item_id'
         );
         $this->setFields($array_fields);
     }
@@ -379,6 +381,7 @@ class Alerts extends DAO
                 'e_type'       => $type,
                 's_secret'     => $secret,
                 'dt_date'      => date('Y-m-d H:i:s'),
+                'fk_i_item_id' => AlertEnvelope::productOf((string) $alert)['listing'] ?? null,
             ));
         }
 

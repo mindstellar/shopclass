@@ -35,6 +35,7 @@ class Pagination
     protected $firstUrl;
     protected $nofollow;
     protected $listClass;
+    protected $showLast;
 
     /**
      * Pagination constructor.
@@ -63,6 +64,7 @@ class Pagination
         $this->firstUrl           = $params['first_url'] ?? $this->url;
         $this->nofollow           = $params['nofollow'] ?? false;
         $this->listClass          = $params['list_class'] ?? false;
+        $this->showLast           = $params['show_last'] ?? true;
 
         // Clamp the selected page into range (internal 1-based, valid up to total-1)
         // so an out-of-range ?iPage= can't render a bogus page number.
@@ -121,7 +123,7 @@ class Pagination
             $items[] = array('text' => $this->text_next, 'href' => $this->pageUrl($pages['next']),
                 'class' => $this->class_next, 'label' => __('Next page'));
         }
-        if (isset($pages['last'])) {
+        if (isset($pages['last']) && $this->showLast) {
             $items[] = array('text' => $this->text_last, 'href' => $this->pageUrl($pages['last']),
                 'class' => $this->class_last, 'label' => __('Last page'));
         }

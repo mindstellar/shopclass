@@ -148,4 +148,11 @@ foreach (array('TEXT', 'DROPDOWN', 'TEXTAREA', 'RADIO') as $i => $type) {
     check($type . ' search control is labelled by its heading', $ok, $html);
 }
 
+$search = $render($field(80, 'colour', 'DROPDOWN'));
+check('a search dropdown starts at Any, like the other filters', str_contains($search, '<option value="">Any</option>'), $search);
+ob_start();
+FieldForm::meta($field(81, 'colour', 'DROPDOWN'));
+$post = (string) ob_get_clean();
+check('the post form still asks to Select', str_contains($post, '<option value="">Select</option>'), $post);
+
 exit(harness_result());

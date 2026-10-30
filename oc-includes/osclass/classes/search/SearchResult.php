@@ -83,6 +83,20 @@ class SearchResult
         return min(($page + 1) * $pageSize, (int)$this->total);
     }
 
+    /**
+     * How many pages to link. With a capped total the end is not known: a full page gets one
+     * more page after it, so every listing stays reachable.
+     */
+    public function pageCount(int $page, int $pageSize): int
+    {
+        $pages = $pageSize > 0 ? (int)ceil((int)$this->total / $pageSize) : 0;
+        if ($this->capped) {
+            $pages = max($pages, $page + (count($this->items) >= $pageSize ? 2 : 1));
+        }
+
+        return $pages;
+    }
+
     public function model(): \Search
     {
         return $this->model;

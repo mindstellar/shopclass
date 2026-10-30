@@ -113,7 +113,7 @@ final class UserAlerts
             static fn (array $row): bool => self::sameProduct(AlertEnvelope::productOf((string) $row['s_search']), $product)
         ));
         if ($same !== []) {
-            if ($product !== null && $this->alerts->update(['s_search' => $alert], ['pk_i_id' => (int) $same[0]['pk_i_id']]) !== false) {
+            if ($product !== null && $this->alerts->update(['s_search' => $alert, 'fk_i_item_id' => $product['listing']], ['pk_i_id' => (int) $same[0]['pk_i_id']]) !== false) {
                 $same[0]['s_search'] = $alert;
             }
 

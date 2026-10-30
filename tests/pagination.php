@@ -100,4 +100,10 @@ check('doPagination() is idempotent (no class doubling)', $obj->doPagination() =
 $oob = paginate(3, 99);
 check('out-of-range page renders no page number beyond total', strpos($oob, '>4<') === false);
 
+harness_section('doPagination — open-ended (capped count)');
+$open = paginate(5, 0, array('show_last' => false));
+check('no last-page link when the end is not known', !str_contains($open, 'searchPaginationLast'));
+check('the next link stays', str_contains($open, 'searchPaginationNext'));
+check('the last link is offered by default', str_contains(paginate(5, 0), 'searchPaginationLast'));
+
 exit(harness_result());

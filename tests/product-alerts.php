@@ -65,10 +65,11 @@ $r = $post($sueK, ['product' => ['listing' => $tee, 'variant' => $s, 'kind' => '
 pin('a stock alert on a variant is saved', 201, $r->status());
 $stockId = (int) ($r->body()['data']['id'] ?? 0);
 pin('it answers its product, no filters', [['listing' => $tee, 'variant' => $s, 'kind' => 'stock', 'below' => null], [], 'custom', true], [
-    $r->body()['data']['product'] ?? null, $r->body()['data']['filters'] ?? null, $r->body()['data']['type'] ?? null, $r->body()['data']['active'] ?? null,
+    $r->body()['data']['product'] ?? null, (array) ($r->body()['data']['filters'] ?? null), $r->body()['data']['type'] ?? null, $r->body()['data']['active'] ?? null,
 ]);
+pin('no filters are sent as an empty object', '{}', json_encode($r->body()['data']['filters'] ?? null));
 pin('the answer matches the schema', [], api_admin_schema_errors('AlertDocument', $r));
-pin('it is stored as a CUSTOM row with the product envelope', ['CUSTOM', AlertEnvelope::product($tee, $s, 'stock')], [$alert($stockId)['e_type'] ?? '', $alert($stockId)['s_search'] ?? '']);
+pin('it is stored as a CUSTOM row with the product envelope and the listing id', ['CUSTOM', AlertEnvelope::product($tee, $s, 'stock'), (string) $tee], [$alert($stockId)['e_type'] ?? '', $alert($stockId)['s_search'] ?? '', $alert($stockId)['fk_i_item_id'] ?? '']);
 $again = $post($sueK, ['product' => ['listing' => $tee, 'variant' => $s, 'kind' => 'stock']]);
 pin('the same alert again is answered as it is', [200, $stockId], [$again->status(), $again->body()['data']['id'] ?? null]);
 
@@ -127,8 +128,10 @@ harness_reset_container();
 osc_add_hook('variant_stock_changed', [ProductAlerts::class, 'stockChanged']);
 osc_add_hook('variant_price_changed', [ProductAlerts::class, 'priceChanged']);
 $mails = [];
-$capture = static function (\mindstellar\mail\event\MailComposing $e) use (&$mails): void {
-    $alert   = (array) $e->alert();
+$titles = [];
+$capture = static function (\mindstellar\mail\event\MailComposing $e) use (&$mails, &$titles): void {
+    $alert    = (array) $e->alert();
+    $titles[] = $e->words()['{ITEM_TITLE}'] ?? '';
     $mails[] = [(int) $alert['pk_i_id'], (int) ($e->item()['pk_i_id'] ?? 0), str_contains($e->subject(), 'Price') ? 'price' : 'stock', $e->words()['{ITEM_PRICE}'] ?? ''];
     $e->suppress();
 };
@@ -142,6 +145,7 @@ VariantStore::saveSet($tee, [$row('S', 3, $micros(699)), $row('M', 5, $micros(69
 pin('stock 0 to 3 queues one job', 1, $jobs());
 osc_job_run(5);
 pin('which mails the alert once', [[$stockId, $tee, 'stock', '']], $mails);
+pin('naming the variant\'s options', ['Tee (Size: S)'], $titles);
 pin('and stops it', false, $live($stockId));
 pin('the saved search is untouched', true, $live($searchId));
 pin('the price alerts are untouched', [true, true], [$live($priceId), $live($tomPriceId)]);
@@ -213,14 +217,28 @@ osc_job_run(5);
 pin('the alert on L waits', [[], true], [$mails, $live($annId)]);
 $admin->query("UPDATE {$p}t_item SET b_enabled = 1 WHERE pk_i_id = $tee");
 
+harness_section('the alerts a listing waits on');
+$admin->query("DELETE FROM {$p}t_alerts WHERE e_type = 'CUSTOM'");
+$waitRow = static function (string $json, string $item) use ($admin, $p, $ann): int {
+    $admin->query("INSERT INTO {$p}t_alerts (fk_i_user_id, s_email, s_search, s_secret, b_active, e_type, dt_date, fk_i_item_id)"
+        . " VALUES ($ann, 'ann@example.test', '" . $admin->real_escape_string($json) . "', 's', 1, 'CUSTOM', NOW(), $item)");
+
+    return (int) $admin->insert_id;
+};
+$mugStock = $waitRow(AlertEnvelope::product($mug, null, 'stock'), (string) $mug);
+$waitRow(AlertEnvelope::product($mug, null, 'stock'), 'NULL');
+$waitRow(AlertEnvelope::product($mug, null, 'price', $micros(5)), (string) $mug);
+$waitRow(AlertEnvelope::product($tee, null, 'stock'), (string) $tee);
+pin('waiting() finds a listing\'s alerts of one kind by its listing id', [$mugStock], array_map(static fn (array $r): int => (int) $r['pk_i_id'], \mindstellar\listing\ProductAlertQuery::waiting('stock', $mug, 0, 25)));
+
 harness_section('batches');
 $admin->query("DELETE FROM {$p}t_alerts WHERE e_type = 'CUSTOM'");
 $values = [];
 $json   = $admin->real_escape_string(AlertEnvelope::product($mug, null, 'stock'));
 for ($i = 0; $i < 30; $i++) {
-    $values[] = "($ann, 'ann@example.test', '$json', 's', 1, 'CUSTOM', NOW())";
+    $values[] = "($ann, 'ann@example.test', '$json', 's', 1, 'CUSTOM', NOW(), $mug)";
 }
-$admin->query("INSERT INTO {$p}t_alerts (fk_i_user_id, s_email, s_search, s_secret, b_active, e_type, dt_date) VALUES " . implode(', ', $values));
+$admin->query("INSERT INTO {$p}t_alerts (fk_i_user_id, s_email, s_search, s_secret, b_active, e_type, dt_date, fk_i_item_id) VALUES " . implode(', ', $values));
 $mails = [];
 VariantStore::adjustStock($mugRow, 4);
 $runs = osc_job_run(10);
