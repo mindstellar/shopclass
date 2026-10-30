@@ -133,6 +133,8 @@ pin('the payment methods on offer', [['id' => 'fake', 'name' => 'Fake pay', 'fee
 $big = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $large . ':1'])->body()['data'];
 pin('a variant\'s own price beats the listing price', ['799.00', '799.00', '848.00'], [$big['lines'][0]['unit']['amount'], $big['lines'][0]['amount']['amount'], $big['totals']['total']['amount']]);
 check('a quote is not cached', str_contains((string) $r->header('Cache-Control'), 'no-store'));
+$none = $call('GET', 'cart/quote', null, null, $guest, [])->body()['data'];
+pin('an empty cart needs no shipping and totals 0', [false, [], null, '0.00', '0.00'], [$none['needs_shipping'], $none['shipping_methods'], $none['shipping'], $none['totals']['shipping']['amount'], $none['totals']['total']['amount']]);
 
 Preference::getInstance()->set('billing_open_hold_orders', '3');
 scratchdb_forget_cache();
@@ -162,6 +164,15 @@ pin('a gateway\'s fee is in the totals and shown on the gateway', ['5.00', '63.0
 $q = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $mugV . ':1'])->body()['data'];
 pin('without it the totals leave the fee out but the gateway still shows it', ['0.00', '5.00'], [$q['totals']['fee']['amount'], $q['gateways'][0]['fee']['amount']]);
 osc_remove_filter('cart_totals', $fee);
+
+$promo = static fn ($lines) => array_merge($lines, [['id' => 'promo', 'label' => 'Promo', 'amount' => -$m(150)]]);
+osc_add_filter('cart_discount_lines', $promo);
+$q = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $large . ':7'])->body()['data'];
+osc_remove_filter('cart_discount_lines', $promo);
+$f = static fn (array $a): string => (string) $a['formatted'];
+pin('a discount reads with the minus before the symbol', [true, false], [str_starts_with($f($q['discounts'][0]['amount']), '-'), str_contains(substr($f($q['discounts'][0]['amount']), 1), '-')]);
+$zero = static fn (string $t): bool => $t !== '' && $t !== 'Free';
+pin('a zero tax or fee reads as an amount; only zero delivery reads Free', [true, true, 'Free', 'Free'], [$zero($f($q['totals']['tax'])), $zero($f($q['totals']['fee'])), $f($q['totals']['shipping']), $f($q['shipping']['amount'])]);
 
 $q = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $small . ':1,' . $medium . ':9,999999:1,' . $mugV . ':30'])->body()['data'];
 pin('an out of stock, a short, an unknown and an over-limit line are problems, not errors', [['line' => 0, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null], ['line' => 1, 'code' => 'out_of_stock', 'pointer' => null, 'message' => null], ['line' => 2, 'code' => 'not_buyable', 'pointer' => null, 'message' => null], ['line' => 3, 'code' => 'qty', 'pointer' => null, 'message' => null]], $q['problems']);
@@ -268,6 +279,8 @@ pin('a blank one is /address/postcode too', '/address/postcode required', ($r->b
 pin('an empty cart is refused', '422 validation_failed', $bad($body([])));
 pin('a quantity of 21 is refused', '422 validation_failed', $bad($body([['variant' => $mugV, 'qty' => 21]])));
 pin('an unknown delivery method is refused', '422 validation_failed', $bad($body([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => 'teleport'])));
+$r = $call('POST', 'account/orders', array_diff_key($body([['variant' => $mugV, 'qty' => 1]]), ['shipping_method' => 1]), $tomKey);
+pin('a cart that ships needs a delivery method', '422 /shipping_method', $r->status() . ' ' . ($r->body()['errors'][0]['pointer'] ?? ''));
 pin('none of the refusals wrote an order', $mark, $orders());
 
 harness_section('the same key places once');
@@ -356,6 +369,17 @@ Preference::getInstance()->set('billing_order_prefix', 'KC-');
 scratchdb_forget_cache();
 osc_reset_preferences();
 pin('the order prefix setting shows in the number', 'KC-' . $paidId, substr(\mindstellar\api\serializer\OrderSerializer::number($paidId), 1));
+
+harness_section('a cart that does not ship');
+$noShip = static fn (): bool => false;
+osc_add_filter('cart_needs_shipping', $noShip);
+$r = $call('POST', 'account/orders', array_diff_key($body([['variant' => $mugV, 'qty' => 1]]), ['shipping_method' => 1]), $tomKey);
+pin('a cart that does not ship places without a delivery method', [201, null], [$r->status(), $r->body()['data']['shipping']['method'] ?? null]);
+$r2 = $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]], ['shipping_method' => '']), $tomKey);
+pin('or with an empty one', 201, $r2->status());
+osc_remove_filter('cart_needs_shipping', $noShip);
+OrderStore::cancel((int) ($r->body()['data']['id'] ?? 0));
+OrderStore::cancel((int) ($r2->body()['data']['id'] ?? 0));
 
 harness_section('the placement limit');
 $policy = new \mindstellar\api\ratelimit\RatePolicy(new \mindstellar\apikey\ApiSettings(true));

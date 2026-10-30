@@ -50,6 +50,7 @@ use mindstellar\webhook\WebhookEndpointStore;
 use mindstellar\webhook\WebhookService;
 
 $admin = api_admin_boot('osc_models_api_webhooks');
+scratchdb_pin_site_mode($admin, 'classifieds');
 $p     = DB_TABLE_PREFIX;
 $_SERVER['REMOTE_ADDR'] = '192.0.2.70';
 
@@ -705,9 +706,10 @@ pin('an unknown id is 404', [404, 404], [$call('GET', 'admin/webhooks/ep_0000000
 harness_section('/admin/webhooks: addresses');
 foreach (['http://127.0.0.1/hook' => 'loopback', 'http://10.0.0.5/hook' => 'a private range', 'http://169.254.169.254/latest' => 'cloud metadata', 'https://93.184.216.34:8443/hook' => 'another port'] as $url => $label) {
     $r = $call('POST', 'admin/webhooks', ['url' => $url, 'events' => ['listing.created']], $boss);
-    pin($label . ' is refused at save: 422', [422, 'rejected'], [$r->status(), $r->body()['errors'][0]['code'] ?? null]);
+    pin($label . ' is refused at save: 422 on /url', [422, 'rejected', '/url'], [$r->status(), $r->body()['errors'][0]['code'] ?? null, $r->body()['errors'][0]['pointer'] ?? null]);
 }
-pin('an unknown event is 422', 422, $call('POST', 'admin/webhooks', ['url' => 'https://93.184.216.34/h', 'events' => ['listing.exploded']], $boss)->status());
+pin('a malformed address is 422 on /url', [422, '/url'], (static fn ($r): array => [$r->status(), $r->body()['errors'][0]['pointer'] ?? null])($call('POST', 'admin/webhooks', ['url' => 'not a url', 'events' => ['listing.created']], $boss)));
+pin('an unknown event is 422 on /events', [422, '/events'], (static fn ($r): array => [$r->status(), $r->body()['errors'][0]['pointer'] ?? null])($call('POST', 'admin/webhooks', ['url' => 'https://93.184.216.34/h', 'events' => ['listing.exploded']], $boss)));
 pin('ping cannot be subscribed to', 422, $call('POST', 'admin/webhooks', ['url' => 'https://93.184.216.34/h', 'events' => ['ping']], $boss)->status());
 pin('no events is 422', 422, $call('POST', 'admin/webhooks', ['url' => 'https://93.184.216.34/h', 'events' => []], $boss)->status());
 Preference::getInstance()->replace('api_webhooks_allow_private', '1', ApiSettings::SECTION, 'BOOLEAN');

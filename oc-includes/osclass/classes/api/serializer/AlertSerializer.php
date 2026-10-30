@@ -57,14 +57,14 @@ final class AlertSerializer
                 'bPic', 'bPremium'       => (bool) $value,
                 'sPattern', 'bbox'       => (string) $value,
                 'sPriceMin', 'sPriceMax' => (int) $value,
-                'meta'                   => (array) $value,
+                'meta'                   => self::map((array) $value),
                 default                  => array_values((array) $value),
             };
         }
 
         return [
             'id'         => Format::int($row['pk_i_id'] ?? 0),
-            'filters'    => $filters,
+            'filters'    => self::map($filters),
             'product'    => $product === null ? null : [
                 'listing' => $product['listing'],
                 'variant' => $product['variant'],
@@ -75,5 +75,17 @@ final class AlertSerializer
             'active'     => Format::bool($row['b_active'] ?? 0),
             'created_at' => Format::time($row['dt_date'] ?? null),
         ];
+    }
+
+    /**
+     * An empty map as {}, so JSON keeps it an object; a filled one stays an array for PHP callers.
+     *
+     * @param array<string|int,mixed> $map
+     *
+     * @return array<string|int,mixed>|\stdClass
+     */
+    private static function map(array $map): array|\stdClass
+    {
+        return $map === [] ? new \stdClass() : $map;
     }
 }

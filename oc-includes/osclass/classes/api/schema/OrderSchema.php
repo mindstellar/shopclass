@@ -91,11 +91,11 @@ final class OrderSchema
             'OrderInput' => Schema::object([
                 'lines'           => ['type' => 'array', 'minItems' => 1, 'maxItems' => CartPricer::MAX_LINES, 'items' => Schema::ref('OrderLineInput')],
                 'address'         => Schema::ref('OrderAddressInput'),
-                'shipping_method' => $text(64, 1),
+                'shipping_method' => $text(64) + ['description' => 'Required when the cart ships; left out or empty when it does not.'],
                 'gateway'         => $text(64, 1),
                 'note'            => $text(500),
                 'coupon'          => $text(200) + ['description' => 'A coupon code, read as GET cart/quote reads it.'],
-            ], ['lines', 'address', 'shipping_method', 'gateway']) + ['description' => 'Prices, totals and stock are worked out on the server; an amount sent is ignored.'],
+            ], ['lines', 'address', 'gateway']) + ['description' => 'Prices, totals and stock are worked out on the server; an amount sent is ignored.'],
 
             'OrderLine' => Schema::object([
                 'kind'    => ['type' => 'string', 'enum' => OrderLineStore::KINDS],
@@ -191,7 +191,7 @@ final class OrderSchema
                 'lines'            => ['type' => 'array', 'items' => Schema::ref('QuoteLine')],
                 'needs_shipping'   => ['type' => 'boolean', 'description' => 'False when every line is a download: no address, delivery or cash on delivery.'],
                 'shipping_methods' => ['type' => 'array', 'items' => Schema::ref('QuoteMethod')],
-                'shipping'         => $maybe(Schema::object(['method' => ['type' => 'string'], 'amount' => $amount], ['method', 'amount']), 'The chosen method.'),
+                'shipping'         => $maybe(Schema::object(['method' => ['type' => 'string'], 'amount' => $amount], ['method', 'amount']), 'The chosen method: the one asked for, or the first one offered when it is not.'),
                 'discounts'        => ['type' => 'array', 'items' => Schema::ref('QuoteAdjustment')],
                 'taxes'            => ['type' => 'array', 'items' => Schema::ref('QuoteTax')],
                 'fees'             => ['type' => 'array', 'items' => Schema::ref('QuoteAdjustment')],

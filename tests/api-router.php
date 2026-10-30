@@ -31,6 +31,7 @@ if (!function_exists('osc_rewrite_enabled')) {
 
 use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
+use mindstellar\api\http\CachePolicy;
 use mindstellar\api\Kernel;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -462,6 +463,7 @@ $refusals = api_test_kernel(new Router($validator, [
         ['pointer' => '/b', 'code' => 'taken', 'message' => 'is worse'],
     ])),
     'GET r/refused'   => $refusing(new \mindstellar\exception\RefusedException('Not now.')),
+    'GET r/conversation' => $refusing(new \mindstellar\exception\ForbiddenException('This conversation is blocked', \mindstellar\messaging\MessagePolicy::BLOCKED)),
 ]), api_test_authenticator(new ApiKeys($store, new Scopes(), new SystemClock())), new ApiSettings(true), validator: $validator);
 $refused = static fn (string $path): Response => $refusals->handle(new Request('GET', 'v1/r/' . $path, [], [], '127.0.0.1'));
 pin('NotFound is 404, Conflict 409, Forbidden 403', [[404, 'not_found'], [409, 'conflict'], [403, 'forbidden']], [
@@ -471,6 +473,7 @@ pin('NotFound is 404, Conflict 409, Forbidden 403', [[404, 'not_found'], [409, '
 ]);
 pin('Blocked is 429 login_blocked with Retry-After', [429, 'login_blocked', '30'], [$refused('blocked')->status(), $refused('blocked')->body()['code'], $refused('blocked')->header('Retry-After')]);
 pin('Invalid is 422 with every field', [422, ['/a', '/b']], [$refused('invalid')->status(), array_column($refused('invalid')->body()['errors'], 'pointer')]);
+pin('a blocked conversation is 403 forbidden titled for messaging', [403, 'forbidden', 'This conversation is blocked, so no message can be sent.', 'This conversation is blocked'], [$refused('conversation')->status(), $refused('conversation')->body()['code'], $refused('conversation')->body()['title'], $refused('conversation')->body()['detail']]);
 pin('any other refusal is 422 with its message', [422, 'Not now.'], [$refused('refused')->status(), $refused('refused')->body()['detail']]);
 
 harness_section('composition root');
@@ -534,6 +537,10 @@ check('a plugin route may opt in to v2', $v2->addPlugin('GET', 'ext/pinned/both'
     && $v2->match('GET', 'ext/pinned/both', 'v2') !== null);
 pin('a context built without a request, as a webhook payload is, keeps the pinned version', 'v1', (new \mindstellar\api\serializer\ViewContext(Credential::anonymous(), 'en_US'))->version());
 pin('osc_api_url() points at the pinned version unless told otherwise', ['https://shop.test/api/v1/ext/a', 'https://shop.test/api/v2'], [osc_api_url('ext/a'), osc_api_url('', 'v2')]);
+$GLOBALS['rewrite'] = false;
+pin('without friendly URLs a page number goes before page=api, which routes the call', 'https://shop.test/index.php?path=v1/listings&page=2&page=api', osc_api_url('listings?page=2'));
+pin('without friendly URLs and no page number the URL is unchanged', 'https://shop.test/index.php?page=api&path=v1/listings&limit=2', osc_api_url('listings?limit=2'));
+unset($GLOBALS['rewrite']);
 pin('an unknown version is refused', 'GET x: unknown API version v9.', (static function () use ($none): string {
     try {
         new RouteSpec('GET', 'x', $none + ['versions' => ['v9']]);
@@ -669,12 +676,17 @@ $kitRouter = new Router($validator, ['GET k' => ['handler' => static fn (ApiCall
 pin('a route built with a kit hands it to the call', \mindstellar\api\ApiKit::class, $kitRouter->match('GET', 'k')->route()->call(new Request('GET', 'v1/k'), Credential::anonymous(), [])->body()['data']['kit']);
 
 harness_section('cache headers');
-$policy = new \mindstellar\api\http\CachePolicy(60);
+$policy = new CachePolicy(60);
 $keyed  = new Credential(\mindstellar\apikey\CredentialKind::KEY, ['listings:read'], 4);
 $cc     = static fn (string $path): string => $policy->header(new Request('GET', 'v1/' . $path), $keyed);
 pin('account, admin and session reads are never stored', ['private, no-store', 'private, no-store', 'private, no-store', 'private, no-store'], [
     $cc('account'), $cc('account/keys/3'), $cc('admin/listings'), $cc('admin/users/4/sessions'),
 ]);
+$readVary = static fn (CachePolicy $p, array $query): array => $p->vary(new Request('GET', 'v1/regions/1/cities', $query), false);
+pin('a site with one language does not vary on Accept-Language', ['Authorization', 'X-Shopclass-Token'], $readVary($policy, []));
+$many = new CachePolicy(60, true);
+pin('with several, a read without locale varies on Accept-Language', ['Authorization', 'X-Shopclass-Token', 'Accept-Language'], $readVary($many, []));
+pin('a read with locale does not', ['Authorization', 'X-Shopclass-Token'], $readVary($many, ['locale' => 'en_US']));
 pin('other keyed reads are revalidated', ['private, no-cache', 'private, no-cache'], [$cc('listings/4'), $cc('accounts-like')]);
 
 harness_section('plugin schemas');

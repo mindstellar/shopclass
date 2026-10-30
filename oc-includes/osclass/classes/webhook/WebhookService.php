@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\webhook;
 
 use mindstellar\database\DbException;
+use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\exception\RefusedException;
 use mindstellar\job\JobQueue;
@@ -245,11 +246,11 @@ final class WebhookService
     {
         $url = trim($url);
         if ($url === '' || strlen($url) > self::MAX_URL || !Validate::httpUrl($url)) {
-            throw new RefusedException(_m('Enter the full web address of the endpoint, such as https://example.com/webhooks.'));
+            throw new InvalidException('/url', 'format', _m('Enter the full web address of the endpoint, such as https://example.com/webhooks.'));
         }
         $check = $this->guard->check($url);
         if (!$check['ok']) {
-            throw new RefusedException(sprintf(_m('That address cannot be used: %s'), (string) ($check['error'] ?? '')));
+            throw new InvalidException('/url', 'rejected', sprintf(_m('That address cannot be used: %s'), (string) ($check['error'] ?? '')));
         }
 
         return $url;
@@ -265,11 +266,11 @@ final class WebhookService
     {
         $events = array_values(array_unique(array_filter(array_map('strval', $events), static fn (string $e): bool => $e !== '')));
         if ($events === []) {
-            throw new RefusedException(_m('Choose at least one event.'));
+            throw new InvalidException('/events', 'minItems', _m('Choose at least one event.'));
         }
         $unknown = array_diff($events, $this->events->subscribable());
         if ($unknown !== []) {
-            throw new RefusedException(sprintf(_m('Unknown events: %s'), implode(', ', $unknown)));
+            throw new InvalidException('/events', 'enum', sprintf(_m('Unknown events: %s'), implode(', ', $unknown)));
         }
 
         return $events;
@@ -282,7 +283,7 @@ final class WebhookService
     {
         $description = trim($description);
         if (mb_strlen($description) > self::MAX_DESCRIPTION) {
-            throw new RefusedException(sprintf(_m('The description is too long. Use %d characters or fewer.'), self::MAX_DESCRIPTION));
+            throw new InvalidException('/description', 'maxLength', sprintf(_m('The description is too long. Use %d characters or fewer.'), self::MAX_DESCRIPTION));
         }
 
         return $description;

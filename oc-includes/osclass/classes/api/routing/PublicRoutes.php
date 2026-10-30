@@ -50,7 +50,7 @@ use mindstellar\search\SearchSuggestions;
  */
 final class PublicRoutes
 {
-    private const LOCALE = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$'];
+    private const LOCALE = ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$', 'description' => 'A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site\'s default.'];
 
     private const INCLUDE = ['type' => 'string', 'maxLength' => 100, 'description' => 'Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star).'];
 

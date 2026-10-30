@@ -108,6 +108,16 @@ $_SERVER['QUERY_STRING'] = 'city=1&city=2&q=x&tag%5B%5D=a&tag%5B%5D=b';
 Params::init();
 $g = Request::fromGlobals();
 pin('a key sent twice is read as a list, as OpenAPI clients send one', [['1', '2'], ['1', '2'], 'x'], [$g->query()['city'] ?? null, $g->queryList('city'), $g->query()['q'] ?? null]);
+$_GET                    = ['page' => '2', 'limit' => '5'];
+$_SERVER['QUERY_STRING'] = 'page=2&limit=5';
+$_SERVER['REQUEST_URI']  = '/api/v1/listings?page=2&limit=5';
+Params::init();
+pin('a rewritten request keeps the page number it was sent', ['page' => '2', 'limit' => '5'], Request::fromGlobals()->query());
+$_GET                    = ['path' => 'v1/listings', 'page' => 'api'];
+$_SERVER['QUERY_STRING'] = 'path=v1/listings&page=3&page=api';
+$_SERVER['REQUEST_URI']  = '/index.php?' . $_SERVER['QUERY_STRING'];
+Params::init();
+pin('with ?page=api the API page number is the other page value', ['page' => '3'], Request::fromGlobals()->query());
 pin('bracketed and single keys are left to PHP', ['city' => ['1', '2']], Request::repeatedKeys('city=1&city=2&q=x&tag%5B%5D=a&tag%5B%5D=b'));
 $_SERVER = $saved;
 Params::init();
@@ -216,6 +226,8 @@ pin('ProblemException::of carries the problem', [409, 'Busy.'], [ProblemExceptio
 
 $field = ProblemException::field('/title', 'minLength', 'is empty')->response();
 pin('ProblemException::field is a 422 on one member', [422, '/title', 'title is empty.'], [$field->status(), $field->body()['errors'][0]['pointer'], $field->body()['detail']]);
+$sentence = Problem::validation([['pointer' => '/address/postcode', 'code' => 'pattern', 'message' => 'PIN code needs 6 digits.']]);
+pin('a message that is a whole sentence is the detail, without the field name before it', 'PIN code needs 6 digits.', $sentence->body()['detail']);
 $many = ProblemException::tooMany('Slow down.', 0)->response();
 pin('ProblemException::tooMany is a 429 with at least a second to wait', [429, 'rate_limited', '1'], [$many->status(), $many->body()['code'], $many->header('Retry-After')]);
 $limiter = new RateLimiter(static fn () => 3, new TestClock(static fn (): int => 1_800_000_030));

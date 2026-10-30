@@ -21,6 +21,9 @@ The site owner turns the API on and makes your key:
 [Set up the REST API](/docs/configure/api/). The API is **off by default**, and once on it needs a
 key or token for every call except sign-in, sign-up and `GET /openapi.json`. Writing needs a user account, not a public key.
 
+In shop mode a listing is a product, and a listing's variants are the product's options. The API
+says "listing" in both modes.
+
 ## Quick start
 
 Set two variables. A public key (`scp_…`) is enough for everything below.

@@ -81,6 +81,15 @@ final class SiteFacts
         return $asked;
     }
 
+    /**
+     * The enabled locale an Accept-Language header prefers most, or null for none. "hi-IN" and
+     * "hi_IN" match hi_IN; a bare "hi" matches the first enabled hi_* locale.
+     */
+    public function acceptedLocale(string $header): ?string
+    {
+        return AcceptLanguage::best($header, array_map('strval', array_keys($this->locales)));
+    }
+
     public function defaultLocale(): string
     {
         return $this->defaultLocale;

@@ -18,6 +18,7 @@ use mindstellar\exception\ForbiddenException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\exception\RefusedException;
+use mindstellar\messaging\MessagePolicy;
 
 /**
  * RFC 9457 problem answers and the error catalogue. `code` is the stable name a client branches on,
@@ -168,7 +169,8 @@ final class Problem
         $errors = array_map(static fn (array $error): array => array_replace($error, ['code' => self::fieldCode($error['code'])]) + ['in' => 'body'], $errors);
         $detail = '';
         if ($errors !== []) {
-            $field  = ltrim(str_replace('/', '.', $errors[0]['pointer']), '.');
+            // A fragment such as "must be a number" is about the field; a whole sentence names it already.
+            $field  = ctype_lower(substr($errors[0]['message'], 0, 1)) ? ltrim(str_replace('/', '.', $errors[0]['pointer']), '.') : '';
             $detail = ($field === '' ? '' : $field . ' ') . rtrim($errors[0]['message'], '.') . '.';
         }
 
@@ -227,6 +229,8 @@ final class Problem
         return match (true) {
             $e instanceof NotFoundException  => self::make('not_found', $e->getMessage()),
             $e instanceof ConflictException  => self::make($e->reason() === ConflictException::ALREADY_REVIEWED ? 'already_reviewed' : 'conflict', $e->getMessage()),
+            $e instanceof ForbiddenException && $e->reason() === MessagePolicy::BLOCKED
+                => self::make('forbidden', $e->getMessage())->withBodyMember('title', 'This conversation is blocked, so no message can be sent.'),
             $e instanceof ForbiddenException => self::make(self::REFUSALS[$e->reason()] ?? 'forbidden', $e->getMessage()),
             $e instanceof BlockedException   => self::make($e->isRateLimit() ? 'rate_limited' : 'login_blocked', $e->getMessage())->withHeader('Retry-After', (string) $e->retryAfter()),
             $e instanceof InvalidException   => self::validation($e->errors()),

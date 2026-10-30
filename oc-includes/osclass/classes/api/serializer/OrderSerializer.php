@@ -26,31 +26,21 @@ use mindstellar\currency\CurrencyService;
  */
 final class OrderSerializer
 {
-    /** @var array<string,string> currency code => the symbol the site shows */
-    private array $symbols = array();
-
     public function __construct(private Links $links, private ListingSerializer $listings, private CurrencyService $currencies)
     {
     }
 
     /**
-     * An amount in micros.
+     * An amount in micros. Only a zero delivery charge reads "Free"; a discount reads "-₹150".
      *
      * @return array{amount:string,currency:string,formatted:string}
      */
-    public function amount(int $micros, string $currency): array
+    public function amount(int $micros, string $currency, bool $delivery = false): array
     {
-        $currency = strtoupper($currency);
-        if (!isset($this->symbols[$currency])) {
-            $row                      = $this->currencies->find($currency);
-            $symbol                   = Format::text($row['s_description'] ?? null);
-            $this->symbols[$currency] = $symbol ?? $currency;
-        }
-
         return array(
             'amount'    => (string) Format::amount($micros),
-            'currency'  => $currency,
-            'formatted' => $this->links->price($micros, $this->symbols[$currency]),
+            'currency'  => strtoupper($currency),
+            'formatted' => $this->currencies->money($micros, $currency, $delivery),
         );
     }
 
@@ -75,6 +65,7 @@ final class OrderSerializer
     {
         $currency = $quote->currency();
         $money    = fn (int $micros): array => $this->amount($micros, $currency);
+        $delivery = fn (int $micros): array => $this->amount($micros, $currency, true);
         $lines    = array();
         foreach ($quote->lines() as $line) {
             $listing = $line['listing'];
@@ -112,9 +103,9 @@ final class OrderSerializer
                 'id'     => (string) $m['id'],
                 'label'  => (string) $m['label'],
                 'eta'    => $m['eta'],
-                'amount' => $money((int) $m['amount']),
+                'amount' => $delivery((int) $m['amount']),
             ), $quote->shippingMethods()),
-            'shipping'         => $chosen === null ? null : array('method' => (string) $chosen['id'], 'amount' => $money((int) $chosen['amount'])),
+            'shipping'         => $chosen === null ? null : array('method' => (string) $chosen['id'], 'amount' => $delivery((int) $chosen['amount'])),
             'discounts'        => $adjust($withAmount($quote->extraLines(OrderLineStore::KIND_DISCOUNT))),
             'taxes'            => array_map(static fn (array $row): array => array(
                 'id'       => (string) $row['id'],
@@ -123,15 +114,15 @@ final class OrderSerializer
                 'included' => ($row['included'] ?? false) === true,
             ), $quote->extraLines(OrderLineStore::KIND_TAX)),
             'fees'             => $adjust($withAmount($quote->extraLines(OrderLineStore::KIND_FEE))),
-            'totals'           => array_map($money, array(
-                'subtotal'     => $totals['subtotal'],
-                'shipping'     => $totals['shipping'],
-                'discount'     => $totals['discount'],
-                'tax'          => $totals['tax'],
-                'tax_included' => $totals['tax_included'],
-                'fee'          => $totals['fee'],
-                'total'        => $totals['total'],
-            )),
+            'totals'           => array(
+                'subtotal'     => $money($totals['subtotal']),
+                'shipping'     => $delivery($totals['shipping']),
+                'discount'     => $money($totals['discount']),
+                'tax'          => $money($totals['tax']),
+                'tax_included' => $money($totals['tax_included']),
+                'fee'          => $money($totals['fee']),
+                'total'        => $money($totals['total']),
+            ),
             'free_over'        => $freeOver === null ? null : array('amount' => $money($freeOver['amount']), 'remaining' => $money($freeOver['remaining'])),
             'gateways'         => array_map(static fn (array $g): array => array(
                 'id'   => $g['id'],
@@ -182,6 +173,7 @@ final class OrderSerializer
         $out      = array();
         foreach ($lines as $line) {
             $item  = $line['kind'] === OrderLineStore::KIND_ITEM;
+            $ship  = $line['kind'] === OrderLineStore::KIND_SHIPPING;
             $meta  = is_array($line['meta'] ?? null) ? $line['meta'] : array();
             $out[] = array(
                 'kind'    => (string) $line['kind'],
@@ -189,8 +181,8 @@ final class OrderSerializer
                 'options' => $item && is_array($line['options'] ?? null) && $line['options'] !== array() ? $line['options'] : null,
                 'sku'     => $item && ($line['sku'] ?? '') !== '' ? (string) $line['sku'] : null,
                 'qty'     => (int) $line['qty'],
-                'unit'    => $this->amount((int) $line['unit'], $currency),
-                'amount'  => $this->amount((int) $line['amount'], $currency),
+                'unit'    => $this->amount((int) $line['unit'], $currency, $ship),
+                'amount'  => $this->amount((int) $line['amount'], $currency, $ship),
                 'listing' => $item && !empty($line['item_id']) ? ($refs[(int) $line['item_id']] ?? null) : null,
                 'included' => $line['kind'] === OrderLineStore::KIND_TAX && ($meta['included'] ?? false) === true,
             );
@@ -199,7 +191,7 @@ final class OrderSerializer
 
         return array(
             'id'          => $order->getId(),
-            'number'      => self::number($order->getId()),
+            'number'      => Receipts::number($order),
             'kind'        => $order->isGoods() ? 'goods' : 'credits',
             'label'       => $order->getLabel(),
             'status'      => $order->getStatus(),

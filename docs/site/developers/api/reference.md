@@ -47,7 +47,7 @@ The signed-in user's own profile
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `fields` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
@@ -220,7 +220,7 @@ Your own listings in any status, newest first
 | `cursor` | query | string | no |  |
 | `count` | query | boolean | no | true: also count every match for meta.total; skipped otherwise, as it costs a query. |
 | `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `fields` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
@@ -1269,7 +1269,7 @@ Every category, flat or as a tree
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `fields` | query | string | no |  |
 | `tree` | query | boolean | no |  |
 | `roots` | query | boolean | no | Only the top-level categories, flat; ignored with tree. |
@@ -1285,7 +1285,7 @@ One category by id or slug, with its custom fields
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `category` | path | string | yes |  |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `fields` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
@@ -1297,7 +1297,7 @@ Custom fields, all or a category's
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `category` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
@@ -1507,7 +1507,7 @@ Search listings
 | `city` | query | string or array | no | One value, a comma list, or repeated. |
 | `city_area` | query | string or array | no | One value, a comma list, or repeated. |
 | `user` | query | string or array | no | One value, a comma list, or repeated. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `price_min` | query | integer | no |  |
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |
@@ -1552,7 +1552,7 @@ One listing
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `fields` | query | string | no |  |
 | `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1682,7 +1682,7 @@ Live listings like this one, best first: same category and shared title words, o
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `fields` | query | string | no |  |
 | `include` | query | string | no | Comma list: custom_fields, translations, rating (the approved ratings: average, count and, on one listing, the count of each star). |
 | `limit` | query | integer | no |  |
@@ -1724,7 +1724,7 @@ A city's areas
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
 | `q` | query | string | no | Names starting with this, in any language. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1738,7 +1738,7 @@ Countries
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `q` | query | string | no | Names starting with this, in any language. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1753,7 +1753,7 @@ A country's regions
 |---|---|---|---|---|
 | `code` | path | string | yes |  |
 | `q` | query | string | no | Names starting with this, in any language. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1768,7 +1768,7 @@ A region's cities
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
 | `q` | query | string | no | Names starting with this, in any language. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `limit` | query | integer | no |  |
 | `cursor` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
@@ -1898,7 +1898,7 @@ Price a cart: lines, shipping, fees and totals, worked out from the database
 | `city` | query | string | no | The delivery city, up to 100 characters; a longer one is ignored. Cash on delivery limited to chosen cities needs it. |
 | `postcode` | query | string | no | The delivery postcode, up to 15 characters; a longer one is ignored. |
 | `coupon` | query | string | no | A coupon code: trimmed and upper-cased, 1-40 of A-Z, 0-9 and -. Anything else is ignored, not refused. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`QuoteDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1918,7 +1918,7 @@ The site's menus: main and footer (the top categories and linked pages until the
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`MenuList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1929,7 +1929,7 @@ The pages shown as links, in order, in the asked language
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`PageSummaryList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1941,7 +1941,7 @@ One page by id or internal name, linked or not, with its text and meta
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `page` | path | string | yes |  |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`PageDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1955,7 +1955,7 @@ The head data of a public page: canonical URL, title, description, robots, bread
 | `for` | query | string: `home`, `listing`, `category`, `page`, `search` | no | The kind of page. |
 | `id` | query | string | no | A listing id, a category id or slug, or a page id or internal name. Not used for home and search. |
 | `q` | query | string | no | Search only: the search words. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`SeoDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 404 Not found; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1974,7 +1974,7 @@ Up to three categories for a new listing's title, best first
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `title` | query | string | no |  |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`CategorySuggestionsDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -1987,7 +1987,7 @@ Listings for a search box while someone types, best first; a search plugin may a
 |---|---|---|---|---|
 | `q` | query | string | no | What was typed. Titles are matched by word start; input with no word of three letters or more suggests nothing. |
 | `limit` | query | integer | no |  |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`SearchSuggestionsDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
@@ -2042,7 +2042,7 @@ A user's public profile
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
 | `id` | path | integer | yes |  |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `fields` | query | string | no |  |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
@@ -2061,7 +2061,7 @@ A user's live listings
 | `region` | query | string or array | no | One value, a comma list, or repeated. |
 | `city` | query | string or array | no | One value, a comma list, or repeated. |
 | `city_area` | query | string or array | no | One value, a comma list, or repeated. |
-| `locale` | query | string | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `price_min` | query | integer | no |  |
 | `price_max` | query | integer | no |  |
 | `with_photos` | query | boolean | no |  |

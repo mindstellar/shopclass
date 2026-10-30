@@ -150,6 +150,7 @@ $sent = $client($on, $visitor)->call('POST', 'contact', ['a' => '1'], ['pattern'
 pin('the body arrives as JSON input', 'bike', $sent['body']['data']['input']['pattern'] ?? null);
 pin('the query arrives', ['a' => '1'], $sent['body']['data']['query']);
 pin('a query string on the path is read, the query array winning', ['limit' => '5', 'q' => 'x'], $client($on, $visitor)->call('GET', 'listings?limit=9&q=x', ['limit' => '5'])['body']['data']['query']);
+pin('scalar query values arrive as strings, as over HTTP', ['id' => '12', 'n' => ['1', '2.5'], 'on' => '1', 'off' => '0'], $client($on, $visitor)->call('GET', 'listings', ['id' => 12, 'n' => [1, 2.5], 'on' => true, 'off' => false, 'gone' => null])['body']['data']['query']);
 pin('an unknown route is a 404 problem body, not an exception', [404, 'not_found'], (static fn (array $r): array => [$r['status'], $r['body']['code'] ?? null])($client($on, $visitor)->call('GET', 'nope')));
 
 harness_section('hooks');

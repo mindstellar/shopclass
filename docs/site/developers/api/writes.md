@@ -531,7 +531,7 @@ The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redire
 | Rule | Detail |
 |---|---|
 | Who | A signed-in user. A guest page token can price a cart but not place one. |
-| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`), `/gateway` (`unavailable`, `too_many_open`), `/address/<field>` (`required`, `maxLength`). A plugin's problem (a bad coupon, a postcode outside every delivery zone) is `rejected` at its pointer, with its message. Nothing is written. |
+| Refused | `422` with a pointer: `/lines/n` (`out_of_stock`, `not_buyable`), `/shipping_method` (`unknown`, also when it is missing on a cart that ships; a cart that does not ship needs none), `/gateway` (`unavailable`, `too_many_open`), `/address/<field>` (`required`, `maxLength`). A plugin's problem (a bad coupon, a postcode outside every delivery zone) is `rejected` at its pointer, with its message. Nothing is written. |
 | `coupon` | Optional, the same rule as on the quote. |
 | `address` | Typed fields within the address book's lengths (`line1` 100, `postcode` 15, `country` two letters). `address.id` orders to a saved address and needs `addresses:read`; an id not in your book is `422` on `/address/id`. `address.save: true` also adds the typed address to the book, and needs `addresses:write`; it must pass the book's checks. A key without the scope gets `403 insufficient_scope`. |
 | Included tax | A tax line already in the prices is stored with `amount` 0, `unit` the tax and `included` true, so the lines still add up to `total`. |

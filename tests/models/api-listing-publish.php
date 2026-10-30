@@ -42,6 +42,7 @@ if (!function_exists('osc_content_path')) {
     }
 }
 $admin = api_admin_boot('osc_models_api_listing_publish');
+scratchdb_pin_site_mode($admin, 'classifieds');
 require_once __DIR__ . '/../lib/listing-order-gateway.php';
 
 /* ----------------------------------------------------------------------------

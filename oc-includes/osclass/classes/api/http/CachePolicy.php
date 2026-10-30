@@ -30,7 +30,11 @@ final class CachePolicy
     /** Paths whose answer changes with admin switches, so a shared cache must not keep them. */
     private const PRIVATE_PATHS = ['openapi.json'];
 
-    public function __construct(private int $maxAge)
+    /**
+     * @param bool $manyLocales the site has more than one language, so a read without `locale`
+     *                          follows Accept-Language
+     */
+    public function __construct(private int $maxAge, private bool $manyLocales = false)
     {
     }
 
@@ -81,6 +85,9 @@ final class CachePolicy
         }
 
         $vary = ['Authorization', PageTokens::HEADER];
+        if ($this->manyLocales && $request->queryString('locale') === '') {
+            $vary[] = 'Accept-Language';
+        }
 
         return $originMatters ? [...$vary, 'Origin'] : $vary;
     }

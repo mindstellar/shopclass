@@ -183,8 +183,10 @@ pin('the open order is no longer linked to the published listing', null, OrderSt
 pin('publish: 200 active, row 1/1/now', [200, 'active', '1', '1', true], [$r->status(), $r->body()['data']['status'] ?? null, $h['b_enabled'], $h['b_active'], strtotime((string) $h['dt_first_pub_date']) > time() - 60]);
 check('the run starts now and ends later', strtotime((string) $h['dt_expiration']) > time() + 86400);
 pin('posted_item fired once, no ledger row, logged under the admin', [1, $ledgerBefore, [['s_who' => 'admin', 'fk_i_who_id' => (string) $bossId]]], [$posted, $ledger(), $logs('publish', $held2)]);
-pin('publish again: 409 conflict', '409 conflict', api_admin_code($call('POST', 'admin/listings/' . $held2 . '/publish', null, $boss)));
-pin('a live listing: 409 conflict', '409 conflict', api_admin_code($call('POST', 'admin/listings/' . $live . '/publish', null, $boss)));
+pin('publish again: 200, already published, as the seller\'s route answers', [200, 'active'], (static fn ($r): array => [$r->status(), $r->body()['data']['status'] ?? null])($call('POST', 'admin/listings/' . $held2 . '/publish', null, $boss)));
+pin('a live listing: 200, nothing changes', 200, $call('POST', 'admin/listings/' . $live . '/publish', null, $boss)->status());
+pin('posted_item did not fire again', 1, $posted);
+pin('a listing waiting for review, not payment: 409 conflict', '409 conflict', api_admin_code($call('POST', 'admin/listings/' . $pending . '/publish', null, $boss)));
 pin('a moderator key may publish, as the screen is open to moderators', 200, $call('POST', 'admin/listings/' . $held3 . '/publish', null, $mod)->status());
 pin('posted_item fired for the second', 2, $posted);
 $admin->query("UPDATE {$p}t_item SET b_enabled = 0, b_active = 0, dt_first_pub_date = NULL WHERE pk_i_id = $held3");

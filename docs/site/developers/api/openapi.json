@@ -391,6 +391,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -9651,6 +9652,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -39808,6 +39810,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -40103,6 +40106,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -40442,6 +40446,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -40794,6 +40799,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -41817,6 +41823,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -42149,6 +42156,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -42779,6 +42787,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -43194,6 +43203,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -44176,6 +44186,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -48130,6 +48141,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -48530,6 +48542,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -49035,6 +49048,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -49338,6 +49352,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -50111,6 +50126,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -50464,6 +50480,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -50780,6 +50797,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -51111,6 +51129,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -51744,6 +51763,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -52180,6 +52200,7 @@
                         "name": "locale",
                         "in": "query",
                         "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
                         "schema": {
                             "type": "string",
                             "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
@@ -60236,8 +60257,9 @@
                     },
                     "shipping_method": {
                         "type": "string",
-                        "minLength": 1,
-                        "maxLength": 64
+                        "minLength": 0,
+                        "maxLength": 64,
+                        "description": "Required when the cart ships; left out or empty when it does not."
                     },
                     "gateway": {
                         "type": "string",
@@ -60259,7 +60281,6 @@
                 "required": [
                     "lines",
                     "address",
-                    "shipping_method",
                     "gateway"
                 ],
                 "description": "Prices, totals and stock are worked out on the server; an amount sent is ignored."
@@ -61000,7 +61021,7 @@
                             "method",
                             "amount"
                         ],
-                        "description": "The chosen method."
+                        "description": "The chosen method: the one asked for, or the first one offered when it is not."
                     },
                     "discounts": {
                         "type": "array",

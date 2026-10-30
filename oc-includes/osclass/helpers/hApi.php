@@ -173,6 +173,12 @@ if (!function_exists('osc_api_url')) {
             return osc_base_url() . 'api/' . $route . ($query === '' ? '' : '?' . $query);
         }
 
+        // PHP keeps the last of two `page` values, so a page number goes before the routing page=api.
+        parse_str($query, $params);
+        if (array_key_exists('page', $params)) {
+            return osc_base_url() . 'index.php?path=' . $route . '&' . $query . '&page=api';
+        }
+
         return osc_base_url() . 'index.php?page=api&path=' . $route . ($query === '' ? '' : '&' . $query);
     }
 }

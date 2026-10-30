@@ -21,6 +21,7 @@ use mindstellar\api\auth\RefreshRetries;
 use mindstellar\api\auth\RefreshTokens;
 use mindstellar\api\auth\TokenIssuer;
 use mindstellar\api\auth\UserRows;
+use mindstellar\api\http\CachePolicy;
 use mindstellar\api\http\SiteOrigin;
 use mindstellar\api\idempotency\Idempotency;
 use mindstellar\api\idempotency\KvIdempotencyStore;
@@ -191,7 +192,8 @@ final class ApiServices
             $this->users,
             $this->admins(),
             new Idempotency(new KvIdempotencyStore(), $this->clock),
-            ratePolicy: $this->ratePolicy()
+            ratePolicy: $this->ratePolicy(),
+            cachePolicy: new CachePolicy($this->settings->cacheMaxAge(), count($this->facts()->locales()) > 1)
         ));
     }
 
@@ -341,13 +343,18 @@ final class ApiServices
     }
 
     /**
-     * The request's locale: the asked one, or the site's default.
+     * The request's locale: the asked one, else the one Accept-Language prefers, else the site's default.
      *
      * @throws ProblemException 422 for a locale the site does not have
      */
     public function locale(Request $request): string
     {
-        return $this->facts()->locale($request->queryString('locale'));
+        $asked = $request->queryString('locale');
+        if ($asked === '') {
+            return $this->facts()->acceptedLocale($request->header('Accept-Language')) ?? $this->facts()->defaultLocale();
+        }
+
+        return $this->facts()->locale($asked);
     }
 
     /**

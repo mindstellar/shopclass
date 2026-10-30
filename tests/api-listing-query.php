@@ -107,6 +107,16 @@ pin('a user that is not an id is refused, not ignored', '422 validation_failed /
 $facts = new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr'], 'de_DE' => ['name' => 'Deutsch', 'direction' => 'ltr']]);
 pin('the locale is resolved once: asked, or the default', ['de_DE', 'en_US'], [$facts->locale('de_DE'), $facts->locale('')]);
 pin('a locale the site lacks is refused', '422 validation_failed /locale', $problem(static fn () => $facts->locale('fr_FR')));
+pin('Accept-Language: a region tag in either spelling, or a bare language', ['de_DE', 'de_DE', 'de_DE', 'en_US'], [
+    $facts->acceptedLocale('de-DE'), $facts->acceptedLocale('de_de'), $facts->acceptedLocale('de'), $facts->acceptedLocale('EN-us'),
+]);
+pin('Accept-Language: the highest q the site has wins', ['de_DE', 'en_US', 'de_DE'], [
+    $facts->acceptedLocale('fr-FR, de;q=0.8, en;q=0.5'), $facts->acceptedLocale('de;q=0.4, en-US;q=0.9'), $facts->acceptedLocale('de, en'),
+]);
+pin('Accept-Language: none the site has, q=0, a wildcard or junk', [null, null, null, null, null], [
+    $facts->acceptedLocale('fr-FR, hi'), $facts->acceptedLocale('de;q=0'), $facts->acceptedLocale('*'), $facts->acceptedLocale(''), $facts->acceptedLocale('<x>'),
+]);
+pin('Accept-Language tags: highest q first, ties in header order, q=0 and junk dropped', ['fr_fr', 'hi', 'de'], \mindstellar\api\read\AcceptLanguage::tags('de;q=0.8, fr-FR, en;q=0, *, hi, <x>'));
 
 harness_section('pager');
 pin('a limit past the site\'s page size is refused', '422 validation_failed /limit', $problem(static fn () => $pager(['limit' => 51])));

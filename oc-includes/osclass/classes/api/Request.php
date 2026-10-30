@@ -105,7 +105,8 @@ final class Request
         }
 
         $query = self::repeatedKeys((string) Params::getServerParam('QUERY_STRING', false, false)) + Params::getParamsAsArray('get', false);
-        unset($query['page'], $query['path']);
+        unset($query['path']);
+        $query = self::withoutRoutingPage($query);
 
         return new self(
             (string) Params::getServerParam('REQUEST_METHOD', false, false),
@@ -134,6 +135,36 @@ final class Request
     }
 
     /**
+     * The query without the front controller's `page=api`: a `page` with another value is the
+     * API's page number, and with ?page=api it is the other `page` value sent.
+     *
+     * @param array<string,mixed> $query
+     *
+     * @return array<string,mixed>
+     */
+    private static function withoutRoutingPage(array $query): array
+    {
+        $page = $query['page'] ?? null;
+        if (is_array($page)) {
+            $at = array_search('api', $page, true);
+            if ($at !== false) {
+                unset($page[$at]);
+            }
+            $page = array_values($page);
+            $page = count($page) === 1 ? $page[0] : ($page === [] ? null : $page);
+        } elseif ($page === 'api') {
+            $page = null;
+        }
+        if ($page === null) {
+            unset($query['page']);
+        } else {
+            $query['page'] = $page;
+        }
+
+        return $query;
+    }
+
+    /**
      * A call made from PHP in this process, not over HTTP. The kernel skips CORS, the rate limit,
      * the API switch and cache headers for it, and acts as $as instead of reading a token.
      *
@@ -149,6 +180,7 @@ final class Request
             parse_str($parts[1], $fromPath);
             $query += $fromPath;
         }
+        $query = self::asSent($query);
         $json    = $body === [] ? '' : (string) json_encode($body, JSON_INVALID_UTF8_SUBSTITUTE | JSON_UNESCAPED_SLASHES);
         $request = new self(
             $method,
@@ -161,6 +193,29 @@ final class Request
         $request->caller = $as ?? Credential::anonymous(Scopes::PUBLIC);
 
         return $request;
+    }
+
+    /**
+     * Query values as HTTP would send them: numbers as strings, true and false as 1 and 0, no nulls.
+     *
+     * @param array<mixed> $query
+     *
+     * @return array<mixed>
+     */
+    private static function asSent(array $query): array
+    {
+        $out = [];
+        foreach ($query as $key => $value) {
+            if (is_array($value)) {
+                $out[$key] = self::asSent($value);
+            } elseif (is_bool($value)) {
+                $out[$key] = $value ? '1' : '0';
+            } elseif (is_scalar($value)) {
+                $out[$key] = (string) $value;
+            }
+        }
+
+        return $out;
     }
 
     /**

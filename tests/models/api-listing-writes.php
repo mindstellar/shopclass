@@ -52,6 +52,7 @@ register_shutdown_function(static function () use ($lwRoot): void {
 require_once __DIR__ . '/../lib/scratchdb.php';
 
 $admin = scratchdb_session('osc_models_api_listing_writes');
+scratchdb_pin_site_mode($admin, 'classifieds');
 
 foreach (array(
     'OSC_CACHE_TTL'   => 60,
