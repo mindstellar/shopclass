@@ -146,25 +146,25 @@ function customHead()
             chart.draw(data, oscChartOpts({
                 pointSize: 6,
                 legend: 'none'
-            }));
+            }, data, chart.getContainer()));
 
             var chart = new google.visualization.AreaChart(document.getElementById('placeholder_total'));
             chart.draw(data2, oscChartOpts({
                 pointSize: 6,
                 legend: 'none'
-            }));
+            }, data2, chart.getContainer()));
 
             var chart = new google.visualization.AreaChart(document.getElementById('placeholder_alerts'));
             chart.draw(data3, oscChartOpts({
                 pointSize: 6,
                 legend: 'none'
-            }));
+            }, data3, chart.getContainer()));
 
             var chart = new google.visualization.AreaChart(document.getElementById('placeholder_subscribers'));
             chart.draw(data4, oscChartOpts({
                 pointSize: 6,
                 legend: 'none'
-            }));
+            }, data4, chart.getContainer()));
 
         }
     </script>

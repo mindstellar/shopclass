@@ -14,7 +14,27 @@
 
     // Merge chart-specific overrides onto a themed base. Series default to bronze +
     // bronze tint; axes, gridlines and legend take the muted/rule tokens.
-    window.oscChartOpts = function (overrides) {
+    // With the chart's data and box, date labels are spaced so the last date always gets one.
+    function dateStep(data, el) {
+        var n = data.getNumberOfRows();
+        if (n < 2 || data.getColumnType(0) !== 'string') {
+            return 0;
+        }
+        var longest = 0;
+        for (var i = 0; i < n; i++) {
+            longest = Math.max(longest, String(data.getValue(i, 0)).length);
+        }
+        var fits = Math.max(2, Math.floor((el.clientWidth - 76) / (longest * 6 + 16)));
+        for (var step = 1; step < n; step++) {
+            if ((n - 1) % step === 0 && (n - 1) / step + 1 <= fits) {
+                return step;
+            }
+        }
+
+        return n - 1;
+    }
+
+    window.oscChartOpts = function (overrides, data, el) {
         var muted = tok('--osc-ink-muted', '#67635d');
         var rule = tok('--osc-rule', '#e0dcd4');
         var base = {
@@ -47,6 +67,12 @@
                 baselineColor: rule
             }
         };
+        if (data && el) {
+            var step = dateStep(data, el);
+            if (step > 0) {
+                base.hAxis.showTextEvery = step;
+            }
+        }
         if (overrides) {
             for (var k in overrides) {
                 if (Object.prototype.hasOwnProperty.call(overrides, k)) {

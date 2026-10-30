@@ -99,13 +99,15 @@ body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 "Inter","Sego
 .rc-totals th{color:var(--muted);padding-right:16px}
 .rc-totals td{text-align:right;white-space:nowrap}
 .rc-totals .rc-total th,.rc-totals .rc-total td{padding-top:12px;border-top:2px solid var(--ink);color:var(--ink);font-weight:700;font-size:1.1rem}
-.rc-summary{margin-top:8px}
+.rc-summary{width:100%;margin-top:8px}
 .rc-summary th,.rc-summary td{font-size:.875rem}
+.rc-summary th{width:1%;white-space:nowrap}
+.rc-summary td{white-space:normal;overflow-wrap:anywhere}
 .rc-ship{margin-top:28px;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px 28px}
 .rc-ship h2{margin:0 0 4px;color:var(--muted);font-size:.8rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
 .rc-ship p{margin:0}
 .rc-note{margin:32px 0 0;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:.875rem}
-@media (max-width:560px){.rc-paper{padding:24px 18px}.rc-titlebox{text-align:left}.rc-rows th,.rc-rows td{display:block;width:auto;padding:0}.rc-rows th{padding-top:10px}.rc-rows td{border-top:0;padding-bottom:10px}.rc-items .rc-price{display:none}}
+@media (max-width:560px){.rc-paper{padding:24px 18px}.rc-titlebox{text-align:left}.rc-rows th,.rc-rows td{display:block;width:auto;padding:0}.rc-rows th{padding-top:10px}.rc-rows td{border-top:0;padding-bottom:10px}.rc-items .rc-price{display:none}.rc-summary th,.rc-summary td{display:block;width:auto;padding:0;white-space:normal;text-align:left}.rc-summary th{padding-top:10px}.rc-summary td{padding-bottom:4px}}
 @media print{:root{--bg:#fff;--soft:#fff;--line:#bbb;--muted:#444}body{font-size:11pt}.rc-wrap{max-width:none;padding:0}.rc-tools{display:none}.rc-paper{border:0;border-radius:0;padding:0}.rc-meta{padding:0}.rc-status{border:1px solid currentColor}}
 </style>
 </head>

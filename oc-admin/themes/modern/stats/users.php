@@ -108,7 +108,7 @@ function customHead()
             chart.draw(data, oscChartOpts({
                 pointSize: 6,
                 legend: 'none'
-            }));
+            }, data, chart.getContainer()));
 
             var data_country = new google.visualization.DataTable();
             data_country.addColumn('string', '<?php _e('Country'); ?>');

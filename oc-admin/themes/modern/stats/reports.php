@@ -92,7 +92,7 @@ function customHead()
             chart.draw(data, oscChartOpts({
                 pointSize: 6,
                 legend: 'none'
-            }));
+            }, data, chart.getContainer()));
         }
     </script>
     <?php }
