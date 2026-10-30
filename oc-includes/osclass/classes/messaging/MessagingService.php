@@ -251,16 +251,35 @@ final class MessagingService
     /**
      * What a poll needs to know: the user's unread total and the time of the newest message in
      * their threads. A held thread does not count for the seller. Both are empty while messaging is off.
+     * With the open thread it adds `their_unread`, how many of the user's messages there the other side has not read.
      *
-     * @return array{unread: int, latest: ?string}
+     * @return array{unread: int, latest: ?string, their_unread?: int}
      */
-    public function activity(int $userId): array
+    public function activity(int $userId, int $conversationId = 0): array
     {
         if ($userId <= 0 || !osc_messaging_enabled()) {
             return ['unread' => 0, 'latest' => null];
         }
+        $activity = ['unread' => $this->conversations->unread($userId), 'latest' => $this->conversations->latest($userId)];
+        $thread   = $conversationId > 0 ? $this->conversations->find($conversationId) : null;
+        $side     = $thread !== null ? ConversationStore::sideOf($thread, $userId) : null;
+        if ($side !== null) {
+            $activity['their_unread'] = (int) $thread[$side === ConversationStore::SIDE_BUYER ? 'i_seller_unread' : 'i_buyer_unread'];
+        }
 
-        return ['unread' => $this->conversations->unread($userId), 'latest' => $this->conversations->latest($userId)];
+        return $activity;
+    }
+
+    /**
+     * The ETag of an activity() answer.
+     *
+     * @param array{unread: int, latest: ?string, their_unread?: int} $activity
+     */
+    public static function activityTag(array $activity): string
+    {
+        $theirs = isset($activity['their_unread']) ? '.' . $activity['their_unread'] : '';
+
+        return '"' . $activity['unread'] . '.' . md5((string) $activity['latest']) . $theirs . '"';
     }
 
     /**

@@ -387,15 +387,20 @@ class Session
      * @param string $key   Bucket, e.g. 'admin' or 'pubMessages'
      * @param string $value
      * @param string $type  'error' | 'ok' | …
+     * @param bool   $dismissible false for a message that shows no dismiss button
      *
      * @return void
      */
-    public function _setMessage($key, $value, $type)
+    public function _setMessage($key, $value, $type, bool $dismissible = true)
     {
         // Flash messages live in a request-scoped store (see below), never $_SESSION, so
         // adding one does not start a session. They are carried across the following
         // redirect in a short-lived, HMAC-signed cookie by _flushFlashMessages().
-        $this->messages[$key][] = array('msg' => str_replace(PHP_EOL, '<br />', $value), 'type' => $type);
+        $message = array('msg' => str_replace(PHP_EOL, '<br />', $value), 'type' => $type);
+        if (!$dismissible) {
+            $message['dismissible'] = false;
+        }
+        $this->messages[$key][] = $message;
     }
 
     /**

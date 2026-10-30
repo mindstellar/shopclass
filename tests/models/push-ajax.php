@@ -58,11 +58,7 @@ $p = DB_TABLE_PREFIX;
 
 // An installed site, so the HTTP section can serve real requests from the same database.
 seed_locale($admin, 'en_US', 'English (US)');
-Connection::getInstance()->executeScript(str_replace(
-    array('/*TABLE_PREFIX*/', '/*OSCLASS_VERSION*/'),
-    array($p, OSCLASS_VERSION),
-    file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/basic_data.sql') . file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/pages.sql')
-));
+Connection::getInstance()->executeScript(scratchdb_install_sql());
 $ledger = \mindstellar\migration\MigrationRunner::forCore();
 $ledger->ensureLedger();
 $ledger->baseline();

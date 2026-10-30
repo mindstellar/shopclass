@@ -11,7 +11,7 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Messages'),
 ));
 

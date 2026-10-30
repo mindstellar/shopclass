@@ -228,6 +228,12 @@ class OSCLocale extends DAO
                     'b_enabled'         => 0,
                     'b_enabled_bo'      => 1
                 );
+                // A package may set how its numbers are written; without it the column defaults stand.
+                foreach (array('thousands_sep' => 's_thousands_sep', 'dec_point' => 's_dec_point') as $key => $column) {
+                    if (isset($aLocale[$key]) && is_string($aLocale[$key]) && strlen($aLocale[$key]) <= 2) {
+                        $values[$column] = $aLocale[$key];
+                    }
+                }
                 // findByCode() returns a LIST of rows, so take the first before
                 // merging; merging the list itself injected a numeric key that
                 // checkFieldKeys() rejected, which is why the update branch never

@@ -64,12 +64,13 @@ function osc_add_flash_error_message($msg, $section = 'pubMessages')
  *
  * @param string $msg
  * @param string $section
+ * @param bool   $dismissible false for a notice about a state, shown without a dismiss button
  *
  * @return void
  */
-function osc_add_flash_info_message($msg, $section = 'pubMessages')
+function osc_add_flash_info_message($msg, $section = 'pubMessages', bool $dismissible = true)
 {
-    Session::getInstance()->_setMessage($section, $msg, 'info');
+    Session::getInstance()->_setMessage($section, $msg, 'info', $dismissible);
 }
 
 /**
@@ -137,8 +138,10 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
             if (isset($message['msg']) && $message['msg'] != '') {
                 echo '<div' . $idAttr . ' role="' . $role . '" class="' . strtolower($class) . ' '
                     . strtolower($class) . '-' . $type . '">';
-                echo $dismiss;
-                osc_enqueue_script('osc-flash-dismiss');
+                if (($message['dismissible'] ?? true) !== false) {
+                    echo $dismiss;
+                    osc_enqueue_script('osc-flash-dismiss');
+                }
                 echo osc_apply_filter('flash_message_text', $message['msg']);
                 echo '</div>';
             } elseif ($message != '') {

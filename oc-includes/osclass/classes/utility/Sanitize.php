@@ -107,7 +107,8 @@ class Sanitize
     }
 
     /**
-     * Sanitize title utf8 string
+     * Sanitize title utf8 string. The result is HTML-escaped, as titles are stored, because
+     * older themes print a title into HTML as it is; plain-text output decodes it.
      *
      * @param string $value
      *
@@ -135,11 +136,9 @@ class Sanitize
         ];
         $value = strtr($value, $replaceMap);
 
-        // Remove any non-alphanumeric characters except spaces, hyphens, quotes, and dots
-        $value = preg_replace('/[^\p{L}\p{N}\s\-\'".]/u', '', $value);
-
-        // Normalize multiple spaces to a single space
-        $value = preg_replace('/\s+/', ' ', $value);
+        // Collapse whitespace, then drop control characters; punctuation is kept.
+        $value = (string) preg_replace('/\s+/u', ' ', $value);
+        $value = (string) preg_replace('/\p{Cc}/u', '', $value);
 
         // Trim spaces
         $value = trim($value);

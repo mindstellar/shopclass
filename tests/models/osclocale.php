@@ -384,6 +384,12 @@ pin('exactly one row now exists for the new code', 1, count($stored));
 pin('b_enabled is forced to 0 on a fresh import, regardless of caller input', '0', $stored[0]['b_enabled']);
 pin('b_enabled_bo is forced to 1 on a fresh import', '1', $stored[0]['b_enabled_bo']);
 
+$withSeparators = array_merge($freshLocale, array('locale_code' => 'de_DE', 'name' => 'German', 'short_name' => 'German', 'thousands_sep' => '.', 'dec_point' => ','));
+$model->insertLocaleInfo($withSeparators);
+$de = $model->findByCode('de_DE')[0];
+pin('a package\'s number separators are stored', array('.', ','), array($de['s_thousands_sep'], $de['s_dec_point']));
+pin('a package without them keeps the column defaults', array('', '.'), array($stored[0]['s_thousands_sep'], $stored[0]['s_dec_point']));
+
 harness_section('OSCLocale::insertLocaleInfo — an existing locale updates its version, keeping the rest');
 
 /* findByCode() returns a LIST of rows, so insertLocaleInfo() indexes into [0]

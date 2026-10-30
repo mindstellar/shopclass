@@ -29,6 +29,7 @@ use mindstellar\security\ActionThrottle;
 use mindstellar\settings\SettingsPageRegistry;
 
 $admin = api_admin_boot('osc_models_messaging_settings');
+scratchdb_pin_site_mode($admin, 'classifieds');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';

@@ -11,7 +11,7 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Listings'),
+    'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Messages'),
     'help'    => __('Messages held by the spam checks wait here for you to release or remove them. Conversations that a user reported can be closed or cleared.'),
 ));
@@ -55,7 +55,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <tr>
                     <th><?php _e('Date'); ?></th>
                     <th><?php _e('Sender'); ?></th>
-                    <th><?php _e('Listing'); ?></th>
+                    <th><?php echo osc_mode_text(__('Listing'), __('Product')); ?></th>
                     <th><?php _e('Message'); ?></th>
                     <th><?php _e('Actions'); ?></th>
                 </tr>
@@ -71,7 +71,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <br /><a href="<?php echo osc_esc_html($banUrl((string) $row['sender_email'])); ?>"><?php _e('Ban sender'); ?></a>
                         <?php } ?>
                     </td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Listing')); ?>"><?php echo $itemLink($row['item_id'], (string) $row['item_title']); ?></td>
+                    <td data-col-name="<?php echo osc_esc_html(osc_mode_text(__('Listing'), __('Product'))); ?>"><?php echo $itemLink($row['item_id'], (string) $row['item_title']); ?></td>
                     <td data-col-name="<?php echo osc_esc_html(__('Message')); ?>">
                         <?php if (mb_strlen($body) > 600) { ?>
                             <div style="white-space: pre-wrap;"><?php echo osc_esc_html(mb_substr($body, 0, 600)); ?>&hellip;</div>
@@ -103,7 +103,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <thead>
                 <tr>
                     <th><?php _e('Date'); ?></th>
-                    <th><?php _e('Listing'); ?></th>
+                    <th><?php echo osc_mode_text(__('Listing'), __('Product')); ?></th>
                     <th><?php _e('Buyer'); ?></th>
                     <th><?php _e('Seller'); ?></th>
                     <th><?php _e('Reported by'); ?></th>
@@ -115,7 +115,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     $reason = (string) ($row['s_report_reason'] ?? ''); ?>
                 <tr>
                     <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_esc_html(osc_format_date((string) $row['dt_last_message'], osc_admin_date_format())); ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Listing')); ?>"><?php echo $itemLink($row['item_id'], (string) $row['item_title']); ?></td>
+                    <td data-col-name="<?php echo osc_esc_html(osc_mode_text(__('Listing'), __('Product'))); ?>"><?php echo $itemLink($row['item_id'], (string) $row['item_title']); ?></td>
                     <td data-col-name="<?php echo osc_esc_html(__('Buyer')); ?>"><?php echo $userLink($row['fk_i_buyer_id'], (string) $row['buyer_name']); ?></td>
                     <td data-col-name="<?php echo osc_esc_html(__('Seller')); ?>"><?php echo $userLink($row['fk_i_seller_id'], (string) $row['seller_name']); ?></td>
                     <td data-col-name="<?php echo osc_esc_html(__('Reported by')); ?>">

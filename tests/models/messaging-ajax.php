@@ -59,7 +59,7 @@ $outcome = static function (callable $fn): string {
 };
 /** The ETag value the messages_check action sends for this activity. */
 $etag = static function (array $activity): string {
-    return '"' . $activity['unread'] . '.' . md5((string) $activity['latest']) . '"';
+    return \mindstellar\messaging\MessagingService::activityTag($activity);
 };
 
 $buyer  = seed_user($admin, 'bea', 'bea@example.test');
@@ -166,6 +166,18 @@ $cases = array(
 foreach ($cases as [$e, $code, $retry]) {
     pin(get_class($e) . ' answers ' . $code, array($code, $retry), $answer($e));
 }
+
+harness_section('activity with the open thread');
+$set('enabled_messaging', '1');
+$desk  = seed_item($admin, $cat, $seller, 'Desk');
+$deskC = $svc->start($desk, 'Is the desk free?', $asBuyer)->conversationId();
+pin('the seller has not read the buyer\'s message', 1, $svc->activity($buyer, $deskC)['their_unread'] ?? null);
+$unseen = $etag($svc->activity($buyer, $deskC));
+$svc->markRead($deskC, $asSeller);
+pin('once the seller reads it, the buyer\'s poll says so', 0, $svc->activity($buyer, $deskC)['their_unread'] ?? null);
+pin('and its tag changes', true, $etag($svc->activity($buyer, $deskC)) !== $unseen);
+pin('no thread asked: the same keys as before', array('unread', 'latest'), array_keys($svc->activity($buyer)));
+pin('a thread the user is not in adds nothing', array('unread', 'latest'), array_keys($svc->activity($third, $deskC)));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

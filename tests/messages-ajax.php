@@ -45,7 +45,7 @@ check('it answers ok and held', strpos($send, "'ok' => true") !== false && strpo
 
 harness_section('check');
 $check = $method('messagesCheck');
-check('the tag has the unread count and the md5 of the latest time', strpos($check, "\$activity['unread']") !== false && strpos($check, "md5((string) \$activity['latest'])") !== false);
+check('the tag comes from the service, for the open thread too', strpos($check, 'MessagingService::activityTag($activity)') !== false && strpos($check, "Params::getParamInt('id')") !== false);
 check('it compares If-None-Match', strpos($check, 'osc_etag_matches(') !== false && strpos($check, 'HTTP_IF_NONE_MATCH') !== false);
 check('a match answers 304', strpos($check, 'http_response_code(304)') !== false);
 $match = strpos($check, 'osc_etag_matches(');

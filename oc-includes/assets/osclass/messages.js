@@ -434,7 +434,10 @@
             if (etag) {
                 headers['If-None-Match'] = etag;
             }
-            return fetch(checkUrl, {headers: headers, credentials: 'same-origin'}).then(function (response) {
+            // With a thread open the answer also says whether the other side has read it, for "Seen".
+            var url = list && list.dataset.conversation
+                ? checkUrl + '&id=' + encodeURIComponent(list.dataset.conversation) : checkUrl;
+            return fetch(url, {headers: headers, credentials: 'same-origin'}).then(function (response) {
                 if (response.status === 304) {
                     return null;
                 }
@@ -448,6 +451,14 @@
                 });
                 return Promise.all([activity, refresh()]).then(function (done) {
                     etag = fresh;
+                    if (list && done[0] && typeof done[0].their_unread === 'number') {
+                        if (done[0].their_unread === 0) {
+                            markSeen();
+                        } else {
+                            list.dataset.theirUnread = String(done[0].their_unread);
+                            clearSeen();
+                        }
+                    }
                     // On a thread, fetching the new messages marked them read, so they leave the count.
                     if (done[0] && typeof done[0].unread === 'number') {
                         setUnread(done[0].unread - (Number(done[1]) || 0));

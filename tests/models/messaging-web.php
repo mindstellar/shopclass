@@ -33,6 +33,7 @@ use mindstellar\container\Container;
 use mindstellar\messaging\MessagingService;
 
 $admin = api_admin_boot('osc_models_messaging_web');
+scratchdb_pin_site_mode($admin, 'classifieds');
 foreach (array('error', 'ok', 'warning', 'info') as $kind) {
     if (!function_exists('osc_add_flash_' . $kind . '_message')) {
         eval('function osc_add_flash_' . $kind . '_message($msg, $section = "pubMessages") { $GLOBALS["flashes"][] = "' . $kind . ':" . $msg; }');

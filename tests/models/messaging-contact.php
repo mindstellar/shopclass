@@ -28,6 +28,7 @@ use mindstellar\container\Container;
 use mindstellar\messaging\MessagingService;
 
 $admin = api_admin_boot('osc_models_messaging_contact');
+scratchdb_pin_site_mode($admin, 'classifieds');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 

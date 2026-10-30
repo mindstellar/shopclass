@@ -107,6 +107,10 @@ check('the script file ships with core', is_file(ABS_PATH . 'oc-includes/assets/
 
 harness_section('no dismiss button');
 
+$html = $show(array(array('msg' => 'Waiting for payment', 'type' => 'info', 'dismissible' => false)));
+check('a message that stays has no button', str_contains($html, 'Waiting for payment') && !str_contains($html, 'ico-close'));
+pin('and enqueues nothing', array(), $GLOBALS['enqueued']);
+
 $show(array('Plain string message'));
 pin('a plain string message enqueues nothing', array(), $GLOBALS['enqueued']);
 $show(array());

@@ -444,6 +444,14 @@ msgstr ""
 msgid "Amount"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Amount to pay"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Amount to pay: %s"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "An error has occurred"
@@ -858,6 +866,14 @@ msgstr ""
 msgid "Conversations"
 msgstr ""
 
+#: oc-includes/osclass/gui/page-fn.php
+msgid "Copied"
+msgstr ""
+
+#: oc-includes/osclass/gui/page-fn.php
+msgid "Copy"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "Copy it now and keep it secret. It is not shown again."
 msgstr ""
@@ -902,6 +918,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-login-content.php
 msgid "Create one"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Credit packages that cover it start at %s."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
@@ -1009,6 +1029,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "Delete your comment? This cannot be undone."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hItems.php
+msgid "Deleted on %s if not paid"
 msgstr ""
 
 #: oc-includes/osclass/gui/parts/address-picker.php
@@ -1377,6 +1401,11 @@ msgid ""
 "<em>Friendly URLs</em>"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/CWebItem.php
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "If it is not paid for by %s, this listing will be deleted."
+msgstr ""
+
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid "If it was not you, ignore this e-mail. The message is deleted in 24 hours."
 msgstr ""
@@ -1421,6 +1450,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Invalid plugin file"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Invoice"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-signin-content.php
@@ -2248,7 +2281,7 @@ msgid "Pay %s when it arrives."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
-msgid "Pay again"
+msgid "Pay another way"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
@@ -2261,6 +2294,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Pay on delivery"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Pay to publish it"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -2375,6 +2412,10 @@ msgid "Plugin uninstalled"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Post a listing"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
 msgid "Post another listing"
 msgstr ""
 
@@ -2406,6 +2447,10 @@ msgstr ""
 msgid "Price must be positive number."
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Price to publish"
+msgstr ""
+
 #: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Price too long."
 msgstr ""
@@ -2432,6 +2477,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Public profile"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Publish"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hItems.php
@@ -2489,10 +2538,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Rebuild queued."
-msgstr ""
-
-#: oc-includes/osclass/gui/billing/parts/order-list.php
-msgid "Receipt"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
@@ -2641,6 +2686,10 @@ msgstr ""
 msgid "Save address"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hBilling.php
+msgid "Save and pay"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Save changes"
@@ -2713,6 +2762,10 @@ msgstr ""
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
 #: oc-includes/osclass/gui/item-send-friend-content.php
 msgid "Send"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Send for review"
 msgstr ""
 
 #: oc-includes/osclass/gui/parts/contact-form.php
@@ -3996,6 +4049,10 @@ msgid "This listing is not waiting for payment."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "This listing is waiting for payment and is not public yet."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "This listing will cost %d credit. You pay on the last step."
 msgid_plural "This listing will cost %d credits. You pay on the last step."
 msgstr[0] ""
@@ -4219,6 +4276,12 @@ msgstr[1] ""
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Use %d credit and publish"
 msgid_plural "Use %d credits and publish"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "Use %d credit and send for review"
+msgid_plural "Use %d credits and send for review"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -4525,6 +4588,10 @@ msgstr ""
 msgid "You have %1$d live listings, which is over your limit of %2$d."
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/publish-content.php
+msgid "You have %s."
+msgstr ""
+
 #: oc-includes/osclass/classes/comment/CommentService.php
 msgid "You have already rated this item"
 msgstr ""
@@ -4646,6 +4713,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
 msgid "Your cart is empty."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/CWebItem.php
+msgid "Your changes are saved. Pay for the listing to publish it."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
@@ -4806,6 +4877,14 @@ msgstr ""
 msgid "Your new key"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Your next listing costs %1$s, paid when you post it. You have %2$s."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/slot-prompt.php
+msgid "Your next listing is free to post."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Your orders"
@@ -4846,6 +4925,12 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
 msgid "Your recent orders"
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-profile-content.php
+msgid ""
+"Your saved addresses, cart and messages are removed with it. This cannot be "
+"undone."
 msgstr ""
 
 #: oc-includes/osclass/classes/security/Csrf.php

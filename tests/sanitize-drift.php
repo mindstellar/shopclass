@@ -19,6 +19,7 @@
  *   blacklist entry must not block every name.
  * - Escape::js() must match osc_esc_js() line for line; the two-array
  *   str_replace() it used to call breaks under PHP 8.
+ * - Sanitize::title() keeps a title's punctuation; it only drops tags and control characters.
  * - Every osc_sanitize_* helper forwards to Sanitize and gives the same output,
  *   including the cases where the two used to differ.
  *
@@ -39,6 +40,11 @@ harness_section('Sanitize::username() keeps dots');
 pin('a dotted username is kept as-is', 'john.doe', (new Sanitize())->username('john.doe'));
 pin('Formatting::username() forwards to it', (new Sanitize())->username(' Jo-hn  doe.x '), (new \mindstellar\utility\Formatting())->username(' Jo-hn  doe.x '));
 pin('Formatting::name() forwards to Sanitize::name()', (new Sanitize())->name('jOHN  o\'neil'), (new \mindstellar\utility\Formatting())->name('jOHN  o\'neil'));
+
+harness_section('Sanitize::title() keeps punctuation');
+
+pin('commas, brackets, slashes and ampersands stay', 'Mugs, set of 2 (blue) 10/12 &amp; more: 50% off!', (new Sanitize())->title('Mugs, set of 2 (blue) 10/12 & more: 50% off!'));
+pin('tags and control characters go, spaces collapse', 'Tee bold x', (new Sanitize())->title(" Tee <b>bold</b>\x07\n\t x "));
 
 harness_section('front-end username controllers call Sanitize::username(), not osc_sanitize_username()');
 

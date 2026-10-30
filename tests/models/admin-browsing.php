@@ -30,11 +30,7 @@ $p  = DB_TABLE_PREFIX;
 
 harness_section('an installed site');
 seed_locale($db, 'en_US', 'English (US)');
-Connection::getInstance()->executeScript(str_replace(
-    ['/*TABLE_PREFIX*/', '/*OSCLASS_VERSION*/'],
-    [$p, OSCLASS_VERSION],
-    file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/basic_data.sql') . file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/pages.sql')
-));
+Connection::getInstance()->executeScript(scratchdb_install_sql());
 foreach ([
     ['osclass', 'osclass_installed', '1'],
     ['osclass', 'csrf_secret', OSC_CSRF_SECRET],

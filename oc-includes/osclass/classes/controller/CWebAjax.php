@@ -501,8 +501,8 @@ class CWebAjax extends BaseModel
 
             return;
         }
-        $activity = Container::root()->get(MessagingService::class)->activity((int) $actor->userId());
-        $etag     = '"' . $activity['unread'] . '.' . md5((string) $activity['latest']) . '"';
+        $activity = Container::root()->get(MessagingService::class)->activity((int) $actor->userId(), Params::getParamInt('id'));
+        $etag     = MessagingService::activityTag($activity);
         header('Cache-Control: private, no-store');
         header('ETag: ' . $etag);
         if (osc_etag_matches((string) Params::getServerParam('HTTP_IF_NONE_MATCH', false, false), $etag)) {

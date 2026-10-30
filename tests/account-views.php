@@ -259,6 +259,10 @@ $profileForm = (string) file_get_contents($accountIn . 'user-profile-content.php
 // Without these fields, profile_post saved b_company = 0 and an empty city area.
 check('the profile form posts b_company', strpos($profileForm, 'UserForm::is_company_select(') !== false);
 check('the profile form posts cityArea', strpos($profileForm, 'UserForm::city_area_text(') !== false);
+check('a shop hides the seller fields and posts their stored values back', strpos($profileForm, '$profileSeller = !osc_is_shop_mode();') !== false
+    && substr_count($profileForm, 'if ($profileSeller) {') === 3
+    && strpos($profileForm, 'name="b_company" value=') !== false && strpos($profileForm, 'name="s_website" value=') !== false);
+check('and its delete text does not mention listings', strpos($profileForm, "osc_mode_text(\n                    _m('Your listings and messages") !== false);
 check('the profile form fires user_avatar_form', strpos($profileForm, "osc_run_hook('user_avatar_form', ") !== false);
 check('the profile form never lists every city', strpos(
     $profileForm,
