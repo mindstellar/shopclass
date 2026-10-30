@@ -40,13 +40,24 @@ final class ListingHoldJobs
     public static function queue(int $itemId, int $holdDays): void
     {
         $key    = (string) $itemId;
-        $queued = osc_job_enqueue(self::EXPIRE, array('item' => $itemId), array('delay' => $holdDays * 86400, 'unique_key' => $key)) > 0;
+        $queued = osc_job_enqueue(self::EXPIRE, array('item' => $itemId), array('delay' => self::daysAhead($holdDays), 'unique_key' => $key)) > 0;
         if ($queued && $holdDays > 1) {
-            $queued = osc_job_enqueue(self::REMIND, array('item' => $itemId), array('delay' => ($holdDays - 1) * 86400, 'unique_key' => $key)) > 0;
+            $queued = osc_job_enqueue(self::REMIND, array('item' => $itemId), array('delay' => self::daysAhead($holdDays - 1), 'unique_key' => $key)) > 0;
         }
         if (!$queued) {
             throw new \RuntimeException('Unpaid listing jobs were not queued for listing ' . $itemId . '.');
         }
+    }
+
+    /**
+     * Seconds until the same clock time $days days from now. The deadline adds calendar days,
+     * so across a clock change this is an hour more or less than $days * 86400.
+     */
+    public static function daysAhead(int $days, ?\DateTimeImmutable $now = null): int
+    {
+        $now ??= new \DateTimeImmutable();
+
+        return $now->modify('+' . $days . ' days')->getTimestamp() - $now->getTimestamp();
     }
 
     /** Drop the listing's waiting delete and reminder, once it is live or deleted. */

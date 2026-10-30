@@ -85,4 +85,11 @@ pin('admin rights with nobody signed in', array(true, 0), array(Actor::admin(0)-
 pin('a user id of 0 is nobody', null, (new Actor(0, null))->userId());
 pin('withSecret() leaves the original alone', array('', 'x'), array(Actor::user(5)->secret(), Actor::user(5)->withSecret('x')->secret()));
 
+harness_section('the delete job waits whole calendar days, like the deadline');
+$tz     = new DateTimeZone('Europe/London');
+$before = new DateTimeImmutable('2026-03-28 12:00:00', $tz); // the clocks go forward on 29 March
+pin('across the spring change, 2 days are 47 hours', 47 * 3600, \mindstellar\listing\ListingHoldJobs::daysAhead(2, $before));
+pin('across the autumn change, 2 days are 49 hours', 49 * 3600, \mindstellar\listing\ListingHoldJobs::daysAhead(2, new DateTimeImmutable('2026-10-24 12:00:00', $tz)));
+pin('with no change, 2 days are 48 hours', 48 * 3600, \mindstellar\listing\ListingHoldJobs::daysAhead(2, new DateTimeImmutable('2026-06-01 12:00:00', $tz)));
+
 exit(harness_result());
