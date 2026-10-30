@@ -896,7 +896,7 @@ final class OrderStore extends Model
         $names = array();
         $users = array_values(array_unique(array_map(static fn (Order $o): int => $o->getUserId(), $orders)));
         foreach ($users === array() ? array() : UserStore::byIds($users, array('pk_i_id', 's_username', 's_name')) as $row) {
-            $names[(int) $row['pk_i_id']] = (string) ($row['s_name'] ?: $row['s_username']);
+            $names[(int) $row['pk_i_id']] = UserStore::displayName($row);
         }
 
         return array_map(static fn (Order $o): array => array('order' => $o, 'buyer' => $names[$o->getUserId()] ?? ''), $orders);

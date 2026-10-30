@@ -204,6 +204,18 @@ final class UserStore extends Model
     }
 
     /**
+     * The name to show for a user row: the full name, else the username.
+     *
+     * @param array<string,mixed> $row a row with s_name and s_username
+     */
+    public static function displayName(array $row): string
+    {
+        $name = trim((string) ($row['s_name'] ?? ''));
+
+        return $name !== '' ? $name : (string) ($row['s_username'] ?? '');
+    }
+
+    /**
      * Bare rows for these ids, keyed by nothing.
      *
      * @param int[]    $ids

@@ -79,7 +79,7 @@ if ($gateway === null) {
     $gatewayWarning = sprintf(__('The %s payment plugin is not set up.'), $gatewayLabel);
 }
 $pluginsUrl = osc_admin_base_url(true) . '?page=plugins';
-$userName = $user !== null ? ($user['s_name'] ?: $user['s_username']) : __('this user');
+$userName = $user !== null ? \mindstellar\user\UserStore::displayName($user) : __('this user');
 
 $base       = osc_admin_base_url(true) . '?page=billing';
 $actionUrl  = osc_admin_base_url(true);

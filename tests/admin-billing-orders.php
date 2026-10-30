@@ -393,4 +393,8 @@ pin('a bad link is refused', 'NEW2', OrderStore::find($tr->getId())->fulfilment(
 $unshipped = $make('fake');
 pin('an unshipped order cannot take tracking', false, OrderStore::setTracking($unshipped->getId(), 'DHL', 'X', ''));
 
+harness_section('the buyer\'s display name');
+pin('the full name first', 'Asha Rao', \mindstellar\user\UserStore::displayName(array('s_name' => 'Asha Rao', 's_username' => '10')));
+pin('the username when the name is blank', 'asha', \mindstellar\user\UserStore::displayName(array('s_name' => '  ', 's_username' => 'asha')));
+
 exit(harness_result());

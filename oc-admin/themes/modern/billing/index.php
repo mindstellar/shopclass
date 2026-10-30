@@ -160,7 +160,7 @@ $isFiltered = $toShip
                             <?php if ($user !== null) { ?>
                                 <a href="<?php echo osc_esc_html(
                                     osc_admin_base_url(true) . '?page=users&action=edit&id=' . $order->getUserId()
-                                ); ?>"><?php echo osc_esc_html($user['s_name'] ?: $user['s_username']); ?></a>
+                                ); ?>"><?php echo osc_esc_html(\mindstellar\user\UserStore::displayName($user)); ?></a>
                             <?php } else { ?>
                                 <span class="text-muted"><?php _e('Deleted user'); ?></span>
                             <?php } ?>
