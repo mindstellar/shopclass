@@ -58,6 +58,12 @@ foreach (array('osc_user_dashboard_url', 'osc_user_list_items_url', 'osc_user_al
         eval('function ' . $fn . '(...$a) { return WEB_PATH . "' . $fn . '"; }');
     }
 }
+if (!function_exists('osc_is_current_page')) {
+    function osc_is_current_page($location, $section)
+    {
+        return ($GLOBALS['currentPage'] ?? null) === array($location, $section);
+    }
+}
 foreach (array('osc_is_user_dashboard', 'osc_is_list_items', 'osc_is_list_alerts', 'osc_is_user_profile', 'osc_is_messages_page', 'osc_is_change_email_page', 'osc_is_change_password_page', 'osc_is_change_username_page', 'osc_is_current_page', 'osc_get_osclass_location') as $fn) {
     if (!function_exists($fn)) {
         eval('function ' . $fn . '(...$a) { return false; }');
@@ -425,6 +431,15 @@ $body  = $m[1] ?? '';
 $check = strpos($body, 'osc_csrf_check();');
 $write = min(array_filter(array(strpos($body, 'publishWithCredits('), strpos($body, 'ListingCheckout::'), PHP_INT_MAX), 'is_int'));
 check('publishPost() checks the token first', $check !== false && $check < $write);
+
+harness_section('account menu on the pay step');
+$GLOBALS['currentPage'] = array('billing', 'publish');
+$menu = osc_account_nav_items(array(
+    array('name' => 'Your listings', 'url' => '#', 'class' => 'opt_items'),
+    array('name' => 'Credits', 'url' => '#', 'class' => 'opt_billing_wallet'),
+));
+unset($GLOBALS['currentPage']);
+pin('the pay step marks Your listings, not Credits', array('opt_items'), array_column(array_filter($menu, static fn ($e) => $e['current']), 'class'));
 
 $_SERVER['REQUEST_METHOD'] = 'GET';
 exit(harness_result());

@@ -63,7 +63,7 @@ final class CurrencyService
     }
 
     /**
-     * An order amount as the shop shows it, e.g. "₹448" or "-₹150". Only a zero delivery
+     * An order amount as the shop shows it, e.g. "₹448" or "−₹150". Only a zero delivery
      * charge reads "Free".
      */
     public function money(int $micros, string $code, bool $delivery = false): string

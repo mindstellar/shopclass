@@ -63,6 +63,8 @@ check('the text is escaped and keeps its lines', str_contains($text, 'Pay &lt;b&
 check('an IBAN with no spaces is found', str_contains($text, '<code class="oe-copy-value">DE89370400440532013000</code>'));
 check('a code too short for an IBAN is left as text', str_contains($text, 'ref AB12 CD34') && substr_count($text, 'oe-copy-value') === 1);
 check('the Copy button waits for the script', str_contains($text, '" hidden>Copy</button>'));
+$dot = osc_gui_payment_text("Wire transfer to IBAN GB00 TEST 0000 0000 00.\nThanks.");
+check('no full stop follows the Copy button', str_contains($dot, "</button></span><br>\nThanks."));
 
 harness_section('a list with a credits order');
 $credits = OrderStore::create($tom, 'offline', 5000000, 'USD', 100, []);

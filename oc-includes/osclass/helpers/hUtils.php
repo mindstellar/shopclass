@@ -545,7 +545,8 @@ function osc_account_nav_items(?array $items = null, bool $markCurrent = true): 
     $current = '';
     if (osc_is_user_dashboard()) {
         $current = 'opt_dashboard';
-    } elseif (osc_is_list_items()) {
+    } elseif (osc_is_list_items() || osc_is_current_page('billing', 'publish')) {
+        // The pay step after posting belongs to the seller's listings.
         $current = 'opt_items';
     } elseif (osc_is_list_alerts()) {
         $current = 'opt_alerts';

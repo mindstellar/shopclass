@@ -315,6 +315,9 @@ foreach ($controllers as $class => [$file, $expected, $fallback]) {
     } else {
         check("any other action goes to $fallback", method_exists($class, $fallback) && strpos($dispatch, "actionMethod('$fallback')") !== false);
     }
+    if ($class === 'CWebUser') {
+        check('an unknown account page is a 404, not a blank page', strpos($dispatch, '$this->do404()') !== false);
+    }
 }
 /** A controller with a two-action map, to drive ActionMap directly. */
 final class ActionMapProbe

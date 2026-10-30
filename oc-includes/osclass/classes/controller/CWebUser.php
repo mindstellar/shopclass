@@ -32,7 +32,7 @@ class CWebUser extends WebSecBaseModel
 {
     use \mindstellar\base\ActionMap;
 
-    /** Each action and the method that answers it; any other action does nothing. */
+    /** Each action and the method that answers it; any other named action is a 404. */
     private const ACTIONS = array(
         'dashboard'            => 'dashboard',
         'profile'              => 'profile',
@@ -81,6 +81,10 @@ class CWebUser extends WebSecBaseModel
     {
         $method = $this->actionMethod(null);
         if ($method === null) {
+            if (is_string($this->action) && $this->action !== '') {
+                $this->do404();
+            }
+
             return;
         }
         $this->redirectShopperHome();

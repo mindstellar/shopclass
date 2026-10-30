@@ -170,7 +170,7 @@ osc_add_filter('cart_discount_lines', $promo);
 $q = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $large . ':7'])->body()['data'];
 osc_remove_filter('cart_discount_lines', $promo);
 $f = static fn (array $a): string => (string) $a['formatted'];
-pin('a discount reads with the minus before the symbol', [true, false], [str_starts_with($f($q['discounts'][0]['amount']), '-'), str_contains(substr($f($q['discounts'][0]['amount']), 1), '-')]);
+pin('a discount reads with the minus before the symbol', [true, false], [str_starts_with($f($q['discounts'][0]['amount']), "\u{2212}"), str_contains(mb_substr($f($q['discounts'][0]['amount']), 1), "\u{2212}")]);
 $zero = static fn (string $t): bool => $t !== '' && $t !== 'Free';
 pin('a zero tax or fee reads as an amount; only zero delivery reads Free', [true, true, 'Free', 'Free'], [$zero($f($q['totals']['tax'])), $zero($f($q['totals']['fee'])), $f($q['totals']['shipping']), $f($q['shipping']['amount'])]);
 

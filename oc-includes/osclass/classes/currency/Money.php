@@ -32,7 +32,8 @@ final class Money
 
     /**
      * An amount as the shop shows it, in the locale's currency format: "₹1,234", "₹1,234.50",
-     * "-₹150", "₹0". Whole amounts drop their decimals; zero is never "Free".
+     * "−₹150", "₹0". Whole amounts drop their decimals; zero is never "Free". A negative
+     * amount takes the minus sign (U+2212), as the cart and checkout show it.
      */
     public static function display(int $micros, string $symbol): string
     {
@@ -48,7 +49,7 @@ final class Money
             (string) osc_locale_currency_format()
         );
 
-        return ($micros < 0 && $rounded > 0 ? '-' : '') . $text;
+        return ($micros < 0 && $rounded > 0 ? "\u{2212}" : '') . $text;
     }
 
     /**

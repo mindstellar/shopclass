@@ -14,6 +14,7 @@ namespace mindstellar\billing;
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\boot\CoreServices;
 use mindstellar\currency\CurrencyService;
+use mindstellar\location\LocationQuery;
 use mindstellar\mail\CoreEmails;
 use RuntimeException;
 use Throwable;
@@ -428,6 +429,32 @@ final class Receipts
             'business' => self::businessDetails(),
             'refunded' => $order->getStatus() === Order::STATUS_REFUNDED,
             'details'  => $order->isGoods() ? self::details($order) : null,
+        ) + self::brand();
+    }
+
+    /**
+     * The logo and accent colour the site's e-mails use, so the receipt matches them.
+     *
+     * @return array{logo:string,accent:string}
+     */
+    private static function brand(): array
+    {
+        $mail   = (array) osc_apply_filter('mail_layout_vars', array(
+            'body'      => '',
+            'subject'   => '',
+            'preheader' => '',
+            'site_name' => osc_page_title(),
+            'site_url'  => osc_base_url(),
+            'logo_url'  => '',
+            'accent'    => '#0b7269',
+            'footer'    => '',
+        ), array());
+        $logo   = (string) ($mail['logo_url'] ?? '');
+        $accent = (string) ($mail['accent'] ?? '');
+
+        return array(
+            'logo'   => preg_match('~^(https?:)?//[^\s<>"\']+$~i', $logo) === 1 ? $logo : '',
+            'accent' => preg_match('/^#[0-9a-f]{3,8}$/i', $accent) === 1 ? $accent : '#0b7269',
         );
     }
 
@@ -480,9 +507,9 @@ final class Receipts
         }
         $fulfilment = $order->fulfilment() ?? array();
         $address    = array();
-        foreach ((array) ($fulfilment['address'] ?? array()) as $part) {
+        foreach ((array) ($fulfilment['address'] ?? array()) as $key => $part) {
             if (is_string($part) && trim($part) !== '') {
-                $address[] = trim($part);
+                $address[] = $key === 'country' ? self::countryName(trim($part)) : trim($part);
             }
         }
         $note    = $order->meta('_note');
@@ -509,6 +536,16 @@ final class Receipts
             'summary' => $event->summaryRows(),
             'footer'  => $event->footer(),
         ) + $details;
+    }
+
+    /**
+     * A country's name for its two-letter code, or the code when the site does not know it.
+     */
+    private static function countryName(string $code): string
+    {
+        $name = (new LocationQuery())->lineage(strtoupper($code), 0, 0)['countryName'] ?? null;
+
+        return is_string($name) && $name !== '' ? $name : $code;
     }
 
     /**

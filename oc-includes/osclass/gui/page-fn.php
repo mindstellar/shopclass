@@ -265,8 +265,12 @@ if (!function_exists('osc_gui_payment_text')) {
                 if (!in_array($match, $values, true) && (strlen($bare) < 15 || strlen($bare) > 34)) {
                     continue;
                 }
-                $html .=osc_esc_html(substr($text, $pos, $at - $pos)) . osc_gui_copy_value($match);
+                $html .= osc_esc_html(substr($text, $pos, $at - $pos)) . osc_gui_copy_value($match);
                 $pos   = $at + strlen($match);
+                // A full stop or comma after a copied value would sit after its Copy button.
+                if (preg_match('/\G[.,;:](?=\s|$)/', $text, $m, 0, $pos)) {
+                    ++$pos;
+                }
             }
         }
 
