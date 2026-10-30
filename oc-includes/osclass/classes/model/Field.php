@@ -179,7 +179,7 @@ class Field extends DAO
 
         $extendedFields = array();
         foreach (Db::stringifyRows($fields) as $field) {
-            $extendedFields[] = $this->extendField($field);
+            $extendedFields[]    = $this->extendField($field);
         }
 
         return $extendedFields;
@@ -364,65 +364,30 @@ class Field extends DAO
             return array();
         }
 
-        // resolve fields down the category inheritance path (leaf + ancestors), so
-        // a field assigned to a parent category renders on a child category's item.
-        // Loose fields (via t_meta_categories) and grouped fields (via a group
-        // assigned through t_meta_group_categories) are unioned; each row carries its
-        // section (cf_group_name / cf_group_position) so the form can render groups
-        // as sections while a flat theme loop still sees every field.
-        $path = $this->categoryPath($catId);
-        if (empty($path)) {
-            return array();
-        }
-        $p      = DB_TABLE_PREFIX;
-        $itemId = (int)$itemId;
-
-        // Path ids (each an (int) from categoryPath) fill the two IN lists via
-        // generated placeholders; the item id — already (int)-cast above — is the
-        // final bound value on the LEFT JOIN. Params are in textual order: the
-        // first arm's IN, the second arm's IN, then the join's item id. Every
-        // identifier is a literal or the DB_TABLE_PREFIX constant.
-        $placeholders = implode(', ', array_fill(0, count($path), '?'));
-
-        // Loose fields carry their global position; grouped fields carry their
-        // per-form position from the link table (cf_field_position), so ordering and
-        // sectioning survive a field living in several forms.
-        $sql = 'SELECT query.*, im.s_value as s_value, im.fk_i_item_id FROM ('
-            . 'SELECT mf.*, NULL AS cf_group_name, 0 AS cf_group_position, mf.i_position AS cf_field_position'
-            . ' FROM ' . $p . 't_meta_fields mf, ' . $p . 't_meta_categories mc'
-            . ' WHERE mc.fk_i_category_id IN (' . $placeholders . ') AND mf.pk_i_id = mc.fk_i_field_id'
-            . ' AND NOT EXISTS (SELECT 1 FROM ' . $p . 't_meta_group_fields gfx WHERE gfx.fk_i_field_id = mf.pk_i_id)'
-            . ' UNION '
-            . 'SELECT mf.*, g.s_name AS cf_group_name, g.i_position AS cf_group_position, gf.i_position AS cf_field_position'
-            . ' FROM ' . $p . 't_meta_fields mf'
-            . ' JOIN ' . $p . 't_meta_group_fields gf ON gf.fk_i_field_id = mf.pk_i_id'
-            . ' JOIN ' . $p . 't_meta_group g ON gf.fk_i_group_id = g.pk_i_id'
-            . ' JOIN ' . $p . 't_meta_group_categories gc ON gc.fk_i_group_id = g.pk_i_id'
-            . ' WHERE gc.fk_i_category_id IN (' . $placeholders . ')'
-            . ') as query'
-            . ' LEFT JOIN ' . $p . 't_item_meta im ON im.fk_i_field_id = query.pk_i_id AND im.fk_i_item_id = ?'
-            . ' ORDER BY query.cf_group_position ASC, query.cf_field_position ASC';
-
+        // The search order: one query decides it for both. A field with several stored rows
+        // (DATEINTERVAL from/to) shows its first value, as before.
         try {
-            $result = Db::select($sql, array_merge($path, $path, array($itemId)));
+            $fields = \mindstellar\fields\FieldQuery::forCategory((int) $catId);
+            $values = array();
+            if ($fields !== array() && (int) $itemId > 0) {
+                $rows = Db::select(
+                    'SELECT fk_i_field_id, s_value FROM ' . DB_TABLE_PREFIX . 't_item_meta WHERE fk_i_item_id = ?',
+                    array((int) $itemId)
+                );
+                foreach (Db::stringifyRows($rows) as $row) {
+                    $values[$row['fk_i_field_id']] ??= $row;
+                }
+            }
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        // Render-time dedup: a field reused across several forms/
-        // categories reaches the context multiple times; keep the FIRST occurrence
-        // (lowest group then field position) so the item form never emits two
-        // meta[id] inputs. This also collapses a field's multiple t_item_meta rows
-        // (e.g. DATEINTERVAL from/to), matching the old GROUP BY pk_i_id behaviour.
         $extendedFields = array();
-        $seen           = array();
-        foreach (Db::stringifyRows($result) as $field) {
-            $id = $field['pk_i_id'];
-            if (isset($seen[$id])) {
-                continue;
-            }
-            $seen[$id] = true;
-            $extendedFields[] = $this->extendField($field);
+        foreach ($fields as $field) {
+            $value               = $values[$field['pk_i_id']] ?? null;
+            $field['s_value']      = $value['s_value'] ?? null;
+            $field['fk_i_item_id'] = $value === null ? null : (string) (int) $itemId;
+            $extendedFields[]    = $this->extendField($field);
         }
 
         return $extendedFields;
@@ -467,7 +432,7 @@ class Field extends DAO
         // extend fields
         $extendedFields = array();
         foreach (Db::stringifyRows($fields) as $field) {
-            $extendedFields[] = $this->extendField($field);
+            $extendedFields[]    = $this->extendField($field);
         }
 
         return $extendedFields;

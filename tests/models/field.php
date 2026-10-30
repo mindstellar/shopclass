@@ -514,8 +514,8 @@ pin(
     array_column($catFields, 'pk_i_id')
 );
 pin(
-    'each row is mf.* plus cf_group_position plus the appended locale key',
-    array('pk_i_id', 's_name', 's_slug', 'e_type', 's_options', 'b_required', 'b_searchable', 's_meta', 'i_position', 'fk_i_group_id', 'cf_group_position', 'locale'),
+    'each row is mf.* plus its section and positions plus the appended locale key',
+    array('pk_i_id', 's_name', 's_slug', 'e_type', 's_options', 'b_required', 'b_searchable', 's_meta', 'i_position', 'fk_i_group_id', 'cf_group_name', 'cf_group_position', 'cf_field_position', 'locale'),
     array_keys($catFields[0])
 );
 $catRowCols = $catFields[0];
@@ -569,6 +569,23 @@ pin(
     array((string)$oLoose, (string)$oB, (string)$oC, (string)$oA),
     array_column($model->findByCategory($oCat), 'pk_i_id')
 );
+
+harness_section('Field::findByCategory — search and the post form share one order');
+// X sits in two forms: position 5 in the first form, 0 in the second. It sorts by its
+// place in the first form, after Y, for search and for the post form alike.
+$oCat   = seed_category($admin, 'Shared order');
+$oFormA = $seedGroup('Form A', 'form-a', 1);
+$oFormB = $seedGroup('Form B', 'form-b', 2);
+$oX     = $seedField('X', 'x-shared');
+$oY     = $seedField('Y', 'y-shared');
+$linkFieldToGroup($oFormA, $oX, 5);
+$linkFieldToGroup($oFormA, $oY, 3);
+$linkFieldToGroup($oFormB, $oX, 0);
+$linkGroupToCat($oFormA, $oCat);
+$linkGroupToCat($oFormB, $oCat);
+pin('search order follows the first form', array((string)$oY, (string)$oX), array_column($model->findByCategory($oCat), 'pk_i_id'));
+pin('the post form has the same order', array((string)$oY, (string)$oX), array_column($model->findByCategoryItem($oCat, 0), 'pk_i_id'));
+pin('the post form keeps the first form as the section', array('Form A', 'Form A'), array_column($model->findByCategoryItem($oCat, 0), 'cf_group_name'));
 
 harness_section('Field::findByCategory — the parent does not see the child\'s fields');
 
