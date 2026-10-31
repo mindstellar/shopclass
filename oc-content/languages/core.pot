@@ -16989,6 +16989,7 @@ msgid "You have to create the <code>languages</code> folder, i.e.: "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
+#: oc-admin/themes/modern/appearance/index.php
 msgid "You have unpublished changes"
 msgstr ""
 

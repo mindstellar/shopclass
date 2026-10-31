@@ -88,6 +88,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Once a listing waiting for payment goes live, its other open orders are cancelled.
 - A language package can set its thousands separator and decimal point.
 - Themes that turn off core's styles should style the new pay step classes (`oe-bill-*`, `oe-callout`, `oe-copy*`).
+- Appearance → Themes says when you have unpublished Customise changes.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.

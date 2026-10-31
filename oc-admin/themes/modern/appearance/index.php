@@ -195,6 +195,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 $themeMeta($info),
                 $activeParent !== null && !$parentMissing
                     ? array(sprintf(__('extends %s'), osc_esc_html($nameOf($activeParent))))
+                    : array(),
+                (static function () {
+                    // A database fault reads as "no draft" so the screen still loads.
+                    try {
+                        return \mindstellar\widgets\Customiser::forCurrentAdmin()?->draft()->read() !== null;
+                    } catch (\mindstellar\database\DbException $e) {
+                        return false;
+                    }
+                })()
+                    ? array('<strong>' . osc_esc_html(__('You have unpublished changes')) . '</strong>')
                     : array()
             ),
             'description' => $info['description'],
