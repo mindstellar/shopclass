@@ -391,7 +391,8 @@ class Field
                 $saved = !isset($spec['placeholder'])
                     && (!empty($spec['stored']) || (string)$value !== '');
                 echo '<input type="password"' . $common . ' class="' . self::cssClass($type, $spec) . '"'
-                    . ' value="" autocomplete="off" spellcheck="false"'
+                    . ' value=""' . (isset($extra['autocomplete']) ? '' : ' autocomplete="off"')
+                    . ' spellcheck="false"'
                     . ($saved ? ' placeholder="••••••••"' : '')
                     . $attrs . ' />';
                 if (!empty($spec['reveal'])) {
