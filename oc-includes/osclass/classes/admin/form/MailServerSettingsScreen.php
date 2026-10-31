@@ -50,7 +50,9 @@ final class MailServerSettingsScreen extends SettingsScreen
                 ->set('max', 65535)
                 ->default(0)
             ->text('mailserver_username', __('Username'))
+                ->set('attrs', array('autocomplete' => 'off'))
             ->secret('mailserver_password', __('Password'), __('Leave blank to keep the current password.'))
+                ->set('attrs', array('autocomplete' => 'new-password'))
                 ->set('masked', true)
                 ->set('reveal', true)
                 // Masked, so the stored value is read back only to know there is one -- the

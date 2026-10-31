@@ -383,7 +383,8 @@ class Field
                 $masked = !empty($spec['masked']);
                 echo '<input type="password"' . $common . ' class="' . self::cssClass($type, $spec) . '"'
                     . ' value="' . ($masked ? '' : osc_esc_html((string)$value)) . '"'
-                    . ' autocomplete="off" spellcheck="false"'
+                    . (isset($extra['autocomplete']) ? '' : ' autocomplete="off"')
+                    . ' spellcheck="false"'
                     . ($masked && (string)$value !== '' ? ' placeholder="••••••••"' : '')
                     . $attrs . ' />';
                 if (!empty($spec['reveal'])) {
