@@ -120,6 +120,8 @@ use mindstellar\apikey\ApiSettings;
 use mindstellar\apikey\CredentialKind;
 use mindstellar\apikey\KeyOwner;
 use mindstellar\apikey\Scopes;
+use mindstellar\container\Container;
+use mindstellar\location\LocationNames;
 use mindstellar\location\LocationNameStore;
 use mindstellar\model\ApiCredential;
 use mindstellar\utility\SystemClock;
@@ -199,10 +201,38 @@ scratchdb_forget_cache();
 harness_reset_container();
 $_COOKIE['oc_userLocale'] = 'en_US';
 
+harness_section('Query count');
+$placeRow = array(array('fk_i_city_id' => $city, 's_city' => 'Cologne', 'fk_i_region_id' => $region, 's_region' => 'Rhineland', 'fk_c_country_code' => 'DE', 's_country' => 'Germany'));
+$translate = static function () use ($placeRow): array {
+    harness_reset_container();
+
+    return Container::root()->get(LocationNames::class)->translateRows($placeRow, 'de_DE');
+};
+$admin->query("DELETE FROM {$p}t_preference WHERE s_name = 'location_names'");
+Preference::getInstance()->toArray();
+$translate();
+pin('with no names stored, rows are not looked up at all', 0, harness_query_count($translate));
+pin('and are unchanged', 'Cologne', $translate()[0]['s_city']);
+
 $store = new LocationNameStore();
 $store->set('city', $city, 'de_DE', 'Köln');
 $store->set('region', $region, 'de_DE', 'Rheinland');
 $store->set('country', 'DE', 'de_DE', 'Deutschland');
+pin('with names stored, city, region and country take one query', 1, harness_query_count($translate));
+pin('and show in the language asked for', array('Köln', 'Rheinland', 'Deutschland'), array_values(array_intersect_key($translate()[0], array_flip(array('s_city', 's_region', 's_country')))));
+$setFlag = static function (string $v) use ($admin, $p): void {
+    $admin->query("UPDATE {$p}t_preference SET s_value = '$v' WHERE s_name = 'location_names'");
+    scratchdb_forget_cache();
+    Preference::getInstance()->toArray();
+};
+$setFlag('0@' . time());
+pin('names that arrive outside the store stay hidden while the empty mark is fresh', 'Cologne', $translate()[0]['s_city']);
+$setFlag('0@' . (time() - 1800));
+pin('and while it is half an hour old', 'Cologne', $translate()[0]['s_city']);
+$setFlag('0@' . (time() - 3601));
+pin('and show once the empty mark is an hour old', 'Köln', $translate()[0]['s_city']);
+$setFlag('0');
+pin('an empty mark from before the hour limit counts as old', 'Köln', $translate()[0]['s_city']);
 $count = static fn (): int => (int) $admin->query("SELECT COUNT(*) c FROM {$p}t_location_name")->fetch_assoc()['c'];
 
 harness_section('Item::extendRows()');
@@ -301,6 +331,19 @@ foreach (array($bulkA, $bulkB) as $bulkId) {
     (new \mindstellar\location\LocationService())->delete('city', $bulkId);
 }
 pin('a multi-select delete removes the names of every city it took', array(array(), array()), array($store->all('city', (string) $bulkA), $store->all('city', (string) $bulkB)));
+
+harness_section('Cached names follow every write');
+$cached = seed_city($admin, $region, 'Trier', $country);
+$store->set('city', $cached, 'de_DE', 'Trier A');
+pin('the first read finds the name', array((string) $cached => 'Trier A'), $store->names('city', array($cached), 'de_DE'));
+$store->set('city', $cached, 'de_DE', 'Trier B');
+pin('a renamed place reads its new name', array((string) $cached => 'Trier B'), $store->names('city', array($cached), 'de_DE'));
+$store->set('city', $cached, 'de_DE', '');
+pin('a cleared name is gone', array(), $store->names('city', array($cached), 'de_DE'));
+$store->set('city', $cached, 'de_DE', 'Trier C');
+$store->names('city', array($cached), 'de_DE');
+$store->forget('city', $cached);
+pin('a forgotten place has no name', array(), $store->names('city', array($cached), 'de_DE'));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

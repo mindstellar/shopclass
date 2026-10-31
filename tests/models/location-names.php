@@ -78,7 +78,7 @@ $names = new LocationNames($store);
 $q = harness_query_count(static function () use ($names, $cologne, $region): void {
     $names->prime('de_DE', ['city' => [$cologne], 'region' => [$region], 'country' => ['DE']]);
 });
-pin('prime() for three types runs three queries', 3, $q);
+pin('prime() for three types runs one query', 1, $q);
 $q = harness_query_count(static function () use ($names, $cologne, $region): void {
     $names->prime('de_DE', ['city' => [$cologne], 'region' => [$region], 'country' => ['DE']]);
 });

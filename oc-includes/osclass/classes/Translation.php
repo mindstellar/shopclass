@@ -28,6 +28,9 @@ class Translation
     private static $instance;
     private $translator;
 
+    /** @var array<string,array<string,mixed>> compiled catalogues read this request, by cache path */
+    private static array $compiled = array();
+
     /**
      * Translation constructor.
      *
@@ -40,6 +43,11 @@ class Translation
             protected function getTranslation($domain, $context, $original)
             {
                 return parent::getTranslation($domain, $context ?? '', $original);
+            }
+
+            public function hasDomain(string $domain): bool
+            {
+                return isset($this->dictionary[$domain]);
             }
         };
         if (!$install) {
@@ -162,12 +170,21 @@ class Translation
         // stake here is the speed-up.
         $cache = $this->cachePath($file, $domain);
 
+        // Start-up builds the translator twice (a theme's functions.php asks for a text first), so
+        // a catalogue read once this request is not read again.
+        if ($cache !== null && isset(self::$compiled[$cache])) {
+            $this->loadCompiled(self::$compiled[$cache]);
+
+            return $this;
+        }
+
         if ($cache !== null && is_file($cache)) {
             $cached = @file_get_contents($cache);
             if ($cached !== false && $cached !== '') {
                 $translations = @unserialize($cached, array('allowed_classes' => false));
-                if (is_array($translations)) {
-                    $this->translator->loadTranslations($translations);
+                if (is_array($translations) && is_array($translations['messages'] ?? null)) {
+                    self::$compiled[$cache] = $translations;
+                    $this->loadCompiled($translations);
 
                     return $this;
                 }
@@ -215,7 +232,8 @@ class Translation
             return null;
         }
 
-        $stamp = md5($file . '|' . $domain . '|' . filesize($file) . '|' . filemtime($file));
+        // The trailing 2 is the cache format: entries compiled by older versions are left unread.
+        $stamp = md5($file . '|' . $domain . '|' . filesize($file) . '|' . filemtime($file) . '|2');
 
         // Deliberately not a .php file. This directory is inside the web root and is
         // writable, and executable content is exactly what turns a stray file-write
@@ -235,7 +253,61 @@ class Translation
      */
     private function writeCache($cache, $translations)
     {
-        \mindstellar\utility\FileSystem::writeAtomic($cache, serialize(Gettext\Generators\PhpArray::generate($translations)));
+        \mindstellar\utility\FileSystem::writeAtomic($cache, serialize(self::splitUnchanged(Gettext\Generators\PhpArray::generate($translations))));
+    }
+
+    /**
+     * Move the entries whose text is the original (an en_US catalogue is mostly these) into one
+     * packed string, so reading the catalogue skips them. Only for English plural rules, where a
+     * missing entry and such an entry give the same text.
+     *
+     * @param array<string,mixed> $compiled
+     *
+     * @return array<string,mixed>
+     */
+    private static function splitUnchanged(array $compiled): array
+    {
+        $rule = rtrim((string) preg_replace('/\s+/', '', (string) ($compiled['plural-forms'] ?? '')), ';');
+        if (!is_array($compiled['messages'] ?? null) || !in_array($rule, array('', 'nplurals=2;plural=(n!=1)', 'nplurals=2;plural=n!=1'), true)) {
+            return $compiled;
+        }
+        $same = array();
+        foreach ($compiled['messages'] as $context => $messages) {
+            foreach ((array) $messages as $original => $translation) {
+                if ((string) $original !== '' && is_array($translation) && count($translation) === 1
+                    && ($translation[0] ?? null) === (string) $original
+                ) {
+                    $same[$context][$original] = $translation;
+                    unset($compiled['messages'][$context][$original]);
+                }
+            }
+        }
+        if ($same !== array()) {
+            $compiled['unchanged'] = serialize($same);
+        }
+
+        return $compiled;
+    }
+
+    /**
+     * Load a compiled catalogue. Its unchanged entries are needed only on top of another
+     * catalogue of the same domain, where they replace that one's texts.
+     *
+     * @param array<string,mixed> $compiled
+     */
+    private function loadCompiled(array $compiled): void
+    {
+        if (isset($compiled['unchanged'])) {
+            $domain = (string) ($compiled['domain'] ?? '');
+            if (!method_exists($this->translator, 'hasDomain') || $this->translator->hasDomain($domain)) {
+                $same = @unserialize((string) $compiled['unchanged'], array('allowed_classes' => false));
+                if (is_array($same)) {
+                    $compiled['messages'] = array_replace_recursive($same, $compiled['messages']);
+                }
+            }
+            unset($compiled['unchanged']);
+        }
+        $this->translator->loadTranslations($compiled);
     }
 
     /**

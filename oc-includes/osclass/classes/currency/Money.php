@@ -37,16 +37,17 @@ final class Money
      */
     public static function display(int $micros, string $symbol): string
     {
+        $locale   = _osc_user_locale_row();
         $value    = abs($micros) / self::MICROS;
-        $decimals = (int) osc_locale_num_dec();
+        $decimals = (int) $locale['i_num_dec'];
         $rounded  = round($value, $decimals);
         if ($decimals > 0 && $rounded == floor($rounded)) {
             $decimals = 0;
         }
         $text = str_replace(
             array('{NUMBER}', '{CURRENCY}'),
-            array(number_format($value, $decimals, osc_locale_dec_point(), osc_locale_thousands_sep()), $symbol),
-            (string) osc_locale_currency_format()
+            array(number_format($value, $decimals, $locale['s_dec_point'], $locale['s_thousands_sep']), $symbol),
+            (string) $locale['s_currency_format']
         );
 
         return ($micros < 0 && $rounded > 0 ? "\u{2212}" : '') . $text;

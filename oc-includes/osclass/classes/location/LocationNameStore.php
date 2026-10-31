@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\location;
 
+use mindstellar\cache\CacheGroup;
 use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 
@@ -27,6 +28,13 @@ final class LocationNameStore
 
     private const TYPES = [self::COUNTRY, self::REGION, self::CITY];
 
+    /** Preference: '1' once a name is saved, '0' while the table is known to be empty, missing when not yet checked. */
+    private const FLAG = 'location_names';
+
+    private const EMPTY_TTL = 3600;
+
+    private const CACHE_GROUP = 'location-name';
+
     /**
      * Names in one language, in one query.
      *
@@ -36,22 +44,41 @@ final class LocationNameStore
      */
     public function names(string $type, array $ids, string $locale): array
     {
-        $keys = [];
-        foreach ($ids as $id) {
-            $keys[$this->key($type, $id)] = true;
+        return $this->namesByType([$type => $ids], $locale)[$type] ?? [];
+    }
+
+    /**
+     * Names in one language for several place types, in one query; none when no name is stored.
+     *
+     * @param array<string,array<int,int|string>> $idsByType place type => ids
+     *
+     * @return array<string,array<string,string>> place type => id => name; places with no row are left out
+     */
+    public function namesByType(array $idsByType, string $locale): array
+    {
+        $where  = [];
+        $params = [];
+        foreach ($idsByType as $type => $ids) {
+            $keys = [];
+            foreach ($ids as $id) {
+                $keys[$this->key((string) $type, $id)] = true;
+            }
+            if ($keys === []) {
+                continue;
+            }
+            $where[] = '(e_place_type = ? AND s_place_id IN (' . implode(',', array_fill(0, count($keys), '?')) . '))';
+            array_push($params, (string) $type, ...array_map('strval', array_keys($keys)));
         }
-        if ($keys === []) {
+        if ($where === [] || !$this->anyStored()) {
             return [];
         }
-        $keys   = array_keys($keys);
-        $marks  = implode(',', array_fill(0, count($keys), '?'));
-        $rows   = Db::select(
-            'SELECT s_place_id, s_name FROM ' . self::table() . ' WHERE e_place_type = ? AND s_place_id IN (' . $marks . ') AND fk_c_locale_code = ?',
-            array_merge([$type], array_map('strval', $keys), [$locale])
-        );
+        $params[] = $locale;
+        $sql      = 'SELECT e_place_type, s_place_id, s_name FROM ' . self::table() . ' WHERE (' . implode(' OR ', $where) . ') AND fk_c_locale_code = ?';
+        // Cached like other place data, so a page served from the object cache needs no database.
+        $rows = CacheGroup::remember(self::CACHE_GROUP, md5($sql . '|' . implode("\0", $params)), static fn (): array => Db::select($sql, $params));
         $names = [];
         foreach ($rows as $row) {
-            $names[(string) $row['s_place_id']] = (string) $row['s_name'];
+            $names[(string) $row['e_place_type']][(string) $row['s_place_id']] = (string) $row['s_name'];
         }
 
         return $names;
@@ -86,6 +113,7 @@ final class LocationNameStore
         $rows = Db::table(self::table());
         if ($name === '') {
             $rows->where('e_place_type', $type)->where('s_place_id', $key)->where('fk_c_locale_code', $locale)->delete();
+            CacheGroup::changed(self::CACHE_GROUP);
 
             return;
         }
@@ -95,6 +123,10 @@ final class LocationNameStore
             'fk_c_locale_code' => $locale,
             's_name'           => $name,
         ], ['s_name']);
+        CacheGroup::changed(self::CACHE_GROUP);
+        if (\Preference::getInstance()->get(self::FLAG) !== '1') {
+            \Preference::getInstance()->replace(self::FLAG, '1');
+        }
     }
 
     /**
@@ -103,6 +135,7 @@ final class LocationNameStore
     public function forget(string $type, int|string $id): void
     {
         Db::table(self::table())->where('e_place_type', $this->checkedType($type))->where('s_place_id', $this->key($type, $id))->delete();
+        CacheGroup::changed(self::CACHE_GROUP);
     }
 
     /**
@@ -171,6 +204,36 @@ final class LocationNameStore
         );
 
         return array_values(array_unique(array_map(static fn (array $row): string => (string) $row['s_place_id'], $rows)));
+    }
+
+    /**
+     * Whether any name may be stored. Deletes never clear the flag, and the empty mark is only
+     * written over a missing one, so a name saved meanwhile always wins. The empty mark is
+     * checked again after an hour, for names that arrive outside the store (a SQL import).
+     */
+    private function anyStored(): bool
+    {
+        $flag = (string) \Preference::getInstance()->get(self::FLAG);
+        if ($flag === '1') {
+            return true;
+        }
+        if (str_starts_with($flag, '0@') && time() - (int) substr($flag, 2) < self::EMPTY_TTL) {
+            return false;
+        }
+        if (Db::selectOne('SELECT 1 FROM ' . self::table() . ' LIMIT 1') !== null) {
+            \Preference::getInstance()->replace(self::FLAG, '1');
+
+            return true;
+        }
+        Db::execute(
+            'INSERT INTO ' . DB_TABLE_PREFIX . "t_preference (s_section, s_name, s_value, e_type) VALUES ('osclass', ?, ?, 'STRING')"
+            . " ON DUPLICATE KEY UPDATE s_value = IF(s_value = '1', s_value, VALUES(s_value))",
+            [self::FLAG, $empty = '0@' . time()]
+        );
+        CacheGroup::changed('preference');
+        \Preference::getInstance()->set(self::FLAG, $empty);
+
+        return false;
     }
 
     private function key(string $type, int|string $id): string

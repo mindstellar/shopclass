@@ -33,6 +33,9 @@ final class Dispatcher implements DispatcherInterface
 
     private int $added = 0;
 
+    /** @var (\Closure(?string):void)|null runs before a class's listeners are read, or with null before one is added */
+    private ?\Closure $before = null;
+
     /**
      * @param ContainerInterface $container where instance methods of lazy pairs come from
      */
@@ -48,6 +51,9 @@ final class Dispatcher implements DispatcherInterface
      */
     public function listen(string $eventClass, $listener, int $priority = 5): void
     {
+        if ($this->before !== null) {
+            ($this->before)(null);
+        }
         foreach ($this->listeners[$eventClass] ?? [] as $entry) {
             if ($entry[2] === $listener) {
                 return;
@@ -55,6 +61,19 @@ final class Dispatcher implements DispatcherInterface
         }
         $this->listeners[$eventClass][] = [$priority, $this->added++, $listener];
         $this->runOrder                 = [];
+    }
+
+    /**
+     * Run $fn before the listeners of a class are read, with that class, and before a listener is
+     * added, with null. The hook bridge adds the callbacks it holds back this way.
+     *
+     * @internal for the hook bridge; not a plugin API.
+     *
+     * @param (\Closure(?string):void)|null $fn
+     */
+    public function beforeListeners(?\Closure $fn): void
+    {
+        $this->before = $fn;
     }
 
     /**
@@ -91,6 +110,9 @@ final class Dispatcher implements DispatcherInterface
      */
     public function listenersFor(string $eventClass): array
     {
+        if ($this->before !== null) {
+            ($this->before)($eventClass);
+        }
         if (isset($this->runOrder[$eventClass])) {
             return $this->runOrder[$eventClass];
         }

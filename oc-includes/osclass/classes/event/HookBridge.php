@@ -24,6 +24,14 @@ final class HookBridge
     /** @var array<string,class-string<Bridged>> hook name => the event class that owns it */
     private array $owners = [];
 
+    /** @var array<string,true> every name any bridge owns, so Plugins can skip the container for the rest */
+    private static array $claimed = [];
+
+    /** @var array<string,array<int,array<int,mixed>>> hook name => priority => callbacks added before start-up and not added to the dispatcher yet */
+    private array $held = [];
+
+    private bool $releasing = false;
+
     /** @var array<string,list<array{fn:mixed,priority:int,listener:\Closure,names:\ArrayObject<int,string>|null}>> hook name => callbacks added on it; names is set for a typed callback and shared by every name it is on */
     private array $bound = [];
 
@@ -39,6 +47,74 @@ final class HookBridge
         $container = Container::root();
 
         return $container->has(self::class) ? $container->get(self::class) : null;
+    }
+
+    /**
+     * Whether some bridge owns $name. False means no bridge does, so the old hook store keeps it.
+     */
+    public static function claims(string $name): bool
+    {
+        return isset(self::$claimed[$name]);
+    }
+
+    /**
+     * Own each name of $map for its event class without loading the classes. Callbacks already
+     * added on one of those names with osc_add_hook() move over, keeping their priority, when
+     * their hook is next used.
+     *
+     * @param array<string,class-string<Bridged>> $map hook name => event class
+     */
+    public function claim(array $map): void
+    {
+        foreach ($map as $name => $eventClass) {
+            $owner = $this->owners[$name] ?? null;
+            if ($owner !== null && $owner !== $eventClass) {
+                throw new \LogicException(sprintf('The hook "%s" is already owned by %s.', $name, $owner));
+            }
+        }
+        $this->owners += $map;
+        self::$claimed += array_fill_keys(array_keys($map), true);
+        if ($this === self::active()) {
+            $active = (array) \Plugins::getActive();
+            foreach ($map as $name => $unused) {
+                if (isset($active[$name])) {
+                    $this->held[$name] = \Plugins::detach($name);
+                }
+            }
+            if ($this->held !== []) {
+                $this->events->beforeListeners(function (?string $eventClass): void {
+                    $this->release($eventClass);
+                });
+            }
+        }
+    }
+
+    /**
+     * Add the held callbacks of $eventClass's names, or of every name for null, in map order.
+     * Mapped classes never extend each other, so one class's callbacks can be added on their own.
+     */
+    private function release(?string $eventClass): void
+    {
+        if ($this->held === [] || $this->releasing || $eventClass === '') {
+            return;
+        }
+        $this->releasing = true;
+        try {
+            foreach ($this->held as $name => $byPriority) {
+                $owner = $this->owners[$name];
+                if ($eventClass !== null && $eventClass !== $owner && !is_a($eventClass, $owner, true)) {
+                    continue;
+                }
+                unset($this->held[$name]);
+                foreach ($byPriority as $priority => $callbacks) {
+                    foreach ($callbacks as $fn) {
+                        $this->add($name, $fn, (int) $priority);
+                    }
+                }
+            }
+        } finally {
+            $this->releasing = false;
+        }
     }
 
     /**
@@ -59,7 +135,8 @@ final class HookBridge
             }
         }
         foreach ($eventClass::legacyNames() as $name) {
-            $this->owners[$name] = $eventClass;
+            $this->owners[$name]  = $eventClass;
+            self::$claimed[$name] = true;
             if ($this === self::active()) {
                 foreach (\Plugins::detach($name) as $priority => $callbacks) {
                     foreach ($callbacks as $fn) {
@@ -102,6 +179,7 @@ final class HookBridge
         if ($eventClass === null) {
             throw new \LogicException(sprintf('No event owns the hook "%s".', $name));
         }
+        $this->release(null);
         foreach ($this->bound[$name] ?? [] as $entry) {
             if ($entry['fn'] === $fn) {
                 return;
@@ -152,6 +230,7 @@ final class HookBridge
     public function remove(string $name, $fn): bool
     {
         $eventClass = $this->eventFor($name);
+        $this->release($eventClass ?? '');
         $removed    = false;
         foreach ($this->bound[$name] ?? [] as $entry) {
             if ($entry['fn'] !== $fn) {
@@ -174,6 +253,8 @@ final class HookBridge
      */
     public function has(string $name): bool
     {
+        $this->release($this->eventFor($name) ?? '');
+
         return !empty($this->bound[$name]);
     }
 
@@ -184,6 +265,7 @@ final class HookBridge
      */
     public function callbacks(string $name): array
     {
+        $this->release($this->eventFor($name) ?? '');
         $entries = $this->bound[$name] ?? [];
         usort($entries, static fn (array $a, array $b): int => $a['priority'] <=> $b['priority']);
 

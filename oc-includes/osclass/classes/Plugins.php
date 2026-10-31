@@ -386,11 +386,15 @@ class Plugins
      */
     public static function addHook($hook, $function, $priority = 5)
     {
-        $hook         = preg_replace('|/+|', '/', str_replace('\\', '/', $hook));
-        $plugin_path  = str_replace('\\', '/', osc_plugins_path());
-        $hook         = str_replace($plugin_path, '', $hook);
-        $priority     = (int)$priority;
-        $bridge       = HookBridge::active();
+        $hook = (string) $hook;
+        // Only a name holding a path, such as a plugin's install hook, needs cleaning.
+        if (strpbrk($hook, '/\\') !== false) {
+            $hook        = preg_replace('|/+|', '/', str_replace('\\', '/', $hook));
+            $plugin_path = str_replace('\\', '/', osc_plugins_path());
+            $hook        = str_replace($plugin_path, '', $hook);
+        }
+        $priority    = (int)$priority;
+        $bridge      = HookBridge::claims($hook) ? HookBridge::active() : null;
         if ($bridge !== null && $bridge->eventFor($hook) !== null) {
             $bridge->add($hook, $function, $priority);
 
@@ -694,7 +698,7 @@ class Plugins
      */
     public static function hasHook($hook)
     {
-        $bridge = HookBridge::active();
+        $bridge = HookBridge::claims($hook) ? HookBridge::active() : null;
         if ($bridge !== null && $bridge->eventFor($hook) !== null) {
             return $bridge->has($hook);
         }
@@ -720,7 +724,7 @@ class Plugins
      */
     public static function callbacks(string $hook): array
     {
-        $bridge = HookBridge::active();
+        $bridge = HookBridge::claims($hook) ? HookBridge::active() : null;
         if ($bridge !== null && $bridge->eventFor($hook) !== null) {
             return $bridge->callbacks($hook);
         }
@@ -932,7 +936,7 @@ class Plugins
      */
     public static function removeHook($hook, $function)
     {
-        $bridge = HookBridge::active();
+        $bridge = HookBridge::claims($hook) ? HookBridge::active() : null;
         if ($bridge !== null && $bridge->eventFor($hook) !== null) {
             $bridge->remove($hook, $function);
 

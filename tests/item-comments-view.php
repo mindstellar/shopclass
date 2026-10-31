@@ -80,6 +80,8 @@ check('the comment text is optional only while the stars show', strpos($src, "\$
 
 check('deleting a comment asks first', strpos($src, 'data-osc-confirm=') !== false && strpos($src, 'osc_gui_print_confirm_script()') !== false);
 check('the pager prints only when it links to another page', strpos($src, "strpos(\$oeCommentPager, '<a ') !== false") !== false);
+// The pager counts the comments with a query of its own; on the first page with none it is never shown.
+check('the pager is built only when the page has comments or is a later page', strpos($src, "\$oeCommentPager = \$oeCommentTotal > 0 || osc_item_comments_page() > 0 ? (string)osc_comments_pagination() : '';") !== false);
 
 harness_section('the values a rejected post is restored from');
 foreach (array('commentAuthorName', 'commentAuthorEmail', 'commentTitle', 'commentBody', 'commentRating') as $key) {

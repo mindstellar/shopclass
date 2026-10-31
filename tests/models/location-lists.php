@@ -90,10 +90,16 @@ pin('countries are translated', 'Vereinigte Staaten', osc_get_countries()[0]['s_
 pin('an untranslated city keeps its name', 'City 02', osc_get_cities($alpine)[0]['s_name']);
 
 $fresh();
+\mindstellar\cache\CacheGroup::invalidate('location-name');
 $q = harness_query_count(static function () use ($alpine): void {
     osc_get_cities($alpine);
 });
 pin('a 20-city list costs the list query plus one name query', 2, $q);
+$fresh();
+$q = harness_query_count(static function () use ($alpine): void {
+    osc_get_cities($alpine);
+});
+pin('read again, its names come from the cache', 1, $q);
 
 $fresh();
 View::newInstance()->_exportVariableToView('regions', $plain);

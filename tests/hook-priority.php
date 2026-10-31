@@ -182,4 +182,15 @@ pin(
     $t->sortedColumns()
 );
 
+harness_section('Hook names');
+
+$noop = static function () {
+};
+Plugins::addHook(osc_plugins_path() . 'hp_demo//index.php', $noop);
+pin('a full plugin path is stored relative to the plugins folder', true, Plugins::hasHook('hp_demo/index.php'));
+Plugins::addHook('hp_other\\index.php', $noop);
+pin('a backslash path is stored with slashes', true, Plugins::hasHook('hp_other/index.php'));
+Plugins::addHook('hp_plain', $noop);
+pin('a plain name is stored as given', true, Plugins::hasHook('hp_plain'));
+
 exit(harness_result());

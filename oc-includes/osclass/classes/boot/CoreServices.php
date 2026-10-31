@@ -42,6 +42,9 @@ use mindstellar\event\DispatcherInterface;
 use mindstellar\event\HookBridge;
 use mindstellar\http\CurlHttpClient;
 use mindstellar\http\HttpClient;
+use mindstellar\language\event\TranslationLoaded;
+use mindstellar\listing\event\VariantPriceChanged;
+use mindstellar\listing\event\VariantStockChanged;
 use mindstellar\live\LivePublisher;
 use mindstellar\live\LiveStatus;
 use mindstellar\live\NchanPublisher;
@@ -73,12 +76,89 @@ use mindstellar\push\WebPushSender;
 use mindstellar\security\AddressGuard;
 use mindstellar\utility\Clock;
 use mindstellar\utility\SystemClock;
+use mindstellar\widgets\event\CustomiserPublished;
 
 /**
  * The services core puts in the site-wide container at start-up. Plugins may add their own on init.
  */
 final class CoreServices
 {
+    /**
+     * Each old hook name a core event owns, with that event, in events() order. The bridge reads
+     * it without loading the event classes; tests/hook-bridge-lazy.php keeps it equal to their legacyNames().
+     */
+    public const EVENT_HOOKS = [
+        'cart_needs_shipping' => CartShipping::class,
+        'cart_shipping_methods' => CartShipping::class,
+        'cart_shipping_lines' => CartShippingLines::class,
+        'cart_tax_lines' => CartTaxLines::class,
+        'cart_discount_lines' => CartDiscountLines::class,
+        'cart_totals' => CartFees::class,
+        'cart_free_over' => CartFreeOver::class,
+        'cart_problems' => CartProblems::class,
+        'cart_item_add_after' => CartItemAdded::class,
+        'cart_checkout_before' => CheckoutStarting::class,
+        'billing_order_placed' => OrderPlaced::class,
+        'billing_order_paid' => OrderPaid::class,
+        'billing_order_failed' => OrderFailed::class,
+        'billing_order_shipped' => OrderShipped::class,
+        'billing_order_delivered' => OrderDelivered::class,
+        'billing_order_cancelled' => OrderCancelled::class,
+        'billing_tracking_url' => TrackingUrlResolving::class,
+        'admin_billing_carriers' => CarriersListing::class,
+        'admin_payment_test_modes' => PaymentTestModes::class,
+        'billing_receipt_details' => ReceiptComposing::class,
+        'billing_order_return_url' => OrderReturnUrlResolving::class,
+        'email_order_placed_title' => MailComposing::class,
+        'email_order_placed_description' => MailComposing::class,
+        'email_order_placed_title_after' => MailComposing::class,
+        'email_order_placed_description_after' => MailComposing::class,
+        'email_order_shipped_title' => MailComposing::class,
+        'email_order_shipped_description' => MailComposing::class,
+        'email_order_shipped_title_after' => MailComposing::class,
+        'email_order_shipped_description_after' => MailComposing::class,
+        'email_order_delivered_title' => MailComposing::class,
+        'email_order_delivered_description' => MailComposing::class,
+        'email_order_delivered_title_after' => MailComposing::class,
+        'email_order_delivered_description_after' => MailComposing::class,
+        'email_order_cancelled_title' => MailComposing::class,
+        'email_order_cancelled_description' => MailComposing::class,
+        'email_order_cancelled_title_after' => MailComposing::class,
+        'email_order_cancelled_description_after' => MailComposing::class,
+        'email_order_refunded_title' => MailComposing::class,
+        'email_order_refunded_description' => MailComposing::class,
+        'email_order_refunded_title_after' => MailComposing::class,
+        'email_order_refunded_description_after' => MailComposing::class,
+        'email_admin_new_order_title' => MailComposing::class,
+        'email_admin_new_order_description' => MailComposing::class,
+        'email_admin_new_order_title_after' => MailComposing::class,
+        'email_admin_new_order_description_after' => MailComposing::class,
+        'email_product_alert_title' => MailComposing::class,
+        'email_product_alert_description' => MailComposing::class,
+        'email_product_alert_title_after' => MailComposing::class,
+        'email_product_alert_description_after' => MailComposing::class,
+        'email_listing_unpaid_reminder_title' => MailComposing::class,
+        'email_listing_unpaid_reminder_description' => MailComposing::class,
+        'email_listing_unpaid_reminder_title_after' => MailComposing::class,
+        'email_listing_unpaid_reminder_description_after' => MailComposing::class,
+        'email_new_message_title' => MailComposing::class,
+        'email_new_message_description' => MailComposing::class,
+        'email_new_message_title_after' => MailComposing::class,
+        'email_new_message_description_after' => MailComposing::class,
+        'conversation_started' => ConversationStarted::class,
+        'message_body' => MessageSending::class,
+        'message_sent' => MessageSent::class,
+        'message_held' => MessageHeld::class,
+        'conversation_blocked' => ConversationBlocked::class,
+        'conversation_unblocked' => ConversationUnblocked::class,
+        'conversation_reported' => ConversationReported::class,
+        'message_read' => MessageRead::class,
+        'variant_price_changed' => VariantPriceChanged::class,
+        'variant_stock_changed' => VariantStockChanged::class,
+        'customiser_published' => CustomiserPublished::class,
+        'translation_load_after' => TranslationLoaded::class,
+    ];
+
     private function __construct()
     {
     }
@@ -157,9 +237,7 @@ final class CoreServices
         $events->listen(MessageSent::class, [PushNotifier::class, 'onMessageSent']);
         $events->listen(OrderPaid::class, [ListingCheckout::class, 'onOrderPaid']);
         $events->listen(OrderReturnUrlResolving::class, [ListingCheckout::class, 'onReturnUrl']);
-        foreach (self::events() as $event) {
-            $bridge->own($event);
-        }
+        $bridge->claim(self::EVENT_HOOKS);
     }
 
     /**
@@ -182,40 +260,6 @@ final class CoreServices
      */
     public static function events(): array
     {
-        return [
-            CartShipping::class,
-            CartShippingLines::class,
-            CartTaxLines::class,
-            CartDiscountLines::class,
-            CartFees::class,
-            CartFreeOver::class,
-            CartProblems::class,
-            CartItemAdded::class,
-            CheckoutStarting::class,
-            OrderPlaced::class,
-            OrderPaid::class,
-            OrderFailed::class,
-            OrderShipped::class,
-            OrderDelivered::class,
-            OrderCancelled::class,
-            TrackingUrlResolving::class,
-            CarriersListing::class,
-            PaymentTestModes::class,
-            ReceiptComposing::class,
-            OrderReturnUrlResolving::class,
-            MailComposing::class,
-            ConversationStarted::class,
-            MessageSending::class,
-            MessageSent::class,
-            MessageHeld::class,
-            ConversationBlocked::class,
-            ConversationUnblocked::class,
-            ConversationReported::class,
-            MessageRead::class,
-            \mindstellar\listing\event\VariantPriceChanged::class,
-            \mindstellar\listing\event\VariantStockChanged::class,
-            \mindstellar\widgets\event\CustomiserPublished::class,
-            \mindstellar\language\event\TranslationLoaded::class,
-        ];
+        return array_values(array_unique(self::EVENT_HOOKS));
     }
 }

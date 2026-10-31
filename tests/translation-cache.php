@@ -65,7 +65,7 @@ $mo = $tmp . '/core.mo';
 make_mo($po, $mo);
 
 /** A Translation with no catalogues loaded, so _load() can be driven directly. */
-function fresh_translation()
+function fresh_translation($translator = null)
 {
     $r = new ReflectionClass('Translation');
     $t = $r->newInstanceWithoutConstructor();
@@ -73,7 +73,7 @@ function fresh_translation()
     if (PHP_VERSION_ID < 80100) {
         $p->setAccessible(true);
     }
-    $p->setValue($t, new Gettext\Translator());
+    $p->setValue($t, $translator ?? new Gettext\Translator());
 
     return $t;
 }
@@ -98,6 +98,12 @@ file_put_contents($compiled, str_replace('Pomme', 'CACHE', file_get_contents($co
 $t2 = fresh_translation();
 $t2->_load($mo, 'core');
 pin('second load came from cache', 'CACHE', $t2->_get()->dgettext('core', 'Apple'));
+
+harness_section('a compiled catalogue is read once per request');
+file_put_contents($compiled, str_replace('CACHE', 'AGAIN', file_get_contents($compiled)));
+$t2b = fresh_translation();
+$t2b->_load($mo, 'core');
+pin('third load reuses what the second read', 'CACHE', $t2b->_get()->dgettext('core', 'Apple'));
 
 harness_section('plural forms survive the round trip');
 $t3 = fresh_translation();
@@ -141,6 +147,109 @@ $GLOBALS['__uploads'] = $tmp . '/uploads/';
 
 harness_section('a missing catalogue is still reported');
 pin('missing file returns false', false, fresh_translation()->_load($tmp . '/nope.mo', 'core'));
+
+harness_section('entries whose text is the original are packed away');
+/** The translator Translation builds: it can say which domains it holds. */
+function domain_translator()
+{
+    return new class () extends Gettext\Translator {
+        public function hasDomain(string $domain): bool
+        {
+            return isset($this->dictionary[$domain]);
+        }
+    };
+}
+
+$enPo = <<<'EOT'
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+msgid "Hello"
+msgstr "Hello"
+
+msgid "Car"
+msgstr "Auto"
+
+msgctxt "menu"
+msgid "Home"
+msgstr "Home"
+
+msgid "%d file"
+msgid_plural "%d files"
+msgstr[0] "%d file"
+msgstr[1] "%d files"
+EOT;
+$enMo = $tmp . '/en.mo';
+make_mo($enPo, $enMo);
+fresh_translation()->_load($enMo, 'en');
+$enCache = null;
+foreach (cache_files($tmp) as $f) {
+    if (strpos(file_get_contents($f), 'Auto') !== false) {
+        $enCache = $f;
+    }
+}
+$compiledEn = unserialize(file_get_contents($enCache));
+pin('an unchanged entry is out of the messages', false, isset($compiledEn['messages']['']['Hello']));
+pin('a translated entry stays', array('Auto'), $compiledEn['messages']['']['Car'] ?? null);
+pin('a plural entry stays', true, isset($compiledEn['messages']['']['%d file']));
+
+$en = fresh_translation(domain_translator());
+$en->_load($enMo, 'en');
+pin('an unchanged text reads the same', 'Hello', $en->_get()->dgettext('en', 'Hello'));
+pin('a translated text still translates', 'Auto', $en->_get()->dgettext('en', 'Car'));
+pin('plural one', '%d file', $en->_get()->dngettext('en', '%d file', '%d files', 1));
+pin('plural many', '%d files', $en->_get()->dngettext('en', '%d file', '%d files', 3));
+
+// Loaded on top of another catalogue of its domain, an unchanged entry still replaces that one's text.
+$otherMo = $tmp . '/other.mo';
+make_mo(str_replace(array('msgstr "Hello"', 'msgstr "Auto"', 'msgstr "Home"'), array('msgstr "Bonjour"', 'msgstr "Voiture"', 'msgstr "Accueil"'), $enPo), $otherMo);
+$over = fresh_translation(domain_translator());
+$over->_load($otherMo, 'en');
+$over->_load($enMo, 'en');
+pin('the later catalogue wins for an unchanged entry', 'Hello', $over->_get()->dgettext('en', 'Hello'));
+pin('the later catalogue wins for a translated entry', 'Auto', $over->_get()->dgettext('en', 'Car'));
+pin('the later catalogue wins for an unchanged entry with a context', 'Home', $over->_get()->dpgettext('en', 'menu', 'Home'));
+pin('an unchanged entry with a context is packed too', false, isset($compiledEn['messages']['menu']['Home']));
+
+// A second language of the same domain in one request, as when an email goes out in another language.
+$other = fresh_translation(domain_translator());
+$other->_load($otherMo, 'en');
+pin('another catalogue read later in the request gets its own text', 'Bonjour', $other->_get()->dgettext('en', 'Hello'));
+pin('and its own text with a context', 'Accueil', $other->_get()->dpgettext('en', 'menu', 'Home'));
+
+$bareMo = $tmp . '/bare.mo';
+make_mo(str_replace(array('plural=(n != 1)', 'msgstr "Auto"'), array('plural=n != 1', 'msgstr "Wagen"'), $enPo), $bareMo);
+fresh_translation()->_load($bareMo, 'bare');
+$bareCache = null;
+foreach (cache_files($tmp) as $f) {
+    $c = unserialize(file_get_contents($f));
+    if (is_array($c) && ($c['domain'] ?? '') === 'bare') {
+        $bareCache = $c;
+    }
+}
+pin('the rule without brackets packs as well', false, isset($bareCache['messages']['']['Hello']));
+
+$frMo = $tmp . '/fr.mo';
+make_mo(str_replace('plural=(n != 1)', 'plural=(n > 1)', $enPo), $frMo);
+fresh_translation()->_load($frMo, 'fr');
+$frCache = null;
+foreach (cache_files($tmp) as $f) {
+    $c = unserialize(file_get_contents($f));
+    if (is_array($c) && ($c['domain'] ?? '') === 'fr') {
+        $frCache = $c;
+    }
+}
+pin('another plural rule keeps every entry', array('Hello'), $frCache['messages']['']['Hello'] ?? null);
+@unlink($enMo);
+@unlink($enMo . '.po');
+@unlink($otherMo);
+@unlink($otherMo . '.po');
+@unlink($frMo);
+@unlink($frMo . '.po');
+@unlink($bareMo);
+@unlink($bareMo . '.po');
 
 // tidy up
 array_map('unlink', cache_files($tmp));

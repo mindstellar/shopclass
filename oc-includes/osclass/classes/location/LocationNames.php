@@ -14,7 +14,7 @@ namespace mindstellar\location;
 
 /**
  * Shows place names in the visitor's language, falling back to the stored name. It loads what a
- * page needs in at most one query per place type and remembers it for the rest of the request.
+ * page needs in at most one query and remembers it for the rest of the request.
  */
 final class LocationNames
 {
@@ -30,20 +30,22 @@ final class LocationNames
      */
     public function prime(string $locale, array $idsByType): void
     {
+        $missing = [];
         foreach ($idsByType as $type => $ids) {
-            $missing = [];
             foreach ($ids as $id) {
                 $key = $this->id((string) $type, $id);
                 if ($key !== '' && !array_key_exists($this->memoKey($locale, (string) $type, $key), $this->memo)) {
-                    $missing[$key] = $key;
+                    $missing[(string) $type][$key] = $key;
                 }
             }
-            if ($missing === []) {
-                continue;
-            }
-            $found = $this->store->names((string) $type, array_values($missing), $locale);
-            foreach ($missing as $key) {
-                $this->memo[$this->memoKey($locale, (string) $type, $key)] = $found[$key] ?? null;
+        }
+        if ($missing === []) {
+            return;
+        }
+        $found = $this->store->namesByType(array_map('array_values', $missing), $locale);
+        foreach ($missing as $type => $keys) {
+            foreach ($keys as $key) {
+                $this->memo[$this->memoKey($locale, $type, $key)] = $found[$type][$key] ?? null;
             }
         }
     }

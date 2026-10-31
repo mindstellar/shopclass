@@ -755,20 +755,22 @@ function osc_admin_language()
 
 /**
  * The saved default, unless it is empty or its language folder is gone: then en_US when that is
- * on, else the first language that is on. A saved default with its folder costs no query, and a
- * fallback is looked up once per request. osc_reset_preferences() clears it.
+ * on, else the first language that is on. The folder check and any fallback run once per request;
+ * osc_reset_preferences() clears both.
  *
  * @internal
  */
 function _osc_enabled_locale(string $code, bool $admin, bool $reset = false): string
 {
     static $memo = array();
+    static $dirs = array();
     if ($reset) {
         $memo = array();
+        $dirs = array();
 
         return $code;
     }
-    if (!function_exists('osc_translations_path') || ($code !== '' && is_dir(osc_translations_path() . $code))) {
+    if (!function_exists('osc_translations_path') || ($code !== '' && ($dirs[$code] ??= is_dir(osc_translations_path() . $code)))) {
         return $code;
     }
     $key = ($admin ? '1|' : '0|') . $code;

@@ -22,27 +22,35 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 
-$GLOBALS['sep'] = array(',', '.');
+$GLOBALS['sep']     = array(',', '.');
+$GLOBALS['money']   = array('{CURRENCY}{NUMBER}', 2);
+$GLOBALS['lookups'] = 0;
+// Like the real helpers, each osc_locale_*() reads the locale row, so lookups can be counted.
+function _osc_user_locale_row(): array
+{
+    $GLOBALS['lookups']++;
+
+    return array('s_thousands_sep' => $GLOBALS['sep'][0], 's_dec_point' => $GLOBALS['sep'][1], 's_currency_format' => $GLOBALS['money'][0], 'i_num_dec' => $GLOBALS['money'][1]);
+}
 function osc_locale_thousands_sep()
 {
-    return $GLOBALS['sep'][0];
+    return _osc_user_locale_row()['s_thousands_sep'];
 }
 function osc_locale_dec_point()
 {
-    return $GLOBALS['sep'][1];
+    return _osc_user_locale_row()['s_dec_point'];
 }
 function osc_current_user_locale()
 {
     return 'en_US';
 }
-$GLOBALS['money'] = array('{CURRENCY}{NUMBER}', 2);
 function osc_locale_currency_format()
 {
-    return $GLOBALS['money'][0];
+    return _osc_user_locale_row()['s_currency_format'];
 }
 function osc_locale_num_dec()
 {
-    return $GLOBALS['money'][1];
+    return _osc_user_locale_row()['i_num_dec'];
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
@@ -72,6 +80,9 @@ pin('display shows zero as an amount, not "Free"', '₹0', Money::display(0, '�
 $GLOBALS['money'] = array('{NUMBER} {CURRENCY}', 2);
 pin('display with the symbol after the number', "\u{2212}12.50 €", Money::display(-12500000, '€'));
 $GLOBALS['money'] = array('{CURRENCY}{NUMBER}', 2);
+$GLOBALS['lookups'] = 0;
+Money::display(1234500000, '₹');
+pin('display reads the locale row once', 1, $GLOBALS['lookups']);
 
 harness_section('byte sizes');
 

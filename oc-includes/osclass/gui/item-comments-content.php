@@ -31,7 +31,8 @@ $oeCommentGated = osc_reg_user_post_comments() && !osc_is_web_user_logged_in();
 // Ratings off hides the stars, old ones too. A rating needs an account, so a guest gets no star field.
 $oeRatingsOn    = osc_comment_ratings_enabled();
 $oeCommentStars = $oeRatingsOn && osc_is_web_user_logged_in();
-$oeCommentPager = (string)osc_comments_pagination();
+// A listing without comments skips the pager's count query; a later page keeps it so an old link can go back.
+$oeCommentPager = $oeCommentTotal > 0 || osc_item_comments_page() > 0 ? (string)osc_comments_pagination() : '';
 require_once ABS_PATH . 'oc-includes/osclass/gui/page-fn.php';
 $oeCommentOld   = static function ($key) {
     return osc_esc_html((string)Session::getInstance()->_getForm($key));
