@@ -141,6 +141,15 @@ pin('a hidden listing is a 404', '404 not_found', api_admin_code($call('POST', '
 pin('DELETE removes', [204, [$a]], [$call('DELETE', 'account/wishlist/' . $b, null, $sueKey)->status(), $wishlist->all($sue)]);
 pin('DELETE of one not there is still 204', 204, $call('DELETE', 'account/wishlist/' . $c, null, $sueKey)->status());
 pin('PUT replaces and drops the hidden one', [204, [$c, $b]], [$call('PUT', 'account/wishlist', ['ids' => [$c, $hidden, $b]], $sueKey)->status(), $wishlist->all($sue)]);
+$gone = seed_item($admin, $cat, $tom, 'Gone', 5.0);
+$call('POST', 'account/wishlist/' . $gone, null, $sueKey);
+$admin->query("DELETE FROM {$p}t_item WHERE pk_i_id = $gone");
+pin('a deleted listing drops out of GET and its count', ['ids' => [$c, $b], 'count' => 2], $call('GET', 'account/wishlist', null, $sueKey)->body()['data'] ?? null);
+pin('and out of the stored list', '[' . $c . ',' . $b . ']', $stored($sue));
+$admin->query("UPDATE {$p}t_item SET b_enabled = 0 WHERE pk_i_id = $b");
+pin('a disabled listing is not shown', ['ids' => [$c], 'count' => 1], $call('GET', 'account/wishlist', null, $sueKey)->body()['data'] ?? null);
+pin('but stays saved for when it comes back', '[' . $c . ',' . $b . ']', $stored($sue));
+$admin->query("UPDATE {$p}t_item SET b_enabled = 1 WHERE pk_i_id = $b");
 pin('PUT over the cap is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/wishlist', ['ids' => range(1, WishlistService::MAX + 1)], $sueKey)));
 pin('PUT with a non-integer id is refused', '422 validation_failed', api_admin_code($call('PUT', 'account/wishlist', ['ids' => ['abc']], $sueKey)));
 pin('PUT needs ids', '422 validation_failed', api_admin_code($call('PUT', 'account/wishlist', [], $sueKey)));

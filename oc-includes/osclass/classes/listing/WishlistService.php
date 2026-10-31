@@ -34,14 +34,24 @@ final class WishlistService
     }
 
     /**
-     * The saved listing ids, newest first.
+     * The saved listing ids that are live now, newest first. Ids of deleted listings are removed
+     * from the stored list; a listing that is only hidden (expired, disabled) stays saved.
      *
      * @return int[]
      * @throws \mindstellar\database\DbException
      */
     public function all(int $userId): array
     {
-        return self::clean($this->store->ids($userId));
+        $ids  = $this->stored($userId);
+        $live = self::live($ids);
+        if ($live !== $ids) {
+            $gone = array_diff($ids, array_keys((new ListingQuery())->findMany($ids)));
+            if ($gone !== array()) {
+                $this->change($userId, static fn (array $old): array => array_values(array_diff($old, $gone)));
+            }
+        }
+
+        return $live;
     }
 
     /**
@@ -131,12 +141,23 @@ final class WishlistService
         }
         Db::transaction(function () use ($userId, $edit): void {
             UserStore::lock($userId);
-            $ids  = $this->all($userId);
+            $ids  = $this->stored($userId);
             $next = $edit($ids);
             if ($next !== $ids) {
                 $this->store->save($userId, $next);
             }
         });
+    }
+
+    /**
+     * The stored list, cleaned but not checked for live listings.
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    private function stored(int $userId): array
+    {
+        return self::clean($this->store->ids($userId));
     }
 
     /**
