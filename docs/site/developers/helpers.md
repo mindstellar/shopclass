@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1268 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1269 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -535,7 +535,7 @@ Core defines 1268 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (125)
+### hItems (126)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -624,6 +624,7 @@ Core defines 1268 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_item_pub_date()` | Gets publication date of current item |
 | `osc_item_region()` | Gets region of current item |
 | `osc_item_region_id()` | Gets region id of current item |
+| `osc_item_saved_count(?int $itemId = null)` | How many user wishlists hold a listing; the current item by default. The loaded item row already carries the count, so a loop over search results costs no query. |
 | `osc_item_secret()` | Gets secret string of current item |
 | `osc_item_show_email()` | Gets true if can show email user at frontend, else return false |
 | `osc_item_status()` | Gets status of current item. b_active = true  -&gt; item is active b_active = false -&gt; item is inactive |
