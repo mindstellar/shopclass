@@ -33,6 +33,13 @@ function osc_force_aspect_image()
     return false;
 }
 
+if (!function_exists('osc_get_preference')) {
+    function osc_get_preference($key, $section = 'osclass')
+    {
+        return '';
+    }
+}
+
 $dir = sys_get_temp_dir() . '/osc-resize-fit-' . getmypid();
 @mkdir($dir);
 
@@ -70,6 +77,39 @@ foreach ($engines as $engine => $imagick) {
 
     pin('padding keeps the target canvas', '640x480', $size($source(240, 80), 640, 480, false, true));
     pin('force aspect with upscale crops the canvas to the scaled height', '640x214', $size($source(240, 80), 640, 480, true, true));
+}
+
+if (isset($engines['Imagick'])) {
+    $GLOBALS['imagick'] = true;
+    harness_section('Imagick: a phone photo stored on its side');
+
+    // 1200x900 with EXIF Orientation 6, as a phone saves a portrait photo.
+    $flat = new Imagick();
+    $flat->newImage(1200, 900, 'red');
+    $flat->setImageFormat('jpeg');
+    $tiff  = "MM\x00\x2a\x00\x00\x00\x08" . pack('n', 1) . pack('nnNnn', 0x0112, 3, 1, 6, 0) . pack('N', 0);
+    $exif  = "Exif\x00\x00" . $tiff;
+    $jpeg  = (string) $flat->getImageBlob();
+    $phone = $dir . '/phone.jpg';
+    file_put_contents($phone, substr($jpeg, 0, 2) . "\xff\xe1" . pack('n', strlen($exif) + 2) . $exif . substr($jpeg, 2));
+
+    $upright = ImageProcessing::fromFile($phone)->autoRotate();
+    pin('turning it upright swaps the sides', '900x1200', $upright->getWidth() . 'x' . $upright->getHeight());
+    $upright->autoRotate();
+    pin('turning it again leaves it upright', '900x1200', $upright->getWidth() . 'x' . $upright->getHeight());
+
+    $kept = $dir . '/phone-kept.jpg';
+    ImageProcessing::fromFile($phone)->autoRotate()->saveToFile($kept, 'jpeg');
+    $keptIm = new Imagick($kept);
+    pin('saved without a resize, it stays upright with no padding', '900x1200', $keptIm->getImageWidth() . 'x' . $keptIm->getImageHeight());
+    $fitted = ImageProcessing::fromFile($phone)->autoRotate()->resizeTo(640, 480, true, true);
+    pin('force aspect gives a portrait canvas with no padding', '360x480', $fitted->getWidth() . 'x' . $fitted->getHeight());
+
+    $out = $dir . '/phone-out.jpg';
+    ImageProcessing::fromFile($phone)->autoRotate()->resizeTo(640, 480, false, true)->saveToFile($out, 'jpeg');
+    $read  = new Imagick($out);
+    $white = static fn (int $x): bool => $read->getImagePixelColor($x, 240)->getColor()['g'] > 200;
+    pin('padding is centred, on both sides', 'white red white', implode(' ', array_map(static fn (int $x): string => $white($x) ? 'white' : 'red', array(2, 320, 637))));
 }
 
 array_map('unlink', glob($dir . '/*'));
