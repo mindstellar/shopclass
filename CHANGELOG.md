@@ -93,6 +93,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.
+- An IP ban rule can be an IPv6 address or a CIDR range (`203.0.113.0/24`, `2001:db8::/32`); before, IPv6 visitors could not be banned by IP.
 
 ### Performance
 - Option filter counts on 232,000 listings: 446 to 53 ms on MariaDB, 526 to 208 ms on MySQL; number and date ranges under 5 ms.

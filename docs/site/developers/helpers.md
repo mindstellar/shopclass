@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1267 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1268 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1200,7 +1200,7 @@ Core defines 1267 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_subscribe_alert(string $token, string $email)` | Subscribe an email to a saved search. The owner is the signed-in user, never the caller: a guest gets a confirmation email, a signed-in active user is subscribed at once. |
 | `osc_update_search_url($params = array(), $forced = false)` | Update the search url with new options |
 
-### hSecurity (22)
+### hSecurity (23)
 
 `oc-includes/osclass/helpers/hSecurity.php`
 
@@ -1218,6 +1218,7 @@ Core defines 1267 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_genRandomPassword($length = 8)` | Creates a random password. |
 | `osc_get_alert_private_key()` | Persistent per-install key of the alert tokens minted before 7.0. |
 | `osc_hash_password($password)` | Hash a password in available method (bcrypt/sha1) |
+| `osc_ip_rule_matches(string $ip, string $rule)` | Whether an IP matches a single-address or CIDR ban rule (IPv4 or IPv6) |
 | `osc_is_banned($email = '', $ip = null, string $scope = 'all')` | Check if an email and/or IP are banned |
 | `osc_is_email_banned($email, $rules = null)` | Check if email is banned |
 | `osc_is_ip_banned($ip, $rules = null)` | Check if IP is banned |
