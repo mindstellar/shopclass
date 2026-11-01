@@ -9411,7 +9411,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
-msgid "No items yet. Add some from the list on the right."
+msgid "No items yet. Add some under Add items."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php

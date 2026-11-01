@@ -151,14 +151,14 @@ $meDepth = static function (array $cat) use ($meCats): int {
                     <p class="visually-hidden" id="menu-announce" role="status" aria-live="polite"></p>
                     <p class="visually-hidden" id="menu-grip-help"><?php _e('Up and down arrows move the item. Right arrow puts it under the item above, left arrow moves it out.'); ?></p>
                     <ol class="menu-items" id="menu-items" aria-label="<?php echo osc_esc_html(sprintf(__('Items in %s'), $meName)); ?>"></ol>
-                    <p class="form-empty" id="menu-empty" hidden><?php _e('No items yet. Add some from the list on the right.'); ?></p>
+                    <p class="form-empty" id="menu-empty" hidden><?php _e('No items yet. Add some under Add items.'); ?></p>
                 </div>
 
                 <div class="menu-actions">
                     <button type="submit" class="btn btn-submit btn-sm" id="menu-save"><?php _e('Save menu'); ?></button>
                     <?php if ($menuEditor['core'] && $menuEditor['saved']) { ?>
                         <button type="button" class="btn btn-dim btn-sm menu-delete" data-osc-dialog-open="#menuDeleteDialog"><?php _e('Use the automatic menu'); ?></button>
-                    <?php } elseif (!$menuEditor['core']) { ?>
+                    <?php } elseif (!$menuEditor['core'] && $menuEditor['saved']) { ?>
                         <button type="button" class="btn btn-dim btn-sm menu-delete" data-osc-dialog-open="#menuDeleteDialog"><?php _e('Delete menu'); ?></button>
                     <?php } ?>
                 </div>
