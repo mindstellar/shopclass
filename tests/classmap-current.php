@@ -9,8 +9,8 @@
  */
 
 /**
- * Every class, interface, trait and enum under oc-includes/osclass is in Composer's committed
- * class map. A class with no namespace loads only from it; run `composer dump-autoload` after
+ * Every class, interface, trait and enum under oc-includes/osclass and oc-includes/classes is in
+ * Composer's class map, at its real path. A class with no namespace loads only from it; run `composer dump-autoload` after
  * adding one. CI regenerates the map with `composer install`.
  *
  * DB-free.  Usage: php tests/classmap-current.php
@@ -68,15 +68,19 @@ function declared_names(string $source): array
 $map     = require ABS_PATH . 'oc-includes/vendor/composer/autoload_classmap.php';
 $missing = array();
 $seen    = 0;
-$it      = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/osclass', FilesystemIterator::SKIP_DOTS));
-foreach ($it as $file) {
-    if ($file->getExtension() !== 'php') {
-        continue;
-    }
-    foreach (declared_names((string) file_get_contents($file->getPathname())) as $name) {
-        $seen++;
-        if (!isset($map[$name]) || realpath($map[$name]) !== realpath($file->getPathname())) {
-            $missing[] = $name . ' (' . substr($file->getPathname(), strlen(ABS_PATH)) . ')';
+$moved   = 0;
+foreach (array('oc-includes/osclass', 'oc-includes/classes') as $tree) {
+    $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . $tree, FilesystemIterator::SKIP_DOTS));
+    foreach ($it as $file) {
+        if ($file->getExtension() !== 'php') {
+            continue;
+        }
+        foreach (declared_names((string) file_get_contents($file->getPathname())) as $name) {
+            $seen++;
+            $moved += $tree === 'oc-includes/classes' ? 1 : 0;
+            if (!isset($map[$name]) || realpath($map[$name]) !== realpath($file->getPathname())) {
+                $missing[] = $name . ' (' . substr($file->getPathname(), strlen(ABS_PATH)) . ')';
+            }
         }
     }
 }
@@ -87,6 +91,7 @@ pin('a namespaced class and a global one are found', array('mindstellar\base\Act
     declared_names("<?php\nclass CWebItem extends BaseModel { function f() { return self::class; } }\n")[0] ?? null,
 ));
 check('the scan reads core', $seen > 500, $seen . ' declarations');
+check('and the modules in oc-includes/classes', $moved > 40, $moved . ' declarations');
 
 harness_section('The class map');
 pin('every declaration is in the class map, at its own file (run composer dump-autoload)', array(), $missing);
