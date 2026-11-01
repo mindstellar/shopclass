@@ -30,6 +30,7 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hDefines.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSitemap.php';
 
 harness_section('default robots.txt');
 
@@ -46,5 +47,11 @@ pin(
     "User-agent: *\nDisallow: /shop/oc-admin/\nSitemap: http://example.com/shop/sitemapindex.xml\n",
     Sitemap::defaultRobotsTxt()
 );
+
+harness_section('sitemap url');
+
+$GLOBALS['robots_base'] = 'http://example.com/shop/';
+pin('index url', 'http://example.com/shop/sitemapindex.xml', osc_sitemap_url());
+pin('robots line uses it', 'Sitemap: ' . osc_sitemap_url(), osc_sitemap_robots_line());
 
 exit(harness_result());

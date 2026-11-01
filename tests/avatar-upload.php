@@ -187,6 +187,34 @@ namespace {
     );
     pin('valid upload flashes nothing', array(), $GLOBALS['flashes']);
 
+    harness_section('store() from a file on disk');
+    $ok = tempnam(sys_get_temp_dir(), 'av');
+    $bad = sys_get_temp_dir() . '/not-an-image-' . getmypid();
+    file_put_contents($bad, 'x');
+
+    avatar_scenario(array(), array(), true);
+    pin('stores and returns true', true, AvatarUpload::store(7, $ok));
+    pin(
+        'replaces the old avatar, same sizes as an upload',
+        array(
+            array('delete', 'user', 7),
+            array('upload', 'user', 7, $ok, array('variants' => array('normal' => '200x200', 'thumbnail' => '64x64'))),
+        ),
+        ResourceUploader::$calls
+    );
+
+    avatar_scenario(array(), array(), false);
+    pin('feature off returns false', false, AvatarUpload::store(7, $ok));
+    pin('feature off stores nothing', array(), ResourceUploader::$calls);
+
+    avatar_scenario(array(), array(), true);
+    pin('not an image returns false', false, AvatarUpload::store(7, $bad));
+    pin('not an image keeps the old avatar', array(), ResourceUploader::$calls);
+    pin('missing file returns false', false, AvatarUpload::store(7, $ok . '-gone'));
+    pin('no user returns false', false, AvatarUpload::store(0, $ok));
+    unlink($ok);
+    unlink($bad);
+
     harness_section('controllers delegate');
     $web   = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/CWebUser.php');
     $admin = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/controller/admin/CAdminUsers.php');
