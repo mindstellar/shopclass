@@ -40,25 +40,11 @@ class ImageProcessing
     private const WATERMARK_TILE_STEP_X = 1.5;
     private const WATERMARK_TILE_STEP_Y = 2.5;
 
-    /** GD holds about 5 bytes a pixel, and a resize or rotate keeps a second copy at once. */
-    private const GD_BYTES_PER_PIXEL = 10;
-
-    /** GD may always open this many pixels, so a nearly full memory_limit does not refuse every photo. */
-    private const GD_MIN_PIXELS = 1000000;
-
     /** The lowest watermark opacity, in percent; 100 is solid. */
     public const WATERMARK_OPACITY_MIN = 10;
 
     /** The gap between a corner mark and the photo's edge, as a share of its shorter side. */
     private const WATERMARK_GAP = 0.02;
-
-    /** The photo formats read, by getimagesize() type, with their ImageMagick coder. */
-    private const PHOTO_CODERS = array(
-        IMAGETYPE_JPEG => 'jpeg',
-        IMAGETYPE_PNG  => 'png',
-        IMAGETYPE_GIF  => 'gif',
-        IMAGETYPE_WEBP => 'webp',
-    );
 
     /**
      * ImageProcessing constructor.
@@ -157,11 +143,7 @@ class ImageProcessing
      */
     public static function parseSize(string $size): array
     {
-        if (!preg_match('/^([0-9]+)x([0-9]+)$/i', trim($size), $m) || (int)$m[1] < 1 || (int)$m[2] < 1) {
-            throw new InvalidArgumentException(sprintf('Image size "%s" is not WIDTHxHEIGHT.', $size));
-        }
-
-        return [(int)$m[1], (int)$m[2]];
+        return \mindstellar\image\Processor::parseSize($size);
     }
 
     /**
@@ -191,11 +173,7 @@ class ImageProcessing
      */
     public static function memoryPixels(int $limit, int $used): int
     {
-        if ($limit <= 0) {
-            return PHP_INT_MAX;
-        }
-
-        return max(self::GD_MIN_PIXELS, intdiv($limit - $used, self::GD_BYTES_PER_PIXEL));
+        return \mindstellar\image\GdEngine::memoryPixels($limit, $used);
     }
 
     /**
@@ -247,10 +225,7 @@ class ImageProcessing
      */
     public static function imageInfo($imagePath)
     {
-        $info = @getimagesize($imagePath);
-
-        // Only photo formats; anything else would reach a decoder no photo ever needs.
-        return is_array($info) && isset(self::PHOTO_CODERS[$info[2]]) ? $info : null;
+        return \mindstellar\image\Formats::info((string)$imagePath);
     }
 
     /**
@@ -263,7 +238,7 @@ class ImageProcessing
      */
     private static function coder(array $info)
     {
-        return self::PHOTO_CODERS[$info[2]];
+        return (string)\mindstellar\image\Formats::coder($info);
     }
 
     /**
