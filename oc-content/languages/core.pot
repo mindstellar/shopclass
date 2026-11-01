@@ -564,6 +564,7 @@ msgid "%s credits"
 msgstr ""
 
 #: oc-includes/osclass/classes/ImageProcessing.php
+#: oc-includes/osclass/classes/image/Processor.php
 msgid "%s does not exist!"
 msgstr ""
 
@@ -578,6 +579,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-includes/osclass/classes/ImageProcessing.php
+#: oc-includes/osclass/classes/image/Processor.php
 msgid "%s has too many pixels to process."
 msgstr ""
 
@@ -586,6 +588,7 @@ msgid "%s is already installed. Update it from the Data tab."
 msgstr ""
 
 #: oc-includes/osclass/classes/ImageProcessing.php
+#: oc-includes/osclass/classes/image/Formats.php
 msgid "%s is corrupt or broken!"
 msgstr ""
 
@@ -643,6 +646,7 @@ msgid "%s is not one of the available options"
 msgstr ""
 
 #: oc-includes/osclass/classes/ImageProcessing.php
+#: oc-includes/osclass/classes/image/Processor.php
 msgid "%s is not readable!"
 msgstr ""
 
