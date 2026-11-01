@@ -807,7 +807,7 @@ pin(
     . '<div class="form-controls"><input type="text" id="field-s_name" name="s_name" class="input-text field-text" value="" /></div></div>'
     . '<div class="form-row"><div class="form-label"><label for="field-s_ip">IP rule</label></div>'
     . '<div class="form-controls"><input type="text" id="field-s_ip" name="s_ip" class="input-text field-text" value="" />'
-    . '<div class="help-box">(e.g. 192.168.10-20.*)</div></div></div>'
+    . '<div class="help-box">(e.g. 192.168.10-20.*, 203.0.113.0/24, 2001:db8::/32)</div></div></div>'
     . '<div class="form-row"><div class="form-label"><label for="field-s_email">E-mail rule</label></div>'
     . '<div class="form-controls"><input type="text" id="field-s_email" name="s_email" class="input-text field-text" value="" />'
     . '<div class="help-box">(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)</div></div></div>'

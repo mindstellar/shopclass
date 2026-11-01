@@ -44,7 +44,19 @@ pin('a prefix longer than 32 bits matches nothing', false, osc_is_ip_banned('198
 harness_section('rules that are not addresses');
 
 pin('an IPv6 visitor with only an e-mail rule is not banned', false, osc_is_ip_banned('2001:db8::5', array(array('s_ip' => '', 's_email' => 'x@example.com'))));
-pin('a garbage rule bans nobody', false, osc_ip_rule_matches('192.0.2.1', 'not-an-ip/8'));
-pin('a garbage visitor address matches nothing', false, osc_ip_rule_matches('nonsense', '2001:db8::/32'));
+pin('a garbage rule bans nobody', false, \mindstellar\security\AddressGuard::matches('192.0.2.1', 'not-an-ip/8'));
+pin('a garbage visitor address matches nothing', false, \mindstellar\security\AddressGuard::matches('nonsense', '2001:db8::/32'));
+
+harness_section('IPv4 visitors written as IPv6');
+
+pin('an IPv4 CIDR rule bans a mapped address inside it', true, osc_is_ip_banned('::ffff:203.0.113.9', $rules));
+pin('a dotted-block rule bans a mapped address', true, osc_is_ip_banned('::ffff:10.0.4.2', $rules));
+pin('a mapped address outside every rule is not banned', false, osc_is_ip_banned('::ffff:198.51.100.1', $rules));
+
+harness_section('inRange() checks the prefix itself');
+
+pin('a prefix longer than the family matches nothing', false, \mindstellar\security\AddressGuard::inRange('192.0.2.1', '192.0.2.0/40'));
+pin('a prefix that is not a number matches nothing', false, \mindstellar\security\AddressGuard::inRange('192.0.2.1', '192.0.2.0/x'));
+pin('a range with no prefix matches nothing', false, \mindstellar\security\AddressGuard::inRange('192.0.2.1', '192.0.2.0'));
 
 exit(harness_result());

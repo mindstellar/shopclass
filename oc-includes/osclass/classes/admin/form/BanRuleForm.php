@@ -59,7 +59,7 @@ final class BanRuleForm
             // Declared text is purified by default, which is what these three always were.
             ->text('s_name', __('Ban name / Reason'))
                 ->set('maxlength', 250)
-            ->text('s_ip', __('IP rule'), __('(e.g. 192.168.10-20.*)'))
+            ->text('s_ip', __('IP rule'), __('(e.g. 192.168.10-20.*, 203.0.113.0/24, 2001:db8::/32)'))
                 ->set('maxlength', 50)
             ->text('s_email', __('E-mail rule'), __('(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)'))
                 // Addresses are matched lower-cased, so they are stored that way.

@@ -739,7 +739,7 @@ msgid "(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BanRuleForm.php
-msgid "(e.g. 192.168.10-20.*)"
+msgid "(e.g. 192.168.10-20.*, 203.0.113.0/24, 2001:db8::/32)"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php

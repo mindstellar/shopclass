@@ -165,7 +165,8 @@ final class AddressGuard
     }
 
     /**
-     * Whether $ip is inside $cidr ("network/bits"); false when the two are not the same family.
+     * Whether $ip is inside $cidr ("network/bits"); false when the two are not the same family
+     * or the prefix is not a whole number that fits the family.
      *
      * @param string $ip
      * @param string $cidr
@@ -174,10 +175,12 @@ final class AddressGuard
      */
     public static function inRange(string $ip, string $cidr): bool
     {
-        [$network, $bits] = explode('/', $cidr);
-        $a = inet_pton($ip);
-        $b = inet_pton($network);
-        if ($a === false || $b === false || strlen($a) !== strlen($b)) {
+        [$network, $bits] = array_pad(explode('/', $cidr, 2), 2, '');
+        $a = @inet_pton($ip);
+        $b = @inet_pton($network);
+        if ($a === false || $b === false || strlen($a) !== strlen($b)
+            || !ctype_digit($bits) || (int) $bits > strlen($a) * 8
+        ) {
             return false;
         }
         $bits  = (int)$bits;
@@ -192,6 +195,72 @@ final class AddressGuard
         $mask = chr((0xff << (8 - $rest)) & 0xff);
 
         return (ord($a[$bytes]) & ord($mask)) === (ord($b[$bytes]) & ord($mask));
+    }
+
+    /**
+     * Whether $ip is the address or inside the range $entry ("2001:db8::1", "203.0.113.0/24").
+     * An IPv4-mapped address (::ffff:a.b.c.d) is matched as IPv4, on either side.
+     *
+     * @param string $ip
+     * @param string $entry
+     *
+     * @return bool
+     */
+    public static function matches(string $ip, string $entry): bool
+    {
+        $range = self::cidr(trim($entry));
+        $ip    = trim($ip);
+
+        return $range !== null && self::inRange(self::mappedV4($ip) ?? $ip, $range);
+    }
+
+    /**
+     * "network/bits" for an address or a CIDR range, or null when it is not one. A mapped
+     * IPv4 entry (::ffff:a.b.c.d/bits) comes back as plain IPv4.
+     *
+     * @param string $entry
+     *
+     * @return string|null
+     */
+    public static function cidr(string $entry): ?string
+    {
+        $parts = explode('/', $entry);
+        if (count($parts) > 2 || filter_var($parts[0], FILTER_VALIDATE_IP) === false) {
+            return null;
+        }
+        $max  = str_contains($parts[0], ':') ? 128 : 32;
+        $bits = $parts[1] ?? (string) $max;
+        if (!ctype_digit($bits) || (int) $bits > $max) {
+            return null;
+        }
+        $ip   = $parts[0];
+        $bits = (int) $bits;
+        $v4   = self::mappedV4($ip);
+        if ($v4 !== null) {
+            if ($bits < 96) {
+                return null;
+            }
+            [$ip, $bits] = array($v4, $bits - 96);
+        }
+
+        return $ip . '/' . $bits;
+    }
+
+    /**
+     * The IPv4 address inside an IPv4-mapped IPv6 address (::ffff:a.b.c.d), or null.
+     *
+     * @param string $ip
+     *
+     * @return string|null
+     */
+    public static function mappedV4(string $ip): ?string
+    {
+        $packed = @inet_pton($ip);
+        if ($packed === false || strlen($packed) !== 16 || strncmp($packed, str_repeat("\0", 10) . "\xff\xff", 12) !== 0) {
+            return null;
+        }
+
+        return (string) inet_ntop(substr($packed, 12));
     }
 
     /**
