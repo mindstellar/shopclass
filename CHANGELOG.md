@@ -56,6 +56,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The pay step shows the amount, bank details with Copy buttons and the deletion date; the post form says Save and pay when a listing will wait for payment.
 - Shop admin: one test-mode notice for all payment methods, filter chips, a Waiting for payment tab, and courier suggestions on the order page (`admin_billing_carriers`).
 - Tests also run as a shop site in CI.
+- **Listings → Settings** can make a name required when a guest posts a listing; it is off by default.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.

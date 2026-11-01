@@ -399,6 +399,16 @@ function osc_reg_user_post()
 }
 
 /**
+ * Whether a guest must give a name to publish a new listing. When off, a blank name is saved as Anonymous.
+ *
+ * @return bool
+ */
+function osc_item_contact_name_required(): bool
+{
+    return getBoolPreference('item_contact_name_required');
+}
+
+/**
  * Gets if the prices are o not enabled on the item's form
  *
  * @return boolean

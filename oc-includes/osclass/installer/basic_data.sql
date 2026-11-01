@@ -29,6 +29,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'moderate_comments', '0', 'INTEGER')
     ,('osclass', 'moderate_items', '-1', 'INTEGER')
     ,('osclass', 'reg_user_post', '0', 'BOOLEAN')
+    ,('osclass', 'item_contact_name_required', '0', 'BOOLEAN')
     ,('osclass', 'num_rss_items', '50', 'INTEGER')
     ,('osclass', 'active_plugins', '', 'STRING')
     ,('osclass', 'installed_plugins', '', 'STRING')

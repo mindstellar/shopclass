@@ -1611,6 +1611,10 @@ msgstr ""
 msgid "Add widget"
 msgstr ""
 
+#: oc-includes/osclass/classes/form/ItemForm.php
+msgid "Add your name."
+msgstr ""
+
 #: oc-admin/themes/modern/users/ban.php
 msgid ""
 "Add, edit or delete ban rules. Keep in mind that ban rules prevent users to "
@@ -8918,6 +8922,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
 msgid "Name from"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Name is required when publishing a new listing"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
+msgid "Name is required when publishing a new product"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php

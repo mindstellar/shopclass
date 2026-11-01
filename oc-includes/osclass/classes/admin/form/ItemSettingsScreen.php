@@ -50,6 +50,8 @@ final class ItemSettingsScreen extends SettingsScreen
         $form
             ->checkbox('reg_user_post', osc_mode_text(__('Only logged in users can post listings'), __('Only logged in users can post products')))
                 ->set('row', false)
+            ->checkbox('item_contact_name_required', osc_mode_text(__('Name is required when publishing a new listing'), __('Name is required when publishing a new product')))
+                ->set('row', false)
             ->number('items_wait_time', __('Wait time'), __('0 means no wait.'))
                 ->set('row', false)
                 ->prefix(__('Wait'))

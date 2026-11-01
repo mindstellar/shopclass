@@ -873,11 +873,15 @@ final class ListingService
         $aItem['cityArea']     = $aItem['cityArea'] ? self::place($aItem['cityArea']) : '';
         $aItem['address']      = $aItem['address'] ? self::place($aItem['address']) : '';
 
-        // Anonymous
-        $aItem['contactName'] = osc_validate_text($aItem['contactName'], 3) ? $aItem['contactName'] : __('Anonymous');
+        // A guest must give a name when the site asks for one; otherwise a short name is Anonymous.
+        $errors    = self::ownerErrors($aItem, $actor);
+        $nameGiven = osc_validate_text($aItem['contactName'], 3);
+        if (!$nameGiven && $actor->isGuest() && empty($aItem['userId']) && osc_item_contact_name_required()) {
+            $errors[] = ListingValidator::entry('/contact_name', 'required', _m('Add your name.'));
+        }
+        $aItem['contactName'] = $nameGiven ? $aItem['contactName'] : __('Anonymous');
 
         // Validate
-        $errors = self::ownerErrors($aItem, $actor);
         if (!osc_validate_max($aItem['contactName'], 35)) {
             $errors[] = ListingValidator::entry('/contact_name', 'too_long', _m('Name too long.'));
         }

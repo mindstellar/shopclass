@@ -563,6 +563,7 @@ pin(
     'the listing settings screen keeps the field names and preferences it always had',
     array(
         'reg_user_post'               => 'osclass/reg_user_post',
+        'item_contact_name_required'  => 'osclass/item_contact_name_required',
         'items_wait_time'             => 'osclass/items_wait_time',
         'moderate_admin_post'         => 'osclass/moderate_admin_post',
         'moderate_admin_edit'         => 'osclass/moderate_admin_edit',

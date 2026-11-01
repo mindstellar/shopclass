@@ -912,10 +912,15 @@ class ItemForm extends Form
         if (Session::getInstance()->_getForm('contactName') != '') {
             $item['s_contact_name'] = Session::getInstance()->_getForm('contactName');
         }
-        parent::generic_input_text(
-            'contactName',
-            isset($item['s_contact_name']) ? $item['s_contact_name'] : null
-        );
+        $value = isset($item['s_contact_name']) ? $item['s_contact_name'] : null;
+        if (self::nameRequired()) {
+            // The browser asks for the name before posting, in every theme.
+            $attributes = array('id' => 'contactName', 'required' => 'required', 'minlength' => '3', 'maxlength' => '35');
+            echo self::withError('contactName', $attributes, static fn (array $a): string => (new self())->text('contactName', $value, $a));
+
+            return true;
+        }
+        parent::generic_input_text('contactName', $value);
 
         return true;
     }
@@ -1096,7 +1101,7 @@ class ItemForm extends Form
                         currency: {required: true},
                         <?php } ?>
                         <?php if ($path === 'front') { ?>
-                        contactName: {minlength: 3, maxlength: 35},
+                        contactName: {<?php echo self::nameRequired() ? 'required: true, ' : ''; ?>minlength: 3, maxlength: 35},
                         contactEmail: {required: true, email: true},
                         <?php } ?>
                         city: {maxlength: 60},
@@ -1112,6 +1117,7 @@ class ItemForm extends Form
                         <?php } ?>
                         <?php if ($path === 'front') { ?>
                         contactName: {
+                            required: "<?php echo osc_esc_js(__('Add your name.')); ?>",
                             minlength: "<?php echo osc_esc_js(__('Name: enter at least 3 characters')); ?>.",
                             maxlength: "<?php echo osc_esc_js(__('Name: no more than 35 characters')); ?>."
                         },
@@ -1279,7 +1285,7 @@ class ItemForm extends Form
                     currency: {required: true},
                     <?php } ?>
                     <?php if ($path === 'front') { ?>
-                    contactName: {minlength: 3, maxlength: 35},
+                    contactName: {<?php echo self::nameRequired() ? 'required: true, ' : ''; ?>minlength: 3, maxlength: 35},
                     contactEmail: {required: true, email: true},
                     <?php } ?>
                     regionId: {required: true, digits: true},
@@ -1296,6 +1302,7 @@ class ItemForm extends Form
                     <?php } ?>
                     <?php if ($path === 'front') { ?>
                     contactName: {
+                        required: "<?php echo osc_esc_js(__('Add your name.')); ?>",
                         minlength: "<?php echo osc_esc_js(__('Name: enter at least 3 characters')); ?>.",
                         maxlength: "<?php echo osc_esc_js(__('Name: no more than 35 characters')); ?>."
                     },
@@ -1712,6 +1719,16 @@ class ItemForm extends Form
         }
 
         return (int) (osc_is_edit_page() ? osc_item_region_id() : osc_user_field('fk_i_region_id'));
+    }
+
+    /**
+     * Whether the publish form asks a guest for a name, as ListingService does.
+     *
+     * @return bool
+     */
+    private static function nameRequired(): bool
+    {
+        return osc_item_contact_name_required() && !osc_is_web_user_logged_in() && !osc_is_edit_page();
     }
 
     /**

@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1266 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1267 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -883,7 +883,7 @@ Core defines 1266 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (139)
+### hPreference (140)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -931,6 +931,7 @@ Core defines 1266 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_is_watermark_image()` | Return if need mark images with image |
 | `osc_is_watermark_text()` | Return if need mark images with text |
 | `osc_item_attachment()` | Gets item attachment is enabled |
+| `osc_item_contact_name_required()` | Whether a guest must give a name to publish a new listing. When off, a blank name is saved as Anonymous. |
 | `osc_item_spam_delay()` | Gets how many seconds between item post to not consider it SPAM |
 | `osc_item_stats_retention_days()` | Retention window for the site-wide daily stats rollup, in days. 0 keeps rows forever, which is the default: the rollup is a handful of rows per day for the whole site regardless of its size, and the admin reports chart looks back as far as ten months. |
 | `osc_item_views_enabled()` | Whether listing view counting is enabled. Defaults to on when the preference has never been set, so existing installs keep counting as before. |
