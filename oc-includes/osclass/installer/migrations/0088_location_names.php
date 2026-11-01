@@ -43,7 +43,7 @@ return new class () implements MigrationInterface {
             'CREATE TABLE IF NOT EXISTS ' . DB_TABLE_PREFIX . 't_location_name ('
             . " e_place_type ENUM('country','region','city') NOT NULL,"
             . ' s_place_id VARCHAR(12) NOT NULL,'
-            . ' fk_c_locale_code CHAR(5) COLLATE ' . $collate . ' NOT NULL,'
+            . ' fk_c_locale_code CHAR(5)' . ($collate === 'utf8mb4_general_ci' ? '' : ' COLLATE ' . $collate) . ' NOT NULL,'
             . ' s_name VARCHAR(100) NOT NULL,'
             . ' PRIMARY KEY (e_place_type, s_place_id, fk_c_locale_code),'
             . ' INDEX idx_type_name (e_place_type, s_name),'
