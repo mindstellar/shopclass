@@ -345,6 +345,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_item_stats (
     i_num_expired INT UNSIGNED NOT NULL DEFAULT 0,
     i_num_premium_views INT UNSIGNED NOT NULL DEFAULT 0,
     dt_date DATE NULL,
+    i_num_saved INT UNSIGNED NOT NULL DEFAULT 0,
 
         PRIMARY KEY (fk_i_item_id),
         INDEX i_num_spam (i_num_spam),

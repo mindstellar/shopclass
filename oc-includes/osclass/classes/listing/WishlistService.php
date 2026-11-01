@@ -123,12 +123,22 @@ final class WishlistService
      */
     public static function erase($userId): void
     {
-        (new WishlistStore())->delete((int) $userId);
+        (new self())->change((int) $userId, static fn (array $ids): array => array());
     }
 
     /**
-     * Read, change and write the list with the user's row locked; nothing is written when
-     * the list stays the same.
+     * How many wishlists hold the listing.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public function savedCount(int $listingId): int
+    {
+        return ListingCounters::saved($listingId);
+    }
+
+    /**
+     * Read, change and write the list with the user's row locked, and move each listing's
+     * saved count by the change; nothing is written when the list stays the same.
      *
      * @param callable(int[]):int[] $edit
      *
@@ -145,6 +155,7 @@ final class WishlistService
             $next = $edit($ids);
             if ($next !== $ids) {
                 $this->store->save($userId, $next);
+                ListingCounters::changeSaved(array_diff($next, $ids), array_diff($ids, $next));
             }
         });
     }
