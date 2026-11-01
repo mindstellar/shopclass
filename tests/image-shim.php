@@ -91,7 +91,8 @@ $class = new ReflectionClass(ImageProcessing::class);
 check('the class is tagged', str_contains((string) $class->getDocComment(), '@deprecated 7.1.0 Use mindstellar\image\\'));
 $untagged = array();
 foreach ($class->getMethods(ReflectionMethod::IS_PUBLIC) as $method) {
-    if (in_array($method->getName(), array('__clone', '__destruct'), true)) {
+    // image() is @internal: core's bridge from a wrapper to the new layer.
+    if (in_array($method->getName(), array('__clone', '__destruct', 'image'), true)) {
         continue;
     }
     if (!str_contains((string) $method->getDocComment(), '@deprecated 7.1.0 Use mindstellar\image\\')) {
@@ -108,6 +109,8 @@ sort($static);
 $listed = array_keys($statics);
 sort($listed);
 pin('every static helper is checked above', $listed, $static);
+
+check('image() hands core the wrapped image', $img->image() instanceof \mindstellar\image\Image);
 
 harness_section('same answers as the new layer');
 

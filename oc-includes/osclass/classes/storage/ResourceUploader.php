@@ -71,10 +71,11 @@ final class ResourceUploader
      * @param string               $box      the normal size, "WxH", the mark is drawn for
      * @param array<string,string> $sizes    path => "WxH" for each size below normal
      * @param bool                 $fit      scale down to fit each size, never pad or upscale
+     * @param Image|\ImageProcessing $normal   a wrapper, as 7.0 passed, is still taken
      * @param string[]             $unmarked paths in $sizes that never get the mark (thumbnails)
      */
     public static function writeSizes(
-        Image $normal,
+        Image|\ImageProcessing $normal,
         string $box,
         string $normalPath,
         array $sizes,
@@ -83,6 +84,9 @@ final class ResourceUploader
         bool $fit = false,
         array $unmarked = []
     ): void {
+        if ($normal instanceof \ImageProcessing) {
+            $normal = $normal->image();
+        }
         $processor = Processor::site();
         $engine    = $processor->engine();
         foreach ($sizes as $path => $dims) {
@@ -284,6 +288,31 @@ final class ResourceUploader
 
         // Single row+cache delete for the whole owner, after files are handled.
         (new Resource())->deleteByOwner($ownerType, $ownerId);
+    }
+
+    /**
+     * Store a new resource for an owner, then drop the ones it had before. When the upload
+     * fails, the old resources are kept.
+     *
+     * @param string              $ownerType
+     * @param int                 $ownerId
+     * @param string              $tmpFile   consumed, as by upload()
+     * @param array<string,mixed> $options   as for upload()
+     *
+     * @return array<string,mixed>|false the new resource row, or false with nothing changed
+     */
+    public function replaceOwned(string $ownerType, int $ownerId, string $tmpFile, array $options = array()): array|false
+    {
+        $old = Resource::isValidOwnerType($ownerType) ? (new Resource())->findByOwner($ownerType, $ownerId) : array();
+        $row = $this->upload($ownerType, $ownerId, $tmpFile, $options);
+        if ($row === false) {
+            return false;
+        }
+        foreach ($old as $previous) {
+            $this->delete($previous);
+        }
+
+        return $row;
     }
 
     /**

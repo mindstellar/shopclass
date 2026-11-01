@@ -3247,6 +3247,10 @@ msgid "The automatic menu is back."
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/AvatarUpload.php
+msgid "The avatar could not be saved. Please try again."
+msgstr ""
+
+#: oc-includes/osclass/classes/storage/AvatarUpload.php
 msgid "The avatar you tried to upload exceeds the maximum size"
 msgstr ""
 

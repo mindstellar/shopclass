@@ -75,28 +75,40 @@ final class AvatarUpload
             return;
         }
 
-        self::replace($userId, $avatar['tmp_name']);
+        if (!self::replace($userId, $avatar['tmp_name'])) {
+            osc_add_flash_error_message(_m('The avatar could not be saved. Please try again.'), $flashScope);
+        }
     }
 
     /**
      * Save an image file already on disk, such as a downloaded social profile
      * picture, as the user's avatar. Makes the same sizes as an upload and
-     * replaces the old avatar only after the file is known to be an image.
+     * replaces the old avatar only once the new one is stored. $path is read, never changed.
      *
      * @param int    $userId avatar owner
      * @param string $path   image file on disk
      *
-     * @return bool true when the avatar was stored; false when avatars are off or the file is not usable
+     * @return bool true when the avatar was stored; false when avatars are off, or the file is
+     *              too large, not an image or could not be stored
      */
     public static function store(int $userId, string $path): bool
     {
-        if ($userId <= 0 || !osc_get_preference('enabled_user_avatars') || !is_file($path) || !self::isImage($path)) {
+        if ($userId <= 0 || !osc_get_preference('enabled_user_avatars') || !is_file($path)
+            || (int) filesize($path) > osc_max_size_kb() * 1024 || !self::isImage($path)
+        ) {
             return false;
         }
+        // The uploader consumes its file, so it gets a copy in the temp folder.
+        $copy = osc_uploads_path() . 'temp/avatar_' . bin2hex(random_bytes(8));
+        if (!@copy($path, $copy)) {
+            return false;
+        }
+        $stored = self::replace($userId, $copy);
+        if (is_file($copy)) {
+            @unlink($copy);
+        }
 
-        self::replace($userId, $path);
-
-        return true;
+        return $stored;
     }
 
     /**
@@ -112,24 +124,22 @@ final class AvatarUpload
     }
 
     /**
-     * Drop the old avatar and store $path in the normal and thumbnail sizes.
+     * Store $path in the normal and thumbnail sizes, then drop the old avatar.
      *
      * @param int    $userId
      * @param string $path
      *
-     * @return void
+     * @return bool false, with the old avatar kept, when the new one could not be stored
      */
-    private static function replace(int $userId, string $path): void
+    private static function replace(int $userId, string $path): bool
     {
         $dimensions = osc_get_preference('avatar_dimensions') ?: '200x200';
 
-        $uploader = new ResourceUploader();
-        $uploader->deleteByOwner(Resource::OWNER_USER, $userId);
-        $uploader->upload(Resource::OWNER_USER, $userId, $path, array(
+        return (new ResourceUploader())->replaceOwned(Resource::OWNER_USER, $userId, $path, array(
             'variants' => array(
                 'normal'    => $dimensions,
                 'thumbnail' => '64x64',
             ),
-        ));
+        )) !== false;
     }
 }

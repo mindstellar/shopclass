@@ -29,7 +29,12 @@ foreach (array('oc-includes', 'oc-admin') as $dir) {
         ) {
             continue;
         }
-        if (preg_match('/\b(ImageProcessing|ImageResizer)\b/', (string) file_get_contents($file->getPathname()))) {
+        $source = (string) file_get_contents($file->getPathname());
+        if ($path === 'oc-includes/osclass/classes/storage/ResourceUploader.php') {
+            // writeSizes() still takes a wrapper, as 7.0 passed, and unwraps it at once.
+            $source = str_replace(array('Image|\\ImageProcessing', 'instanceof \\ImageProcessing'), '', $source);
+        }
+        if (preg_match('/\b(ImageProcessing|ImageResizer)\b/', $source)) {
             $found[] = $path;
         }
     }

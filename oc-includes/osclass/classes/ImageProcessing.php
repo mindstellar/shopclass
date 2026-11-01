@@ -231,6 +231,16 @@ class ImageProcessing
     }
 
     /**
+     * The image this wrapper holds, for core code that still receives a wrapper.
+     *
+     * @internal
+     */
+    public function image(): Image
+    {
+        return $this->image;
+    }
+
+    /**
      * The extension the image will be written with ('png', 'webp' or 'jpg').
      *
      * @return string

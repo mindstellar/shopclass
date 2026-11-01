@@ -31,11 +31,20 @@ namespace mindstellar\storage {
             self::$calls[] = array('delete', $ownerType, $ownerId);
         }
 
+        public static bool $fail = false;
+
         public function upload(string $ownerType, int $ownerId, string $tmpFile, array $options = array()): array|false
         {
             self::$calls[] = array('upload', $ownerType, $ownerId, $tmpFile, $options);
 
             return array();
+        }
+
+        public function replaceOwned(string $ownerType, int $ownerId, string $tmpFile, array $options = array()): array|false
+        {
+            self::$calls[] = array('replace', $ownerType, $ownerId, $tmpFile, $options);
+
+            return self::$fail ? false : array();
         }
     }
 
@@ -75,6 +84,14 @@ namespace {
     function osc_get_preference($key, $section = 'osclass')
     {
         return $GLOBALS['prefs'][$key] ?? '';
+    }
+
+    function osc_uploads_path()
+    {
+        $dir = sys_get_temp_dir() . '/avatar-test-' . getmypid() . '/';
+        is_dir($dir . 'temp') || mkdir($dir . 'temp', 0777, true);
+
+        return $dir;
     }
 
     function osc_max_size_kb()
@@ -185,8 +202,7 @@ namespace {
     pin(
         'replaces the old avatar and uploads with default variants',
         array(
-            array('delete', 'user', 7),
-            array('upload', 'user', 7, '/tmp/ok.jpg', array('variants' => array('normal' => '200x200', 'thumbnail' => '64x64'))),
+            array('replace', 'user', 7, '/tmp/ok.jpg', array('variants' => array('normal' => '200x200', 'thumbnail' => '64x64'))),
         ),
         ResourceUploader::$calls
     );
@@ -200,13 +216,17 @@ namespace {
     avatar_scenario(array(), array(), true);
     pin('stores and returns true', true, AvatarUpload::store(7, $ok));
     pin(
-        'replaces the old avatar, same sizes as an upload',
-        array(
-            array('delete', 'user', 7),
-            array('upload', 'user', 7, $ok, array('variants' => array('normal' => '200x200', 'thumbnail' => '64x64'))),
-        ),
-        ResourceUploader::$calls
+        'replaces the old avatar from a copy in the temp folder, same sizes as an upload',
+        array(array('replace', 'user', 7, true, array('variants' => array('normal' => '200x200', 'thumbnail' => '64x64')))),
+        array_map(static fn (array $c): array => array($c[0], $c[1], $c[2], str_starts_with($c[3], osc_uploads_path() . 'temp/avatar_'), $c[4]), ResourceUploader::$calls)
     );
+    check('the file it was given is left alone', is_file($ok));
+    check('and the copy is gone', !is_file(ResourceUploader::$calls[0][3]));
+
+    avatar_scenario(array(), array(), true);
+    ResourceUploader::$fail = true;
+    pin('a failed store returns false', false, AvatarUpload::store(7, $ok));
+    ResourceUploader::$fail = false;
 
     avatar_scenario(array(), array(), false);
     pin('feature off returns false', false, AvatarUpload::store(7, $ok));
