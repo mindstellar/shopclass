@@ -25,7 +25,7 @@
 
 // Tests that load classes by hand have no autoloader; registries now live in the container.
 foreach (array('ContainerInterface', 'NotFoundException', 'Container') as $containerFile) {
-    require_once dirname(__DIR__, 2) . '/oc-includes/osclass/classes/container/' . $containerFile . '.php';
+    require_once dirname(__DIR__, 2) . '/oc-includes/classes/core/container/' . $containerFile . '.php';
 }
 
 if (!isset($GLOBALS['okCount'])) {
@@ -383,20 +383,22 @@ if (!function_exists('harness_class_files')) {
     /**
      * Every PHP file under a folder of the repository, sorted, as relative path => source.
      *
-     * @param string                       $dir    a folder relative to the repository root
+     * @param string|null                  $dir    a folder relative to the repository root; null scans both class trees
      * @param (callable(string): bool)|null $filter keeps a relative path when it returns true
      *
      * @return array<string,string>
      */
-    function harness_class_files(string $dir = 'oc-includes/osclass/classes', ?callable $filter = null): array
+    function harness_class_files(?string $dir = null, ?callable $filter = null): array
     {
         $root  = dirname(__DIR__, 2) . '/';
         $files = array();
-        $it    = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . $dir, FilesystemIterator::SKIP_DOTS));
-        foreach ($it as $file) {
-            $path = substr($file->getPathname(), strlen($root));
-            if ($file->getExtension() === 'php' && ($filter === null || $filter($path))) {
-                $files[$path] = (string) file_get_contents($file->getPathname());
+        foreach ($dir === null ? array('oc-includes/osclass/classes', 'oc-includes/classes') : array($dir) as $tree) {
+            $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . $tree, FilesystemIterator::SKIP_DOTS));
+            foreach ($it as $file) {
+                $path = substr($file->getPathname(), strlen($root));
+                if ($file->getExtension() === 'php' && ($filter === null || $filter($path))) {
+                    $files[$path] = (string) file_get_contents($file->getPathname());
+                }
             }
         }
         ksort($files);

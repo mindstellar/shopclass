@@ -35,7 +35,7 @@ function __($key, $domain = 'core')
 {
     return $key;
 }
-require_once ABS_PATH . 'oc-includes/osclass/classes/site/SiteMode.php';
+require_once ABS_PATH . 'oc-includes/classes/core/site/SiteMode.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 

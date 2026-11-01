@@ -34,7 +34,7 @@ function hides_error(string $body): bool
 }
 
 $found = array();
-foreach (harness_class_files('oc-includes/osclass/classes', static fn (string $path): bool => !str_contains($path, '/classes/model/') && !str_contains($path, '/classes/database/')) as $path => $source) {
+foreach (harness_class_files(null, static fn (string $path): bool => !str_contains($path, '/classes/model/') && !str_contains($path, '/classes/database/')) as $path => $source) {
     preg_match_all(DB_CATCH, harness_code_only($source), $m);
     $count = count(array_filter($m[2], 'hides_error'));
     if ($count > 0) {

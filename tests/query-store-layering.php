@@ -52,7 +52,7 @@ check('a store naming a query in any form is caught, RowHashQuery aside', preg_m
     && preg_match(STORE_USES_QUERY, 'ListingQuery::find(1);') === 1 && preg_match(STORE_USES_QUERY, 'RowHashQuery::keyedHashes($t, $k, true);') === 0);
 
 $found = array();
-foreach (harness_class_files('oc-includes/osclass/classes', static fn (string $path): bool => preg_match('/(Query|Store)\.php$/', $path) === 1) as $path => $source) {
+foreach (harness_class_files(null, static fn (string $path): bool => preg_match('/(Query|Store)\.php$/', $path) === 1) as $path => $source) {
     $kind = str_ends_with($path, 'Query.php') ? 'query' : 'store';
     foreach (explode("\n", harness_code_only($source)) as $line) {
         $broken = $kind === 'query'

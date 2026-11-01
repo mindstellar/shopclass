@@ -47,7 +47,7 @@ check('the inbox and the thread both build their rows with listRows()', strpos(h
     && strpos($thread, '$this->listRows(') !== false);
 check('the thread is read and marked read before the list is built', strpos($thread, '->markRead(') < strpos($thread, '$this->listRows('));
 check('listRows() hands the shaping to InboxQuery', strpos(harness_method_source($file, 'listRows'), '$this->query()->rows(') !== false);
-$queryFile = __DIR__ . '/../oc-includes/osclass/classes/messaging/InboxQuery.php';
+$queryFile = __DIR__ . '/../oc-includes/classes/messaging/InboxQuery.php';
 $rows      = harness_method_source($queryFile, 'rows');
 foreach (array('lastVisible(', '$this->listings(', 'UserStore::displayNames(', "'preview_mine'", "'photo_url'", "'short_time'", "'initial'", "'listing_live'") as $needle) {
     check("InboxQuery::rows() uses {$needle}", strpos($rows, $needle) !== false);

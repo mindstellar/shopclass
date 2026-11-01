@@ -89,11 +89,12 @@ other request values, and `ViewScope::withItem()` runs a hook with the listing t
 
 ## Folders
 
-Every class lives in `oc-includes/osclass/classes/`. A folder is a module: its classes are
-in the `mindstellar\<folder>` namespace. The old classes plugins use have no namespace: all of
+A module's classes are in the `mindstellar\<module>` namespace. Modules added from 7.1 on live in
+`oc-includes/classes/`, grouped by feature (`core/`, `messaging/`, `media/`, `content/`), and each has
+its own PSR-4 entry in `composer.json`. Older modules are folders in `oc-includes/osclass/classes/`. The old classes plugins use have no namespace: all of
 `controller`, `actions` and `datatables`, the files in the root, and some of `model`, `form` and
 `logger`.
-`tests/classes-folder-map.php` fails when a folder is missing from this table.
+`tests/classes-folder-map.php` fails when a module is missing from this table.
 
 | Folder | Holds |
 |---|---|

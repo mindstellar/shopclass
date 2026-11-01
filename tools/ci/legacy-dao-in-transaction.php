@@ -60,7 +60,7 @@ foreach ($args as $arg) {
 }
 $root = $root ?? getcwd();
 
-$scanDirs = [$root . '/oc-includes/osclass', $root . '/oc-admin'];
+$scanDirs = [$root . '/oc-includes/osclass', $root . '/oc-includes/classes', $root . '/oc-admin'];
 
 /**
  * Blank comments, keeping every byte position and newline so offsets and line numbers

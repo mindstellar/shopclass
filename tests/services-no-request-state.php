@@ -33,7 +33,7 @@ check('a comment does not count', preg_match(REQUEST_STATE, harness_code_only("<
 
 harness_section('Services, policies, stores and queries');
 $found = array();
-$files = harness_class_files('oc-includes/osclass/classes', static fn (string $path): bool => preg_match('/(Service|Policy|Store|Query)\.php$/', $path) === 1);
+$files = harness_class_files(null, static fn (string $path): bool => preg_match('/(Service|Policy|Store|Query)\.php$/', $path) === 1);
 foreach ($files as $path => $source) {
     foreach (explode("\n", harness_code_only($source)) as $i => $line) {
         if (preg_match(REQUEST_STATE, $line) === 1) {

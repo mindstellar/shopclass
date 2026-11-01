@@ -22,7 +22,7 @@ const ROOT   = __DIR__ . '/../';
 const DOC    = ROOT . 'docs/site/developers/hooks.md';
 const BEGIN  = '<!-- generated:hooks -->';
 const END    = '<!-- /generated:hooks -->';
-const ROOTS  = array('oc-includes/osclass', 'oc-admin');
+const ROOTS  = array('oc-includes/osclass', 'oc-includes/classes', 'oc-admin');
 
 require __DIR__ . '/lib/docgen.php';
 

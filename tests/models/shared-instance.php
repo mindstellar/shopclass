@@ -55,9 +55,7 @@ require_once ABS_PATH . 'oc-includes/osclass/formatting.php';
 harness_section('deprecated accessors answer the shared instance');
 
 $classes = array();
-$sources = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/osclass/classes', FilesystemIterator::SKIP_DOTS));
-foreach ($sources as $file) {
-    $src = (string) file_get_contents($file->getPathname());
+foreach (harness_class_files() as $src) {
     if ((strpos($src, 'function getInstance(') === false && strpos($src, 'SharedInstance;') === false)
         || !preg_match('/function (newInstance|instance)\(/', $src)
         || !preg_match('/^(?:final |abstract )?class (\w+)/m', $src, $m)

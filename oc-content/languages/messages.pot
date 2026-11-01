@@ -402,7 +402,7 @@ msgstr ""
 msgid "Addresses"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Admins cannot write in a conversation"
 msgstr ""
 
@@ -731,7 +731,7 @@ msgstr ""
 msgid "Choose a package"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Choose a reason for the report"
 msgstr ""
 
@@ -1303,8 +1303,8 @@ msgstr[1] ""
 msgid "Forgotten your password?"
 msgstr ""
 
+#: oc-includes/classes/messaging/InboxQuery.php
 #: oc-includes/osclass/classes/controller/CWebMessages.php
-#: oc-includes/osclass/classes/messaging/InboxQuery.php
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Former user"
 msgstr ""
@@ -1691,8 +1691,8 @@ msgstr ""
 msgid "Messages (%d)"
 msgstr ""
 
+#: oc-includes/classes/messaging/MessagingService.php
 #: oc-includes/osclass/classes/controller/CWebMessages.php
-#: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "Messages are switched off on this site"
 msgstr ""
 
@@ -1881,7 +1881,7 @@ msgstr ""
 msgid "No such comment."
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 #: oc-includes/osclass/classes/moderation/MessageModeration.php
 msgid "No such conversation"
 msgstr ""
@@ -2107,7 +2107,7 @@ msgstr ""
 msgid "Only registered users can share listings"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Only the person who blocked this conversation can unblock it"
 msgstr ""
 
@@ -2383,7 +2383,7 @@ msgstr ""
 msgid "Please type a comment"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Please type a message"
 msgstr ""
 
@@ -2604,9 +2604,9 @@ msgstr ""
 msgid "Removed by admin"
 msgstr ""
 
+#: oc-includes/classes/messaging/InboxQuery.php
 #: oc-includes/osclass/classes/controller/CWebMessages.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
-#: oc-includes/osclass/classes/messaging/InboxQuery.php
 msgid "Removed listing"
 msgstr ""
 
@@ -2866,7 +2866,7 @@ msgstr ""
 msgid "Sign in to the admin"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Sign in to use messages"
 msgstr ""
 
@@ -3550,7 +3550,7 @@ msgstr ""
 msgid "The message has been removed"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "The message is too long."
 msgstr ""
 
@@ -3942,11 +3942,11 @@ msgstr ""
 msgid "This alert could not be kept after an update. Save the search again."
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "This conversation is blocked"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "This conversation is closed"
 msgstr ""
 
@@ -3958,11 +3958,11 @@ msgstr ""
 msgid "This conversation is not reported"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "This conversation is waiting for review"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "This conversation was already reported"
 msgstr ""
 
@@ -4018,13 +4018,13 @@ msgstr ""
 msgid "This listing could not be published. Try again later."
 msgstr ""
 
+#: oc-includes/classes/messaging/MessagingService.php
 #: oc-includes/osclass/classes/comment/CommentService.php
 #: oc-includes/osclass/classes/controller/CWebItem.php
-#: oc-includes/osclass/classes/messaging/MessagingService.php
 msgid "This listing doesn't exist"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "This listing has no account to message"
 msgstr ""
 
@@ -4040,7 +4040,7 @@ msgstr ""
 msgid "This listing is free to publish now."
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "This listing is no longer available"
 msgstr ""
 
@@ -4147,7 +4147,7 @@ msgstr ""
 msgid "Titles can be 1 to %d characters."
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessageTime.php
+#: oc-includes/classes/messaging/MessageTime.php
 msgid "Today"
 msgstr ""
 
@@ -4169,11 +4169,11 @@ msgid_plural "Too many failed attempts. Please try again in %d minutes."
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Too many messages in an hour. Try again later."
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Too many new conversations in an hour. Try again later."
 msgstr ""
 
@@ -4468,7 +4468,7 @@ msgstr ""
 msgid "Write to %s"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessageTime.php
+#: oc-includes/classes/messaging/MessageTime.php
 msgid "Yesterday"
 msgstr ""
 
@@ -4557,11 +4557,11 @@ msgstr ""
 msgid "You can't repeat internal name"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "You cannot message yourself about your own listing"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "You cannot send messages"
 msgstr ""
 
@@ -4687,7 +4687,7 @@ msgstr ""
 msgid "Your account"
 msgstr ""
 
-#: oc-includes/osclass/classes/messaging/MessagingService.php
+#: oc-includes/classes/messaging/MessagingService.php
 msgid "Your account cannot use messages"
 msgstr ""
 

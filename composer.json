@@ -19,6 +19,16 @@
     ],
     "autoload": {
         "psr-4": {
+            "mindstellar\\container\\": "oc-includes/classes/core/container",
+            "mindstellar\\event\\": "oc-includes/classes/core/event",
+            "mindstellar\\install\\": "oc-includes/classes/core/install",
+            "mindstellar\\site\\": "oc-includes/classes/core/site",
+            "mindstellar\\image\\": "oc-includes/classes/media/image",
+            "mindstellar\\messaging\\": "oc-includes/classes/messaging",
+            "mindstellar\\push\\": "oc-includes/classes/messaging/push",
+            "mindstellar\\live\\": "oc-includes/classes/messaging/live",
+            "mindstellar\\menu\\": "oc-includes/classes/content/menu",
+            "mindstellar\\seo\\": "oc-includes/classes/content/seo",
             "mindstellar\\": "oc-includes/osclass/classes"
         },
         "classmap": [

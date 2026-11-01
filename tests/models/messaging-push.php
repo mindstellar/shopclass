@@ -167,7 +167,7 @@ $cleanup0();
 $svc->reply($sent->conversationId(), 'For the buyer', $asSeller);
 pin('a reply to a user with no browsers queues no job', 0, $count(sprintf($job, 'COUNT(*)')));
 pin('the job checks for browsers before counting unread', true, (static function (): bool {
-    $src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/messaging/PushNotifier.php');
+    $src = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/messaging/PushNotifier.php');
     $run = substr($src, (int) strpos($src, 'public function run('));
     $has = strpos($run, '->has(');
 
@@ -302,7 +302,7 @@ pin('an inactive user is not pushed', array(), $runJobs());
 $admin->query("UPDATE {$p}t_user SET b_active = 1 WHERE pk_i_id = $seller");
 
 harness_section('what travels');
-$sender = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/messaging/PushNotifier.php');
+$sender = file_get_contents(ABS_PATH . 'oc-includes/classes/messaging/PushNotifier.php');
 pin('the notifier handles ids, not text', 0, preg_match('/s_body|getBody|->body\(/', $sender));
 
 if (!defined('MODELS_RUNNER')) {

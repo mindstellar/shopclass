@@ -9,7 +9,8 @@
  */
 
 /**
- * Every folder in oc-includes/osclass/classes/ has one line in the folder map of
+ * Every module (a folder in oc-includes/osclass/classes/, or a namespace composer.json maps
+ * into oc-includes/classes/) has one line in the folder map of
  * docs/site/developers/architecture.md, and the map names no folder that is gone.
  * DB-free.  Usage: php tests/classes-folder-map.php
  */
@@ -18,6 +19,13 @@ require_once __DIR__ . '/lib/harness.php';
 
 $root    = dirname(__DIR__);
 $folders = array_map('basename', glob($root . '/oc-includes/osclass/classes/*', GLOB_ONLYDIR));
+$psr4    = json_decode((string) file_get_contents($root . '/composer.json'), true)['autoload']['psr-4'];
+foreach ($psr4 as $prefix => $path) {
+    if (str_starts_with($path, 'oc-includes/classes/')) {
+        $folders[] = substr(rtrim($prefix, '\\'), strlen('mindstellar\\'));
+        check($prefix . ' points at a folder', is_dir($root . '/' . $path));
+    }
+}
 sort($folders);
 
 $doc = (string) file_get_contents($root . '/docs/site/developers/architecture.md');

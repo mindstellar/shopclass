@@ -665,10 +665,10 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `contact_form_top` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_page_aside` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_params` | filter | `$params` | `oc-includes/osclass/classes/controller/CWebContact.php` |
-| `conversation_blocked` | event | `ConversationBlocked` | `oc-includes/osclass/classes/messaging/event/ConversationBlocked.php` |
-| `conversation_reported` | event | `ConversationReported` | `oc-includes/osclass/classes/messaging/event/ConversationReported.php` |
-| `conversation_started` | event | `ConversationStarted` | `oc-includes/osclass/classes/messaging/event/ConversationStarted.php` |
-| `conversation_unblocked` | event | `ConversationUnblocked` | `oc-includes/osclass/classes/messaging/event/ConversationUnblocked.php` |
+| `conversation_blocked` | event | `ConversationBlocked` | `oc-includes/classes/messaging/event/ConversationBlocked.php` |
+| `conversation_reported` | event | `ConversationReported` | `oc-includes/classes/messaging/event/ConversationReported.php` |
+| `conversation_started` | event | `ConversationStarted` | `oc-includes/classes/messaging/event/ConversationStarted.php` |
+| `conversation_unblocked` | event | `ConversationUnblocked` | `oc-includes/classes/messaging/event/ConversationUnblocked.php` |
 | `correct_login_url_redirect` | filter | `$url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `count_view_on_beacon` | filter | `osc_request_counts_as_view(), $id` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `count_view_on_render` | filter | `osc_request_counts_as_view(), $item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
@@ -702,9 +702,9 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `gettext` | filter | `$string` | `oc-includes/osclass/helpers/hTranslations.php` |
 | `header` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `help_box` | action | none | `oc-admin/themes/modern/parts/header.php` |
-| `image_jpeg_quality` | filter | `$qualityPref` | `oc-includes/osclass/classes/ImageProcessing.php` |
-| `image_max_pixels` | filter | `50000000` | `oc-includes/osclass/classes/ImageProcessing.php` |
-| `image_png_compression` | filter | `6` | `oc-includes/osclass/classes/ImageProcessing.php` |
+| `image_jpeg_quality` | filter | `$pref` | `oc-includes/classes/media/image/Processor.php` |
+| `image_max_pixels` | filter | `50000000` | `oc-includes/classes/media/image/Processor.php` |
+| `image_png_compression` | filter | `6` | `oc-includes/classes/media/image/Processor.php` |
 | `init` | action | none | `oc-includes/osclass/classes/controller/BaseModel.php` |
 | `init_ajax` | action | none | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `init_billing` | action | none | `oc-includes/osclass/classes/controller/CWebBilling.php` |
@@ -744,10 +744,10 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `market_catalog_mirror_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `market_catalog_primary_base` | filter | `$default, $this->type` | `oc-includes/osclass/classes/market/Catalog.php` |
 | `media_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/MediaDataTable.php` |
-| `message_body` | event | `MessageSending` | `oc-includes/osclass/classes/messaging/event/MessageSending.php` |
-| `message_held` | event | `MessageHeld` | `oc-includes/osclass/classes/messaging/event/MessageHeld.php` |
-| `message_read` | event | `MessageRead` | `oc-includes/osclass/classes/messaging/event/MessageRead.php` |
-| `message_sent` | event | `MessageSent` | `oc-includes/osclass/classes/messaging/event/MessageSent.php` |
+| `message_body` | event | `MessageSending` | `oc-includes/classes/messaging/event/MessageSending.php` |
+| `message_held` | event | `MessageHeld` | `oc-includes/classes/messaging/event/MessageHeld.php` |
+| `message_read` | event | `MessageRead` | `oc-includes/classes/messaging/event/MessageRead.php` |
+| `message_sent` | event | `MessageSent` | `oc-includes/classes/messaging/event/MessageSent.php` |
 | `meta_description_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_keywords_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_title_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |

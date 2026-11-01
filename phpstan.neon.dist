@@ -3,6 +3,7 @@ parameters:
     phpVersion: 80200
     paths:
         - oc-includes/osclass
+        - oc-includes/classes
         - oc-admin
     excludePaths:
         analyse:
