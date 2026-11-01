@@ -229,6 +229,12 @@ if (!function_exists('osc_sitemap_default_robots_txt')) {
         return "User-agent: *\nDisallow: /oc-admin/\n";
     }
 }
+if (!function_exists('osc_sitemap_url')) {
+    function osc_sitemap_url(): string
+    {
+        return 'https://example.test/sitemapindex.xml';
+    }
+}
 // A save that changed something clears the page cache; counted apart from the effects above.
 $GLOBALS['purges'] = 0;
 if (!function_exists('osc_purge_page_cache')) {
