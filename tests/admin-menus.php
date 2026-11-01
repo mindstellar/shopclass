@@ -218,6 +218,8 @@ pin(
 pin('...and the saved menu is kept', array('Sale', 'Motors'), array_column(osc_menu('main'), 'label'));
 $r = drive('menu_save_post', array('menu' => 'main', 'items' => json_encode(array(array('type' => 'link', 'url' => 'nope', 'label' => array('en_US' => 'a & "b"'))))));
 pin('a posted label is escaped in the flash', array('error:The link &quot;a &amp; &quot;b&quot;&quot; needs an address that starts with http://, https:// or /.'), $r['flashes']);
+$r = drive('menu_save_post', array('menu' => 'ghost', 'items' => json_encode(array(array('type' => 'link', 'url' => 'nope', 'label' => array('en_US' => 'x'))))));
+pin('a refused save for a menu that cannot be edited draws no draft in another menu', array(null, 1), array($r['view']['menuEditor'] ?? null, count($r['redirects'])));
 $r = drive('menu_save_post', array('menu' => 'main', 'items' => 'not json'));
 pin('bad JSON is refused', array('error:The menu could not be read.'), $r['flashes']);
 

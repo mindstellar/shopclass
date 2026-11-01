@@ -686,7 +686,8 @@ class CAdminAppearance extends AdminSecBaseModel
             // A message can name a posted label, and flash messages print as HTML.
             osc_add_flash_error_message(osc_esc_html($error), 'admin');
         }
-        if ($errors !== array() && !$create) {
+        // A draft only goes back to its own menu, never to another one in its place.
+        if ($errors !== array() && !$create && in_array($id, $service->editableIds(), true)) {
             // Back to the editor with the posted items, so the owner fixes the one item named
             // instead of building the menu again.
             $this->menusScreen($service->draft(json_decode(Params::getParamString('items', false, false, false), true)));
