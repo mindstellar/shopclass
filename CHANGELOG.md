@@ -60,6 +60,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
+- Sites update to 7.1 from 7.0.12; an older 7.0 site is offered 7.0.12 first.
+- Releases ship only `shopclass_v*.zip`; `osclass_v*.zip` is no longer built.
 
 ### Changed
 - An update to a new X.Y release replaces `oc-admin` and `oc-includes` whole, so files the release dropped are removed. The database step then runs on its own page.

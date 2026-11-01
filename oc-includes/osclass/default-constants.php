@@ -19,7 +19,7 @@ if (!defined('OSCLASS_VERSION')) {
 // The oldest version that may update straight to this release, or '' for any. An older site is
 // offered a release in between first. The release build copies it into the release notes.
 if (!defined('OSCLASS_UPDATE_FROM')) {
-    define('OSCLASS_UPDATE_FROM', '');
+    define('OSCLASS_UPDATE_FROM', '7.0.12');
 }
 
 // Roughly where a search engine stops showing a description, and the budget

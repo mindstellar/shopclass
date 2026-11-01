@@ -79,9 +79,7 @@ curl -fsSL -o "$DIR/storefront.zip" "$THEME_URL"
 unzip -qq "$DIR/storefront.zip" -d "$DIR/osclass/oc-content/themes/"
 rm -f "$DIR/storefront.zip"
 
-# Package twice from the same tree. shopclass_v*.zip is the download; osclass_v*.zip,
-# wrapped in osclass/, is what updaters older than 6.4.0 look for and can unpack.
-( cd "$DIR" && zip -qr "osclass_v${VERSION}.zip" osclass )
+# 7.1 and later ship only shopclass_v*.zip; sites update to 7.1 from 7.0.12, whose updater takes it.
 mv "$DIR/osclass" "$DIR/shopclass"
 ( cd "$DIR" && zip -qr "shopclass_v${VERSION}.zip" shopclass )
-echo "Build created successfully in $DIR/shopclass_v${VERSION}.zip and $DIR/osclass_v${VERSION}.zip"
+echo "Build created successfully in $DIR/shopclass_v${VERSION}.zip"
