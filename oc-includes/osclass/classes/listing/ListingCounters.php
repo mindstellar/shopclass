@@ -18,7 +18,7 @@ use mindstellar\database\Db;
 use mindstellar\database\DbException;
 
 /**
- * The per-listing counters in t_item_stats: views, and the reports visitors file.
+ * The per-listing counters in t_item_stats: views, wishlist saves, and the reports visitors file.
  *
  * With a Redis-protocol cache, views are added up there and written to the table by a job
  * about once a minute, so a page view costs no database write. Without one, each view is
@@ -59,6 +59,39 @@ final class ListingCounters extends Model
             $in = implode(',', array_fill(0, count($chunk), '?'));
             Db::select('SELECT fk_i_item_id FROM ' . DB_TABLE_PREFIX . 't_item_stats WHERE fk_i_item_id IN (' . $in . ') ORDER BY fk_i_item_id FOR UPDATE', $chunk);
         }
+    }
+
+    /**
+     * Count the listings put on a wishlist up by one and those taken off down by one, never
+     * below 0. A listing with no stats row is skipped.
+     *
+     * @param int[] $added
+     * @param int[] $removed
+     *
+     * @throws DbException
+     */
+    public static function changeSaved(array $added, array $removed): void
+    {
+        $sets = array('i_num_saved + 1' => $added, 'IF(i_num_saved > 0, i_num_saved - 1, 0)' => $removed);
+        foreach ($sets as $value => $ids) {
+            foreach (array_chunk(array_values(array_unique(array_map('intval', $ids))), 500) as $chunk) {
+                Db::execute(
+                    'UPDATE ' . DB_TABLE_PREFIX . 't_item_stats SET i_num_saved = ' . $value
+                    . ' WHERE fk_i_item_id IN (' . implode(',', array_fill(0, count($chunk), '?')) . ')',
+                    $chunk
+                );
+            }
+        }
+    }
+
+    /**
+     * How many wishlists hold the listing; 0 when it has no stats row.
+     *
+     * @throws DbException
+     */
+    public static function saved(int $itemId): int
+    {
+        return (int) Db::scalar('SELECT i_num_saved FROM ' . DB_TABLE_PREFIX . 't_item_stats WHERE fk_i_item_id = ?', array($itemId));
     }
 
     /**

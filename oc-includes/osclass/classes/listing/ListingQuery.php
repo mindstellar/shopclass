@@ -367,7 +367,7 @@ final class ListingQuery
         $p    = DB_TABLE_PREFIX;
         $rows = Db::stringifyRows(Db::select(
             'SELECT s.i_num_views, s.i_num_spam, s.i_num_bad_classified, s.i_num_repeated, s.i_num_offensive,'
-            . ' s.i_num_expired, s.i_num_premium_views, l.*'
+            . ' s.i_num_expired, s.i_num_premium_views, s.i_num_saved, l.*'
             . ' FROM ' . $p . 't_item_stats s INNER JOIN ' . $p . 't_item_location l ON s.fk_i_item_id = l.fk_i_item_id'
             . ' WHERE s.fk_i_item_id IN (' . implode(', ', array_fill(0, count($rest), '?')) . ')',
             $rest

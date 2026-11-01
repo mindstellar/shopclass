@@ -666,6 +666,32 @@ function osc_item_views($viewAll = false)
 }
 
 /**
+ * How many user wishlists hold a listing; the current item by default. The loaded item row
+ * already carries the count, so a loop over search results costs no query.
+ *
+ * @param int|null $itemId
+ *
+ * @return int
+ */
+function osc_item_saved_count(?int $itemId = null): int
+{
+    $item = osc_item();
+    if (($itemId === null || $itemId === osc_item_id()) && isset($item['i_num_saved'])) {
+        return (int) $item['i_num_saved'];
+    }
+    $itemId ??= osc_item_id();
+    if ($itemId <= 0) {
+        return 0;
+    }
+
+    try {
+        return (new \mindstellar\listing\WishlistService())->savedCount($itemId);
+    } catch (\mindstellar\database\DbException $e) {
+        return 0;
+    }
+}
+
+/**
  * Return true if item is expired, else return false
  *
  * @return boolean
