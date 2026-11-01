@@ -59,29 +59,95 @@ final class ReleaseChannel
 
     /**
      * The newest release a channel allows, from a GitHub /releases list in any order.
+     * With $installed, a release that needs a newer site first (see updateFrom()) is skipped.
      *
      * @param array<int,mixed> $releases
      * @param string           $channel
+     * @param string           $installed the site's version, or '' to skip that rule
      *
      * @return array<string,mixed>|null
      */
-    public static function pick(array $releases, string $channel): ?array
+    public static function pick(array $releases, string $channel, string $installed = ''): ?array
     {
         $best = null;
-        foreach ($releases as $release) {
-            // GitHub's prerelease flag also keeps a release off the stable channel.
-            if (!is_array($release) || !empty($release['draft']) || empty($release['tag_name'])
-                || !self::allows($channel, (string) $release['tag_name'])
-                || ($channel === self::STABLE && !empty($release['prerelease']))
+        foreach (self::offered($releases, $channel) as $release) {
+            if (self::needsFirst($release, $installed) === null
+                && ($best === null || version_compare(self::version($release), self::version($best), '>'))
             ) {
-                continue;
-            }
-            if ($best === null || version_compare(self::version($release), self::version($best), '>')) {
                 $best = $release;
             }
         }
 
         return $best;
+    }
+
+    /**
+     * The newest release the channel allows, when the site cannot take it yet, so the screen
+     * can say which version to update to first.
+     *
+     * @param array<int,mixed> $releases
+     * @param string           $channel
+     * @param string           $installed
+     *
+     * @return array{version:string,from:string}|null
+     */
+    public static function waiting(array $releases, string $channel, string $installed): ?array
+    {
+        $newest = null;
+        foreach (self::offered($releases, $channel) as $release) {
+            if ($newest === null || version_compare(self::version($release), self::version($newest), '>')) {
+                $newest = $release;
+            }
+        }
+        // Only the newest can wait: were it free to take, pick() would give it.
+        $from = $newest === null ? null : self::needsFirst($newest, $installed);
+
+        return $from === null ? null : array('version' => self::version($newest), 'from' => $from);
+    }
+
+    /**
+     * The oldest version a release takes an update from, read from the line the release build
+     * writes into its notes; '' when there is none.
+     *
+     * @param array<string,mixed> $release
+     *
+     * @return string
+     */
+    public static function updateFrom(array $release): string
+    {
+        return preg_match('/^Update from (\d+\.\d+\.\d+) or newer\.\s*$/m', (string) ($release['body'] ?? ''), $m) ? $m[1] : '';
+    }
+
+    /**
+     * Releases in the list that the channel allows: no drafts, no junk, no prereleases on stable.
+     *
+     * @param array<int,mixed> $releases
+     * @param string           $channel
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function offered(array $releases, string $channel): array
+    {
+        return array_values(array_filter($releases, static fn ($release) => is_array($release)
+            && empty($release['draft']) && !empty($release['tag_name'])
+            && self::allows($channel, (string) $release['tag_name'])
+            // GitHub's prerelease flag also keeps a release off the stable channel.
+            && !($channel === self::STABLE && !empty($release['prerelease']))));
+    }
+
+    /**
+     * The version a site must reach before it may take this release, or null when it may now.
+     *
+     * @param array<string,mixed> $release
+     * @param string              $installed '' never blocks
+     *
+     * @return string|null
+     */
+    private static function needsFirst(array $release, string $installed): ?string
+    {
+        $from = self::updateFrom($release);
+
+        return $installed !== '' && $from !== '' && version_compare($installed, $from, '<') ? $from : null;
     }
 
     /**

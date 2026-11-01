@@ -147,6 +147,26 @@ class Upgrade
     }
 
     /**
+     * The version a site must reach before it takes this package, when $installed is older.
+     * A core release states it as OSCLASS_UPDATE_FROM; any other package needs nothing.
+     *
+     * @param string $root      package root, see packageRoot()
+     * @param string $installed the site's version
+     *
+     * @return string|null
+     */
+    public static function versionNeeded(string $root, string $installed): ?string
+    {
+        $file = $root . '/oc-includes/osclass/default-constants.php';
+        $code = is_file($file) ? (string) file_get_contents($file) : '';
+        if (!preg_match("/define\\('OSCLASS_UPDATE_FROM',\\s*'(\\d+\\.\\d+\\.\\d+)'\\)/", $code, $m)) {
+            return null;
+        }
+
+        return version_compare($installed, $m[1], '<') ? $m[1] : null;
+    }
+
+    /**
      * Target paths the package would write but this PHP user cannot. A new file counts as
      * writable when its nearest existing parent folder is.
      *
@@ -290,6 +310,14 @@ class Upgrade
                 ));
             }
 
+            $first = self::versionNeeded($originDir, OSCLASS_VERSION);
+            if ($first !== null) {
+                throw new RuntimeException(sprintf(
+                    __('Nothing was changed. This update needs Shopclass %1$s or newer first. Update to %1$s, then update again.'),
+                    $first
+                ));
+            }
+
             $blocked = self::unwritable(
                 $originDir,
                 $this->objPackage->getTargetDirectory(),
@@ -314,6 +342,7 @@ class Upgrade
                 if (function_exists('opcache_reset')) {
                     @opcache_reset();
                 }
+                self::loadNewAutoload($this->objPackage->getTargetDirectory());
             } else {
                 throw new RuntimeException(
                     $originDir . ' '
@@ -328,6 +357,41 @@ class Upgrade
             $this->FileSystem->remove($extracted_package_path);
             $this->FileSystem->remove(ABS_PATH . '.maintenance');
             osc_purge_page_cache('upgrade');
+        }
+    }
+
+    /**
+     * Register the new release's Composer class maps ahead of the old ones, so classes first
+     * loaded after the file swap in this request resolve to the new files.
+     *
+     * @param string $root the swapped install root
+     *
+     * @return bool true when the new maps were registered
+     */
+    public static function loadNewAutoload(string $root): bool
+    {
+        $dir = rtrim($root, '/') . '/oc-includes/vendor/composer/';
+        if (!is_file($dir . 'autoload_psr4.php') || !is_file($dir . 'autoload_classmap.php')
+            || !class_exists(\Composer\Autoload\ClassLoader::class, false)
+        ) {
+            return false;
+        }
+        try {
+            $read = static fn (string $file) => include $file;
+            $psr4 = $read($dir . 'autoload_psr4.php');
+            $classMap = $read($dir . 'autoload_classmap.php');
+            if (!is_array($psr4) || !is_array($classMap)) {
+                return false;
+            }
+            $loader = new \Composer\Autoload\ClassLoader();
+            $loader->addClassMap($classMap);
+            foreach ($psr4 as $prefix => $paths) {
+                $loader->setPsr4($prefix, $paths);
+            }
+            $loader->register(true);
+            return true;
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 

@@ -2,6 +2,27 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.12
+
+### Fixed
+- The updater loads the new release's class map after it swaps the files, so a later release can move classes.
+
+## Shopclass 7.0.11
+
+### Fixed
+- Portrait phone photos no longer get white bars on the sides when Imagick resizes them.
+
+## Shopclass 7.0.10
+
+### Fixed
+- Mail Settings no longer takes the browser's saved admin login as an unsaved change, so the test email runs after saving.
+- A child theme with no Widgets line offers its parent's widget sections.
+
+## Shopclass 7.0.9
+
+### New
+- A release can set `OSCLASS_UPDATE_FROM`, the oldest version that may update straight to it. An older site is offered the newest release in between first, and the Update screen says which version it needs.
+
 ## Shopclass 7.0.8
 
 ### Fixed

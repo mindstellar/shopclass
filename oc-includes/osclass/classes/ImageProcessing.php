@@ -551,6 +551,10 @@ class ImageProcessing
                     // DO NOTHING, THE IMAGE IS OK OR WE DON'T KNOW IF IT'S ROTATED
                     break;
             }
+            // A quarter turn swaps the sides; a resize that used the old ones padded the photo.
+            $this->im->setImageOrientation(imagick::ORIENTATION_TOPLEFT);
+            $this->width  = $this->im->getImageWidth();
+            $this->height = $this->im->getImageHeight();
         } elseif (isset($this->exif['Orientation'])) {
             switch ($this->exif['Orientation']) {
                 case 1:

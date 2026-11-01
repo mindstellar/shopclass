@@ -1766,7 +1766,7 @@ $run = drive('CAdminSettingsStorage', 'storage');
 check('the stored secret is never drawn back', strpos($run['drawn'], 'zq-second-key') === false);
 check(
     'the box draws empty over the keep-it hint',
-    strpos($run['drawn'], 'name="storage_s3_secret_key" class="input-text field-key" value="" autocomplete="off" spellcheck="false" autocomplete="new-password" placeholder="Leave blank to keep the currently saved secret key"') !== false
+    strpos($run['drawn'], 'name="storage_s3_secret_key" class="input-text field-key" value="" spellcheck="false" autocomplete="new-password" placeholder="Leave blank to keep the currently saved secret key"') !== false
 );
 check('the form reopens on the stored provider', strpos($run['drawn'], '<option value="aws" selected>') !== false);
 ob_start();

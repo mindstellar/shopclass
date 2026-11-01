@@ -57,9 +57,12 @@ function customHead()
             var testBtn = document.getElementById('testMail');
             if (testBtn) {
                 // The test sends with the saved settings, so an unsaved edit would not be tested.
-                var edited = false;
-                if (testBtn.form) {
-                    testBtn.form.addEventListener('input', function () { edited = true; });
+                // Ask the form's unsaved-changes tracker, which compares with the saved values.
+                function edited() {
+                    var bar = testBtn.form ? testBtn.form.querySelector('[data-osc-dirty-bar]') : null;
+                    if (!bar || typeof oscDirtySync !== 'function') { return false; }
+                    oscDirtySync(bar);
+                    return bar.classList.contains('is-dirty');
                 }
                 testBtn.addEventListener('click', function () {
                     var msg = document.getElementById('testMail_message');
@@ -71,7 +74,7 @@ function customHead()
                         msg.classList.remove('flashmessage-ok', 'flashmessage-error');
                         msg.classList.add(ok ? 'flashmessage-ok' : 'flashmessage-error');
                     }
-                    if (edited) {
+                    if (edited()) {
                         show(<?php echo json_encode(__('Save your changes first. The test uses the saved settings.'), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>, false);
                         return;
                     }
