@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1267 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1268 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1259,7 +1259,7 @@ Core defines 1267 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_settings_value($pageId, $name, $id = null)` | The stored value of one declared field, or the field's declared default when nothing has been saved yet. |
 | `osc_settings_values($pageId, $id = null)` | Every declared field on a page, keyed by name, resolved the same way osc_settings_value() resolves one. |
 
-### hSitemap (5)
+### hSitemap (6)
 
 `oc-includes/osclass/helpers/hSitemap.php`
 
@@ -1269,6 +1269,7 @@ Core defines 1267 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_sitemap_default_robots_txt()` | Default robots.txt body: disallow the admin panel and advertise the sitemap. Intended as the seed content for the admin robots.txt editor. |
 | `osc_sitemap_robots_line()` | The `Sitemap:` directive that advertises the sitemap index, as an absolute URL. Built at runtime from osc_base_url(), so it can be appended to a robots.txt without ever baking a host into a tracked file. |
 | `osc_sitemap_stylesheet_url($file)` | Core-served URL of a sitemap XSL stylesheet. |
+| `osc_sitemap_url()` | Public URL of the sitemap index core serves, with friendly URLs on or off. |
 | `osc_sitemap_warm_cache()` | Pre-generate every enabled sitemap document into the object cache. |
 
 ### hSpam (8)

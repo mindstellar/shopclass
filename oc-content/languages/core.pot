@@ -14114,6 +14114,12 @@ msgstr ""
 msgid "The active theme extends this one. Deleting it would leave "
 msgstr ""
 
+#: oc-admin/themes/modern/settings/comments.php
+msgid ""
+"The active theme shows no comments, so these settings have no visible "
+"effect."
+msgstr ""
+
 #: oc-includes/osclass/install-location.php
 msgid ""
 "The admin account could not be created. Nothing was saved — please try "
