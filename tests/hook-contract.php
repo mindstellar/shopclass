@@ -34,7 +34,7 @@ const HOOK_FIXTURE = __DIR__ . '/fixtures/hook-names.txt';
 const HOOK_ARGS_FIXTURE = __DIR__ . '/fixtures/hook-api-args.txt';
 
 /** Directories scanned. Themes and plugins live in their own repositories. */
-const HOOK_ROOTS = array('oc-includes/osclass', 'oc-admin');
+const HOOK_ROOTS = array('oc-includes/osclass', 'oc-includes/classes', 'oc-admin');
 
 /**
  * Every hook and filter name fired under HOOK_ROOTS.

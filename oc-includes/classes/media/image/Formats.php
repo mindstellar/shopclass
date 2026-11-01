@@ -59,6 +59,22 @@ final class Formats
     }
 
     /**
+     * The extension a file of this MIME type is saved with, null for one that is not a photo.
+     */
+    public static function extension(string $mime): ?string
+    {
+        return ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'][strtolower($mime)] ?? null;
+    }
+
+    /**
+     * The MIME type a file with this extension holds, such as 'image/jpeg' for 'JPG'.
+     */
+    public static function mime(string $ext): string
+    {
+        return 'image/' . self::name($ext);
+    }
+
+    /**
      * The error for a file that cannot be read as a photo.
      */
     public static function corrupt(string $path): \RuntimeException

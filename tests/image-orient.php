@@ -97,7 +97,7 @@ if (function_exists('exif_read_data')) {
     pin('a JPEG whose EXIF read fails is the test case', false, @exif_read_data($failed));
     $img = ImageProcessing::fromFile($failed);
     pin('it still opens', '120x90', $img->getWidth() . 'x' . $img->getHeight());
-    pin('and its EXIF is an empty array', array(), (new ReflectionProperty($img, 'exif'))->getValue($img));
+    pin('and it reads as upright', 1, (new ReflectionProperty($img, 'image'))->getValue($img)->orientation);
 }
 
 $cmd = escapeshellarg(PHP_BINARY) . ' -d disable_functions=exif_read_data -d display_errors=stderr '

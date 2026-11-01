@@ -28,20 +28,32 @@ final class ImagickEngine implements Engine
     {
     }
 
-    public function tooLarge(string $path, array $info, int $max): bool
+    /**
+     * Whether photos are made with ImageMagick: it is loaded and the admin chose it.
+     */
+    public static function enabled(): bool
     {
-        $pixels = (int) $info[0] * (int) $info[1];
+        return extension_loaded('imagick') && osc_use_imagick();
+    }
+
+    public function pixels(string $path, array $info): int
+    {
         try {
             // A GIF frame can be larger than the size its header states.
             $ping = new Imagick();
             $ping->pingImage($this->source($path, $info));
-            $pixels = max($pixels, $ping->getImageWidth() * $ping->getImageHeight());
+            $pixels = $ping->getImageWidth() * $ping->getImageHeight();
             $ping->clear();
         } catch (ImagickException | \RuntimeException $e) {
-            return true;
+            return PHP_INT_MAX;
         }
 
-        return $pixels > $max;
+        return max((int) $info[0] * (int) $info[1], $pixels);
+    }
+
+    public function maxPixels(int $max, int $fileBytes): int
+    {
+        return $max;
     }
 
     public function open(string $path, array $info): Image

@@ -19,11 +19,20 @@ namespace mindstellar\image;
 interface Engine
 {
     /**
-     * Whether opening the file would decode more than $max pixels, or more than this engine can hold in memory.
+     * How many pixels opening the file would decode.
      *
      * @param array<int|string,mixed> $info getimagesize() of the file
+     *
+     * @return int PHP_INT_MAX when the engine cannot tell
      */
-    public function tooLarge(string $path, array $info, int $max): bool;
+    public function pixels(string $path, array $info): int;
+
+    /**
+     * The most pixels this engine opens: $max, or fewer when it cannot hold that many in memory.
+     *
+     * @param int $fileBytes the size of the file to open, as an engine may read it into memory first
+     */
+    public function maxPixels(int $max, int $fileBytes): int;
 
     /**
      * Decode the first frame of the file.

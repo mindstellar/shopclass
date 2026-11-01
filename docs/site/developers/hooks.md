@@ -808,9 +808,9 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `uploaded_resource` | action | `$row` | `oc-includes/osclass/classes/storage/ResourceUploader.php` |
 | `variant_price_changed` | event | `VariantPriceChanged` | `oc-includes/osclass/classes/listing/event/VariantPriceChanged.php` |
 | `variant_stock_changed` | event | `VariantStockChanged` | `oc-includes/osclass/classes/listing/event/VariantStockChanged.php` |
-| `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/osclass/classes/ImageProcessing.php` |
-| `watermark_font_size` | filter | `30` | `oc-includes/osclass/classes/ImageProcessing.php` |
-| `watermark_text_value` | filter | `$watermark_text` | `oc-includes/osclass/classes/ImageProcessing.php` |
+| `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/classes/media/image/WatermarkText.php` |
+| `watermark_font_size` | filter | `30` | `oc-includes/classes/media/image/WatermarkText.php` |
+| `watermark_text_value` | filter | `$text` | `oc-includes/classes/media/image/WatermarkText.php` |
 | `widget_locations` | filter | `$locations` | `oc-includes/osclass/helpers/hWidgets.php` |
 
 ### Plugin (12)

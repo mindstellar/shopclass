@@ -24,6 +24,7 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 
+use mindstellar\image\WatermarkText;
 use mindstellar\storage\ResourceUploader;
 
 $dir = sys_get_temp_dir() . '/osc-watermark-' . getmypid();
@@ -326,7 +327,7 @@ harness_section('text drawing');
 
 // The outlined text, drawn by one library into a PNG: white text, black outline, see-through.
 $drawn = static function (string $method) use ($dir, $box, $filled): string {
-    $draw = new ReflectionMethod(ImageProcessing::class, $method);
+    $draw = new ReflectionMethod(WatermarkText::class, $method);
     $draw->setAccessible(true);
     $file = $dir . '/text-' . $method . '.png';
     $ok   = $draw->invoke(null, $file, 'I I', 30, LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf', '#ffffff', '#000000', 3);
@@ -339,15 +340,15 @@ $drawn = static function (string $method) use ($dir, $box, $filled): string {
 
     return 'drawn, corner alpha ' . $corner . ', outline ' . ($box($file) === 'none' ? 'missing' : 'present');
 };
-pin('GD draws the outlined text on a see-through background', 'drawn, corner alpha 127, outline present', $drawn('drawTextGd'));
+pin('GD draws the outlined text on a see-through background', 'drawn, corner alpha 127, outline present', $drawn('drawGd'));
 if (extension_loaded('imagick')) {
-    pin('so does ImageMagick, for a GD built without FreeType', 'drawn, corner alpha 127, outline present', $drawn('drawTextImagick'));
+    pin('so does ImageMagick, for a GD built without FreeType', 'drawn, corner alpha 127, outline present', $drawn('drawImagick'));
 }
 
-$draw = new ReflectionMethod(ImageProcessing::class, 'drawTextGd');
+$draw = new ReflectionMethod(WatermarkText::class, 'drawGd');
 $draw->setAccessible(true);
 pin('GD refuses a font it cannot read', false, $draw->invoke(null, $dir . '/x.png', 'I', 30, $dir . '/missing.ttf', '#fff', '#000', 1));
-$draw = new ReflectionMethod(ImageProcessing::class, 'drawTextImagick');
+$draw = new ReflectionMethod(WatermarkText::class, 'drawImagick');
 $draw->setAccessible(true);
 pin('and so does ImageMagick', false, $draw->invoke(null, $dir . '/x.png', 'I', 30, $dir . '/missing.ttf', '#fff', '#000', 1));
 
