@@ -25,13 +25,15 @@ final class GdEngine implements Engine
     /** GD may always open this many pixels, so a nearly full memory_limit does not refuse every photo. */
     private const MIN_PIXELS = 1000000;
 
-    public function tooLarge(string $path, array $info, int $max): bool
+    public function pixels(string $path, array $info): int
+    {
+        return (int) $info[0] * (int) $info[1];
+    }
+
+    public function maxPixels(int $max, int $fileBytes): int
     {
         // GD reads the whole file into memory before it decodes it.
-        $used  = memory_get_usage() + (int) @filesize($path);
-        $limit = self::memoryPixels(Formatting::iniBytes((string) ini_get('memory_limit')), $used);
-
-        return (int) $info[0] * (int) $info[1] > min($max, $limit);
+        return min($max, self::memoryPixels(Formatting::iniBytes((string) ini_get('memory_limit')), memory_get_usage() + $fileBytes));
     }
 
     /**

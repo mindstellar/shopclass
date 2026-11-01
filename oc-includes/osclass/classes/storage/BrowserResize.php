@@ -52,7 +52,7 @@ final class BrowserResize
             return null;
         }
         try {
-            [$width, $height] = \ImageProcessing::parseSize($normal);
+            [$width, $height] = \mindstellar\image\Processor::parseSize($normal);
         } catch (\InvalidArgumentException $e) {
             return null;
         }

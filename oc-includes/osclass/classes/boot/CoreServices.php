@@ -43,8 +43,6 @@ use mindstellar\event\HookBridge;
 use mindstellar\http\CurlHttpClient;
 use mindstellar\http\HttpClient;
 use mindstellar\image\Engine;
-use mindstellar\image\GdEngine;
-use mindstellar\image\ImagickEngine;
 use mindstellar\image\Processor;
 use mindstellar\language\event\TranslationLoaded;
 use mindstellar\listing\event\VariantPriceChanged;
@@ -212,7 +210,7 @@ final class CoreServices
         $c->set(LiveNotifier::class, static fn (Container $c): LiveNotifier => new LiveNotifier($c->get(LivePublisher::class), $c->get(ConversationStore::class)));
         $events->listen(MessageSent::class, [LiveNotifier::class, 'onMessageSent']);
         $events->listen(MessageRead::class, [LiveNotifier::class, 'onMessageRead']);
-        $c->set(Engine::class, static fn (): Engine => extension_loaded('imagick') && osc_use_imagick() ? new ImagickEngine() : new GdEngine());
+        $c->set(Engine::class, static fn (): Engine => Processor::siteEngine());
         $c->set(Processor::class, static fn (Container $c): Processor => new Processor($c->get(Engine::class)));
         $c->set(HttpClient::class, static fn (): HttpClient => new CurlHttpClient());
         $c->set(AddressGuard::class, static fn (): AddressGuard => new AddressGuard());

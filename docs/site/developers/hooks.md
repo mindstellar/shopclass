@@ -802,15 +802,15 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `template_candidates` | filter | `$candidates, $context` | `oc-includes/osclass/helpers/hTheme.php` |
 | `tinymce_config` | filter | `$config, $preset` | `oc-includes/osclass/helpers/hUtils.php` |
 | `translation_load_after` | event | `TranslationLoaded` | `oc-includes/osclass/classes/language/event/TranslationLoaded.php` |
-| `upload_image_extension` | filter | `$imgres->getExt()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
-| `upload_image_mime` | filter | `$imgres->getMime()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
+| `upload_image_extension` | filter | `$processor->defaultExt($image)` | `oc-includes/osclass/classes/listing/PhotoService.php` |
+| `upload_image_mime` | filter | `Formats::mime($processor->defaultExt($image))` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_file` | action | `$stored` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_resource` | action | `$row` | `oc-includes/osclass/classes/storage/ResourceUploader.php` |
 | `variant_price_changed` | event | `VariantPriceChanged` | `oc-includes/osclass/classes/listing/event/VariantPriceChanged.php` |
 | `variant_stock_changed` | event | `VariantStockChanged` | `oc-includes/osclass/classes/listing/event/VariantStockChanged.php` |
-| `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/osclass/classes/ImageProcessing.php` |
-| `watermark_font_size` | filter | `30` | `oc-includes/osclass/classes/ImageProcessing.php` |
-| `watermark_text_value` | filter | `$watermark_text` | `oc-includes/osclass/classes/ImageProcessing.php` |
+| `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/classes/media/image/WatermarkText.php` |
+| `watermark_font_size` | filter | `30` | `oc-includes/classes/media/image/WatermarkText.php` |
+| `watermark_text_value` | filter | `$text` | `oc-includes/classes/media/image/WatermarkText.php` |
 | `widget_locations` | filter | `$locations` | `oc-includes/osclass/helpers/hWidgets.php` |
 
 ### Plugin (12)

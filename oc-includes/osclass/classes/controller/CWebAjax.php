@@ -34,6 +34,7 @@ use mindstellar\location\LocationAutocompleteQuery;
 use mindstellar\messaging\MessageStore;
 use mindstellar\messaging\MessagingService;
 use mindstellar\push\PushSubscriptions;
+use mindstellar\storage\ResourceUploader;
 use mindstellar\utility\AjaxResponse;
 
 class CWebAjax extends BaseModel
@@ -375,27 +376,11 @@ class CWebAjax extends BaseModel
             return;
         }
 
-        // auto rotate
-
-        $img = ImageProcessing::fromFile(osc_content_path() . 'uploads/temp/' . $filename);
-        $img->autoRotate();
-        try {
-            $img->saveToFile(
-                osc_content_path() . 'uploads/temp/auto_' . $filename,
-                $original['extension']
-            );
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_NOTICE);
-            AjaxResponse::json(array('success' => false));
-            return;
-        }
-        try {
-            $img->saveToFile(
-                osc_content_path() . 'uploads/temp/' . $filename,
-                $original['extension']
-            );
-        } catch (Exception $e) {
-            trigger_error($e->getMessage(), E_USER_NOTICE);
+        // Turned upright and written once as the staged copy; the raw upload is not kept.
+        $temp   = osc_content_path() . 'uploads/temp/';
+        $staged = ResourceUploader::saveOriginal($temp . $filename, $temp . 'auto_' . $filename, $original['extension']);
+        @unlink($temp . $filename);
+        if (!$staged) {
             AjaxResponse::json(array('success' => false));
             return;
         }

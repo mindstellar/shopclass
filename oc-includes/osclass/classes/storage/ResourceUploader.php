@@ -11,7 +11,9 @@
 
 namespace mindstellar\storage;
 
-use ImageProcessing;
+use mindstellar\image\Formats;
+use mindstellar\image\Image;
+use mindstellar\image\Processor;
 use mindstellar\model\Resource;
 use Throwable;
 
@@ -35,7 +37,7 @@ use Throwable;
 final class ResourceUploader
 {
     /**
-     * Re-encode the uploaded source into an "_original" file next to the variants.
+     * Re-encode the uploaded source upright at full size, such as the "_original" file next to the variants.
      * A copy stores the upload byte for byte, so anything appended after the image
      * survives on disk under an image extension; re-encoding strips that.
      *
@@ -43,15 +45,23 @@ final class ResourceUploader
      * @param string $destPath absolute path to write the re-encoded original to
      * @param string $extension
      *
-     * @return void
+     * @return bool false, with nothing left at $destPath, when it could not be written
      */
-    public static function saveOriginal(string $tmpFile, string $destPath, string $extension): void
+    public static function saveOriginal(string $tmpFile, string $destPath, string $extension): bool
     {
+        $processor = Processor::site();
         try {
-            ImageProcessing::fromFile($tmpFile)->autoRotate()->saveToFile($destPath, $extension);
+            $image = $processor->orient($processor->open($tmpFile));
+            $saved = $processor->save($image, $destPath, $extension);
+            $processor->engine()->free($image);
         } catch (Throwable $e) {
+            $saved = false;
+        }
+        if (!$saved) {
             @unlink($destPath);
         }
+
+        return $saved;
     }
 
     /**
@@ -64,7 +74,7 @@ final class ResourceUploader
      * @param string[]             $unmarked paths in $sizes that never get the mark (thumbnails)
      */
     public static function writeSizes(
-        ImageProcessing $normal,
+        Image $normal,
         string $box,
         string $normalPath,
         array $sizes,
@@ -73,18 +83,22 @@ final class ResourceUploader
         bool $fit = false,
         array $unmarked = []
     ): void {
+        $processor = Processor::site();
+        $engine    = $processor->engine();
         foreach ($sizes as $path => $dims) {
-            [$width, $height] = ImageProcessing::parseSize($dims);
-            $img = (clone $normal)->resizeTo($width, $height, $fit ? true : null, !$fit);
+            [$width, $height] = Processor::parseSize($dims);
+            $img = $processor->resizeTo($engine->copy($normal), $width, $height, $fit ? true : null, !$fit);
             if ($mark && !in_array($path, $unmarked, true)) {
-                $img->doSiteWatermark($box);
+                $img = $processor->siteWatermark($img, $box);
             }
-            $img->saveToFile($path, $extension);
+            $processor->save($img, $path, $extension);
+            $engine->free($img);
         }
         if ($mark) {
-            $normal->doSiteWatermark($box);
+            $normal = $processor->siteWatermark($normal, $box);
         }
-        $normal->saveToFile($normalPath, $extension);
+        $processor->save($normal, $normalPath, $extension);
+        $engine->free($normal);
     }
 
     /**
@@ -112,14 +126,15 @@ final class ResourceUploader
             return false;
         }
 
+        $processor = Processor::site();
         try {
-            $imgres = ImageProcessing::fromFile($tmpFile);
+            $image = $processor->open($tmpFile);
         } catch (Throwable $e) {
             return false;
         }
 
-        $extension = osc_apply_filter('upload_image_extension', $imgres->getExt());
-        $mime      = osc_apply_filter('upload_image_mime', $imgres->getMime());
+        $extension = osc_apply_filter('upload_image_extension', $processor->defaultExt($image));
+        $mime      = osc_apply_filter('upload_image_mime', Formats::mime($processor->defaultExt($image)));
 
         $variants = $options['variants'] ?? array(
             'normal'    => osc_normal_dimensions(),
@@ -135,8 +150,8 @@ final class ResourceUploader
 
         try {
             $baseDims = (string) ($variants['normal'] ?? reset($variants));
-            [$width, $height] = ImageProcessing::parseSize($baseDims);
-            $img = $imgres->autoRotate()->resizeTo($width, $height, $fit ? true : null, !$fit);
+            [$width, $height] = Processor::parseSize($baseDims);
+            $img = $processor->resizeTo($processor->orient($image), $width, $height, $fit ? true : null, !$fit);
 
             $sizes = array();
             foreach ($variants as $name => $dims) {

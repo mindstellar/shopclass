@@ -13,7 +13,7 @@
  *
  * A copy stored the upload byte for byte, so anything appended after the image survived
  * on disk under an image extension. Both upload paths now run the file back through
- * ImageProcessing, which writes only pixels.
+ * ResourceUploader::saveOriginal(), which writes only pixels.
  *
  * DB-free.  Usage: php tests/keep-original-reencode.php
  */
@@ -81,7 +81,7 @@ check('copy() carries the marker through', strpos(file_get_contents($copied), $m
 harness_section('Re-encoding drops them');
 
 $out = $dir . '/original.jpg';
-ImageProcessing::fromFile($poly)->autoRotate()->saveToFile($out, 'jpg');
+\mindstellar\storage\ResourceUploader::saveOriginal($poly, $out, 'jpg');
 
 $written = file_get_contents($out);
 check('the re-encoded file exists and is not empty', $written !== false && $written !== '');
@@ -99,7 +99,7 @@ foreach (array(
 ) as $file) {
     $src = file_get_contents(ABS_PATH . $file);
     // The raw upload temp must never be handed to osc_copy(). Copying a derived path
-    // ($tmpName . '_normal') is fine -- that file was written by ImageProcessing.
+    // ($tmpName . '_normal') is fine -- that file was written by the image processor.
     check(
         $file . ' never copies the raw upload anywhere',
         preg_match('/osc_copy\(\s*\$tmp(Name|File)\s*,/', $src) !== 1,
@@ -116,14 +116,21 @@ check(
     'no ResourceUploader::saveOriginal() call found'
 );
 
-$uploaderSrc = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/storage/ResourceUploader.php');
+$broken = $dir . '/broken.jpg';
+file_put_contents($broken, 'not a photo');
+\mindstellar\storage\ResourceUploader::saveOriginal($broken, $dir . '/broken-original.jpg', 'jpg');
+pin('a file that does not open leaves no original behind', false, is_file($dir . '/broken-original.jpg'));
+pin('and saveOriginal() says so', array(true, false), array(
+    \mindstellar\storage\ResourceUploader::saveOriginal($poly, $out, 'jpg'),
+    \mindstellar\storage\ResourceUploader::saveOriginal($broken, $dir . '/broken-original.jpg', 'jpg'),
+));
+
+// The listing form's photo upload stages its copy the same way: upright, written once, the raw upload dropped.
+$ajax = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebAjax.php');
 check(
-    'ResourceUploader::saveOriginal() re-encodes the original',
-    preg_match(
-        '/function saveOriginal\(.*?ImageProcessing::fromFile\(\$tmp\w*\)->autoRotate\(\)\s*\n?\s*->?\s*saveToFile/s',
-        $uploaderSrc
-    ) === 1,
-    'no ImageProcessing::fromFile(...)->autoRotate()->saveToFile() found inside saveOriginal()'
+    'CWebAjax stages the upload through saveOriginal() once and drops the raw file',
+    preg_match('/ResourceUploader::saveOriginal\(\$temp \. \$filename, \$temp \. \'auto_\' \. \$filename,[^;]*;\s*@unlink\(\$temp \. \$filename\);/', $ajax) === 1
+    && substr_count($ajax, '\'auto_\' . $filename') === 2
 );
 
 array_map('unlink', glob($dir . '/*'));

@@ -24,6 +24,8 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 
+use mindstellar\image\Processor;
+use mindstellar\image\WatermarkText;
 use mindstellar\storage\ResourceUploader;
 
 $dir = sys_get_temp_dir() . '/osc-watermark-' . getmypid();
@@ -300,7 +302,7 @@ foreach ($engines as $engine => $imagick) {
     $files = array('' => $dir . '/n.png', '_preview' => $dir . '/p.png', '_thumbnail' => $dir . '/t.png');
     $sizes = array($files['_preview'] => '480x360', $files['_thumbnail'] => '240x180');
     $write = static function (bool $mark, array $unmarked = array()) use ($photo, $files, $sizes): void {
-        ResourceUploader::writeSizes(ImageProcessing::fromFile($photo(640, 480)), '640x480', $files[''], $sizes, 'png', $mark, false, $unmarked);
+        ResourceUploader::writeSizes(Processor::site()->open($photo(640, 480)), '640x480', $files[''], $sizes, 'png', $mark, false, $unmarked);
     };
     $write(true);
     pin('the normal size is stamped', '200x30@430,440', $box($files['']));
@@ -326,7 +328,7 @@ harness_section('text drawing');
 
 // The outlined text, drawn by one library into a PNG: white text, black outline, see-through.
 $drawn = static function (string $method) use ($dir, $box, $filled): string {
-    $draw = new ReflectionMethod(ImageProcessing::class, $method);
+    $draw = new ReflectionMethod(WatermarkText::class, $method);
     $draw->setAccessible(true);
     $file = $dir . '/text-' . $method . '.png';
     $ok   = $draw->invoke(null, $file, 'I I', 30, LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf', '#ffffff', '#000000', 3);
@@ -339,15 +341,15 @@ $drawn = static function (string $method) use ($dir, $box, $filled): string {
 
     return 'drawn, corner alpha ' . $corner . ', outline ' . ($box($file) === 'none' ? 'missing' : 'present');
 };
-pin('GD draws the outlined text on a see-through background', 'drawn, corner alpha 127, outline present', $drawn('drawTextGd'));
+pin('GD draws the outlined text on a see-through background', 'drawn, corner alpha 127, outline present', $drawn('drawGd'));
 if (extension_loaded('imagick')) {
-    pin('so does ImageMagick, for a GD built without FreeType', 'drawn, corner alpha 127, outline present', $drawn('drawTextImagick'));
+    pin('so does ImageMagick, for a GD built without FreeType', 'drawn, corner alpha 127, outline present', $drawn('drawImagick'));
 }
 
-$draw = new ReflectionMethod(ImageProcessing::class, 'drawTextGd');
+$draw = new ReflectionMethod(WatermarkText::class, 'drawGd');
 $draw->setAccessible(true);
 pin('GD refuses a font it cannot read', false, $draw->invoke(null, $dir . '/x.png', 'I', 30, $dir . '/missing.ttf', '#fff', '#000', 1));
-$draw = new ReflectionMethod(ImageProcessing::class, 'drawTextImagick');
+$draw = new ReflectionMethod(WatermarkText::class, 'drawImagick');
 $draw->setAccessible(true);
 pin('and so does ImageMagick', false, $draw->invoke(null, $dir . '/x.png', 'I', 30, $dir . '/missing.ttf', '#fff', '#000', 1));
 

@@ -11,10 +11,9 @@
 
 namespace mindstellar\storage;
 
-use ImageProcessing;
+use mindstellar\image\Processor;
 use mindstellar\model\Resource;
 use Params;
-use Throwable;
 
 /**
  * Class AvatarUpload
@@ -109,13 +108,7 @@ final class AvatarUpload
      */
     private static function isImage(string $path): bool
     {
-        try {
-            ImageProcessing::fromFile($path);
-        } catch (Throwable $e) {
-            return false;
-        }
-
-        return true;
+        return Processor::site()->opens($path);
     }
 
     /**

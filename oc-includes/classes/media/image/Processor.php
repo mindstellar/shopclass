@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\image;
 
+use mindstellar\container\Container;
+
 /**
  * Opens, fits, watermarks and saves photos the same way whichever engine draws them.
  */
@@ -33,8 +35,29 @@ final class Processor
     /** The gap between a corner mark and the photo's edge, as a share of its shorter side. */
     private const WATERMARK_GAP = 0.02;
 
+    /** The lowest watermark opacity, in percent; 100 is solid. */
+    public const OPACITY_MIN = 10;
+
     public function __construct(private readonly Engine $engine)
     {
+    }
+
+    /**
+     * The site's processor from the container, or one built for the Media settings where nothing registered it.
+     */
+    public static function site(): self
+    {
+        $c = Container::root();
+
+        return $c->has(self::class) ? $c->get(self::class) : new self(self::siteEngine());
+    }
+
+    /**
+     * ImageMagick when it is loaded and the admin chose it, else GD.
+     */
+    public static function siteEngine(): Engine
+    {
+        return ImagickEngine::enabled() ? new ImagickEngine() : new GdEngine();
     }
 
     public function engine(): Engine
@@ -59,11 +82,47 @@ final class Processor
         if ($info === null) {
             throw Formats::corrupt($path);
         }
-        if ($this->engine->tooLarge($path, $info, max(1, (int) \Plugins::applyFilter('image_max_pixels', 50000000)))) {
+        if ($this->engine->pixels($path, $info) > $this->maxPixels((int) filesize($path))) {
             throw new \RuntimeException(sprintf(__('%s has too many pixels to process.'), $path));
         }
 
         return $this->engine->open($path, $info);
+    }
+
+    /**
+     * Whether the file opens as a photo: a photo type that decodes, within the pixel limit.
+     */
+    public function opens(string $path): bool
+    {
+        try {
+            $this->engine->free($this->open($path));
+        } catch (\RuntimeException $e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * The most pixels a photo may have to be opened: the image_max_pixels filter, held to what the engine can hold.
+     *
+     * @param int $fileBytes the size of the file, as GD reads the whole file into memory first
+     */
+    public function maxPixels(int $fileBytes = 0): int
+    {
+        return $this->engine->maxPixels(max(1, (int) \Plugins::applyFilter('image_max_pixels', 50000000)), $fileBytes);
+    }
+
+    /**
+     * How many pixels opening the file would decode.
+     *
+     * @return int 0 when the file is not a photo
+     */
+    public function pixels(string $path): int
+    {
+        $info = Formats::info($path);
+
+        return $info === null ? 0 : $this->engine->pixels($path, $info);
     }
 
     /**
@@ -177,6 +236,49 @@ final class Processor
     public function pngCompression(): int
     {
         return max(0, min(9, (int) \Plugins::applyFilter('image_png_compression', 6)));
+    }
+
+    /**
+     * A watermark opacity held between OPACITY_MIN and 100; empty reads as 100.
+     */
+    public static function opacity(mixed $value): int
+    {
+        return $value === '' || $value === null ? 100 : max(self::OPACITY_MIN, min(100, (int) $value));
+    }
+
+    /**
+     * Stamp the site's watermark, text or image, when one is set.
+     *
+     * @param string|null $box the normal size box the mark is drawn for, "WxH"; null reads the site's setting
+     */
+    public function siteWatermark(Image $image, ?string $box = null): Image
+    {
+        if (osc_is_watermark_text()) {
+            return $this->stamp($image, WatermarkText::create(osc_watermark_text(), osc_watermark_text_color()), $box);
+        }
+
+        return osc_is_watermark_image() ? $this->stamp($image, osc_uploads_path() . 'watermark.png', $box) : $image;
+    }
+
+    /**
+     * Stamp the PNG at $markPath with the site's place and opacity. A missing or broken mark is left off.
+     *
+     * @param string|null $box the normal size box the mark is drawn for, "WxH"; null reads the site's setting
+     */
+    public function stamp(Image $image, string $markPath, ?string $box = null): Image
+    {
+        if ($markPath === '' || !is_file($markPath)) {
+            return $image;
+        }
+        try {
+            $mark = $this->open($markPath);
+        } catch (\RuntimeException $e) {
+            return $image;
+        }
+        $image = $this->watermark($image, $mark, $box ?? (string) osc_normal_dimensions(), (string) osc_watermark_place(), (int) osc_watermark_opacity());
+        $this->engine->free($mark);
+
+        return $image;
     }
 
     /**

@@ -1204,7 +1204,7 @@ class CAdminTools extends AdminSecBaseModel
             'photos'           => (int) osc_max_images_per_item(),
             'extensions'       => get_loaded_extensions(),
             'imagick'          => extension_loaded('imagick'),
-            'imagick_on'       => \ImageProcessing::usesImagick(),
+            'imagick_on'       => \mindstellar\image\ImagickEngine::enabled(),
             'gd'               => extension_loaded('gd'),
             'opcache'          => function_exists('opcache_get_status') && ini_get('opcache.enable'),
             'allow_url_fopen'  => (bool) ini_get('allow_url_fopen'),

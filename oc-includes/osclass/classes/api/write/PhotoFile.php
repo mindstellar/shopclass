@@ -23,9 +23,6 @@ use mindstellar\storage\UploadMimes;
  */
 final class PhotoFile
 {
-    /** Image type => the extension the temp file gets. */
-    private const EXTENSIONS = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/gif' => 'gif', 'image/webp' => 'webp'];
-
     /**
      * @param string $extension of its real type: jpg, png, gif or webp
      * @param string $token     a staged photo's token; '' for one not staged
@@ -125,7 +122,7 @@ final class PhotoFile
         if (!UploadMimes::isAllowedImage($path)) {
             throw ProblemException::field($pointer, 'invalid', 'is not an image this site accepts');
         }
-        $extension = self::EXTENSIONS[UploadMimes::detect($path)] ?? 'jpg';
+        $extension = \mindstellar\image\Formats::extension(UploadMimes::detect($path)) ?? 'jpg';
         $final     = (string) preg_replace('/\.[A-Za-z0-9]+$/D', '', $path) . '.' . $extension;
         if ($final !== $path && !@rename($path, $final)) {
             throw self::notStored();

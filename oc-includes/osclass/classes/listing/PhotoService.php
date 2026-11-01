@@ -14,6 +14,8 @@
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
+use mindstellar\image\Formats;
+use mindstellar\image\Processor;
 use mindstellar\security\Demo;
 use mindstellar\storage\ResourceUploader;
 use mindstellar\utility\DeferredMail;
@@ -257,13 +259,14 @@ final class PhotoService
      */
     private static function process(string $tmpName): array
     {
-        $imgres    = \ImageProcessing::fromFile($tmpName);
-        $extension = osc_apply_filter('upload_image_extension', $imgres->getExt());
-        $mime      = osc_apply_filter('upload_image_mime', $imgres->getMime());
+        $processor = Processor::site();
+        $image     = $processor->open($tmpName);
+        $extension = osc_apply_filter('upload_image_extension', $processor->defaultExt($image));
+        $mime      = osc_apply_filter('upload_image_mime', Formats::mime($processor->defaultExt($image)));
         $files     = array('' => $tmpName . '_normal', '_preview' => $tmpName . '_preview', '_thumbnail' => $tmpName . '_thumbnail');
 
-        [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
-        $img = $imgres->autoRotate()->resizeTo($width, $height);
+        [$width, $height] = Processor::parseSize(osc_normal_dimensions());
+        $img = $processor->resizeTo($processor->orient($image), $width, $height);
         ResourceUploader::writeSizes($img, osc_normal_dimensions(), $files[''], self::smallerSizes($files), $extension, true, false, [$files['_thumbnail']]);
         if (osc_keep_original_image()) {
             ResourceUploader::saveOriginal($tmpName, $tmpName . '_original', $extension);
@@ -598,10 +601,11 @@ final class PhotoService
         $base  = osc_base_path() . $resource['s_path'] . $resource['pk_i_id'];
         $files = array('' => $base . '.' . $resource['s_extension'], '_preview' => $base . '_preview.'
             . $resource['s_extension'], '_thumbnail' => $base . '_thumbnail.' . $resource['s_extension']);
-        [$width, $height] = \ImageProcessing::parseSize(osc_normal_dimensions());
+        [$width, $height] = Processor::parseSize(osc_normal_dimensions());
         // Without the original, the source already carries the mark, and so does every size cut
         // from it, the thumbnail included; nothing is stamped twice.
-        $normal = \ImageProcessing::fromFile($image_tmp)->resizeTo($width, $height);
+        $processor = Processor::site();
+        $normal    = $processor->resizeTo($processor->open($image_tmp), $width, $height);
         ResourceUploader::writeSizes($normal, osc_normal_dimensions(), $files[''], self::smallerSizes($files), null, $use_original, false, [$files['_thumbnail']]);
 
         osc_run_hook(
