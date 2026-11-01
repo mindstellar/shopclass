@@ -100,6 +100,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- Portrait phone photos no longer get white bars on the sides when Imagick resizes them.
 - Mail Settings no longer takes the browser's saved admin login as an unsaved change, so the test email runs after saving.
 - Static pages, custom fields and e-mail templates get a language tab for every website language, not only the admin ones.
 - Any pending order can be cancelled.
