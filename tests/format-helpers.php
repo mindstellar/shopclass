@@ -30,7 +30,7 @@ function _osc_user_locale_row(): array
 {
     $GLOBALS['lookups']++;
 
-    return array('s_thousands_sep' => $GLOBALS['sep'][0], 's_dec_point' => $GLOBALS['sep'][1], 's_currency_format' => $GLOBALS['money'][0], 'i_num_dec' => $GLOBALS['money'][1]);
+    return array('s_thousands_sep' => $GLOBALS['sep'][0], 's_dec_point' => $GLOBALS['sep'][1], 's_currency_format' => $GLOBALS['money'][0], 'i_num_dec' => $GLOBALS['money'][1], 'pk_c_code' => $GLOBALS['code'] ?? 'en_US');
 }
 function osc_locale_thousands_sep()
 {
@@ -77,6 +77,13 @@ $GLOBALS['sep'] = array(',', '.');
 pin('display uses the locale\'s currency format and drops whole decimals', ['₹1,234', '₹1,234.50'], [Money::display(1234000000, '₹'), Money::display(1234500000, '₹')]);
 pin('display puts the minus before the whole amount', ["\u{2212}₹150", "\u{2212}₹119.70"], [Money::display(-150000000, '₹'), Money::display(-119700000, '₹')]);
 pin('display shows zero as an amount, not "Free"', '₹0', Money::display(0, '₹'));
+$GLOBALS['code'] = 'en_IN';
+pin('en_IN groups in lakhs', ['₹0', '₹999', '₹1,000', '₹1,00,000', '₹12,34,567.50', "\u{2212}₹1,20,000", '₹12,34,56,789.50'], array_map(fn ($m) => Money::display($m, '₹'), [0, 999000000, 1000000000, 100000000000, 1234567500000, -120000000000, 123456789500000]));
+$GLOBALS['code'] = 'hi_IN';
+pin('hi_IN groups in lakhs', '₹1,20,000', Money::display(120000000000, '₹'));
+$GLOBALS['code'] = 'en_US';
+pin('en_US keeps groups of three', '₹1,234,567.50', Money::display(1234567500000, '₹'));
+unset($GLOBALS['code']);
 $GLOBALS['money'] = array('{NUMBER} {CURRENCY}', 2);
 pin('display with the symbol after the number', "\u{2212}12.50 €", Money::display(-12500000, '€'));
 $GLOBALS['money'] = array('{CURRENCY}{NUMBER}', 2);
