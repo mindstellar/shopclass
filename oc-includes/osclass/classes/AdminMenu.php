@@ -669,6 +669,10 @@ class AdminMenu
             if ($actual_page === 'settings' && Params::getParam('action') === 'custom_post' && Params::getParamString('id') !== '') {
                 $actual_url .= '&action=custom&id=' . Params::getParamString('id');
             }
+            // A refused menu save redraws the menu editor: light Menus, not Manage themes.
+            if ($actual_page === 'appearance' && Params::getParam('action') === 'menu_save_post') {
+                $actual_url .= '&action=menus';
+            }
         }
 
         // A declared page with no menu entry sits in no Settings group; the prefix match would light General.

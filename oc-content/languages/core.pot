@@ -1791,6 +1791,7 @@ msgstr ""
 msgid "Adopt existing Better S3 images"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -6029,6 +6030,10 @@ msgstr ""
 msgid "Fix it"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Fix this link"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Flat"
@@ -7389,12 +7394,12 @@ msgstr ""
 msgid "Label"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/menus.php
-msgid "Label (%s)"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/page-block-form.php
 msgid "Label (for your reference)"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Label · %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
@@ -9716,6 +9721,10 @@ msgstr ""
 msgid "Not saved yet."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Not saved. Fix the problem named above and save again."
+msgstr ""
+
 #: oc-includes/osclass/classes/utility/SystemInfo.php
 msgid "Not set"
 msgstr ""
@@ -10898,6 +10907,10 @@ msgstr ""
 #: oc-admin/themes/modern/billing/package.php
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Position"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Position %1$d of %2$d, level %3$d"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -12243,6 +12256,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid "Saved searches per user"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Saved. Add a Menu widget to show it on the site."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php

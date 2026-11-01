@@ -148,9 +148,15 @@ $support->add('menus', [
     'four'    => ['label' => 'Four', 'depth' => 4],
     'text'    => ['label' => 'Text', 'depth' => '2'],
     'junk'    => 'Junk',
-    'side'    => ['label' => 'Side', 'depth' => 2],
+    'side'    => ['label' => 'Side', 'depth' => 2, 'hint' => '  One row only. '],
+    'oddhint' => ['label' => 'Odd', 'hint' => ['x']],
 ]);
-pin('valid places are kept, bad ones skipped', ['main' => ['label' => 'Top bar', 'depth' => 1], 'footer' => ['label' => 'Footer', 'depth' => 3], 'side' => ['label' => 'Side', 'depth' => 2]], $menus->themePlaces());
+pin('valid places are kept, bad ones skipped', [
+    'main'    => ['label' => 'Top bar', 'depth' => 1, 'hint' => ''],
+    'footer'  => ['label' => 'Footer', 'depth' => 3, 'hint' => ''],
+    'side'    => ['label' => 'Side', 'depth' => 2, 'hint' => 'One row only.'],
+    'oddhint' => ['label' => 'Odd', 'depth' => 3, 'hint' => ''],
+], $menus->themePlaces());
 $support->add('menus', 'not an array');
 pin('a non-array declaration gives no places', [], $menus->themePlaces());
 $support->add('menus', ['side' => ['label' => 'Side']]);
