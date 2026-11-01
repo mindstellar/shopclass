@@ -65,6 +65,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Releases ship only `shopclass_v*.zip`; `osclass_v*.zip` is no longer built.
 
 ### Changed
+- Prices in Indian locales (en_IN, hi_IN) show Indian digit grouping, e.g. ₹12,34,567.
 - Modules new in 7.1 live in `oc-includes/classes/`, grouped by feature; class names do not change.
 - An update to a new X.Y release replaces `oc-admin` and `oc-includes` whole, so files the release dropped are removed. The database step then runs on its own page.
 - In shop mode there is no public user profile; the page and `GET /users/{id}` answer 404.
