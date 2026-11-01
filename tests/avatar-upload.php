@@ -46,22 +46,27 @@ namespace mindstellar\storage {
     }
 }
 
+namespace mindstellar\image {
+
+    /** The image check: a path naming not-an-image does not open. */
+    final class Processor
+    {
+        public static function site(): self
+        {
+            return new self();
+        }
+
+        public function opens(string $path): bool
+        {
+            return strpos($path, 'not-an-image') === false;
+        }
+    }
+}
+
 namespace {
 
     if (!defined('ABS_PATH')) {
         define('ABS_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
-    }
-
-    class ImageProcessing
-    {
-        public static function fromFile($path)
-        {
-            if (strpos($path, 'not-an-image') !== false) {
-                throw new RuntimeException('bad image');
-            }
-
-            return new self();
-        }
     }
 
     $GLOBALS['prefs']   = array();

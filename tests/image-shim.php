@@ -114,6 +114,7 @@ harness_section('same answers as the new layer');
 $p = Processor::site();
 pin('pixelCount() is Processor::pixels()', $p->pixels($file), ImageProcessing::pixelCount($file));
 pin('Processor::pixels() of a file that is not a photo is 0', 0, $p->pixels(__FILE__));
+pin('Processor::opens() takes a photo and refuses anything else', array(true, false), array($p->opens($file), $p->opens(__FILE__)));
 pin('maxPixels() is Processor::maxPixels()', $p->maxPixels(), ImageProcessing::maxPixels());
 pin('watermarkOpacity() is Processor::opacity()', array(100, 10, 55, 100), array_map(array(Processor::class, 'opacity'), array('', 3, '55', 140)));
 pin('WATERMARK_OPACITY_MIN is Processor::OPACITY_MIN', Processor::OPACITY_MIN, ImageProcessing::WATERMARK_OPACITY_MIN);

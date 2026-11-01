@@ -11,7 +11,7 @@
 
 namespace mindstellar\settings;
 
-use ImageProcessing;
+use mindstellar\image\Processor;
 use mindstellar\model\Resource;
 use mindstellar\storage\ResourceUploader;
 use Params;
@@ -117,9 +117,7 @@ final class SettingsImage
             return array('file' => null, 'error' => sprintf(__('%s could not be uploaded'), $label));
         }
 
-        try {
-            ImageProcessing::fromFile($tmp);
-        } catch (Throwable $e) {
+        if (!Processor::site()->opens($tmp)) {
             return array('file' => null, 'error' => sprintf(__('%s is not a valid image'), $label));
         }
 

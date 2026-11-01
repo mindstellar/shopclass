@@ -74,7 +74,7 @@ function osc_force_jpeg()
 function osc_save_webp()
 {
     return osc_image_format() === 'webp'
-           && ImageProcessing::canWriteWebp(ImageProcessing::usesImagick());
+           && \mindstellar\image\Processor::site()->engine()->canWrite('webp');
 }
 
 /**
@@ -1498,7 +1498,7 @@ function osc_watermark_place()
  */
 function osc_watermark_opacity(): int
 {
-    return ImageProcessing::watermarkOpacity(getPreference('watermark_opacity'));
+    return \mindstellar\image\Processor::opacity(getPreference('watermark_opacity'));
 }
 
 /**

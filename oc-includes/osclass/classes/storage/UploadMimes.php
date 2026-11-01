@@ -193,7 +193,7 @@ final class UploadMimes
             return false;
         }
 
-        return \ImageProcessing::imageInfo($path) !== null && !self::tooManyPixels($path);
+        return \mindstellar\image\Formats::info($path) !== null && !self::tooManyPixels($path);
     }
 
     /**
@@ -206,7 +206,9 @@ final class UploadMimes
      */
     public static function tooManyPixels(string $path): bool
     {
-        return \ImageProcessing::pixelCount($path) > \ImageProcessing::maxPixels();
+        $processor = \mindstellar\image\Processor::site();
+
+        return $processor->pixels($path) > $processor->maxPixels();
     }
 
     /**
@@ -218,7 +220,7 @@ final class UploadMimes
     {
         return sprintf(
             __('The photo is too large. It can have at most %s megapixels.'),
-            round(\ImageProcessing::maxPixels() / 1000000)
+            round(\mindstellar\image\Processor::site()->maxPixels() / 1000000)
         );
     }
 }

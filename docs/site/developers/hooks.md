@@ -802,8 +802,8 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `template_candidates` | filter | `$candidates, $context` | `oc-includes/osclass/helpers/hTheme.php` |
 | `tinymce_config` | filter | `$config, $preset` | `oc-includes/osclass/helpers/hUtils.php` |
 | `translation_load_after` | event | `TranslationLoaded` | `oc-includes/osclass/classes/language/event/TranslationLoaded.php` |
-| `upload_image_extension` | filter | `$imgres->getExt()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
-| `upload_image_mime` | filter | `$imgres->getMime()` | `oc-includes/osclass/classes/listing/PhotoService.php` |
+| `upload_image_extension` | filter | `$processor->defaultExt($image)` | `oc-includes/osclass/classes/listing/PhotoService.php` |
+| `upload_image_mime` | filter | `Formats::mime($processor->defaultExt($image))` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_file` | action | `$stored` | `oc-includes/osclass/classes/listing/PhotoService.php` |
 | `uploaded_resource` | action | `$row` | `oc-includes/osclass/classes/storage/ResourceUploader.php` |
 | `variant_price_changed` | event | `VariantPriceChanged` | `oc-includes/osclass/classes/listing/event/VariantPriceChanged.php` |

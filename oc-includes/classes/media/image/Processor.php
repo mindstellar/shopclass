@@ -90,6 +90,20 @@ final class Processor
     }
 
     /**
+     * Whether the file opens as a photo: a photo type that decodes, within the pixel limit.
+     */
+    public function opens(string $path): bool
+    {
+        try {
+            $this->engine->free($this->open($path));
+        } catch (\RuntimeException $e) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
      * The most pixels a photo may have to be opened: the image_max_pixels filter, held to what the engine can hold.
      *
      * @param int $fileBytes the size of the file, as GD reads the whole file into memory first

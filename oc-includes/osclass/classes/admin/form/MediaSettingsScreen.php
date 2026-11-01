@@ -13,6 +13,10 @@ namespace mindstellar\admin\form;
 
 use mindstellar\admin\ui\FormSpec;
 use mindstellar\base\SettingsScreen;
+use mindstellar\image\Formats;
+use mindstellar\image\ImagickEngine;
+use mindstellar\image\Processor;
+use mindstellar\image\WatermarkText;
 use Params;
 
 /**
@@ -38,7 +42,7 @@ final class MediaSettingsScreen extends SettingsScreen
     /** What jpeg_quality holds when nothing between 1 and 100 was given. */
     public const DEFAULT_JPEG_QUALITY = 82;
 
-    /** Width x height, lower-cased, both above 0: what ImageProcessing::parseSize() accepts. */
+    /** Width x height, lower-cased, both above 0: what Processor::parseSize() accepts. */
     private const DIMENSION = '/^[1-9][0-9]*x[1-9][0-9]*$/';
 
     /** The text options JSON, each with what a missing or empty entry reads as. */
@@ -214,14 +218,14 @@ final class MediaSettingsScreen extends SettingsScreen
 
         $form
             ->number('watermark_opacity', __('Opacity'), __('100 is solid. Lower lets the photo show through the mark.'))
-                ->set('min', \ImageProcessing::WATERMARK_OPACITY_MIN)
+                ->set('min', Processor::OPACITY_MIN)
                 ->set('max', 100)
                 ->set('step', 5)
                 ->suffix('%')
                 ->default(100)
                 ->dependsOn(self::TYPE, array('text', 'image'))
                 ->sanitize(static function ($value) {
-                    return \ImageProcessing::watermarkOpacity($value);
+                    return Processor::opacity($value);
                 })
             ->custom('watermark_clear', static function () {
                 echo '<div class="clear"></div>';
@@ -248,7 +252,7 @@ final class MediaSettingsScreen extends SettingsScreen
 
         $quality = (int)$stored['jpeg_quality'];
         $stored['jpeg_quality'] = $quality < 1 || $quality > 100 ? self::DEFAULT_JPEG_QUALITY : $quality;
-        $stored['use_imagick']  = \ImageProcessing::usesImagick();
+        $stored['use_imagick']  = ImagickEngine::enabled();
 
         // A refused save posts no value for a block whose type was not chosen; the stored one
         // is what that block shows if the admin switches back to it.
@@ -338,7 +342,7 @@ final class MediaSettingsScreen extends SettingsScreen
     private static function formats(): array
     {
         $formats = array('original' => __('Keep the original format'), 'jpeg' => __('Save as JPEG'));
-        if (\ImageProcessing::canWriteWebp(\ImageProcessing::usesImagick())) {
+        if (Processor::site()->engine()->canWrite('webp')) {
             $formats['webp'] = __('Save as WebP');
         }
 
@@ -421,7 +425,7 @@ final class MediaSettingsScreen extends SettingsScreen
         if (!osc_is_watermark_text() || !osc_watermark_text_color()) {
             return;
         }
-        $path = \ImageProcessing::createWatermarkImageFromText(osc_watermark_text(), osc_watermark_text_color());
+        $path = WatermarkText::create((string) osc_watermark_text(), (string) osc_watermark_text_color());
         if ($path === '') {
             return;
         }
@@ -519,8 +523,8 @@ final class MediaSettingsScreen extends SettingsScreen
             return _m('There was a problem uploading the watermark image');
         }
 
-        $info = @getimagesize($file['tmp_name']);
-        if ($info === false || $info['mime'] !== 'image/png') {
+        $info = Formats::info($file['tmp_name']);
+        if ($info === null || $info['mime'] !== 'image/png') {
             return _m('The watermark image has to be a .PNG file');
         }
 

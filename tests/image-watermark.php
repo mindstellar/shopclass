@@ -24,6 +24,7 @@ require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
 
+use mindstellar\image\Processor;
 use mindstellar\image\WatermarkText;
 use mindstellar\storage\ResourceUploader;
 
@@ -301,7 +302,7 @@ foreach ($engines as $engine => $imagick) {
     $files = array('' => $dir . '/n.png', '_preview' => $dir . '/p.png', '_thumbnail' => $dir . '/t.png');
     $sizes = array($files['_preview'] => '480x360', $files['_thumbnail'] => '240x180');
     $write = static function (bool $mark, array $unmarked = array()) use ($photo, $files, $sizes): void {
-        ResourceUploader::writeSizes(ImageProcessing::fromFile($photo(640, 480)), '640x480', $files[''], $sizes, 'png', $mark, false, $unmarked);
+        ResourceUploader::writeSizes(Processor::site()->open($photo(640, 480)), '640x480', $files[''], $sizes, 'png', $mark, false, $unmarked);
     };
     $write(true);
     pin('the normal size is stamped', '200x30@430,440', $box($files['']));
