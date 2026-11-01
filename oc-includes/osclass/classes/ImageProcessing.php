@@ -40,6 +40,12 @@ class ImageProcessing
     private const WATERMARK_TILE_STEP_X = 1.5;
     private const WATERMARK_TILE_STEP_Y = 2.5;
 
+    /** GD holds about 5 bytes a pixel, and a resize or rotate keeps a second copy at once. */
+    private const GD_BYTES_PER_PIXEL = 10;
+
+    /** GD may always open this many pixels, so a nearly full memory_limit does not refuse every photo. */
+    private const GD_MIN_PIXELS = 1000000;
+
     /** The lowest watermark opacity, in percent; 100 is solid. */
     public const WATERMARK_OPACITY_MIN = 10;
 
@@ -80,7 +86,7 @@ class ImageProcessing
             throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
         }
         $this->use_imagick = self::usesImagick();
-        if (self::pixelCount($imagePath) > self::maxPixels()) {
+        if (self::pixelsOf($imagePath, $this->image_info) > self::maxPixels((int)filesize($imagePath))) {
             throw new RuntimeException(sprintf(__('%s has too many pixels to process.'), $imagePath));
         }
 
@@ -106,8 +112,10 @@ class ImageProcessing
             $this->height = imagesy($this->im);
 
             $this->exif = array();
-            if ($this->image_info['mime'] === 'image/jpeg') {
-                $this->exif = exif_read_data($imagePath);
+            if ($this->image_info['mime'] === 'image/jpeg' && function_exists('exif_read_data')) {
+                // A broken EXIF block only loses the orientation, so its warnings are silenced.
+                $exif       = @exif_read_data($imagePath);
+                $this->exif = is_array($exif) ? $exif : array();
             }
         }
 
@@ -128,7 +136,8 @@ class ImageProcessing
             default:
                 $this->ext  = 'jpg';
                 $this->mime = 'image/jpeg';
-                if (!$this->use_imagick) {
+                // A JPEG has no transparency; a WebP saved as JPEG gets white behind it.
+                if (!$this->use_imagick && $this->image_info['mime'] !== 'image/jpeg') {
                     $bg = imagecreatetruecolor($this->width, $this->height);
                     imagefill($bg, 0, 0, imagecolorallocatealpha($bg, 255, 255, 255, 127));
                     imagesavealpha($bg, true);
@@ -157,13 +166,36 @@ class ImageProcessing
 
     /**
      * The most pixels an image may have before it is opened. The image_max_pixels filter
-     * changes it.
+     * changes it; with GD it is also held to the memory_limit left after what is in use.
+     *
+     * @param int $fileBytes The file's size, as GD reads the whole file into memory first
      *
      * @return int
      */
-    public static function maxPixels()
+    public static function maxPixels(int $fileBytes = 0)
     {
-        return max(1, (int)Plugins::applyFilter('image_max_pixels', 50000000));
+        $max = max(1, (int)Plugins::applyFilter('image_max_pixels', 50000000));
+        if (!self::usesImagick()) {
+            $limit = \mindstellar\utility\Formatting::iniBytes((string)ini_get('memory_limit'));
+            $max   = min($max, self::memoryPixels($limit, memory_get_usage() + $fileBytes));
+        }
+
+        return $max;
+    }
+
+    /**
+     * How many pixels GD can decode in a memory_limit of $limit bytes with $used already taken.
+     *
+     * @internal
+     * @return int PHP_INT_MAX when there is no limit (-1 or 0)
+     */
+    public static function memoryPixels(int $limit, int $used): int
+    {
+        if ($limit <= 0) {
+            return PHP_INT_MAX;
+        }
+
+        return max(self::GD_MIN_PIXELS, intdiv($limit - $used, self::GD_BYTES_PER_PIXEL));
     }
 
     /**
@@ -177,9 +209,20 @@ class ImageProcessing
     public static function pixelCount($imagePath)
     {
         $info = self::imageInfo($imagePath);
-        if (!is_array($info)) {
-            return 0;
-        }
+
+        return is_array($info) ? self::pixelsOf($imagePath, $info) : 0;
+    }
+
+    /**
+     * pixelCount() for an image whose imageInfo() is already read.
+     *
+     * @param string                  $imagePath
+     * @param array<int|string,mixed> $info
+     *
+     * @return int
+     */
+    private static function pixelsOf($imagePath, array $info)
+    {
         $pixels = $info[0] * $info[1];
         if (self::usesImagick()) {
             try {
@@ -395,7 +438,7 @@ class ImageProcessing
             // Padding stays transparent; saving as JPEG turns it white.
             $bg = new Imagick();
             $bg->newImage($width, $height, 'none');
-            $this->im->thumbnailImage($width, $height, true);
+            $this->im->thumbnailImage((int) $newW, (int) $newH);
             $bg->compositeImage(
                 $this->im,
                 imagick::COMPOSITE_OVER,
@@ -433,9 +476,10 @@ class ImageProcessing
      * Write the image to disk, applying the configured JPEG quality / PNG compression.
      *
      * @param string      $imagePath
-     * @param string|null $ext Output format; defaults to the loaded image's own
+     * @param string|null $ext Output format ('jpg', 'jpeg', 'png', 'gif' or 'webp', any case);
+     *                         defaults to the loaded image's own
      *
-     * @return void
+     * @return bool false when the image could not be written
      * @throws RuntimeException when the target path exists and is not writable
      */
     public function saveToFile($imagePath, $ext = null)
@@ -444,10 +488,7 @@ class ImageProcessing
             throw new RuntimeException("$imagePath is not writable!");
         }
 
-        if ($ext === null) {
-            $ext = $this->ext;
-        }
-
+        $ext = strtolower((string)($ext ?? $this->ext));
         if ($ext === 'webp' && !self::canWriteWebp($this->use_imagick)) {
             $ext = 'jpeg';
         }
@@ -468,9 +509,9 @@ class ImageProcessing
             try {
                 if ($ext === 'jpeg') {
                     $bg = new Imagick();
-                    $bg->newImage($this->width, $this->height, 'white');
-                    $this->im->thumbnailImage($this->width, $this->height, true);
+                    $bg->newImage($this->im->getImageWidth(), $this->im->getImageHeight(), 'white');
                     $bg->compositeImage($this->im, imagick::COMPOSITE_OVER, 0, 0);
+                    $this->im->destroy();
                     $this->im  = $bg;
                     $this->ext = 'jpeg';
                 }
@@ -484,27 +525,30 @@ class ImageProcessing
                 }
                 $this->im->setImageFilename($imagePath);
                 $this->im->setImageFormat($ext);
-                $this->im->writeImage($imagePath);
+
+                return $this->im->writeImage($imagePath);
             } catch (Exception $e) {
                 trigger_error($e->getMessage(), E_USER_WARNING);
+
+                return false;
             }
-        } else {
-            switch ($ext) {
-                case 'gif':
-                case 'png':
-                    imagepng($this->im, $imagePath, $png_compression);
-                    break;
-                case 'webp':
-                    imagesavealpha($this->im, true);
-                    imagewebp($this->im, $imagePath, $jpeg_quality);
-                    break;
-                default:
-                    if (($this->ext !== 'jpeg' && $this->ext !== 'jpg') || $this->watermarked) {
-                        $this->ext = 'jpeg';
-                    }
-                    imagejpeg($this->im, $imagePath, $jpeg_quality);
-                    break;
-            }
+        }
+
+        switch ($ext) {
+            case 'gif':
+                return imagegif($this->im, $imagePath);
+            case 'png':
+                return imagepng($this->im, $imagePath, $png_compression);
+            case 'webp':
+                imagesavealpha($this->im, true);
+
+                return imagewebp($this->im, $imagePath, $jpeg_quality);
+            default:
+                if (($this->ext !== 'jpeg' && $this->ext !== 'jpg') || $this->watermarked) {
+                    $this->ext = 'jpeg';
+                }
+
+                return imagejpeg($this->im, $imagePath, $jpeg_quality);
         }
     }
 
@@ -614,12 +658,16 @@ class ImageProcessing
         header('Content-Disposition: Attachment;filename=image.' . $this->ext);
         header('Content-type: ' . $this->mime);
         if ($this->use_imagick) {
-            $this->im->getImageBlob();
+            $this->im->setImageFormat($this->ext === 'jpg' ? 'jpeg' : $this->ext);
+            echo $this->im->getImageBlob();
         } else {
             switch ($this->ext) {
                 case 'gif':
                 case 'png':
                     imagepng($this->im);
+                    break;
+                case 'webp':
+                    imagewebp($this->im);
                     break;
                 default:
                     imagejpeg($this->im);

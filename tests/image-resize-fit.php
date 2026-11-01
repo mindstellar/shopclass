@@ -11,7 +11,9 @@
 /**
  * Pins ImageProcessing::resizeTo() in fit mode (force aspect, no upscale): the canvas is the
  * scaled image, so a small logo keeps its size and shape. The listing photo mode, which pads
- * onto the target canvas, must not change. Runs with GD, and with Imagick when it is loaded.
+ * onto the target canvas, must not change, and a small image padded without upscaling sits
+ * centred at its own size. saveToFile() keeps the asked format in any case and says whether it
+ * wrote the file. Runs with GD, and with Imagick when it is loaded.
  *
  * Usage: php tests/image-resize-fit.php
  */
@@ -59,6 +61,22 @@ $size = static function (string $file, int $w, int $h, ?bool $force, bool $upsca
     return $img->getWidth() . 'x' . $img->getHeight();
 };
 
+// The opaque area's columns and rows, read along the middle row and column.
+$opaqueBox = static function (string $file): string {
+    $im   = imagecreatefrompng($file);
+    imagepalettetotruecolor($im);
+    $span = static function (int $count, callable $alpha): string {
+        $hit = array_values(array_filter(range(0, $count - 1), static fn (int $i): bool => $alpha($i) < 64));
+
+        return $hit === array() ? 'none' : $hit[0] . '-' . end($hit);
+    };
+    $w = imagesx($im);
+    $h = imagesy($im);
+
+    return $span($w, static fn (int $x): int => (imagecolorat($im, $x, intdiv($h, 2)) >> 24) & 0x7f)
+        . ' x ' . $span($h, static fn (int $y): int => (imagecolorat($im, intdiv($w, 2), $y) >> 24) & 0x7f);
+};
+
 $engines = array('GD' => false);
 if (extension_loaded('imagick')) {
     $engines['Imagick'] = true;
@@ -77,6 +95,23 @@ foreach ($engines as $engine => $imagick) {
 
     pin('padding keeps the target canvas', '640x480', $size($source(240, 80), 640, 480, false, true));
     pin('force aspect with upscale crops the canvas to the scaled height', '640x214', $size($source(240, 80), 640, 480, true, true));
+
+    harness_section($engine . ': no upscale, padded');
+
+    $padded = $dir . "/padded-$engine.png";
+    ImageProcessing::fromFile($source(240, 80))->resizeTo(640, 480, false, false)->saveToFile($padded, 'png');
+    pin('a small logo keeps its size, centred on the canvas', '200-439 x 200-279', $opaqueBox($padded));
+
+    harness_section($engine . ': saveToFile');
+
+    $written = $dir . "/upper-$engine";
+    pin('true when written', true, ImageProcessing::fromFile($source(40, 30))->saveToFile($written, 'PNG'));
+    pin('an upper-case PNG is still written as PNG', "\x89PNG", substr((string) file_get_contents($written), 0, 4));
+    ImageProcessing::fromFile($source(40, 30))->saveToFile($written, 'gif');
+    pin('a GIF is written as GIF', 'GIF8', substr((string) file_get_contents($written), 0, 4));
+    set_error_handler(static fn (): bool => true);
+    pin('false when the folder is missing', false, ImageProcessing::fromFile($source(40, 30))->saveToFile($dir . '/missing/x.png', 'png'));
+    restore_error_handler();
 }
 
 if (isset($engines['Imagick'])) {
