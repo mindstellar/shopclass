@@ -126,7 +126,7 @@ pin('unsaved main starts from the automatic items', array(array('type' => 'categ
 pin('the page list offers the page', array(array('id' => $about, 'name' => 'About us')), $r['view']['menuEditor']['pages']);
 pin('no theme place: none passed to the view', null, $r['view']['menuEditor']['place']);
 \mindstellar\theme\ThemeSupports::getInstance()->add('menus', array('main' => array('label' => 'Top bar', 'depth' => 1), 'strip' => array('label' => 'Strip')));
-pin('main shows its place', array('label' => 'Top bar', 'depth' => 1), drive('menus', array())['view']['menuEditor']['place']);
+pin('main shows its place', array('label' => 'Top bar', 'depth' => 1, 'hint' => ''), drive('menus', array())['view']['menuEditor']['place']);
 pin('a declared unsaved menu opens', 'strip', drive('menus', array('menu' => 'strip'))['view']['menuEditor']['id']);
 \mindstellar\theme\ThemeSupports::getInstance()->reset();
 pin('an unknown menu opens main', 'main', drive('menus', array('menu' => 'nope'))['view']['menuEditor']['id']);
@@ -146,8 +146,8 @@ foreach (array(
         eval('function ' . $fn . '(...$args) { ' . $body . ' }');
     }
 }
-$screen = static function (): string {
-    $view = drive('menus')['view'];
+$screen = static function (string $action = 'menus', array $post = array()): string {
+    $view = drive($action, $post)['view'];
     View::newInstance()->_exportVariableToView('menuEditor', $view['menuEditor']);
     ob_start();
     require ABS_PATH . 'oc-admin/themes/modern/appearance/menus.php';
@@ -158,6 +158,33 @@ check('the editor says how to show a menu', str_contains($screen(), 'id="menu-no
 \mindstellar\theme\ThemeSupports::getInstance()->add('menus', array('main' => array('label' => 'Top bar')));
 check('a theme with places does not get the line', !str_contains($screen(), 'id="menu-no-places"'));
 \mindstellar\theme\ThemeSupports::getInstance()->reset();
+
+harness_section('status line and place hint');
+$status = static function (string $html): string {
+    return preg_match('#id="menu-saved-state">([^<]*)<#', $html, $m) === 1 ? $m[1] : '';
+};
+pin('unsaved main: the automatic line', 'Automatic: your top categories. Save to use this list instead.', $status($screen()));
+$service->save('main', json_decode($items, true));
+\mindstellar\theme\ThemeSupports::getInstance()->add('menus', array('main' => array('label' => 'Top bar', 'hint' => 'One <b>row</b> only.')));
+$html = $screen();
+pin('saved and in a theme place: visitors see it', 'Saved. Visitors see this menu.', $status($html));
+check('the place hint is printed, escaped', str_contains($html, 'id="menu-place-hint">One &lt;b&gt;row&lt;/b&gt; only.</p>'));
+\mindstellar\theme\ThemeSupports::getInstance()->add('menus', array('main' => array('label' => 'Top bar')));
+check('no hint, no hint line', !str_contains($screen(), 'id="menu-place-hint"'));
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
+pin('saved with no theme place: says how to show it', 'Saved. Add a Menu widget to show it on the site.', $status($screen()));
+$html = $screen('menu_save_post', array('menu' => 'main', 'items' => json_encode(array(array('type' => 'link', 'url' => 'nope', 'label' => array('en_US' => 'x'))))));
+pin('a refused save: no "Saved" line', 'Not saved. Fix the problem named above and save again.', $status($html));
+$service->delete('main');
+
+harness_section('sidebar after a refused save');
+$_GET                    = array();
+$_POST                   = array('page' => 'appearance', 'action' => 'menu_save_post', 'menu' => 'main');
+$_SERVER['QUERY_STRING'] = '';
+Params::init();
+$sidebar = AdminMenu::getInstance();
+$sidebar->init();
+pin('Appearance > Menus stays lit', array('appearance', 'appearance_menus'), $sidebar->currentIds());
 
 harness_section('csrf');
 $GLOBALS['badCsrf'] = true;

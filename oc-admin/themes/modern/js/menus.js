@@ -32,6 +32,7 @@
     var addError = document.getElementById('menu-add-error');
     var pick = document.getElementById('menu-pick');
     var placeWarn = document.getElementById('menu-place-warn');
+    var announce = document.getElementById('menu-announce');
 
     var names = { category: {}, page: {} };
     state.categories.forEach(function (c) { names.category[c.id] = c.name; });
@@ -44,6 +45,50 @@
 
     function fmt(text, value) {
         return String(text).replace('%s', value).replace('%d', value);
+    }
+
+    // The server's rule in short: an http(s) address or a site path, no spaces or quotes.
+    function goodUrl(value) {
+        return /^(https?:\/\/[^\s"'<>]+|\/(?!\/)[^\s"'<>]*)$/i.test(String(value).trim());
+    }
+
+    function hasLabel(item) {
+        return Object.keys(item.label).some(function (code) {
+            return String(item.label[code]).trim() !== '';
+        });
+    }
+
+    // What is wrong with an item, '' when nothing.
+    function problem(item) {
+        if (item.type === 'link') {
+            return goodUrl(item.url) && hasLabel(item) ? '' : t.badLink;
+        }
+        return names[item.type][item.ref] ? '' : t.missing;
+    }
+
+    function markRow(li, item) {
+        var bad = problem(item);
+        li.classList.toggle('is-missing', bad !== '');
+        li.querySelector('.chip-type').textContent = bad !== '' ? bad : t[item.type];
+    }
+
+    function position(i) {
+        var depth = items[i].depth;
+        var at = 0;
+        var of = 0;
+        var start = i;
+        while (start > 0 && items[start - 1].depth >= depth) {
+            start--;
+        }
+        for (var k = start; k < items.length && items[k].depth >= depth; k++) {
+            if (items[k].depth === depth) {
+                of++;
+                if (k <= i) {
+                    at++;
+                }
+            }
+        }
+        return String(t.position).replace('%1$d', at).replace('%2$d', of).replace('%3$d', depth + 1);
     }
 
     function flatten(nested, depth) {
@@ -191,6 +236,7 @@
                 dirty = true;
                 status.textContent = t.unsaved;
                 box.parentNode.querySelector('.chip-name').textContent = labelOf(item);
+                markRow(box.parentNode, item);
             });
             box.appendChild(lab);
             box.appendChild(input);
@@ -206,13 +252,30 @@
             url.id = urlId;
             url.className = 'input-text';
             url.value = item.url;
+            var urlError = document.createElement('p');
+            urlError.className = 'menu-add-error';
+            urlError.id = urlId + '-error';
+            url.setAttribute('aria-describedby', urlError.id);
+            var checkUrl = function () {
+                var bad = !goodUrl(url.value);
+                urlError.hidden = !bad;
+                urlError.textContent = bad ? t.badAddress : '';
+                url.setAttribute('aria-invalid', bad ? 'true' : 'false');
+            };
             url.addEventListener('input', function () {
                 item.url = url.value.trim();
                 dirty = true;
                 status.textContent = t.unsaved;
+                checkUrl();
+                markRow(box.parentNode, item);
+                if (!hasLabel(item)) {
+                    box.parentNode.querySelector('.chip-name').textContent = labelOf(item);
+                }
             });
+            checkUrl();
             box.appendChild(ulab);
             box.appendChild(url);
+            box.appendChild(urlError);
         } else {
             var hint = document.createElement('p');
             hint.className = 'menu-help';
@@ -237,12 +300,10 @@
         items.forEach(function (item, i) {
             var li = rowTemplate.content.firstElementChild.cloneNode(true);
             var name = labelOf(item);
-            var missing = item.type !== 'link' && !names[item.type][item.ref];
             li.style.setProperty('--menu-depth', String(item.depth));
             li.dataset.index = String(i);
-            li.classList.toggle('is-missing', missing);
             li.querySelector('.chip-name').textContent = name !== '' ? name : '#' + item.ref;
-            li.querySelector('.chip-type').textContent = missing ? t.missing : t[item.type];
+            markRow(li, item);
             var grip = li.querySelector('.chip-grip');
             grip.setAttribute('aria-label', fmt(t.move, name));
             grip.title = fmt(t.move, name);
@@ -321,6 +382,9 @@
         }
         e.preventDefault();
         changed(to);
+        if (announce) {
+            announce.textContent = position(to);
+        }
     });
 
     list.addEventListener('dragstart', function (e) {
@@ -400,7 +464,7 @@
                     addError.hidden = false;
                     return;
                 }
-                if (!/^(https?:\/\/|\/)/i.test(url.value.trim())) {
+                if (!goodUrl(url.value)) {
                     addError.textContent = t.badAddress;
                     addError.hidden = false;
                     url.focus();
@@ -437,6 +501,40 @@
         json.value = JSON.stringify(nest());
         dirty = false;
     });
+
+    // Deleting throws the edits away anyway; the leave-page warning would stack on the confirm.
+    var deleteForm = document.querySelector('#menuDeleteDialog form');
+    if (deleteForm) {
+        deleteForm.addEventListener('submit', function () {
+            dirty = false;
+        });
+    }
+
+    // A new menu's id follows its name until the owner types one.
+    var newName = document.getElementById('menu-new-label');
+    var newId = document.getElementById('menu-new-id');
+    var advanced = document.getElementById('menu-new-advanced');
+    if (newName && newId) {
+        var idTouched = false;
+        newId.addEventListener('input', function () {
+            idTouched = newId.value !== '';
+        });
+        newName.addEventListener('input', function () {
+            if (!idTouched) {
+                newId.value = newName.value.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+                    .replace(/[^a-z0-9_-]+/g, '-')
+                    .replace(/-{2,}/g, '-')
+                    .replace(/^[^a-z]+/, '')
+                    .slice(0, 32)
+                    .replace(/-+$/, '');
+            }
+        });
+        newId.addEventListener('invalid', function () {
+            if (advanced) {
+                advanced.open = true;
+            }
+        });
+    }
 
     window.addEventListener('beforeunload', function (e) {
         if (dirty) {

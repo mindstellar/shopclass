@@ -218,11 +218,11 @@ Declare the places your theme shows menus, so the editor can name them and warn 
 ```php
 osc_add_theme_support('menus', [
     'main'   => ['label' => __('Top bar', 'mytheme'), 'depth' => 1],
-    'footer' => ['label' => __('Footer', 'mytheme'), 'depth' => 1],
+    'footer' => ['label' => __('Footer', 'mytheme'), 'depth' => 1, 'hint' => __('Shows in one row; keep it short.', 'mytheme')],
 ]);
 ```
 
-The key is a menu id. `label` is required; `depth` is how many levels you show, 1 to 3 (default 3). A declared menu the owner has not made yet is still listed in the editor. Entries that do not fit are skipped. Older cores ignore the key.
+The key is a menu id. `label` is required; `depth` is how many levels you show, 1 to 3 (default 3). `hint` is an optional plain-text note the editor shows under the place. A declared menu the owner has not made yet is still listed in the editor. Entries that do not fit are skipped. Older cores ignore the key.
 
 The `core.menu` widget prints one menu as `<nav class="osc-menu">` with nested `<ul>` lists and an optional `<h2 class="osc-menu-title">`. Core adds no CSS for it; style `.osc-menu` in your theme. `osc_menu_choices()` lists the menus as `id => name`.
 

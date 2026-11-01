@@ -61,6 +61,70 @@
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
+
+  // Kept away from Save so a slip does not delete the menu.
+  .menu-delete {
+    margin-inline-start: auto;
+  }
+}
+
+// On white, the plain outline read as a disabled button; a tint and weight make it a control.
+.menus-page .btn-dim {
+  --#{$prefix}btn-bg: var(--osc-bench-warm);
+  --#{$prefix}btn-hover-bg: var(--osc-bench-sunk);
+  font-weight: 500;
+}
+
+// Status, hints and type badges stay at 12px or more.
+.menus-page {
+  .form-card-cats,
+  .col-hint,
+  .chip-type {
+    font-size: .875rem;
+  }
+}
+
+.menu-new-advanced {
+  display: flex;
+  flex-direction: column;
+  gap: .35rem;
+  margin-top: .4rem;
+
+  > summary {
+    color: var(--osc-ink-muted);
+    cursor: pointer;
+    font-size: .875rem;
+    width: max-content;
+
+    &:hover {
+      color: var(--osc-ink);
+    }
+  }
+
+  &[open] > summary {
+    margin-bottom: .25rem;
+  }
+}
+
+// Phones: 44px targets, and the row wraps instead of pushing the page sideways.
+@include media-breakpoint-down(md) {
+  .menu-item {
+    margin-inline-start: calc(var(--menu-depth, 0) * 1rem);
+
+    .field-chip-row {
+      flex-wrap: wrap;
+    }
+
+    .chip-grip,
+    .chip-btn {
+      min-height: 44px;
+      min-width: 44px;
+    }
+
+    .chip-actions {
+      margin-inline-start: auto;
+    }
+  }
 }
 
 .menu-add-card,
@@ -100,18 +164,22 @@
 
 .menu-help {
   color: var(--osc-ink-muted);
-  font-size: $font-size-label;
+  font-size: .875rem;
   margin: 0;
 }
 
 .menu-warn {
   color: var(--osc-warning-deep);
-  font-size: $font-size-label;
+  font-size: .875rem;
   margin: .25rem 0 0;
 }
 
 .menu-add-error {
   color: var(--osc-danger);
-  font-size: $font-size-label;
+  font-size: .875rem;
   margin: .25rem 0 0;
+
+  &[hidden] {
+    display: none;
+  }
 }

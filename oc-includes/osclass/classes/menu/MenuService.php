@@ -88,10 +88,11 @@ final class MenuService
     }
 
     /**
-     * The places the theme declared with osc_add_theme_support('menus', [id => ['label' => …, 'depth' => 1..3]]).
-     * An entry with a bad id, no label or a depth outside 1 to 3 is skipped.
+     * The places the theme declared with osc_add_theme_support('menus', [id => ['label' => …, 'depth' => 1..3, 'hint' => …]]).
+     * An entry with a bad id, no label or a depth outside 1 to 3 is skipped. 'hint' is an
+     * optional plain-text note for the menu editor, '' when missing.
      *
-     * @return array<string,array{label:string,depth:int}>
+     * @return array<string,array{label:string,depth:int,hint:string}>
      */
     public function themePlaces(): array
     {
@@ -107,7 +108,8 @@ final class MenuService
             if (preg_match(self::ID, $id) !== 1 || $label === '' || !is_int($depth) || $depth < 1 || $depth > MenuItems::MAX_DEPTH) {
                 continue;
             }
-            $out[$id] = ['label' => $label, 'depth' => $depth];
+            $hint     = is_string($place['hint'] ?? null) ? trim($place['hint']) : '';
+            $out[$id] = ['label' => $label, 'depth' => $depth, 'hint' => $hint];
         }
 
         return $out;

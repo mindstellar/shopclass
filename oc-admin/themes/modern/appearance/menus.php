@@ -39,8 +39,13 @@ $meLocales = array();
 foreach ((array) OSCLocale::getInstance()->listAllEnabled() as $meLocale) {
     $meLocales[] = array('code' => (string) $meLocale['pk_c_code'], 'name' => (string) $meLocale['s_name']);
 }
-if ($menuEditor['saved']) {
+$mePlace = is_array($menuEditor['place']) ? $menuEditor['place'] : null;
+if (!empty($menuEditor['draft'])) {
+    $meStatus = __('Not saved. Fix the problem named above and save again.');
+} elseif ($menuEditor['saved'] && $mePlace !== null) {
     $meStatus = __('Saved. Visitors see this menu.');
+} elseif ($menuEditor['saved']) {
+    $meStatus = __('Saved. Add a Menu widget to show it on the site.');
 } elseif ($meId === 'main') {
     $meStatus = __('Automatic: your top categories. Save to use this list instead.');
 } elseif ($meId === 'footer') {
@@ -48,8 +53,6 @@ if ($menuEditor['saved']) {
 } else {
     $meStatus = __('Not saved yet.');
 }
-
-$mePlace = is_array($menuEditor['place']) ? $menuEditor['place'] : null;
 
 $meState = array(
     'place'      => $mePlace,
@@ -72,13 +75,15 @@ $meState = array(
         'edit'       => __('Edit %s'),
         'remove'     => __('Remove %s'),
         'label'      => __('Label'),
-        'labelIn'    => __('Label (%s)'),
+        'labelIn'    => __('Label · %s'),
         'labelHint'  => __('Leave empty to use its own name.'),
         'url'        => __('Address'),
         'unsaved'    => __('Unsaved changes'),
         'full'       => __('A menu can hold at most %d items.'),
         'needLink'   => __('A link needs a label and an address.'),
         'badAddress' => __('A link needs an address that starts with http://, https:// or /.'),
+        'badLink'    => __('Fix this link'),
+        'position'   => __('Position %1$d of %2$d, level %3$d'),
         'already'    => __('"%s" is already in this menu.'),
         'leave'      => __('You have unsaved changes to this menu.'),
         'hidden1'    => __('1 item is deeper than your theme shows here and will not show.'),
@@ -127,7 +132,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
                     <div class="form-card-head">
                         <div class="form-card-heading">
                             <span class="form-card-title"><?php echo osc_esc_html($meName); ?></span>
-                            <span class="form-card-cats"><?php echo osc_esc_html($meStatus); ?></span>
+                            <span class="form-card-cats" id="menu-saved-state"><?php echo osc_esc_html($meStatus); ?></span>
                         </div>
                         <span class="form-card-actions">
                             <span class="form-card-status" id="menu-status" role="status" aria-live="polite"></span>
@@ -135,11 +140,15 @@ $meDepth = static function (array $cat) use ($meCats): int {
                     </div>
                     <?php if ($mePlace !== null) { ?>
                         <p class="menu-help" id="menu-place"><?php echo osc_esc_html(sprintf(__('Your theme shows this menu in: %1$s (%2$s).'), $mePlace['label'], sprintf(_n('%d level', '%d levels', $mePlace['depth']), $mePlace['depth']))); ?></p>
+                        <?php if (($mePlace['hint'] ?? '') !== '') { ?>
+                            <p class="menu-help" id="menu-place-hint"><?php echo osc_esc_html($mePlace['hint']); ?></p>
+                        <?php } ?>
                         <?php $meBeyond = MenuService::itemsBeyond((array) $menuEditor['items'], $mePlace['depth']); ?>
                         <p class="menu-warn" id="menu-place-warn" role="status"<?php echo $meBeyond === 0 ? ' hidden' : ''; ?>><?php echo $meBeyond === 0 ? '' : osc_esc_html(sprintf($meBeyond === 1 ? $meState['i18n']['hidden1'] : $meState['i18n']['hiddenN'], $meBeyond)); ?></p>
                     <?php } elseif (empty($menuEditor['places'])) { ?>
                         <p class="menu-help" id="menu-no-places"><?php _e('Your theme does not show saved menus by itself. Add the Menu widget to a section to show one.'); ?></p>
                     <?php } ?>
+                    <p class="visually-hidden" id="menu-announce" role="status" aria-live="polite"></p>
                     <p class="visually-hidden" id="menu-grip-help"><?php _e('Up and down arrows move the item. Right arrow puts it under the item above, left arrow moves it out.'); ?></p>
                     <ol class="menu-items" id="menu-items" aria-label="<?php echo osc_esc_html(sprintf(__('Items in %s'), $meName)); ?>"></ol>
                     <p class="form-empty" id="menu-empty" hidden><?php _e('No items yet. Add some from the list on the right.'); ?></p>
@@ -148,9 +157,9 @@ $meDepth = static function (array $cat) use ($meCats): int {
                 <div class="menu-actions">
                     <button type="submit" class="btn btn-submit btn-sm" id="menu-save"><?php _e('Save menu'); ?></button>
                     <?php if ($menuEditor['core'] && $menuEditor['saved']) { ?>
-                        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-open="#menuDeleteDialog"><?php _e('Use the automatic menu'); ?></button>
+                        <button type="button" class="btn btn-dim btn-sm menu-delete" data-osc-dialog-open="#menuDeleteDialog"><?php _e('Use the automatic menu'); ?></button>
                     <?php } elseif (!$menuEditor['core']) { ?>
-                        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-open="#menuDeleteDialog"><?php _e('Delete menu'); ?></button>
+                        <button type="button" class="btn btn-dim btn-sm menu-delete" data-osc-dialog-open="#menuDeleteDialog"><?php _e('Delete menu'); ?></button>
                     <?php } ?>
                 </div>
             </form>
@@ -203,9 +212,12 @@ $meDepth = static function (array $cat) use ($meCats): int {
                 <input type="hidden" name="create" value="1" />
                 <label class="form-sublabel" for="menu-new-label"><?php _e('Name'); ?></label>
                 <input type="text" id="menu-new-label" name="label" class="input-text" maxlength="<?php echo MenuItems::MAX_LABEL; ?>" required />
-                <label class="form-sublabel" for="menu-new-id"><?php _e('Id'); ?></label>
-                <input type="text" id="menu-new-id" name="menu" class="input-text" required pattern="[a-z][a-z0-9_\-]{0,31}" maxlength="32" aria-describedby="menu-new-id-help" />
-                <p class="menu-help" id="menu-new-id-help"><?php printf(osc_esc_html(__('Lowercase letters, digits, - and _. Themes and widgets use it to find the menu. At most %d menus.')), MenuService::MAX_MENUS); ?></p>
+                <details class="menu-new-advanced" id="menu-new-advanced">
+                    <summary><?php _e('Advanced'); ?></summary>
+                    <label class="form-sublabel" for="menu-new-id"><?php _e('Id'); ?></label>
+                    <input type="text" id="menu-new-id" name="menu" class="input-text" required pattern="[a-z][a-z0-9_\-]{0,31}" maxlength="32" aria-describedby="menu-new-id-help" />
+                    <p class="menu-help" id="menu-new-id-help"><?php printf(osc_esc_html(__('Lowercase letters, digits, - and _. Themes and widgets use it to find the menu. At most %d menus.')), MenuService::MAX_MENUS); ?></p>
+                </details>
                 <button type="submit" class="btn btn-dim btn-sm"><?php _e('Create menu'); ?></button>
             </form>
         </aside>
