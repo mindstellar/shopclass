@@ -15,6 +15,16 @@
  */
 
 /**
+ * Public URL of the sitemap index core serves, with friendly URLs on or off.
+ *
+ * @return string e.g. "https://example.com/sitemapindex.xml"
+ */
+function osc_sitemap_url(): string
+{
+    return Sitemap::indexUrl();
+}
+
+/**
  * The `Sitemap:` directive that advertises the sitemap index, as an absolute
  * URL. Built at runtime from osc_base_url(), so it can be appended to a
  * robots.txt without ever baking a host into a tracked file.
@@ -23,7 +33,7 @@
  */
 function osc_sitemap_robots_line()
 {
-    return Sitemap::robotsLine();
+    return 'Sitemap: ' . osc_sitemap_url();
 }
 
 /**

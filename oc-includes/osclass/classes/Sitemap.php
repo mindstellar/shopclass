@@ -732,7 +732,17 @@ class Sitemap extends DAO
      */
     public static function robotsLine()
     {
-        return 'Sitemap: ' . osc_base_url() . 'sitemapindex.xml';
+        return 'Sitemap: ' . self::indexUrl();
+    }
+
+    /**
+     * Absolute URL of the sitemap index. The path is the same with friendly URLs on or off.
+     *
+     * @return string
+     */
+    public static function indexUrl()
+    {
+        return osc_base_url() . 'sitemapindex.xml';
     }
 
     /**

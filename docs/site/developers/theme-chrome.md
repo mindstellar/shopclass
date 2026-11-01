@@ -124,6 +124,12 @@ Call `osc_add_theme_support()` from `functions.php`, which core loads before it
 renders anything. A feature nobody declared reads as `false`, and core does what
 it did before: declaring is always optional.
 
+Core reads these features:
+
+| Feature | Value | Effect |
+|---|---|---|
+| `comments` | `false` | Settings, Comments shows a note that the theme shows no comments. Unset or `true` shows nothing. |
+
 ## Declaring extra views
 
 A static page's internal name becomes a URL segment, so core keeps a list of

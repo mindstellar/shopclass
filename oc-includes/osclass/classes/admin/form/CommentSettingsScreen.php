@@ -33,6 +33,19 @@ final class CommentSettingsScreen extends SettingsScreen
     /** What 'moderate_comments' holds while moderation is switched off. */
     public const MODERATION_OFF = '-1';
 
+    /**
+     * Whether the active theme declared osc_add_theme_support('comments', false), saying
+     * it shows no comments. An undeclared or true value means it does.
+     *
+     * @return bool
+     */
+    public static function themeHidesComments(): bool
+    {
+        $supports = \mindstellar\theme\ThemeSupports::getInstance();
+
+        return $supports->has('comments') && $supports->get('comments') === false;
+    }
+
     protected static function declareFields(): void
     {
         $moderated = osc_moderate_comments();
