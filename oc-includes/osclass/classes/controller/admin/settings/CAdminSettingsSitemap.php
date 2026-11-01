@@ -162,7 +162,7 @@ class CAdminSettingsSitemap extends AdminSecBaseModel
         $this->_exportVariableToView('robots_content', (string) $forms['robots']['values'][SitemapSettingsScreen::ROBOTS]);
         $this->_exportVariableToView('robots_writable', SitemapSettingsScreen::robotsWritable());
         $this->_exportVariableToView('robots_exists', file_exists($path));
-        $this->_exportVariableToView('sitemap_index_url', osc_base_url() . 'sitemapindex.xml');
+        $this->_exportVariableToView('sitemap_index_url', osc_sitemap_url());
         $this->doView('settings/sitemap.php');
     }
 
