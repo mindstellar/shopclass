@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- `AccountService::registerVerified()` makes an active account for an e-mail a sign-in provider already verified, for social login.
 - **Settings → General → Site is a** sets classifieds or shop. In shop mode only admins post and shoppers see buyer pages only. `osc_site_mode()` reads it.
 - The installer asks for the site type and offers sample data; the CLI takes `--site-type` and `--sample-data`. **Listings** offers to remove the sample data later.
 - New category trees for classifieds and shop sites, on new installs only.

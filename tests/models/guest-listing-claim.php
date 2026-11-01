@@ -108,6 +108,39 @@ $madeId = (int)(User::getInstance()->findByEmail('made@example.test')['pk_i_id']
 check('the account exists', $madeId > 0);
 pin('it takes the guest listing at once', $madeId, $ownerOf('t_item', $adminGuest));
 
+harness_section('a verified e-mail (social login)');
+$verified = 'social@example.test';
+$socialGuest = seed_item($admin, $cat, null, 'Social guest listing');
+$admin->query("UPDATE {$prefix}t_item SET s_contact_email = '$verified' WHERE pk_i_id = $socialGuest");
+Preference::getInstance()->set('enabled_user_validation', '1');
+Preference::getInstance()->set('notify_new_user', '1');
+osc_reset_preferences();
+$fired = [];
+foreach (['hook_email_user_validation', 'hook_email_user_registration', 'hook_email_admin_new_user', 'validate_user', 'user_register_completed'] as $hook) {
+    osc_add_hook($hook, static function () use (&$fired, $hook): void {
+        $fired[$hook] = ($fired[$hook] ?? 0) + 1;
+    });
+}
+$made = $accounts->registerVerified(['s_name' => 'Social', 's_email' => $verified], \mindstellar\auth\Actor::guest('127.0.0.1'));
+check('the account exists', $made['id'] > 0);
+pin('it is active although validation is on', true, $made['active']);
+pin('the row is active', '1', (string)$admin->query("SELECT b_active FROM {$prefix}t_user WHERE pk_i_id = {$made['id']}")->fetch_row()[0]);
+pin('each mail and hook fires once, with no activation mail', [
+    'hook_email_admin_new_user' => 1, 'hook_email_user_registration' => 1, 'user_register_completed' => 1, 'validate_user' => 1,
+], (static function (array $f): array {
+    ksort($f);
+
+    return $f;
+})($fired));
+pin('it takes the guest listing at once', $made['id'], $ownerOf('t_item', $socialGuest));
+check('it has a password nobody knows', !osc_verify_password('', (string)User::getInstance()->findByPrimaryKey($made['id'])['s_password']));
+pin('a taken e-mail is refused', 'mindstellar\exception\InvalidException', $refusal(fn () => $accounts->registerVerified(['s_name' => 'Again', 's_email' => $verified], \mindstellar\auth\Actor::guest('127.0.0.1'))));
+pin('an e-mail the sanitizer would change is refused', 'mindstellar\exception\InvalidException', $refusal(fn () => $accounts->registerVerified(['s_name' => 'Idn', 's_email' => 'victim@exämple.com'], \mindstellar\auth\Actor::guest('127.0.0.1'))));
+pin('and makes no account', false, (bool)User::getInstance()->findByEmail('victim@exmple.com'));
+Preference::getInstance()->set('enabled_user_registration', '0');
+osc_reset_preferences();
+pin('closed sign-ups refuse it', 'mindstellar\exception\ForbiddenException', $refusal(fn () => $accounts->registerVerified(['s_name' => 'Late', 's_email' => 'late@example.test'], \mindstellar\auth\Actor::guest('127.0.0.1'))));
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

@@ -120,6 +120,44 @@ final class AccountService
      */
     public function register(array $form, Actor $actor, bool $captchaPassed = true, bool $hideTaken = false, ?callable $accepted = null): array
     {
+        return $this->create($form, $actor, $captchaPassed, $hideTaken, $accepted, false);
+    }
+
+    /**
+     * Make an active account for an e-mail a sign-in provider already verified (social login).
+     * It passes the same gate, username rules and refusals as register(), but takes no password
+     * (the account gets a random one, so it signs in through the provider or a password reset),
+     * sends no activation mail, joins the guest listings posted with the e-mail, and fires
+     * `hook_email_user_registration` and `validate_user` once, as a confirmed sign-up does.
+     * A taken e-mail is refused: signing the visitor into that account instead needs its own proof.
+     *
+     * @param array<string,mixed> $form as for register(), without the passwords
+     *
+     * @return array{id:int,active:bool} active is always true
+     * @throws InvalidException with the form's messages, one per line
+     * @throws ForbiddenException DISABLED when sign-ups are off, BANNED for a ban rule
+     */
+    public function registerVerified(array $form, Actor $actor): array
+    {
+        // Only the address the provider vouched for may take the guest listings.
+        $email = trim((string) ($form['s_email'] ?? ''));
+        if ($this->sanitize->email($email) !== $email) {
+            throw self::refusal(_m('The email is not valid'));
+        }
+        $form['s_password'] = $form['s_password2'] = bin2hex(random_bytes(32));
+
+        return $this->create($form, $actor, true, false, null, true);
+    }
+
+    /**
+     * register() and registerVerified(); $verified means the e-mail is already confirmed.
+     *
+     * @param array<string,mixed> $form
+     *
+     * @return array{id:int,active:bool}
+     */
+    private function create(array $form, Actor $actor, bool $captchaPassed, bool $hideTaken, ?callable $accepted, bool $verified): array
+    {
         $admin  = $actor->isAdmin();
         $hidden = $hideTaken && !$admin && osc_user_validation_enabled();
         if (!$admin) {
@@ -216,14 +254,14 @@ final class AccountService
             // A hidden sign-up sends from the queue, so a new e-mail answers as fast as a taken one.
             $send = $hidden ? [SignUpMail::class, 'queue'] : null;
 
-            return DeferredMail::transaction(function () use ($input, $info, $username, $activation, $admin, $actor, $hidden, &$failed): array {
+            return DeferredMail::transaction(function () use ($input, $info, $username, $activation, $admin, $actor, $hidden, $verified, &$failed): array {
                 $userId = (int) $this->users->insertGetId($input);
                 if ($userId <= 0) {
                     trigger_error('User insert produced no row; registration aborted.', E_USER_WARNING);
 
                     throw self::refusal(_m('Your account could not be created. Please try again.'));
                 }
-                if ($admin) {
+                if ($admin || $verified) {
                     UserStore::lockGuestListings((string) $input['s_email']);
                 }
                 if ($username === '') {
@@ -246,7 +284,7 @@ final class AccountService
                 if (!$admin && osc_notify_new_user()) {
                     osc_run_hook('hook_email_admin_new_user', $user);
                 }
-                $active = $admin || !osc_user_validation_enabled();
+                $active = $admin || $verified || !osc_user_validation_enabled();
                 if (!$active && $hidden) {
                     // The queue holds only the id; the job mails a code made when it runs.
                     SignUpMail::queueActivation($userId);
@@ -256,9 +294,13 @@ final class AccountService
                 } else {
                     $this->users->update(['b_active' => '1'], ['pk_i_id' => $userId]);
                     // A visitor's address is unconfirmed here, so only an admin-made account
-                    // takes the guest listings and alerts under it.
-                    if ($admin) {
+                    // or a verified e-mail takes the guest listings and alerts under it.
+                    if ($admin || $verified) {
                         $this->claimGuestListings($userId);
+                    }
+                    if ($verified) {
+                        osc_run_hook('hook_email_user_registration', $user);
+                        osc_run_hook('validate_user', $user);
                     }
                 }
                 osc_run_hook('user_register_completed', $userId);
