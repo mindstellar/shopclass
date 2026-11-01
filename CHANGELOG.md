@@ -2,10 +2,14 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.0.10
+## Shopclass 7.0.11
 
 ### Fixed
 - Portrait phone photos no longer get white bars on the sides when Imagick resizes them.
+
+## Shopclass 7.0.10
+
+### Fixed
 - Mail Settings no longer takes the browser's saved admin login as an unsaved change, so the test email runs after saving.
 - A child theme with no Widgets line offers its parent's widget sections.
 
