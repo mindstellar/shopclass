@@ -45,8 +45,10 @@ final class Money
             $decimals = 0;
         }
         $number = number_format($value, $decimals, $locale['s_dec_point'], $locale['s_thousands_sep']);
-        if (str_ends_with((string) ($locale['pk_c_code'] ?? ''), '_IN') && $locale['s_thousands_sep'] !== '') {
-            $number = self::lakh($value, $decimals, (string) $locale['s_dec_point'], (string) $locale['s_thousands_sep']);
+        if (str_ends_with((string) ($locale['pk_c_code'] ?? ''), '_IN')) {
+            // An empty separator is the column default, not a choice, so Indian prices still group.
+            $sep    = (string) $locale['s_thousands_sep'];
+            $number = self::lakh($value, $decimals, (string) $locale['s_dec_point'], $sep === '' ? ',' : $sep);
         }
         $text = str_replace(
             array('{NUMBER}', '{CURRENCY}'),
