@@ -204,7 +204,48 @@ function osc_is_ip_banned($ip, $rules = null)
         }
     }
 
+    // An IPv6 visitor never has four dotted blocks, so the rules above cannot ban one.
+    // A rule with ':' or '/' is a single address (either family, any notation) or a
+    // CIDR range such as 203.0.113.0/24 or 2001:db8::/32.
+    foreach ($rules as $rule) {
+        $range = trim((string) $rule['s_ip']);
+        if ($range !== '' && (strpos($range, ':') !== false || strpos($range, '/') !== false)
+            && osc_ip_rule_matches((string) $ip, $range)
+        ) {
+            return true;
+        }
+    }
+
     return false;
+}
+
+/**
+ * Whether an IP matches a single-address or CIDR ban rule (IPv4 or IPv6)
+ *
+ * @param string $ip
+ * @param string $rule "2001:db8::1", "203.0.113.0/24" or "2001:db8::/32"
+ *
+ * @return bool
+ * @since 7.1.0
+ */
+function osc_ip_rule_matches(string $ip, string $rule): bool
+{
+    $address = @inet_pton(trim($ip));
+    if ($address === false) {
+        return false;
+    }
+    if (strpos($rule, '/') === false) {
+        return $address === @inet_pton($rule);
+    }
+    [$network, $bits] = explode('/', $rule, 2);
+    $base = @inet_pton($network);
+    if ($base === false || strlen($base) !== strlen($address)
+        || !ctype_digit($bits) || (int) $bits > strlen($address) * 8
+    ) {
+        return false;
+    }
+
+    return \mindstellar\security\AddressGuard::inRange(trim($ip), $rule);
 }
 
 /**
