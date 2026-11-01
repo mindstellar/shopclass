@@ -44,13 +44,33 @@ final class Money
         if ($decimals > 0 && $rounded == floor($rounded)) {
             $decimals = 0;
         }
+        $number = number_format($value, $decimals, $locale['s_dec_point'], $locale['s_thousands_sep']);
+        if (str_ends_with((string) ($locale['pk_c_code'] ?? ''), '_IN') && $locale['s_thousands_sep'] !== '') {
+            $number = self::lakh($value, $decimals, (string) $locale['s_dec_point'], (string) $locale['s_thousands_sep']);
+        }
         $text = str_replace(
             array('{NUMBER}', '{CURRENCY}'),
-            array(number_format($value, $decimals, $locale['s_dec_point'], $locale['s_thousands_sep']), $symbol),
+            array($number, $symbol),
             (string) $locale['s_currency_format']
         );
 
         return ($micros < 0 && $rounded > 0 ? "\u{2212}" : '') . $text;
+    }
+
+    /**
+     * Indian grouping: a group of three, then groups of two ("12,34,56,789.50"). Used for _IN locales.
+     */
+    private static function lakh(float $value, int $decimals, string $point, string $sep): string
+    {
+        $parts = explode('.', number_format($value, $decimals, '.', ''));
+        $int   = $parts[0];
+        if (strlen($int) > 3) {
+            $head = substr($int, 0, -3);
+            $int  = implode($sep, str_split(str_pad($head, (int) (2 * ceil(strlen($head) / 2)), ' ', STR_PAD_LEFT), 2)) . $sep . substr($int, -3);
+            $int  = ltrim($int);
+        }
+
+        return isset($parts[1]) ? $int . $point . $parts[1] : $int;
     }
 
     /**
