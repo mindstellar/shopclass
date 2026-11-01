@@ -342,6 +342,7 @@ class Upgrade
                 if (function_exists('opcache_reset')) {
                     @opcache_reset();
                 }
+                self::loadNewAutoload($this->objPackage->getTargetDirectory());
             } else {
                 throw new RuntimeException(
                     $originDir . ' '
@@ -356,6 +357,41 @@ class Upgrade
             $this->FileSystem->remove($extracted_package_path);
             $this->FileSystem->remove(ABS_PATH . '.maintenance');
             osc_purge_page_cache('upgrade');
+        }
+    }
+
+    /**
+     * Register the new release's Composer class maps ahead of the old ones, so classes first
+     * loaded after the file swap in this request resolve to the new files.
+     *
+     * @param string $root the swapped install root
+     *
+     * @return bool true when the new maps were registered
+     */
+    public static function loadNewAutoload(string $root): bool
+    {
+        $dir = rtrim($root, '/') . '/oc-includes/vendor/composer/';
+        if (!is_file($dir . 'autoload_psr4.php') || !is_file($dir . 'autoload_classmap.php')
+            || !class_exists(\Composer\Autoload\ClassLoader::class, false)
+        ) {
+            return false;
+        }
+        try {
+            $read = static fn (string $file) => include $file;
+            $psr4 = $read($dir . 'autoload_psr4.php');
+            $classMap = $read($dir . 'autoload_classmap.php');
+            if (!is_array($psr4) || !is_array($classMap)) {
+                return false;
+            }
+            $loader = new \Composer\Autoload\ClassLoader();
+            $loader->addClassMap($classMap);
+            foreach ($psr4 as $prefix => $paths) {
+                $loader->setPsr4($prefix, $paths);
+            }
+            $loader->register(true);
+            return true;
+        } catch (\Throwable $e) {
+            return false;
         }
     }
 

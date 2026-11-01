@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.12
+
+### Fixed
+- The updater loads the new release's class map after it swaps the files, so a later release can move classes.
+
 ## Shopclass 7.0.11
 
 ### Fixed
