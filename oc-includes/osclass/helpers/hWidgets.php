@@ -344,10 +344,17 @@ function osc_customiser_draft_value(string $page, string $name)
 function osc_customiser_preview_url(string $location = 'home'): string
 {
     $spec = osc_customiser_spec();
-    if ($spec === null || !isset($spec['locations'][$location])) {
+    if ($spec === null) {
         return '';
     }
-    $url = $spec['locations'][$location]['preview'];
+    // A theme that offers settings only, with no sections, previews its home page.
+    if (($spec['locations'] ?? array()) === array()) {
+        $url = osc_base_url();
+    } elseif (isset($spec['locations'][$location])) {
+        $url = $spec['locations'][$location]['preview'];
+    } else {
+        return '';
+    }
 
     return $url . (strpos($url, '?') === false ? '?' : '&') . 'osc_preview=1';
 }

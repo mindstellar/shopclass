@@ -132,6 +132,9 @@ customiser_kit_declare(array('locations' => array('home' => array('types' => arr
 pin('a preview on another origin falls back to the home page', WEB_PATH, osc_customiser_spec()['locations']['home']['preview']);
 pin('the preview URL helper adds osc_preview=1', WEB_PATH . '?osc_preview=1', osc_customiser_preview_url('home'));
 pin('and is empty for a location the theme does not offer', '', osc_customiser_preview_url('footer'));
+customiser_kit_declare(array('locations' => array()));
+pin('a theme with settings only keeps them', array('brand', 'footer_note', 'logo'), osc_customiser_spec()['settings']['fields'] ?? null);
+pin('and previews its home page', WEB_PATH . '?osc_preview=1', osc_customiser_preview_url());
 customiser_kit_declare(array('locations' => array(), 'settings' => array()));
 pin('nothing usable reads as no customiser', null, osc_customiser_spec());
 osc_remove_theme_support('customiser');

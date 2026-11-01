@@ -34,10 +34,13 @@ if (!is_array($customiser)) {
 $czAdmin    = osc_admin_base_url(true) . '?page=appearance&action=';
 $czCsrf     = '&' . osc_csrf_token_url();
 $czLocation = (string) array_key_first($customiser['locations']);
+// A theme with settings only has no sections to list.
+$czSections = $customiser['locations'] !== array();
 $czThemeName = (string) ($customiser['theme_name'] ?? osc_theme());
 
 $czState = array(
-    'locations'  => $customiser['locations'],
+    'locations'  => (object) $customiser['locations'],
+    'preview_url' => osc_customiser_preview_url(),
     'types'      => $customiser['types'],
     'live'       => $customiser['live'],
     'updated_at' => $customiser['updated_at'],
@@ -89,14 +92,14 @@ $currentWidgetConfig = array();
         <div class="cz-top">
             <h1 class="cz-title"><?php echo osc_esc_html(sprintf(__('Customise %s'), $czThemeName)); ?></h1>
             <label class="visually-hidden" for="cz-page"><?php _e('Page'); ?></label>
-            <select id="cz-page" class="form-select form-select-sm"<?php echo count($customiser['locations']) < 2 ? ' disabled' : ''; ?>>
+            <select id="cz-page" class="form-select form-select-sm"<?php echo count($customiser['locations']) < 2 ? ' disabled' : ''; ?><?php echo $czSections ? '' : ' hidden'; ?>>
                 <?php foreach ($customiser['locations'] as $czSlug => $czLoc) { ?>
                     <option value="<?php echo osc_esc_html($czSlug); ?>"><?php echo osc_esc_html($czLoc['label']); ?></option>
                 <?php } ?>
             </select>
         </div>
 
-        <div class="cz-list">
+        <div class="cz-list"<?php echo $czSections ? '' : ' hidden'; ?>>
             <h2 class="cz-h" id="cz-rows-title"><?php _e('Page sections'); ?></h2>
             <p class="visually-hidden" id="cz-grip-help"><?php _e('Press the up or down arrow key to move this section.'); ?></p>
             <?php if (!empty($customiser['stale'])) { ?>
@@ -200,7 +203,7 @@ $currentWidgetConfig = array();
         <div class="cz-canvas">
             <div class="cz-frame" id="cz-frame">
                 <iframe id="cz-preview" title="<?php echo osc_esc_html(__('Preview of your site')); ?>"
-                        src="<?php echo osc_esc_html($customiser['locations'][$czLocation]['preview_url']); ?>"
+                        src="<?php echo osc_esc_html($czSections ? $customiser['locations'][$czLocation]['preview_url'] : osc_customiser_preview_url()); ?>"
                         referrerpolicy="same-origin"></iframe>
             </div>
         </div>

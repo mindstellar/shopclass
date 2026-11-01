@@ -119,8 +119,12 @@
         }
     }
 
+    function here() {
+        return state.locations[location_] || {preview_url: state.preview_url, other: 0, types: []};
+    }
+
     function reloadFrame() {
-        frame.src = state.locations[location_].preview_url;
+        frame.src = here().preview_url;
     }
 
     window.addEventListener('message', function (e) {
@@ -216,7 +220,7 @@
             list.appendChild(empty);
         }
 
-        var count = state.locations[location_].other || 0;
+        var count = here().other || 0;
         other.hidden = count === 0;
         other.textContent = count ? other.getAttribute('data-text-' + (count === 1 ? 'one' : 'many')).replace('%d', count) : '';
 
@@ -343,7 +347,7 @@
         typesBox.hidden = !open;
         addBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
         if (open) {
-            var allowed = state.locations[location_].types;
+            var allowed = here().types;
             typesBox.querySelectorAll('[data-type]').forEach(function (li) {
                 li.hidden = allowed.indexOf(li.getAttribute('data-type')) === -1;
             });
