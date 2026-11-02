@@ -15,6 +15,7 @@ use InvalidArgumentException;
 use mindstellar\base\Model;
 use mindstellar\billing\event\OrderCancelled;
 use mindstellar\billing\event\OrderDelivered;
+use mindstellar\billing\event\OrderProcessing;
 use mindstellar\billing\event\OrderShipped;
 use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\boot\CoreServices;
@@ -53,8 +54,20 @@ final class OrderStore extends Model
     /** s_meta key core sets when an order was paid but its listing could not be published. */
     public const PUBLISH_FAILED = '_publish_failed';
 
-    /** The search() filter of orders waiting to ship: paid goods orders and unpaid cash on delivery ones. */
+    /** s_meta key: the list of status changes, see OrderHistory. */
+    public const HISTORY = '_history';
+
+    /** s_meta key: the list of parcels sent, see Order::shipments(). */
+    public const SHIPMENTS = '_shipments';
+
+    /** s_meta key: when and by whom the order was marked packed. */
+    public const PACKED = '_packed';
+
+    /** The search() filter of orders waiting to ship: paid and processing goods orders, and unpaid cash on delivery ones. */
     public const TO_SHIP = array('goods' => true, 'to_ship' => true);
+
+    /** The statuses the "To ship" list reads; pending counts for cash on delivery only. */
+    private const TO_SHIP_STATUSES = array(Order::STATUS_PAID, Order::STATUS_PROCESSING, Order::STATUS_PENDING);
 
     /** Cache group and lifetime (seconds) of the "to ship" count shown in the admin menu. */
     private const TO_SHIP_CACHE_GROUP = 'billing_order';
@@ -232,7 +245,7 @@ final class OrderStore extends Model
             throw new InvalidArgumentException('Orders: unknown status "' . $status . '"');
         }
 
-        $data = array('s_status' => $status);
+        $data = array();
         if ($externalRef !== null) {
             $data['s_external_ref'] = $externalRef;
         }
@@ -240,31 +253,21 @@ final class OrderStore extends Model
             $data['dt_paid_date'] = date('Y-m-d H:i:s');
         }
 
-        $write = static function () use ($id, $from, $data, $status): int {
-            try {
-                $changed = self::table()
-                    ->where('pk_i_id', $id)
-                    ->whereIn('s_status', $from)
-                    ->update($data);
-            } catch (DbException $e) {
-                // uq_gateway_ref: this external reference is already attached to another
-                // order, which means the callback is being replayed against the wrong
-                // record. Refuse rather than overwrite.
-                return 0;
-            }
-            if ($changed === 1 && $status === Order::STATUS_FAILED) {
-                OrderStock::release($id);
-            }
+        try {
+            return Db::transaction(static function () use ($id, $from, $data, $status): bool {
+                $moved = self::transition($id, $from, $status, static fn (array $meta): array => $meta, $data) !== null;
+                if ($moved && $status === Order::STATUS_FAILED) {
+                    OrderStock::release($id);
+                }
 
-            return $changed;
-        };
-        $changed = $status === Order::STATUS_FAILED ? Db::transaction($write) : $write();
-
-        if ($changed === 1) {
-            self::forgetToShip();
+                return $moved;
+            });
+        } catch (DbException $e) {
+            // uq_gateway_ref: this external reference is already attached to another
+            // order, which means the callback is being replayed against the wrong
+            // record. Refuse rather than overwrite.
+            return false;
         }
-
-        return $changed === 1;
     }
 
     /**
@@ -433,17 +436,18 @@ final class OrderStore extends Model
      * Read s_meta, apply $change and write it back only if s_meta is unchanged since the
      * read. Tried twice, so one write racing this one does not lose either change.
      *
-     * @param int                   $orderId
-     * @param callable(array):array $change
-     * @param string[]|null         $statuses Only an order in one of these statuses is changed
-     * @param string|null           $to       Also move the order to this status, in the same write
+     * @param int                                $orderId
+     * @param callable(array,string):?array      $change   Gets the meta and status read; null refuses the write
+     * @param string[]|null                      $statuses Only an order in one of these statuses is changed
+     * @param string|\Closure(array,string):string|null $to Also move the order to this status (or to what
+     *                                                       the closure picks from the new meta and the old status)
      * @param-out array<string,mixed>|null $row
      * @param array<string,mixed>|null $row   Set to the order's user id and status as read
      * @param array<string,mixed>   $set      More columns to write with the move
      *
      * @return bool whether the change is stored
      */
-    private static function changeMeta(int $orderId, callable $change, ?array $statuses = null, ?string $to = null, ?array &$row = null, array $set = array()): bool
+    private static function changeMeta(int $orderId, callable $change, ?array $statuses = null, string|\Closure|null $to = null, ?array &$row = null, array $set = array()): bool
     {
         for ($try = 0; $try < 2; $try++) {
             if (Db::inTransaction()) {
@@ -468,25 +472,37 @@ final class OrderStore extends Model
                 return false;
             }
 
-            $old  = $row['s_meta'];
-            $meta = $old !== null && $old !== '' ? json_decode((string) $old, true) : array();
+            $old    = $row['s_meta'];
+            $status = (string) $row['s_status'];
+            $meta   = $old !== null && $old !== '' ? json_decode((string) $old, true) : array();
             if (!is_array($meta)) {
                 $meta = array();
             }
-            $new = $change($meta);
+            $new = $change($meta, $status);
+            if ($new === null) {
+                return false;
+            }
+            $target = $to instanceof \Closure ? $to($new, $status) : $to;
+            if ($target !== null && !in_array($target, Order::STATUSES, true)) {
+                throw new InvalidArgumentException('Orders: unknown status "' . $target . '"');
+            }
+            $moving = $target !== null && $target !== $status;
+            if ($moving) {
+                $new = OrderHistory::append($new, $status, $target, OrderHistory::actor((int) $row['fk_i_user_id']));
+            }
             $new = $new === array() ? null : json_encode($new);
-            if ($new === $old && $to === null) {
+            if ($new === $old && !$moving) {
                 return true;
             }
 
-            $write = self::table()->where('pk_i_id', $orderId)->where('s_status', $row['s_status']);
+            $write = self::table()->where('pk_i_id', $orderId)->where('s_status', $status);
             $write = $old === null ? $write->whereNull('s_meta') : $write->where('s_meta', $old);
             $data  = array('s_meta' => $new);
-            if ($to !== null) {
-                $data = $set + $data + array('s_status' => $to);
+            if ($moving) {
+                $data = $set + $data + array('s_status' => $target);
             }
             if ($write->update($data) === 1) {
-                if ($to !== null) {
+                if ($moving) {
                     self::forgetToShip();
                 }
 
@@ -536,19 +552,34 @@ final class OrderStore extends Model
      */
     public static function refund(int $id): bool
     {
-        $changed = self::table()
-            ->where('pk_i_id', $id)
-            ->whereIn('s_status', Order::SETTLED)
-            ->update(array('s_status' => Order::STATUS_REFUNDED));
-        if ($changed === 1) {
-            self::forgetToShip();
-        }
-
-        return $changed === 1;
+        return self::transition($id, Order::SETTLED, Order::STATUS_REFUNDED, static fn (array $meta): array => $meta) !== null;
     }
 
     /**
-     * A paid goods order was sent, or a cash on delivery one before it is paid. With no URL
+     * Start work on a paid goods order, or on a cash on delivery one before it is paid. Fires
+     * `OrderProcessing` once the write commits.
+     *
+     * @param int $id
+     *
+     * @return bool false when the order cannot move to processing (Order::canProcess())
+     */
+    public static function process(int $id): bool
+    {
+        $order = self::find($id);
+        if ($order === null || !$order->canProcess()) {
+            return false;
+        }
+        $userId = self::transition($id, array($order->getStatus()), Order::STATUS_PROCESSING, static fn (array $meta): array => $meta);
+        if ($userId === null) {
+            return false;
+        }
+        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderProcessing($id, $userId)));
+
+        return true;
+    }
+
+    /**
+     * A paid or processing goods order was sent, or a cash on delivery one before it is paid. With no URL
      * given, a `TrackingUrlResolving` listener may supply one, kept only when it
      * is https. Fires `OrderShipped` once the write commits.
      *
@@ -574,7 +605,7 @@ final class OrderStore extends Model
             $url = $found->url();
         }
         $at     = date('Y-m-d H:i:s');
-        $userId = self::move($id, $order->getStatus(), Order::STATUS_SHIPPED, static function (array $meta) use ($carrier, $tracking, $url, $at): array {
+        $userId = self::transition($id, $order->getStatus(), Order::STATUS_SHIPPED, static function (array $meta) use ($carrier, $tracking, $url, $at): array {
             $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
             $meta['_shipping'] = array(
                 'carrier'    => $carrier,
@@ -637,7 +668,7 @@ final class OrderStore extends Model
         }
         $at     = date('Y-m-d H:i:s');
         $cash   = $order->awaitsCash();
-        $userId = self::move($id, Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, static function (array $meta) use ($at): array {
+        $userId = self::transition($id, Order::STATUS_SHIPPED, Order::STATUS_DELIVERED, static function (array $meta) use ($at): array {
             $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
             $meta['_shipping'] = array('delivered_at' => $at) + $shipping;
 
@@ -653,8 +684,8 @@ final class OrderStore extends Model
     }
 
     /**
-     * Close a pending order unpaid, or a cash on delivery parcel the buyer refused, giving back
-     * any stock it holds. Fires `OrderCancelled` once the write commits.
+     * Close a pending order unpaid, or a cash on delivery order not paid yet (in processing, or a
+     * parcel the buyer refused), giving back any stock it holds. Fires `OrderCancelled` once the write commits.
      *
      * @param int         $id
      * @param string|null $from The status the caller checked; null picks it from the order
@@ -665,10 +696,10 @@ final class OrderStore extends Model
     {
         if ($from === null) {
             $order = self::find($id);
-            $from  = $order !== null && $order->awaitsCash() ? Order::STATUS_SHIPPED : Order::STATUS_PENDING;
+            $from  = $order !== null && $order->awaitsCash() ? $order->getStatus() : Order::STATUS_PENDING;
         }
         $userId = Db::transaction(static function () use ($id, $from): ?int {
-            $userId = self::move($id, $from, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
+            $userId = self::transition($id, $from, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
             if ($userId !== null) {
                 OrderStock::release($id);
             }
@@ -684,19 +715,27 @@ final class OrderStore extends Model
     }
 
     /**
-     * Move an order from one status to the next with its meta changed in the same write.
+     * Move an order from one status to the next with its meta changed in the same write, under
+     * the row lock and with a `_history` entry. $change may return null to refuse the move.
      *
-     * @param string|string[]       $from
-     * @param callable(array):array $change
-     * @param array<string,mixed>   $set    More columns to write with the move
+     * @param int                                $id
+     * @param string|string[]                    $from   The statuses the order may move from
+     * @param string|\Closure(array,string):string $to   The new status, or a closure that picks it from
+     *                                                   the changed meta and the old status; the old
+     *                                                   status again writes the meta alone
+     * @param callable(array,string):?array      $change Gets the meta and the status, as locked
+     * @param array<string,mixed>                $set    More columns to write with the move
      *
-     * @return int|null the order's user id, or null when the order was not in $from
+     * @return int|null the order's user id, or null when the order was not in $from or $change refused
+     * @throws DbException
      */
-    private static function move(int $id, $from, string $to, callable $change, array $set = array()): ?int
+    public static function transition(int $id, string|array $from, string|\Closure $to, callable $change, array $set = array()): ?int
     {
-        $row = null;
+        return Db::transaction(static function () use ($id, $from, $to, $change, $set): ?int {
+            $row = null;
 
-        return self::changeMeta($id, $change, (array) $from, $to, $row, $set) && $row !== null ? (int) $row['fk_i_user_id'] : null;
+            return self::changeMeta($id, $change, (array) $from, $to, $row, $set) && $row !== null ? (int) $row['fk_i_user_id'] : null;
+        });
     }
 
     /**
@@ -848,7 +887,7 @@ final class OrderStore extends Model
      * The admin orders list: filter by status, gateway and user, newest first.
      *
      * @param array $filters 'status', 'gateway', 'user_id', 'goods' (true: goods orders only),
-     *                       'to_ship' (true: paid goods orders and unpaid cash on delivery ones) — any may be omitted
+     *                       'to_ship' (true: paid and processing goods orders, and unpaid cash on delivery ones) — any may be omitted
      * @param int   $limit
      * @param int   $offset
      *
@@ -890,8 +929,12 @@ final class OrderStore extends Model
     public static function searchCount(array $filters): int
     {
         if (!empty($filters['to_ship']) && empty($filters['status'])) {
-            return self::filtered(array('status' => Order::STATUS_PAID) + $filters)->count()
-                + self::filtered(array('status' => Order::STATUS_PENDING) + $filters)->count();
+            $count = 0;
+            foreach (self::TO_SHIP_STATUSES as $status) {
+                $count += self::filtered(array('status' => $status) + $filters)->count();
+            }
+
+            return $count;
         }
 
         return self::filtered($filters)->count();
@@ -922,7 +965,7 @@ final class OrderStore extends Model
     {
         $limit = max(1, $limit);
         $parts = array();
-        foreach (array(Order::STATUS_PAID, Order::STATUS_PENDING) as $status) {
+        foreach (self::TO_SHIP_STATUSES as $status) {
             $parts = array_merge($parts, self::filtered(array('status' => $status) + self::TO_SHIP)
                 ->orderBy('dt_date', 'ASC')
                 ->orderBy('pk_i_id', 'ASC')
@@ -962,7 +1005,7 @@ final class OrderStore extends Model
     {
         $take  = max(1, $limit) + max(0, $offset);
         $parts = array();
-        foreach (array(Order::STATUS_PAID, Order::STATUS_PENDING) as $status) {
+        foreach (self::TO_SHIP_STATUSES as $status) {
             $parts = array_merge($parts, self::filtered(array('status' => $status) + $filters)
                 ->orderBy('dt_date', 'DESC')
                 ->orderBy('pk_i_id', 'DESC')
@@ -1044,7 +1087,7 @@ final class OrderStore extends Model
         }
         if (!empty($filters['to_ship']) && ($filters['status'] ?? null) === Order::STATUS_PENDING) {
             $q = $q->where('s_gateway', gateway\CashOnDeliveryGateway::ID);
-        } elseif (!empty($filters['to_ship']) && ($filters['status'] ?? null) !== Order::STATUS_PAID) {
+        } elseif (!empty($filters['to_ship']) && !in_array($filters['status'] ?? null, array(Order::STATUS_PAID, Order::STATUS_PROCESSING), true)) {
             $q = $q->whereRaw('1 = 0');
         }
 
