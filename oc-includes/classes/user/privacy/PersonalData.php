@@ -107,6 +107,13 @@ class PersonalData
                 'why'      => 'What their orders held. Exported with each order under t_billing_order, as its '
                     . 'lines, and kept for the same reason as the orders.',
             ),
+            't_billing_document' => array(
+                'user_key' => null,
+                'export'   => false,
+                'erase'    => self::ERASE_RETAINED,
+                'why'      => 'Invoices and credit notes for their orders, with the name and address they were issued to. '
+                    . 'A legal record, kept unchanged after the account goes.',
+            ),
             't_billing_ledger' => array(
                 'user_key' => 'fk_i_user_id',
                 'export'   => true,
