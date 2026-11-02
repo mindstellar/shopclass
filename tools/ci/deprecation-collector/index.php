@@ -21,7 +21,7 @@ Short Name: deprecation-collector
 /**
  * Runtime half of the deprecated-API check (docs/MARKET.md §6.3). `Deprecate`
  * already fires `d_function_run`, `d_hook_run`, and `d_file_included` every time
- * a deprecated symbol is used (oc-includes/osclass/classes/utility/Deprecate.php)
+ * a deprecated symbol is used (oc-includes/classes/core/utility/Deprecate.php)
  * — this plugin only listens and records, it adds no instrumentation of its own.
  *
  * tools/ci/smoke-install.sh installs and enables this alongside the package under

@@ -4,7 +4,7 @@
 *                                           @navjottomer
 
 # Auth, crypto, tokens, throttling.
-/oc-includes/osclass/classes/security/      @navjottomer
+/oc-includes/classes/core/security/      @navjottomer
 
 # SQL construction and the query layer.
 /oc-includes/osclass/classes/database/      @navjottomer

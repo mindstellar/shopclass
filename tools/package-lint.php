@@ -709,7 +709,7 @@ function main(array $argv): int
     $compatPath = $options['compat'];
     if ($compatPath === null) {
         foreach ([__DIR__ . '/Compatibility.php',
-                  __DIR__ . '/../oc-includes/osclass/classes/market/Compatibility.php'] as $candidate) {
+                  __DIR__ . '/../oc-includes/classes/market/Compatibility.php'] as $candidate) {
             if (is_file($candidate)) {
                 $compatPath = $candidate;
                 break;

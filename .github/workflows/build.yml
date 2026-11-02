@@ -253,7 +253,7 @@ jobs:
             release/shopclass_v${{ env.OSCLASS_VERSION }}.zip
             deprecated-api.json
             tools/package-lint.php
-            oc-includes/osclass/classes/market/Compatibility.php
+            oc-includes/classes/market/Compatibility.php
             shopclass-package-ci.tar.gz
             release/install.sh
             release/install.sh.sha256

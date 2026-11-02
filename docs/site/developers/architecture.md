@@ -89,11 +89,11 @@ other request values, and `ViewScope::withItem()` runs a hook with the listing t
 
 ## Folders
 
-A module's classes are in the `mindstellar\<module>` namespace. Modules added from 7.1 on live in
-`oc-includes/classes/`, grouped by feature (`core/`, `messaging/`, `media/`, `content/`), and each has
-its own PSR-4 entry in `composer.json`. Older modules are folders in `oc-includes/osclass/classes/`. The old classes plugins use have no namespace: all of
-`controller`, `actions` and `datatables`, the files in the root, and some of `model`, `form` and
-`logger`.
+A module's classes are in the `mindstellar\<module>` namespace. They live in `oc-includes/classes/`,
+grouped by feature (`core/`, `listing/`, `user/`, `billing/`, `messaging/`, `content/`, `media/`…), and
+each namespace has its own PSR-4 entry in `composer.json`. The old classes plugins use have no
+namespace and stay in `oc-includes/osclass/classes/`: all of `controller`, `actions` and
+`datatables`, the files in the root, and some of `model`, `form`, `database`, `theme` and `logger`.
 `tests/classes-folder-map.php` fails when a module is missing from this table.
 
 | Folder | Holds |
@@ -174,7 +174,7 @@ Use one of these before making up a new ending.
 
 Some older names stay, because plugins and site settings use them: the `CWeb*` and
 `CAdmin*` controllers, and the `Item`, `User`,
-`Category`… table classes in `classes/model/` (the legacy DAOs). `Item` is the table and its
+`Category`… table classes in `osclass/classes/model/` (the legacy DAOs). `Item` is the table and its
 legacy class; new code about listings is named `Listing…`. A few interfaces also end in
 `Store` without being a table: the settings form stores, and the API's idempotency and
 rate-limit stores.
@@ -183,18 +183,18 @@ rate-limit stores.
 
 | You are adding | Put it in |
 |---|---|
-| A page or an action on a page | A method on its `CWeb*` or `CAdmin*` controller in `classes/controller/` |
+| A page or an action on a page | A method on its `CWeb*` or `CAdmin*` controller in `osclass/classes/controller/` |
 | An admin ajax action | The area's `…Ajax` class in `classes/admin/ajax/` |
 | An API endpoint | `classes/api/controller/` |
 | A rule, or a write | The module's `…Service` |
 | A yes/no question | The module's `…Policy` |
 | A table one module owns | The module's `…Store` |
-| A table several modules use | `classes/model/` (`mindstellar\model\`) |
+| A table several modules use | `classes/core/model/` (`mindstellar\model\`) |
 | A read for one screen or the API | The module's `…Query` |
 | An admin settings page | A `…SettingsScreen` in `classes/admin/form/` |
 | A helper for themes and plugins | The matching `helpers/h*.php`, as a thin call into a class |
 
-Never add a method to a legacy DAO in `classes/model/` or to `ItemActions` or `UserActions`.
+Never add a method to a legacy DAO in `osclass/classes/model/` or to `ItemActions` or `UserActions`.
 They are kept for plugins.
 
 ### Reading rows
