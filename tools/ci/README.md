@@ -31,7 +31,7 @@ registry into the static catalog core actually fetches. See
 | `check-release-assets.php` | Core's release job only, not published: checks the inventory, this bundle (listed in `package-ci-files.txt`) and `install.sh` before they upload | Yes, on any problem |
 
 `package-lint.php`, `Compatibility.php`, and `build-catalog.php` are owned by
-core (`tools/`, `oc-includes/osclass/classes/market/`, and `tools/ci/`
+core (`tools/`, `oc-includes/classes/market/`, and `tools/ci/`
 respectively) — this directory does not duplicate them, it only assumes they
 travel alongside each other in the release bundle described below.
 

@@ -568,7 +568,7 @@ cannot redirect an install to arbitrary infrastructure.
 
 ## 8. Core implementation
 
-Namespace `mindstellar\market`, `oc-includes/osclass/classes/market/`:
+Namespace `mindstellar\market`, `oc-includes/classes/market/`:
 
 | Class | Responsibility |
 |---|---|

@@ -17,7 +17,7 @@
  * file the plugin never meant to run does not.  Usage: php tests/plugin-ajax-file.php
  */
 
-require_once __DIR__ . '/../oc-includes/osclass/classes/security/PluginAjaxFile.php';
+require_once __DIR__ . '/../oc-includes/classes/core/security/PluginAjaxFile.php';
 require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\security\PluginAjaxFile;

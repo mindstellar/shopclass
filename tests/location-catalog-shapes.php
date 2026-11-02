@@ -32,7 +32,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 define('LIB_PATH', ABS_PATH . 'oc-includes/');
 
 require_once __DIR__ . '/lib/harness.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/location/LocationCatalog.php';
+require_once ABS_PATH . 'oc-includes/classes/location/LocationCatalog.php';
 
 use mindstellar\location\LocationCatalog;
 

@@ -11,8 +11,8 @@ core the latest version.
 
 **Core still parses the header field**, and the code that reads it
 (`mindstellar\upgrade\Plugin::getPackageInfo()`,
-`oc-includes/osclass/classes/upgrade/Plugin.php:68`; `Theme::getPackageInfo()`,
-`oc-includes/osclass/classes/upgrade/Theme.php:68`) still works if something
+`oc-includes/classes/core/upgrade/Plugin.php:68`; `Theme::getPackageInfo()`,
+`oc-includes/classes/core/upgrade/Theme.php:68`) still works if something
 calls it. **Nothing in the admin panel or the CLI calls it.** A package that
 relies only on `Update URI` gets no "update available" notice and no one-click
 install in this version: the admin's update badge and install flow come from

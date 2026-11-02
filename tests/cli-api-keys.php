@@ -68,7 +68,7 @@ seed_exec($admin, 'INSERT INTO ' . DB_TABLE_PREFIX . "t_admin (s_name, s_usernam
 
 harness_section('registered');
 
-$cli = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/cli/Cli.php');
+$cli = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/cli/Cli.php');
 foreach (array('api:key:create', 'api:key:list', 'api:key:revoke') as $name) {
     check($name . ' is a core command', str_contains($cli, "'" . $name . "'"));
 }

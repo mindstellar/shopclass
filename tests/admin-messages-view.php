@@ -58,7 +58,7 @@ check(
     'the Messages entry is open to moderators',
     (bool) preg_match("/__\('Messages'\),\s*osc_admin_base_url\(true\) \. '\?page=messages',\s*'items_messages',\s*'moderator'/", $menu)
 );
-require_once $root . 'oc-includes/osclass/classes/admin/ModeratorAccess.php';
+require_once $root . 'oc-includes/classes/admin/ModeratorAccess.php';
 check('moderators may open the messages page', in_array('messages', \mindstellar\admin\ModeratorAccess::DEFAULT_PAGES, true));
 
 harness_section('docs');

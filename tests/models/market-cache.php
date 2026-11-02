@@ -43,7 +43,7 @@ $migrate();
 pin('a second run changes nothing', 2, $count("SELECT COUNT(*) FROM $kv WHERE s_group = 'market'"));
 
 harness_section('Catalog');
-$src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/market/Catalog.php');
+$src = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/market/Catalog.php');
 check('Catalog no longer reads or writes preferences', strpos($src, 'osc_get_preference') === false && strpos($src, 'osc_set_preference') === false);
 
 if (!defined('MODELS_RUNNER')) {

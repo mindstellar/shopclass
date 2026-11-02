@@ -29,11 +29,11 @@ require_once __DIR__ . '/lib/harness.php';
  * entry once it is clean.
  */
 const ALLOWED = array(
-    'oc-includes/osclass/classes/job/JobQueue.php'               => array(21, 'is the t_job_queue store; the class name is public API'),
-    'oc-includes/osclass/classes/cli/Cli.php'                    => array(3, 'CLI installer: the first admin and site preferences, as install-functions.php'),
-    'oc-includes/osclass/classes/privacy/PersonalData.php'       => array(1, 'reads a fixed map of account tables for the data export'),
+    'oc-includes/classes/core/job/JobQueue.php'               => array(21, 'is the t_job_queue store; the class name is public API'),
+    'oc-includes/classes/core/cli/Cli.php'                    => array(3, 'CLI installer: the first admin and site preferences, as install-functions.php'),
+    'oc-includes/classes/user/privacy/PersonalData.php'       => array(1, 'reads a fixed map of account tables for the data export'),
     'oc-includes/classes/messaging/push/PushSubscriptions.php'     => array(4, 'push rows in t_key_value: delete by user key prefix, count the group'),
-    'oc-includes/osclass/classes/search/'                        => array(55, 'the search compiler builds listing SQL that plugins extend with raw fragments'),
+    'oc-includes/classes/search/'                        => array(55, 'the search compiler builds listing SQL that plugins extend with raw fragments'),
 );
 
 /**
@@ -62,12 +62,12 @@ const P_TABLE = '/DB_TABLE_PREFIX\s*\.|\.\s*[\'"]t_[a-z]|%st_[a-z]|\{\$\w+\}t_[a
  */
 function table_owner(string $rel, string $code): bool
 {
-    foreach (array('oc-includes/osclass/classes/model/', 'oc-includes/osclass/classes/database/', 'oc-includes/osclass/installer/', 'oc-includes/osclass/classes/migration/') as $dir) {
+    foreach (array('oc-includes/osclass/classes/model/', 'oc-includes/osclass/classes/database/', 'oc-includes/classes/core/model/', 'oc-includes/classes/core/database/', 'oc-includes/osclass/installer/', 'oc-includes/classes/core/migration/') as $dir) {
         if (str_starts_with($rel, $dir)) {
             return true;
         }
     }
-    if (in_array($rel, array('oc-includes/osclass/install-functions.php', 'oc-includes/osclass/classes/base/Model.php', 'oc-includes/osclass/helpers/hDatabase.php'), true)) {
+    if (in_array($rel, array('oc-includes/osclass/install-functions.php', 'oc-includes/classes/core/base/Model.php', 'oc-includes/osclass/helpers/hDatabase.php'), true)) {
         return true;
     }
     if (preg_match('/(Store|Query)\.php$/', $rel) === 1) {
@@ -108,10 +108,10 @@ check('catches an interpolated prefix', raw_access("<?php \$s = \"FROM {\$p}t_pa
 check('catches a sprintf prefix', raw_access("<?php sprintf('%st_item.b_active', DB_TABLE_PREFIX);") !== array());
 check('lets the prefix pass as a value', raw_access("<?php size(\$c, DB_TABLE_PREFIX); \$a = DB_TABLE_PREFIX;") === array());
 check('ignores comments', raw_access(harness_code_only("<?php // osc_db_table(DB_TABLE_PREFIX . 't_x')\n/** FROM {\$p}t_x */")) === array());
-check('a Store file owns its table', table_owner('oc-includes/osclass/classes/user/UserStore.php', ''));
+check('a Store file owns its table', table_owner('oc-includes/classes/user/UserStore.php', ''));
 check('a DAO subclass owns its table', table_owner('oc-includes/osclass/classes/Sitemap.php', 'class Sitemap extends DAO {'));
 check('a base Model subclass owns its table', table_owner('x.php', "use mindstellar\\base\\Model;\nfinal class X extends Model {"));
-check('a service does not', !table_owner('oc-includes/osclass/classes/user/AccountService.php', 'final class AccountService {'));
+check('a service does not', !table_owner('oc-includes/classes/user/AccountService.php', 'final class AccountService {'));
 
 harness_section('Core files');
 

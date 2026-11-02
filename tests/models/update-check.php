@@ -112,9 +112,9 @@ foreach (array('checkLanguages', 'checkThemes', 'checkPlugins') as $method) {
 
 harness_section('sources');
 foreach (array(
-    'oc-includes/osclass/classes/admin/ajax/UpdateAjax.php',
-    'oc-includes/osclass/classes/upgrade/Osclass.php',
-    'oc-includes/osclass/classes/location/LocationCatalog.php',
+    'oc-includes/classes/admin/ajax/UpdateAjax.php',
+    'oc-includes/classes/core/upgrade/Osclass.php',
+    'oc-includes/classes/location/LocationCatalog.php',
     'oc-includes/osclass/classes/controller/admin/CAdminPlugins.php',
     'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php',
     'oc-admin/themes/modern/appearance/index.php',
@@ -125,7 +125,7 @@ foreach (array(
         $src
     ));
 }
-$backup = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/backup/BackupService.php');
+$backup = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/backup/BackupService.php');
 check('the backup probe is cached in the key-value store', strpos($backup, "osc_kv_set('backup', 'probe'") !== false
     && strpos($backup, "osc_set_preference('backup_probe'") === false);
 

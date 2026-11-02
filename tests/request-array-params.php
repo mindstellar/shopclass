@@ -26,7 +26,7 @@ require_once __DIR__ . '/lib/harness.php';
 harness_section('ListingInput reads scalar fields as scalars');
 
 // build() needs the preferences table, so the reader is checked in the source.
-$src = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/listing/ListingInput.php');
+$src = file_get_contents(ABS_PATH . 'oc-includes/classes/listing/ListingInput.php');
 pin('the $get closure refuses an array for a scalar field', 1, preg_match(
     '/\$get\s*=\s*static fn[^;]*is_scalar\(\$form\[\$key\]\)[^;]*\'title\', \'description\'/s',
     $src
@@ -35,16 +35,16 @@ pin('ajax_photos is read from the form, not through $get', 1, preg_match('/\$aja
 
 harness_section('Readers that took a scalar no longer take getParam');
 
-$base  = ABS_PATH . 'oc-includes/osclass/classes/';
+$base  = ABS_PATH . 'oc-includes/';
 $sites = array(
-    'security/Csrf.php'                       => array('CSRFName', 'CSRFToken'),
-    'controller/CWebLogin.php'                => array('email', 'password', 'new_password', 'new_password2'),
-    'controller/admin/CAdminLogin.php'        => array('user', 'password'),
-    'controller/CWebCustom.php'               => array('route', 'file'),
-    'controller/CWebAjax.php'                 => array('route', 'ajaxfile', 'country', 'region'),
-    'controller/CWebLanguage.php'             => array('locale'),
-    'controller/CWebPage.php'                 => array('lang'),
-    'controller/admin/CAdminPlugins.php'      => array('route'),
+    'classes/core/security/Csrf.php'          => array('CSRFName', 'CSRFToken'),
+    'osclass/classes/controller/CWebLogin.php'                => array('email', 'password', 'new_password', 'new_password2'),
+    'osclass/classes/controller/admin/CAdminLogin.php'        => array('user', 'password'),
+    'osclass/classes/controller/CWebCustom.php'               => array('route', 'file'),
+    'osclass/classes/controller/CWebAjax.php'                 => array('route', 'ajaxfile', 'country', 'region'),
+    'osclass/classes/controller/CWebLanguage.php'             => array('locale'),
+    'osclass/classes/controller/CWebPage.php'                 => array('lang'),
+    'osclass/classes/controller/admin/CAdminPlugins.php'      => array('route'),
 );
 foreach ($sites as $file => $keys) {
     $code = file_get_contents($base . $file);

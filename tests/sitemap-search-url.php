@@ -60,7 +60,7 @@ function osc_prune_array(&$input)
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/../oc-includes/osclass/classes/Params.php';
 require_once __DIR__ . '/../oc-includes/osclass/classes/View.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/utility/Utils.php';
+require_once __DIR__ . '/../oc-includes/classes/core/utility/Utils.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hSearch.php';
 require_once __DIR__ . '/lib/harness.php';
 

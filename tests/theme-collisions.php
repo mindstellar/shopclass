@@ -32,7 +32,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeFunctions.php';
+require_once ABS_PATH . 'oc-includes/classes/core/theme/ThemeFunctions.php';
 
 use mindstellar\theme\ThemeFunctions;
 

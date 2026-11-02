@@ -106,7 +106,7 @@ foreach ($registries as $class) {
 check('each registry has its own instance', count($seen) === count($registries));
 
 harness_section('settings forms extend SettingsScreen');
-$formDir = __DIR__ . '/../oc-includes/osclass/classes/admin/form/';
+$formDir = __DIR__ . '/../oc-includes/classes/admin/form/';
 $formOverrides = array('ItemSettingsScreen', 'MainSettingsScreen', 'MediaSettingsScreen', 'StorageSettingsScreen', 'UserSettingsScreen');
 foreach (array('Advanced', 'Api', 'Comment', 'Item', 'KeywordBlock', 'LatestSearch', 'MailServer', 'Main', 'Media', 'Permalink', 'Storage', 'User') as $form) {
     $name = $form . 'SettingsScreen';

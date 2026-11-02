@@ -509,7 +509,7 @@ for ($i = 0; $i < BackupJobs::KEEP + 3; $i++) {
 pin('the bucket keeps the newest KEEP', 3, $store->bucketPrune($pruneS3, BackupJobs::KEEP));
 pin('...exactly those', array_slice($inBucket, 0, BackupJobs::KEEP), array_column((array) $store->bucketAll($pruneS3), 'name'));
 pin('...with no manifest left behind', BackupJobs::KEEP * 2, count($pruneBucket->objects));
-check('the prune job prunes the bucket too', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/backup/BackupJobs.php'), '$store->bucketPrune($bucket, $keep);') !== false);
+check('the prune job prunes the bucket too', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/classes/backup/BackupJobs.php'), '$store->bucketPrune($bucket, $keep);') !== false);
 
 harness_section('Pruning');
 

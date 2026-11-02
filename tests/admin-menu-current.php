@@ -20,7 +20,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
+require_once ABS_PATH . 'oc-includes/classes/core/base/SharedInstance.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php';
 
 if (!function_exists('__')) {
@@ -207,7 +207,7 @@ pin('with billing off the switch is in System and a billing page falls to Other'
     [true, ['p-tax']], [in_array('settings_billing', $offGroups['settings_group_system'], true), $offGroups['settings_group_other']]);
 pin('with billing off there is no Billing section', false, isset($off->get_array_menu()['billing']));
 
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Form.php';
 pin('a section heading id is a stable slug of its title', ['s-server-rules-nginx', 's-server-rules-htaccess', 's-keys'],
     [\mindstellar\admin\ui\Form::anchor('Server rules (nginx)'), \mindstellar\admin\ui\Form::anchor('Server rules (.htaccess)'), \mindstellar\admin\ui\Form::anchor(' Keys ')]);
 

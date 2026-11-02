@@ -60,7 +60,7 @@ check(
     'delete_post deletes through AccountService with the password',
     isset($post[1]) && strpos($post[1], "(new AccountService())->delete(\$userId, Actor::fromSession(false), Params::getParamString('password', false, false))") !== false
 );
-$service = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/user/AccountService.php');
+$service = (string) file_get_contents(__DIR__ . '/../oc-includes/classes/user/AccountService.php');
 preg_match('/public function delete\(int \$userId.*?\n    }\n/s', $service, $delete);
 check(
     'the service checks the current password for a user',
@@ -89,7 +89,7 @@ check(
 
 // The URL itself is declared in the route table now, so that is where the
 // no-id, no-secret, confirm-view-only shape has to be checked.
-require_once __DIR__ . '/../oc-includes/osclass/classes/routing/CoreRoutes.php';
+require_once __DIR__ . '/../oc-includes/classes/core/routing/CoreRoutes.php';
 $route = \mindstellar\routing\CoreRoutes::all()['user_delete'] ?? array();
 check('the route exists', $route !== array());
 pin('the route points at the GET confirm action', 'delete', $route['to']['action'] ?? null);

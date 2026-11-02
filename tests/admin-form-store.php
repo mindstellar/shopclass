@@ -1482,7 +1482,7 @@ pin('the id it does carry names the page', 'rule', $spec['id']);
 $drawing = '';
 foreach (array(
     'oc-includes/osclass/gui/admin/settings-page.php',
-    'oc-includes/osclass/classes/admin/ui/SettingsForm.php',
+    'oc-includes/classes/admin/ui/SettingsForm.php',
 ) as $rel) {
     $drawing .= (string)file_get_contents(ABS_PATH . $rel);
 }

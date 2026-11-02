@@ -44,14 +44,14 @@ if (!defined('OC_ADMIN')) {
 
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Sanitize.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/TableStore.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/StoreFactory.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Validate.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/Sanitize.php';
+require_once ABS_PATH . 'oc-includes/classes/core/base/Registry.php';
+require_once ABS_PATH . 'oc-includes/classes/core/settings/SettingsPageRegistry.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/Store.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/PreferenceStore.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/TableStore.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/StoreFactory.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/Validate.php';
 
 use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\utility\Validate;
@@ -225,9 +225,9 @@ function osc_validate_url($value, $required = false, $headers = false)
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/SettingsForm.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Field.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Form.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/SettingsForm.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
 /** Draw a declared page through the view core owns, and hand back the markup. */

@@ -65,8 +65,8 @@ function osc_theme()
 }
 
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/base/Registry.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/pages/PageTemplateRegistry.php';
+require_once __DIR__ . '/../oc-includes/classes/core/base/Registry.php';
+require_once __DIR__ . '/../oc-includes/classes/content/pages/PageTemplateRegistry.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hPageTemplates.php';
 require_once __DIR__ . '/lib/harness.php';
 

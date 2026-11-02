@@ -122,7 +122,7 @@ $takes = array_filter(
     static fn (ReflectionParameter $p): bool => str_contains((string) $p->getType(), 'Credential')
 );
 pin('the constructor takes no credential', [], array_values($takes));
-check('fromGlobals() never sets the caller', !str_contains(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/api/Request.php', 'fromGlobals'), 'caller'));
+check('fromGlobals() never sets the caller', !str_contains(harness_method_source(ABS_PATH . 'oc-includes/classes/api/Request.php', 'fromGlobals'), 'caller'));
 check('an internal request keeps its caller through a copy', Request::internal('GET', 'listings', [], [], $user)->withQuery([])->caller() === $user);
 
 harness_section('who it acts as');
@@ -173,6 +173,6 @@ $got = osc_api_get('me');
 pin('osc_api_get() answers status, body and headers', [200, 7], [$got['status'], $got['body']['data']['user']]);
 check('with headers as an array', is_array($got['headers']));
 pin('osc_api_call() refuses a signed-in write', 403, osc_api_call('POST', 'me/alerts', [], ['pattern' => 'bike'])['status']);
-check('the client never forgets the web identity', !str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/InternalClient.php'), 'forget('));
+check('the client never forgets the web identity', !str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/classes/api/InternalClient.php'), 'forget('));
 
 exit(harness_result());

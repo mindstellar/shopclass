@@ -83,7 +83,7 @@ pin('the bundled text is not left unfilled', false, str_contains((string) ($GLOB
 pin('the template helper returns the bundled title', $english['s_title'], CoreEmails::template('email_admin_new_user')['s_title'] ?? null);
 
 harness_section('every core mail has bundled text');
-preg_match_all("/template\\('([a-z0-9_]+)'/", (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/mail/CoreEmails.php'), $named);
+preg_match_all("/template\\('([a-z0-9_]+)'/", (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/mail/CoreEmails.php'), $named);
 $named = array_values(array_unique($named[1]));
 check('core names its templates', count($named) > 10);
 pin('each one is in installer/mail.json', array(), array_values(array_diff($named, array_column($bundled, 's_internal_name'))));

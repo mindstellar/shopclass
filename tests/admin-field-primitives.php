@@ -55,8 +55,8 @@ function osc_admin_base_url($index = false)
 // For osc_tinymce_config(), which a richtext field's configuration comes from.
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Field.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Form.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
 /** Capture what a helper prints. */
@@ -585,8 +585,8 @@ emits('a field with no row label still labels the row with its own', $html, '<la
 harness_section('the length hint, and the mirror it depends on');
 // Field keeps its own copy of the purified-type list so a markup primitive need not load
 // the settings registry. The copy is only safe while it stays a copy.
-require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
+require_once ABS_PATH . 'oc-includes/classes/core/base/Registry.php';
+require_once ABS_PATH . 'oc-includes/classes/core/settings/SettingsPageRegistry.php';
 $mirror = new ReflectionClassConstant('mindstellar\\admin\\ui\\Field', 'PURIFIED_TYPES');
 pin(
     'Field\'s purified-type list still matches the registry it mirrors',

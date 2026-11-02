@@ -22,9 +22,9 @@ if (($argv[1] ?? '') === '--case') {
     $root = (string) $argv[2];
     $case = (string) $argv[3];
     define('ABS_PATH', $root);
-    require_once $root . 'oc-includes/osclass/classes/base/SharedInstance.php';
-    require_once $root . 'oc-includes/osclass/classes/utility/Validate.php';
-    require_once $root . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
+    require_once $root . 'oc-includes/classes/core/base/SharedInstance.php';
+    require_once $root . 'oc-includes/classes/core/utility/Validate.php';
+    require_once $root . 'oc-includes/classes/core/theme/ThemeSupports.php';
 
     /** Stands in for the active theme. */
     class WebThemes
@@ -120,9 +120,9 @@ $link    = static function (string $rel) use ($scratch): void {
     symlink(ABS_PATH . $rel, $scratch . $rel);
 };
 foreach (array(
-    'oc-includes/osclass/classes/base/SharedInstance.php',
-    'oc-includes/osclass/classes/utility/Validate.php',
-    'oc-includes/osclass/classes/theme/ThemeSupports.php',
+    'oc-includes/classes/core/base/SharedInstance.php',
+    'oc-includes/classes/core/utility/Validate.php',
+    'oc-includes/classes/core/theme/ThemeSupports.php',
     'oc-includes/osclass/helpers/hTheme.php',
     'oc-includes/osclass/helpers/hItems.php',
     'oc-includes/osclass/gui/page.php',
@@ -170,8 +170,8 @@ check('a theme with no chrome gets core\'s own page', str_contains($out, '<!doct
 check('styled even though the theme opted out', str_contains($out, $pageSheet));
 
 harness_section('ThemeSupports::has()');
-require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
+require_once ABS_PATH . 'oc-includes/classes/core/base/SharedInstance.php';
+require_once ABS_PATH . 'oc-includes/classes/core/theme/ThemeSupports.php';
 $supports = \mindstellar\theme\ThemeSupports::getInstance();
 check('false for an undeclared feature', !$supports->has('core-styles'));
 $supports->add('core-styles', false);

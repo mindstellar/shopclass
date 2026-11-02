@@ -115,7 +115,7 @@ function osc_esc_html($s)
 }
 function osc_sanitize_url($s)
 {
-    require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Sanitize.php';
+    require_once ABS_PATH . 'oc-includes/classes/core/utility/Sanitize.php';
 
     return (new \mindstellar\utility\Sanitize())->url($s);
 }

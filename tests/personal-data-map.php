@@ -34,7 +34,7 @@ $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
 // PersonalData::map() is a pure literal, so it can be read without booting the app.
-$src = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/privacy/PersonalData.php');
+$src = file_get_contents(__DIR__ . '/../oc-includes/classes/user/privacy/PersonalData.php');
 preg_match_all("/'(t_[a-z_]+)' => array\(/", $src, $m);
 $mapped = array_values(array_unique($m[1]));
 

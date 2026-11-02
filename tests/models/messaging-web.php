@@ -56,7 +56,7 @@ foreach (array(
 }
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/AjaxResponse.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/AjaxResponse.php';
 $p = DB_TABLE_PREFIX;
 
 $set = static function (string $key, string $value): void {

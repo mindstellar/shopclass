@@ -271,8 +271,8 @@ pin('and refuses a prefix it was not given', null, ApiKeys::parse($first->token(
 pin('or a short secret', null, ApiKeys::parse('scr_' . str_repeat('A', 16) . '.abc', [RefreshTokens::PREFIX]));
 $stored = new StoredKey(1, CredentialKind::REFRESH, $row['tokenId'], $row['hash'], '', [], null);
 pin('secretMatches() checks the stored hash', [true, false], [ApiKeys::secretMatches($stored, explode('.', $first->token())[1]), ApiKeys::secretMatches($stored, str_repeat('0', 64))]);
-$code = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/apikey/ApiKeys.php')
-    . file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/api/auth/RefreshTokens.php');
+$code = (string) file_get_contents(__DIR__ . '/../oc-includes/classes/user/apikey/ApiKeys.php')
+    . file_get_contents(__DIR__ . '/../oc-includes/classes/api/auth/RefreshTokens.php');
 pin('both make secrets and compare hashes in one place', [1, 1, 2], [substr_count($code, 'random_bytes(32)'), substr_count($code, 'hash_equals('), substr_count($code, '::mint()')]);
 
 harness_section('a Clock reaches SignedPayload');

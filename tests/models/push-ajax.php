@@ -53,7 +53,7 @@ register_shutdown_function(static function (): void {
 $admin = api_admin_boot('osc_models_push_ajax');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/AjaxResponse.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/AjaxResponse.php';
 $p = DB_TABLE_PREFIX;
 
 // An installed site, so the HTTP section can serve real requests from the same database.

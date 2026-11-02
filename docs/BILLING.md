@@ -258,7 +258,7 @@ Plugins register on `init`.
 
 ### Classes
 
-All under `mindstellar\billing` (`oc-includes/osclass/classes/billing/`):
+All under `mindstellar\billing` (`oc-includes/classes/billing/`):
 
 | Class | Role |
 |---|---|
@@ -364,7 +364,7 @@ admin Upgrades save re-runs it):
 | `item.highlight` | duration | item | Grants an `item.highlight` row expiring `billing_highlight_days` days out |
 | `item.urgent` | duration | item | Grants an `item.urgent` row expiring `billing_urgent_days` days out |
 
-All three persist through `ItemUpgradeStore` (`oc-includes/osclass/classes/billing/ItemUpgradeStore.php`),
+All three persist through `ItemUpgradeStore` (`oc-includes/classes/billing/ItemUpgradeStore.php`),
 backed by `t_item_upgrade` — one row per `(item, upgrade)`, extended on repurchase rather
 than duplicated, thanks to a unique key on that pair. Deliberately not a JSON column on
 `t_item`: the expiry sweep needs an indexed `dt_expiration`, and two upgrades bought on one

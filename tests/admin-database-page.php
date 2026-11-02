@@ -83,7 +83,7 @@ $menu = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/Admin
 check('the menu keeps tools_upgrade', strpos($menu, "'tools_upgrade'") !== false);
 check('the menu no longer lists Database', strpos($menu, "'tools_database'") === false);
 check('the menu no longer lists Import data', strpos($menu, "'tools_import'") === false);
-check('a restore replaces tables through the streamed path', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/backup/BackupJobs.php'), 'DatabaseTools::restore($conn, $handle, $each, true)') !== false
+check('a restore replaces tables through the streamed path', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/classes/backup/BackupJobs.php'), 'DatabaseTools::restore($conn, $handle, $each, true)') !== false
     && strpos($controller, 'executeScript(') === false);
 check('the Database tab does not back up or restore', strpos($view, "'import_post'") === false && strpos($view, 'id="backup"') === false);
 

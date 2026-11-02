@@ -71,7 +71,7 @@ check('a sign-in block is not called a rate limit', strpos($refusal, "isRateLimi
 
 harness_section('each refusal\'s status');
 foreach (array('Refused', 'Forbidden', 'NotFound', 'Conflict', 'Invalid', 'Blocked') as $name) {
-    require_once __DIR__ . "/../oc-includes/osclass/classes/exception/{$name}Exception.php";
+    require_once __DIR__ . "/../oc-includes/classes/core/exception/{$name}Exception.php";
 }
 $statuses = array(
     422 => new \mindstellar\exception\RefusedException('x'),

@@ -91,7 +91,7 @@ check('...but a malformed optional address is still rejected', !osc_validate_ema
 harness_section('no form rolls its own address pattern');
 
 $offenders = array();
-$roots     = array(__DIR__ . '/../oc-includes/osclass', __DIR__ . '/../oc-admin');
+$roots     = array(__DIR__ . '/../oc-includes/osclass', __DIR__ . '/../oc-includes/classes', __DIR__ . '/../oc-admin');
 foreach ($roots as $root) {
     $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root));
     foreach ($it as $file) {

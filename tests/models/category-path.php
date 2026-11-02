@@ -81,7 +81,7 @@ pin('nothing set is off', '', \mindstellar\category\CategoryModes::modeFor('{}',
 pin('a category with its own mode uses it', 'slots', \mindstellar\category\CategoryModes::modeFor(array($parent => 'nights', $grandchild => 'slots'), $grandchild));
 
 harness_section('category card pickers');
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Picker.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Picker.php';
 $admin->query("UPDATE {$p}t_category_description SET s_name = 'Cars <b>' WHERE fk_i_category_id = $child");
 $tree = array(array('pk_i_id' => $parent, 's_name' => 'Vehicles', 'categories' => array(
     array('pk_i_id' => $child, 's_name' => 'Cars <b>', 'categories' => array(

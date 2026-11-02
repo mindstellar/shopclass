@@ -94,8 +94,8 @@ pin('the full size is kept, not resized', array(40, 30), array($size[0] ?? 0, $s
 harness_section('Both upload paths re-encode');
 
 foreach (array(
-    'oc-includes/osclass/classes/listing/PhotoService.php',
-    'oc-includes/osclass/classes/storage/ResourceUploader.php',
+    'oc-includes/classes/listing/PhotoService.php',
+    'oc-includes/classes/core/storage/ResourceUploader.php',
 ) as $file) {
     $src = file_get_contents(ABS_PATH . $file);
     // The raw upload temp must never be handed to osc_copy(). Copying a derived path
@@ -108,7 +108,7 @@ foreach (array(
 }
 
 // Both paths share the re-encode step through ResourceUploader::saveOriginal().
-$itemActionsSrc = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/listing/PhotoService.php');
+$itemActionsSrc = file_get_contents(ABS_PATH . 'oc-includes/classes/listing/PhotoService.php');
 check(
     'PhotoService.php delegates the original to ResourceUploader::saveOriginal()',
     strpos($itemActionsSrc, "_original.' . \$extension") !== false

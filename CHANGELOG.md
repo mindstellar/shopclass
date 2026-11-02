@@ -73,6 +73,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
 - Sites update to 7.1 from 7.0.12; an older 7.0 site is offered 7.0.12 first.
 - Releases ship only `shopclass_v*.zip`; `osclass_v*.zip` is no longer built.
+- Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
 - Money uses the currency's decimals, not the language's: `Money::format()`, `osc_format_price()` and `osc_prepare_price()` now print JPY with none and KWD with three.

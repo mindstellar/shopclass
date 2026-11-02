@@ -141,7 +141,7 @@ pin('off, activity is empty', array('unread' => 0, 'latest' => null), $svc->acti
 $set('enabled_messaging', '1');
 
 harness_section('how the controller answers a refusal');
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/AjaxResponse.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/AjaxResponse.php';
 $ajax    = (new ReflectionClass('CWebAjax'))->newInstanceWithoutConstructor();
 $refusal = new ReflectionMethod('CWebAjax', 'messagingRefusal');
 $refusal->setAccessible(true);

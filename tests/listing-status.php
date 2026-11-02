@@ -60,8 +60,8 @@ check('unpaid SQL is that rule', strpos($where(ListingStatus::UNPAID), ListingSt
 check('disabled SQL excludes held rows', strpos($where(ListingStatus::DISABLED), 'b_spam = 0 AND b_enabled = 0 AND NOT ' . ListingStatus::heldSql()) !== false);
 check('pending SQL keeps an enabled row with no first date, as of() does', strpos($where(ListingStatus::PENDING), 'dt_first_pub_date') === false);
 $src = '';
-foreach (array('model/Item.php', 'listing/ListingStore.php', 'billing/EntitlementStore.php') as $file) {
-    $src .= (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/' . $file);
+foreach (array('osclass/classes/model/Item.php', 'classes/listing/ListingStore.php', 'classes/billing/EntitlementStore.php') as $file) {
+    $src .= (string) file_get_contents(__DIR__ . '/../oc-includes/' . $file);
 }
 pin('no other class spells the held rule out', 0, preg_match_all('/dt_first_pub_date IS (NOT )?NULL/', $src));
 

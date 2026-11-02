@@ -22,7 +22,7 @@ require_once __DIR__ . '/../lib/harness.php';
 $admin = scratchdb_session('osc_models_item_edit_access');
 
 require_once __DIR__ . '/../lib/action-standins.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/security/ItemAccess.php';
+require_once ABS_PATH . 'oc-includes/classes/core/security/ItemAccess.php';
 
 use mindstellar\auth\Actor;
 use mindstellar\listing\ListingPolicy;

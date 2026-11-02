@@ -10,7 +10,7 @@
  */
 
 /**
- * Writes oc-includes/osclass/classes/user/AddressFormatData.php from Google's address metadata
+ * Writes oc-includes/classes/user/AddressFormatData.php from Google's address metadata
  * (the data behind libaddressinput, CC BY 4.0). Run it by hand when that data changes; sites never
  * fetch it.
  *
@@ -22,7 +22,7 @@
 declare(strict_types=1);
 
 const SOURCE = 'https://chromium-i18n.appspot.com/ssl-address/data';
-const OUT    = __DIR__ . '/../oc-includes/osclass/classes/user/AddressFormatData.php';
+const OUT    = __DIR__ . '/../oc-includes/classes/user/AddressFormatData.php';
 
 $opts = getopt('', array('cache:', 'offline'));
 if (empty($opts['cache'])) {
@@ -147,4 +147,4 @@ $rows    );
 
 PHP;
 file_put_contents(OUT, $php);
-fwrite(STDERR, count($map) . " countries written to oc-includes/osclass/classes/user/AddressFormatData.php\n");
+fwrite(STDERR, count($map) . " countries written to oc-includes/classes/user/AddressFormatData.php\n");
