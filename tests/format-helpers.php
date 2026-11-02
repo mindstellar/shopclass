@@ -76,6 +76,7 @@ pin('format with a comma decimal point', '1.234,50 USD', Money::format(123450000
 $GLOBALS['sep'] = array(',', '.');
 pin('display uses the locale\'s currency format and drops whole decimals', ['₹1,234', '₹1,234.50'], [Money::display(1234000000, '₹'), Money::display(1234500000, '₹')]);
 pin('display puts the minus before the whole amount', ["\u{2212}₹150", "\u{2212}₹119.70"], [Money::display(-150000000, '₹'), Money::display(-119700000, '₹')]);
+pin('fixed keeps the decimals on a whole amount', '₹3.00', Money::display(3000000, '₹', 2, true));
 pin('display shows zero as an amount, not "Free"', '₹0', Money::display(0, '₹'));
 $GLOBALS['code'] = 'en_IN';
 pin('en_IN groups in lakhs', ['₹0', '₹999', '₹1,000', '₹1,00,000', '₹12,34,567.50', "\u{2212}₹1,20,000", '₹12,34,56,789.50'], array_map(fn ($m) => Money::display($m, '₹'), [0, 999000000, 1000000000, 100000000000, 1234567500000, -120000000000, 123456789500000]));

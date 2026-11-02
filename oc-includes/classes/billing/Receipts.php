@@ -722,8 +722,8 @@ final class Receipts
                 'options' => implode(', ', $options),
                 'sku'     => (string) ($line['sku'] ?? ''),
                 'qty'     => (string) $line['qty'],
-                'unit'     => $money->money((int) $line['unit'], $currency, $ship),
-                'amount'   => $money->money((int) $line['amount'], $currency, $ship),
+                'unit'     => $money->money((int) $line['unit'], $currency, $ship, true),
+                'amount'   => $money->money((int) $line['amount'], $currency, $ship, true),
                 'included' => $line['kind'] === OrderLineStore::KIND_TAX && ($line['meta']['included'] ?? false) === true,
             );
         }
@@ -737,7 +737,7 @@ final class Receipts
             'carrier'      => (string) ($fulfilment['carrier'] ?? ''),
             'tracking'     => (string) ($fulfilment['tracking'] ?? ''),
             'tracking_url' => self::httpsUrl((string) ($fulfilment['tracking_url'] ?? '')),
-            'total'        => $money->money($order->getAmount(), $currency),
+            'total'        => $money->money($order->getAmount(), $currency, false, true),
             'note'         => is_string($note) ? $note : '',
             'title'        => __('Receipt'),
             'extra'        => array(),

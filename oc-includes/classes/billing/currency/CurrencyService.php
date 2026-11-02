@@ -74,11 +74,11 @@ final class CurrencyService
 
     /**
      * An order amount as the shop shows it, e.g. "₹448" or "−₹150". Only a zero delivery
-     * charge reads "Free".
+     * charge reads "Free"; $fixed keeps the decimals on whole amounts, as receipts and invoices do.
      */
-    public function money(int $micros, string $code, bool $delivery = false): string
+    public function money(int $micros, string $code, bool $delivery = false, bool $fixed = false): string
     {
-        return $delivery && $micros === 0 ? __('Free') : Money::display($micros, $this->symbol($code), $this->decimals($code));
+        return $delivery && $micros === 0 ? __('Free') : Money::display($micros, $this->symbol($code), $this->decimals($code), $fixed);
     }
 
     /**

@@ -101,10 +101,10 @@ if (($page['refund']['reason'] ?? '') !== '') {
             <?php if (($buyer['name'] ?? '') !== '' || ($buyer['email'] ?? '') !== '' || !empty($buyer['address'])) { ?>
                 <div>
                     <dt><?php echo osc_esc_html(__('Billed to')); ?></dt>
-                    <dd><?php echo implode('<br>', array_map('osc_esc_html', array_filter(array_merge(
+                    <dd><?php echo implode('<br>', array_map('osc_esc_html', array_unique(array_filter(array_merge(
                         array((string) ($buyer['name'] ?? ''), (string) ($buyer['email'] ?? '')),
                         array_map('strval', (array) ($buyer['address'] ?? array()))
-                    ), static fn (string $row): bool => $row !== ''))); ?></dd>
+                    ), static fn (string $row): bool => $row !== '')))); ?></dd>
                 </div>
             <?php } ?>
         </dl>

@@ -48,16 +48,16 @@ final class Money
     /**
      * An amount as the shop shows it, in the locale's currency format: "₹1,234", "₹1,234.50",
      * "−₹150", "₹0". The decimals are the currency's (the site currency when $decimals is null);
-     * whole amounts drop them, and zero is never "Free". A negative amount takes the minus sign
+     * whole amounts drop them unless $fixed, and zero is never "Free". A negative amount takes the minus sign
      * (U+2212), as the cart and checkout show it.
      */
-    public static function display(int $micros, string $symbol, ?int $decimals = null): string
+    public static function display(int $micros, string $symbol, ?int $decimals = null, bool $fixed = false): string
     {
         $locale   = _osc_user_locale_row();
         $value    = abs($micros) / self::MICROS;
         $decimals = max(0, $decimals ?? self::decimals());
         $rounded  = round($value, $decimals);
-        if ($decimals > 0 && $rounded == floor($rounded)) {
+        if (!$fixed && $decimals > 0 && $rounded == floor($rounded)) {
             $decimals = 0;
         }
         $number = number_format($value, $decimals, $locale['s_dec_point'], $locale['s_thousands_sep']);

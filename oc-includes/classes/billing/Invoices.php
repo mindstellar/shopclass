@@ -308,7 +308,7 @@ final class Invoices
             ),
             'currency'    => array('code' => $currency, 'decimals' => $money->decimals($currency)),
             'lines'       => self::orderLines($order, (string) ($order->isGoods() || $order->isListing() ? $order->getLabel() : $vars['credits'])),
-            'totals'      => array('total' => $order->getAmount(), 'total_text' => $money->money($order->getAmount(), $currency)),
+            'totals'      => array('total' => $order->getAmount(), 'total_text' => $money->money($order->getAmount(), $currency, false, true)),
             'wording'     => array(
                 'title'   => $title !== '' && $title !== __('Receipt') ? $title : __('Invoice'),
                 'extra'   => (array) ($details['extra'] ?? array()),
@@ -346,8 +346,8 @@ final class Invoices
                 'qty'         => (int) $line['qty'],
                 'unit'        => (int) $line['unit'],
                 'amount'      => (int) $line['amount'],
-                'unit_text'   => $money->money((int) $line['unit'], $currency, $ship),
-                'amount_text' => $money->money((int) $line['amount'], $currency, $ship),
+                'unit_text'   => $money->money((int) $line['unit'], $currency, $ship, true),
+                'amount_text' => $money->money((int) $line['amount'], $currency, $ship, true),
                 'included'    => $line['kind'] === OrderLineStore::KIND_TAX && ($line['meta']['included'] ?? false) === true,
             );
         }
@@ -431,7 +431,7 @@ final class Invoices
             'buyer'       => $inv['buyer'] ?? array(),
             'currency'    => array('code' => $currency, 'decimals' => $decimals),
             'lines'       => $noteLines,
-            'totals'      => array('total' => $amount, 'total_text' => CurrencyService::make()->money($amount, $currency)),
+            'totals'      => array('total' => $amount, 'total_text' => CurrencyService::make()->money($amount, $currency, false, true)),
             'wording'     => array(
                 'title'   => __('Credit note'),
                 'extra'   => (array) ($wording['extra'] ?? array()),
@@ -533,8 +533,8 @@ final class Invoices
             'qty'         => $qty,
             'unit'        => $unit,
             'amount'      => $amount,
-            'unit_text'   => $money->money($unit, $currency),
-            'amount_text' => $money->money($amount, $currency),
+            'unit_text'   => $money->money($unit, $currency, false, true),
+            'amount_text' => $money->money($amount, $currency, false, true),
             'included'    => false,
         );
     }
