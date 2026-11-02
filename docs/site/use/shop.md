@@ -83,9 +83,11 @@ Every paid order gets a numbered invoice, such as `INV-2026-00042`. Each refund 
 
 **Settings → Billing → Receipts** turns invoices off and sets the two prefixes. **Billing → Invoices** lists them by type and date, with a CSV download for your accountant. A document is frozen when it is made: later changes to the order or to your business details do not alter it. Orders paid before 7.1 have no invoice.
 
+When a tax plugin reports tax for each item, the invoice and the order page show a **Tax** column with the rate and amount, and the tax code (such as HSN) under the product name. If the plugin asks for a buyer tax number, the buyer types it at checkout and it prints under **Billed to**. Orders made before this have tax shown as a whole.
+
 ### Refunding part of an order
 
-Open the order and use **Refund part**. Enter an amount, or the units to refund, and a reason, and choose whether the units go back on sale (on by default for items not yet shipped). If the payment plugin supports it, the money goes back through the provider; otherwise the refund is recorded and you send the money yourself. Each partial refund makes a credit note and a mail to the buyer. The order shows **Partly refunded** until the credit notes add up to what was paid, then it becomes **Refunded**. Refund part needs an invoice: an order without one, such as one paid before 7.1 or while invoices were off, can only be refunded in full. A credit pack order is refunded whole.
+Open the order and use **Refund part**. Enter an amount, or the units to refund, and a reason, and choose whether the units go back on sale (on by default for items not yet shipped). If the payment plugin supports it, the money goes back through the provider; otherwise the refund is recorded and you send the money yourself. Each partial refund makes a credit note and a mail to the buyer. The order shows **Partly refunded** until the credit notes add up to what was paid, then it becomes **Refunded**. Refund part needs an invoice: an order without one, such as one paid before 7.1 or while invoices were off, can only be refunded in full. When the order has tax per line, returning units refunds those units' own tax, so a mixed 5% and 19% order refunds only the tax of the lines you return. A credit pack order is refunded whole.
 
 A card payment that arrives after its order was cancelled is refunded by the payment plugin.
 
@@ -116,7 +118,7 @@ Each one is free, works on plain shared hosting and does nothing until you set i
 | Plugin | What it adds |
 |---|---|
 | **Shipping** | Delivery zones by country, state or postcode, Standard and Express, weight prices, free delivery, delivery dates and tracking links. |
-| **Tax** | Tax lines from a default, country and category rates, prices with or without tax, and a tax invoice. |
+| **Tax** | Tax lines from a default, country and category rates, prices with or without tax, and a tax invoice with tax per line and an optional buyer tax number. |
 | **Tax GST** | India GST on top of Tax: CGST and SGST in your state, IGST elsewhere, GSTIN and HSN on the invoice. |
 | **Promotions** | Coupon codes, automatic discounts, a first-order offer and use limits. |
 | **Shop emails** | A newsletter sign-up list with double opt-in and CSV export, and one reminder for a signed-in shopper's left cart. |
