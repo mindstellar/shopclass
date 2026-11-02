@@ -39,7 +39,7 @@ final class ListingInput
     public static function read(bool $admin, bool $isAdd, ?Actor $actor = null): array
     {
         $actor ??= self::sessionActor($admin);
-        $data  = self::build(Params::getParamsAsArray('', false), $actor, $isAdd, Params::getFiles('photos'));
+        $data  = self::build(Params::getParamsAsArray('', false), $actor, $isAdd, Params::getFiles('photos'), true);
         // A signed-in seller's form posts their name and e-mail in hidden fields; plugins reading
         // the request get the account's own values instead.
         if (($data['userId'] ?? null) !== null) {
@@ -126,16 +126,7 @@ final class ListingInput
             }
         }
         $text  = static fn ($value): string => $value === null ? '' : (string) $value;
-        $mass  = static fn ($value): string => is_int($value) || (is_string($value) && ctype_digit($value)) ? osc_weight_input((int) $value) : $text($value);
-        $price = static fn ($value): string => is_numeric($value) ? (string) osc_prepare_price($value, $currency) : $text($value);
-        $shown = static fn (array $row): array => array(
-            'sku'           => $text($row['s_sku'] ?? null),
-            'price'         => $price($row['i_price'] ?? null),
-            'compareAt'     => $price($row['i_compare_price'] ?? null),
-            'stock'         => $text($row['i_stock'] ?? null),
-            'weight'        => $mass($row['i_weight'] ?? null),
-            'shippingClass' => $text($row['s_shipping_class'] ?? null),
-        );
+        $shown = static fn (array $row): array => self::shownFields($row, $currency);
 
         $options  = VariantStore::optionsOf($rows ?? array());
         $names    = array_column($options, 'name');
@@ -159,6 +150,29 @@ final class ListingInput
             'variants'   => $variants,
             'photos'     => $photos,
             'errors'     => $errors,
+        );
+    }
+
+    /**
+     * One variant row's columns as the product form shows them; the weight is in the form's unit.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array<string,string>
+     */
+    private static function shownFields(array $row, ?string $currency): array
+    {
+        $text  = static fn ($value): string => $value === null ? '' : (string) $value;
+        $mass  = static fn ($value): string => is_int($value) || (is_string($value) && ctype_digit($value)) ? osc_weight_input((int) $value) : $text($value);
+        $price = static fn ($value): string => is_numeric($value) ? (string) osc_prepare_price($value, $currency) : $text($value);
+
+        return array(
+            'sku'           => $text($row['s_sku'] ?? null),
+            'price'         => $price($row['i_price'] ?? null),
+            'compareAt'     => $price($row['i_compare_price'] ?? null),
+            'stock'         => $text($row['i_stock'] ?? null),
+            'weight'        => $mass($row['i_weight'] ?? null),
+            'shippingClass' => $text($row['s_shipping_class'] ?? null),
         );
     }
 
@@ -251,12 +265,12 @@ final class ListingInput
      *
      * @return array{sell:bool,fields:array<string,int|string|null>,variants?:array<int,array{options:array<string,string>,fields:array<string,int|string|null>}>}|null
      */
-    private static function product(mixed $raw, int $decimals): ?array
+    private static function product(mixed $raw, int $decimals, bool $formUnit = false): ?array
     {
         if (!is_array($raw)) {
             return null;
         }
-        $product = array('sell' => !empty($raw['sell']), 'fields' => self::variantFields($raw, $decimals));
+        $product = array('sell' => !empty($raw['sell']), 'fields' => self::variantFields($raw, $decimals, $formUnit));
         if (empty($raw['hasOptions'])) {
             return $product;
         }
@@ -280,7 +294,7 @@ final class ListingInput
                     $options[self::optionText($name)] = self::optionText($value);
                 }
             }
-            $fields = self::variantFields($row, $decimals);
+            $fields = self::variantFields($row, $decimals, $formUnit);
             if (array_key_exists('photoId', $row)) {
                 $photo                      = is_scalar($row['photoId']) ? trim((string) $row['photoId']) : '';
                 $fields['fk_i_resource_id'] = $photo === '' ? null : (preg_match('/^\d{1,10}$/', $photo) === 1 ? (int) $photo : $photo);
@@ -299,7 +313,7 @@ final class ListingInput
      *
      * @return array<string,int|string|null>
      */
-    private static function variantFields(array $raw, int $decimals): array
+    private static function variantFields(array $raw, int $decimals, bool $formUnit = false): array
     {
         $text = static function (string $key) use ($raw): ?string {
             $value = isset($raw[$key]) && is_scalar($raw[$key]) ? trim((string) Params::purifyText($raw[$key])) : '';
@@ -325,9 +339,9 @@ final class ListingInput
             $fields['i_stock'] = $whole($text('stock'));
         }
         if (array_key_exists('weight', $raw)) {
-            // Ounces are converted to grams; anything that is not a number is left for the validator.
-            $weight            = $text('weight');
-            $fields['i_weight'] = $weight !== null && osc_weight_unit() === 'imperial' && preg_match('/^\d{1,12}([.,]\d{1,6})?$/', $weight) === 1
+            // The web form's ounces become grams; the API and imports always send grams.
+            $weight             = $text('weight');
+            $fields['i_weight'] = $formUnit && $weight !== null && osc_weight_unit() === 'imperial' && preg_match('/^\d{1,12}([.,]\d{1,6})?$/', $weight) === 1
                 ? osc_weight_parse($weight) : $whole($weight);
         }
 
@@ -360,12 +374,13 @@ final class ListingInput
     }
 
     /**
-     * @param array<string,mixed> $form  the request, or the values given
-     * @param array<string,mixed> $files photos in the $_FILES shape
+     * @param array<string,mixed> $form     the request, or the values given
+     * @param array<string,mixed> $files    photos in the $_FILES shape
+     * @param bool                $formUnit weights are in the form's unit (ounces on an imperial site), not grams
      *
      * @return array<string,mixed>
      */
-    private static function build(array $form, Actor $actor, bool $isAdd, array $files): array
+    private static function build(array $form, Actor $actor, bool $isAdd, array $files, bool $formUnit = false): array
     {
         $admin = $actor->isAdmin();
         $get   = static fn (string $key): mixed => isset($form[$key])
@@ -551,7 +566,7 @@ final class ListingInput
         }
 
         // Only an admin sells a listing; for anyone else the member is ignored.
-        $product = $admin ? self::product($form['product'] ?? null, $decimals) : null;
+        $product = $admin ? self::product($form['product'] ?? null, $decimals, $formUnit) : null;
         if ($product !== null) {
             $aItem['product'] = $product;
         }

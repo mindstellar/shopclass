@@ -1144,15 +1144,34 @@ function osc_weight_unit(): string
 }
 
 /**
- * Grams as text with up to two decimals and no trailing zeros.
+ * Grams in one of a weight unit: 'g', 'kg', 'oz' or 'lb'.
  *
- * @param float $value
+ * @param string $unit
+ *
+ * @return float
+ * @since 7.1.0
+ */
+function osc_weight_grams_per(string $unit): float
+{
+    return match ($unit) {
+        'kg'    => 1000.0,
+        'oz'    => 28.349523125,
+        'lb'    => 453.59237,
+        default => 1.0,
+    };
+}
+
+/**
+ * Grams in the given unit, as text with up to two decimals and no trailing zeros.
+ *
+ * @param int    $grams
+ * @param string $unit 'g', 'kg', 'oz' or 'lb'
  *
  * @return string
  */
-function _osc_weight_number(float $value): string
+function _osc_weight_in(int $grams, string $unit): string
 {
-    return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+    return rtrim(rtrim(number_format($grams / osc_weight_grams_per($unit), 2, '.', ''), '0'), '.');
 }
 
 /**
@@ -1166,12 +1185,10 @@ function _osc_weight_number(float $value): string
 function osc_weight_display(int $grams): string
 {
     if (osc_weight_unit() === 'imperial') {
-        return $grams < 453.59237
-            ? _osc_weight_number($grams / 28.349523125) . ' oz'
-            : _osc_weight_number($grams / 453.59237) . ' lb';
+        return $grams < osc_weight_grams_per('lb') ? _osc_weight_in($grams, 'oz') . ' oz' : _osc_weight_in($grams, 'lb') . ' lb';
     }
 
-    return $grams < 1000 ? $grams . ' g' : _osc_weight_number($grams / 1000) . ' kg';
+    return $grams < 1000 ? $grams . ' g' : _osc_weight_in($grams, 'kg') . ' kg';
 }
 
 /**
@@ -1184,7 +1201,7 @@ function osc_weight_display(int $grams): string
  */
 function osc_weight_input(int $grams): string
 {
-    return osc_weight_unit() === 'imperial' ? _osc_weight_number($grams / 28.349523125) : (string) $grams;
+    return osc_weight_unit() === 'imperial' ? _osc_weight_in($grams, 'oz') : (string) $grams;
 }
 
 /**
@@ -1203,7 +1220,24 @@ function osc_weight_parse($value): int
         return 0;
     }
 
-    return (int) round((float) $text * (osc_weight_unit() === 'imperial' ? 28.349523125 : 1));
+    return (int) round((float) $text * (osc_weight_unit() === 'imperial' ? osc_weight_grams_per('oz') : 1));
+}
+
+/**
+ * The started kilos a weight in grams takes, or started pounds on an imperial site. A pound
+ * counts as 454 g, the whole grams 16 oz are stored as, so a product typed as 1 lb is one pound.
+ *
+ * @param int       $grams
+ * @param bool|null $imperial null follows the site's unit
+ *
+ * @return int
+ * @since 7.1.0
+ */
+function osc_weight_started(int $grams, ?bool $imperial = null): int
+{
+    $per = ($imperial ?? osc_weight_unit() === 'imperial') ? (int) round(16 * osc_weight_grams_per('oz')) : 1000;
+
+    return intdiv(max(0, $grams) + $per - 1, $per);
 }
 
 /**
