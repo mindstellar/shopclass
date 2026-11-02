@@ -190,7 +190,7 @@ final class ImagickEngine implements Engine
             $icc = $im->getImageProfiles('icc', true)['icc'] ?? '';
             // A real colour profile is a few KB, a CMYK one about 0.5 MB; a larger one is not parsed.
             if ($icc !== '' && strlen($icc) <= 1048576 && $im->getImageColorspace() !== Imagick::COLORSPACE_GRAY) {
-                $im->profileImage('icc', (string) file_get_contents(dirname(__DIR__, 2) . '/icc/sRGB-v2-micro.icc'));
+                $im->profileImage('icc', (string) file_get_contents(dirname(__DIR__, 3) . '/osclass/icc/sRGB-v2-micro.icc'));
             } elseif ($im->getImageColorspace() === Imagick::COLORSPACE_CMYK) {
                 $im->transformImageColorspace(Imagick::COLORSPACE_SRGB);
             }

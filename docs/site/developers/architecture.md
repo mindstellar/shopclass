@@ -96,62 +96,62 @@ namespace and stay in `oc-includes/osclass/classes/`: all of `controller`, `acti
 `datatables`, the files in the root, and some of `model`, `form`, `database`, `theme` and `logger`.
 `tests/classes-folder-map.php` fails when a module is missing from this table.
 
-| Folder | Holds |
-|---|---|
-| `actions` | `ItemActions`, `UserActions`: old wrappers kept for plugins; each calls a service |
-| `admin` | Admin panel code: ajax actions (`ajax/`), settings screens (`form/`), shared form and editor parts (`ui/`), stats, system checks |
-| `api` | The REST API: HTTP only, no rules of its own. Core never uses it, so it can be switched off |
-| `apikey` | API keys, sign-in tokens and scopes. Core manages them (settings, CLI, account pages) even with the API off, so they are not under `api` |
-| `auth` | Signing in and out, re-asking for a password, and `Actor`: who is acting |
-| `backup` | Making, storing and restoring backups |
-| `base` | Abstract base classes and traits other classes extend: `Model`, `Registry`, `SettingsScreen`, `Cache` (the object-cache drivers), `ActionMap`, `SharedInstance` (the one shared object behind `getInstance()`) |
-| `billing` | Packages, orders, entitlements, payment gateways and receipts |
-| `boot` | The start-up steps `oc-load.php` runs: the helper file list, the core services and the session stage |
-| `cache` | The object cache: `CacheManager`, the drivers (`MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`), the Redis clients they use, and page-cache purges |
-| `category` | Categories: `CategoryService`, `CategoryStore`, `CategoryQuery` |
-| `cli` | `oc-cli.php` commands |
-| `comment` | Listing comments: posting, rules and reads |
-| `container` | `Container`: the site-wide service container, in the PSR-11 shape |
-| `controller` | Web and admin page controllers (`CWeb*`, `admin/CAdmin*`) and their base classes |
-| `currency` | Currencies and `Money` |
-| `database` | The database connection, `Db` and `QueryBuilder`, the legacy `DAO`, schema checks, row hashes that tell when a row changed |
-| `datatables` | The admin list tables |
-| `event` | Typed events: `Dispatcher` (PSR-14 shape), the `Event` base, and `HookBridge`, which turns `osc_add_hook()` callbacks on a name an event owns into listeners |
-| `exception` | The refusals every service throws (below) |
-| `fields` | Custom fields and their types |
-| `form` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
-| `http` | Outgoing HTTPS requests for core and plugins: `HttpClient`, `CurlHttpClient` |
-| `image` | Photo processing: `Processor` (fit, formats, quality, watermark, pixel limit) over an `Engine`, `GdEngine` or `ImagickEngine` |
-| `install` | The first-run installer: what it can set up for a shop site |
-| `job` | The background job queue |
-| `live` | Push to open browsers: publisher, status |
-| `language` | Installing and storing languages |
-| `listing` | Listings and their photos: posting, editing, rules, reads and mail |
-| `location` | Countries, regions, cities: reads, admin and import |
-| `logger` | The admin log and error logging |
-| `mail` | Sending e-mail (`Mailer`) and the e-mails core sends (`CoreEmails`) |
-| `market` | The plugin and theme market: catalogue, install, compatibility |
-| `menu` | Menus the owner builds, checked, saved and turned into links |
-| `messaging` | On-site messages between a buyer and a seller: threads, rules, mail |
-| `migration` | Running the database migrations |
-| `model` | Tables several modules use: the old `Item`, `User`… classes (kept for plugins; add no methods) and new `mindstellar\model` stores |
-| `moderation` | What an admin does to a listing's or comment's status, and the keyword block list |
-| `pages` | Static pages and page templates |
-| `privacy` | Where a person's data lives, so a copy can be handed back |
-| `push` | Web push wake-ups: VAPID keys, browser subscriptions, the sender |
-| `routing` | URLs: routes, the front controller and reserved slugs |
-| `search` | Search and saved-search alerts; the SQL is built in `query/` |
-| `seo` | The head data of a public page: canonical URL, title, robots, breadcrumbs, hreflang |
-| `security` | CSRF, rate limits, captcha, ban rules, two-factor sign-in, signed links |
-| `settings` | The registry plugins add settings pages to, and image fields on those pages |
-| `site` | What the site is for: classifieds or shop (`SiteMode`) |
-| `storage` | File storage (local, S3), uploads and the media library |
-| `theme` | Themes and their views |
-| `upgrade` | Core, plugin and theme updates |
-| `user` | User accounts: sign-up, profile, password, delete |
-| `utility` | Small tools with no module: escaping, dates, files, the clock |
-| `webhook` | Outgoing webhooks: endpoints, delivery and retries |
-| `widgets` | Widget types plugins register, and saved widgets |
+| Namespace | Folder (in `oc-includes/`) | Holds |
+|---|---|---|
+| `actions` | `osclass/classes/actions/` | `ItemActions`, `UserActions`: old wrappers kept for plugins; each calls a service |
+| `admin` | `classes/admin/` | Admin panel code: ajax actions (`ajax/`), settings screens (`form/`), shared form and editor parts (`ui/`), stats, system checks |
+| `api` | `classes/api/` | The REST API: HTTP only, no rules of its own. Core never uses it, so it can be switched off |
+| `apikey` | `classes/user/apikey/` | API keys, sign-in tokens and scopes. Core manages them (settings, CLI, account pages) even with the API off, so they are not under `api` |
+| `auth` | `classes/user/auth/` | Signing in and out, re-asking for a password, and `Actor`: who is acting |
+| `backup` | `classes/backup/` | Making, storing and restoring backups |
+| `base` | `classes/core/base/` | Abstract base classes and traits other classes extend: `Model`, `Registry`, `SettingsScreen`, `Cache` (the object-cache drivers), `ActionMap`, `SharedInstance` (the one shared object behind `getInstance()`) |
+| `billing` | `classes/billing/` | Packages, orders, entitlements, payment gateways and receipts |
+| `boot` | `classes/core/boot/` | The start-up steps `oc-load.php` runs: the helper file list, the core services and the session stage |
+| `cache` | `classes/core/cache/` | The object cache: `CacheManager`, the drivers (`MemoryCache`, `ApcuCache`, `MemcachedCache`, `RedisCache`), the Redis clients they use, and page-cache purges |
+| `category` | `classes/listing/category/` | Categories: `CategoryService`, `CategoryStore`, `CategoryQuery` |
+| `cli` | `classes/core/cli/` | `oc-cli.php` commands |
+| `comment` | `classes/content/comment/` | Listing comments: posting, rules and reads |
+| `container` | `classes/core/container/` | `Container`: the site-wide service container, in the PSR-11 shape |
+| `controller` | `osclass/classes/controller/` | Web and admin page controllers (`CWeb*`, `admin/CAdmin*`) and their base classes |
+| `currency` | `classes/billing/currency/` | Currencies and `Money` |
+| `database` | `classes/core/database/`, `osclass/classes/database/` | The database connection, `Db` and `QueryBuilder`, the legacy `DAO`, schema checks, row hashes that tell when a row changed |
+| `datatables` | `osclass/classes/datatables/` | The admin list tables |
+| `event` | `classes/core/event/` | Typed events: `Dispatcher` (PSR-14 shape), the `Event` base, and `HookBridge`, which turns `osc_add_hook()` callbacks on a name an event owns into listeners |
+| `exception` | `classes/core/exception/` | The refusals every service throws (below) |
+| `fields` | `classes/listing/fields/` | Custom fields and their types |
+| `form` | `classes/core/form/`, `osclass/classes/form/` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
+| `http` | `classes/core/http/` | Outgoing HTTPS requests for core and plugins: `HttpClient`, `CurlHttpClient` |
+| `image` | `classes/media/image/` | Photo processing: `Processor` (fit, formats, quality, watermark, pixel limit) over an `Engine`, `GdEngine` or `ImagickEngine` |
+| `install` | `classes/core/install/` | The first-run installer: what it can set up for a shop site |
+| `job` | `classes/core/job/` | The background job queue |
+| `live` | `classes/messaging/live/` | Push to open browsers: publisher, status |
+| `language` | `classes/core/language/` | Installing and storing languages |
+| `listing` | `classes/listing/` | Listings and their photos: posting, editing, rules, reads and mail |
+| `location` | `classes/location/` | Countries, regions, cities: reads, admin and import |
+| `logger` | `classes/core/logger/`, `osclass/classes/logger/` | The admin log and error logging |
+| `mail` | `classes/core/mail/` | Sending e-mail (`Mailer`) and the e-mails core sends (`CoreEmails`) |
+| `market` | `classes/market/` | The plugin and theme market: catalogue, install, compatibility |
+| `menu` | `classes/content/menu/` | Menus the owner builds, checked, saved and turned into links |
+| `messaging` | `classes/messaging/` | On-site messages between a buyer and a seller: threads, rules, mail |
+| `migration` | `classes/core/migration/` | Running the database migrations |
+| `model` | `classes/core/model/`, `osclass/classes/model/` | Tables several modules use: the old `Item`, `User`… classes (kept for plugins; add no methods) and new `mindstellar\model` stores |
+| `moderation` | `classes/listing/moderation/` | What an admin does to a listing's or comment's status, and the keyword block list |
+| `pages` | `classes/content/pages/` | Static pages and page templates |
+| `privacy` | `classes/user/privacy/` | Where a person's data lives, so a copy can be handed back |
+| `push` | `classes/messaging/push/` | Web push wake-ups: VAPID keys, browser subscriptions, the sender |
+| `routing` | `classes/core/routing/` | URLs: routes, the front controller and reserved slugs |
+| `search` | `classes/search/` | Search and saved-search alerts; the SQL is built in `query/` |
+| `seo` | `classes/content/seo/` | The head data of a public page: canonical URL, title, robots, breadcrumbs, hreflang |
+| `security` | `classes/core/security/` | CSRF, rate limits, captcha, ban rules, two-factor sign-in, signed links |
+| `settings` | `classes/core/settings/` | The registry plugins add settings pages to, and image fields on those pages |
+| `site` | `classes/core/site/` | What the site is for: classifieds or shop (`SiteMode`) |
+| `storage` | `classes/core/storage/` | File storage (local, S3), uploads and the media library |
+| `theme` | `classes/core/theme/`, `osclass/classes/theme/` | Themes and their views |
+| `upgrade` | `classes/core/upgrade/` | Core, plugin and theme updates |
+| `user` | `classes/user/` | User accounts: sign-up, profile, password, delete |
+| `utility` | `classes/core/utility/` | Small tools with no module: escaping, dates, files, the clock |
+| `webhook` | `classes/webhook/` | Outgoing webhooks: endpoints, delivery and retries |
+| `widgets` | `classes/content/widgets/` | Widget types plugins register, and saved widgets |
 
 ### Names
 
