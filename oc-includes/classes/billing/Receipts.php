@@ -605,13 +605,7 @@ final class Receipts
             );
         }
         $fulfilment = $order->fulfilment() ?? array();
-        // Name and phone first, then the lines in the country's own order, then the country.
-        $raw     = array_filter((array) ($fulfilment['address'] ?? array()), 'is_string');
-        $address = array_values(array_filter(array_merge(
-            array(trim((string) ($raw['name'] ?? '')), trim((string) ($raw['phone'] ?? ''))),
-            \mindstellar\user\AddressFormat::lines($raw),
-            array(trim((string) ($raw['country'] ?? '')) === '' ? '' : self::countryName(trim((string) $raw['country'])))
-        ), static fn (string $part): bool => $part !== ''));
+        $address = self::addressLines((array) ($fulfilment['address'] ?? array()));
         $note    = $order->meta('_note');
         $details = array(
             'lines'        => $lines,
@@ -641,6 +635,25 @@ final class Receipts
     /**
      * A country's name for its two-letter code, or the code when the site does not know it.
      */
+    /**
+     * A delivery address as printed lines: name and phone, the lines in the country's own order,
+     * then the country's name.
+     *
+     * @param array<string,mixed> $address ADDRESS keys
+     *
+     * @return list<string>
+     */
+    public static function addressLines(array $address): array
+    {
+        $raw = array_filter($address, 'is_string');
+
+        return array_values(array_filter(array_merge(
+            array(trim((string) ($raw['name'] ?? '')), trim((string) ($raw['phone'] ?? ''))),
+            \mindstellar\user\AddressFormat::lines($raw),
+            array(trim((string) ($raw['country'] ?? '')) === '' ? '' : self::countryName(trim((string) $raw['country'])))
+        ), static fn (string $part): bool => $part !== ''));
+    }
+
     private static function countryName(string $code): string
     {
         $name = (new LocationQuery())->lineage(strtoupper($code), 0, 0)['countryName'] ?? null;

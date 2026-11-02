@@ -345,7 +345,7 @@ foreach ($order->getMeta() as $key => $value) {
 
                 <?php osc_admin_panel_open(__('Delivery address and buyer')); ?>
                     <p class="mb-0">
-                        <?php echo implode('<br>', array_map('osc_esc_html', array_filter(array_map('strval', $address), static fn (string $v): bool => $v !== ''))); ?>
+                        <?php echo implode('<br>', array_map('osc_esc_html', Receipts::addressLines($address))); ?>
                     </p>
                     <p class="panel-subtitle mt-3 mb-0">
                         <?php echo osc_esc_html(trim((string) ($buyer['name'] ?? ''))); ?>
@@ -535,7 +535,7 @@ foreach ($order->getMeta() as $key => $value) {
                                         $open    = max(0, (int) $line['qty'] - $sentQty); ?>
                                         <tr>
                                             <td><?php echo osc_esc_html((string) $line['title']); ?></td>
-                                            <td class="col-numeric"><?php echo osc_esc_html(sprintf(__('%1$d of %2$d'), $sentQty, (int) $line['qty'])); ?></td>
+                                            <td class="col-numeric text-nowrap"><?php echo osc_esc_html(sprintf(__('%1$d of %2$d'), $sentQty, (int) $line['qty'])); ?></td>
                                             <td class="col-numeric">
                                                 <input type="number" class="form-control" min="0" max="<?php echo $open; ?>"
                                                        name="qty[<?php echo (int) $line['id']; ?>]" value="<?php echo $open; ?>"

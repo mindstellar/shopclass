@@ -33,6 +33,7 @@
 // rather than below the address and the items.
 @media (max-width: 991.98px) {
   .billing-detail-grid {
+    align-items: stretch;
     display: flex;
     flex-direction: column;
 
