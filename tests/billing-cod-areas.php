@@ -103,8 +103,8 @@ pin('another city, the wrong region, or no city is not offered', [false, false, 
 harness_section('placing');
 $setAreas([['type' => 'country', 'id' => 'IN']]);
 pin('inside the areas places the order', true, $place($full)['order']->getId() > 0);
-pin('outside is refused as unavailable', ['/gateway unavailable'], $refused(static fn () => $place(['country' => 'DE', 'state' => 'Bayern', 'city' => 'München'] + $full)));
-pin('another way to pay is still placed outside', true, $checkout->place($tom, $lines, ['country' => 'DE'] + $full, 'standard', 'offline')['order']->getId() > 0);
+pin('outside is refused as unavailable', ['/gateway unavailable'], $refused(static fn () => $place(['country' => 'DE', 'state' => 'Bayern', 'city' => 'München', 'postcode' => '80331'] + $full)));
+pin('another way to pay is still placed outside', true, $checkout->place($tom, $lines, ['country' => 'DE', 'postcode' => '80331'] + $full, 'standard', 'offline')['order']->getId() > 0);
 
 harness_section('the saved list');
 pin('clean keeps well-formed distinct entries only', [[['type' => 'country', 'id' => 'IN'], ['type' => 'region', 'id' => '5']]], [CodAreas::clean('[{"type":"country","id":"in"},{"type":"country","id":"IN"},{"type":"city","id":"x"},{"type":"state","id":"1"},{"type":"region","id":5},7]')]);

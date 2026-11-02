@@ -777,7 +777,7 @@ final class Schema
             ], array_merge(['id'], array_keys(AddressBook::FIELDS), ['default'])),
             'AddressInput'      => $input(self::addressMembers() + [
                 'default' => ['type' => 'boolean', 'description' => 'POST only: make the new address the default.'],
-            ], array_values(array_diff(array_keys(AddressBook::FIELDS), ['label']))) + ['description' => 'An Indian PIN code (country IN) has 6 digits; a mobile number has at least 8.'],
+            ], array_values(array_diff(array_keys(AddressBook::FIELDS), ['label', 'state', 'postcode']))) + ['description' => 'The country decides whether state and postcode are needed and what a postcode looks like (see address_format on GET /countries). A phone number has 4 to 15 digits, with an optional leading +.'],
         ];
     }
 

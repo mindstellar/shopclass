@@ -123,10 +123,12 @@ pin('a damaged row reads as its clean entries', ['ok1', ''], [$book->all($sue)[1
 (new AddressStore())->delete($sue);
 
 harness_section('the checks');
-pin('every field but label is needed', ['/name required', '/phone required', '/line1 required', '/city required', '/state required', '/postcode required', '/country required'], $refusal(static fn () => AddressBook::check(['label' => 'x'])));
+pin('name, phone, line1, city and country are needed, state and postcode where the default asks none', ['/name required', '/phone required', '/line1 required', '/city required', '/country required'], $refusal(static fn () => AddressBook::check(['label' => 'x'])));
+pin('a US address needs state and ZIP code', ['/state required', '/postcode required'], $refusal(static fn () => AddressBook::check(['state' => '', 'postcode' => ''] + $home)));
 pin('an Indian PIN code has 6 digits', ['/postcode pattern'], $refusal(static fn () => AddressBook::check(['country' => 'IN', 'postcode' => '12345'] + $home)));
 pin('and passes with 6', ['none'], $refusal(static fn () => AddressBook::check(['country' => 'IN', 'postcode' => '110001'] + $home)));
-pin('a mobile number has at least 8 digits', ['/phone pattern'], $refusal(static fn () => AddressBook::check(['phone' => '555-0100'] + $home)));
+pin('a short phone number is refused', ['/phone pattern'], $refusal(static fn () => AddressBook::check(['phone' => '12'] + $home)));
+pin('a number with a country code or local format passes', ['none', 'none'], [$refusal(static fn () => AddressBook::check(['phone' => '+44 20 7946 0958'] + $home))[0], $refusal(static fn () => AddressBook::check(['phone' => '555-0100'] + $home))[0]]);
 pin('the country is one of the site\'s', ['/country unknown'], $refusal(static fn () => AddressBook::check(['country' => 'FR'] + $home)));
 pin('lengths fit the account\'s columns', ['/line1 maxLength', '/postcode maxLength'], $refusal(static fn () => AddressBook::check(['line1' => str_repeat('a', 101), 'postcode' => str_repeat('1', 16)] + $home)));
 pin('under a pointer', ['/address/phone pattern'], $refusal(static fn () => AddressBook::check(['phone' => '1'] + $home, '/address')));
@@ -263,6 +265,9 @@ pin('a postcode the book refuses is refused at checkout too, with the same messa
     $messages(static fn () => (new \mindstellar\billing\GoodsCheckout())->place($sue, [['variant' => $mugV, 'qty' => 1]], $long, 'standard', 'fake')),
     $r->status(), array_map(static fn ($e) => $e['pointer'] . ' ' . $e['code'], $r->body()['errors'] ?? []),
 ]);
+$noState = static fn (string $country): array => $messages(static fn () => (new \mindstellar\billing\GoodsCheckout())->place($sue, [['variant' => $mugV, 'qty' => 1]], ['country' => $country, 'state' => ''] + $typed, 'standard', 'fake'));
+pin('checkout needs no state for DE', [], array_values(array_filter($noState('DE'), static fn (string $m): bool => str_starts_with($m, '/address/state'))));
+pin('checkout needs a state for US', 1, count(array_filter($noState('US'), static fn (string $m): bool => str_starts_with($m, '/address/state'))));
 pin('and is left out of a quote', [], \mindstellar\billing\CartPricer::quoteAddress('', '', str_repeat('7', 16)));
 pin('the address fields share one table', [AddressBook::FIELDS['line1'], AddressBook::FIELDS['postcode']], [\mindstellar\billing\GoodsCheckout::ADDRESS['line1'], \mindstellar\billing\GoodsCheckout::ADDRESS['postcode']]);
 pin('text is put on one line', 'a b c', \mindstellar\utility\Utils::oneLine(" a\n\tb\x7Fc "));
@@ -277,7 +282,7 @@ $r = $order($typed + ['save' => true]);
 pin('the same one again is not added twice', 2, count($book->all($sue)));
 OrderStore::cancel((int) $r->body()['data']['id']);
 $before = (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_order")->fetch_row()[0];
-$r      = $order(['phone' => '5550100'] + $typed + ['save' => true]);
+$r      = $order(['phone' => '12'] + $typed + ['save' => true]);
 pin('a typed address to save must pass the book\'s checks, and no order is written', [422, ['/address/phone pattern'], $before], [$r->status(), array_map(static fn ($e) => $e['pointer'] . ' ' . $e['code'], $r->body()['errors'] ?? []), (int) $admin->query("SELECT COUNT(*) FROM {$p}t_billing_order")->fetch_row()[0]]);
 $book->remove($sue, $book->all($sue)[1]['id']);
 $book->remove($sue, $homeId);

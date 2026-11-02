@@ -56771,12 +56771,10 @@
                     "phone",
                     "line1",
                     "city",
-                    "state",
-                    "postcode",
                     "country"
                 ],
                 "additionalProperties": false,
-                "description": "An Indian PIN code (country IN) has 6 digits; a mobile number has at least 8."
+                "description": "The country decides whether state and postcode are needed and what a postcode looks like (see address_format on GET /countries). A phone number has 4 to 15 digits, with an optional leading +."
             },
             "SearchSuggestions": {
                 "type": "object",
