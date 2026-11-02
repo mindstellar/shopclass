@@ -768,6 +768,10 @@ msgstr ""
 msgid "Choose at least one scope."
 msgstr ""
 
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Choose…"
+msgstr ""
+
 #: oc-includes/osclass/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php

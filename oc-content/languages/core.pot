@@ -6429,6 +6429,10 @@ msgstr ""
 msgid "Google reCAPTCHA"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Grams and kilograms"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Green"
 msgstr ""
@@ -10344,6 +10348,10 @@ msgstr ""
 msgid "Other themes"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Ounces and pounds"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid "Outline Color"
 msgstr ""
@@ -11104,6 +11112,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
 msgid "Product views"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Product weights in"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -16786,7 +16798,15 @@ msgid "Weight (g)"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+msgid "Weight (oz)"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
 msgid "Weight and shipping class are set per row in Options."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
+msgid "Weights are kept in grams. Changing this does not change any price."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -17850,6 +17870,11 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "on, site closed"
+msgstr ""
+
+#: oc-admin/themes/modern/items/frm.php
+msgctxt "unit: ounces"
+msgid "oz"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
