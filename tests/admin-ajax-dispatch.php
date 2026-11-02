@@ -114,27 +114,27 @@ function ajax_drive(array $query, bool $moderator = false): string
     return (string) ob_get_clean();
 }
 
-// Every action the endpoint answered before it was split into handlers.
+// Every action the endpoint answers; dead ones were removed in 7.1.
 $csrf = array(
     'resource_upload', 'save_admin_theme', 'save_sidebar_state', 'categories_order',
-    'field_categories_post', 'delete_field', 'add_field', 'fields_order', 'add_group', 'group_post',
+    'field_categories_post', 'delete_field', 'add_field', 'add_group', 'group_post',
     'delete_group', 'form_set_fields', 'migrate_loose_fields', 'form_submission_status',
     'form_submission_delete', 'form_submissions_purge', 'enable_category', 'delete_category',
     'edit_category_post', 'test_mail', 'test_mail_template', 'order_pages', 'market_refresh',
-    'market_install', 'market_update', 'market_detail', 'upgrade', 'reinstall_osclass', 'upgrade_db',
+    'market_install', 'market_update', 'market_detail', 'upgrade', 'upgrade_db',
     'location_stats', 'backup_status', 'market_install_dependency',
 );
 $open = array(
-    'bulk_actions', 'regions', 'cities', 'location_catalog', 'location', 'userajax', 'date_format',
+    'regions', 'cities', 'location_catalog', 'userajax', 'date_format',
     'media_list', 'runhook', 'category_edit_iframe', 'field_categories_iframe',
     'group_categories_iframe', 'custom', 'check_version', 'check_languages', 'check_themes',
-    'check_plugins', 'country_slug', 'region_slug', 'city_slug', 'location_search', 'location_impact',
+    'check_plugins', 'country_slug', 'region_slug', 'city_slug', 'location_search',
     'location_record', 'error_permissions', 'settings_index',
 );
 
 harness_section('every action still has a handler');
 $all = array_merge($csrf, $open);
-pin('57 actions, none added or lost', 57, count($all));
+pin('52 actions, none added or lost', 52, count($all));
 $registered = AjaxRegistry::actions();
 sort($registered);
 $expected = $all;
@@ -155,8 +155,7 @@ foreach ($open as $action) {
 
 harness_section('moderators');
 pin('the moderator allow-list is unchanged', array(
-    'items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state',
-    'resource_upload', 'media_list',
+    'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload', 'media_list',
 ), AjaxRegistry::MODERATOR_ACTIONS);
 pin('a moderator asking to upgrade is refused', '{"error":"You don\'t have the necessary permissions"}', ajax_drive(array('action' => 'upgrade'), true));
 pin('a moderator may run a hook', array(array('ajax_admin_ping', array())), (ajax_drive(array('action' => 'runhook', 'hook' => 'ping'), true) === '') ? $GLOBALS['hooks'] : null);
@@ -166,7 +165,9 @@ pin('an unknown action answers as before', '{"error":"no action defined"}', ajax
 pin('...and the session is still cleaned up', 1, $GLOBALS['sessionCleared']);
 pin('a missing action too', '{"error":"no action defined"}', ajax_drive(array()));
 pin('an array action is not an action', '{"error":"no action defined"}', ajax_drive(array('action' => array('regions'))));
-pin('bulk_actions answers nothing', '', ajax_drive(array('action' => 'bulk_actions')));
+foreach (array('bulk_actions', 'reinstall_osclass', 'location', 'location_impact', 'fields_order') as $gone) {
+    pin("$gone is no longer an action", '{"error":"no action defined"}', ajax_drive(array('action' => $gone)));
+}
 pin('a token-checked action without a token is refused', 'csrf refused', ajax_drive(array('action' => 'delete_field', 'id' => '1')));
 pin('...as is upgrade_db', 'csrf refused', ajax_drive(array('action' => 'upgrade_db')));
 pin('runhook with no hook says so', '{"error":"hook parameter not defined"}', ajax_drive(array('action' => 'runhook')));

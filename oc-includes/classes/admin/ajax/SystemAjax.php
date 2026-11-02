@@ -24,11 +24,6 @@ use User;
  */
 final class SystemAjax extends AjaxHandler
 {
-    /** Answers nothing; kept so the action is not reported as unknown. */
-    public function bulkActions(): void
-    {
-    }
-
     public function errorPermissions(): void
     {
         AjaxResponse::json(array('error' => __("You don't have the necessary permissions")));

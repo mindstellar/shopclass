@@ -31,9 +31,7 @@ $ajax = $body(mindstellar\admin\ajax\UpdateAjax::class, 'replaceFiles');
 pin('the admin update replaces the files', true, str_contains($ajax, '->doUpgrade()'));
 pin('the admin update does not run the database step', false, str_contains($ajax, 'upgradeDB'));
 pin('the admin update sends the screen to the database page', true, str_contains($ajax, "'?page=upgrade'"));
-foreach (['upgrade', 'reinstall'] as $action) {
-    pin("$action goes through replaceFiles", true, str_contains($body(mindstellar\admin\ajax\UpdateAjax::class, $action), 'self::replaceFiles('));
-}
+pin('upgrade goes through replaceFiles', true, str_contains($body(mindstellar\admin\ajax\UpdateAjax::class, 'upgrade'), 'self::replaceFiles('));
 
 $screen = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/upgrade.php');
 pin('the update screen follows next', true, str_contains($screen, 'window.location.assign(json.next)'));

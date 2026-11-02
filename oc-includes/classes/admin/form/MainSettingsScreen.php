@@ -57,9 +57,11 @@ final class MainSettingsScreen extends SettingsScreen
         $shop = osc_is_shop_mode();
         $form = CoreSettings::page(self::PAGE_ID, __('General Settings'))
             // A changed channel offers different releases, so the saved answer is dropped and
-            // the next update check asks again.
+            // the next update check asks again. With an address lookup set up, older listings
+            // are queued for their map positions once per provider.
             ->onAfterSave(static function () {
                 osc_update_check_save('core', array('checked' => 0));
+                \mindstellar\listing\ListingGeocode::queueForNewProvider();
             });
 
         $form
@@ -113,7 +115,7 @@ final class MainSettingsScreen extends SettingsScreen
                 '4' => __('Thursday'),
                 '5' => __('Friday'),
                 '6' => __('Saturday'),
-            ))
+            ), __('For calendars in plugins and themes.'))
             ->select('timezone', __('Timezone'), self::timezones())
                 ->width('text')
             ->custom('date_time_formats', static function () {

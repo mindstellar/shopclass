@@ -40,7 +40,6 @@ class CAdminAppearance extends AdminSecBaseModel
         'add_post'             => 'addPost',
         'delete'               => 'deleteTheme',
         'widgets'              => 'widgets',
-        'add_widget'           => 'addWidgetForm',
         'edit_widget'          => 'editWidgetForm',
         'delete_widget'        => 'deleteWidget',
         'edit_widget_post'     => 'editWidgetPost',
@@ -197,14 +196,6 @@ class CAdminAppearance extends AdminSecBaseModel
         $this->_exportVariableToView('info', $info);
 
         $this->doView('appearance/widgets.php');
-    }
-
-    /**
-     * The form for a new widget.
-     */
-    private function addWidgetForm(): void
-    {
-        $this->doView('appearance/add_widget.php');
     }
 
     /**

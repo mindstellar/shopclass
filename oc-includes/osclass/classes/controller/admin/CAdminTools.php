@@ -45,7 +45,6 @@ class CAdminTools extends AdminSecBaseModel
     /** Each action and the method that answers it; any other action goes to systemInfo(). */
     private const ACTIONS = array(
         'import'             => 'importMoved',
-        'import_post'        => 'uploadBackup',
         'backup_upload'      => 'uploadBackup',
         'category'           => 'categoryMoved',
         'category_post'      => 'recountCategories',
@@ -57,12 +56,7 @@ class CAdminTools extends AdminSecBaseModel
         'jobs'               => 'movedToSystemInfo',
         'cache_clear'        => 'clearCache',
         'backup'             => 'backupScreen',
-        'backup_post'        => 'backupScreen',
         'backup_start'       => 'startBackup',
-        'backup-sql'         => 'startBackup',
-        'backup-sql_file'    => 'startBackup',
-        'backup-zip'         => 'startBackup',
-        'backup-zip_file'    => 'startBackup',
         'backup_cancel'      => 'cancelBackup',
         'backup_download'    => 'downloadBackup',
         'backup_delete'      => 'deleteBackup',
@@ -80,7 +74,6 @@ class CAdminTools extends AdminSecBaseModel
         'logs_settings_post' => 'logSettingsSave',
         'logs_clear'         => 'clearLogs',
         'database'           => 'databaseMoved',
-        'system_info'        => 'systemInfo',
         'system-info'        => 'systemInfo',
     );
 
@@ -132,7 +125,7 @@ class CAdminTools extends AdminSecBaseModel
      */
     private function uploadBackup(): void
     {
-        $this->backupUpload($this->action === 'import_post' ? 'sql' : 'backup_file');
+        $this->backupUpload('backup_file');
     }
 
     /**
@@ -797,7 +790,7 @@ class CAdminTools extends AdminSecBaseModel
     }
 
     /**
-     * Start a backup from the form, or from an old Tools URL that made one.
+     * Start a backup from the form.
      *
      * @return void
      */
@@ -807,17 +800,10 @@ class CAdminTools extends AdminSecBaseModel
             return;
         }
         osc_csrf_check();
-        $aliases = array(
-            'backup-sql'      => array('database', 'server'),
-            'backup-sql_file' => array('database', 'download'),
-            'backup-zip'      => array('files', 'server'),
-            'backup-zip_file' => array('files', 'download'),
-        );
-        list($what, $where) = $aliases[$this->action] ?? array(
+        $error = BackupService::startBackup(
             (string) Params::getParamEnum('what', BackupService::WHAT, ''),
-            (string) Params::getParamEnum('where', BackupService::WHERE, ''),
+            (string) Params::getParamEnum('where', BackupService::WHERE, '')
         );
-        $error = BackupService::startBackup($what, $where);
         if ($error !== '') {
             osc_add_flash_error_message(osc_esc_html($error), 'admin');
         }

@@ -71,13 +71,35 @@ final class ListingGeocode
 
     /**
      * Queue the lookup of every listing with a street address and no map position, when a
-     * geocode provider is set up.
+     * geocode provider is set up. Saving General Settings calls it; a run already waiting is kept.
      *
      * @return bool whether the lookup is now queued or running
      */
     public static function queueExisting(): bool
     {
-        return Geocoder::active() !== null && osc_job_ensure(self::BACKFILL, ['after' => 0]);
+        return Geocoder::active() !== null
+            && osc_job_ensure(self::BACKFILL, ['after' => 0], ['unique_key' => self::BACKFILL, 'keep_existing' => true]);
+    }
+
+    /**
+     * Queue the older listings once per lookup provider, so saving settings again does not pay
+     * for the same failed addresses twice.
+     *
+     * @return bool whether a lookup was queued now
+     */
+    public static function queueForNewProvider(): bool
+    {
+        $active = Geocoder::active();
+        if ($active === null) {
+            return false;
+        }
+        $id = $active->provider()->id();
+        if (osc_kv_get('geocode', 'backfill_provider') === $id) {
+            return false;
+        }
+        osc_kv_set('geocode', 'backfill_provider', $id);
+
+        return self::queueExisting();
     }
 
     /**

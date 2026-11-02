@@ -116,6 +116,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - A language package can set its thousands separator and decimal point.
 - Themes that turn off core's styles should style the new pay step classes (`oe-bill-*`, `oe-callout`, `oe-copy*`).
 - Appearance → Themes says when you have unpublished Customise changes.
+- Unused admin actions are gone: ajax `bulk_actions`, `reinstall_osclass`, `location`, `location_impact`, `fields_order`; Appearance `add_widget`; Tools `import_post`, `backup_post`, `backup-sql*`, `backup-zip*`, `system_info`.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.
@@ -152,3 +153,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Titles keep their punctuation, and mail subjects no longer show `&amp;`.
 - The order number keeps the prefix it was placed with.
 - Sign-up no longer says an activation mail was sent when mail is blocked.
+- The memory limit at start-up is only raised, never cut; a host's 1G or unlimited setting stays.
+- An admin can edit a rated comment down to no text, on the screen and in the API.
+- Options passed to `Sanitize` string, float, email and encoded methods now reach the filter.
+- Saving General Settings with an address lookup set up queues map positions for older listings.
+- S3 storage errors and skipped mail attachments are written to the error log.

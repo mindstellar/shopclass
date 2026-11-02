@@ -49,7 +49,7 @@ class Sanitize
     public function string($value, ...$options)
     {
         // utf8 safe sanitize
-        $options = array_merge(
+        $options = self::filterOptions(
             [
                 'flags' => FILTER_FLAG_NO_ENCODE_QUOTES,
                 'options' => [
@@ -74,7 +74,7 @@ class Sanitize
     {
         // sanitize price to float up to 2 decimal places, merge with default options
         if ($value) {
-            $options = array_merge(
+            $options = self::filterOptions(
                 [
                     'flags'   => FILTER_FLAG_ALLOW_FRACTION,
                     'options' => [
@@ -249,14 +249,13 @@ class Sanitize
      */
     public function float($value, ...$options)
     {
-        $options = array_merge(
+        $options = self::filterOptions(
             [
                 'flags'   => FILTER_FLAG_ALLOW_FRACTION,
                 'options' => [
                     'min_range' => 0,
                     'max_range' => 65535,
                 ],
-
             ],
             $options
         );
@@ -288,12 +287,7 @@ class Sanitize
      */
     public function encoded($value, ...$options)
     {
-        $options = array_merge(
-            [
-                'default' => '',
-            ],
-            $options
-        );
+        $options = self::filterOptions(['options' => ['default' => '']], $options);
 
         return filter_var($value, FILTER_SANITIZE_ENCODED, $options);
     }
@@ -322,12 +316,7 @@ class Sanitize
      */
     public function email($value, ...$options)
     {
-        $options = array_merge(
-            [
-                'default' => '',
-            ],
-            $options
-        );
+        $options = self::filterOptions(['options' => ['default' => '']], $options);
 
         return filter_var($value, FILTER_SANITIZE_EMAIL, $options);
     }
@@ -510,6 +499,38 @@ class Sanitize
         }
 
         return self::purifier()->purify($value);
+    }
+
+    /**
+     * The filter_var() options: each array a caller passed is merged over the defaults, its
+     * `flags` replacing them and its `options` (and a top-level `default`) added to them.
+     * A bare int is taken as flags.
+     *
+     * @param array<string,mixed> $defaults
+     * @param array<int,mixed>    $given    the method's variadic options
+     *
+     * @return array<string,mixed>
+     */
+    private static function filterOptions(array $defaults, array $given): array
+    {
+        foreach ($given as $set) {
+            if (is_int($set)) {
+                $set = ['flags' => $set];
+            }
+            if (!is_array($set)) {
+                continue;
+            }
+            if (isset($set['flags'])) {
+                $defaults['flags'] = (int) $set['flags'];
+            }
+            $extra = is_array($set['options'] ?? null) ? $set['options'] : [];
+            if (array_key_exists('default', $set)) {
+                $extra['default'] = $set['default'];
+            }
+            $defaults['options'] = array_merge($defaults['options'] ?? [], $extra);
+        }
+
+        return $defaults;
     }
 
     /**

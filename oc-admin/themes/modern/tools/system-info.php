@@ -102,15 +102,6 @@ osc_admin_page(array(
     'help'    => __('A checked view of your site: what needs doing, background jobs, security, the cache, the database, and the server it runs on.'),
 ));
 
-// Backup and restore left the old Database page; links to those parts follow. Remove in 7.0.
-osc_add_hook('admin_footer', static function () { ?>
-    <script>
-        if (location.hash === '#backup' || location.hash === '#restore') {
-            location.replace(<?php echo json_encode(osc_admin_base_url(true) . '?page=tools&action=backup'); ?> + location.hash);
-        }
-    </script>
-<?php });
-
 osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('System info')); ?>
     <div id="system-info" class="sysinfo">

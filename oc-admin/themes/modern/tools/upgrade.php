@@ -198,15 +198,6 @@ osc_add_hook('admin_footer', static function () use ($selfUpdateOff, $isAvailabl
     <?php
 });
 
-// The files backup moved to Tools > Backup and restore; old links to it follow. Remove in 7.0.
-osc_add_hook('admin_footer', static function () { ?>
-    <script>
-        if (location.hash === '#backup-files') {
-            location.replace(<?php echo json_encode(osc_admin_base_url(true) . '?page=tools&action=backup'); ?>);
-        }
-    </script>
-<?php });
-
 /**
  * Filter callback for `render-wrapper`: the CSS class the page wrapper renders with.
  *

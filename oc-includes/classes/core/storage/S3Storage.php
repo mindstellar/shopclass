@@ -11,6 +11,7 @@
 
 namespace mindstellar\storage;
 
+use AsyncAws\S3\Exception\NoSuchKeyException;
 use AsyncAws\S3\Input\GetObjectRequest;
 use AsyncAws\S3\S3Client;
 use DateTimeImmutable;
@@ -140,6 +141,7 @@ class S3Storage implements StorageAdapter
 
             return true;
         } catch (Throwable $e) {
+            self::logError('put', $e);
             return false;
         } finally {
             if (is_resource($handle)) {
@@ -163,6 +165,7 @@ class S3Storage implements StorageAdapter
                 'Key' => $key,
             ])->getBody()->getContentAsString();
         } catch (Throwable $e) {
+            self::logError('get', $e);
             return false;
         }
     }
@@ -182,6 +185,7 @@ class S3Storage implements StorageAdapter
                 'Key' => $key,
             ])->isSuccess();
         } catch (Throwable $e) {
+            self::logError('exists', $e);
             return false;
         }
     }
@@ -206,6 +210,7 @@ class S3Storage implements StorageAdapter
 
             return true;
         } catch (Throwable $e) {
+            self::logError('delete', $e);
             return false;
         }
     }
@@ -263,6 +268,7 @@ class S3Storage implements StorageAdapter
 
             return $this->client()->presign($input, new DateTimeImmutable('+' . $this->signedTtl . ' seconds'));
         } catch (Throwable $e) {
+            self::logError('presignedUrl', $e);
             return '';
         }
     }
@@ -579,6 +585,7 @@ class S3Storage implements StorageAdapter
 
             return $rows;
         } catch (Throwable $e) {
+            self::logError('list', $e);
             $this->timedOut = self::isTimeout($e);
 
             return false;
@@ -627,6 +634,7 @@ class S3Storage implements StorageAdapter
                     $ok = false;
                 }
             } catch (Throwable $e) {
+                self::logError('deleteMany', $e);
                 $ok = false;
             }
         }
@@ -655,6 +663,7 @@ class S3Storage implements StorageAdapter
 
             return $this->client()->presign($input, new DateTimeImmutable('+' . max(60, min(3600, $ttl)) . ' seconds'));
         } catch (Throwable $e) {
+            self::logError('downloadUrl', $e);
             return '';
         }
     }
@@ -744,6 +753,16 @@ class S3Storage implements StorageAdapter
         $line = (string) preg_replace('#(https?://[^\s?]+)\?\S*#', '$1', $line);
 
         return mb_substr($line, 0, 200);
+    }
+
+    /**
+     * Writes a failed call to the PHP error log; a missing key on a read is not an error.
+     */
+    private static function logError(string $operation, Throwable $e): void
+    {
+        if (!$e instanceof NoSuchKeyException) {
+            error_log('S3Storage::' . $operation . ': ' . self::cleanError($e));
+        }
     }
 
     /**

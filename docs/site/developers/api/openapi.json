@@ -58182,8 +58182,9 @@
                     },
                     "body": {
                         "type": "string",
-                        "minLength": 1,
-                        "maxLength": 5000
+                        "minLength": 0,
+                        "maxLength": 5000,
+                        "description": "Needed unless the comment has a rating."
                     },
                     "author_name": {
                         "type": "string",
