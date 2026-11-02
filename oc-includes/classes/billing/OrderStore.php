@@ -16,8 +16,6 @@ use mindstellar\base\Model;
 use mindstellar\billing\event\OrderCancelled;
 use mindstellar\billing\event\OrderDelivered;
 use mindstellar\billing\event\OrderProcessing;
-use mindstellar\billing\event\OrderShipped;
-use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\boot\CoreServices;
 use mindstellar\cache\CacheGroup;
 use mindstellar\currency\CurrencyCode;
@@ -579,9 +577,9 @@ final class OrderStore extends Model
     }
 
     /**
-     * A paid or processing goods order was sent, or a cash on delivery one before it is paid. With no URL
-     * given, a `TrackingUrlResolving` listener may supply one, kept only when it
-     * is https. Fires `OrderShipped` once the write commits.
+     * Send everything still open of a paid or processing goods order, or of a cash on delivery
+     * one before it is paid, in one parcel; see Shipments::add(). Fires `ShipmentAdded` and
+     * `OrderShipped` once the write commits.
      *
      * @param int    $id
      * @param string $carrier  Up to 100 characters
@@ -592,41 +590,12 @@ final class OrderStore extends Model
      */
     public static function ship(int $id, string $carrier, string $tracking, string $url): bool
     {
-        $order = self::find($id);
-        if ($order === null || !$order->canShip()) {
-            return false;
-        }
-        $carrier  = mb_substr(trim($carrier), 0, 100, 'UTF-8');
-        $tracking = mb_substr(trim($tracking), 0, 100, 'UTF-8');
-        $url      = trim($url);
-        if ($url === '') {
-            $found = new TrackingUrlResolving($carrier, $tracking);
-            CoreServices::dispatcher()->dispatch($found);
-            $url = $found->url();
-        }
-        $at     = date('Y-m-d H:i:s');
-        $userId = self::transition($id, $order->getStatus(), Order::STATUS_SHIPPED, static function (array $meta) use ($carrier, $tracking, $url, $at): array {
-            $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
-            $meta['_shipping'] = array(
-                'carrier'    => $carrier,
-                'tracking'   => $tracking,
-                'url'        => mb_substr($url, 0, 500, 'UTF-8'),
-                'shipped_at' => $at,
-            ) + $shipping;
-
-            return $meta;
-        });
-        if ($userId === null) {
-            return false;
-        }
-        Db::afterCommit(static fn () => CoreServices::dispatcher()->dispatch(new OrderShipped($id, $userId)));
-
-        return true;
+        return Shipments::add($id, null, $carrier, $tracking, $url) !== null;
     }
 
     /**
-     * Correct the carrier, tracking number and link of an order already shipped. Only the
-     * `_shipping` meta changes; the status stays.
+     * Correct the carrier, tracking number and link of a shipped order's newest parcel. The
+     * status stays.
      *
      * @param int    $id
      * @param string $carrier  Up to 100 characters
@@ -637,16 +606,7 @@ final class OrderStore extends Model
      */
     public static function setTracking(int $id, string $carrier, string $tracking, string $url): bool
     {
-        $carrier  = mb_substr(trim($carrier), 0, 100, 'UTF-8');
-        $tracking = mb_substr(trim($tracking), 0, 100, 'UTF-8');
-        $url      = mb_substr(trim($url), 0, 500, 'UTF-8');
-
-        return self::changeMeta($id, static function (array $meta) use ($carrier, $tracking, $url): array {
-            $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
-            $meta['_shipping'] = array('carrier' => $carrier, 'tracking' => $tracking, 'url' => $url) + $shipping;
-
-            return $meta;
-        }, array(Order::STATUS_SHIPPED));
+        return Shipments::setTracking($id, null, $carrier, $tracking, $url);
     }
 
     /**
