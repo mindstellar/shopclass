@@ -14,6 +14,12 @@ The list shows how many listings use each currency, so you can see what is safe
 to remove. Deleting a currency that listings are priced in leaves those listings
 without a valid one. Check the count first.
 
+Each currency has a **Decimals** number (0 to 4), filled in from the ISO 4217 list when you add
+it: 0 for yen or won, 3 for dinar, 2 for most others. Prices in that currency show and save with
+that many decimals everywhere: listings, cart, orders, receipts, e-mails and the API. A whole
+amount still drops its decimals ("$12", not "$12.00"). The language's own decimal setting no
+longer changes money.
+
 A single-country site should offer exactly one. Every extra currency is another
 decision on the publish form and another thing to compare in search results.
 

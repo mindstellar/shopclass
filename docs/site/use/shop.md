@@ -98,14 +98,14 @@ Each one is free, works on plain shared hosting and does nothing until you set i
 
 | Plugin | What it adds |
 |---|---|
-| **Shipping** | Delivery zones by country, state or PIN code, Standard and Express, weight prices, free delivery, delivery dates and tracking links. |
+| **Shipping** | Delivery zones by country, state or postcode, Standard and Express, weight prices, free delivery, delivery dates and tracking links. |
 | **Tax** | Tax lines from a default, country and category rates, prices with or without tax, and a tax invoice. |
 | **Tax GST** | India GST on top of Tax: CGST and SGST in your state, IGST elsewhere, GSTIN and HSN on the invoice. |
 | **Promotions** | Coupon codes, automatic discounts, a first-order offer and use limits. |
 | **Shop emails** | A newsletter sign-up list with double opt-in and CSV export, and one reminder for a signed-in shopper's left cart. |
 | **Analytics** | Google Analytics 4 and Meta Pixel shop events, with a consent bar. Nothing loads before the visitor accepts. |
 | **Digital Goods** | Downloadable files for a product, with links in the receipt. |
-| **Stripe**, **PayPal**, **Razorpay** | Card and wallet payments. Buyers pay on the provider's page. |
+| **Stripe**, **PayPal**, **Razorpay** | Card and wallet payments. Buyers pay on the provider's page. The installer offers all three; none is ticked by default. |
 
 ## What shoppers see in their account
 
@@ -116,7 +116,7 @@ Digital Goods on, a Downloads entry lists what they bought. An admin signed in s
 
 **Addresses** keeps up to 10 delivery addresses. The default one is also the account's own
 address. At checkout the saved addresses show as cards with the default chosen; "Use a new
-address" opens the form, and "Save this address" (ticked) adds it to the book. The first address
+address" opens the form, and "Save this address" (ticked) adds it to the book. The form follows the country: it asks for a state or county only where people write one, names the postcode field as that country does (Postcode, ZIP code, PIN code) and checks its shape. Phone numbers may start with `+` and a country code. The first address
 saved becomes the default. A classifieds site has no Addresses page.
 
 ## 6. Customise

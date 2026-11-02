@@ -424,6 +424,21 @@ account's own address. At most 10 are kept.
 | URL | `osc_user_addresses_url()` |
 | Nav entry | "Addresses", class `opt_addresses`. Shown in shop mode only (`osc_address_book_enabled()`); elsewhere the page is a 404. |
 
+### Address formats
+
+Each country has its own rules in `mindstellar\user\AddressFormat`: which of `line1`, `line2`,
+`city`, `state` and `postcode` show, in what order, which are required, the state and postcode
+labels, and a postcode pattern. `name`, `phone`, `line1`, `city` and `country` are always required;
+an unknown country gets state and postcode as optional fields. The server applies these rules on
+the account page, at checkout and in the API. A phone is an optional `+`, then 4 to 15 digits with
+spaces and `- . ( ) /` allowed.
+
+`osc_address_formats()` returns the map for the site's countries, labels translated.
+`osc_address_form_script()` prints it once as JSON (`#osc-address-formats`) with
+`address-form.js`, which reorders, hides, relabels and checks the fields when the country changes.
+Mark the form `data-address-form` and each field's wrapper `data-address-field="<name>"`; fields
+are found by `name`. The page works without the script.
+
 A theme that ships its own `user-addresses.php` gets these view variables:
 
 | Variable | Holds |

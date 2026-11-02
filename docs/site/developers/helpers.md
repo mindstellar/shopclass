@@ -558,7 +558,7 @@ Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_count_items()` | Gets number of items in current array items |
 | `osc_count_latest_items($total_latest_items = null, $options = array())` | Gets number of latest items |
 | `osc_delete_comment_url()` | Gets  link to delete the current comment of current item |
-| `osc_format_price($price, $symbol = null)` | Formats the price using the appropiate currency. |
+| `osc_format_price($price, $symbol = null, $currency = null)` | Formats the price using the appropiate currency. |
 | `osc_get_item_meta()` | Gets item meta fields |
 | `osc_get_item_resources()` | Gets current resource of current array resources of current item |
 | `osc_has_custom_items()` | Gets next item of custom items |
@@ -1595,7 +1595,7 @@ Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_package_installs_disabled()` | Whether installing/updating market packages (plugins/themes) is disabled for this installation. Distinct from osc_self_update_disabled(): that flag stops core from overwriting itself on an immutable deployment. Packages are not core — on a deployment where oc-content is a persistent volume, a package write survives a redeploy just fine, so this defaults to enabled and is only set where the site owner has no persistent oc-content to write into. |
 | `osc_phpmailer_limit_smtp_wait($mail)` | Apply osc_phpmailer_smtp_timeout_seconds() to a PHPMailer instance and to the SMTP object it will use on send(). |
 | `osc_phpmailer_smtp_timeout_seconds()` | Seconds PHPMailer may wait on one SMTP connect or command. |
-| `osc_prepare_price($price)` | Format a stored integer price for display. |
+| `osc_prepare_price($price, $currency = null)` | Format a stored integer price for display. |
 | `osc_prune_array(&$input)` | Drop null and empty elements from an array in place, recursively. |
 | `osc_redirect_to($url, $code = null)` | Flush pending flash messages, send a Location header and end the request. |
 | `osc_replace_double_slash($path)` | replace double slash with single slash |

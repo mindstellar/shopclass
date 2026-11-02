@@ -1145,7 +1145,7 @@ function _osc_product_alert_criteria(array $product): array
     }
     if ($product['below'] !== null) {
         $currency       = is_array($item) ? Currency::getInstance()->findByPrimaryKey($item['fk_c_currency_code'] ?? '') : false;
-        $parts['below'] = array('label' => _m('Below'), 'value' => osc_format_price($product['below'], is_array($currency) ? (string) $currency['s_description'] : ''));
+        $parts['below'] = array('label' => _m('Below'), 'value' => osc_format_price($product['below'], is_array($currency) ? (string) $currency['s_description'] : '', is_array($currency) ? (string) $currency['pk_c_code'] : null));
     }
 
     return $parts;
