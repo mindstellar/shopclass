@@ -11,7 +11,7 @@ SET NAMES 'utf8mb4';
 -- it must go through the model that performs them. There, RESTRICT is the safety
 -- net: it turns a forgotten cascade into a loud failure instead of orphaned files.
 --
--- t_billing_ledger, t_billing_order and t_billing_order_line deliberately carry no foreign key at all, for
+-- t_billing_ledger, t_billing_order, t_billing_order_line and t_billing_document deliberately carry no foreign key at all, for
 -- the reason given in the note above each of them. t_resource has none either: its owner
 -- can be a listing, a user, a page or a plugin's record, so the owner's model removes it.
 
@@ -882,6 +882,25 @@ CREATE TABLE /*TABLE_PREFIX*/t_billing_order_line (
         PRIMARY KEY (pk_i_id),
         INDEX idx_order (fk_i_order_id),
         INDEX idx_item (fk_i_item_id)
+) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
+
+-- Numbered invoices and credit notes. s_data freezes what the document says, so it never
+-- changes after issue: rows are only inserted. No foreign key, like the orders: the legal
+-- record outlives the order and the account.
+CREATE TABLE /*TABLE_PREFIX*/t_billing_document (
+    pk_i_id INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    s_type VARCHAR(16) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    s_number VARCHAR(40) NOT NULL,
+    dt_date DATETIME NOT NULL,
+    fk_i_order_id INT UNSIGNED NOT NULL,
+    i_total BIGINT NOT NULL,
+    s_currency CHAR(3) NOT NULL,
+    s_data MEDIUMTEXT NOT NULL,
+
+        PRIMARY KEY (pk_i_id),
+        UNIQUE KEY uq_type_number (s_type, s_number),
+        INDEX idx_date (dt_date),
+        INDEX idx_order (fk_i_order_id)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 -- What a user is entitled to: a quantity, a duration, or both, per feature. Cascades
