@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.13
+
+### Security
+- TinyMCE is updated to 8.9.3, which fixes an XSS in its media plugin.
+
 ## Shopclass 7.0.12
 
 ### Fixed
