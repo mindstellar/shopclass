@@ -158,6 +158,71 @@ final class Invoices
     }
 
     /**
+     * Compose a credit note for part of an order, before the refund's transaction. Unlike
+     * remainderDraft() a composing failure is thrown, so the refund stops before any money moves.
+     *
+     * @param array<int,int>|null $lines   Item line id => units; null is every unit not refunded yet
+     * @param array<int,int>      $restock Item line id => units put back in stock
+     *
+     * @return array<string,mixed>|null null when there is no invoice, or the amount or a line is
+     *                                  more than is left to refund
+     * @throws Throwable
+     */
+    public static function partDraft(Order $order, int $amount, ?array $lines, string $reason, array $restock): ?array
+    {
+        return self::draftNote($order->getId(), $amount, $lines, $reason, null, $restock);
+    }
+
+    /**
+     * A draft with the provider's refund id set, once the provider has answered.
+     *
+     * @param array<string,mixed> $draft
+     *
+     * @return array<string,mixed>
+     */
+    public static function withProviderRef(array $draft, ?string $providerRef): array
+    {
+        $draft['data']['refund']['provider_ref'] = $providerRef !== null && $providerRef !== '' ? Receipts::plain($providerRef, 200) : null;
+
+        return $draft;
+    }
+
+    /**
+     * What returning these units refunds: their price plus the tax added on top in the
+     * invoice's proportion, rounded to the currency. Null when the order has no invoice.
+     *
+     * @param array<int,int> $lines Item line id => units
+     */
+    public static function linesAmount(int $orderId, array $lines): ?int
+    {
+        $invoice = DocumentStore::invoiceOf($orderId);
+        if ($invoice === null) {
+            return null;
+        }
+        $base  = 0;
+        $value = 0;
+        foreach ((array) ($invoice->data['lines'] ?? array()) as $line) {
+            if (!is_array($line)) {
+                continue;
+            }
+            $kind = (string) ($line['kind'] ?? '');
+            if ($kind !== OrderLineStore::KIND_TAX) {
+                $base += (int) ($line['amount'] ?? 0);
+            }
+            $id = (int) ($line['line_id'] ?? 0);
+            if ($kind === OrderLineStore::KIND_ITEM && isset($lines[$id])) {
+                $value += (int) ($line['unit'] ?? 0) * max(0, (int) $lines[$id]);
+            }
+        }
+        if ($base < 1) {
+            return $value;
+        }
+        $decimals = (int) ($invoice->data['currency']['decimals'] ?? CurrencyService::make()->decimals($invoice->currency));
+
+        return self::roundTo($value * $invoice->total / $base, $decimals);
+    }
+
+    /**
      * Store a drafted credit note inside the caller's transaction, after the order row is locked.
      *
      * @param array<string,mixed> $draft From remainderDraft()

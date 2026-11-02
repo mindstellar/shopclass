@@ -453,6 +453,17 @@ final class Billing
                 : __('This payment method cannot refund from here'));
         }
 
+        if (DocumentStore::refundedTotal($fresh->getId()) > 0) {
+            // Part is already refunded, so only the rest may go back through the provider.
+            if (!$gateway instanceof PartialRefundableGateway || !$fresh->isGoods()) {
+                return CallbackResult::ignored(__('Part of this order was already refunded. Refund the rest in the payment provider\'s dashboard, then record it.'));
+            }
+            $result           = self::refundPartLocked($fresh->getId(), 0, null, '', false, true);
+            $providerAccepted = $result->getOutcome() !== CallbackResult::OUTCOME_IGNORED;
+
+            return $result;
+        }
+
         // Marked before the call: if the provider takes the refund and anything after
         // fails, even a crash mid-call, a later press cannot send a second one.
         if (!OrderStore::markRefundRequested($fresh->getId())) {
@@ -540,6 +551,235 @@ final class Billing
         }
 
         return $result;
+    }
+
+    /**
+     * Refund part of a paid goods order with a credit note: an amount, or units of its item lines.
+     * Runs under the same per-order lock as refundThroughGateway(). When the notes reach the paid
+     * amount the order moves to refunded and gives back the stock it still holds, as refund() does.
+     *
+     * @param Order          $order
+     * @param int            $amount     Micros; 0 takes the value of $lines with their tax share
+     * @param array<int,int> $lines      Item line id => units refunded
+     * @param string         $reason     Plain text, printed on the credit note
+     * @param bool           $restock    Put the refunded units back in stock
+     * @param bool           $viaGateway Have the order's gateway send the money back; else only record it
+     *
+     * @return CallbackResult refunded(), or refundPending() from the provider, once the credit note
+     *                        is issued; otherwise ignored() with a reason the admin can read
+     */
+    public static function refundPart(Order $order, int $amount, array $lines, string $reason, bool $restock, bool $viaGateway): CallbackResult
+    {
+        $clean = array();
+        foreach ($lines as $lineId => $qty) {
+            if (is_numeric($lineId) && (int) $lineId > 0 && is_numeric($qty) && (int) $qty > 0) {
+                $clean[(int) $lineId] = (int) $qty;
+            }
+        }
+
+        return Db::withNamedLock(
+            self::refundLockName($order->getId()),
+            2,
+            static fn (): CallbackResult => self::refundPartLocked($order->getId(), $amount, $clean, $reason, $restock, $viaGateway),
+            static fn (): CallbackResult => CallbackResult::ignored(__('A refund for this order is already running'))
+        );
+    }
+
+    /**
+     * The order's gateway when it can refund part of the order itself: a paid goods order with no
+     * full refund sent, and a configured gateway that implements PartialRefundableGateway.
+     *
+     * @param Order $order
+     *
+     * @return PartialRefundableGateway|null
+     */
+    public static function partRefundableGateway(Order $order): ?PartialRefundableGateway
+    {
+        if (!$order->isGoods()) {
+            return null;
+        }
+        $gateway = self::refundableGateway($order);
+
+        return $gateway instanceof PartialRefundableGateway ? $gateway : null;
+    }
+
+    /**
+     * The body of refundPart(), run while the order's lock is held.
+     *
+     * @param array<int,int>|null $lines Null refunds every unit and all money not refunded yet
+     */
+    private static function refundPartLocked(int $orderId, int $amount, ?array $lines, string $reason, bool $restock, bool $viaGateway): CallbackResult
+    {
+        $order = OrderStore::find($orderId);
+        if ($order === null) {
+            return CallbackResult::ignored(__('That order no longer exists'));
+        }
+        if (!$order->isPaid()) {
+            return CallbackResult::ignored(__('Only a paid order can be refunded'));
+        }
+        if (!$order->isGoods()) {
+            return CallbackResult::ignored(__('Only a shop order can be refunded in part'));
+        }
+        $invoice = DocumentStore::invoiceOf($orderId);
+        if ($invoice === null) {
+            return CallbackResult::ignored(__('This order has no invoice, so it can only be refunded in full'));
+        }
+        $left = $invoice->total - DocumentStore::refundedTotal($orderId);
+        if ($lines === null) {
+            $amount = $left;
+        } elseif ($amount < 1 && $lines !== array()) {
+            $amount = min($left, (int) Invoices::linesAmount($orderId, $lines));
+        }
+        if ($amount < 1) {
+            return CallbackResult::ignored(__('Enter an amount or choose what to refund'));
+        }
+        if ($amount > $left) {
+            return CallbackResult::ignored(sprintf(__('At most %s is left to refund'), \mindstellar\currency\CurrencyService::make()->money($left, $order->getCurrency())));
+        }
+
+        $gateway = null;
+        if ($viaGateway) {
+            $gateway = self::partRefundableGateway($order);
+            if ($gateway === null) {
+                return CallbackResult::ignored(__('This payment method cannot refund part of an order from here'));
+            }
+        }
+
+        $restocked = array();
+        if ($restock && $lines !== null) {
+            $held = OrderStock::held($order);
+            foreach ($lines as $lineId => $qty) {
+                $n = min($qty, $held[$lineId] ?? 0);
+                if ($n > 0) {
+                    $restocked[$lineId] = $n;
+                }
+            }
+        }
+
+        try {
+            $draft = Invoices::partDraft($order, $amount, $lines, $reason, $restocked);
+        } catch (Throwable $e) {
+            error_log(sprintf('Billing: credit note for order #%d threw %s (code %s)', $orderId, get_class($e), (string) $e->getCode()));
+
+            return CallbackResult::ignored(__('The credit note could not be made. Nothing was refunded.'));
+        }
+        if ($draft === null) {
+            return CallbackResult::ignored(__('More units were chosen than are left to refund'));
+        }
+
+        $result = CallbackResult::refunded($orderId);
+        if ($gateway !== null) {
+            $n = OrderStore::partRefundKey($orderId, $amount, count(DocumentStore::forOrder($orderId)) - 1);
+            if ($n === null) {
+                return CallbackResult::ignored(__('The refund could not be started. Try again.'));
+            }
+            try {
+                $result = $gateway->refundPart($order, $amount, 'order:' . $orderId . ':refund:' . $n);
+            } catch (Throwable $e) {
+                // The key stays open: a retry of the same amount sends the same key, so it is not paid twice.
+                error_log(sprintf('Billing: part refund of order #%d through %s threw %s (code %s)', $orderId, $order->getGateway(), get_class($e), (string) $e->getCode()));
+                self::log('refund failed', $order, get_class($e));
+
+                return CallbackResult::ignored(__('The payment provider returned an error'));
+            }
+            if ($result->getOutcome() === CallbackResult::OUTCOME_IGNORED) {
+                OrderStore::partRefundDone($orderId);
+                self::log('refund refused', $order, $result->getMessage());
+
+                return $result;
+            }
+            if (!in_array($result->getOutcome(), array(CallbackResult::OUTCOME_REFUNDED, CallbackResult::OUTCOME_PENDING), true) || $result->getOrderId() !== $orderId) {
+                self::log('refund mismatch', $order, $result->getExternalRef());
+
+                return CallbackResult::ignored(__('The payment provider gave an answer that does not match this order'));
+            }
+            $draft = Invoices::withProviderRef($draft, $result->getExternalRef());
+        }
+
+        return self::storePart($order, $draft, $lines, $restock, $result, $gateway !== null);
+    }
+
+    /**
+     * Store a part refund's credit note with its stock move, and close the order when the notes
+     * reach the paid amount. Composed once more when another note was stored since the draft.
+     *
+     * @param array<string,mixed> $draft From Invoices::partDraft()
+     * @param array<int,int>|null $lines
+     */
+    private static function storePart(Order $order, array $draft, ?array $lines, bool $restock, CallbackResult $result, bool $sent): CallbackResult
+    {
+        $orderId = $order->getId();
+        $closed  = false;
+        for ($try = 0; $try < 2; $try++) {
+            try {
+                $note = DocumentStore::atomic(static function () use ($draft, $lines, $restock, $order, &$closed) {
+                    $closed = false;
+                    $note   = Invoices::storeNote($draft);
+                    if (!$note instanceof Document) {
+                        return $note;
+                    }
+                    if ($lines !== null && $lines !== array()) {
+                        OrderStock::releaseLines($order->getId(), $lines, $restock);
+                    }
+                    OrderStore::partRefundDone($order->getId());
+                    if ((int) $draft['refunded'] + (int) $draft['amount'] >= $order->getAmount() && OrderStore::refund($order->getId())) {
+                        $closed = true;
+                        OrderStock::release($order->getId());
+                    }
+
+                    return $note;
+                });
+            } catch (Throwable $e) {
+                error_log(sprintf('Billing: part refund of order #%d could not be recorded: %s (code %s)', $orderId, get_class($e), (string) $e->getCode()));
+                self::log('refund unrecorded', $order, $result->getExternalRef());
+
+                return CallbackResult::ignored($sent
+                    ? __('Refunded at the provider but not recorded here. Record it with Refund part.')
+                    : __('The refund could not be recorded. Try again.'));
+            }
+            if ($note instanceof Document) {
+                break;
+            }
+            $draft = $note === false ? self::redraft($order, $draft, $lines, $restock) : null;
+            if ($draft === null) {
+                self::log('refund already recorded', $order, $result->getExternalRef());
+
+                return CallbackResult::ignored($sent
+                    ? __('Refunded at the provider, but the order had already been refunded here. Check the credit notes.')
+                    : __('This order was refunded meanwhile'));
+            }
+        }
+        if (!isset($note) || !$note instanceof Document) {
+            return CallbackResult::ignored(__('The refund could not be recorded. Try again.'));
+        }
+
+        self::log('part refunded', $order, $result->getExternalRef());
+        if ($closed) {
+            self::log('refunded', $order, $result->getExternalRef());
+            osc_run_hook('billing_order_refunded', $orderId, $order->getUserId(), $order->getCredits());
+        }
+
+        return $result;
+    }
+
+    /**
+     * Compose a part refund's note again, for the same amount, lines and provider ref.
+     *
+     * @param array<string,mixed> $draft
+     * @param array<int,int>|null $lines
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function redraft(Order $order, array $draft, ?array $lines, bool $restock): ?array
+    {
+        $refund = (array) ($draft['data']['refund'] ?? array());
+        try {
+            $again = Invoices::partDraft($order, (int) $draft['amount'], $lines, (string) ($refund['reason'] ?? ''), $restock ? (array) ($refund['restocked'] ?? array()) : array());
+        } catch (Throwable $e) {
+            return null;
+        }
+
+        return $again === null ? null : Invoices::withProviderRef($again, $refund['provider_ref'] ?? null);
     }
 
     /**
