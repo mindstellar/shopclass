@@ -1266,7 +1266,7 @@ function osc_reset_users()
  */
 const OSC_SHOPPER_PAGES = array(
     'user'    => array('hide' => array('items', 'alerts', 'api_access', 'api_access_post', 'pub_profile')),
-    'billing' => array('keep' => array('orders', 'receipt', 'cancel')),
+    'billing' => array('keep' => array('orders', 'receipt', 'document', 'cancel')),
     'messages' => array('keep' => array()),
 );
 

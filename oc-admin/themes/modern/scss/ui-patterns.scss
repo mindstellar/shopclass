@@ -346,6 +346,32 @@ table:has(> tbody > .osc-table-empty-row) > thead,
     align-items: center;
   }
 
+  // A field with its label shown inside the box, such as a date range. It grows into the
+  // room left on its row, so a wrapped row leaves no empty cell.
+  .osc-filter-field {
+    align-items: center;
+    border-inline-end: 1px solid var(--osc-rule);
+    display: flex;
+    flex: 1 1 10rem;
+
+    label {
+      color: var(--osc-ink-muted);
+      font-size: $font-size-label;
+      padding-inline-start: .75rem;
+      white-space: nowrap;
+    }
+
+    .form-control {
+      border-inline-end: 0;
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+  }
+
+  &:has(.osc-filter-field) .form-select {
+    flex: 1 1 auto;
+  }
+
   // Only the last control in the row keeps a square outer edge against the box.
   > :last-child {
     border-inline-end: 0;

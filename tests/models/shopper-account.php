@@ -227,6 +227,9 @@ $orders = $drive('TestShopperBilling', 'billing', 'orders');
 pin('orders renders', [null, 'user-billing-orders.php'], [$orders['redirect'], $orders['view']]);
 $receipt = $drive('TestShopperBilling', 'billing', 'receipt', ['id' => (string) $orderIds[0]]);
 check('a receipt renders', $receipt['redirect'] === null && str_contains($receipt['drawn'], osc_billing_order_number($orderIds[0])));
+$invoice = \mindstellar\billing\Invoices::issue(OrderStore::find($orderIds[0]));
+$doc     = $drive('TestShopperBilling', 'billing', 'document', ['id' => (string) $invoice?->id]);
+check('her invoice renders', $invoice !== null && $doc['redirect'] === null && str_contains($doc['drawn'], $invoice->number));
 
 $dash = $drive('TestShopperUser', 'user', 'dashboard');
 pin('the dashboard renders', [null, 'user-dashboard'], [$dash['redirect'], $dash['view']]);
@@ -284,6 +287,6 @@ foreach ($hidden as [$class, $page, $action]) {
     $listed[] = osc_shopper_page_hidden($page, $action);
 }
 pin('every page above is on it', array_fill(0, count($hidden), true), $listed);
-pin('dashboard, orders, receipt and other pages are not', [false, false, false, false], [osc_shopper_page_hidden('user', 'dashboard'), osc_shopper_page_hidden('billing', 'orders'), osc_shopper_page_hidden('billing', 'receipt'), osc_shopper_page_hidden('item', 'item_add')]);
+pin('dashboard, orders, receipt, document and other pages are not', [false, false, false, false, false], [osc_shopper_page_hidden('user', 'dashboard'), osc_shopper_page_hidden('billing', 'orders'), osc_shopper_page_hidden('billing', 'receipt'), osc_shopper_page_hidden('billing', 'document'), osc_shopper_page_hidden('item', 'item_add')]);
 
 exit(harness_result());

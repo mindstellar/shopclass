@@ -963,6 +963,18 @@ msgstr ""
 
 #: oc-includes/classes/core/mail/CoreEmails.php
 msgid ""
+"<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order "
+"{ORDER_NUMBER}.</p><p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/classes/core/mail/CoreEmails.php
+msgid ""
+"<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order "
+"{ORDER_NUMBER}.</p>{ORDER_LINES}<p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/classes/core/mail/CoreEmails.php
+msgid ""
 "<p>Hi {USER_NAME},</p><p>You have a new message about {ITEM_TITLE}.</"
 "p><p>{MESSAGE_LINK}</p>"
 msgstr ""

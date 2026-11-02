@@ -165,6 +165,10 @@ foreach (['2', 'M', 'TEE-M', 'Standard delivery', '1 Main St', 'Austin', 'TX'] a
 }
 check('a seller title is escaped', str_contains($confirm['body'], 'Tee &lt;b&gt;&amp; &quot;Co&quot;&lt;/b&gt;') && !str_contains($confirm['body'], '<b>&'));
 check('it links the receipt', str_contains($confirm['body'], Receipts::url($online->getId())));
+check('it says a shipping mail follows', str_contains($confirm['body'], 'when your order ships'));
+$admin->query("UPDATE {$p}t_billing_order SET s_status = 'delivered' WHERE pk_i_id = {$online->getId()}");
+check('not once the order was delivered', !str_contains(Receipts::emailBody(Receipts::vars(OrderStore::find($online->getId()))), 'when your order ships'));
+$admin->query("UPDATE {$p}t_billing_order SET s_status = 'paid' WHERE pk_i_id = {$online->getId()}");
 pin('a replayed callback sends nothing', false, Billing::markPaid($online, 'ext-1'));
 Receipts::send($online->getId());
 Receipts::notify(Receipts::MAIL_ADMIN, $online->getId());
@@ -262,6 +266,12 @@ pin('refunding tells the buyer', ['tom@example.test'], array_column($sent, 'to')
 check('with the amount, the method and the wait', str_contains($sent[0]['subject'], 'was refunded') && str_contains($sent[0]['body'], \mindstellar\currency\CurrencyService::make()->money($gone->getAmount(), 'USD')) && str_contains($sent[0]['body'], 'Fake') && str_contains($sent[0]['body'], '3-5 working days'));
 Receipts::afterRefunded($gone->getId(), $tom, 0);
 pin('a second refund hook sends nothing', [], $mails());
+$codGone = $make('cod', 'Cup');
+Billing::markPaid($codGone, null);
+$mails();
+Billing::refund(OrderStore::find($codGone->getId()));
+$sent = $mails();
+check('a cash on delivery refund names no payment method to return it to', str_contains($sent[0]['subject'], 'was refunded') && !str_contains($sent[0]['body'], 'original payment method'));
 $unpaid = $make('fake');
 check('a mail for the wrong status is nothing to send', Receipts::sendNotice(Receipts::MAIL_DELIVERED, $unpaid->getId()) && Receipts::sendNotice(Receipts::MAIL_CANCELLED, $unpaid->getId()) && Receipts::sendNotice(Receipts::MAIL_REFUNDED, $unpaid->getId()) && $mails() === []);
 

@@ -18,6 +18,7 @@ namespace mindstellar\mail;
 
 use Admin;
 use Item;
+use mindstellar\billing\Billing;
 use mindstellar\billing\Document;
 use mindstellar\billing\DocumentPage;
 use mindstellar\billing\DocumentStore;
@@ -2301,11 +2302,26 @@ final class CoreEmails
                     __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was cancelled. If you paid for it, you are not charged: any amount taken is returned to you.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),
                 );
             case 'order_refunded':
+                // Paid outside the site: there is no payment method to send the money back to.
+                if ($order !== null && in_array($order->getGateway(), Billing::HOLDS_STOCK, true)) {
+                    return array(
+                        __('Your order {ORDER_NUMBER} was refunded'),
+                        __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER}.</p>{ORDER_LINES}<p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>'),
+                    );
+                }
+
                 return array(
                     __('Your order {ORDER_NUMBER} was refunded'),
                     __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>'),
                 );
             case 'order_part_refunded':
+                if ($order !== null && in_array($order->getGateway(), Billing::HOLDS_STOCK, true)) {
+                    return array(
+                        __('Part of your order {ORDER_NUMBER} was refunded'),
+                        __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER}.</p><p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>'),
+                    );
+                }
+
                 return array(
                     __('Part of your order {ORDER_NUMBER} was refunded'),
                     __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p><p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>'),

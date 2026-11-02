@@ -649,6 +649,7 @@ final class Receipts
             'wallet'   => osc_billing_credits_enabled() ? osc_billing_wallet_url() : '',
             'business' => self::businessDetails(),
             'refunded' => $order->getStatus() === Order::STATUS_REFUNDED,
+            'to_ship'  => in_array($order->getStatus(), array(Order::STATUS_PAID, Order::STATUS_PROCESSING), true),
             'details'  => $order->isGoods() ? self::details($order) : null,
         ) + self::brand();
     }
@@ -931,8 +932,10 @@ final class Receipts
         if ($details['note'] !== '') {
             $html .= '<p>' . nl2br(osc_esc_html($details['note']), false) . '</p>';
         }
-        $html .= '<p>' . osc_esc_html(__('We will send you another e-mail when your order ships.')) . '</p>'
-                 . '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['url']) . '">'
+        if (!empty($vars['to_ship'])) {
+            $html .= '<p>' . osc_esc_html(__('We will send you another e-mail when your order ships.')) . '</p>';
+        }
+        $html .= '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['url']) . '">'
                  . osc_esc_html(__('View or print your receipt')) . '</a></p>';
         if (($vars['invoice_url'] ?? '') !== '') {
             $html .= '<p><a href="' . osc_esc_html($vars['invoice_url']) . '">'

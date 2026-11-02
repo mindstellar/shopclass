@@ -54,10 +54,14 @@ $typeWords  = array(Document::INVOICE => __('Invoices'), Document::CREDIT_NOTE =
                     <option value="<?php echo osc_esc_html($value); ?>"<?php echo $filters['type'] === $value ? ' selected' : ''; ?>><?php echo osc_esc_html($word); ?></option>
                 <?php } ?>
             </select>
-            <label class="visually-hidden" for="fFrom"><?php _e('From'); ?></label>
-            <input type="date" id="fFrom" name="from" class="form-control form-control-sm" value="<?php echo osc_esc_html($filters['from']); ?>"/>
-            <label class="visually-hidden" for="fTo"><?php _e('To'); ?></label>
-            <input type="date" id="fTo" name="to" class="form-control form-control-sm" value="<?php echo osc_esc_html($filters['to']); ?>"/>
+            <span class="osc-filter-field">
+                <label for="fFrom"><?php _e('From'); ?></label>
+                <input type="date" id="fFrom" name="from" class="form-control form-control-sm" value="<?php echo osc_esc_html($filters['from']); ?>"/>
+            </span>
+            <span class="osc-filter-field">
+                <label for="fTo"><?php _e('To'); ?></label>
+                <input type="date" id="fTo" name="to" class="form-control form-control-sm" value="<?php echo osc_esc_html($filters['to']); ?>"/>
+            </span>
             <button type="submit" class="btn btn-sm btn-primary" title="<?php echo osc_esc_html(__('Filter')); ?>"><i class="bi bi-search"></i></button>
             <?php if ($isFiltered) { ?>
                 <a class="btn btn-sm btn-dim osc-filter-reset" href="<?php echo osc_esc_html($base . '&action=documents'); ?>"><?php _e('Reset'); ?></a>
