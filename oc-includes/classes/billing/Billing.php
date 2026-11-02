@@ -289,9 +289,23 @@ final class Billing
      *
      * @param Order $order
      *
+     * Runs under the same per-order lock as refundPart(), so a provider's refund webhook waits
+     * for a part refund that is still storing its note. If the lock stays busy it goes ahead: the
+     * note is still checked against the stored notes under the order row lock.
+     *
      * @return bool whether this call reversed the order
      */
     public static function refund(Order $order): bool
+    {
+        $run = static fn (): bool => self::refundRecord($order);
+
+        return (bool) Db::withNamedLock(self::refundLockName($order->getId()), 15, $run, $run);
+    }
+
+    /**
+     * The body of refund().
+     */
+    private static function refundRecord(Order $order): bool
     {
         // The credit note for what is left is composed first and stored with the status write.
         $draft    = Invoices::remainderDraft($order);

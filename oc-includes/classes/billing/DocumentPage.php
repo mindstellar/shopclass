@@ -28,6 +28,30 @@ final class DocumentPage
     }
 
     /**
+     * The page's address in the admin panel.
+     */
+    public static function adminUrl(Document $document): string
+    {
+        return osc_admin_base_url(true) . '?page=billing&action=document&id=' . $document->id;
+    }
+
+    /**
+     * The minus sign printed before a credit note's amounts, or '' for an invoice.
+     */
+    public static function sign(Document $document): string
+    {
+        return $document->isCreditNote() ? "\u{2212}" : '';
+    }
+
+    /**
+     * The total in micros, negated for a credit note.
+     */
+    public static function signedTotal(Document $document): int
+    {
+        return $document->isCreditNote() ? -$document->total : $document->total;
+    }
+
+    /**
      * Admins see every document; a buyer sees the documents of orders that are theirs.
      */
     public static function canView(Document $document, int $userId, bool $isAdmin): bool
@@ -49,7 +73,7 @@ final class DocumentPage
     public static function render(Document $document, string $backUrl, string $backLabel): void
     {
         $data = $document->data;
-        $sign = $document->isCreditNote() ? "\u{2212}" : '';
+        $sign = self::sign($document);
         $page = array(
             'title'    => (string) ($data['wording']['title'] ?? ($document->isCreditNote() ? __('Credit note') : __('Invoice'))),
             'number'   => $document->number,

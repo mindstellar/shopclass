@@ -56,7 +56,7 @@ final class DocumentExport
         $name     = trim((string) ($buyer['name'] ?? ''));
         $email    = trim((string) ($buyer['email'] ?? ''));
         $decimals = (int) ($doc->data['currency']['decimals'] ?? Money::decimals($doc->currency));
-        $total    = Money::fromMicros($doc->isCreditNote() ? -$doc->total : $doc->total, $decimals);
+        $total    = Money::fromMicros(DocumentPage::signedTotal($doc), $decimals);
 
         return array(
             self::safe($doc->number),

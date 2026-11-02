@@ -2187,7 +2187,8 @@ final class CoreEmails
         } elseif ($kind === 'order_refunded') {
             $notes = array_values(array_filter(DocumentStore::forOrder($order->getId()), static fn (Document $d): bool => $d->isCreditNote()));
             $last  = $notes === array() ? null : $notes[count($notes) - 1];
-            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(CurrencyService::make()->money($last !== null ? $last->total : $order->getAmount(), $order->getCurrency())));
+            $total = $last !== null ? DocumentStore::refundedTotal($order->getId()) : $order->getAmount();
+            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(CurrencyService::make()->money($total, $order->getCurrency())));
             $extra += $last !== null ? self::noteWords($last) : array('{CREDIT_NOTE_LINK}' => '', '{CREDIT_NOTE_NUMBER}' => '');
         } elseif ($kind === 'order_part_refunded' && $document !== null) {
             $extra = array('{REFUND_AMOUNT}' => osc_esc_html(CurrencyService::make()->money($document->total, $document->currency))) + self::noteWords($document);

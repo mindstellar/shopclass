@@ -11,8 +11,9 @@
 /**
  * Invoices and credit notes: a paid goods order, a delivered cash on delivery order, a credit pack
  * and a listing order each get one invoice, a replayed webhook none; the frozen copy, the compose
- * filter and the issued hook; a plugin that throws queues a job that issues it later; credit notes
- * with tax in proportion, the closing note taking the exact remainder, and a full refund issuing one.
+ * filter and the issued hook; a plugin that throws, or an amount that keeps changing, queues a job
+ * that issues it later; credit notes with tax in proportion, the closing note taking the exact
+ * remainder, and a full refund issuing one.
  * Usage: php tests/billing-invoices.php
  */
 
@@ -207,6 +208,25 @@ $handler(new \mindstellar\job\Job([], ['order_id' => $late->getId()]));
 pin('a second run issues no other', 1, $count($late->getId(), Document::INVOICE));
 pin('and sends no second mail', 1, count($mails));
 Receipts::$mailer = static fn (array $params): bool => true;
+
+harness_section('an amount that keeps changing while composing is retried');
+$moving = $goods();
+$bump   = static function (DocumentComposing $e) use ($admin, $p, $moving): void {
+    $admin->query("UPDATE {$p}t_billing_order SET i_amount = i_amount + 1 WHERE pk_i_id = " . $moving->getId());
+};
+$events->listen(DocumentComposing::class, $bump);
+check('the payment still settles', Billing::markPaid($moving, 'bank-moving'));
+pin('no invoice yet', 0, count($docs($moving->getId())));
+$threw = false;
+try {
+    $handler(new \mindstellar\job\Job([], ['order_id' => $moving->getId()]));
+} catch (Throwable $e) {
+    $threw = true;
+}
+check('the job throws to retry, not a silent success', $threw);
+$events->remove(DocumentComposing::class, $bump);
+$handler(new \mindstellar\job\Job([], ['order_id' => $moving->getId()]));
+pin('the retry issues it for the stored amount', OrderStore::find($moving->getId())?->getAmount(), DocumentStore::invoiceOf($moving->getId())?->total);
 
 harness_section('credit notes take tax in proportion');
 $part  = $goods();

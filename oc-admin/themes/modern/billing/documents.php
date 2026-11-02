@@ -101,7 +101,7 @@ $typeWords  = array(Document::INVOICE => __('Invoices'), Document::CREDIT_NOTE =
                     $buyer  = (array) ($doc->data['buyer'] ?? array()); ?>
                     <tr>
                         <td data-col-name="<?php echo osc_esc_html(__('Number')); ?>">
-                            <a href="<?php echo osc_esc_html(DocumentPage::url($doc)); ?>" target="_blank" rel="noopener"><?php echo osc_esc_html($doc->number); ?></a>
+                            <a href="<?php echo osc_esc_html(DocumentPage::adminUrl($doc)); ?>" target="_blank" rel="noopener"><?php echo osc_esc_html($doc->number); ?></a>
                             <?php if ($credit) { ?><span class="text-muted">· <?php _e('Credit note'); ?></span><?php } ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($doc->date, true); ?></td>
@@ -109,7 +109,7 @@ $typeWords  = array(Document::INVOICE => __('Invoices'), Document::CREDIT_NOTE =
                             <a class="billing-order-link" href="<?php echo osc_esc_html($base . '&action=order&id=' . $doc->orderId); ?>"><?php echo osc_esc_html('#' . $doc->orderId); ?></a>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Buyer')); ?>"><?php echo osc_esc_html((string) ($buyer['name'] ?? '')); ?></td>
-                        <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(($credit ? '−' : '') . osc_admin_money($doc->total, $doc->currency)); ?></td>
+                        <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(DocumentPage::sign($doc) . osc_admin_money($doc->total, $doc->currency)); ?></td>
                     </tr>
                 <?php } ?>
                 </tbody>

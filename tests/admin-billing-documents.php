@@ -11,7 +11,8 @@
 /**
  * The admin side of invoices and part refunds: the Documents panel and Partly refunded chip on
  * the order page, the Refund part form (record and through the gateway), the Invoices list with
- * its filters and paging, and the CSV. Each post checks the token and refuses what it should.
+ * its filters and paging, the admin document page, and the CSV. Each post checks the token and
+ * refuses what it should.
  * Usage: php tests/admin-billing-documents.php
  */
 
@@ -337,6 +338,15 @@ check('with invoices off but some issued, the tab stays', str_contains(drive('in
 Preference::getInstance()->set('billing_invoice_on', '1');
 scratchdb_forget_cache();
 osc_reset_preferences();
+
+harness_section('the admin document page');
+check('the order page and the list link to the admin page', str_contains(drive('order', [], ['id' => $aid])['drawn'], 'action=document&amp;id=' . $inv->id . '"') && str_contains(drive('documents')['drawn'], 'action=document&amp;id=' . $n[0]->id . '"'));
+$page = drive('document', [], ['id' => $inv->id]);
+check('an admin opens any invoice, with a link back to its order', str_contains($page['drawn'], $inv->number) && str_contains($page['drawn'], 'action=order&amp;id=' . $aid) && str_contains($page['drawn'], 'Back to the order'));
+$page = drive('document', [], ['id' => $n[0]->id]);
+check('and a credit note, negated', str_contains($page['drawn'], $n[0]->number) && str_contains($page['drawn'], "\u{2212}"));
+$page = drive('document', [], ['id' => 999999]);
+check('an unknown one goes back to the list', $page['redirects'] !== [] && str_contains(implode(' ', $page['flashes']), 'error:'));
 
 harness_section('the CSV');
 $csv = DocumentExport::csv([]);

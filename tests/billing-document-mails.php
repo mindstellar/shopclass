@@ -11,7 +11,7 @@
 /**
  * Document mails: the receipt names and links the invoice; a credit note that leaves money open
  * sends one "part refunded" mail with its link; the note that closes the order sends none, and the
- * refunded mail links it; a retry or replay sends nothing more.
+ * refunded mail links it and names the total refunded; a retry or replay sends nothing more.
  * Usage: php tests/billing-document-mails.php
  */
 
@@ -29,12 +29,14 @@ use mindstellar\billing\OrderStore;
 use mindstellar\billing\PaymentGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
+use mindstellar\currency\CurrencyService;
 use PHPMailer\PHPMailer\PHPMailer;
 
 $admin = api_admin_boot('osc_billing_document_mails');
 $p     = DB_TABLE_PREFIX;
 
 $locale = seed_locale($admin);
+$admin->query("UPDATE {$p}t_locale SET s_currency_format = '{CURRENCY}{NUMBER}'");
 seed_currency($admin);
 seed_country($admin, 'US', 'United States');
 $cat = seed_category($admin, 'Goods', null, $locale);
@@ -202,6 +204,7 @@ pin('three notes', 3, count($notes));
 pin('no part refund mail for it', [], $ofType($sent, 'Part of'));
 $ref = $ofType($sent, 'refunded');
 check('the refunded mail goes once and links the last note', count($ref) === 1 && str_contains($ref[0]['body'], 'href="' . DocumentPage::url($last) . '"') && str_contains($ref[0]['body'], $last->number));
+check('it names the total refunded, not the last note', str_contains($ref[0]['body'] ?? '', 'We refunded ' . CurrencyService::make()->money($m(1447), 'USD')));
 
 harness_section('a closing part refund sends no part mail');
 $order2 = $make();

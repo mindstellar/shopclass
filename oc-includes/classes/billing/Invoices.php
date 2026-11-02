@@ -56,7 +56,8 @@ final class Invoices
      * invoices switched off since.
      *
      * @return Document|null null when the order takes none: unpaid, free, or invoices are off
-     * @throws Throwable when composing or storing fails; issueOrQueue() catches it
+     * @throws Throwable when composing or storing fails, or the amount changed on both tries;
+     *                   issueOrQueue() catches it and the job tries again
      */
     public static function issue(Order $order): ?Document
     {
@@ -97,7 +98,7 @@ final class Invoices
             $order = OrderStore::find($order->getId()) ?? $order;
         }
 
-        return null;
+        throw new RuntimeException('order amount changed while the invoice was issued');
     }
 
     /**

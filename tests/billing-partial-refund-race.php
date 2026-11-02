@@ -11,7 +11,8 @@
 /**
  * Refunds of one order at once. Two part refunds that do not both fit: one is refused and the
  * notes never pass the paid amount. A part refund racing a full refund webhook: the notes add up to
- * the paid amount exactly, with one remainder note, and the order ends refunded.
+ * the paid amount exactly, with one remainder note, and the order ends refunded. The webhook takes
+ * the same refund lock as a part refund, so the final part refund and the webhook write one note.
  * Usage: php tests/billing-partial-refund-race.php
  */
 
@@ -75,14 +76,31 @@ $kids = [
     race_run($child, $dbName, [$order->getId(), 'part', $m(15)]),
     race_run($child, $dbName, [$order->getId(), 'full']),
 ];
-$waiting = race_wait_for($dbName, "%{$p}t_billing_order%FOR UPDATE%", 2);
+$onRow   = race_wait_for($dbName, "%{$p}t_billing_order%FOR UPDATE%", 1);
+$onLock  = race_wait_for($dbName, '%GET_LOCK%', 1);
 $out     = implode('', race_release($admin, $kids));
-pin('both waited on the order row', 2, $waiting);
+pin('one waited on the order row, one on the refund lock', [1, 1], [$onRow, $onLock]);
 pin('nothing threw', 0, substr_count($out, 'threw'));
 pin('the notes add up to the paid amount exactly', $m(40), DocumentStore::refundedTotal($order->getId()));
 pin('the order is refunded', Order::STATUS_REFUNDED, OrderStore::find($order->getId())->getStatus());
 check('one or two notes, never a second remainder', in_array($credit($order), [1, 2], true));
 check('a replayed webhook adds nothing', !Billing::refund(OrderStore::find($order->getId())));
 pin('the total is still the paid amount', $m(40), DocumentStore::refundedTotal($order->getId()));
+
+harness_section('the final part refund racing the full refund webhook');
+$order = $paidOrder();
+Billing::refundPart($order, $m(10), [], 'first', false, false);
+race_hold($admin, $lockSql($order));
+$kids = [
+    race_run($child, $dbName, [$order->getId(), 'part', $m(30)]),
+    race_run($child, $dbName, [$order->getId(), 'full']),
+];
+$onRow  = race_wait_for($dbName, "%{$p}t_billing_order%FOR UPDATE%", 1);
+$onLock = race_wait_for($dbName, '%GET_LOCK%', 1);
+$out    = implode('', race_release($admin, $kids));
+pin('one waited on the order row, one on the refund lock', [1, 1], [$onRow, $onLock]);
+pin('nothing threw', 0, substr_count($out, 'threw'));
+pin('two notes that add up to the paid amount', [2, $m(40)], [$credit($order), DocumentStore::refundedTotal($order->getId())]);
+pin('the order is refunded', Order::STATUS_REFUNDED, OrderStore::find($order->getId())->getStatus());
 
 exit(harness_result());

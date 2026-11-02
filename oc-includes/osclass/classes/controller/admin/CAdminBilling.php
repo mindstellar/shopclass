@@ -18,6 +18,7 @@ use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\Document;
 use mindstellar\billing\DocumentExport;
+use mindstellar\billing\DocumentPage;
 use mindstellar\billing\DocumentStore;
 use mindstellar\billing\event\CarriersListing;
 use mindstellar\billing\Invoices;
@@ -126,6 +127,9 @@ class CAdminBilling extends AdminSecBaseModel
                 break;
             case ('documents'):
                 $this->documentsView();
+                break;
+            case ('document'):
+                $this->documentView();
                 break;
             case ('documents_csv'):
                 $this->documentsCsv();
@@ -815,6 +819,24 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('perPage', self::PER_PAGE);
 
         $this->doView('billing/documents.php');
+    }
+
+    /**
+     * The printable page of one invoice or credit note.
+     *
+     * @return void
+     */
+    private function documentView()
+    {
+        $document = DocumentStore::find(Params::getParamInt('id'));
+        if ($document === null) {
+            osc_add_flash_error_message(_m('That document does not exist'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=documents');
+
+            return;
+        }
+
+        DocumentPage::render($document, osc_admin_base_url(true) . '?page=billing&action=order&id=' . $document->orderId, _m('Back to the order'));
     }
 
     /**

@@ -295,8 +295,8 @@ foreach ($order->getMeta() as $key => $value) {
                                         <?php if ($credit) { ?><span class="text-muted">· <?php _e('Credit note'); ?></span><?php } ?>
                                     </td>
                                     <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($doc->date, true); ?></td>
-                                    <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(($credit ? '−' : '') . osc_admin_money($doc->total, $doc->currency)); ?></td>
-                                    <td><a href="<?php echo osc_esc_html(DocumentPage::url($doc)); ?>" target="_blank" rel="noopener"><?php _e('View'); ?></a></td>
+                                    <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(DocumentPage::sign($doc) . osc_admin_money($doc->total, $doc->currency)); ?></td>
+                                    <td><a href="<?php echo osc_esc_html(DocumentPage::adminUrl($doc)); ?>" target="_blank" rel="noopener"><?php _e('View'); ?></a></td>
                                 </tr>
                             <?php } ?>
                             </tbody>
