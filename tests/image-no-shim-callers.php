@@ -30,7 +30,7 @@ foreach (array('oc-includes', 'oc-admin') as $dir) {
             continue;
         }
         $source = (string) file_get_contents($file->getPathname());
-        if ($path === 'oc-includes/osclass/classes/storage/ResourceUploader.php') {
+        if ($path === 'oc-includes/classes/core/storage/ResourceUploader.php') {
             // writeSizes() still takes a wrapper, as 7.0 passed, and unwraps it at once.
             $source = str_replace(array('Image|\\ImageProcessing', 'instanceof \\ImageProcessing'), '', $source);
         }

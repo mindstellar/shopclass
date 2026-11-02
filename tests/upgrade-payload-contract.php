@@ -38,7 +38,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 require_once __DIR__ . '/lib/harness.php';
 
 $view  = ABS_PATH . 'oc-admin/themes/modern/upgrade/index.php';
-$model = ABS_PATH . 'oc-includes/osclass/classes/upgrade/Osclass.php';
+$model = ABS_PATH . 'oc-includes/classes/core/upgrade/Osclass.php';
 
 foreach (array($view, $model) as $file) {
     if (!is_readable($file)) {

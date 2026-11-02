@@ -18,7 +18,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/api-boot.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Validate.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/Validate.php';
 
 $root = sys_get_temp_dir() . '/osc-api-theme-' . getmypid() . '/';
 define('WEB_PATH', 'http://example.test/');

@@ -109,8 +109,8 @@ harness_section('RFC 3339 times');
 pin('UtcDatetime::rfc3339', '2026-01-31T12:00:00Z', UtcDatetime::rfc3339(1769860800));
 pin('Format::timestamp uses it', UtcDatetime::rfc3339(1769860800), Format::timestamp('1769860800'));
 $typed = array();
-foreach (array('apikey/AccessEntry.php', 'webhook/Endpoint.php', 'webhook/Dispatcher.php', 'api/serializer/Format.php') as $f) {
-    $source = @file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/' . $f);
+foreach (array('classes/user/apikey/AccessEntry.php', 'classes/webhook/Endpoint.php', 'classes/webhook/Dispatcher.php', 'classes/api/serializer/Format.php') as $f) {
+    $source = @file_get_contents(ABS_PATH . 'oc-includes/' . $f);
     if ($source === false || strpos($source, 'TH:i:s') !== false) {
         $typed[] = $f;
     }

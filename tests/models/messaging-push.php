@@ -225,7 +225,7 @@ $mod->release($held->messageId(), $asAdmin);
 pin('release queues one', 1, $count(sprintf($job, 'COUNT(*)')));
 pin('and the payload names the seller', array('recipient' => $seller), json_decode((string) $col(sprintf($job, 's_payload')), true));
 $cleanup();
-$listeners = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/boot/CoreServices.php');
+$listeners = file_get_contents(ABS_PATH . 'oc-includes/classes/core/boot/CoreServices.php');
 pin('PushNotifier is not listening to MessageHeld', 0, preg_match('/MessageHeld::class,\s*\[PushNotifier::class/', $listeners));
 pin('PushNotifier listens to MessageSent', 1, preg_match('/MessageSent::class,\s*\[PushNotifier::class/', $listeners));
 

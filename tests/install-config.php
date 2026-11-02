@@ -15,7 +15,7 @@
  * Usage:  php tests/install-config.php
  */
 
-require_once __DIR__ . '/../oc-includes/osclass/classes/admin/SystemChecks.php';
+require_once __DIR__ . '/../oc-includes/classes/admin/SystemChecks.php';
 require_once __DIR__ . '/../oc-includes/osclass/install-functions.php';
 require_once __DIR__ . '/lib/harness.php';
 
@@ -104,7 +104,7 @@ harness_section('seeding moved out of oc_install');
 $start = strpos($src, 'function oc_install()');
 $body  = substr($src, $start, strpos($src, "\nfunction ", $start + 1) - $start);
 check('oc_install no longer writes categories or listings', $start !== false && !str_contains($body, 'example_data') && !str_contains($body, 'install_seed'));
-$cli = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/cli/Cli.php');
+$cli = (string) file_get_contents(__DIR__ . '/../oc-includes/classes/core/cli/Cli.php');
 check('the CLI takes --site-type and --sample-data', str_contains($cli, "'site-type'") && str_contains($cli, "'sample-data'"));
 check('the CLI seeds through install_seed_site', str_contains($cli, 'install_seed_site($siteType, $sampleData, $photos)'));
 $loc = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/install-location.php');

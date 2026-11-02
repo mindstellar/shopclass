@@ -96,8 +96,8 @@ preg_match('/data-osc-filter-for=.*?value=/s', $ui, $switchInput);
 pin('the toolbar switch inputs are named', true, isset($switchInput[0]) && str_contains($switchInput[0], 'aria-label'));
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/Sanitize.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/Sanitize.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Field.php';
 pin('a locale tab item is presentational', true, str_contains(\mindstellar\admin\ui\Field::localeTab('p', 'L', 'en_US'), 'role="presentation"'));
 
 $logs = (string) file_get_contents(ABS_PATH . $theme . 'tools/logs.php');
@@ -110,7 +110,7 @@ $uiosc = (string) file_get_contents(ABS_PATH . $theme . 'js/ui-osc.js');
 pin('tab items are presentational in the script', true, str_contains($uiosc, "setAttribute('role', 'presentation')"));
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Form.php';
 $custom = static function (array $extra): string {
     ob_start();
     (new \mindstellar\admin\ui\Field(array_merge([

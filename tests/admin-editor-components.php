@@ -60,11 +60,11 @@ function osc_base_url($index = false)
     return 'https://example.test/' . ($index ? 'index.php' : '');
 }
 
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Field.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Form.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Editor.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/Picker.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/PhotoGrid.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Field.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Form.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Editor.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Picker.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/PhotoGrid.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
 /** Capture what a helper prints. */

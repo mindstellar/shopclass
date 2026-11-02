@@ -31,9 +31,9 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/base/SharedInstance.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeSupports.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/theme/ThemeViews.php';
+require_once ABS_PATH . 'oc-includes/classes/core/base/SharedInstance.php';
+require_once ABS_PATH . 'oc-includes/classes/core/theme/ThemeSupports.php';
+require_once ABS_PATH . 'oc-includes/classes/core/theme/ThemeViews.php';
 
 /** The request the stubs describe: which page, who is looking at it. */
 $GLOBALS['page']       = 'home';

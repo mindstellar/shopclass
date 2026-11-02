@@ -2053,7 +2053,7 @@ $run = drive('CAdminSettingsStorage', 'storage_post', array('storage_s3_provider
 osc_remove_filter('admin_form_before_save', $toR2);
 pin('a provider a before_save listener switches to r2 is stored', array('r2', 'STRING'), pref($admin, 'storage_s3_provider'));
 pin('and a blank region under it is the preset region', array('auto', 'STRING'), pref($admin, 'storage_s3_region'));
-check('the form reads nothing out of the request', strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/StorageSettingsScreen.php'), 'Params::') === false);
+check('the form reads nothing out of the request', strpos((string)file_get_contents(ABS_PATH . 'oc-includes/classes/admin/form/StorageSettingsScreen.php'), 'Params::') === false);
 
 pin('the corrections, called directly: provider', array('r2', 'custom', 'custom'), array(StorageSettingsScreen::provider('r2'), StorageSettingsScreen::provider('nope'), StorageSettingsScreen::provider(null)));
 pin('region', array('auto', '', 'x'), array(StorageSettingsScreen::region('', 'r2'), StorageSettingsScreen::region('', 'custom'), StorageSettingsScreen::region('x', 'r2')));
@@ -2468,7 +2468,7 @@ foreach (array(
     'PermalinkSettingsScreen.php'    => array('rewriteEnabled'),
     'MediaSettingsScreen.php'        => array('watermark_place', 'watermark_text_options', "'/watermark.png'"),
 ) as $file => $keys) {
-    $src = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/' . $file);
+    $src = (string)file_get_contents(ABS_PATH . 'oc-includes/classes/admin/form/' . $file);
     foreach ($keys as $key) {
         check($file . ' still names the "' . $key . '" preference', strpos($src, $key) !== false);
     }
@@ -2476,7 +2476,7 @@ foreach (array(
 
 // One place decides how a refused save is reported, or eight screens drift into reporting
 // it eight ways.
-$shared = (string)file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/form/CoreSettings.php');
+$shared = (string)file_get_contents(ABS_PATH . 'oc-includes/classes/admin/form/CoreSettings.php');
 check('the shared helper is what flashes a refusal', strpos($shared, 'osc_add_flash_warning_message') !== false);
 foreach (array_column($screens, 0) as $controller) {
     $src = (string)file_get_contents(
@@ -2546,7 +2546,7 @@ check('the core settings forms were rendered', $rendered >= 20, (string)$rendere
 
 $screens = array_merge(
     glob(ABS_PATH . 'oc-admin/themes/modern/settings/*.php') ?: array(),
-    glob(ABS_PATH . 'oc-includes/osclass/classes/admin/form/*.php') ?: array(),
+    glob(ABS_PATH . 'oc-includes/classes/admin/form/*.php') ?: array(),
     array(ABS_PATH . 'oc-admin/themes/modern/items/settings.php', ABS_PATH . 'oc-admin/themes/modern/users/settings.php',
         ABS_PATH . 'oc-admin/themes/modern/users/ban.php', ABS_PATH . 'oc-admin/themes/modern/emails/index.php')
 );

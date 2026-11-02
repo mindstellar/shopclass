@@ -30,8 +30,8 @@
  */
 
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hHttpCache.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/base/SharedInstance.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/security/Csrf.php';
+require_once __DIR__ . '/../oc-includes/classes/core/base/SharedInstance.php';
+require_once __DIR__ . '/../oc-includes/classes/core/security/Csrf.php';
 require_once __DIR__ . '/lib/harness.php';
 
 $GLOBALS['okCount']    = 0;

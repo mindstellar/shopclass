@@ -157,7 +157,7 @@ harness_section('a finished update stops being announced');
 
 // Source pins: both paths need a booted admin, so what is checked here is that the calls
 // that clear the badge are still in place.
-$installer = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/market/Installer.php');
+$installer = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/market/Installer.php');
 pin('the installer re-counts after every success', 3, substr_count($installer, 'refreshUpdateCount()'));
 check(
     'the re-count drops the plugin header cache first',

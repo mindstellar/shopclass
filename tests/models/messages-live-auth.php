@@ -33,7 +33,7 @@ use mindstellar\live\NullPublisher;
 $admin = api_admin_boot('osc_models_messages_live_auth');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSecurity.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUsers.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/utility/AjaxResponse.php';
+require_once ABS_PATH . 'oc-includes/classes/core/utility/AjaxResponse.php';
 
 $set = static function (string $key, string $value): void {
     Preference::getInstance()->replace($key, $value);

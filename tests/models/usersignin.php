@@ -162,7 +162,7 @@ SignIn::complete(['s_username' => 'uma'], '/dashboard');
 pin('attempt() fires before_validating_login once, complete() after_login with the user and where they go', ['before_validating_login', 'after_login uma /dashboard'], $hooked);
 
 $web = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebLogin.php', 'loginPost');
-$api = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/controller/AuthController.php');
+$api = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/api/controller/AuthController.php');
 check('the web form reads the account again, and refuses a blocked one, before it signs in', str_contains($web, "findByPrimaryKey((int) \$user['pk_i_id'])")
     && str_contains($web, "!\$fresh['b_enabled']") && strpos($web, 'findByPrimaryKey(') < strpos($web, 'osc_web_user_login('));
 foreach (['the web form' => $web, 'the API' => $api] as $who => $code) {
@@ -216,7 +216,7 @@ for ($i = 0; $i < 20; $i++) {
 pin('enough wrong current passwords block the change', true, isset($e) && $e instanceof BlockedException && $e->retryAfter() > 0);
 $sources = [
     'web change'   => (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/CWebUser.php'),
-    'API change'   => (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/controller/AccountController.php'),
+    'API change'   => (string) file_get_contents(ABS_PATH . 'oc-includes/classes/api/controller/AccountController.php'),
 ];
 foreach ($sources as $who => $code) {
     check("the $who goes through AccountService::changePassword()", str_contains($code, '->changePassword('));
@@ -358,7 +358,7 @@ try {
 osc_remove_hook(SignOut::ADMIN_HOOK, $failing);
 pin('a failing sign-out rolls the password back with it', [true, $stamp + 1], [osc_verify_password('admin-new', $adminRow()['s_password']), AuthStamp::of($adminRow())]);
 $recover = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLogin.php', 'forgotPost');
-$cli     = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/cli/Cli.php');
+$cli     = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/cli/Cli.php');
 $cli     = substr($cli, (int) strpos($cli, 'private function cmdUserResetPassword('), 1800);
 foreach (['the recovery link' => $recover, 'the CLI user:reset-password' => $cli] as $who => $code) {
     check("$who stores the password through AdminPassword::set()", str_contains($code, 'AdminPassword::set(') && !str_contains($code, 'osc_hash_password('));

@@ -147,8 +147,8 @@ pin('the term table clears the flag', '0', $flag());
 pin('the term table queues one build', 1, $jobs());
 
 harness_section('Command list');
-$cli = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/cli/Cli.php');
+$cli = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/cli/Cli.php');
 check('search:reindex is in the command map with a summary', preg_match("/'search:reindex'\s*=>\s*\['cmdSearchReindex', '[^']+'\]/", $cli) === 1);
-check('db:repair runs the shared repair, which calls afterRepair', str_contains($cli, 'DatabaseTools::repair()') && str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/DatabaseTools.php'), 'FacetJobs::afterRepair($result[\'ran\'])'));
+check('db:repair runs the shared repair, which calls afterRepair', str_contains($cli, 'DatabaseTools::repair()') && str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/classes/admin/DatabaseTools.php'), 'FacetJobs::afterRepair($result[\'ran\'])'));
 
 exit(harness_result());

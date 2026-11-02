@@ -125,7 +125,7 @@ foreach ($themePhp as $path) {
 /* 3b. The multilang editors stay off Bootstrap tabs. */
 $multilangForms = array(
     'oc-includes/osclass/classes/form/FieldForm.php',
-    'oc-includes/osclass/classes/form/admin/Item.php',
+    'oc-includes/classes/core/form/admin/Item.php',
     'oc-includes/osclass/classes/form/PageForm.php',
     'oc-includes/osclass/classes/form/UserForm.php',
 );
@@ -142,7 +142,7 @@ foreach ($multilangForms as $rel) {
  *    per field and that its return value is used are pinned by the behavioural assertions
  *    in tests/admin-form-lifecycle-hooks.php. */
 $declaredPageForm = (string) file_get_contents(
-    __DIR__ . '/../oc-includes/osclass/classes/admin/ui/SettingsForm.php'
+    __DIR__ . '/../oc-includes/classes/admin/ui/SettingsForm.php'
 );
 check(
     'the declared settings form still names admin_form_render_field as a filter',

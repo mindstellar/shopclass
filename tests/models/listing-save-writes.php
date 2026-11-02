@@ -123,7 +123,7 @@ $jobs   = static fn (): array => DBConnectionClass::newInstance()->getOsclassDb(
 $coords = static fn (int $id): array => array_values((array) $admin->query("SELECT d_coord_lat, d_coord_long FROM {$p}t_item_location WHERE fk_i_item_id = $id")->fetch_assoc());
 
 harness_section('coordinates are looked up after the save commits');
-check('ListingService makes no HTTP call', !str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/listing/ListingService.php'), 'osc_file_get_contents'));
+check('ListingService makes no HTTP call', !str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/classes/listing/ListingService.php'), 'osc_file_get_contents'));
 $inside = null;
 $id     = Db::transaction(static function () use ($service, $form, $actor, $jobs, &$inside): int {
     $id     = $service->create(ListingInput::fromArray($form(['ownerId' => '0']), $actor, true), $actor)->id();

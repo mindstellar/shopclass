@@ -28,7 +28,7 @@ check('it builds no ItemActions', $body !== '' && strpos($body, 'ItemActions') =
 check('it reads the comment id as an int', strpos($body, "\$commentId = Params::getParamInt('comment')") !== false);
 check('it deletes through CommentService', strpos($body, '(new CommentService())->delete($commentId') !== false);
 
-$service = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/comment/CommentService.php');
+$service = file_get_contents(__DIR__ . '/../oc-includes/classes/content/comment/CommentService.php');
 preg_match('/public function delete\(int \$commentId.*?\n    }\n/s', $service, $d);
 $delete = $d[0] ?? '';
 
@@ -39,7 +39,7 @@ check('the service delete was parsed', $delete !== '');
 check('it fires delete_comment with the comment id', $hook !== false);
 check('the hook fires after the delete', $row !== false && $hook !== false && $hook > $row);
 
-$admin = file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/moderation/CommentModeration.php');
+$admin = file_get_contents(__DIR__ . '/../oc-includes/classes/listing/moderation/CommentModeration.php');
 check('the admin delete still fires it too', (bool) preg_match("/osc_run_hook\\('delete_comment', \\\$/", $admin));
 
 harness_section('who may delete');

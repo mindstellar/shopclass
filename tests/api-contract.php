@@ -64,7 +64,7 @@ function api_signature(ReflectionFunctionAbstract $r): string
  */
 function api_surface(): array
 {
-    $root  = ABS_PATH . 'oc-includes/osclass/classes/';
+    $root  = ABS_PATH . 'oc-includes/classes/';
     $lines = [];
     $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root, FilesystemIterator::SKIP_DOTS));
     foreach ($files as $file) {

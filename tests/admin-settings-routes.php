@@ -32,7 +32,7 @@ $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
 $viewDir    = __DIR__ . '/../oc-admin/themes/modern/settings';
-$formDir    = __DIR__ . '/../oc-includes/osclass/classes/admin/form';
+$formDir    = __DIR__ . '/../oc-includes/classes/admin/form';
 $controller = __DIR__ . '/../oc-includes/osclass/classes/controller/admin/CAdminSettings.php';
 
 check('the settings view directory is where it is expected', is_dir($viewDir));

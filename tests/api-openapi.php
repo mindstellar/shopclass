@@ -358,7 +358,7 @@ function api_emitted_warning_codes(string $code): array
 
 $emitted = [];
 foreach (['controller', 'write'] as $dir) {
-    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/osclass/classes/api/' . $dir, FilesystemIterator::SKIP_DOTS));
+    $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-includes/classes/api/' . $dir, FilesystemIterator::SKIP_DOTS));
     foreach ($files as $file) {
         array_push($emitted, ...api_emitted_warning_codes((string) file_get_contents((string) $file)));
     }

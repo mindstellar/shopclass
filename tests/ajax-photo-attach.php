@@ -86,7 +86,7 @@ function attach(array $ajaxPhotos): array
     $photos = array('name' => array(), 'type' => array(), 'tmp_name' => array(), 'error' => array(), 'size' => array());
     $aItem  = array('photos' => $photos);
 
-    $src = file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/listing/ListingInput.php');
+    $src = file_get_contents(ABS_PATH . 'oc-includes/classes/listing/ListingInput.php');
     if (!preg_match('/\n        if \(is_array\(\$ajax_photos\).*?\n        \}\n/s', $src, $m)) {
         fwrite(STDERR, "Could not find the attach block in ListingInput.php\n");
         exit(1);

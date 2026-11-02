@@ -29,8 +29,8 @@ const SEARCH_EXPORTS_FIXTURE = __DIR__ . '/fixtures/search-exports.txt';
 /** Classes the scan follows calls into, by short name. */
 const SEARCH_EXPORTS_FILES = array(
     'CWebSearch'        => 'oc-includes/osclass/classes/controller/CWebSearch.php',
-    'SearchUriResolver' => 'oc-includes/osclass/classes/search/SearchUriResolver.php',
-    'SearchRunner'      => 'oc-includes/osclass/classes/search/SearchRunner.php',
+    'SearchUriResolver' => 'oc-includes/classes/search/SearchUriResolver.php',
+    'SearchRunner'      => 'oc-includes/classes/search/SearchRunner.php',
 );
 
 /**

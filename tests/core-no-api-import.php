@@ -39,7 +39,7 @@ function core_api_references(): array
             $path = $file->getPathname();
             if ($file->getExtension() === 'php'
                 && !str_contains($path, '/oc-includes/vendor/')
-                && !str_contains($path, '/oc-includes/osclass/classes/api/')
+                && !str_contains($path, '/oc-includes/classes/api/')
             ) {
                 $files[] = $path;
             }

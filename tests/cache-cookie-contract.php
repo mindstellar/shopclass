@@ -41,7 +41,7 @@ foreach ($cookies as $name) {
         continue;
     }
     $found = array();
-    foreach (array('oc-includes/osclass', 'oc-admin') as $dir) {
+    foreach (array('oc-includes/osclass', 'oc-includes/classes', 'oc-admin') as $dir) {
         $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/' . $dir));
         foreach ($it as $f) {
             if ($f->isFile() && substr($f->getFilename(), -4) === '.php') {

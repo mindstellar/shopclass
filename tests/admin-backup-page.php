@@ -164,7 +164,7 @@ $plain = sys_get_temp_dir() . '/osc_protect_folder_' . getmypid();
 \mindstellar\utility\FileSystem::protectFolder($plain);
 pin('the purifier cache and the backups folder get the same .htaccess', $htaccess, (string) file_get_contents($plain . '/.htaccess'));
 exec('rm -rf ' . escapeshellarg($plain));
-check('...and the purifier cache uses the shared helper', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/security/PurifierCache.php'), 'FileSystem::protectFolder($dir)') !== false);
+check('...and the purifier cache uses the shared helper', strpos((string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/security/PurifierCache.php'), 'FileSystem::protectFolder($dir)') !== false);
 check('...an empty index.php', is_file($store->dir() . 'index.php'));
 check('...and the probe file', is_file($store->dir() . BackupStore::PROBE));
 pin('...readable by the site only', '750', substr(sprintf('%o', fileperms($store->dir())), -3));

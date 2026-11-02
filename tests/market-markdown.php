@@ -14,7 +14,7 @@
  * Usage:  php tests/market-markdown.php
  */
 
-require_once __DIR__ . '/../oc-includes/osclass/classes/market/Markdown.php';
+require_once __DIR__ . '/../oc-includes/classes/market/Markdown.php';
 require_once __DIR__ . '/lib/harness.php';
 
 use mindstellar\market\Markdown;

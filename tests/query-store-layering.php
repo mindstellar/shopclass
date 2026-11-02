@@ -27,7 +27,7 @@ const STORE_USES_QUERY = '/(?:\bnew\s+|\b)\\\\?(?:\w+\\\\)*(?!RowHashQuery\b)\w*
 
 /** Lines allowed to break a rule, as "path: the code on the line" => why. */
 const LAYERING_ALLOWED = array(
-    'oc-includes/osclass/classes/user/UserQuery.php: $user = \User::getInstance()->findByPrimaryKey($id);'
+    'oc-includes/classes/user/UserQuery.php: $user = \User::getInstance()->findByPrimaryKey($id);'
         => 'the legacy User row, cached by the model, is the shape its callers read',
 );
 

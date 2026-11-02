@@ -27,7 +27,7 @@ define('PLUGINS_PATH', $base);
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/stubs.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/cli/Cli.php';
+require_once ABS_PATH . 'oc-includes/classes/core/cli/Cli.php';
 
 $GLOBALS['prefs'] = array('active_plugins' => serialize(array()), 'installed_plugins' => serialize(array()));
 

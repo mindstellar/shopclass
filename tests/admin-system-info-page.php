@@ -127,7 +127,7 @@ check('Repair is refused when nothing is fixable', (static function (string $c):
 
     return $refuse !== false && $run !== false && $refuse < $run;
 })($post));
-$repair = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/DatabaseTools.php');
+$repair = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/admin/DatabaseTools.php');
 check('Repair waits for a running upgrade', strpos($post, 'if ($repair === null)') !== false
     && strpos($repair, 'self::upgradeLock($conn)') !== false && strpos($repair, '$release();') !== false);
 check('the update dialog posts to the Database tab', (bool) preg_match("/'id'\\s*=> 'db-update-dialog',.*?'url'\\s*=> SystemChecks::url\\(\\\$env, 'database', 'db-update'\\)/s", $shell));

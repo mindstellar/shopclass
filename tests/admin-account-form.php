@@ -1320,7 +1320,7 @@ check(
 // The declaration is where the hashing lives now, and it is the core helper rather than a
 // second copy of password_hash().
 $form = (string)file_get_contents(
-    ABS_PATH . 'oc-includes/osclass/classes/admin/form/AdminAccountForm.php'
+    ABS_PATH . 'oc-includes/classes/admin/form/AdminAccountForm.php'
 );
 check('scan: the declaration hashes through osc_hash_password()', strpos($form, 'osc_hash_password(') !== false);
 check('scan: and verifies through osc_verify_password()', strpos($form, 'osc_verify_password(') !== false);

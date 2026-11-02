@@ -101,11 +101,11 @@ putenv('OSC_DISABLE_SELF_UPDATE=0');
 pin('even when the environment says otherwise', true, osc_self_update_disabled());
 putenv('OSC_DISABLE_SELF_UPDATE');
 
-$ajax      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/admin/ajax/UpdateAjax.php');
+$ajax      = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/admin/ajax/UpdateAjax.php');
 $functions = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/functions.php');
 $footer    = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/functions.php');
 $upgrade   = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/upgrade.php');
-$auto      = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php');
+$auto      = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/upgrade/AutoSecurityUpdate.php');
 
 check('the version check asks GitHub nothing on edge', (bool) preg_match(
     "/function checkVersion\\(\\): void\\s*\\{\\s*if \\(BuildInfo::isEdge\\(\\)\\) \\{\\s*AjaxResponse::json\\([^;]+;\\s*return;\\s*\\}/",

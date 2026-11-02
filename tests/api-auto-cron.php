@@ -20,9 +20,9 @@ $GLOBALS['okCount']    = 0;
 $GLOBALS['failCount']  = 0;
 $GLOBALS['failLabels'] = array();
 
-$response = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/api/Response.php');
+$response = (string) file_get_contents(__DIR__ . '/../oc-includes/classes/api/Response.php');
 $jobs     = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/helpers/hJobs.php');
-$index    = (string) file_get_contents(__DIR__ . '/../oc-includes/osclass/classes/routing/FrontController.php');
+$index    = (string) file_get_contents(__DIR__ . '/../oc-includes/classes/core/routing/FrontController.php');
 
 harness_section('API path ticks auto-cron after sending');
 

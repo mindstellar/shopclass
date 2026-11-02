@@ -39,14 +39,14 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/base/Registry.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/category/CategoryModes.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/settings/SettingsPageRegistry.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/Store.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/PreferenceStore.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/TableStore.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/form/store/StoreFactory.php';
-require_once ABS_PATH . 'oc-includes/osclass/classes/admin/ui/FormSpec.php';
+require_once ABS_PATH . 'oc-includes/classes/core/base/Registry.php';
+require_once ABS_PATH . 'oc-includes/classes/listing/category/CategoryModes.php';
+require_once ABS_PATH . 'oc-includes/classes/core/settings/SettingsPageRegistry.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/Store.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/PreferenceStore.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/TableStore.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/form/store/StoreFactory.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/FormSpec.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/Plugins.php';
 
 use mindstellar\admin\ui\FormSpec;
@@ -116,7 +116,7 @@ check(
     strpos((string)file_get_contents(ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php'), 'function osc_admin_form') !== false
 );
 $ocLoad     = (string)file_get_contents(ABS_PATH . 'oc-load.php');
-require_once ABS_PATH . 'oc-includes/osclass/classes/boot/Boot.php';
+require_once ABS_PATH . 'oc-includes/classes/core/boot/Boot.php';
 $atHelper   = strpos($ocLoad, 'Boot::HELPERS');
 $atPlugins  = strpos($ocLoad, 'Plugins::init()');
 check('oc-load.php loads that file', in_array('osclass/helpers/hSettings.php', \mindstellar\boot\Boot::HELPERS, true) && $atHelper !== false);

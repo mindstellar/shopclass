@@ -70,7 +70,7 @@ function osc_user_email()
 
 require_once __DIR__ . '/lib/stubs.php';
 require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
-require_once __DIR__ . '/../oc-includes/osclass/classes/routing/CoreRoutes.php';
+require_once __DIR__ . '/../oc-includes/classes/core/routing/CoreRoutes.php';
 require_once __DIR__ . '/../oc-includes/osclass/classes/Rewrite.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hDefines.php';
 require_once __DIR__ . '/lib/harness.php';

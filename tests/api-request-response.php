@@ -181,7 +181,7 @@ $cookie = (new Response(200, ['data' => []], ['Set-Cookie' => 'a=b', 'X-Test' =>
 $names  = array_map('strtolower', array_keys($cookie->prepare('GET')['headers']));
 check('a Response never carries Set-Cookie', !in_array('set-cookie', $names, true));
 pin('a header value cannot smuggle a line break', '1Set-Cookie: c=d', $cookie->header('X-Test'));
-$src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/Response.php');
+$src = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/api/Response.php');
 check('send() removes cookies queued elsewhere, ends every buffer and flushes before exit', str_contains($src, "header_remove('Set-Cookie')")
     && str_contains($src, 'ob_end_clean()') && str_contains($src, 'flush();'));
 
@@ -267,7 +267,7 @@ $bad = array_filter(Problem::CATALOGUE, static fn (array $e, string $c): bool =>
 pin('every catalogue entry is well formed', [], array_keys($bad));
 
 // PHP makes any answer carrying WWW-Authenticate a 401, so a 403 insufficient_scope needs its status set last.
-$send = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/api/Response.php');
+$send = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/api/Response.php');
 check('send() sets the status after the headers', strpos($send, 'http_response_code($out[\'status\'])') > strpos($send, "header(\$name . ': ' . \$value);"));
 
 exit(harness_result());

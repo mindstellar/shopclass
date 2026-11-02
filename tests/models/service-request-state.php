@@ -226,8 +226,8 @@ UserActions::refreshIdentity($sue);
 pin('the web caller refreshes it', 'Susan', Session::getInstance()->_get('userName'));
 $asUser(null);
 
-$source = static fn (string $path): string => (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/' . $path);
-foreach (array('listing/ListingService.php', 'comment/CommentService.php', 'user/AccountService.php') as $path) {
+$source = static fn (string $path): string => (string) file_get_contents(ABS_PATH . 'oc-includes/' . $path);
+foreach (array('classes/listing/ListingService.php', 'classes/content/comment/CommentService.php', 'classes/user/AccountService.php') as $path) {
     $code = $source($path);
     pin("$path reads no request, View or session", array(false, false, false), array(str_contains($code, 'Params::'), str_contains($code, 'View::'), str_contains($code, 'Session::')));
 }
