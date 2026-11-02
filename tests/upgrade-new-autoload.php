@@ -33,13 +33,21 @@ file_put_contents(
 );
 file_put_contents(
     $composer . '/autoload_classmap.php',
-    $header . "return array('FakeNewLegacyClass' => \$baseDir . '/oc-includes/osclass/legacy/FakeNewLegacyClass.php');\n"
+    $header . "return array('FakeNewLegacyClass' => \$baseDir . '/oc-includes/osclass/legacy/FakeNewLegacyClass.php', 'FakeBothClass' => \$baseDir . '/oc-includes/osclass/legacy/FakeBothClass.php');\n"
 );
 file_put_contents(
     $root . '/oc-includes/classes/fakenew/Moved.php',
     "<?php\nnamespace mindstellar\\fakenew;\nclass Moved {}\n"
 );
 file_put_contents($root . '/oc-includes/osclass/legacy/FakeNewLegacyClass.php', "<?php\nclass FakeNewLegacyClass {}\n");
+// A class both releases ship: the old loader would give the old copy, the new maps must win.
+file_put_contents($root . '/old-FakeBothClass.php', "<?php\nclass FakeBothClass { public const FROM = 'old'; }\n");
+file_put_contents($root . '/oc-includes/osclass/legacy/FakeBothClass.php', "<?php\nclass FakeBothClass { public const FROM = 'new'; }\n");
+spl_autoload_register(static function (string $class) use ($root): void {
+    if ($class === 'FakeBothClass') {
+        require $root . '/old-FakeBothClass.php';
+    }
+});
 
 harness_section('the new release maps are loaded after the swap');
 pin('the moved class is unknown before', false, class_exists('mindstellar\fakenew\Moved'));
@@ -48,6 +56,7 @@ pin('loading the new maps reports success', true, Upgrade::loadNewAutoload($root
 pin('a new PSR-4 class is found', true, class_exists('mindstellar\fakenew\Moved'));
 pin('a new classmap class is found', true, class_exists('FakeNewLegacyClass'));
 pin('old classes still load', true, class_exists('mindstellar\utility\FileSystem'));
+pin('a class both releases ship loads from the new one', 'new', FakeBothClass::FROM);
 
 harness_section('a missing or broken package changes nothing');
 $empty = $root . '/empty';

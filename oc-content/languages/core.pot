@@ -579,6 +579,10 @@ msgid_plural "%s files"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/helpers/hPreference.php
+msgid "%s g"
+msgstr ""
+
 #: oc-includes/classes/media/image/Processor.php
 msgid "%s has too many pixels to process."
 msgstr ""
@@ -658,6 +662,14 @@ msgid ""
 "will be back shortly — thanks for your patience."
 msgstr ""
 
+#: oc-includes/osclass/helpers/hPreference.php
+msgid "%s kg"
+msgstr ""
+
+#: oc-includes/osclass/helpers/hPreference.php
+msgid "%s lb"
+msgstr ""
+
 #: oc-includes/classes/search/SearchSuggestions.php
 #: oc-includes/osclass/functions.php
 msgid "%s listing"
@@ -692,6 +704,10 @@ msgid "%s order"
 msgid_plural "%s orders"
 msgstr[0] ""
 msgstr[1] ""
+
+#: oc-includes/osclass/helpers/hPreference.php
+msgid "%s oz"
+msgstr ""
 
 #: oc-admin/themes/modern/stats/users.php
 msgid "%s products per user"
@@ -741,7 +757,7 @@ msgid "(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)"
 msgstr ""
 
 #: oc-includes/classes/admin/form/BanRuleForm.php
-msgid "(e.g. 192.168.10-20.*, 203.0.113.0/24, 2001:db8::/32)"
+msgid "(e.g. 192.168.10-20.*)"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -1166,6 +1182,10 @@ msgstr ""
 msgid ""
 "A private bucket for Tools > Backup and restore, reached with the keys "
 "above. "
+msgstr ""
+
+#: oc-includes/classes/admin/form/BanRuleForm.php
+msgid "A range such as 203.0.113.0/24 or 2001:db8::/32 also works."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php

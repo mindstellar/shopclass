@@ -130,6 +130,8 @@ final class AccountService
      * sends no activation mail, joins the guest listings posted with the e-mail, and fires
      * `hook_email_user_registration` and `validate_user` once, as a confirmed sign-up does.
      * A taken e-mail is refused: signing the visitor into that account instead needs its own proof.
+     * Pass only the e-mail from the provider's verified claim, never one the visitor typed: it takes
+     * the guest listings posted with it.
      *
      * @param array<string,mixed> $form as for register(), without the passwords
      *

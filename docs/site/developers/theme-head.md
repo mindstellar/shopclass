@@ -56,6 +56,16 @@ core-managed; `osc_head()` itself works whether or not you declared anything.
 A theme that does not call `osc_head()` still gets the `api` tag from the `header` hook, unless it
 declares `'api' => false`.
 
+### A theme with no comments
+
+A theme that never shows listing comments says so:
+
+```php
+osc_add_theme_support('comments', false);
+```
+
+**Settings → Comments** then tells the owner the active theme shows no comments.
+
 ## `osc_body_class()`
 
 ```php

@@ -1185,10 +1185,10 @@ function _osc_weight_in(int $grams, string $unit): string
 function osc_weight_display(int $grams): string
 {
     if (osc_weight_unit() === 'imperial') {
-        return $grams < osc_weight_grams_per('lb') ? _osc_weight_in($grams, 'oz') . ' oz' : _osc_weight_in($grams, 'lb') . ' lb';
+        return $grams < osc_weight_grams_per('lb') ? sprintf(__('%s oz'), _osc_weight_in($grams, 'oz')) : sprintf(__('%s lb'), _osc_weight_in($grams, 'lb'));
     }
 
-    return $grams < 1000 ? $grams . ' g' : _osc_weight_in($grams, 'kg') . ' kg';
+    return $grams < 1000 ? sprintf(__('%s g'), $grams) : sprintf(__('%s kg'), _osc_weight_in($grams, 'kg'));
 }
 
 /**

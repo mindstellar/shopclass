@@ -276,6 +276,17 @@ so a theme script can find the address fields.
 `user_avatar_form($user)` fires after the picture field and its Remove box. A
 "Your data" panel links to `osc_user_export_url()`.
 
+## Social sign-in
+
+A sign-in plugin makes the account with `AccountService::registerVerified($form, $actor)`. It
+takes the same form as a sign-up, without the passwords, and makes an active account with no
+activation mail. Pass only the e-mail from the provider's verified claim: the account takes the
+guest listings posted with it. A taken e-mail is refused.
+
+`AvatarUpload::store($userId, $path)` saves an image file already on disk, such as the provider's
+profile picture, as the user's avatar. It returns false when avatars are off or the file is not a
+usable image.
+
 ## The public profile contact form
 
 The public profile has a contact form, unless the visitor owns the profile, or

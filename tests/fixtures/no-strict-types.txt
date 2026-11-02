@@ -128,7 +128,6 @@ oc-includes/classes/search/SearchRunner.php
 oc-includes/classes/search/SearchUriResolver.php
 oc-includes/classes/core/security/ActionThrottle.php
 oc-includes/classes/core/security/ActionToken.php
-oc-includes/classes/core/security/AddressGuard.php
 oc-includes/classes/core/security/AdminReauth.php
 oc-includes/classes/core/security/AdminTwoFactor.php
 oc-includes/classes/core/security/Csrf.php

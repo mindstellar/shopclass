@@ -7,6 +7,7 @@
 /oc-includes/classes/core/security/      @navjottomer
 
 # SQL construction and the query layer.
+/oc-includes/classes/core/database/         @navjottomer
 /oc-includes/osclass/classes/database/      @navjottomer
 /oc-includes/osclass/model/                 @navjottomer
 
