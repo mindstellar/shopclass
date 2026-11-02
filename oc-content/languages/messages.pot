@@ -132,7 +132,8 @@ msgid "%s can't be disabled because it's the default language"
 msgstr ""
 
 #: oc-includes/osclass/classes/language/LanguageService.php
-msgid "%s can't be disabled for oc-admin because it's the admin default language"
+msgid ""
+"%s can't be disabled for oc-admin because it's the admin default language"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -177,8 +178,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid ""
-"%s is already installed. Preview its update on the Data tab before "
-"importing it again."
+"%s is already installed. Preview its update on the Data tab before importing "
+"it again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -242,7 +243,8 @@ msgid "A currency with this code already exists."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
-msgid "A held alert cannot be activated. Ask the user to save the search again."
+msgid ""
+"A held alert cannot be activated. Ask the user to save the search again."
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageGuard.php
@@ -281,8 +283,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
 msgid ""
-"A new secret is made. The old one also signs deliveries for 24 hours, so "
-"you can switch over."
+"A new secret is made. The old one also signs deliveries for 24 hours, so you "
+"can switch over."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/StaticPageForm.php
@@ -290,7 +292,8 @@ msgid "A page needs a title in at least one language."
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/PhotoService.php
-msgid "A photo could not be saved. Check that the uploads folder can be written to."
+msgid ""
+"A photo could not be saved. Check that the uploads folder can be written to."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
@@ -306,7 +309,8 @@ msgid "A test event is queued. It is sent on the next run of the job queue."
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingService.php
-msgid "A user with that email address already exists, if it is you, please log in"
+msgid ""
+"A user with that email address already exists, if it is you, please log in"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hApi.php
@@ -583,7 +587,8 @@ msgid "Block"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
-msgid "Block this conversation? Neither of you can write until it is unblocked."
+msgid ""
+"Block this conversation? Neither of you can write until it is unblocked."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/item-row.php
@@ -689,8 +694,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid ""
-"Check your inbox at %s. A message is sent only when you click the link we "
-"e-mailed."
+"Check your inbox at %s. A message is sent only when you click the link we e-"
+"mailed."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
@@ -884,8 +889,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid ""
-"Could not read the list of translations at %s. This server has to be able "
-"to reach it."
+"Could not read the list of translations at %s. This server has to be able to "
+"reach it."
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
@@ -1207,8 +1212,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/webhook/WebhookService.php
 msgid ""
-"Enter the full web address of the endpoint, such as "
-"https://example.com/webhooks."
+"Enter the full web address of the endpoint, such as https://example.com/"
+"webhooks."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
@@ -1310,7 +1315,8 @@ msgid "Former user"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hBilling.php
-msgid "Free bumps are paused: you have %1$d live listings and your limit is %2$d."
+msgid ""
+"Free bumps are paused: you have %1$d live listings and your limit is %2$d."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
@@ -1321,8 +1327,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid ""
-"Friendly URLs deactivated, but .htaccess file was modified outside "
-"Shopclass and was not deleted"
+"Friendly URLs deactivated, but .htaccess file was modified outside Shopclass "
+"and was not deleted"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
@@ -1411,7 +1417,8 @@ msgid "If it is not paid for by %s, this listing will be deleted."
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
-msgid "If it was not you, ignore this e-mail. The message is deleted in 24 hours."
+msgid ""
+"If it was not you, ignore this e-mail. The message is deleted in 24 hours."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -1420,8 +1427,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid ""
-"If that email address belongs to an account, we have sent it instructions "
-"to reset the password"
+"If that email address belongs to an account, we have sent it instructions to "
+"reset the password"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
@@ -1834,8 +1841,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid ""
-"No more alerts can be saved right now. Delete one you no longer need, or "
-"try again later."
+"No more alerts can be saved right now. Delete one you no longer need, or try "
+"again later."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
@@ -1940,7 +1947,8 @@ msgid "No users have been signed out"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
-msgid "Not enough credits for this upgrade. <a href=\"%s\">Buy more credits</a>"
+msgid ""
+"Not enough credits for this upgrade. <a href=\"%s\">Buy more credits</a>"
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
@@ -2052,7 +2060,8 @@ msgid "Only a paid order can be refunded"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
-msgid "Only a paid order, or an unpaid cash on delivery one, can be marked shipped"
+msgid ""
+"Only a paid order, or an unpaid cash on delivery one, can be marked shipped"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -2920,7 +2929,8 @@ msgid "So you know later what uses it."
 msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
-msgid "Someone, hopefully you, wrote a message on %s and gave this e-mail address."
+msgid ""
+"Someone, hopefully you, wrote a message on %s and gave this e-mail address."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
@@ -3080,8 +3090,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/security/MessageHold.php
 msgid ""
-"That file cannot be attached. Attach a picture, PDF, text or office "
-"document of up to %d MB."
+"That file cannot be attached. Attach a picture, PDF, text or office document "
+"of up to %d MB."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebForm.php
@@ -3094,8 +3104,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid ""
-"That is more than the balance holds. Remove no more than the current "
-"balance."
+"That is more than the balance holds. Remove no more than the current balance."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -3111,7 +3120,8 @@ msgid "That key is not in the list any more."
 msgstr ""
 
 #: oc-includes/osclass/classes/apikey/ApiKeyService.php
-msgid "That key is revoked, expired or its owner is gone, so it cannot be rotated."
+msgid ""
+"That key is revoked, expired or its owner is gone, so it cannot be rotated."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
@@ -3167,7 +3177,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/controller/CWebBilling.php
-msgid "That payment method is not available right now. Try again or choose another."
+msgid ""
+"That payment method is not available right now. Try again or choose another."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
@@ -3175,7 +3186,8 @@ msgid "That settings page is not available"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
-msgid "That settings page saves into a table, which needs a controller of its own"
+msgid ""
+"That settings page saves into a table, which needs a controller of its own"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
@@ -3466,7 +3478,8 @@ msgid "The listing has been validated"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
-msgid "The listing hasn't been enabled. Please enable it in order to make it public"
+msgid ""
+"The listing hasn't been enabled. Please enable it in order to make it public"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -3706,7 +3719,8 @@ msgid "The site is open again. Check the database below."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
-msgid "The site team reviews it. Neither of you can write while it is under review."
+msgid ""
+"The site team reviews it. Neither of you can write while it is under review."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
@@ -3823,7 +3837,8 @@ msgid "The watermark image has to be a .PNG file"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
-msgid "The webhook endpoint is added. Copy its secret now: it is not shown again."
+msgid ""
+"The webhook endpoint is added. Copy its secret now: it is not shown again."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
@@ -3831,7 +3846,8 @@ msgid "The webhook endpoint is deleted."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
-msgid "The webhook endpoint is off. Nothing is sent to it until you switch it on."
+msgid ""
+"The webhook endpoint is off. Nothing is sent to it until you switch it on."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
@@ -3910,14 +3926,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid ""
-"There was an error creating the .maintenance file, please create it "
-"manually at the root folder"
+"There was an error creating the .maintenance file, please create it manually "
+"at the root folder"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid ""
-"There was an error removing the .maintenance file, please remove it "
-"manually from the root folder"
+"There was an error removing the .maintenance file, please remove it manually "
+"from the root folder"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -4411,7 +4427,8 @@ msgid "We've just sent an e-mail to the seller"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
-msgid "We've sent you an e-mail. Follow its instructions to validate the changes"
+msgid ""
+"We've sent you an e-mail. Follow its instructions to validate the changes"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
@@ -4643,7 +4660,8 @@ msgid "You have to set an internal name"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
-msgid "You have very few free space left, users will not be able to upload pictures"
+msgid ""
+"You have very few free space left, users will not be able to upload pictures"
 msgstr ""
 
 #: oc-includes/osclass/classes/comment/CommentService.php
@@ -4716,7 +4734,8 @@ msgid "Your account has been validated"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hTheme.php
-msgid "Your account is not deleted yet. Enter your password and click Delete my "
+msgid ""
+"Your account is not deleted yet. Enter your password and click Delete my "
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
@@ -5036,7 +5055,8 @@ msgid "robots.txt has been updated"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SitemapSettingsScreen.php
-msgid "robots.txt is not writable. Fix the file or folder permissions and try again"
+msgid ""
+"robots.txt is not writable. Fix the file or folder permissions and try again"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php

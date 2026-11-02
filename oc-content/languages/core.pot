@@ -33,7 +33,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "%1$d linked folder was skipped: %2$s (it points outside oc-content)."
-msgid_plural "%1$d linked folders were skipped: %2$s (they point outside oc-content)."
+msgid_plural ""
+"%1$d linked folders were skipped: %2$s (they point outside oc-content)."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -271,8 +272,8 @@ msgstr[1] ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"%d column defaults to a zero date, so strict SQL mode refuses changes to "
-"its table."
+"%d column defaults to a zero date, so strict SQL mode refuses changes to its "
+"table."
 msgid_plural ""
 "%d columns default to a zero date, so strict SQL mode refuses changes to "
 "their tables."
@@ -488,7 +489,8 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/appearance/customise.php
-msgid "%d widgets here are not sections this page offers. Publishing removes them."
+msgid ""
+"%d widgets here are not sections this page offers. Publishing removes them."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -594,8 +596,8 @@ msgid ""
 "%s is in test mode: no real money is taken. Switch it to live mode before "
 "the site takes payments."
 msgid_plural ""
-"%s are in test mode: no real money is taken. Switch them to live mode "
-"before the site takes payments."
+"%s are in test mode: no real money is taken. Switch them to live mode before "
+"the site takes payments."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -781,7 +783,8 @@ msgid "0 means no wait."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
-msgid "0 uses the default: %1$d, or %2$d while the listing form asks for a captcha."
+msgid ""
+"0 uses the default: %1$d, or %2$d while the listing form asks for a captcha."
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
@@ -895,8 +898,8 @@ msgstr ""
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
 "<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have "
-"it and will get it ready once your payment ({PAYMENT_METHOD}) is "
-"in.</p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
+"it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</"
+"p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -908,8 +911,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
-"<p>Hi {USER_NAME},</p><p>You have a new message about "
-"{ITEM_TITLE}.</p><p>{MESSAGE_LINK}</p>"
+"<p>Hi {USER_NAME},</p><p>You have a new message about {ITEM_TITLE}.</"
+"p><p>{MESSAGE_LINK}</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -928,8 +931,8 @@ msgstr ""
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
 "<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} was "
-"cancelled. Your listing stays on hold until the fee is "
-"paid.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>"
+"cancelled. Your listing stays on hold until the fee is paid.</p>{ORDER_LINES}"
+"<p>{ORDER_LINK}</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -940,14 +943,13 @@ msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
-"<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} is back in "
-"stock.</p><p>{ITEM_LINK}</p>"
+"<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} is back in stock.</p><p>{ITEM_LINK}</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
 msgid ""
-"<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} now sells for "
-"{ITEM_PRICE}.</p><p>{ITEM_LINK}</p>"
+"<p>Hi {USER_NAME},</p><p>{ITEM_TITLE} now sells for {ITEM_PRICE}.</"
+"p><p>{ITEM_LINK}</p>"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
@@ -1032,8 +1034,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid ""
-"A country in the catalog can be imported with its regions and cities "
-"instead."
+"A country in the catalog can be imported with its regions and cities instead."
 msgstr ""
 
 #: oc-includes/osclass/classes/search/AlertStore.php
@@ -1084,8 +1085,8 @@ msgstr ""
 
 #: oc-includes/classes/content/menu/MenuService.php
 msgid ""
-"A menu id starts with a letter and has at most 32 lowercase letters, "
-"digits, - or _."
+"A menu id starts with a letter and has at most 32 lowercase letters, digits, "
+"- or _."
 msgstr ""
 
 #: oc-includes/classes/content/menu/MenuItems.php
@@ -1136,15 +1137,15 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid ""
 "A plugin that finds the exact map position of a listing from its street "
-"address. It works with any map. Without one, a listing is placed at its "
-"city centre."
+"address. It works with any map. Without one, a listing is placed at its city "
+"centre."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid ""
 "A plugin that finds the exact map position of a product from its street "
-"address. It works with any map. Without one, a product is placed at its "
-"city centre."
+"address. It works with any map. Without one, a product is placed at its city "
+"centre."
 msgstr ""
 
 #: oc-includes/classes/core/install/ShopSetup.php
@@ -1181,8 +1182,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/billing/Billing.php
 msgid ""
-"A refund was already sent to the payment provider. Check its dashboard, "
-"then use Record a refund."
+"A refund was already sent to the payment provider. Check its dashboard, then "
+"use Record a refund."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -1226,8 +1227,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/routing/ReservedSlugs.php
 msgid ""
-"A slug of \"api\", or one starting with \"api/\", is reserved for the "
-"site's API. Choose another."
+"A slug of \"api\", or one starting with \"api/\", is reserved for the site's "
+"API. Choose another."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupJobs.php
@@ -1531,8 +1532,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/currencies.php
 msgid ""
-"Add new currencies or edit existing currencies so users can publish "
-"listings in their country's currency."
+"Add new currencies or edit existing currencies so users can publish listings "
+"in their country's currency."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
@@ -1627,8 +1628,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/index.php
 msgid ""
-"Add, edit or delete information associated to registered users. Keep in "
-"mind that deleting a user also "
+"Add, edit or delete information associated to registered users. Keep in mind "
+"that deleting a user also "
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -1767,7 +1768,8 @@ msgid "Administrators"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/AdminAccountForm.php
-msgid "Administrators have total control over all aspects of your installation, "
+msgid ""
+"Administrators have total control over all aspects of your installation, "
 msgstr ""
 
 #: oc-admin/themes/modern/admins/index.php
@@ -1776,7 +1778,8 @@ msgid "Admins"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/index.php
-msgid "Admins manage the whole panel; moderators only handle listings and stats."
+msgid ""
+"Admins manage the whole panel; moderators only handle listings and stats."
 msgstr ""
 
 #: oc-includes/osclass/classes/storage/StorageJobs.php
@@ -1870,7 +1873,8 @@ msgid "Alerts"
 msgstr ""
 
 #: oc-admin/themes/modern/users/alerts.php
-msgid "Alerts notify a user by email when a new listing matches their saved search."
+msgid ""
+"Alerts notify a user by email when a new listing matches their saved search."
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
@@ -2024,7 +2028,8 @@ msgid "An account allowed to create databases. Only used once, during setup."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/credits.php
-msgid "An account appears here the first time credits are added to it, whether "
+msgid ""
+"An account appears here the first time credits are added to it, whether "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -2108,7 +2113,8 @@ msgid "Anonymous"
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Osclass.php
-msgid "Another upgrade is already running. Wait for it to finish, then try again."
+msgid ""
+"Another upgrade is already running. Wait for it to finish, then try again."
 msgstr ""
 
 #: oc-includes/osclass/classes/form/FieldForm.php
@@ -2289,14 +2295,15 @@ msgid "Are you sure you want to %s the selected users?"
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
-msgid "Are you sure you want to clear all the reportings of the selected items?"
+msgid ""
+"Are you sure you want to clear all the reportings of the selected items?"
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
 msgid ""
-"Are you sure you want to clear the deduplicated reports (and all "
-"reportings) of the selected items? This also resets their report-threshold "
-"auto-block state."
+"Are you sure you want to clear the deduplicated reports (and all reportings) "
+"of the selected items? This also resets their report-threshold auto-block "
+"state."
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
@@ -2306,7 +2313,8 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
-msgid "Are you sure you want to clear the expired reportings of the selected items?"
+msgid ""
+"Are you sure you want to clear the expired reportings of the selected items?"
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
@@ -2322,7 +2330,8 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
-msgid "Are you sure you want to clear the spam reportings of the selected items?"
+msgid ""
+"Are you sure you want to clear the spam reportings of the selected items?"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
@@ -2349,8 +2358,7 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid ""
-"At least PHP %s (PHP %s or higher recommended) is required to run "
-"Shopclass. "
+"At least PHP %s (PHP %s or higher recommended) is required to run Shopclass. "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
@@ -2420,8 +2428,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
 msgid ""
-"Automatic prefers reCAPTCHA whenever its site and secret keys below are "
-"set; clear "
+"Automatic prefers reCAPTCHA whenever its site and secret keys below are set; "
+"clear "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -2433,7 +2441,8 @@ msgid "Automatic: your top categories. Save to use this list instead."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
-msgid "Automatically hide a listing once enough distinct visitors have reported it"
+msgid ""
+"Automatically hide a listing once enough distinct visitors have reported it"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
@@ -2910,8 +2919,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid ""
-"Build reusable forms by dragging fields from the palette on the right into "
-"a form on the left. "
+"Build reusable forms by dragging fields from the palette on the right into a "
+"form on the left. "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -3107,7 +3116,8 @@ msgid "Captcha"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
-msgid "Captcha is currently off: you forced a provider but its keys are empty. "
+msgid ""
+"Captcha is currently off: you forced a provider but its keys are empty. "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -3357,14 +3367,13 @@ msgstr ""
 #: oc-includes/osclass/installer/gui/install.php
 msgid ""
 "Check that the database server is running and that the settings in "
-"config.php are right, then reload this page. To install from scratch, "
-"delete config.php first."
+"config.php are right, then reload this page. To install from scratch, delete "
+"config.php first."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid ""
-"Check to see if you're using the latest version of Shopclass. If you're "
-"not, "
+"Check to see if you're using the latest version of Shopclass. If you're not, "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
@@ -3419,7 +3428,8 @@ msgid "Choose one category"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
-msgid "Choose the country your visitors are mostly in. You can change this later."
+msgid ""
+"Choose the country your visitors are mostly in. You can change this later."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
@@ -3505,7 +3515,8 @@ msgid "Cleanup removed %1$d: %2$s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
-msgid "Cleanup runs in the background, one batch at a time, until nothing matches."
+msgid ""
+"Cleanup runs in the background, one batch at a time, until nothing matches."
 msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
@@ -3608,7 +3619,8 @@ msgid "Close an order that will not be paid."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
-msgid "Close an order that will not be paid. Stock held for it goes back on sale."
+msgid ""
+"Close an order that will not be paid. Stock held for it goes back on sale."
 msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
@@ -3877,11 +3889,13 @@ msgid "Connected to %s. Ready to install."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "Connected to %s. The unfinished install will be removed when you continue."
+msgid ""
+"Connected to %s. The unfinished install will be removed when you continue."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "Connected to the server. The database %s will be created during install."
+msgid ""
+"Connected to the server. The database %s will be created during install."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -4109,7 +4123,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
-msgid "Counting views writes on every page view. Turn it off if you do not use it."
+msgid ""
+"Counting views writes on every page view. Turn it off if you do not use it."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
@@ -4165,7 +4180,8 @@ msgid "Crafts & Hobbies"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
-msgid "Crawlers are most of the traffic on a busy site and inflate the numbers."
+msgid ""
+"Crawlers are most of the traffic on a busy site and inflate the numbers."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -4247,7 +4263,8 @@ msgid "Cron Settings"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
-msgid "Cron has never run. Update checks, alert emails and cleanup wait for it."
+msgid ""
+"Cron has never run. Update checks, alert emails and cleanup wait for it."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -4486,7 +4503,8 @@ msgid "Date: %s at %s"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
-msgid "Days from the publishing date, or a date like 2027-03-04. 0 never expires."
+msgid ""
+"Days from the publishing date, or a date like 2027-03-04. 0 never expires."
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
@@ -4514,7 +4532,8 @@ msgid "Debug mode"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
-msgid "Debug mode is on. On a live site it shows internal details and slows pages."
+msgid ""
+"Debug mode is on. On a live site it shows internal details and slows pages."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -4625,8 +4644,7 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php
 msgid ""
 "Delete <strong>%1$s</strong>? This permanently removes it, its %2$d "
-"subcategories, and all %3$d listings filed under them. This cannot be "
-"undone."
+"subcategories, and all %3$d listings filed under them. This cannot be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -4770,7 +4788,8 @@ msgid "Delete submission"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
-msgid "Delete the selected files? Listings, users and pages lose them for good."
+msgid ""
+"Delete the selected files? Listings, users and pages lose them for good."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -4862,8 +4881,8 @@ msgstr ""
 #: oc-includes/osclass/classes/webhook/Delivery.php
 msgid ""
 "Deliveries to %1$s failed %2$d times in a row, so the site stopped sending "
-"to it. The last answer was: %3$s. Fix the receiver, then switch the "
-"endpoint on again in Settings, then API."
+"to it. The last answer was: %3$s. Fix the receiver, then switch the endpoint "
+"on again in Settings, then API."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -5069,7 +5088,8 @@ msgid "Download every remote image back to local disk?"
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
-msgid "Download failed, or the downloaded file did not match the expected checksum."
+msgid ""
+"Download failed, or the downloaded file did not match the expected checksum."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
@@ -5244,8 +5264,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
-"Each remote image is queued for download and switched back to local "
-"storage. "
+"Each remote image is queued for download and switched back to local storage. "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -5385,7 +5404,8 @@ msgid "Editing this field changes it in every form that uses it."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-msgid "Eight months old and good with children. Looking for a family with a garden."
+msgid ""
+"Eight months old and good with children. Looking for a family with a garden."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
@@ -5437,11 +5457,13 @@ msgid "Email: this field is required"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "Emails the seller this many days before the listing expires. 0 sends none."
+msgid ""
+"Emails the seller this many days before the listing expires. 0 sends none."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "Emails the seller this many days before the product expires. 0 sends none."
+msgid ""
+"Emails the seller this many days before the product expires. 0 sends none."
 msgstr ""
 
 #: oc-includes/osclass/classes/job/CategoryJobs.php
@@ -5538,8 +5560,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/admins/sign_out_all.php
 msgid ""
-"Ends every admin sign-in of this account: other browsers, remembered "
-"sign-ins, and this browser too."
+"Ends every admin sign-in of this account: other browsers, remembered sign-"
+"ins, and this browser too."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupStore.php
@@ -5580,7 +5602,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "Enter the database settings this site is configured with in its environment."
+msgid ""
+"Enter the database settings this site is configured with in its environment."
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -5628,7 +5651,8 @@ msgid "Events & Photography"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
-msgid "Every app or script using it stops working at once. This cannot be undone."
+msgid ""
+"Every app or script using it stops working at once. This cannot be undone."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -5890,7 +5914,8 @@ msgid "Fields for this category"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
-msgid "Fifty natural wood blocks in a cotton bag. Smooth edges and safe finishes."
+msgid ""
+"Fifty natural wood blocks in a cotton bag. Smooth edges and safe finishes."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -6064,7 +6089,8 @@ msgid "Folding walking frame"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-msgid "Folds flat with one hand and fits in a small boot. Comes with a rain cover."
+msgid ""
+"Folds flat with one hand and fits in a small boot. Comes with a rain cover."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
@@ -6102,8 +6128,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid ""
-"For the contact form and the contact publisher form. Pictures, PDF, text "
-"and office documents only."
+"For the contact form and the contact publisher form. Pictures, PDF, text and "
+"office documents only."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
@@ -6142,7 +6168,8 @@ msgid "Forms"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-msgid "Forty pieces of track and four carriages. Safe paint and no loose parts."
+msgid ""
+"Forty pieces of track and four carriages. Safe paint and no loose parts."
 msgstr ""
 
 #: oc-admin/themes/modern/functions.php
@@ -6349,8 +6376,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid ""
-"GitHub's cumulative release-asset downloads — includes CI, mirrors, bots "
-"and repeat downloads. Not an install count."
+"GitHub's cumulative release-asset downloads — includes CI, mirrors, bots and "
+"repeat downloads. Not an install count."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
@@ -6763,8 +6790,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"Imagick is installed but not selected. It resizes at higher quality: turn "
-"it on under Settings > Media."
+"Imagick is installed but not selected. It resizes at higher quality: turn it "
+"on under Settings > Media."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -6824,8 +6851,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
-"Imports your Better S3 connection settings and marks images already "
-"uploaded to that "
+"Imports your Better S3 connection settings and marks images already uploaded "
+"to that "
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -6991,8 +7018,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid ""
-"Install the OS package (for example %1$s or %2$s), make sure an %3$s line "
-"is present, and restart PHP. This page then lists it as installed."
+"Install the OS package (for example %1$s or %2$s), make sure an %3$s line is "
+"present, and restart PHP. This page then lists it as installed."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -7300,7 +7327,8 @@ msgid "Keep the photo at its full size."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
-msgid "Keep this high: many people can share one address at an office or on mobile."
+msgid ""
+"Keep this high: many people can share one address at an office or on mobile."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -7308,7 +7336,8 @@ msgid "Keeps data between requests"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
-msgid "Kept visible though the catalog dropped it, because it holds listings: %s."
+msgid ""
+"Kept visible though the catalog dropped it, because it holds listings: %s."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -7322,13 +7351,14 @@ msgid "Keys"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
-msgid "Keys a user makes for their own scripts. Each one must expire within a year."
+msgid ""
+"Keys a user makes for their own scripts. Each one must expire within a year."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
 msgid ""
-"Keys are kept apart per site, so several sites can share one Redis or "
-"Valkey server. Clearing empties only this site's keys."
+"Keys are kept apart per site, so several sites can share one Redis or Valkey "
+"server. Clearing empties only this site's keys."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
@@ -7546,7 +7576,8 @@ msgid "Latest users on the web"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-msgid "Lawns, hedges and borders tidied by an experienced gardener. Free quotes."
+msgid ""
+"Lawns, hedges and borders tidied by an experienced gardener. Free quotes."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -7640,8 +7671,8 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid ""
-"Light aluminium frame with mudguards and a rear rack. Ridden to work for "
-"two summers."
+"Light aluminium frame with mudguards and a rear rack. Ridden to work for two "
+"summers."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -7942,7 +7973,8 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
-msgid "Listings published by your users appear here, and you can post one yourself."
+msgid ""
+"Listings published by your users appear here, and you can post one yourself."
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
@@ -7956,7 +7988,8 @@ msgid "Listings shown in RSS feed: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/index.php
-msgid "Listings shown in RSS feed: this field must only contain numeric characters"
+msgid ""
+"Listings shown in RSS feed: this field must only contain numeric characters"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CleanupSettingsScreen.php
@@ -8163,7 +8196,8 @@ msgid "Machinery & Tools"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-msgid "Made in small batches with shea butter and almond oil. No added perfume."
+msgid ""
+"Made in small batches with shea butter and almond oil. No added perfume."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/mailserver.php
@@ -8204,13 +8238,13 @@ msgid "Maintenance mode"
 msgstr ""
 
 #: oc-includes/osclass/functions.php
-msgid "Maintenance mode is on — only signed-in admins can see the site right now."
+msgid ""
+"Maintenance mode is on — only signed-in admins can see the site right now."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"Maintenance mode is on, but visitors can still use the site and see a "
-"banner."
+"Maintenance mode is on, but visitors can still use the site and see a banner."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -8295,8 +8329,8 @@ msgstr ""
 #: oc-admin/themes/modern/items/index.php
 msgid ""
 "Manage all the listings on your site: edit, delete or block the latest "
-"listings published. You can also filter by several parameters: user, "
-"region, city, etc."
+"listings published. You can also filter by several parameters: user, region, "
+"city, etc."
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
@@ -8448,8 +8482,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid ""
-"Mark this delivered once the courier has collected the cash. That also "
-"marks it paid."
+"Mark this delivered once the courier has collected the cash. That also marks "
+"it paid."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -9680,7 +9714,8 @@ msgid "Not compatible"
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
-msgid "Not enough space on the server to download it: needs about %1$s, %2$s free."
+msgid ""
+"Not enough space on the server to download it: needs about %1$s, %2$s free."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/Builder.php
@@ -9827,8 +9862,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Upgrade.php
 msgid ""
-"Nothing was changed. This update needs Shopclass %1$s or newer first. "
-"Update to %1$s, then update again."
+"Nothing was changed. This update needs Shopclass %1$s or newer first. Update "
+"to %1$s, then update again."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupService.php
@@ -9880,8 +9915,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/KeywordBlockSettingsScreen.php
 msgid ""
-"Number of distinct reporters (one vote per person) that auto-hides a "
-"listing."
+"Number of distinct reporters (one vote per person) that auto-hides a listing."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
@@ -10063,7 +10097,8 @@ msgid "One week"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
-msgid "Only %s of disk space is left. Uploads and backups fail when it runs out."
+msgid ""
+"Only %s of disk space is left. Uploads and backups fail when it runs out."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/Billing.php
@@ -10208,7 +10243,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
-msgid "Optional. Your business name, address and tax number, printed at the top "
+msgid ""
+"Optional. Your business name, address and tax number, printed at the top "
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -10547,8 +10583,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php
 msgid ""
-"Paste a comma-separated keyword list — useful for migrating an existing "
-"list from a theme or plugin. Wrap a keyword in asterisks (e.g. *viagra*) to "
+"Paste a comma-separated keyword list — useful for migrating an existing list "
+"from a theme or plugin. Wrap a keyword in asterisks (e.g. *viagra*) to "
 "import it as a substring match. Keywords already on file are skipped."
 msgstr ""
 
@@ -10631,7 +10667,8 @@ msgid "Per key or signed-in user"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
-msgid "Per signed-in user, or per address for guests, per hour. 0 means no limit."
+msgid ""
+"Per signed-in user, or per address for guests, per hour. 0 means no limit."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -10739,8 +10776,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid ""
-"Photos are only made smaller. When off, empty space is white in JPEG and "
-"see-through in PNG and WebP."
+"Photos are only made smaller. When off, empty space is white in JPEG and see-"
+"through in PNG and WebP."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
@@ -10759,8 +10796,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
 msgid ""
-"Photos upload faster. With full size kept, only photos over the maximum "
-"size are shrunk."
+"Photos upload faster. With full size kept, only photos over the maximum size "
+"are shrunk."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -10821,8 +10858,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
 msgid ""
-"Plugin couldn't be installed because it triggered a <strong>fatal "
-"error</strong>"
+"Plugin couldn't be installed because it triggered a <strong>fatal error</"
+"strong>"
 msgstr ""
 
 #: oc-includes/osclass/classes/Plugins.php
@@ -10881,8 +10918,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
 msgid ""
-"Plugins extend what the panel and your site can do. Install one from "
-"Browse, or upload its zip file."
+"Plugins extend what the panel and your site can do. Install one from Browse, "
+"or upload its zip file."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
@@ -10896,8 +10933,8 @@ msgstr ""
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid ""
 "Point %1$s at an installed driver (for example %2$s, %3$s or %5$s) so "
-"category trees, user data and search stop being recomputed on every "
-"request; %4$s sets how long, in seconds, a value is kept."
+"category trees, user data and search stop being recomputed on every request; "
+"%4$s sets how long, in seconds, a value is kept."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
@@ -11225,12 +11262,13 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"Queued work has nothing to run it: %s. A plugin was probably turned off "
-"with jobs still waiting."
+"Queued work has nothing to run it: %s. A plugin was probably turned off with "
+"jobs still waiting."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-msgid "Quick and quiet, with a solid state drive. Battery lasts a full working day."
+msgid ""
+"Quick and quiet, with a solid state drive. Battery lasts a full working day."
 msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
@@ -11254,7 +11292,8 @@ msgid "Raise %1$s and %2$s together, keeping post at least as large as upload:"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
-msgid "Raise %s to at least the number of photos per listing you allow in Settings."
+msgid ""
+"Raise %s to at least the number of photos per listing you allow in Settings."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
@@ -11705,8 +11744,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid ""
-"Repair does not change these. Ask for help before changing the table by "
-"hand."
+"Repair does not change these. Ask for help before changing the table by hand."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -12094,8 +12132,7 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid ""
-"Sample photos could not be downloaded, so the sample listings have no "
-"photos."
+"Sample photos could not be downloaded, so the sample listings have no photos."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -12122,7 +12159,8 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
-msgid "Save a copy of your site. Do it before an update, and now and then anyway."
+msgid ""
+"Save a copy of your site. Do it before an update, and now and then anyway."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -12220,7 +12258,8 @@ msgid "Save this page with the Page builder template to compose it from"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
-msgid "Save this password now — it won't be shown again. We also emailed it to %s."
+msgid ""
+"Save this password now — it won't be shown again. We also emailed it to %s."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -12511,7 +12550,8 @@ msgid "See all"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php
-msgid "See how many comments the listings published on your site have received."
+msgid ""
+"See how many comments the listings published on your site have received."
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php
@@ -12548,8 +12588,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
 msgid ""
-"See who is blocked right now, and unblock them, under <a href=\"%s\">Tools "
-"> System info > Security</a>."
+"See who is blocked right now, and unblock them, under <a href=\"%s\">Tools > "
+"System info > Security</a>."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -12688,8 +12728,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
 msgid ""
-"Sell featured listings, posting credits or plugin extras. While off, "
-"posting stays free and the Billing menu is hidden."
+"Sell featured listings, posting credits or plugin extras. While off, posting "
+"stays free and the Billing menu is hidden."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -12909,8 +12949,8 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid ""
-"Setting up your site… this can take a minute on shared hosting — don't "
-"close this tab."
+"Setting up your site… this can take a minute on shared hosting — don't close "
+"this tab."
 msgstr ""
 
 #: oc-admin/themes/modern/comments/index.php
@@ -12962,7 +13002,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "Setup couldn't save the site language. The database user may not be able to "
+msgid ""
+"Setup couldn't save the site language. The database user may not be able to "
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
@@ -13125,8 +13166,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"Shopclass keeps the server's mode, but it is not strict, so over-long "
-"values are still cut short."
+"Shopclass keeps the server's mode, but it is not strict, so over-long values "
+"are still cut short."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -13138,7 +13179,8 @@ msgid "Shopclass needs MySQL 5.7.5 or newer, or MariaDB 10.2 or newer. "
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
-msgid "Shopclass never handles card details itself. To take payments, install a "
+msgid ""
+"Shopclass never handles card details itself. To take payments, install a "
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/AutoSecurityUpdate.php
@@ -13664,8 +13706,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/stats/users.php
 msgid ""
-"Stay up-to-date on the number of users registered on your site. You can "
-"also see a breakdown of the "
+"Stay up-to-date on the number of users registered on your site. You can also "
+"see a breakdown of the "
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -13831,7 +13873,8 @@ msgid "Switch on"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
-msgid "Switch on the billing section, and see which payment plugins are installed. "
+msgid ""
+"Switch on the billing section, and see which payment plugins are installed. "
 msgstr ""
 
 #: oc-admin/themes/modern/parts/footer.php
@@ -13888,7 +13931,8 @@ msgid "Take a backup first."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
-msgid "Take credits back off this account. You can add them again afterwards, and "
+msgid ""
+"Take credits back off this account. You can add them again afterwards, and "
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/BillingSettingsScreen.php
@@ -14019,14 +14063,14 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hSettings.php
 msgid ""
-"The %1$s theme has a settings page Shopclass cannot load, so it is left "
-"out: %2$s. Update the theme or switch to another one."
+"The %1$s theme has a settings page Shopclass cannot load, so it is left out: "
+"%2$s. Update the theme or switch to another one."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid ""
-"The %s folder isn't writable, so nothing can be installed from here. Make "
-"it writable and reload this page."
+"The %s folder isn't writable, so nothing can be installed from here. Make it "
+"writable and reload this page."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -14045,24 +14089,24 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"The .htaccess file does not pass the Authorization header to PHP, so the "
-"API cannot see keys sent in it. Add this line after \"RewriteEngine On\": %s"
+"The .htaccess file does not pass the Authorization header to PHP, so the API "
+"cannot see keys sent in it. Add this line after \"RewriteEngine On\": %s"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "The <a href=\"https://github.com/mindstellar/shopclass\">Shopclass</a> team"
+msgid ""
+"The <a href=\"https://github.com/mindstellar/shopclass\">Shopclass</a> team"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
-"The <strong>Better S3</strong> plugin is currently active. Disable it "
-"before turning on "
+"The <strong>Better S3</strong> plugin is currently active. Disable it before "
+"turning on "
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 msgid ""
-"The API is off, so keys and webhooks do nothing until you switch it on "
-"above."
+"The API is off, so keys and webhooks do nothing until you switch it on above."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -14085,8 +14129,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MailServerSettingsScreen.php
 msgid ""
-"The PHP <b>openssl</b> extension is not loaded, so SSL and TLS will not "
-"work."
+"The PHP <b>openssl</b> extension is not loaded, so SSL and TLS will not work."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -14112,14 +14155,12 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/comments.php
 msgid ""
-"The active theme shows no comments, so these settings have no visible "
-"effect."
+"The active theme shows no comments, so these settings have no visible effect."
 msgstr ""
 
 #: oc-includes/osclass/install-location.php
 msgid ""
-"The admin account could not be created. Nothing was saved — please try "
-"again."
+"The admin account could not be created. Nothing was saved — please try again."
 msgstr ""
 
 #: oc-includes/osclass/install-location.php
@@ -14226,8 +14267,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid ""
-"The buyer will see the order as shipped with no carrier or tracking. You "
-"can add them later."
+"The buyer will see the order as shipped with no carrier or tracking. You can "
+"add them later."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -14270,8 +14311,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/ajax/CategoryAjax.php
 msgid ""
-"The category is too large to delete at once. It has been hidden and is "
-"being emptied in the background."
+"The category is too large to delete at once. It has been hidden and is being "
+"emptied in the background."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
@@ -14324,7 +14365,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "The database server rejected that username and password. Re-copy them from "
+msgid ""
+"The database server rejected that username and password. Re-copy them from "
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
@@ -14338,7 +14380,8 @@ msgid "The database was restored. Visitors still see the maintenance page."
 msgstr ""
 
 #: oc-includes/osclass/classes/upgrade/Upgrade.php
-msgid "The download failed, or did not match its checksum. Nothing was changed."
+msgid ""
+"The download failed, or did not match its checksum. Nothing was changed."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
@@ -14412,7 +14455,8 @@ msgid "The last build failed: %s"
 msgstr ""
 
 #: oc-includes/classes/content/menu/MenuItems.php
-msgid "The link \"%s\" needs an address that starts with http://, https:// or /."
+msgid ""
+"The link \"%s\" needs an address that starts with http://, https:// or /."
 msgstr ""
 
 #: oc-includes/classes/content/menu/MenuItems.php
@@ -14481,8 +14525,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 msgid ""
-"The new key gets the same type, scopes and expiry. The old key keeps "
-"working until you revoke it, so you can switch over first."
+"The new key gets the same type, scopes and expiry. The old key keeps working "
+"until you revoke it, so you can switch over first."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -14501,7 +14545,8 @@ msgid "The package archive must contain exactly one top-level directory."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
-msgid "The package header declares version %1$s, but the catalog entry is for %2$s."
+msgid ""
+"The package header declares version %1$s, but the catalog entry is for %2$s."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
@@ -14670,7 +14715,8 @@ msgid "The site could not be put in maintenance mode."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
-msgid "The site downloads each photo itself. Only public addresses are fetched."
+msgid ""
+"The site downloads each photo itself. Only public addresses are fetched."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
@@ -14779,7 +14825,8 @@ msgid "The user cannot sign in, and their listings are hidden until unblocked."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "The user connected, but isn't allowed to write to this database. Grant it "
+msgid ""
+"The user connected, but isn't allowed to write to this database. Grant it "
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
@@ -14821,7 +14868,8 @@ msgid "Themes"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
-msgid "Themes and widgets that show this menu show nothing until you make it again."
+msgid ""
+"Themes and widgets that show this menu show nothing until you make it again."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -14853,8 +14901,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/Restorer.php
 msgid ""
-"There is not enough free space to put back the files: %1$s needed, %2$s "
-"free."
+"There is not enough free space to put back the files: %1$s needed, %2$s free."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -14881,8 +14928,8 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid ""
-"There's no database called %s yet. Open More options below and let "
-"Shopclass create "
+"There's no database called %s yet. Open More options below and let Shopclass "
+"create "
 msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
@@ -14903,14 +14950,15 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
-msgid "These stopped retrying. Fix the cause the reason names, then try them again."
+msgid ""
+"These stopped retrying. Fix the cause the reason names, then try them again."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid ""
 "They still show on those listings, but you can only manage them once they "
-"are in a form. Move them in — grouped by the categories they share — "
-"without changing where any of them appears."
+"are in a form. Move them in — grouped by the categories they share — without "
+"changing where any of them appears."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -14951,8 +14999,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/backup/Manifest.php
 msgid ""
-"This backup comes from Shopclass %1$s. This site runs %2$s. Update "
-"Shopclass first, then restore."
+"This backup comes from Shopclass %1$s. This site runs %2$s. Update Shopclass "
+"first, then restore."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/Manifest.php
@@ -14966,7 +15014,8 @@ msgid "This balance is below zero, usually after a refund of credits that had "
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
-msgid "This cache holds nothing between requests, so there is nothing to clear."
+msgid ""
+"This cache holds nothing between requests, so there is nothing to clear."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
@@ -14975,8 +15024,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid ""
-"This can take a minute on a large site. Please leave this page open until "
-"it finishes."
+"This can take a minute on a large site. Please leave this page open until it "
+"finishes."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -14988,7 +15037,8 @@ msgid "This cannot be undone."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "This database already has Shopclass tables in it. Choose a different table "
+msgid ""
+"This database already has Shopclass tables in it. Choose a different table "
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -14998,13 +15048,14 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
-msgid "This deletes the field definition and removes it from every form. Continue?"
+msgid ""
+"This deletes the field definition and removes it from every form. Continue?"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/LatestSearchSettingsScreen.php
 msgid ""
-"This feature can generate a lot of data. It's recommended to purge this "
-"data periodically."
+"This feature can generate a lot of data. It's recommended to purge this data "
+"periodically."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -15013,7 +15064,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "This field is used in %d form. Changes here apply to that form."
-msgid_plural "This field is used in %d forms. Changes here apply to all of them."
+msgid_plural ""
+"This field is used in %d forms. Changes here apply to all of them."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -15024,7 +15076,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/Manifest.php
-msgid "This file has no version information. Updates run after it, just in case."
+msgid ""
+"This file has no version information. Updates run after it, just in case."
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/Restorer.php
@@ -15032,7 +15085,8 @@ msgid "This file is not a Shopclass backup."
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
-msgid "This file will be removed from the server. The listing, user or page it "
+msgid ""
+"This file will be removed from the server. The listing, user or page it "
 msgstr ""
 
 #: oc-includes/osclass/classes/backup/BackupStore.php
@@ -15074,8 +15128,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
-"This keeps going while the page is open. With cron set up it also carries "
-"on if you close it."
+"This keeps going while the page is open. With cron set up it also carries on "
+"if you close it."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/SpamSettingsScreen.php
@@ -15135,18 +15189,19 @@ msgid "This permanently deletes every submission for this form. Continue?"
 msgstr ""
 
 #: oc-admin/themes/modern/users/index.php
-msgid "This permanently deletes the account and every listing the user published."
+msgid ""
+"This permanently deletes the account and every listing the user published."
 msgstr ""
 
 #: oc-admin/themes/modern/comments/index.php
 msgid ""
-"This permanently deletes the comment from the listing. This cannot be "
-"undone."
+"This permanently deletes the comment from the listing. This cannot be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/items/reported.php
-msgid "This permanently deletes the listing and its photos. This cannot be undone."
+msgid ""
+"This permanently deletes the listing and its photos. This cannot be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
@@ -15157,7 +15212,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/items/reported.php
-msgid "This permanently deletes the product and its photos. This cannot be undone."
+msgid ""
+"This permanently deletes the product and its photos. This cannot be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
@@ -15176,8 +15232,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/market/PluginDependencies.php
 msgid ""
-"This plugin is not in the market. Get its zip file from the theme author "
-"and upload it under Plugins, Add plugin."
+"This plugin is not in the market. Get its zip file from the theme author and "
+"upload it under Plugins, Add plugin."
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -15210,12 +15266,13 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/alerts.php
 msgid ""
-"This removes the saved alert; the user will no longer be notified when a "
-"new listing matches it."
+"This removes the saved alert; the user will no longer be notified when a new "
+"listing matches it."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
-msgid "This removes the widget from its section immediately and cannot be undone."
+msgid ""
+"This removes the widget from its section immediately and cannot be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
@@ -15261,7 +15318,8 @@ msgid "This user has no alerts."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid "This user isn't allowed to create databases. Create the database in your "
+msgid ""
+"This user isn't allowed to create databases. Create the database in your "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -15662,8 +15720,8 @@ msgid ""
 "Two files hold these settings. PHP's own limits live in %1$s%2$s; "
 "Shopclass's own behaviour lives in %3$s in the site root%4$s. Edit the "
 "relevant one — a php.ini change needs PHP restarted (or your host's control "
-"panel, e.g. cPanel's “MultiPHP INI Editor”), while a config.php change "
-"takes effect on the next request."
+"panel, e.g. cPanel's “MultiPHP INI Editor”), while a config.php change takes "
+"effect on the next request."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -15912,8 +15970,7 @@ msgstr ""
 
 #: oc-includes/osclass/classes/market/Installer.php
 msgid ""
-"Update failed: %s. The previous version is back in place, so nothing "
-"changed."
+"Update failed: %s. The previous version is back in place, so nothing changed."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
@@ -16120,8 +16177,8 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid ""
-"Used for six months with a case and screen protector. Comes with the box "
-"and charger."
+"Used for six months with a case and screen protector. Comes with the box and "
+"charger."
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
@@ -16363,12 +16420,12 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
 msgid ""
-"Users sign up and post listings. Buyers contact the seller; there is no "
-"cart."
+"Users sign up and post listings. Buyers contact the seller; there is no cart."
 msgstr ""
 
 #: oc-admin/themes/modern/users/ban.php
-msgid "Users, listings and comments matching this rule will no longer be blocked."
+msgid ""
+"Users, listings and comments matching this rule will no longer be blocked."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php
@@ -16415,8 +16472,8 @@ msgstr ""
 
 #: oc-includes/osclass/classes/market/PluginDependencies.php
 msgid ""
-"Version %1$s is installed; the theme needs %2$s and no release this site "
-"can run meets that."
+"Version %1$s is installed; the theme needs %2$s and no release this site can "
+"run meets that."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -16560,7 +16617,8 @@ msgid "Waiting to start"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-msgid "Warm tone and easy to play, good for a beginner. A hard case is included."
+msgid ""
+"Warm tone and easy to play, good for a beginner. A hard case is included."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
@@ -16606,7 +16664,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
-msgid "We couldn't email your password. Copy it now and store it somewhere safe."
+msgid ""
+"We couldn't email your password. Copy it now and store it somewhere safe."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -16617,8 +16676,8 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid ""
-"We couldn't save your selected location. You can set it later from the "
-"admin panel."
+"We couldn't save your selected location. You can set it later from the admin "
+"panel."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/media.php
@@ -16687,8 +16746,8 @@ msgstr ""
 #: oc-includes/osclass/classes/admin/form/ApiSettingsScreen.php
 msgid ""
 "Websites whose pages may call the API from a browser, one per line, such as "
-"https://app.example.com. Use * for any site; keyed calls still need an "
-"exact origin."
+"https://app.example.com. Use * for any site; keyed calls still need an exact "
+"origin."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -16984,11 +17043,13 @@ msgid "You add the products. Buyers pay through a cart and checkout."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
-msgid "You are about to delete the files of the plugin. Do you want to continue?"
+msgid ""
+"You are about to delete the files of the plugin. Do you want to continue?"
 msgstr ""
 
 #: oc-includes/osclass/classes/market/PluginDependencies.php
-msgid "You can also download the zip file and upload it under Plugins, Add plugin."
+msgid ""
+"You can also download the zip file and upload it under Plugins, Add plugin."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-site-type.php
@@ -17015,8 +17076,8 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid ""
-"You have to create <code>uploads</code> folder, i.e.: <code>mkdir "
-"%soc-content/uploads/</code>"
+"You have to create <code>uploads</code> folder, i.e.: <code>mkdir %soc-"
+"content/uploads/</code>"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -17087,9 +17148,9 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/upgrade.php
 msgid ""
-"Your Shopclass installation can be auto-upgraded. %1$s: the database and "
-"oc-content. You can also upgrade Shopclass manually, more information in "
-"the %2$s."
+"Your Shopclass installation can be auto-upgraded. %1$s: the database and oc-"
+"content. You can also upgrade Shopclass manually, more information in the "
+"%2$s."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
@@ -17109,8 +17170,8 @@ msgstr ""
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid ""
-"Your backups folder is open to the web. Anyone who guesses a file name "
-"could download a backup."
+"Your backups folder is open to the web. Anyone who guesses a file name could "
+"download a backup."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
@@ -17139,8 +17200,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
-"Your database is replaced with the one in this file. Anything added since "
-"it was made is lost. Visitors see the maintenance page until it finishes."
+"Your database is replaced with the one in this file. Anything added since it "
+"was made is lost. Visitors see the maintenance page until it finishes."
 msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
@@ -17169,7 +17230,8 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/helpers/hSpam.php
-msgid "Your listing could not be posted. Please review its content and try again."
+msgid ""
+"Your listing could not be posted. Please review its content and try again."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hSearch.php
@@ -17182,8 +17244,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 msgid ""
-"Your new key \"%s\". Copy it now and keep it somewhere safe: it is not "
-"shown again."
+"Your new key \"%s\". Copy it now and keep it somewhere safe: it is not shown "
+"again."
 msgstr ""
 
 #: oc-includes/osclass/classes/billing/Receipts.php
@@ -17234,12 +17296,13 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid ""
-"Your reusable fields. Drag one into a form on the left, or use a form’s "
-"“Add field”. The same field can be placed in several forms."
+"Your reusable fields. Drag one into a form on the left, or use a form’s “Add "
+"field”. The same field can be placed in several forms."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
-msgid "Your saved items are removed and the menu lists its automatic links again."
+msgid ""
+"Your saved items are removed and the menu lists its automatic links again."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -17981,11 +18044,13 @@ msgid "username: %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "validated listings the user doesn't need to validate the listings any more"
+msgid ""
+"validated listings the user doesn't need to validate the listings any more"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/ItemSettingsScreen.php
-msgid "validated products the user doesn't need to validate the products any more"
+msgid ""
+"validated products the user doesn't need to validate the products any more"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
@@ -18017,7 +18082,8 @@ msgid "yes, for one request at a time"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
-msgid "{WEB_TITLE} - We failed trying to upgrade your site to Shopclass {VERSION}"
+msgid ""
+"{WEB_TITLE} - We failed trying to upgrade your site to Shopclass {VERSION}"
 msgstr ""
 
 #: oc-includes/osclass/classes/mail/CoreEmails.php
