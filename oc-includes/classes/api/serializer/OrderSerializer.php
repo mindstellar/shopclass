@@ -16,7 +16,9 @@ use mindstellar\billing\CartPricer;
 use mindstellar\billing\Document;
 use mindstellar\billing\DocumentPage;
 use mindstellar\billing\DocumentStore;
+use mindstellar\billing\event\CheckoutFields;
 use mindstellar\billing\LineTax;
+use mindstellar\billing\LineTaxView;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\PaymentGatewayRegistry;
@@ -246,13 +248,11 @@ final class OrderSerializer
         if ($tax === null) {
             return null;
         }
-        $rate = static fn (int $bp): string => rtrim(rtrim(number_format($bp / 100, 2, '.', ''), '0'), '.') . '%';
-
         return array(
             'included'  => $tax->included,
             'base'      => $this->amount($tax->base, $currency),
             'amount'    => $this->amount($tax->amount, $currency),
-            'rate_text' => implode(' + ', array_map(static fn (array $part): string => $rate($part['bp']), $tax->parts)),
+            'rate_text' => LineTaxView::rateText($tax->parts),
             'parts'     => array_map(fn (array $part): array => array('label' => $part['label'], 'amount' => $this->amount($part['amount'], $currency)), $tax->parts),
         );
     }
@@ -264,14 +264,7 @@ final class OrderSerializer
      */
     private static function fields(Order $order): array
     {
-        $out = array();
-        foreach (is_array($order->meta('_fields')) ? $order->meta('_fields') : array() as $id => $field) {
-            if (is_array($field) && is_string($field['value'] ?? null) && $field['value'] !== '') {
-                $out[] = array('id' => (string) $id, 'label' => (string) ($field['label'] ?? $id), 'value' => $field['value']);
-            }
-        }
-
-        return $out;
+        return CheckoutFields::answers($order);
     }
 
     /**

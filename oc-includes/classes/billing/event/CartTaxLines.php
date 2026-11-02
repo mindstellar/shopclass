@@ -17,6 +17,7 @@ use mindstellar\billing\LineTax;
 /**
  * The tax lines of a cart. Old filter: `cart_tax_lines`. A listener may also break the tax down per
  * item and shipping line with setLineTax(); core checks that breakdown against the tax lines.
+ * The cart's `fields` holds the values the buyer sent, such as a tax number; check them before use.
  */
 final class CartTaxLines extends CartLineEvent
 {

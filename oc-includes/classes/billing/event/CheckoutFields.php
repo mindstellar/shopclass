@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\billing\event;
 
+use mindstellar\billing\Order;
 use mindstellar\event\Bridged;
 
 /**
@@ -126,6 +127,32 @@ final class CheckoutFields extends CartEvent implements Bridged
         }
 
         return array_values($out);
+    }
+
+    /**
+     * The buyer's answers stored on an order, as plain text: label up to 60, value up to MAX_VALUE.
+     * A field with no `invoice` key counts as meant for the invoice, as addField() does.
+     *
+     * @param bool $forInvoice keep only the fields meant for the invoice
+     *
+     * @return list<array{id:string,label:string,value:string}>
+     */
+    public static function answers(Order $order, bool $forInvoice = false): array
+    {
+        $out    = [];
+        $stored = $order->meta('_fields');
+        foreach (is_array($stored) ? $stored : [] as $id => $field) {
+            if (!is_array($field) || ($forInvoice && ($field['invoice'] ?? true) === false)) {
+                continue;
+            }
+            $value = is_string($field['value'] ?? null) ? mb_substr(self::plain($field['value']), 0, self::MAX_VALUE, 'UTF-8') : '';
+            $label = is_string($field['label'] ?? null) ? mb_substr(self::plain($field['label']), 0, 60, 'UTF-8') : '';
+            if ($value !== '') {
+                $out[] = ['id' => (string) $id, 'label' => $label !== '' ? $label : (string) $id, 'value' => $value];
+            }
+        }
+
+        return $out;
     }
 
     /**

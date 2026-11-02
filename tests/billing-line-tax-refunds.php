@@ -199,7 +199,23 @@ $e      = $mixed();
 $gadget = $lineOf($e, 'Gadget');
 Billing::refundPart($e, $m(55), [$gadget => 1], 'Part', false, false);
 $ln = array_map(static fn (array $l): array => [$l['kind'], $l['amount']], $notes($e)[0]->data['lines'] ?? []);
-pin('the gadget, its own tax, then the adjustment', [['item', $m(50)], ['tax', $m(9.5)], ['adjustment', $m(-4.5)]], $ln);
+pin('below the gadget\'s 59.50, its tax scales down with the amount', [['item', $m(50)], ['tax', $m(8.78)], ['adjustment', $m(-3.78)]], $ln);
+pin('and the line tax on the note matches', $m(8.78), $notes($e)[0]->data['lines'][0]['tax']['amount'] ?? null);
+$e2 = $mixed();
+Billing::refundPart($e2, $m(10), [$lineOf($e2, 'Gadget') => 1], 'Goodwill', false, false);
+pin('a goodwill 10 with the gadget back refunds no more tax than 10', [['VAT 19%', $m(1.6), false]], $taxOf($notes($e2)[0] ?? null));
+
+harness_section('a discounted order refunds what the buyer paid');
+$h = $place([
+    ['kind' => 'item', 'title' => 'Shoe', 'qty' => 2, 'unit' => $m(50), 'amount' => $m(100), 'tax' => $lineTax(false, $m(80), [['tax' => 'vat', 'label' => 'VAT 10%', 'bp' => 1000, 'amount' => $m(8)]])],
+    ['kind' => 'discount', 'title' => 'Coupon', 'qty' => 1, 'unit' => $m(-20), 'amount' => $m(-20)],
+    ['kind' => 'tax', 'title' => 'VAT 10%', 'qty' => 1, 'unit' => $m(8), 'amount' => $m(8), 'meta' => ['id' => 'vat']],
+]);
+$shoe = $lineOf($h, 'Shoe');
+pin('one shoe of two is worth half the discounted base plus its tax', $m(44), Invoices::linesAmount($h->getId(), [$shoe => 1]));
+Billing::refundPart($h, 0, [$shoe => 1], 'Return', false, false);
+pin('the note refunds 44 with 4 tax', [$m(44), [['VAT 10%', $m(4), false]]], [$notes($h)[0]->total ?? null, $taxOf($notes($h)[0] ?? null)]);
+pin('the second shoe is the rest', $m(44), Invoices::linesAmount($h->getId(), [$shoe => 1]));
 
 harness_section('tax included in the price');
 $f = $place([

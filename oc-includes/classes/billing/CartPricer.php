@@ -181,13 +181,14 @@ final class CartPricer
         // Discounts first, so tax is worked out on what the buyer pays.
         $extra['discount']       = self::extra($this->events()->dispatch(new CartDiscountLines($cart))->rawLines(), 'discount', $currency);
         $cart['discount_lines']  = $extra['discount'];
+        // Tax listeners see every value the buyer sent; the fields pass below keeps only the asked ids.
+        $given                   = self::fieldValues($ctx['fields'] ?? null);
+        $cart['fields']          = $given;
         $taxEvent                = $this->events()->dispatch(new CartTaxLines($cart));
         $extra['tax']            = self::extra($taxEvent->rawLines(), 'tax', $currency);
         $cart['tax_lines']       = $extra['tax'];
         $lineTax                 = self::checkedLineTax($taxEvent->lineTax(), $extra['tax']);
 
-        $given          = self::fieldValues($ctx['fields'] ?? null);
-        $cart['fields'] = $given;
         $asked          = $this->events()->dispatch(new CheckoutFields($cart))->fields();
         $cart['fields'] = array_map(static fn (array $f): string => $given[$f['id']] ?? '', array_column($asked, null, 'id'));
 

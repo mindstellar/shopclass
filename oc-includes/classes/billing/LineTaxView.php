@@ -21,30 +21,44 @@ use mindstellar\currency\CurrencyService;
 final class LineTaxView
 {
     /**
-     * @return array{included:bool,base:int,amount:int,code:?string,parts:list<array{label:string,bp:int,amount:int,amount_text:string}>,base_text:string,amount_text:string,rate_text:string}
+     * @return array{included:bool,base:int,amount:int,code:?string,parts:list<array<string,mixed>>,base_text:string,amount_text:string,rate_text:string}
      */
     public static function describe(LineTax $tax, string $currency): array
     {
-        $money = CurrencyService::make();
         $parts = array();
         foreach ($tax->parts as $part) {
-            $parts[] = array(
-                'label'       => $part['label'],
-                'bp'          => $part['bp'],
-                'amount'      => $part['amount'],
-                'amount_text' => $money->money($part['amount'], $currency, false, true),
-            );
+            $parts[] = array('label' => $part['label'], 'bp' => $part['bp'], 'amount' => $part['amount']);
+        }
+
+        return self::shape($tax->included, $tax->base, $tax->code, $parts, $currency);
+    }
+
+    /**
+     * The described shape from its pieces; each part keeps its own keys and gains `amount_text`.
+     * The amount is the sum of the parts.
+     *
+     * @param list<array<string,mixed>&array{bp:int,amount:int}> $parts
+     *
+     * @return array{included:bool,base:int,amount:int,code:?string,parts:list<array<string,mixed>>,base_text:string,amount_text:string,rate_text:string}
+     */
+    public static function shape(bool $included, int $base, ?string $code, array $parts, string $currency): array
+    {
+        $money = CurrencyService::make();
+        $sum   = 0;
+        foreach ($parts as $i => $part) {
+            $sum += $part['amount'];
+            $parts[$i]['amount_text'] = $money->money($part['amount'], $currency, false, true);
         }
 
         return array(
-            'included'    => $tax->included,
-            'base'        => $tax->base,
-            'amount'      => $tax->amount,
-            'code'        => $tax->code,
+            'included'    => $included,
+            'base'        => $base,
+            'amount'      => $sum,
+            'code'        => $code,
             'parts'       => $parts,
-            'base_text'   => $money->money($tax->base, $currency, false, true),
-            'amount_text' => $money->money($tax->amount, $currency, false, true),
-            'rate_text'   => self::rateText($tax->parts),
+            'base_text'   => $money->money($base, $currency, false, true),
+            'amount_text' => $money->money($sum, $currency, false, true),
+            'rate_text'   => self::rateText($parts),
         );
     }
 

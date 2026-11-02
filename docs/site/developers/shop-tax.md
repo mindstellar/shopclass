@@ -23,8 +23,10 @@ Describe one item or shipping line with `mindstellar\billing\LineTax` and hand i
 
 ```php
 use mindstellar\billing\LineTax;
+use mindstellar\billing\event\CartTaxLines;
 
-osc_add_hook('cart_tax_lines', static function ($event) {
+// Type the parameter: an untyped callback gets the old array, not the event.
+osc_add_hook('cart_tax_lines', static function (CartTaxLines $event) {
     if (!method_exists($event, 'setLineTax')) {
         return;
     }
@@ -48,7 +50,7 @@ osc_add_hook('cart_tax_lines', static function ($event) {
 ### The sum check
 
 Before writing the order, core checks every tax line: the parts that name it, over all item and shipping
-lines, must add up to that line's amount (its `unit` when the tax is included), and `included` must match.
+lines, must add up to that tax line's `amount`, and `included` must match.
 If anything is off, core drops all line tax for that order and logs one `E_USER_WARNING`. The order still
 places with its tax lines, and invoices and refunds use proportional tax, as before. Money never depends on
 a plugin's unchecked sum.
@@ -59,7 +61,9 @@ made before this feature keep proportional tax.
 ## Refunds
 
 A credit note that returns units of a line takes that line's own tax, per part. Returning 1 of 3 units
-takes a third; the note that returns the last unit takes the exact rest. A note for a typed amount only,
+takes a third; the note that returns the last unit takes the exact rest. A returned unit is worth its share
+of the line's base plus its tax, so a discount the base already took off is not refunded. A typed amount
+below that worth scales the tax down with it. A note for a typed amount only,
 or for an order without line tax, splits tax in proportion to the amount, as before. A tax line never goes
 below zero.
 
@@ -69,7 +73,9 @@ Ask the buyer for extra details on the `checkout_fields` event (`CheckoutFields`
 is priced, so a field can depend on the buyer's country.
 
 ```php
-osc_add_hook('checkout_fields', static function ($event) {
+use mindstellar\billing\event\CheckoutFields;
+
+osc_add_hook('checkout_fields', static function (CheckoutFields $event) {
     $event->addField('tax_id', __('Tax number'), false, 20, '', true, 'off');
 });
 ```
@@ -81,10 +87,12 @@ The quote lists the fields as `checkout_fields`. The theme sends the values as `
 order. Unknown ids are dropped, values are plain text up to 100 characters, and a missing required field
 fails with a `required` error at `/fields/<id>`.
 
-Check or tidy a value on the `checkout_starting` event (`CheckoutStarting`):
+Check or tidy a value on the `cart_checkout_before` event (`CheckoutStarting`):
 
 ```php
-osc_add_hook('checkout_starting', static function ($event) {
+use mindstellar\billing\event\CheckoutStarting;
+
+osc_add_hook('cart_checkout_before', static function (CheckoutStarting $event) {
     $id = strtoupper(trim($event->field('tax_id')));
     if ($id !== '' && !preg_match('/^[A-Z0-9]{4,20}$/', $id)) {
         $event->refuse('/fields/tax_id', 'invalid', __('Check the tax number.'));
@@ -95,7 +103,12 @@ osc_add_hook('checkout_starting', static function ($event) {
 ```
 
 The values are stored on the order as `s_meta._fields` (`{id: {label, value, invoice}}`, empty values
-left out) and shown on the order in the API as `fields`. Core only checks the format a plugin asks for; it
+left out) and shown on the order in the API as `fields`. Invoice fields are also the last column of the
+Invoices CSV.
+
+Tax listeners see the buyer's values in the cart's `fields` on `cart_tax_lines`, before the field list is
+known, so treat them as unchecked. A field can change the tax this way, for example a zero rate for a
+valid business number. Core only checks the format a plugin asks for; it
 never calls an outside tax service.
 
 ## In the API

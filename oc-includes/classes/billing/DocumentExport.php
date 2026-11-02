@@ -15,7 +15,8 @@ namespace mindstellar\billing;
 use mindstellar\currency\Money;
 
 /**
- * The invoice list as CSV, for the shop's accountant. Credit notes carry a minus sign.
+ * The invoice list as CSV, for the shop's accountant. Credit notes carry a minus sign; the last
+ * column holds the buyer's invoice fields, such as a tax number.
  *
  * @package mindstellar\billing
  */
@@ -32,7 +33,7 @@ final class DocumentExport
     public static function csv(array $filters): string
     {
         $out = fopen('php://temp', 'w+');
-        fputcsv($out, array('number', 'date', 'order', 'buyer', 'net', 'tax', 'total', 'currency'), ',', '"', '');
+        fputcsv($out, array('number', 'date', 'order', 'buyer', 'net', 'tax', 'total', 'currency', 'buyer_details'), ',', '"', '');
         for ($offset = 0;; $offset += self::CHUNK) {
             $docs = DocumentStore::search($filters, self::CHUNK, $offset);
             foreach ($docs as $doc) {
@@ -59,6 +60,12 @@ final class DocumentExport
         $signed   = DocumentPage::signedTotal($doc);
         $tax      = self::taxMicros($doc) * ($doc->isCreditNote() ? -1 : 1);
         $total    = Money::fromMicros($signed, $decimals);
+        $details  = array();
+        foreach ((array) ($buyer['fields'] ?? array()) as $field) {
+            if (is_array($field) && (string) ($field['value'] ?? '') !== '') {
+                $details[] = (string) ($field['label'] ?? '') . ': ' . (string) $field['value'];
+            }
+        }
 
         return array(
             self::safe($doc->number),
@@ -69,6 +76,7 @@ final class DocumentExport
             Money::fromMicros($tax, $decimals),
             $total,
             $doc->currency,
+            self::safe(implode('; ', $details)),
         );
     }
 

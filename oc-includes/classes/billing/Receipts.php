@@ -11,6 +11,7 @@
 
 namespace mindstellar\billing;
 
+use mindstellar\billing\event\CheckoutFields;
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\boot\CoreServices;
 use mindstellar\currency\CurrencyService;
@@ -760,17 +761,9 @@ final class Receipts
      *
      * @return list<array{label:string,value:string}>
      */
-    private static function buyerFields(Order $order): array
+    public static function buyerFields(Order $order): array
     {
-        $out = array();
-        $raw = $order->meta('_fields');
-        foreach (is_array($raw) ? $raw : array() as $field) {
-            if (is_array($field) && ($field['invoice'] ?? true) !== false && is_string($field['value'] ?? null) && $field['value'] !== '') {
-                $out[] = array('label' => (string) ($field['label'] ?? ''), 'value' => $field['value']);
-            }
-        }
-
-        return $out;
+        return array_map(static fn (array $f): array => array('label' => $f['label'], 'value' => $f['value']), CheckoutFields::answers($order, true));
     }
 
     /**

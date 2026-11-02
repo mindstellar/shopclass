@@ -8,7 +8,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### New
 - Invoices and credit notes show tax per line, and a refund of units takes those units' own tax. Tax plugins report it with `CartTaxLines::setLineTax()`.
-- Checkout fields: a plugin can ask the buyer for a tax number or other details with the `checkout_fields` event; they print on the invoice.
+- Checkout fields: a plugin can ask the buyer for a tax number or other details with the `checkout_fields` event; they print on the invoice and in the Invoices CSV.
 - `osc_item_saved_count()` shows how many wishlists hold a listing.
 - `AvatarUpload::store()` saves an image file on disk as a user's avatar.
 - `osc_sitemap_url()` returns the sitemap URL.

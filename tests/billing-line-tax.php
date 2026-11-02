@@ -229,9 +229,11 @@ $plan['line_tax'][1][2] = new LineTax(true, $m(9), [$part('tax.vat.10', 'VAT', 1
 $warnings = [];
 pin('an included flag that differs drops it', [null, 1], [$quote()->lineTax('item', 0), count($warnings)]);
 
-$plan['line_tax'][1][2] = new LineTax(false, $m(9), [$part('tax.vat.20', 'VAT', 2000, $m(0.9))]);
+// The vat.10 parts add up exactly, so only the unknown id can drop it.
+$plan['line_tax'][1][2] = new LineTax(false, $m(9), [$part('tax.vat.10', 'VAT', 1000, $m(0.9)), $part('tax.vat.20', 'VAT', 2000, 0)]);
 $warnings = [];
 pin('a part naming no tax line drops it', [null, 1], [$quote()->lineTax('item', 0), count($warnings)]);
+check('and the warning names it', str_contains($warnings[0] ?? '', '"tax.vat.20", which is not a tax line'));
 
 $plan['line_tax'] = [$plan['line_tax'][0]];
 $warnings = [];

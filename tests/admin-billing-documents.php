@@ -360,13 +360,15 @@ check('with line tax the column, code, buyer field and refund help show', str_co
 harness_section('the CSV');
 $csv = DocumentExport::csv([]);
 $rows = array_map('str_getcsv', array_filter(explode("\n", $csv)));
-pin('the header', ['number', 'date', 'order', 'buyer', 'net', 'tax', 'total', 'currency'], $rows[0]);
+pin('the header', ['number', 'date', 'order', 'buyer', 'net', 'tax', 'total', 'currency', 'buyer_details'], $rows[0]);
 $byNumber = [];
 foreach (array_slice($rows, 1) as $r) {
     $byNumber[$r[0]] = $r;
 }
 pin('an invoice row', [(string) $aid, '44.00', 'USD'], [$byNumber[$inv->number][2] ?? null, $byNumber[$inv->number][6] ?? null, $byNumber[$inv->number][7] ?? null]);
 pin('an invoice splits net and tax', ['40.00', '4.00'], [$byNumber[$inv->number][4] ?? null, $byNumber[$inv->number][5] ?? null]);
+$txInv = DocumentStore::invoiceOf($tx->getId());
+pin('the buyer tax number is in the last column', 'Tax ID: DE1<b>', $txInv === null ? null : ($byNumber[$txInv->number][8] ?? null));
 pin('a credit note is negative', '-11.00', $byNumber[$n[0]->number][6] ?? null);
 $cn = $byNumber[$n[0]->number] ?? array();
 pin('its tax is negative and net plus tax is the total', [true, true], [(float) ($cn[5] ?? 0) < 0, abs((float) ($cn[4] ?? 0) + (float) ($cn[5] ?? 0) - (float) ($cn[6] ?? 0)) < 0.005]);

@@ -97,12 +97,7 @@ foreach ($lines as $l) {
         $lineTaxes[(int) $l['id']] = \mindstellar\billing\LineTaxView::describe($lt, $order->getCurrency());
     }
 }
-$buyerFields = array();
-foreach (is_array($order->meta('_fields')) ? $order->meta('_fields') : array() as $f) {
-    if (is_array($f) && is_string($f['value'] ?? null) && $f['value'] !== '') {
-        $buyerFields[] = (string) ($f['label'] ?? '') . ': ' . $f['value'];
-    }
-}
+$buyerFields = array_map(static fn (array $f): string => $f['label'] . ': ' . $f['value'], \mindstellar\billing\event\CheckoutFields::answers($order));
 $itemLines  = array_values(array_filter($lines, static fn (array $l): bool => $l['kind'] === 'item'));
 $lineTitles = array();
 foreach ($itemLines as $l) {
