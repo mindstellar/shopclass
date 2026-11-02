@@ -27,7 +27,7 @@ final class OrderSchema
     /** Every component name, known without building a schema. */
     public const NAMES = [
         'Amount', 'OrderAddress', 'OrderAddressInput', 'OrderLineInput', 'OrderInput',
-        'OrderLine', 'OrderGateway', 'Order', 'OrderNext',
+        'OrderLine', 'OrderShipment', 'OrderGateway', 'Order', 'OrderNext',
         'OrderDocument', 'OrderPage', 'OrderPlaced',
         'QuoteLine', 'QuoteMethod', 'QuoteAdjustment', 'QuoteTax', 'QuoteTotals', 'QuoteGateway', 'QuoteProblem',
         'Quote', 'QuoteDocument',
@@ -108,6 +108,18 @@ final class OrderSchema
                 'listing' => $sold,
                 'included' => ['type' => 'boolean', 'description' => 'True on a tax line for tax already in the prices: its amount is 0 and its unit is the tax.'],
             ], ['kind', 'title', 'options', 'sku', 'qty', 'unit', 'amount', 'listing', 'included']) + ['description' => 'A discount line\'s amount is negative.'],
+            'OrderShipment' => Schema::object([
+                'n'            => ['type' => 'integer', 'description' => 'The parcel number, from 1.'],
+                'shipped_at'   => Schema::time(),
+                'carrier'      => Schema::nullable('string'),
+                'tracking'     => Schema::nullable('string'),
+                'tracking_url' => Schema::nullable('string', 'https only.'),
+                'lines'        => ['type' => 'array', 'items' => Schema::object([
+                    'line_id' => ['type' => 'integer'],
+                    'title'   => ['type' => 'string'],
+                    'qty'     => ['type' => 'integer'],
+                ], ['line_id', 'title', 'qty'])],
+            ], ['n', 'shipped_at', 'carrier', 'tracking', 'tracking_url', 'lines']) + ['description' => 'One parcel of an order.'],
             'OrderGateway' => Schema::object(['id' => ['type' => 'string'], 'name' => ['type' => 'string']], ['id', 'name']),
             'Order'        => Schema::object([
                 'id'          => ['type' => 'integer'],
@@ -120,12 +132,14 @@ final class OrderSchema
                 'total'       => $amount,
                 'lines'       => ['type' => 'array', 'items' => Schema::ref('OrderLine')],
                 'shipping'    => $shipping,
+                'shipments'   => ['type' => 'array', 'items' => Schema::ref('OrderShipment'), 'description' => 'Parcels sent so far, oldest first. Empty until the first one goes.'],
+                'packed_at'   => Schema::time('When the seller marked it packed; null if not.'),
                 'gateway'     => Schema::ref('OrderGateway'),
                 'receipt_url' => Schema::nullable('string', 'The printable receipt, once the order is paid.'),
                 'can_cancel'  => ['type' => 'boolean', 'description' => 'True while the buyer may cancel it: a pending bank transfer or cash on delivery order.'],
                 'pay_instructions' => Schema::nullable('string', 'How to pay a pending bank transfer order: the shop\'s instructions and the reference to quote.'),
                 'can_pay'     => ['type' => 'boolean', 'description' => 'True while the buyer may start paying again: a pending card order.'],
-            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'gateway', 'receipt_url', 'can_cancel', 'pay_instructions', 'can_pay']),
+            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'shipments', 'packed_at', 'gateway', 'receipt_url', 'can_cancel', 'pay_instructions', 'can_pay']),
             'OrderNext' => Schema::object([
                 'kind'    => ['type' => 'string', 'enum' => ['redirect', 'html']],
                 'payload' => ['type' => 'string', 'description' => 'redirect: the URL to send the buyer to. html: the gateway\'s own markup, to print as it is.'],

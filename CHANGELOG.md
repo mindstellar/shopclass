@@ -22,6 +22,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Cash on delivery orders ship before payment, are marked paid on delivery, and are never cancelled once shipped.
 - An unpaid card order is cancelled after the stock hold time, and its stock goes back.
 - **Billing → Orders** shows a goods order's items, address and buyer, and marks it shipped (with tracking), delivered or cancelled. A **To ship** list and count show what waits to ship.
+- Orders have a **Processing** status, set by hand or by the first partial shipment.
+- An order can ship in parcels: pick the quantities, add tracking per parcel, and the buyer gets a mail for each. Mark an order packed as an admin note.
+- Each order keeps a history of its status changes, shown on the admin order page.
 - **Settings → Billing → Shop** sets the delivery charge, free delivery, cash on delivery and where it is offered, the stock hold time, open unpaid orders per buyer and the order number prefix.
 - Shoppers keep up to 10 delivery addresses and pick one at checkout.
 - Buyers get an e-mail when an order is placed, paid, shipped, delivered, cancelled or refunded; the owner gets one for each new order.
@@ -52,6 +55,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key. `osc_admin_is_browsing()` tells the site's own API calls that an admin is browsing.
 - `osc_kv_list()`, `osc_kv_increment()`, `osc_billing_user_order_count()` and `osc_plugin_data_path()` (a private folder per plugin).
 - Shop API: `GET /cart/quote`, `account/cart`, `account/orders`, `account/addresses`, `account/wishlist` and `account/alerts`.
+- The REST order has `shipments[]` (one per parcel) and `packed_at`.
+- New hooks `billing_order_processing` and `billing_shipment_add_after`. One parcel that ships a whole paid order fires `billing_order_shipped`, not `billing_order_processing`.
 - Messaging API: `/account/conversations`, `/admin/conversations`, `/admin/messages`, and the webhooks `message.created` and `conversation.reported`.
 - `POST /listings/{id}/publish` and `POST /admin/listings/{id}/publish` publish a listing waiting for payment.
 - The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
@@ -76,6 +81,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
+- `billing_order_shipped` fires only when the last item ships; every parcel fires `billing_shipment_add_after`. A paid order may now be `processing`, so test `Order::isPaid()` rather than `'paid'`.
 - Money uses the currency's decimals, not the language's: `Money::format()`, `osc_format_price()` and `osc_prepare_price()` now print JPY with none and KWD with three.
 - An address no longer needs a state or postcode everywhere, and a phone may start with `+` and a country code; the fixed 8-digit phone and 6-digit PIN rules are gone. Money no longer follows the language's decimal setting.
 - Core now bundles symfony/http-client 7.4 (was 5.4) with async-aws/s3 3.5; a plugin that implements Symfony's HTTP client interfaces needs the 7.x signatures.

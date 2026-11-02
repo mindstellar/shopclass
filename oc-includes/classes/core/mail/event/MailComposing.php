@@ -29,6 +29,7 @@ final class MailComposing extends Event implements Bridged
     public const KINDS = [
         'order_placed',
         'order_shipped',
+        'order_part_shipped',
         'order_delivered',
         'order_cancelled',
         'order_refunded',

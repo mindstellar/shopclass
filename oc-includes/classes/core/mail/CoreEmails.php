@@ -1957,6 +1957,19 @@ final class CoreEmails
     }
 
     /**
+     * Tell the buyer part of their order has shipped: the parcel's lines and its tracking.
+     *
+     * @param Order               $order
+     * @param array<string,mixed> $parcel An entry of Order::shipments()
+     *
+     * @return void
+     */
+    public static function orderPartShipped($order, array $parcel)
+    {
+        self::instance()->mailOrder('order_part_shipped', $order, $parcel);
+    }
+
+    /**
      * Tell the buyer their order arrived, with a link to rate each product.
      *
      * @param Order $order
@@ -2136,9 +2149,12 @@ final class CoreEmails
         return $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item)));
     }
 
-    public function mailOrder(string $kind, Order $order): void
+    public function mailOrder(string $kind, Order $order, array $parcel = array()): void
     {
         $extra = array();
+        if ($kind === 'order_part_shipped') {
+            $extra = self::parcelWords($order, $parcel);
+        }
         if ($kind === 'order_delivered') {
             $rate = '';
             $seen = array();
@@ -2174,6 +2190,40 @@ final class CoreEmails
     }
 
     /**
+     * The lines and tracking of one parcel, as escaped HTML for the part-shipped mail.
+     *
+     * @param array<string,mixed> $parcel
+     *
+     * @return array<string,string>
+     */
+    private static function parcelWords(Order $order, array $parcel): array
+    {
+        $titles = array();
+        foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+            $titles[(int) $line['id']] = (string) $line['title'];
+        }
+        $list = '';
+        foreach (is_array($parcel['lines'] ?? null) ? $parcel['lines'] : array() as $line) {
+            if (is_array($line) && isset($titles[(int) ($line['line'] ?? 0)])) {
+                $list .= '<li>' . osc_esc_html($titles[(int) $line['line']]) . ' &times; ' . (int) ($line['qty'] ?? 0) . '</li>';
+            }
+        }
+        $carrier  = Receipts::plain($parcel['carrier'] ?? '', 100);
+        $number   = Receipts::plain($parcel['tracking'] ?? '', 100);
+        $url      = Receipts::httpsUrl((string) ($parcel['url'] ?? ''));
+        $tracking = '';
+        if ($carrier !== '' || $number !== '' || $url !== '') {
+            $tracking = '<p>'
+                . ($carrier !== '' ? osc_esc_html(sprintf(__('Carrier: %s'), $carrier)) . '<br>' : '')
+                . ($number !== '' ? osc_esc_html(sprintf(__('Tracking number: %s'), $number)) . '<br>' : '')
+                . ($url !== '' ? '<a href="' . osc_esc_html($url) . '">' . osc_esc_html(__('Track your parcel')) . '</a>' : '')
+                . '</p>';
+        }
+
+        return array('{SHIPMENT_LINES}' => $list === '' ? '' : '<ul>' . $list . '</ul>', '{ORDER_TRACKING}' => $tracking);
+    }
+
+    /**
      * The subject and body templates of an order mail.
      *
      * @return array{0:string,1:string}
@@ -2190,6 +2240,11 @@ final class CoreEmails
                 return array(
                     __('Your order {ORDER_NUMBER} has shipped'),
                     __('<p>Hi {USER_NAME},</p><p>Your order {ORDER_NUMBER} from {WEB_TITLE} is on its way.</p>{ORDER_TRACKING}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>'),
+                );
+            case 'order_part_shipped':
+                return array(
+                    __('Part of your order {ORDER_NUMBER} has shipped'),
+                    __('<p>Hi {USER_NAME},</p><p>Part of your order {ORDER_NUMBER} from {WEB_TITLE} is on its way. The rest follows in another parcel.</p>{SHIPMENT_LINES}{ORDER_TRACKING}<p>{ORDER_LINK}</p>'),
                 );
             case 'order_delivered':
                 return array(

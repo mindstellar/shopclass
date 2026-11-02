@@ -28,6 +28,7 @@ final class Order
 {
     public const STATUS_PENDING   = 'pending';
     public const STATUS_PAID      = 'paid';
+    public const STATUS_PROCESSING = 'processing';
     public const STATUS_FAILED    = 'failed';
     public const STATUS_REFUNDED  = 'refunded';
     public const STATUS_CANCELLED = 'cancelled';
@@ -37,6 +38,7 @@ final class Order
     public const STATUSES = array(
         self::STATUS_PENDING,
         self::STATUS_PAID,
+        self::STATUS_PROCESSING,
         self::STATUS_FAILED,
         self::STATUS_REFUNDED,
         self::STATUS_CANCELLED,
@@ -44,8 +46,8 @@ final class Order
         self::STATUS_DELIVERED,
     );
 
-    /** The statuses where the money is in: a goods order moves on to shipped and delivered. */
-    public const SETTLED = array(self::STATUS_PAID, self::STATUS_SHIPPED, self::STATUS_DELIVERED);
+    /** The statuses where the money is in: a goods order moves on to processing, shipped and delivered. */
+    public const SETTLED = array(self::STATUS_PAID, self::STATUS_PROCESSING, self::STATUS_SHIPPED, self::STATUS_DELIVERED);
 
     /** s_meta `_kind` of an order for goods, not credits. */
     public const KIND_GOODS = 'goods';
@@ -243,8 +245,8 @@ final class Order
     }
 
     /**
-     * Whether the money is in: paid, or a goods order since shipped or delivered. A cash on
-     * delivery order on its way is not paid yet.
+     * Whether the money is in: paid, or a goods order since processing, shipped or delivered. A
+     * cash on delivery order not collected yet is not paid.
      *
      * @return bool
      */
@@ -254,27 +256,129 @@ final class Order
     }
 
     /**
-     * A cash on delivery order shipped before the courier collected: it is paid once delivered.
+     * A cash on delivery order in processing or shipped before the courier collected: it is paid
+     * once delivered.
      *
      * @return bool
      */
     public function awaitsCash(): bool
     {
-        return $this->status === self::STATUS_SHIPPED && $this->paidDate === null && $this->gateway === gateway\CashOnDeliveryGateway::ID;
+        return in_array($this->status, array(self::STATUS_PROCESSING, self::STATUS_SHIPPED), true)
+            && $this->paidDate === null
+            && $this->gateway === gateway\CashOnDeliveryGateway::ID;
     }
 
     /**
-     * Whether the admin may mark it shipped: a paid goods order, or a cash on delivery one not
-     * paid yet.
+     * Whether the admin may ship it, in one parcel or more: a paid or processing goods order, or a
+     * cash on delivery one not paid yet.
      *
      * @return bool
      */
     public function canShip(): bool
     {
+        return $this->status === self::STATUS_PROCESSING ? $this->isGoods() : $this->canProcess();
+    }
+
+    /**
+     * Whether the order may move to processing: a paid goods order, or a pending cash on delivery one.
+     *
+     * @return bool
+     */
+    public function canProcess(): bool
+    {
         return $this->isGoods() && (
             $this->status === self::STATUS_PAID
             || ($this->status === self::STATUS_PENDING && $this->gateway === gateway\CashOnDeliveryGateway::ID)
         );
+    }
+
+    /**
+     * Status changes, oldest first: each {at, from, to, by: admin|buyer|system, id}.
+     *
+     * @return array<int,array{at:string,from:string,to:string,by:string,id:int|null}>
+     */
+    public function history(): array
+    {
+        return self::listMeta($this->meta(OrderStore::HISTORY));
+    }
+
+    /**
+     * Parcels sent, oldest first: each {n, at, by, id, lines: [{line, qty}], carrier, tracking, url}.
+     * An order shipped before parcels were kept reads as one parcel of every item line, from `_shipping`.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public function shipments(): array
+    {
+        $list = self::listMeta($this->meta(OrderStore::SHIPMENTS));
+        if ($list !== array() || !$this->isGoods() || !in_array($this->status, array(self::STATUS_SHIPPED, self::STATUS_DELIVERED), true)) {
+            return $list;
+        }
+        $shipping = $this->meta('_shipping');
+        $shipping = is_array($shipping) ? $shipping : array();
+        $lines    = array();
+        foreach (OrderLineStore::itemLines($this->id) as $line) {
+            $lines[] = array('line' => (int) $line['id'], 'qty' => (int) $line['qty']);
+        }
+
+        return array(array(
+            'n'        => 1,
+            'at'       => isset($shipping['shipped_at']) ? (string) $shipping['shipped_at'] : null,
+            'by'       => 'system',
+            'id'       => null,
+            'lines'    => $lines,
+            'carrier'  => (string) ($shipping['carrier'] ?? ''),
+            'tracking' => (string) ($shipping['tracking'] ?? ''),
+            'url'      => (string) ($shipping['url'] ?? ''),
+        ));
+    }
+
+    /**
+     * How many of each order line went out so far, by line id.
+     *
+     * @param int|null $upTo Count only parcels numbered up to this one
+     *
+     * @return array<int,int>
+     */
+    public function shippedQty(?int $upTo = null): array
+    {
+        $qty = array();
+        foreach ($this->shipments() as $shipment) {
+            if ($upTo !== null && (int) ($shipment['n'] ?? 0) > $upTo) {
+                continue;
+            }
+            foreach (is_array($shipment['lines'] ?? null) ? $shipment['lines'] : array() as $line) {
+                if (is_array($line) && isset($line['line'], $line['qty'])) {
+                    $qty[(int) $line['line']] = ($qty[(int) $line['line']] ?? 0) + (int) $line['qty'];
+                }
+            }
+        }
+
+        return $qty;
+    }
+
+    /**
+     * When and by whom the order was marked packed, or null when it is not.
+     *
+     * @return array{at:string,by:string,id:int|null}|null
+     */
+    public function packed(): ?array
+    {
+        $packed = $this->meta(OrderStore::PACKED);
+
+        return is_array($packed) && isset($packed['at']) ? $packed : null;
+    }
+
+    /**
+     * The array entries of a list kept in meta; anything else reads as empty.
+     *
+     * @param mixed $value
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function listMeta($value): array
+    {
+        return is_array($value) ? array_values(array_filter($value, 'is_array')) : array();
     }
 
     /**

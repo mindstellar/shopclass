@@ -690,7 +690,9 @@ touched.
 | `billing_order_paid` | action | Order transitions to paid, after credits are minted |
 | `billing_order_refunded` | action | Reversal recorded |
 | `billing_order_placed` | action | `($orderId, $userId)` a goods order is placed and its gateway answered |
-| `billing_order_shipped` | action | `($orderId, $userId)` paid → shipped, after commit |
+| `billing_order_processing` | action | `($orderId, $userId)` → processing (by hand or the first part parcel), after commit |
+| `billing_shipment_add_after` | action | `($orderId, $userId, $n)` every parcel, after commit |
+| `billing_order_shipped` | action | `($orderId, $userId)` the parcel with the last item → shipped, after commit. A part parcel fires only `billing_shipment_add_after` |
 | `billing_order_delivered` | action | `($orderId, $userId)` shipped → delivered, after commit |
 | `billing_order_cancelled` | action | `($orderId, $userId)` pending → cancelled, after commit |
 | `billing_order_failed` | action | `($orderId, $userId)` pending → failed on a gateway's failed callback |

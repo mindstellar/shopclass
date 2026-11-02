@@ -326,7 +326,7 @@ pin('cancelling a credits order tells the buyer', ['tom@example.test'], array_co
 
 harness_section('the mail events');
 $bridge = \mindstellar\event\HookBridge::active();
-pin('MailComposing owns the 36 mail text names', [36, MailComposing::class], [count(MailComposing::legacyNames()), $bridge->eventFor('email_order_placed_title')]);
+pin('MailComposing owns the 40 mail text names', [40, MailComposing::class], [count(MailComposing::legacyNames()), $bridge->eventFor('email_order_placed_title')]);
 check('the seven hook_email_ trigger names are gone', !Plugins::hasHook('hook_email_order_placed') && !Plugins::hasHook('hook_email_product_alert'));
 
 $seen  = [];

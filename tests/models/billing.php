@@ -342,7 +342,7 @@ harness_section('Orders: lifecycle');
 
 $order = OrderStore::create($userId, 'fake', 9_990_000, 'USD', 100, array('sku' => 'credits-100'));
 pin('new orders start pending', Order::STATUS_PENDING, $order->getStatus());
-pin('the money is in for paid, shipped and delivered', array('paid', 'shipped', 'delivered'), Order::SETTLED);
+pin('the money is in for paid, processing, shipped and delivered', array('paid', 'processing', 'shipped', 'delivered'), Order::SETTLED);
 pin('amount is stored in micros', 9990000, $order->getAmount());
 pin('metadata round-trips', 'credits-100', OrderStore::find($order->getId())->meta('sku'));
 pin('search filters by status and gateway', true, in_array($order->getId(), array_map(static fn ($o) => $o->getId(), OrderStore::search(array('status' => Order::STATUS_PENDING, 'gateway' => 'fake'), 50)), true));
@@ -606,7 +606,9 @@ Billing::markPaid($withMeta, 'ext_meta');
 check('the sent mark can be set', OrderStore::markRefundRequested($withMeta->getId()));
 pin('the plugin\'s own meta is kept', 'cs_keep', OrderStore::find($withMeta->getId())->meta('session'));
 check('and cleared', OrderStore::markRefundRequested($withMeta->getId(), false));
-pin('clearing keeps the plugin\'s meta', array('session' => 'cs_keep', OrderStore::NUMBER_PREFIX => ''), OrderStore::find($withMeta->getId())->getMeta());
+$cleared = OrderStore::find($withMeta->getId())->getMeta();
+unset($cleared[OrderStore::HISTORY]);
+pin('clearing keeps the plugin\'s meta', array('session' => 'cs_keep', OrderStore::NUMBER_PREFIX => ''), $cleared);
 check('a pending order cannot be marked', !OrderStore::markRefundRequested(OrderStore::create($userId, 'refundy', 1, 'USD', 1)->getId()));
 
 $threw   = $paidRefundy();

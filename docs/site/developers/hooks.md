@@ -224,7 +224,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 633 names. Generated from the source; do not edit by hand.
+Core fires 639 names. Generated from the source; do not edit by hand.
 
 ### Admin (81)
 
@@ -341,7 +341,7 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/classes/listing/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/classes/listing/moderation/CommentModeration.php` |
 
-### Email (129)
+### Email (133)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -419,6 +419,10 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `email_order_delivered_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_delivered_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_delivered_title_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_shipped_description` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_shipped_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_shipped_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_shipped_title_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_placed_description` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_placed_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_placed_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
@@ -557,7 +561,7 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/classes/search/query/PluginClauses.php` |
 
-### Other (251)
+### Other (253)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -642,10 +646,12 @@ Core fires 633 names. Generated from the source; do not edit by hand.
 | `billing_order_failed` | event | `OrderFailed` | `oc-includes/classes/billing/event/OrderFailed.php` |
 | `billing_order_paid` | event | `OrderPaid` | `oc-includes/classes/billing/event/OrderPaid.php` |
 | `billing_order_placed` | event | `OrderPlaced` | `oc-includes/classes/billing/event/OrderPlaced.php` |
+| `billing_order_processing` | event | `OrderProcessing` | `oc-includes/classes/billing/event/OrderProcessing.php` |
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/classes/billing/Billing.php` |
 | `billing_order_return_url` | event | `OrderReturnUrlResolving` | `oc-includes/classes/billing/event/OrderReturnUrlResolving.php` |
 | `billing_order_shipped` | event | `OrderShipped` | `oc-includes/classes/billing/event/OrderShipped.php` |
 | `billing_receipt_details` | event | `ReceiptComposing` | `oc-includes/classes/billing/event/ReceiptComposing.php` |
+| `billing_shipment_add_after` | event | `ShipmentAdded` | `oc-includes/classes/billing/event/ShipmentAdded.php` |
 | `billing_tracking_url` | event | `TrackingUrlResolving` | `oc-includes/classes/billing/event/TrackingUrlResolving.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
 | `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', 'oc_theme', 'oc_admin_browsing', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |

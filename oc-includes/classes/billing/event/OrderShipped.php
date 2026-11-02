@@ -13,7 +13,8 @@ declare(strict_types=1);
 namespace mindstellar\billing\event;
 
 /**
- * The order was shipped. Fired by the `billing_order_shipped` hook name.
+ * The order's last item was shipped. Fired by the `billing_order_shipped` hook name; a parcel that
+ * leaves items open fires only `billing_shipment_add_after`.
  */
 final class OrderShipped extends OrderEvent
 {

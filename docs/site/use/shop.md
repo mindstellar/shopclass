@@ -68,11 +68,14 @@ A number beside **Billing** and **Orders** counts the orders waiting to ship, an
 |---|---|
 | **Pending** | Placed, not paid. Bank transfer and cash on delivery orders wait here. Any pending order can be cancelled. |
 | **Paid** | Money received. It shows in **To ship** until you send it. |
-| **Shipped** | You marked it shipped with a carrier and tracking number (you can edit them later; shipping with none asks you to confirm). Cash on delivery is shipped before it is paid. |
+| **Processing** | You are preparing it. Set it with **Start processing**, or it starts when the first parcel ships. A cash on delivery order can start before it is paid. It stays in **To ship**. |
+| **Shipped** | Every item has shipped. You marked it shipped with a carrier and tracking number (you can edit them later; shipping with none asks you to confirm). Cash on delivery is shipped before it is paid. |
 | **Delivered** | You marked it delivered. A cash on delivery order is marked paid now. |
 | **Cancelled** | Closed before payment, by you, the buyer, or because a card order was not paid within the hold minutes. The stock goes back on sale. |
 | **Refunded** | The money went back. The stock goes back on sale. |
 | **Failed** | The payment provider reported a failed card payment. The order is closed and its stock goes back on sale. |
+
+To ship an order in parts, open it and use **Ship this order** (**Send another parcel** after the first): set the quantity in **Send now** for each line and add the carrier and tracking. The order stays **Processing** until the last item ships, then becomes **Shipped**. Each parcel keeps its own tracking, which you can edit. **Mark packed** is a note for you; it changes no status and sends no mail. The order page also lists its status history. Orders from before 7.1 have none.
 
 A card payment that arrives after its order was cancelled is refunded by the payment plugin.
 
@@ -85,10 +88,11 @@ The buyer is e-mailed when an order is:
 
 1. **placed** (bank transfer and cash on delivery, before payment),
 2. **paid**, with the receipt,
-3. **shipped**, with the carrier and tracking link,
-4. **delivered**,
-5. **cancelled**,
-6. **refunded**.
+3. **part shipped**, one mail per parcel with its items and tracking,
+4. **shipped**, when the last item goes, with the carrier and tracking link,
+5. **delivered**,
+6. **cancelled**,
+7. **refunded**.
 
 You get a "New order" mail for each order. A mail that cannot be sent waits on the job queue and
 is tried again, once per order and kind. Developers change the wording with the `MailComposing`

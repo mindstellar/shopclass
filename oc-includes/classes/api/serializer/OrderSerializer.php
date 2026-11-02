@@ -200,6 +200,8 @@ final class OrderSerializer
             'total'       => $this->amount($order->getAmount(), $currency),
             'lines'       => $out,
             'shipping'    => self::shipping($order),
+            'shipments'   => self::shipments($order, $lines),
+            'packed_at'   => Format::time($order->packed()['at'] ?? null),
             'gateway'     => array('id' => $order->getGateway(), 'name' => $gateway === null ? $order->getGateway() : $gateway->getName()),
             'receipt_url' => Receipts::available($order) ? Receipts::url($order->getId()) : null,
             'can_cancel'  => $order->buyerMayCancel(),
@@ -236,6 +238,42 @@ final class OrderSerializer
             'shipped_at'   => Format::time($f['shipped_at']),
             'delivered_at' => Format::time($f['delivered_at']),
         );
+    }
+
+    /**
+     * The parcels sent so far, oldest first. A line no longer on the order is left out.
+     *
+     * @param array<int,array<string,mixed>> $lines the order's stored lines
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function shipments(Order $order, array $lines): array
+    {
+        $titles = array();
+        foreach ($lines as $line) {
+            $titles[(int) $line['id']] = (string) $line['title'];
+        }
+        $out = array();
+        foreach ($order->shipments() as $shipment) {
+            $parcel = array();
+            foreach (is_array($shipment['lines'] ?? null) ? $shipment['lines'] : array() as $row) {
+                $id = is_array($row) ? (int) ($row['line'] ?? 0) : 0;
+                if (isset($titles[$id])) {
+                    $parcel[] = array('line_id' => $id, 'title' => $titles[$id], 'qty' => (int) ($row['qty'] ?? 0));
+                }
+            }
+            $url   = $shipment['url'] ?? null;
+            $out[] = array(
+                'n'            => (int) ($shipment['n'] ?? 0),
+                'shipped_at'   => Format::time($shipment['at'] ?? null),
+                'carrier'      => ($shipment['carrier'] ?? '') !== '' ? (string) $shipment['carrier'] : null,
+                'tracking'     => ($shipment['tracking'] ?? '') !== '' ? (string) $shipment['tracking'] : null,
+                'tracking_url' => is_string($url) && str_starts_with(strtolower($url), 'https://') ? $url : null,
+                'lines'        => $parcel,
+            );
+        }
+
+        return $out;
     }
 
     /**

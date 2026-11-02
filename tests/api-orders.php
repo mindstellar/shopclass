@@ -346,6 +346,29 @@ $show = $call('GET', 'account/orders/' . $paidId, null, $tomKey)->body()['data']
 pin('shipped: carrier and tracking, an http tracking link is withheld', ['shipped', 'DHL', 'JD0001', null, true], [$show['status'], $show['shipping']['carrier'], $show['shipping']['tracking'], $show['shipping']['tracking_url'], $show['shipping']['shipped_at'] !== null]);
 pin('and it still matches the schema', [], api_admin_schema_errors('OrderDocument', $call('GET', 'account/orders/' . $paidId, null, $tomKey)));
 
+harness_section('partial shipments');
+$lineIds = array_map(static fn ($l) => $l['id'], array_values(array_filter(\mindstellar\billing\OrderLineStore::ofOrders([$paidId])[$paidId], static fn ($l) => $l['kind'] === 'item')));
+$none    = $call('GET', 'account/orders/' . $paidId, null, $tomKey)->body()['data'];
+$unshipped = $call('GET', 'account/orders/' . $o['id'], null, $tomKey)->body()['data'];
+pin('an order with no parcels lists none and is not packed', [[], null], [$unshipped['shipments'], $unshipped['packed_at']]);
+$meta = [
+    '_kind'      => Order::KIND_GOODS,
+    '_shipping'  => ['carrier' => 'DHL', 'tracking' => 'P1', 'url' => 'https://t.example.test/P1', 'shipped_at' => '2026-11-02 10:00:00'],
+    '_shipments' => [
+        ['n' => 1, 'at' => '2026-11-02 10:00:00', 'by' => 'admin', 'id' => 1, 'lines' => [['line' => $lineIds[0], 'qty' => 1]], 'carrier' => 'DHL', 'tracking' => 'P1', 'url' => 'https://t.example.test/P1'],
+        ['n' => 2, 'at' => '2026-11-02 11:00:00', 'by' => 'admin', 'id' => 1, 'lines' => [['line' => $lineIds[0], 'qty' => 1], ['line' => 99999, 'qty' => 1]], 'carrier' => 'UPS', 'tracking' => 'P2', 'url' => 'http://t.example.test/P2'],
+    ],
+    '_packed'    => ['at' => '2026-11-02 09:00:00', 'by' => 'admin', 'id' => 1],
+];
+$admin->query("UPDATE {$p}t_billing_order SET s_status = 'processing', s_meta = '" . $admin->real_escape_string(json_encode($meta)) . "' WHERE pk_i_id = " . (int) $paidId);
+$r    = $call('GET', 'account/orders/' . $paidId, null, $tomKey);
+$part = $r->body()['data'];
+pin('processing is an order status the schema accepts', ['processing', []], [$part['status'], api_admin_schema_errors('OrderDocument', $r)]);
+pin('two parcels: n, carrier, tracking, https-only link', [[1, 2], ['DHL', 'UPS'], ['P1', 'P2'], ['https://t.example.test/P1', null]], [array_column($part['shipments'], 'n'), array_column($part['shipments'], 'carrier'), array_column($part['shipments'], 'tracking'), array_column($part['shipments'], 'tracking_url')]);
+pin('a parcel line carries the line id, title and qty; a gone line is left out', [[['line_id' => $lineIds[0], 'title' => $none['lines'][0]['title'], 'qty' => 1]], 1], [$part['shipments'][0]['lines'], count($part['shipments'][1]['lines'])]);
+pin('shipped_at and packed_at are times', [true, true], [$part['shipments'][0]['shipped_at'] !== null, $part['packed_at'] !== null]);
+pin('no history in the API', false, array_key_exists('history', $part));
+
 harness_section('a variant price');
 $rL = $call('POST', 'account/orders', $body([['variant' => $large, 'qty' => 1, 'unit' => '1.00']]), $tomKey);
 $oL = $rL->body()['data'];

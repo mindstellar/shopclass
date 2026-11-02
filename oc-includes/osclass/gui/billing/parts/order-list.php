@@ -34,6 +34,7 @@ $statusWords = array(
     Order::STATUS_FAILED    => _m('Failed'),
     Order::STATUS_REFUNDED  => _m('Refunded'),
     Order::STATUS_CANCELLED => _m('Cancelled'),
+    Order::STATUS_PROCESSING => _m('Processing'),
     Order::STATUS_SHIPPED   => _m('Shipped'),
     Order::STATUS_DELIVERED => _m('Delivered'),
 );

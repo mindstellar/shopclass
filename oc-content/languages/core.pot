@@ -38,6 +38,10 @@ msgid_plural ""
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "%1$d of %2$d"
+msgstr ""
+
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "%1$d package does not say it works with %2$s:"
 msgid_plural "%1$d packages do not say they work with %2$s:"
@@ -169,6 +173,10 @@ msgstr ""
 msgid ""
 "%1$s surfaces errors while you diagnose a problem; %2$s sends them to a log "
 "file instead of the page. Both belong off on a live site."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "%1$s to %2$s"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -913,6 +921,13 @@ msgstr ""
 
 #: oc-includes/classes/core/mail/CoreEmails.php
 msgid ""
+"<p>Hi {USER_NAME},</p><p>Part of your order {ORDER_NUMBER} from {WEB_TITLE} "
+"is on its way. The rest follows in another parcel.</p>{SHIPMENT_LINES}"
+"{ORDER_TRACKING}<p>{ORDER_LINK}</p>"
+msgstr ""
+
+#: oc-includes/classes/core/mail/CoreEmails.php
+msgid ""
 "<p>Hi {USER_NAME},</p><p>Thank you for your order from {WEB_TITLE}. We have "
 "it and will get it ready once your payment ({PAYMENT_METHOD}) is in.</"
 "p>{ORDER_LINES}{ORDER_ADDRESS}<p>{ORDER_LINK}</p>"
@@ -1076,6 +1091,12 @@ msgstr ""
 msgid ""
 "A job has been running for more than 15 minutes. The run that took it may "
 "have stopped partway."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid ""
+"A label for staff while you pack. The buyer gets no mail, but the API shows "
+"when it was packed."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -1731,6 +1752,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/api.php
 #: oc-includes/classes/core/mail/CoreEmails.php
 msgid "Admin"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Admin #%d"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
@@ -2995,6 +3020,7 @@ msgstr ""
 msgid "Buyers can add this product to a cart."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "By"
 msgstr ""
@@ -3591,6 +3617,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/logs.php
 msgid "Clear log"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Clear packed mark"
 msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
@@ -5411,6 +5441,10 @@ msgstr ""
 msgid "Edit tracking"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Edit tracking of parcel %d"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/users/frm.php
@@ -6584,6 +6618,7 @@ msgstr ""
 msgid "Highlights from %s"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "History"
 msgstr ""
@@ -8510,6 +8545,10 @@ msgid "Mark delivered"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
+msgid "Mark packed"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
 msgid "Mark shipped"
 msgstr ""
 
@@ -9465,6 +9504,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
 msgid "No held messages"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "No history kept before 7.1"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
@@ -10484,6 +10527,10 @@ msgstr ""
 msgid "Packages"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Packed"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/media/index.php
@@ -10562,6 +10609,10 @@ msgid ""
 "in the buyer's wallet."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Parcel"
+msgstr ""
+
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "Parent categories"
 msgstr ""
@@ -10572,6 +10623,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Parking & Storage"
+msgstr ""
+
+#: oc-includes/classes/core/mail/CoreEmails.php
+msgid "Part of your order {ORDER_NUMBER} has shipped"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -11098,6 +11153,11 @@ msgstr ""
 msgid "Process queue now"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
+#: oc-admin/themes/modern/billing/order.php
+msgid "Processing"
+msgstr ""
+
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/main/index.php
 #: oc-admin/themes/modern/messages/index.php
@@ -11271,6 +11331,10 @@ msgstr ""
 #: oc-includes/classes/billing/Receipts.php
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "Qty"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Quantity of %s to send now"
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
@@ -12842,12 +12906,24 @@ msgstr ""
 msgid "Send admin a copy to \"share product\" email"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Send another parcel"
+msgstr ""
+
 #: oc-includes/classes/admin/form/UserSettingsScreen.php
 msgid "Send browser notifications for new messages"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 msgid "Send events to it from now on"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Send now"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Send parcel"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -12885,6 +12961,7 @@ msgstr ""
 msgid "Sends what is on screen now. Placeholders are not filled in."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/messages/thread.php
 msgid "Sent"
 msgstr ""
@@ -13065,6 +13142,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Ship this order"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Shipments"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
@@ -13700,6 +13781,14 @@ msgid ""
 "the charge instead. Amounts are in the products' currency."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Start processing"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "Start processing when you begin to pick and pack this order."
+msgstr ""
+
 #: oc-includes/classes/backup/BackupService.php
 msgid "Starting"
 msgstr ""
@@ -14291,6 +14380,10 @@ msgid "The bucket did not answer; its backups are not listed right now."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
+msgid "The buyer"
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
 msgid "The buyer is not charged. This cannot be undone."
 msgstr ""
 
@@ -14812,6 +14905,10 @@ msgstr ""
 msgid "The submission has been deleted"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "The system"
+msgstr ""
+
 #: oc-includes/osclass/install-functions.php
 msgid "The table prefix can only contain letters, numbers and underscores."
 msgstr ""
@@ -15195,6 +15292,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "This order cannot be refunded "
+msgstr ""
+
+#: oc-admin/themes/modern/billing/order.php
+msgid "This order is marked packed. The buyer gets no mail about it."
 msgstr ""
 
 #: oc-includes/classes/admin/ajax/MarketAjax.php
