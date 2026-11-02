@@ -2,7 +2,7 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.beta2
+## Shopclass 7.1.0.beta3
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
@@ -69,6 +69,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Releases ship only `shopclass_v*.zip`; `osclass_v*.zip` is no longer built.
 
 ### Changed
+- Core now bundles symfony/http-client 7.4 (was 5.4) with async-aws/s3 3.5; a plugin that implements Symfony's HTTP client interfaces needs the 7.x signatures.
 - `ImageProcessing` and `ImageResizer` are deprecated; use `mindstellar\image\Processor`.
 - A listing photo upload is turned upright and saved once.
 - Prices in Indian locales (en_IN, hi_IN) show Indian digit grouping, e.g. ₹12,34,567.
