@@ -34,6 +34,7 @@ function osc_get_countries()
         array('pk_c_code' => 'GB', 's_name' => 'United Kingdom'),
         array('pk_c_code' => 'DE', 's_name' => 'Germany'),
         array('pk_c_code' => 'JP', 's_name' => 'Japan'),
+        array('pk_c_code' => 'IE', 's_name' => 'Ireland'),
         array('pk_c_code' => 'ZZ', 's_name' => 'Nowhere'),
     );
 }
@@ -107,9 +108,10 @@ $order = static function (string $html): array {
 
 $gb = $render('GB');
 pin('the form carries the JS hook', 1, substr_count($gb, 'data-address-form'));
-pin('GB labels the state field County, not required', array(true, false), array(
-    str_contains($wrapper($gb, 'state'), '>County</label>'),
-    str_contains($wrapper($gb, 'state'), ' required'),
+$ie = $render('IE');
+pin('IE labels the state field County, not required', array(true, false), array(
+    str_contains($wrapper($ie, 'state'), '>County</label>'),
+    str_contains($wrapper($ie, 'state'), ' required'),
 ));
 pin('GB asks for a required Postcode', array(true, true), array(
     str_contains($wrapper($gb, 'postcode'), '>Postcode</label>'),
@@ -142,13 +144,13 @@ pin('the formats JSON prints once, with the script', array(1, 1), array(
 ));
 preg_match('/id="osc-address-formats"[^>]*>(.*?)<\/script>/s', $gb, $json);
 $decoded = json_decode($json[1] ?? '', true);
-pin('the JSON is the format map', array('Postal code', '^\d{5}$'), array($decoded['DE']['postcode'] ?? null, $decoded['DE']['pattern'] ?? null));
+pin('the JSON is the format map', array('Postal code', '^(?:\d{5})$'), array($decoded['DE']['postcode'] ?? null, $decoded['DE']['pattern'] ?? null));
 ob_start();
 osc_address_form_script();
 pin('a later call prints nothing', '', ob_get_clean());
 
 $formats = osc_address_formats();
-pin('the formats cover the site countries only', array('US', 'GB', 'DE', 'JP', 'ZZ'), array_keys($formats));
+pin('the formats cover the site countries only', array('US', 'GB', 'DE', 'JP', 'IE', 'ZZ'), array_keys($formats));
 pin('a format has the fields the script reads', array('fields', 'required', 'state', 'postcode', 'pattern', 'example'), array_keys($formats['DE']));
 
 pin('osc_address_text puts the German postcode before the city', 'Hauptstr. 1, 10115 Berlin, Germany · +49 30 1234', osc_address_text(array(

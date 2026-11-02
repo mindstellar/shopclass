@@ -333,9 +333,10 @@ pin('a country row becomes code, name and a null slug when empty', ['DE', 'Germa
 pin('a currency row becomes code, name, symbol and decimals', ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€', 'decimals' => 2], $places->currency(['pk_c_code' => 'EUR', 's_name' => 'Euro', 's_description' => '€', 'i_decimals' => '2']));
 pin('a currency row without the column gets the ISO decimals', 0, $places->currency(['pk_c_code' => 'JPY', 's_name' => 'Yen', 's_description' => '¥'])['decimals']);
 $gb = $places->country(['pk_c_code' => 'gb', 's_name' => 'United Kingdom', 's_slug' => 'uk']);
+$ie = $places->country(['pk_c_code' => 'ie', 's_name' => 'Ireland', 's_slug' => 'ie']);
 check('DE asks for no state field but a postcode', !in_array('state', $de['address_format']['fields'], true) && in_array('postcode', $de['address_format']['required'], true));
-pin('GB asks for a County, not required', ['County', false], ['County' === $gb['address_format']['labels']['state'] ? 'County' : '', in_array('state', $gb['address_format']['required'], true)]);
+pin('IE asks for a County, not required', ['County', false], [$ie['address_format']['labels']['state'], in_array('state', $ie['address_format']['required'], true)]);
 pin('a country matches the schema', [], $validator->check(Schema::ref('Country'), $gb));
-pin('the Indian format keeps its 6-digit pattern', '^\\d{6}$', $places->country(['pk_c_code' => 'IN', 's_name' => 'India', 's_slug' => null])['address_format']['pattern']);
+pin('the Indian format keeps its 6-digit pattern', '^(?:\\d{6})$', $places->country(['pk_c_code' => 'IN', 's_name' => 'India', 's_slug' => null])['address_format']['pattern']);
 
 exit(harness_result());

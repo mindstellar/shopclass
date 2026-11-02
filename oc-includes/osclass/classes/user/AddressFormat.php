@@ -15,79 +15,23 @@ namespace mindstellar\user;
 /**
  * How a delivery address is written in each country: which of line1, line2, city, state and
  * postcode show and in what order, which are needed, their labels and the postcode pattern.
- * The map is kept by hand in code; a country not in it gets the default. Name, phone, line1, city
- * and country are needed everywhere.
+ * The data is generated from Google's address metadata into AddressFormatData; OVERRIDES holds
+ * Shopclass's own changes. A country not in the data gets the default.
  */
 final class AddressFormat
 {
-    private const STD     = array('line1', 'line2', 'city', 'state', 'postcode');
-    private const EU      = array('line1', 'line2', 'postcode', 'city');
-    private const EU_AREA = array('line1', 'line2', 'postcode', 'city', 'state');
-    private const CITY_PC = array('line1', 'line2', 'city', 'postcode');
-    private const CITY    = array('line1', 'line2', 'city');
-    private const CITY_ST = array('line1', 'line2', 'city', 'state');
-    private const BIG     = array('postcode', 'state', 'city', 'line1', 'line2');
+    private const STD = array('line1', 'line2', 'city', 'state', 'postcode');
 
     private const BASE = array('line1', 'city');
 
-    /**
-     * Per country: fields, extra required fields, state label code, postcode label code, pattern
-     * (anchored; the same text works in PCRE and in JavaScript) and an example postcode.
-     */
-    private const MAP = array(
-        'US' => array(self::STD, array('state', 'postcode'), 'state', 'zip', '^\d{5}(-\d{4})?$', '78701'),
-        'CA' => array(self::STD, array('state', 'postcode'), 'province', 'postal', '^[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d$', 'K1A 0B1'),
-        'MX' => array(self::STD, array('state', 'postcode'), 'state', 'postal', '^\d{5}$', '06600'),
-        'BR' => array(self::STD, array('state', 'postcode'), 'state', 'cep', '^\d{5}-?\d{3}$', '01310-100'),
-        'AR' => array(self::STD, array('postcode'), 'province', 'postal', '^([A-Za-z]\d{4}[A-Za-z]{3}|\d{4})$', 'C1425ABC'),
-        'CL' => array(self::STD, array('postcode'), 'region', 'postal', '^\d{3}-?\d{4}$', '8320000'),
-        'CO' => array(self::STD, array('postcode'), 'province', 'postal', '^\d{6}$', '110111'),
-        'PE' => array(self::STD, array(), 'region', 'postal', '^\d{5}$', '15001'),
-        'GB' => array(self::STD, array('postcode'), 'county', 'postcode', '^[A-Za-z]{1,2}\d[A-Za-z\d]? ?\d[A-Za-z]{2}$', 'SW1A 1AA'),
-        'IE' => array(self::STD, array(), 'county', 'eircode', '^[A-Za-z]\d{2} ?[A-Za-z\d]{4}$', 'D02 X285'),
-        'FR' => array(self::EU, array('postcode'), null, 'postal', '^\d{5}$', '75001'),
-        'DE' => array(self::EU, array('postcode'), null, 'postal', '^\d{5}$', '10115'),
-        'NL' => array(self::EU, array('postcode'), null, 'postcode', '^\d{4} ?[A-Za-z]{2}$', '1012 AB'),
-        'BE' => array(self::EU, array('postcode'), null, 'postal', '^\d{4}$', '1000'),
-        'LU' => array(self::EU, array('postcode'), null, 'postal', '^\d{4}$', '1111'),
-        'ES' => array(self::EU_AREA, array('postcode'), 'province', 'postal', '^\d{5}$', '28013'),
-        'PT' => array(self::EU, array('postcode'), null, 'postal', '^\d{4}-?\d{3}$', '1100-148'),
-        'IT' => array(self::EU_AREA, array('postcode'), 'province', 'postal', '^\d{5}$', '00184'),
-        'CH' => array(self::EU, array('postcode'), null, 'postal', '^\d{4}$', '8001'),
-        'AT' => array(self::EU, array('postcode'), null, 'postal', '^\d{4}$', '1010'),
-        'DK' => array(self::EU, array('postcode'), null, 'postal', '^\d{4}$', '1050'),
-        'SE' => array(self::EU, array('postcode'), null, 'postal', '^\d{3} ?\d{2}$', '111 22'),
-        'NO' => array(self::EU, array('postcode'), null, 'postal', '^\d{4}$', '0150'),
-        'FI' => array(self::EU, array('postcode'), null, 'postal', '^\d{5}$', '00100'),
-        'PL' => array(self::EU, array('postcode'), null, 'postal', '^\d{2}-?\d{3}$', '00-001'),
-        'CZ' => array(self::EU, array('postcode'), null, 'postal', '^\d{3} ?\d{2}$', '110 00'),
-        'GR' => array(self::EU, array('postcode'), null, 'postal', '^\d{3} ?\d{2}$', '105 57'),
-        'TR' => array(self::EU_AREA, array('postcode'), 'province', 'postal', '^\d{5}$', '34000'),
-        'IL' => array(self::CITY_PC, array('postcode'), null, 'postal', '^\d{5}(\d{2})?$', '6100000'),
-        'AE' => array(self::CITY_ST, array(), 'emirate', null, null, ''),
-        'SA' => array(self::STD, array('postcode'), 'region', 'postal', '^\d{5}(-\d{4})?$', '12211'),
-        'QA' => array(self::CITY, array(), null, null, null, ''),
-        'KW' => array(self::STD, array('postcode'), 'governorate', 'postal', '^\d{5}$', '13001'),
-        'EG' => array(self::STD, array(), 'governorate', 'postal', '^\d{5}$', '11511'),
-        'ZA' => array(self::STD, array('postcode'), 'province', 'postal', '^\d{4}$', '2000'),
-        'NG' => array(self::STD, array(), 'state', 'postal', '^\d{6}$', '100001'),
-        'KE' => array(self::STD, array(), 'county', 'postal', '^\d{5}$', '00100'),
-        'IN' => array(self::STD, array('state', 'postcode'), 'state', 'pin', '^\d{6}$', '110001'),
-        'PK' => array(self::STD, array(), 'province', 'postal', '^\d{5}$', '44000'),
-        'BD' => array(self::STD, array(), 'region', 'postal', '^\d{4}$', '1207'),
-        'LK' => array(self::STD, array(), 'province', 'postal', '^\d{5}$', '00100'),
-        'JP' => array(self::BIG, array('state', 'postcode'), 'prefecture', 'postal', '^\d{3}-?\d{4}$', '100-0001'),
-        'KR' => array(self::BIG, array('postcode'), 'province', 'postal', '^\d{5}$', '04524'),
-        'CN' => array(self::BIG, array('state', 'postcode'), 'province', 'postal', '^\d{6}$', '100000'),
-        'HK' => array(self::CITY, array(), null, null, null, ''),
-        'SG' => array(self::CITY_PC, array('postcode'), null, 'postal', '^\d{6}$', '049483'),
-        'MY' => array(self::EU_AREA, array('postcode'), 'state', 'postal', '^\d{5}$', '50450'),
-        'TH' => array(self::STD, array('postcode'), 'province', 'postal', '^\d{5}$', '10110'),
-        'ID' => array(self::STD, array('postcode'), 'province', 'postal', '^\d{5}$', '10110'),
-        'PH' => array(self::STD, array('postcode'), 'province', 'postal', '^\d{4}$', '1000'),
-        'VN' => array(self::STD, array(), 'province', 'postal', '^\d{5,6}$', '100000'),
-        'AU' => array(self::EU_AREA, array('state', 'postcode'), 'state', 'postcode', '^\d{4}$', '2000'),
-        'NZ' => array(self::CITY_PC, array('postcode'), null, 'postcode', '^\d{4}$', '6011'),
+    /** Our changes on top of the generated data, by country: label types the post itself uses. */
+    private const OVERRIDES = array(
+        'AU' => array(3 => 'postcode'),
+        'BR' => array(3 => 'cep'),
+        'GB' => array(3 => 'postcode'),
+        'IN' => array(3 => 'pin'),
+        'NL' => array(3 => 'postcode'),
+        'NZ' => array(3 => 'postcode'),
     );
 
     private function __construct()
@@ -101,7 +45,8 @@ final class AddressFormat
      */
     public static function for(string $country): array
     {
-        $row = self::MAP[strtoupper(trim($country))] ?? null;
+        $code = strtoupper(trim($country));
+        $row  = AddressFormatData::MAP[$code] ?? null;
         if ($row === null) {
             return array(
                 'fields'   => self::STD,
@@ -112,7 +57,7 @@ final class AddressFormat
                 'example'  => '',
             );
         }
-        [$fields, $needed, $state, $postcode, $pattern, $example] = $row;
+        [$fields, $needed, $state, $postcode, $pattern, $example] = array_replace($row, self::OVERRIDES[$code] ?? array());
 
         return array(
             'fields'   => $fields,
@@ -132,7 +77,7 @@ final class AddressFormat
     public static function all(): array
     {
         $out = array();
-        foreach (array_keys(self::MAP) as $country) {
+        foreach (array_keys(AddressFormatData::MAP) as $country) {
             $out[$country] = self::for($country);
         }
 
@@ -190,14 +135,18 @@ final class AddressFormat
     private static function stateLabel(string $code): string
     {
         return match ($code) {
-            'state'       => _m('State'),
-            'province'    => _m('Province'),
-            'county'      => _m('County'),
-            'prefecture'  => _m('Prefecture'),
-            'region'      => _m('Region'),
-            'emirate'     => _m('Emirate'),
-            'governorate' => _m('Governorate'),
-            default       => _m('State / Province'),
+            'state'          => _m('State'),
+            'province', 'do_si' => _m('Province'),
+            'county'         => _m('County'),
+            'prefecture'     => _m('Prefecture'),
+            'region', 'oblast' => _m('Region'),
+            'emirate'        => _m('Emirate'),
+            'area'           => _m('Area'),
+            'department'     => _m('Department'),
+            'district'       => _m('District'),
+            'island'         => _m('Island'),
+            'parish'         => _m('Parish'),
+            default          => _m('State / Province'),
         };
     }
 

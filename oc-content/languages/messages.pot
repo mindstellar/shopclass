@@ -495,6 +495,10 @@ msgid ""
 "scripts. End any you do not recognise."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Area"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebMessages.php
 msgid "Asking about your listing"
 msgstr ""
@@ -1068,6 +1072,10 @@ msgstr ""
 msgid "Delivered"
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Department"
+msgstr ""
+
 #: oc-includes/osclass/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Description"
@@ -1113,6 +1121,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Directory '%s' couldn't be removed;)"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "District"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -1392,10 +1404,6 @@ msgstr ""
 msgid "Go to the home page"
 msgstr ""
 
-#: oc-includes/osclass/classes/user/AddressFormat.php
-msgid "Governorate"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
 msgid "Great! We just updated your comment"
 msgstr ""
@@ -1497,6 +1505,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Invoice"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Island"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-signin-content.php
@@ -2289,6 +2301,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
 msgid "Paid"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Parish"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-login-content.php

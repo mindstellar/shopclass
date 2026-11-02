@@ -36,11 +36,11 @@ $needed = static fn (string $c): array => AddressFormat::for($c)['required'];
 harness_section('the map');
 pin('about 45 countries', true, count(AddressFormat::all()) >= 45);
 pin('US asks for state and ZIP code', [['line1', 'city', 'state', 'postcode'], 'ZIP code'], [$needed('US'), AddressFormat::for('us')['postcode']]);
-pin('GB: county optional, postcode needed', [['line1', 'city', 'postcode'], 'County'], [$needed('GB'), AddressFormat::for('GB')['state']]);
+pin('GB: no county, a required Postcode', [['line1', 'city', 'postcode'], '', 'Postcode'], [$needed('GB'), AddressFormat::for('GB')['state'], AddressFormat::for('GB')['postcode']]);
 pin('JP: prefecture, postcode first', [['postcode', 'state', 'city', 'line1', 'line2'], true], [AddressFormat::for('JP')['fields'], in_array('state', $needed('JP'), true)]);
 pin('DE: no state shown, postcode before city', [['line1', 'line2', 'postcode', 'city'], ''], [AddressFormat::for('DE')['fields'], AddressFormat::for('DE')['state']]);
-pin('IN: state and a 6-digit PIN code', [['line1', 'city', 'state', 'postcode'], 'PIN code'], [$needed('IN'), AddressFormat::for('IN')['postcode']]);
-pin('HK: no state and no postcode', [['line1', 'line2', 'city'], null], [AddressFormat::for('HK')['fields'], AddressFormat::for('HK')['pattern']]);
+pin('IN: state and a 6-digit PIN code', [['line1', 'city', 'state', 'postcode'], 'PIN code'], [array_values(array_intersect(['line1', 'city', 'state', 'postcode'], $needed('IN'))), AddressFormat::for('IN')['postcode']]);
+pin('HK: a required Area and no postcode', [['state', 'city', 'line1', 'line2'], 'Area', true, null], [AddressFormat::for('HK')['fields'], AddressFormat::for('HK')['state'], in_array('state', $needed('HK'), true), AddressFormat::for('HK')['pattern']]);
 pin('an unknown country gets the default', [AddressFormat::for(''), ['line1', 'city'], 'State / Province', 'Postcode', null], [AddressFormat::for('ZZ'), $needed('ZZ'), AddressFormat::for('ZZ')['state'], AddressFormat::for('ZZ')['postcode'], AddressFormat::for('ZZ')['pattern']]);
 pin('every pattern is valid in PCRE and has an example that matches', [], array_keys(array_filter(AddressFormat::all(), static fn (array $f): bool => $f['pattern'] !== null && preg_match('/' . $f['pattern'] . '/iu', $f['example']) !== 1)));
 
@@ -52,7 +52,7 @@ pin('US saves with state and ZIP', [], $wrong(['country' => 'US', 'state' => 'TX
 pin('JP saves with prefecture', [], $wrong(['country' => 'JP', 'state' => 'Tokyo', 'postcode' => '100-0001'] + $base));
 pin('DE saves with no state', [], $wrong(['country' => 'DE', 'postcode' => '10115'] + $base));
 pin('IN needs state', ['/state' => 'required'], $wrong(['country' => 'IN', 'postcode' => '110001'] + $base));
-pin('HK saves with no postcode', [], $wrong(['country' => 'HK'] + $base));
+pin('HK saves with an area and no postcode', [], $wrong(['country' => 'HK', 'state' => 'Kowloon'] + $base));
 pin('IE saves with no Eircode', [], $wrong(['country' => 'IE'] + $base));
 pin('an unknown country saves with just the basics', [], $wrong(['country' => 'ZZ'] + $base));
 pin('name, phone, line1, city and country are needed everywhere', ['/name' => 'required', '/phone' => 'required', '/line1' => 'required', '/city' => 'required', '/country' => 'required'], $wrong(['name' => '', 'phone' => '', 'line1' => '', 'city' => '', 'country' => ''] + $base));
@@ -70,5 +70,9 @@ pin('a 2-digit number fails', 'pattern', AddressFormat::phoneProblem('12')[0] ??
 pin('two plus signs fail', 'pattern', AddressFormat::phoneProblem('+1+2')[0] ?? '');
 pin('letters fail', 'pattern', AddressFormat::phoneProblem('555-CALL-ME')[0] ?? '');
 pin('more than 15 digits fail', 'pattern', AddressFormat::phoneProblem('1234567890123456')[0] ?? '');
+
+$data = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/user/AddressFormatData.php');
+check('the generated data keeps its credit to Google and its CC BY 4.0 licence', str_contains($data, 'copyright Google LLC') && str_contains($data, 'https://creativecommons.org/licenses/by/4.0/') && str_contains($data, 'Changed:'));
+check('the data covers about every country', count(\mindstellar\user\AddressFormatData::MAP) > 240);
 
 exit(harness_result());

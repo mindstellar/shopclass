@@ -428,8 +428,11 @@ account's own address. At most 10 are kept.
 
 Each country has its own rules in `mindstellar\user\AddressFormat`: which of `line1`, `line2`,
 `city`, `state` and `postcode` show, in what order, which are required, the state and postcode
-labels, and a postcode pattern. `name`, `phone`, `line1`, `city` and `country` are always required;
-an unknown country gets state and postcode as optional fields. The server applies these rules on
+labels, and a postcode pattern, for about 250 countries. Every country has a `city` field, optional
+where its post does not use one. `name`, `phone` and `country` are always required; an unknown
+country gets state and postcode as optional fields. The data is generated into
+`AddressFormatData` by `tools/gen-address-formats.php`; Shopclass's own changes go in
+`AddressFormat::OVERRIDES`. The server applies these rules on
 the account page, at checkout and in the API. A phone is an optional `+`, then 4 to 15 digits with
 spaces and `- . ( ) /` allowed.
 
