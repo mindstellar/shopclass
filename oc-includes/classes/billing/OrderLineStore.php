@@ -182,6 +182,22 @@ final class OrderLineStore extends Model
     }
 
     /**
+     * The tax a stored item or shipping line carries in meta `tax`, or null when it has none or it
+     * does not read back whole. Orders placed before line tax have none.
+     *
+     * @param array<string,mixed> $line a line as this class reads it
+     */
+    public static function lineTax(array $line): ?LineTax
+    {
+        $kind = $line['kind'] ?? null;
+        if ($kind !== self::KIND_ITEM && $kind !== self::KIND_SHIPPING) {
+            return null;
+        }
+
+        return LineTax::fromArray(is_array($line['meta'] ?? null) ? ($line['meta']['tax'] ?? null) : null);
+    }
+
+    /**
      * @param array<string,mixed> $row a t_billing_order_line row
      *
      * @return array<string,mixed>

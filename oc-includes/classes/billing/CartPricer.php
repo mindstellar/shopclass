@@ -180,15 +180,63 @@ final class CartPricer
         // Discounts first, so tax is worked out on what the buyer pays.
         $extra['discount']       = self::extra($this->events()->dispatch(new CartDiscountLines($cart))->rawLines(), 'discount', $currency);
         $cart['discount_lines']  = $extra['discount'];
-        $extra['tax']            = self::extra($this->events()->dispatch(new CartTaxLines($cart))->rawLines(), 'tax', $currency);
+        $taxEvent                = $this->events()->dispatch(new CartTaxLines($cart));
+        $extra['tax']            = self::extra($taxEvent->rawLines(), 'tax', $currency);
         $cart['tax_lines']       = $extra['tax'];
+        $lineTax                 = self::checkedLineTax($taxEvent->lineTax(), $extra['tax']);
 
         $extra['fee'] = $this->fees($cart, $subtotal, $extra);
         $totals       = self::sum($subtotal, $extra);
         $freeOver     = $cart['needs_shipping'] ? $this->freeOver($subtotal, $cart) : null;
         $problems     = array_merge($problems, self::problems($this->events()->dispatch(new CartProblems($cart))->rawProblems()));
 
-        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $freeOver, $problems, $cart);
+        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $freeOver, $problems, $cart, $lineTax);
+    }
+
+    /**
+     * The line tax when it breaks the tax lines down exactly, else none. For every tax line the parts
+     * naming it must add up to its amount, with the same `included`; one mismatch drops it all.
+     *
+     * @param array{item:array<int,LineTax>,shipping:array<string,LineTax>} $lineTax
+     * @param array<int,array<string,mixed>>                                $taxLines
+     *
+     * @return array{item:array<int,LineTax>,shipping:array<string,LineTax>}
+     */
+    private static function checkedLineTax(array $lineTax, array $taxLines): array
+    {
+        $none = array('item' => array(), 'shipping' => array());
+        if ($lineTax['item'] === array() && $lineTax['shipping'] === array()) {
+            return $none;
+        }
+        $lines = array();
+        foreach ($taxLines as $line) {
+            $lines[$line['id']] = array((int) $line['amount'], ($line['included'] ?? false) === true);
+        }
+        $sums  = array_fill_keys(array_keys($lines), 0);
+        $fault = null;
+        foreach (array_merge(array_values($lineTax['item']), array_values($lineTax['shipping'])) as $tax) {
+            foreach ($tax->parts as $part) {
+                if (!isset($lines[$part['tax']])) {
+                    $fault = sprintf('a part names "%s", which is not a tax line', $part['tax']);
+                } elseif ($lines[$part['tax']][1] !== $tax->included) {
+                    $fault = sprintf('"%s" and its parts differ on included', $part['tax']);
+                } else {
+                    $sums[$part['tax']] += $part['amount'];
+                }
+            }
+        }
+        foreach ($lines as $id => [$amount]) {
+            if ($fault === null && $sums[$id] !== $amount) {
+                $fault = sprintf('the parts of "%s" add up to %d, not %d', $id, $sums[$id], $amount);
+            }
+        }
+        if ($fault !== null) {
+            trigger_error('Line tax dropped for this cart: ' . $fault . '.', E_USER_WARNING);
+
+            return $none;
+        }
+
+        return $lineTax;
     }
 
     /**

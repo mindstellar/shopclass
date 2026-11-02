@@ -312,7 +312,7 @@ final class GoodsCheckout
     /**
      * The order's lines: the goods, then shipping, tax, discount and fee. A tax already in the
      * prices is stored with amount 0 and the tax as its unit, meta `included`, so the lines
-     * still add up to the order's total.
+     * still add up to the order's total. Only core writes meta `tax`: a line's checked line tax.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -320,6 +320,7 @@ final class GoodsCheckout
     {
         $out = array();
         foreach ($quote->lines() as $line) {
+            $tax   = $quote->lineTax(OrderLineStore::KIND_ITEM, (int) $line['line']);
             $out[] = array(
                 'kind'       => OrderLineStore::KIND_ITEM,
                 'item_id'    => $line['item_id'],
@@ -330,18 +331,19 @@ final class GoodsCheckout
                 'qty'        => $line['qty'],
                 'unit'       => $line['unit'],
                 'amount'     => $line['amount'],
-            );
+            ) + ($tax !== null ? array('meta' => array('tax' => $tax->toArray())) : array());
         }
         foreach (array(OrderLineStore::KIND_SHIPPING, OrderLineStore::KIND_TAX, OrderLineStore::KIND_DISCOUNT, OrderLineStore::KIND_FEE) as $kind) {
             foreach ($quote->extraLines($kind) as $line) {
                 $included = ($line['included'] ?? false) === true;
+                $tax      = $kind === OrderLineStore::KIND_SHIPPING ? $quote->lineTax($kind, $line['id']) : null;
                 $out[]    = array(
                     'kind'   => $kind,
                     'title'  => $line['label'],
                     'qty'    => 1,
                     'unit'   => $line['amount'],
                     'amount' => $included ? 0 : $line['amount'],
-                    'meta'   => array('id' => $line['id']) + ($included ? array('included' => true) : array()) + $line['meta'],
+                    'meta'   => ($tax !== null ? array('tax' => $tax->toArray()) : array()) + array('id' => $line['id']) + ($included ? array('included' => true) : array()) + array_diff_key($line['meta'], array('tax' => true)),
                 );
             }
         }
