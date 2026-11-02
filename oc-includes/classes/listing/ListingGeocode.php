@@ -82,6 +82,27 @@ final class ListingGeocode
     }
 
     /**
+     * Queue the older listings once per lookup provider, so saving settings again does not pay
+     * for the same failed addresses twice.
+     *
+     * @return bool whether a lookup was queued now
+     */
+    public static function queueForNewProvider(): bool
+    {
+        $active = Geocoder::active();
+        if ($active === null) {
+            return false;
+        }
+        $id = $active->provider()->id();
+        if (osc_kv_get('geocode', 'backfill_provider') === $id) {
+            return false;
+        }
+        osc_kv_set('geocode', 'backfill_provider', $id);
+
+        return self::queueExisting();
+    }
+
+    /**
      * Queue the lookups of the next listings after $afterId. Each lookup is its own job, so it
      * retries and waits for the provider's allowance like a new listing's; a run queues no more
      * while a batch still waits.
