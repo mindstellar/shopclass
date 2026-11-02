@@ -91,7 +91,7 @@ pin('the move is in the history', array('paid', 'processing', 'admin', 3), array
 $first = $now->shipments()[0];
 pin('the parcel is stored', array(1, 'admin', 3, array(array('line' => $tee, 'qty' => 2)), 'DHL', 'P1', 'https://track.example.test/P1'), array($first['n'], $first['by'], $first['id'], $first['lines'], $first['carrier'], $first['tracking'], $first['url']));
 pin('shipped so far', array($tee => 2), $now->shippedQty());
-pin('the fulfilment shows the parcel', array('DHL', 'P1', $first['at']), array($now->fulfilment()['carrier'], $now->fulfilment()['tracking'], $now->fulfilment()['shipped_at']));
+pin('the fulfilment shows the parcel, with no shipped date yet', array('DHL', 'P1', null), array($now->fulfilment()['carrier'], $now->fulfilment()['tracking'], $now->fulfilment()['shipped_at']));
 pin('processing then the parcel was heard, not shipped', array(array('billing_order_processing', $id), array('billing_shipment_add_after', $id, 1)), $heard);
 
 pin('two more tees is over what is open', null, Shipments::add($id, array($tee => 2, $mug => 1), 'DHL', 'P2', ''));
@@ -99,7 +99,7 @@ $heard = array();
 pin('the rest is parcel 2', 2, Shipments::add($id, array($tee => 1, $mug => '1'), 'UPS', 'P2', 'https://ups.example.test/P2'));
 $now = OrderStore::find($id);
 pin('the order is shipped', 'shipped', $now->getStatus());
-pin('the newest parcel is the order\'s tracking', array('UPS', 'P2'), array($now->fulfilment()['carrier'], $now->fulfilment()['tracking']));
+pin('the newest parcel is the order\'s tracking, shipped when it went', array('UPS', 'P2', $now->shipments()[1]['at']), array($now->fulfilment()['carrier'], $now->fulfilment()['tracking'], $now->fulfilment()['shipped_at']));
 pin('the parcel and the shipped order were heard', array(array('billing_shipment_add_after', $id, 2), array('billing_order_shipped', $id)), $heard);
 pin('one history entry per move', array(array('pending', 'paid'), array('paid', 'processing'), array('processing', 'shipped')), array_map(static fn (array $e): array => array($e['from'], $e['to']), $now->history()));
 pin('no parcel after it shipped', null, Shipments::add($id, array($tee => 1), 'DHL', 'P3', ''));
@@ -160,6 +160,19 @@ check('packing again keeps the first mark', Shipments::markPacked($pack, true) &
 pin('the status stays and no history is written', array('paid', 1), array($status($pack), count(OrderStore::find($pack)->history())));
 check('the mark is cleared', Shipments::markPacked($pack, false) && OrderStore::find($pack)->packed() === null);
 pin('a shipped order cannot be packed', false, Shipments::markPacked($id, true));
+
+harness_section('an order shipped before parcels were kept');
+[$old, $oTee, $oMug] = $order();
+$oldMeta = array('_kind' => Order::KIND_GOODS, '_shipping' => array('method' => 'standard', 'carrier' => 'DHL', 'tracking' => 'L1', 'url' => 'https://t.example.test/L1', 'shipped_at' => '2026-10-01 09:00:00'));
+$admin->query("UPDATE " . DB_TABLE_PREFIX . "t_billing_order SET s_status = 'shipped', s_meta = '" . $admin->real_escape_string(json_encode($oldMeta)) . "' WHERE pk_i_id = $old");
+$legacy = OrderStore::find($old)->shipments();
+pin('it reads as parcel 1 of every item line', array(1, array(array('line' => $oTee, 'qty' => 3), array('line' => $oMug, 'qty' => 1)), 'DHL', 'L1', 'https://t.example.test/L1', '2026-10-01 09:00:00'), array($legacy[0]['n'], $legacy[0]['lines'], $legacy[0]['carrier'], $legacy[0]['tracking'], $legacy[0]['url'], $legacy[0]['at']));
+pin('one parcel, fully shipped', array(1, array($oTee => 3, $oMug => 1)), array(count($legacy), OrderStore::find($old)->shippedQty()));
+check('it is not written back', !str_contains((string) $admin->query("SELECT s_meta FROM " . DB_TABLE_PREFIX . "t_billing_order WHERE pk_i_id = $old")->fetch_row()[0], '_shipments'));
+check('parcel 1 tracking can be corrected', Shipments::setTracking($old, 1, 'UPS', 'L2', ''));
+pin('the order reads it', array('UPS', 'L2'), array(OrderStore::find($old)->shipments()[0]['carrier'], OrderStore::find($old)->fulfilment()['tracking']));
+$admin->query("UPDATE " . DB_TABLE_PREFIX . "t_billing_order SET s_status = 'paid' WHERE pk_i_id = $old");
+pin('a paid order has no parcel', array(), OrderStore::find($old)->shipments());
 
 OrderHistory::actAs(null);
 

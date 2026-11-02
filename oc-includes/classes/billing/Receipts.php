@@ -222,49 +222,43 @@ final class Receipts
             return true;
         }
         $parcel = null;
-        $before = array();
         foreach ($order->shipments() as $shipment) {
-            if ((int) ($shipment['n'] ?? 0) <= $n) {
-                $before[] = $shipment;
-            }
             if ((int) ($shipment['n'] ?? 0) === $n) {
                 $parcel = $shipment;
             }
         }
-        if ($parcel === null || !empty($parcel['mailed']) || self::coversOrder($order, $before)) {
+        if ($parcel === null || !empty($parcel['mailed']) || self::coversOrder($order, $n)) {
+            return true;
+        }
+        // Claim the parcel under the row lock first, so a retry or a second sender finds it taken.
+        if (!OrderStore::markShipmentMailed($orderId, $n)) {
             return true;
         }
 
         CoreEmails::resetOrderMailFailure();
         CoreEmails::orderPartShipped($order, $parcel);
         if (CoreEmails::orderMailFailed()) {
+            OrderStore::markShipmentMailed($orderId, $n, false);
+
             return false;
         }
-        OrderStore::markShipmentMailed($orderId, $n);
 
         return true;
     }
 
     /**
-     * Whether these parcels together carry every unit of every item line.
+     * Whether parcels 1 to $n together carry every unit of every item line.
      *
-     * @param Order                            $order
-     * @param array<int,array<string,mixed>>   $shipments
+     * @param Order $order
+     * @param int   $n
      *
      * @return bool
      */
-    private static function coversOrder(Order $order, array $shipments): bool
+    private static function coversOrder(Order $order, int $n): bool
     {
-        $sent = array();
-        foreach ($shipments as $shipment) {
-            foreach (is_array($shipment['lines'] ?? null) ? $shipment['lines'] : array() as $line) {
-                if (is_array($line)) {
-                    $sent[(int) ($line['line'] ?? 0)] = ($sent[(int) ($line['line'] ?? 0)] ?? 0) + (int) ($line['qty'] ?? 0);
-                }
-            }
-        }
-        foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
-            if ($line['kind'] === OrderLineStore::KIND_ITEM && ($sent[$line['id']] ?? 0) < $line['qty']) {
+        $sent = $order->shippedQty($n);
+        foreach (OrderLineStore::itemLines($order->getId()) as $line) {
+            if (($sent[$line['id']] ?? 0) < $line['qty']) {
                 return false;
             }
         }

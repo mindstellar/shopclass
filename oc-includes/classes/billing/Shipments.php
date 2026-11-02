@@ -117,7 +117,7 @@ final class Shipments
                 );
                 $meta[OrderStore::SHIPMENTS] = $list;
 
-                return self::mirror($meta, $carrier, $tracking, $url, $at);
+                return self::mirror($meta, $carrier, $tracking, $url, self::complete($meta, $ordered) ? $at : null);
             }
         );
         if ($userId === null) {
@@ -158,10 +158,13 @@ final class Shipments
         $url      = self::clip($url, 500);
         $from     = $n === null ? array(Order::STATUS_SHIPPED) : array(Order::STATUS_PROCESSING, Order::STATUS_SHIPPED);
 
-        return self::metaOnly($orderId, $from, static function (array $meta) use ($n, $carrier, $tracking, $url): ?array {
+        return self::metaOnly($orderId, $from, static function (array $meta, string $status) use ($n, $carrier, $tracking, $url): ?array {
             $list = self::view($meta)->shipments();
             $last = array_key_last($list);
             $at   = null;
+            if ($n === 1 && $list === array() && $status === Order::STATUS_SHIPPED) {
+                $n = null;
+            }
             foreach ($list as $i => $shipment) {
                 if ($n === null ? $i === $last : (int) ($shipment['n'] ?? 0) === $n) {
                     $list[$i] = array('carrier' => $carrier, 'tracking' => $tracking, 'url' => $url) + $shipment;
@@ -250,21 +253,20 @@ final class Shipments
     }
 
     /**
-     * $meta with `_shipping` set to the newest parcel.
+     * $meta with `_shipping` set to the newest parcel. The shipped date is set only by the parcel
+     * that ships the whole order.
      *
      * @param array<string,mixed> $meta
      *
      * @return array<string,mixed>
      */
-    private static function mirror(array $meta, string $carrier, string $tracking, string $url, string $at): array
+    private static function mirror(array $meta, string $carrier, string $tracking, string $url, ?string $shippedAt): array
     {
         $shipping = is_array($meta['_shipping'] ?? null) ? $meta['_shipping'] : array();
-        $meta['_shipping'] = array(
-            'carrier'    => $carrier,
-            'tracking'   => $tracking,
-            'url'        => $url,
-            'shipped_at' => $at,
-        ) + $shipping;
+        $meta['_shipping'] = array('carrier' => $carrier, 'tracking' => $tracking, 'url' => $url) + $shipping;
+        if ($shippedAt !== null) {
+            $meta['_shipping']['shipped_at'] = $shippedAt;
+        }
 
         return $meta;
     }

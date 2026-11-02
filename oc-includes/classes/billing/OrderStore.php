@@ -376,28 +376,35 @@ final class OrderStore extends Model
     }
 
     /**
-     * Record that the buyer was mailed about one parcel.
+     * Mark one parcel as mailed to the buyer, or clear the mark, under the order's row lock.
      *
-     * @param int $orderId
-     * @param int $n       The parcel's number on the order
+     * @param int  $orderId
+     * @param int  $n       The parcel's number on the order
+     * @param bool $on
      *
-     * @return bool whether the mark is stored
+     * @return bool whether this call changed the mark (false when the parcel is missing or already so)
+     * @throws DbException
      */
-    public static function markShipmentMailed(int $orderId, int $n): bool
+    public static function markShipmentMailed(int $orderId, int $n, bool $on = true): bool
     {
-        return self::changeMeta($orderId, static function (array $meta) use ($n): ?array {
+        return Db::transaction(static fn (): bool => self::changeMeta($orderId, static function (array $meta) use ($n, $on): ?array {
             $list = is_array($meta[self::SHIPMENTS] ?? null) ? $meta[self::SHIPMENTS] : array();
             foreach ($list as $i => $shipment) {
-                if (is_array($shipment) && (int) ($shipment['n'] ?? 0) === $n) {
-                    $list[$i]['mailed']     = date('Y-m-d H:i:s');
-                    $meta[self::SHIPMENTS] = $list;
-
-                    return $meta;
+                if (!is_array($shipment) || (int) ($shipment['n'] ?? 0) !== $n || empty($shipment['mailed']) !== $on) {
+                    continue;
                 }
+                if ($on) {
+                    $list[$i]['mailed'] = date('Y-m-d H:i:s');
+                } else {
+                    unset($list[$i]['mailed']);
+                }
+                $meta[self::SHIPMENTS] = $list;
+
+                return $meta;
             }
 
             return null;
-        });
+        }));
     }
 
     /**

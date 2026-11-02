@@ -846,7 +846,7 @@ function osc_billing_order_return_url(int $orderId): string
 }
 
 /**
- * Whether the user has a paid, shipped or delivered order with this listing on it.
+ * Whether the user has a paid, processing, shipped or delivered order with this listing on it.
  *
  * @param int $userId
  * @param int $itemId
@@ -860,7 +860,7 @@ function osc_order_bought(int $userId, int $itemId): bool
 
 /**
  * How many goods orders the user has in these statuses, e.g. a promotion's first-order check
- * with array('pending', 'paid', 'shipped', 'delivered'). Credits orders are not counted.
+ * with array('pending', 'paid', 'processing', 'shipped', 'delivered'). Credits orders are not counted.
  *
  * @param int      $userId
  * @param string[] $statuses Order::STATUS_* values

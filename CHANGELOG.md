@@ -55,6 +55,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key. `osc_admin_is_browsing()` tells the site's own API calls that an admin is browsing.
 - `osc_kv_list()`, `osc_kv_increment()`, `osc_billing_user_order_count()` and `osc_plugin_data_path()` (a private folder per plugin).
 - Shop API: `GET /cart/quote`, `account/cart`, `account/orders`, `account/addresses`, `account/wishlist` and `account/alerts`.
+- The REST order has `shipments[]` (one per parcel) and `packed_at`.
+- New hooks `billing_order_processing` and `billing_shipment_add_after`. One parcel that ships a whole paid order fires `billing_order_shipped`, not `billing_order_processing`.
 - Messaging API: `/account/conversations`, `/admin/conversations`, `/admin/messages`, and the webhooks `message.created` and `conversation.reported`.
 - `POST /listings/{id}/publish` and `POST /admin/listings/{id}/publish` publish a listing waiting for payment.
 - The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.

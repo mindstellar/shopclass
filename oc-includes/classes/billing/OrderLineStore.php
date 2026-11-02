@@ -156,7 +156,7 @@ final class OrderLineStore extends Model
     }
 
     /**
-     * Which of these listings the user has on a paid, shipped or delivered order.
+     * Which of these listings the user has on a paid, processing, shipped or delivered order.
      *
      * @param int[] $itemIds
      *

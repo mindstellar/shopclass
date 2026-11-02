@@ -304,23 +304,49 @@ final class Order
 
     /**
      * Parcels sent, oldest first: each {n, at, by, id, lines: [{line, qty}], carrier, tracking, url}.
+     * An order shipped before parcels were kept reads as one parcel of every item line, from `_shipping`.
      *
      * @return array<int,array<string,mixed>>
      */
     public function shipments(): array
     {
-        return self::listMeta($this->meta(OrderStore::SHIPMENTS));
+        $list = self::listMeta($this->meta(OrderStore::SHIPMENTS));
+        if ($list !== array() || !$this->isGoods() || !in_array($this->status, array(self::STATUS_SHIPPED, self::STATUS_DELIVERED), true)) {
+            return $list;
+        }
+        $shipping = $this->meta('_shipping');
+        $shipping = is_array($shipping) ? $shipping : array();
+        $lines    = array();
+        foreach (OrderLineStore::itemLines($this->id) as $line) {
+            $lines[] = array('line' => (int) $line['id'], 'qty' => (int) $line['qty']);
+        }
+
+        return array(array(
+            'n'        => 1,
+            'at'       => isset($shipping['shipped_at']) ? (string) $shipping['shipped_at'] : null,
+            'by'       => 'system',
+            'id'       => null,
+            'lines'    => $lines,
+            'carrier'  => (string) ($shipping['carrier'] ?? ''),
+            'tracking' => (string) ($shipping['tracking'] ?? ''),
+            'url'      => (string) ($shipping['url'] ?? ''),
+        ));
     }
 
     /**
-     * How many of each order line went out in all shipments so far, by line id.
+     * How many of each order line went out so far, by line id.
+     *
+     * @param int|null $upTo Count only parcels numbered up to this one
      *
      * @return array<int,int>
      */
-    public function shippedQty(): array
+    public function shippedQty(?int $upTo = null): array
     {
         $qty = array();
         foreach ($this->shipments() as $shipment) {
+            if ($upTo !== null && (int) ($shipment['n'] ?? 0) > $upTo) {
+                continue;
+            }
             foreach (is_array($shipment['lines'] ?? null) ? $shipment['lines'] : array() as $line) {
                 if (is_array($line) && isset($line['line'], $line['qty'])) {
                     $qty[(int) $line['line']] = ($qty[(int) $line['line']] ?? 0) + (int) $line['qty'];

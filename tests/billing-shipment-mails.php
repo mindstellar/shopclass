@@ -72,9 +72,16 @@ final class MailsRecorder extends PHPMailer
     /** @var array<int,array<string,string>> */
     public static array $sent = [];
     public static bool $fail  = false;
+    /** Runs once while the next mail is being sent, as a second sender would. */
+    public static ?Closure $during = null;
 
     public function send()
     {
+        if (self::$during !== null) {
+            $during       = self::$during;
+            self::$during = null;
+            $during();
+        }
         if (self::$fail) {
             throw new \PHPMailer\PHPMailer\Exception('SMTP Error: could not connect');
         }
@@ -226,5 +233,17 @@ pin('the retry sends it', true, Receipts::sendPartShipped($order->getId(), 1));
 pin('to the buyer', ['tom@example.test'], array_column($mails(), 'to'));
 pin('and once only', [true, []], [Receipts::sendPartShipped($order->getId(), 1), $mails()]);
 pin('an unknown parcel or order is nothing to send', [true, true], [Receipts::sendPartShipped($order->getId(), 9), Receipts::sendPartShipped(999999, 1)]);
+
+harness_section('two senders of one parcel');
+$order = $paid();
+$tee   = $itemLine($order->getId(), 'Tee');
+$parcel($order->getId(), 1, [['line' => $tee, 'qty' => 1]], 'S1');
+$inner = null;
+MailsRecorder::$during = static function () use ($order, &$inner): void {
+    $inner = Receipts::sendPartShipped($order->getId(), 1);
+};
+pin('the first sender mails', true, Receipts::sendPartShipped($order->getId(), 1));
+pin('the second finds the parcel taken and mails nothing', [true, ['tom@example.test']], [$inner, array_column($mails(), 'to')]);
+pin('marking it again changes nothing', false, OrderStore::markShipmentMailed($order->getId(), 1));
 
 exit(harness_result());
