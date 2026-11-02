@@ -373,6 +373,31 @@ final class OrderStore extends Model
     }
 
     /**
+     * Record that the buyer was mailed about one parcel.
+     *
+     * @param int $orderId
+     * @param int $n       The parcel's number on the order
+     *
+     * @return bool whether the mark is stored
+     */
+    public static function markShipmentMailed(int $orderId, int $n): bool
+    {
+        return self::changeMeta($orderId, static function (array $meta) use ($n): ?array {
+            $list = is_array($meta[self::SHIPMENTS] ?? null) ? $meta[self::SHIPMENTS] : array();
+            foreach ($list as $i => $shipment) {
+                if (is_array($shipment) && (int) ($shipment['n'] ?? 0) === $n) {
+                    $list[$i]['mailed']     = date('Y-m-d H:i:s');
+                    $meta[self::SHIPMENTS] = $list;
+
+                    return $meta;
+                }
+            }
+
+            return null;
+        });
+    }
+
+    /**
      * Record that one of an order's notice e-mails (placed, shipped, admin) was sent.
      *
      * @param int    $orderId

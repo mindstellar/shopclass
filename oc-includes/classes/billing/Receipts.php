@@ -45,6 +45,9 @@ final class Receipts
     public const MAIL_CANCELLED = 'cancelled';
     public const MAIL_REFUNDED  = 'refunded';
 
+    /** Job kind of the mail for one parcel of an order that is not yet fully shipped. */
+    public const MAIL_PART_SHIPPED = 'part_shipped';
+
     /** Gateways that leave an order unpaid until the shop hears the money came in. */
     private const HELD_GATEWAYS = array('offline', 'cod');
 
@@ -169,6 +172,104 @@ final class Receipts
     public static function afterShipped($orderId, $userId = 0): void
     {
         self::notify(self::MAIL_SHIPPED, (int) $orderId);
+    }
+
+    /**
+     * `billing_shipment_add_after`: tell the buyer about a parcel that does not finish the order.
+     * The parcel that does finish it is covered by `billing_order_shipped`.
+     *
+     * @param int $orderId
+     * @param int $userId
+     * @param int $n       The parcel's number on the order
+     *
+     * @return void
+     */
+    public static function afterShipmentAdded($orderId, $userId = 0, $n = 0): void
+    {
+        $orderId = (int) $orderId;
+        $n       = (int) $n;
+        try {
+            if (self::sendPartShipped($orderId, $n)) {
+                return;
+            }
+        } catch (Throwable $e) {
+            self::logFailure($orderId, $e);
+        }
+
+        try {
+            osc_job_enqueue(
+                self::MAIL_JOB,
+                array('order_id' => $orderId, 'kind' => self::MAIL_PART_SHIPPED, 'n' => $n),
+                array('unique_key' => 'order:' . $orderId . ':shipment:' . $n, 'delay' => 60)
+            );
+        } catch (Throwable $e) {
+            self::logFailure($orderId, $e);
+        }
+    }
+
+    /**
+     * Send the "part of your order has shipped" mail for one parcel, once per parcel.
+     *
+     * @param int $orderId
+     * @param int $n       The parcel's number on the order
+     *
+     * @return bool true when the mail went, or there is nothing to send; false to try again
+     */
+    public static function sendPartShipped(int $orderId, int $n): bool
+    {
+        $order = OrderStore::find($orderId);
+        if ($order === null || !$order->isGoods()) {
+            return true;
+        }
+        $parcel = null;
+        $before = array();
+        foreach ($order->shipments() as $shipment) {
+            if ((int) ($shipment['n'] ?? 0) <= $n) {
+                $before[] = $shipment;
+            }
+            if ((int) ($shipment['n'] ?? 0) === $n) {
+                $parcel = $shipment;
+            }
+        }
+        if ($parcel === null || !empty($parcel['mailed']) || self::coversOrder($order, $before)) {
+            return true;
+        }
+
+        CoreEmails::resetOrderMailFailure();
+        CoreEmails::orderPartShipped($order, $parcel);
+        if (CoreEmails::orderMailFailed()) {
+            return false;
+        }
+        OrderStore::markShipmentMailed($orderId, $n);
+
+        return true;
+    }
+
+    /**
+     * Whether these parcels together carry every unit of every item line.
+     *
+     * @param Order                            $order
+     * @param array<int,array<string,mixed>>   $shipments
+     *
+     * @return bool
+     */
+    private static function coversOrder(Order $order, array $shipments): bool
+    {
+        $sent = array();
+        foreach ($shipments as $shipment) {
+            foreach (is_array($shipment['lines'] ?? null) ? $shipment['lines'] : array() as $line) {
+                if (is_array($line)) {
+                    $sent[(int) ($line['line'] ?? 0)] = ($sent[(int) ($line['line'] ?? 0)] ?? 0) + (int) ($line['qty'] ?? 0);
+                }
+            }
+        }
+        foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+            if ($line['kind'] === OrderLineStore::KIND_ITEM && ($sent[$line['id']] ?? 0) < $line['qty']) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -335,7 +436,11 @@ final class Receipts
         });
         osc_job_describe(self::JOB, __('Payment receipt e-mail'));
         osc_job_register_handler(self::MAIL_JOB, static function ($job) {
-            if (!self::sendNotice((string) $job->get('kind'), (int) $job->get('order_id'))) {
+            $kind = (string) $job->get('kind');
+            $sent = $kind === self::MAIL_PART_SHIPPED
+                ? self::sendPartShipped((int) $job->get('order_id'), (int) $job->get('n'))
+                : self::sendNotice($kind, (int) $job->get('order_id'));
+            if (!$sent) {
                 throw new RuntimeException('order e-mail not sent');
             }
         });
