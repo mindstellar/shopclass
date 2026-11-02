@@ -27,7 +27,7 @@ final class OrderSchema
     /** Every component name, known without building a schema. */
     public const NAMES = [
         'Amount', 'OrderAddress', 'OrderAddressInput', 'OrderLineInput', 'OrderInput',
-        'OrderLine', 'OrderShipment', 'OrderGateway', 'Order', 'OrderNext',
+        'OrderLine', 'OrderShipment', 'OrderGateway', 'OrderInvoice', 'Order', 'OrderNext',
         'OrderDocument', 'OrderPage', 'OrderPlaced',
         'QuoteLine', 'QuoteMethod', 'QuoteAdjustment', 'QuoteTax', 'QuoteTotals', 'QuoteGateway', 'QuoteProblem',
         'Quote', 'QuoteDocument',
@@ -121,6 +121,14 @@ final class OrderSchema
                 ], ['line_id', 'title', 'qty'])],
             ], ['n', 'shipped_at', 'carrier', 'tracking', 'tracking_url', 'lines']) + ['description' => 'One parcel of an order.'],
             'OrderGateway' => Schema::object(['id' => ['type' => 'string'], 'name' => ['type' => 'string']], ['id', 'name']),
+            'OrderInvoice' => Schema::object([
+                'type'     => ['type' => 'string', 'enum' => ['invoice', 'credit_note']],
+                'number'   => ['type' => 'string', 'description' => 'Such as INV-2026-00042 or CN-2026-00003.'],
+                'date'     => Schema::time(),
+                'total'    => $amount,
+                'currency' => ['type' => 'string'],
+                'url'      => ['type' => 'string', 'description' => 'The printable page; only the buyer and the admins can open it.'],
+            ], ['type', 'number', 'date', 'total', 'currency', 'url']) + ['description' => 'An invoice or credit note issued for an order.'],
             'Order'        => Schema::object([
                 'id'          => ['type' => 'integer'],
                 'number'      => ['type' => 'string', 'description' => 'What the buyer sees: "#1042".'],
@@ -136,10 +144,12 @@ final class OrderSchema
                 'packed_at'   => Schema::time('When the seller marked it packed; null if not.'),
                 'gateway'     => Schema::ref('OrderGateway'),
                 'receipt_url' => Schema::nullable('string', 'The printable receipt, once the order is paid.'),
+                'documents'   => ['type' => 'array', 'items' => Schema::ref('OrderInvoice'), 'description' => 'The order\'s invoice and credit notes, oldest first. Empty when none was issued.'],
+                'refunded_total' => $amount + ['description' => 'The sum of the credit notes; zero when nothing was refunded through one.'],
                 'can_cancel'  => ['type' => 'boolean', 'description' => 'True while the buyer may cancel it: a pending bank transfer or cash on delivery order.'],
                 'pay_instructions' => Schema::nullable('string', 'How to pay a pending bank transfer order: the shop\'s instructions and the reference to quote.'),
                 'can_pay'     => ['type' => 'boolean', 'description' => 'True while the buyer may start paying again: a pending card order.'],
-            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'shipments', 'packed_at', 'gateway', 'receipt_url', 'can_cancel', 'pay_instructions', 'can_pay']),
+            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'shipments', 'packed_at', 'gateway', 'receipt_url', 'documents', 'refunded_total', 'can_cancel', 'pay_instructions', 'can_pay']),
             'OrderNext' => Schema::object([
                 'kind'    => ['type' => 'string', 'enum' => ['redirect', 'html']],
                 'payload' => ['type' => 'string', 'description' => 'redirect: the URL to send the buyer to. html: the gateway\'s own markup, to print as it is.'],
