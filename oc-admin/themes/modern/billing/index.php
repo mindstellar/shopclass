@@ -36,6 +36,7 @@ $base = osc_admin_base_url(true) . '?page=billing';
 $statusWords = array(
     Order::STATUS_PENDING   => __('Pending'),
     Order::STATUS_PAID      => __('Paid'),
+    Order::STATUS_PROCESSING => __('Processing'),
     Order::STATUS_SHIPPED   => __('Shipped'),
     Order::STATUS_DELIVERED => __('Delivered'),
     Order::STATUS_FAILED    => __('Failed'),
