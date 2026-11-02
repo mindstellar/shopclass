@@ -9501,10 +9501,6 @@ msgstr ""
 msgid "No listings match these filters"
 msgstr ""
 
-#: oc-includes/classes/admin/ajax/LocationAjax.php
-msgid "No locations selected"
-msgstr ""
-
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "No locations yet"
 msgstr ""
@@ -13572,7 +13568,6 @@ msgid ""
 "otherwise in good shape."
 msgstr ""
 
-#: oc-includes/classes/admin/ajax/LocationAjax.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "Some of the selected locations no longer exist"
 msgstr ""

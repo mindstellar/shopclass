@@ -220,27 +220,6 @@ final class FieldAjax extends AjaxHandler
         ));
     }
 
-    public function order(): void
-    {
-        $aIds  = json_decode(Params::getParamString('list'), true);
-        $error = 0;
-
-        $fieldManager = Field::getInstance();
-        foreach ($aIds as $pos => $field) {
-            $res = $fieldManager->update(
-                array(
-                    'i_position' => $pos
-                ),
-                array('pk_i_id' => $field)
-            );
-            if (is_bool($res) && !$res) {
-                $error = 1;
-            }
-        }
-
-        AjaxResponse::json(self::orderResult($error));
-    }
-
     /**
      * Save a field's per-type config (placeholder, help text, bounds, rules, ...) into its
      * s_meta. Only keys the type declares are read; an empty value clears the key.

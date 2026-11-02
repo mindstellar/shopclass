@@ -21,13 +21,11 @@ final class AjaxRegistry
 {
     /** The actions a moderator may reach; any other answers error_permissions. */
     public const MODERATOR_ACTIONS = array(
-        'items', 'media', 'comments', 'custom', 'runhook', 'save_admin_theme',
-        'save_sidebar_state', 'resource_upload', 'media_list',
+        'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload', 'media_list',
     );
 
     /** action => [handler class, method, CSRF token required] */
     private const ROUTES = array(
-        'bulk_actions'           => array(SystemAjax::class, 'bulkActions', false),
         'error_permissions'      => array(SystemAjax::class, 'errorPermissions', false),
         'userajax'               => array(SystemAjax::class, 'userLookup', false),
         'test_mail'              => array(SystemAjax::class, 'testMail', true),
@@ -48,13 +46,11 @@ final class AjaxRegistry
 
         'regions'                => array(LocationAjax::class, 'regions', false),
         'cities'                 => array(LocationAjax::class, 'cities', false),
-        'location'               => array(LocationAjax::class, 'cityLookup', false),
         'location_catalog'       => array(LocationAjax::class, 'catalog', false),
         'country_slug'           => array(LocationAjax::class, 'countrySlug', false),
         'region_slug'            => array(LocationAjax::class, 'regionSlug', false),
         'city_slug'              => array(LocationAjax::class, 'citySlug', false),
         'location_search'        => array(LocationAjax::class, 'read', false),
-        'location_impact'        => array(LocationAjax::class, 'read', false),
         'location_record'        => array(LocationAjax::class, 'read', false),
         'location_stats'         => array(LocationAjax::class, 'stats', true),
 
@@ -68,7 +64,6 @@ final class AjaxRegistry
         'field_categories_post'  => array(FieldAjax::class, 'editPost', true),
         'delete_field'           => array(FieldAjax::class, 'delete', true),
         'add_field'              => array(FieldAjax::class, 'add', true),
-        'fields_order'           => array(FieldAjax::class, 'order', true),
 
         'add_group'              => array(FormBuilderAjax::class, 'addGroup', true),
         'group_post'             => array(FormBuilderAjax::class, 'groupPost', true),
@@ -85,7 +80,6 @@ final class AjaxRegistry
         'check_themes'           => array(UpdateAjax::class, 'checkThemes', false),
         'check_plugins'          => array(UpdateAjax::class, 'checkPlugins', false),
         'upgrade'                => array(UpdateAjax::class, 'upgrade', true),
-        'reinstall_osclass'      => array(UpdateAjax::class, 'reinstall', true),
         'upgrade_db'             => array(UpdateAjax::class, 'upgradeDb', true),
 
         'market_refresh'         => array(MarketAjax::class, 'refresh', true),

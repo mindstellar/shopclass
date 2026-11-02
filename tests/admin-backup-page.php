@@ -9,7 +9,7 @@
  */
 
 /**
- * Tools > Backup and restore: every old backup URL still routes, each action refuses on
+ * Tools > Backup and restore: its URLs route and the dead aliases are gone, each action refuses on
  * the demo before it checks the token, a visit forgets nothing until Dismiss is posted,
  * a download takes only a listed name, the browser can no longer name a server folder,
  * the folder is closed on Apache 2.4 and 2.2, a restore asks for the password first,
@@ -51,21 +51,15 @@ $body = static function (string $name) use ($controller): string {
 
 harness_section('Old URLs');
 
-foreach (array('backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post',
+foreach (array('backup', 'import',
     'backup_start', 'backup_cancel', 'backup_download', 'backup_delete', 'backup_restore', 'backup_upload', 'backup_dismiss', 'backup_reopen') as $action) {
     check("the controller routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
+foreach (array('backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import_post') as $action) {
+    check("action=$action is no longer routed", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) === '');
+}
 pin('import lands on the restore part of the new page', '?page=tools&action=backup#restore', CAdminTools::movedTo('import'));
 pin('backup has its own page again', null, CAdminTools::movedTo('backup'));
-pin('backup_post too', null, CAdminTools::movedTo('backup_post'));
-check('the old backup actions run the new engine', (bool) preg_match(
-    "/'backup-sql'\\s*=> array\\('database', 'server'\\),\\s*'backup-sql_file' => array\\('database', 'download'\\),\\s*"
-    . "'backup-zip'\\s*=> array\\('files', 'server'\\),\\s*'backup-zip_file' => array\\('files', 'download'\\)/",
-    $controller
-));
-check('import_post still takes the old sql field', strpos($controller, "\$this->backupUpload(\$this->action === 'import_post' ? 'sql' : 'backup_file')") !== false);
-check('old links to #backup and #restore on the Database page follow', strpos($sysinfo, "location.hash === '#backup' || location.hash === '#restore'") !== false);
-check('old links to #backup-files on the Upgrade page follow', strpos($upgrade, "location.hash === '#backup-files'") !== false);
 
 harness_section('Demo first, then the token');
 
@@ -180,7 +174,7 @@ foreach (array(
 ) as $action) {
     check("$action checks the CSRF token", str_contains(harness_action_source($toolsFile, $action), 'osc_csrf_check();'));
 }
-foreach (array('backup_start' => 'backupStart', 'backup_upload' => 'backupUpload', 'import_post' => 'backupUpload') as $action => $method) {
+foreach (array('backup_start' => 'backupStart', 'backup_upload' => 'backupUpload') as $action => $method) {
     check("$action checks the CSRF token in $method()", str_contains(harness_action_source($toolsFile, $action), '$this->' . $method . '(')
         && str_contains($body($method), 'osc_csrf_check();'));
 }

@@ -75,7 +75,7 @@ pin('import lands on the Backup and restore page', '?page=tools&action=backup#re
 pin('upgrade keeps its own screen', null, CAdminTools::movedTo('upgrade'));
 pin('database lands on the System info Database tab', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
 
-foreach (array('upgrade', 'database', 'backup', 'backup_post', 'backup-sql', 'backup-sql_file', 'backup-zip', 'backup-zip_file', 'import', 'import_post') as $action) {
+foreach (array('upgrade', 'database', 'backup', 'import') as $action) {
     check("the controller still routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
 

@@ -115,31 +115,23 @@ final class UpdateAjax extends AjaxHandler
     /** Upgrade to the available release. */
     public function upgrade(): void
     {
-        AjaxResponse::json(self::replaceFiles(false));
-    }
-
-    /** Reinstall the current release over itself. */
-    public function reinstall(): void
-    {
-        AjaxResponse::json(self::replaceFiles(true));
+        AjaxResponse::json(self::replaceFiles());
     }
 
     /**
      * Put the release files in place and send the screen on to the database step. That step runs
      * in its own request, so it loads the new files and not the class map this one started with.
      *
-     * @param bool $force reinstall the current release
-     *
      * @return array{error:int, message:string, next?:string}
      */
-    private static function replaceFiles(bool $force): array
+    private static function replaceFiles(): array
     {
         $result = self::refusal();
         if ($result !== null) {
             return $result;
         }
         try {
-            (new Upgrade(new Osclass(Osclass::getPackageInfo(), $force)))->doUpgrade();
+            (new Upgrade(new Osclass(Osclass::getPackageInfo())))->doUpgrade();
         } catch (Exception $e) {
             osc_add_flash_error_message($e->getMessage(), 'admin');
 

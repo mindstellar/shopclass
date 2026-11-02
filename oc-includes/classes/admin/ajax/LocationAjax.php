@@ -20,7 +20,6 @@ use mindstellar\container\Container;
 use mindstellar\database\DbException;
 use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
-use mindstellar\location\LocationAutocompleteQuery;
 use mindstellar\location\LocationCatalog;
 use mindstellar\location\LocationNames;
 use mindstellar\location\LocationNameStore;
@@ -55,12 +54,6 @@ final class LocationAjax extends AjaxHandler
             's_name',
             osc_current_admin_locale()
         ));
-    }
-
-    /** The city autocomplete. */
-    public function cityLookup(): void
-    {
-        AjaxResponse::json(LocationAutocompleteQuery::inLocale(osc_current_admin_locale())->cities(Params::getParamString('term')));
     }
 
     /** Countries the published catalog offers for import. */
@@ -119,9 +112,9 @@ final class LocationAjax extends AjaxHandler
     }
 
     /**
-     * The Locations screen reads: search, delete impact or a single record.
+     * The Locations screen reads: search or a single record.
      *
-     * @param string $action location_search|location_impact|location_record
+     * @param string $action location_search|location_record
      */
     public function read(string $action): void
     {
@@ -156,21 +149,6 @@ final class LocationAjax extends AjaxHandler
                         LocationAdminView::search((string) Params::getParamString('q', false, false, false), 'all')['q'],
                         Params::getParamInt('per', 10)
                     );
-                case 'location_impact':
-                    // id[] for a selection, id for one row.
-                    $ids = Params::getParamArray('id', false, false, false);
-                    if ($ids === array() && Params::getParamString('id', false, false, false) !== '') {
-                        $ids = array(Params::getParamString('id', false, false, false));
-                    }
-                    if ($ids === array()) {
-                        return array('error' => __('No locations selected'));
-                    }
-                    $impact = $query->impact($level, $ids);
-                    if ($impact['found'] < $impact['requested']) {
-                        return array('error' => __('Some of the selected locations no longer exist'));
-                    }
-
-                    return $impact;
                 default:
                     $record = $query->record($level, Params::getParamString('id', false, false, false));
 

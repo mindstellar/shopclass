@@ -74,7 +74,7 @@ check('the Server tab links its help from the verdict', strpos($server, 'id="ser
 
 harness_section('Old URLs');
 
-$routes = array('database', 'system_info', 'system-info', 'upgrade', 'backup', 'import', 'import_post', 'jobs', 'cache', 'jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear');
+$routes = array('database', 'system-info', 'upgrade', 'backup', 'import', 'jobs', 'cache', 'jobs_run', 'jobs_retry', 'jobs_forget', 'cache_clear');
 foreach ($routes as $action) {
     check("the controller routes action=$action", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) !== '');
 }
@@ -83,7 +83,9 @@ check('...which is System info > Database', strpos($body('databaseUrl'), "self::
 pin('...at this address', '?page=tools&action=system-info&tab=database', CAdminTools::movedTo('database'));
 check('no action lands on System info', strpos(harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', 'doModel'), "actionMethod('systemInfo')") !== false
     && strpos($body('system-info'), '$this->systemInfoPage();') !== false);
-check('#backup and #restore on the old Database URL follow to Backup and restore', strpos($shell, "location.hash === '#backup' || location.hash === '#restore'") !== false);
+foreach (array('system_info', 'import_post') as $action) {
+    check("action=$action is no longer routed", harness_action_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php', $action) === '');
+}
 check('the old Database page file is gone', !is_file($theme . 'tools/database.php'));
 check('action=jobs and action=cache redirect through movedTo', $body('jobs') === $body('cache')
     && strpos($body('jobs'), '$this->redirectTo(osc_admin_base_url(true) . self::movedTo($this->action));') !== false);
