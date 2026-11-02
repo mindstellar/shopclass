@@ -63,6 +63,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Tests also run as a shop site in CI.
 - **Listings → Settings** can make a name required when a guest posts a listing; it is off by default.
 - Addresses follow the country: the account form and checkout ask for a state or county only where people write one, label the postcode as that country does, and check its shape. `osc_address_formats()` and `osc_address_form_script()` let a theme use the same rules.
+- The State box in an address form lists the shop's own regions for the chosen country, and the Country box is hidden when the shop has one country. A theme can listen for `osc:address-country`.
 - Each currency has a **Decimals** setting (JPY 0, KWD 3, most 2) that every price, order, receipt and e-mail follows; the API shows it as `decimals`.
 - `GET /countries` lists each country's `address_format`.
 - The installer offers Stripe and PayPal beside Razorpay.

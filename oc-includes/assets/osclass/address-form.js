@@ -9,8 +9,9 @@
 
 /*
  * Reshapes an address form to the chosen country: field order, hidden fields, labels, required
- * marks and the postcode pattern. The formats come from #osc-address-formats; the server still
- * checks every address.
+ * marks and the postcode pattern, and offers the shop's regions as the State list. The formats come
+ * from #osc-address-formats; the server still checks every address. A theme can listen for
+ * `osc:address-country` on the form (detail: country, format, regions) to build its own widget.
  */
 (function () {
   'use strict';
@@ -25,6 +26,31 @@
   }
   var NEEDED = holder.getAttribute('data-required') || '';
   var BAD = holder.getAttribute('data-pattern') || '';
+  var REGIONS = holder.getAttribute('data-regions-url') || '';
+  var CHOOSE = holder.getAttribute('data-choose') || '';
+  var loaded = {};
+
+  function regionsOf(code) {
+    if (!REGIONS || !code || typeof fetch !== 'function') return Promise.resolve([]);
+    if (!loaded[code]) {
+      loaded[code] = fetch(REGIONS + encodeURIComponent(code), { credentials: 'same-origin' })
+        .then(function (res) {
+          return res.ok ? res.json() : [];
+        })
+        .then(function (rows) {
+          var names = [];
+          (Array.isArray(rows) ? rows : []).forEach(function (row) {
+            var name = row && row.s_name ? String(row.s_name) : '';
+            if (name && names.indexOf(name) === -1) names.push(name);
+          });
+          return names;
+        })
+        .catch(function () {
+          return [];
+        });
+    }
+    return loaded[code];
+  }
 
   function init(form) {
     var country = form.querySelector('[name="country"]');
@@ -48,6 +74,61 @@
     function clear(field) {
       field.removeAttribute('aria-invalid');
       field.setCustomValidity('');
+    }
+
+    function option(value, text) {
+      var o = document.createElement('option');
+      o.value = value;
+      o.textContent = text;
+      return o;
+    }
+
+    function setState(names, keep) {
+      var field = input('state');
+      if (!field) return;
+      var value = field.value;
+      var list = names.length > 0;
+      var next = field;
+      if (list !== (field.tagName === 'SELECT')) {
+        next = document.createElement(list ? 'select' : 'input');
+        ['id', 'name', 'class', 'autocomplete', 'aria-invalid', 'aria-describedby'].forEach(function (attr) {
+          var v = field.getAttribute(attr);
+          if (v !== null && v !== undefined) next.setAttribute(attr, v);
+        });
+        if (!list) {
+          next.setAttribute('type', 'text');
+          next.setAttribute('maxlength', '100');
+          next.value = keep ? value : '';
+        }
+        next.required = field.required;
+        next.disabled = field.disabled;
+        field.parentNode.replaceChild(next, field);
+      }
+      if (!list) return;
+      while (next.firstChild) next.removeChild(next.firstChild);
+      next.appendChild(option('', CHOOSE));
+      names.forEach(function (name) {
+        next.appendChild(option(name, name));
+      });
+      if (value && names.indexOf(value) === -1 && keep) next.appendChild(option(value, value));
+      next.value = value && (keep || names.indexOf(value) !== -1) ? value : '';
+    }
+
+    var pending = 0;
+
+    function announce(first) {
+      var code = country.value;
+      var format = formats[code] || null;
+      var ask = format && (format.fields || []).indexOf('state') !== -1;
+      var mine = ++pending;
+      (ask ? regionsOf(code) : Promise.resolve([])).then(function (regions) {
+        if (mine !== pending) return;
+        if (ask) setState(regions, first === true);
+        form.dispatchEvent(new CustomEvent('osc:address-country', {
+          bubbles: true,
+          detail: { country: code, format: format, regions: regions },
+        }));
+      });
     }
 
     function apply(first) {
@@ -100,6 +181,7 @@
 
     country.addEventListener('change', function () {
       apply(false);
+      announce(false);
     });
     var post = input('postcode');
     if (post) {
@@ -124,6 +206,7 @@
       }
     });
     apply(true);
+    announce(true);
   }
 
   Array.prototype.forEach.call(document.querySelectorAll('[data-address-form]'), init);

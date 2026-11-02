@@ -117,8 +117,11 @@ $addrFormat = \mindstellar\user\AddressFormat::for($addrCountry);
                         $addrField('label', _m('Label (Home, Work)'), 'off', 40, false);
                         $addrField('name', _m('Full name'), 'name', 100);
                         $addrField('phone', _m('Phone'), 'tel', 40);
-                        $addrCountryError = (string) ($addrErrors['country'] ?? '');
-                        osc_gui_field('oe-addr-country', _m('Country'), static function () use ($addrCountries, $addrCountry, $addrCountryError, $addrAria): void { ?>
+                        if (count($addrCountries) === 1) { ?>
+                            <input type="hidden" name="country" value="<?php echo osc_esc_html($addrCountry); ?>" />
+                        <?php } else {
+                            $addrCountryError = (string) ($addrErrors['country'] ?? '');
+                            osc_gui_field('oe-addr-country', _m('Country'), static function () use ($addrCountries, $addrCountry, $addrCountryError, $addrAria): void { ?>
                             <select class="oe-input" id="oe-addr-country" name="country" autocomplete="country"<?php
                                 echo $addrAria('oe-addr-country', $addrCountryError); ?>>
                                 <?php foreach ($addrCountries as $addrCode => $addrName) { ?>
@@ -126,7 +129,8 @@ $addrFormat = \mindstellar\user\AddressFormat::for($addrCountry);
                                         echo osc_esc_html($addrName); ?></option>
                                 <?php } ?>
                             </select>
-                        <?php }, '', $addrCountryError); ?>
+                        <?php }, '', $addrCountryError);
+                        } ?>
                     </div>
                     <div class="oe-grid" data-address-fields>
                         <?php
