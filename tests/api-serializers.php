@@ -321,8 +321,21 @@ $comment = (new CommentSerializer())->one([
 ]);
 check('a comment never carries the author\'s e-mail', !str_contains((string) json_encode($comment), 'bo@example.test'));
 pin('a comment matches the schema', [], $validator->check(Schema::ref('Comment'), $comment));
+if (!function_exists('_m')) {
+    function _m($text)
+    {
+        return $text;
+    }
+}
 $places = new LocationSerializer();
-pin('a country row becomes code, name and a null slug when empty', ['code' => 'DE', 'name' => 'Germany', 'slug' => null], $places->country(['pk_c_code' => 'de', 's_name' => 'Germany', 's_slug' => '']));
-pin('a currency row becomes code, name and symbol', ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€'], $places->currency(['pk_c_code' => 'EUR', 's_name' => 'Euro', 's_description' => '€']));
+$de = $places->country(['pk_c_code' => 'de', 's_name' => 'Germany', 's_slug' => '']);
+pin('a country row becomes code, name and a null slug when empty', ['DE', 'Germany', null], [$de['code'], $de['name'], $de['slug']]);
+pin('a currency row becomes code, name, symbol and decimals', ['code' => 'EUR', 'name' => 'Euro', 'symbol' => '€', 'decimals' => 2], $places->currency(['pk_c_code' => 'EUR', 's_name' => 'Euro', 's_description' => '€', 'i_decimals' => '2']));
+pin('a currency row without the column gets the ISO decimals', 0, $places->currency(['pk_c_code' => 'JPY', 's_name' => 'Yen', 's_description' => '¥'])['decimals']);
+$gb = $places->country(['pk_c_code' => 'gb', 's_name' => 'United Kingdom', 's_slug' => 'uk']);
+check('DE asks for no state field but a postcode', !in_array('state', $de['address_format']['fields'], true) && in_array('postcode', $de['address_format']['required'], true));
+pin('GB asks for a County, not required', ['County', false], ['County' === $gb['address_format']['labels']['state'] ? 'County' : '', in_array('state', $gb['address_format']['required'], true)]);
+pin('a country matches the schema', [], $validator->check(Schema::ref('Country'), $gb));
+pin('the Indian format keeps its 6-digit pattern', '^\\d{6}$', $places->country(['pk_c_code' => 'IN', 's_name' => 'India', 's_slug' => null])['address_format']['pattern']);
 
 exit(harness_result());

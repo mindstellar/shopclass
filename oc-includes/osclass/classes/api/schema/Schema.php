@@ -171,7 +171,14 @@ final class Schema
                 'code' => ['type' => 'string', 'pattern' => CountryCode::PATTERN],
                 'name' => ['type' => 'string'],
                 'slug' => self::nullable('string'),
-            ], ['code', 'name', 'slug']),
+                'address_format' => self::object([
+                    'fields'   => ['type' => 'array', 'items' => ['type' => 'string'], 'description' => 'The address fields to ask for, in this country\'s order. A field not listed is not asked for.'],
+                    'required' => ['type' => 'array', 'items' => ['type' => 'string']],
+                    'labels'   => self::object(['state' => ['type' => 'string'], 'postcode' => ['type' => 'string']], ['state', 'postcode']),
+                    'pattern'  => self::nullable('string', 'A regular expression a typed postcode must match, case-insensitive; null for none.'),
+                    'example'  => ['type' => 'string'],
+                ], ['fields', 'required', 'labels', 'pattern', 'example']),
+            ], ['code', 'name', 'slug', 'address_format']),
             'Region'       => self::object(self::regionMembers(), ['id', 'country_code', 'name', 'slug']),
             'City'         => self::object(self::cityMembers(), ['id', 'region_id', 'name', 'slug']),
             'CityArea'     => self::object([
@@ -183,7 +190,8 @@ final class Schema
                 'code'   => ['type' => 'string', 'pattern' => CurrencyCode::PATTERN],
                 'name'   => ['type' => 'string'],
                 'symbol' => self::nullable('string'),
-            ], ['code', 'name', 'symbol']),
+                'decimals' => ['type' => 'integer', 'minimum' => 0, 'maximum' => 4, 'description' => 'Digits after the point in a price in this currency.'],
+            ], ['code', 'name', 'symbol', 'decimals']),
             'Comment'      => self::object([
                 'id'           => ['type' => 'integer'],
                 'listing_id'   => ['type' => 'integer'],

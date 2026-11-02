@@ -75,6 +75,14 @@ None.
 
 ## Changes
 
+### v1: currency decimals and country address format
+
+Added to v1 on 2026-11-02.
+
+- A currency has `decimals` (0 to 4), the digits after the point in its prices. `POST` and `PATCH /admin/currencies` take it; left out on `POST`, the ISO 4217 value for the code is used.
+- A country in `GET /countries` has `address_format`: `fields` (the address fields to ask for, in order), `required`, `labels` (`state`, `postcode`), `pattern` and `example`.
+- On `POST /me/addresses` and `PATCH /me/addresses/{id}`, `state` and `postcode` are no longer always required: the country decides.
+
 ### v1: no profile link in shop mode
 
 Changed in v1 on 2026-10-28.
