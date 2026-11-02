@@ -77,6 +77,16 @@ A number beside **Billing** and **Orders** counts the orders waiting to ship, an
 
 To ship an order in parts, open it and use **Ship this order** (**Send another parcel** after the first): set the quantity in **Send now** for each line and add the carrier and tracking. The order stays **Processing** until the last item ships, then becomes **Shipped**. Each parcel keeps its own tracking, which you can edit. **Mark packed** is a note for you; it changes no status and sends no mail. The order page also lists its status history. Orders from before 7.1 have none.
 
+### Invoices and credit notes
+
+Every paid order gets a numbered invoice, such as `INV-2026-00042`. Each refund gets a credit note, such as `CN-2026-00003`, with its own numbers. Both restart on 1 January. The buyer opens them from the order in their account and from the receipt mail.
+
+**Settings → Billing → Receipts** turns invoices off and sets the two prefixes. **Billing → Invoices** lists them by type and date, with a CSV download for your accountant. A document is frozen when it is made: later changes to the order or to your business details do not alter it. Orders paid before 7.1 have no invoice.
+
+### Refunding part of an order
+
+Open the order and use **Refund part**. Enter an amount, or the units to refund, and a reason, and choose whether the units go back on sale (on by default for items not yet shipped). If the payment plugin supports it, the money goes back through the provider; otherwise the refund is recorded and you send the money yourself. Each partial refund makes a credit note and a mail to the buyer. The order shows **Partly refunded** until the credit notes add up to what was paid, then it becomes **Refunded**. A credit pack order is refunded whole.
+
 A card payment that arrives after its order was cancelled is refunded by the payment plugin.
 
 Unpaid bank transfer and cash on delivery orders are cancelled after **Cancel unpaid orders after (days)**. A
@@ -87,12 +97,13 @@ shopper may hold at most the number of open unpaid bank transfer orders you allo
 The buyer is e-mailed when an order is:
 
 1. **placed** (bank transfer and cash on delivery, before payment),
-2. **paid**, with the receipt,
+2. **paid**, with the receipt and invoice link,
 3. **part shipped**, one mail per parcel with its items and tracking,
 4. **shipped**, when the last item goes, with the carrier and tracking link,
 5. **delivered**,
 6. **cancelled**,
-7. **refunded**.
+7. **partly refunded**, with the credit note link,
+8. **refunded**.
 
 You get a "New order" mail for each order. A mail that cannot be sent waits on the job queue and
 is tried again, once per order and kind. Developers change the wording with the `MailComposing`

@@ -73,6 +73,11 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `GET /countries` lists each country's `address_format`.
 - **Settings → Billing → Shop** sets product weights in grams and kilograms or ounces and pounds. Weights stay stored in grams, and the API always uses grams. `osc_weight_unit()`, `osc_weight_display()`, `osc_weight_input()` and `osc_weight_parse()` read and convert them.
 - The installer offers Stripe and PayPal beside Razorpay.
+- **Invoices and credit notes**: every paid order gets a numbered invoice (`INV-2026-00042`), and every refund a credit note (`CN-2026-00003`) with its tax shown in proportion. Numbers restart each year. **Settings → Billing → Receipts** turns them off and sets the prefixes; **Billing → Invoices** lists them with a CSV download. Orders paid before 7.1 get none.
+- Buyers see the invoice and credit notes in their account and in the receipt mail; the REST order has `documents[]` and `refunded_total`.
+- **Partial refunds**: **Refund part** on a shop order refunds an amount or some units, with a reason and an option to return them to stock. The order shows **Partly refunded** until the credit notes add up to what was paid, then becomes refunded.
+- Stripe, PayPal and Razorpay refund part of an order through the provider. A gateway adds this with `PartialRefundableGateway::refundPart()`; other gateways record the refund only.
+- Hooks `billing_document_compose` and `billing_document_issued`; the buyer gets a mail when a partial refund is made (`email_order_part_refunded`).
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
