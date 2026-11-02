@@ -348,16 +348,28 @@ check('and a credit note, negated', str_contains($page['drawn'], $n[0]->number) 
 $page = drive('document', [], ['id' => 999999]);
 check('an unknown one goes back to the list', $page['redirects'] !== [] && str_contains(implode(' ', $page['flashes']), 'error:'));
 
+harness_section('the admin order with line tax');
+$plain = drive('order', [], ['id' => $aid])['drawn'];
+check('without line tax there is no Tax column and the refund help is unchanged', !str_contains($plain, '>Tax</th>') && !str_contains($plain, 'their own tax'));
+$tx = OrderStore::create($tom, 'offline', $m(11), 'USD', 0, ['_kind' => Order::KIND_GOODS, '_buyer' => ['email' => 'tom@example.test', 'name' => 'Tom', 'phone' => ''], '_fields' => ['tax_id' => ['label' => 'Tax ID', 'value' => 'DE1<b>', 'invoice' => true]]]);
+OrderLineStore::add($tx->getId(), [['kind' => 'item', 'title' => 'Cap', 'qty' => 1, 'unit' => $m(10), 'amount' => $m(10), 'meta' => ['tax' => ['included' => false, 'base' => $m(10), 'amount' => $m(1), 'code' => '6505', 'parts' => [['tax' => 'tax.vat.10', 'label' => 'VAT', 'bp' => 1000, 'amount' => $m(1)]]]]]]);
+Billing::markPaid($tx, 'ref-tx');
+$taxed = drive('order', [], ['id' => $tx->getId()])['drawn'];
+check('with line tax the column, code, buyer field and refund help show', str_contains($taxed, '>Tax</th>') && str_contains($taxed, '10% · ') && str_contains($taxed, 'Tax code 6505') && str_contains($taxed, 'their own tax') && str_contains($taxed, 'Tax ID: DE1&lt;b&gt;') && !str_contains($taxed, 'DE1<b>'));
+
 harness_section('the CSV');
 $csv = DocumentExport::csv([]);
 $rows = array_map('str_getcsv', array_filter(explode("\n", $csv)));
-pin('the header', ['number', 'date', 'order', 'buyer', 'total', 'currency'], $rows[0]);
+pin('the header', ['number', 'date', 'order', 'buyer', 'net', 'tax', 'total', 'currency'], $rows[0]);
 $byNumber = [];
 foreach (array_slice($rows, 1) as $r) {
     $byNumber[$r[0]] = $r;
 }
-pin('an invoice row', [(string) $aid, '44.00', 'USD'], [$byNumber[$inv->number][2] ?? null, $byNumber[$inv->number][4] ?? null, $byNumber[$inv->number][5] ?? null]);
-pin('a credit note is negative', '-11.00', $byNumber[$n[0]->number][4] ?? null);
+pin('an invoice row', [(string) $aid, '44.00', 'USD'], [$byNumber[$inv->number][2] ?? null, $byNumber[$inv->number][6] ?? null, $byNumber[$inv->number][7] ?? null]);
+pin('an invoice splits net and tax', ['40.00', '4.00'], [$byNumber[$inv->number][4] ?? null, $byNumber[$inv->number][5] ?? null]);
+pin('a credit note is negative', '-11.00', $byNumber[$n[0]->number][6] ?? null);
+$cn = $byNumber[$n[0]->number] ?? array();
+pin('its tax is negative and net plus tax is the total', [true, true], [(float) ($cn[5] ?? 0) < 0, abs((float) ($cn[4] ?? 0) + (float) ($cn[5] ?? 0) - (float) ($cn[6] ?? 0)) < 0.005]);
 check('the buyer name and email are there, a formula is quoted', str_starts_with($byNumber[$inv->number][3] ?? '', "'=Tom") && str_contains($byNumber[$inv->number][3] ?? '', 'tom@example.test'));
 pin('the type filter narrows the file', true, count(array_filter(array_slice(array_map('str_getcsv', array_filter(explode("\n", DocumentExport::csv(['type' => 'credit_note'])))), 1), static fn (array $r): bool => str_starts_with($r[0], 'CN-'))) === count(array_slice(array_filter(explode("\n", DocumentExport::csv(['type' => 'credit_note']))), 1)));
 pin('a date range with nothing gives the header only', 1, count(array_filter(explode("\n", DocumentExport::csv(['from' => '2999-01-01'])))));

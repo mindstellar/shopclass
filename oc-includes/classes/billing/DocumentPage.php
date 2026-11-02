@@ -86,6 +86,7 @@ final class DocumentPage
             'buyer'    => (array) ($data['buyer'] ?? array()),
             'lines'    => array_values(array_filter((array) ($data['lines'] ?? array()), 'is_array')),
             'total'    => (string) ($data['totals']['total_text'] ?? ''),
+            'codeLabel' => (string) ($data['wording']['code_label'] ?? ''),
             'extra'    => (array) ($data['wording']['extra'] ?? array()),
             'summary'  => (array) ($data['wording']['summary'] ?? array()),
             'footer'   => (string) ($data['wording']['footer'] ?? ''),

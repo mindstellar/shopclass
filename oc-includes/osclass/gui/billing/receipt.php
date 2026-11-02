@@ -43,6 +43,9 @@ if ($receipt['ref'] !== '') {
 if ($receipt['email'] !== '') {
     $rows[__('Paid by')] = $receipt['email'];
 }
+foreach ($details['buyer_fields'] ?? array() as $field) {
+    $rows[(string) $field['label']] = (string) $field['value'];
+}
 $title  = $details === null ? sprintf(__('Receipt %s'), $receipt['label']) : sprintf(__('%1$s %2$s'), $details['title'], $receipt['label']);
 $items  = array();
 $others = array();
@@ -53,6 +56,11 @@ foreach ($details['lines'] ?? array() as $line) {
         $others[] = $line;
     }
 }
+$hasTax = false;
+foreach ($items as $line) {
+    $hasTax = $hasTax || is_array($line['tax'] ?? null);
+}
+$sign   = '';
 $accent = (string) ($receipt['accent'] ?? '#0b7269');
 ?>
 <!doctype html>
@@ -121,6 +129,9 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
                         <th scope="col"><?php echo osc_esc_html(__('Item')); ?></th>
                         <th scope="col" class="rc-num"><?php echo osc_esc_html(__('Qty')); ?></th>
                         <th scope="col" class="rc-num rc-price"><?php echo osc_esc_html(__('Price')); ?></th>
+                        <?php if ($hasTax) { ?>
+                            <th scope="col" class="rc-num rc-tax"><?php echo osc_esc_html(__('Tax')); ?></th>
+                        <?php } ?>
                         <th scope="col" class="rc-num"><?php echo osc_esc_html(__('Amount')); ?></th>
                     </tr>
                 </thead>
@@ -135,9 +146,16 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
                                 <?php if ($line['sku'] !== '') { ?>
                                     <small><?php echo osc_esc_html(sprintf(__('SKU %s'), $line['sku'])); ?></small>
                                 <?php } ?>
+                                <?php if (is_array($line['tax'] ?? null) && (string) ($line['tax']['code'] ?? '') !== '') { ?>
+                                    <small><?php echo osc_esc_html(__('Tax code') . ' ' . (string) $line['tax']['code']); ?></small>
+                                <?php } ?>
                             </td>
                             <td class="rc-num"><?php echo osc_esc_html($line['qty']); ?></td>
                             <td class="rc-num rc-price"><?php echo osc_esc_html($line['unit']); ?></td>
+                            <?php if ($hasTax) {
+                                $lineTax = $line['tax'] ?? null;
+                                require __DIR__ . '/parts/line-tax.php';
+                            } ?>
                             <td class="rc-num"><?php echo osc_esc_html($line['amount']); ?></td>
                         </tr>
                     <?php } ?>

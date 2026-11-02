@@ -700,7 +700,7 @@ final class Receipts
      *
      * @param Order $order
      *
-     * @return array{lines:array<int,array<string,mixed>>,address:string[],shipping:string,carrier:string,tracking:string,tracking_url:string,total:string,note:string,title:string,extra:array<int,array{label:string,value:string}>,summary:array<int,array{label:string,value:string}>,footer:string}
+     * @return array{lines:array<int,array<string,mixed>>,address:string[],shipping:string,carrier:string,tracking:string,tracking_url:string,total:string,note:string,buyer_fields:list<array{label:string,value:string}>,title:string,extra:array<int,array{label:string,value:string}>,summary:array<int,array{label:string,value:string}>,footer:string}
      */
     public static function details(Order $order): array
     {
@@ -713,7 +713,9 @@ final class Receipts
             foreach ((array) ($line['options'] ?? array()) as $name => $value) {
                 $options[] = $name . ': ' . $value;
             }
+            $lineTax = OrderLineStore::lineTax($line);
             $lines[] = array(
+                'tax'     => $lineTax === null ? null : LineTaxView::describe($lineTax, $currency),
                 'kind'    => (string) $line['kind'],
                 'title'   => (string) $line['title'],
                 'options' => implode(', ', $options),
@@ -736,6 +738,7 @@ final class Receipts
             'tracking_url' => self::httpsUrl((string) ($fulfilment['tracking_url'] ?? '')),
             'total'        => $money->money($order->getAmount(), $currency, false, true),
             'note'         => is_string($note) ? $note : '',
+            'buyer_fields' => self::buyerFields($order),
             'title'        => __('Receipt'),
             'extra'        => array(),
             'summary'      => array(),
@@ -750,6 +753,24 @@ final class Receipts
             'summary' => $event->summaryRows(),
             'footer'  => $event->footer(),
         ) + $details;
+    }
+
+    /**
+     * The buyer's checkout fields meant for the invoice, such as a tax number.
+     *
+     * @return list<array{label:string,value:string}>
+     */
+    private static function buyerFields(Order $order): array
+    {
+        $out = array();
+        $raw = $order->meta('_fields');
+        foreach (is_array($raw) ? $raw : array() as $field) {
+            if (is_array($field) && ($field['invoice'] ?? true) !== false && is_string($field['value'] ?? null) && $field['value'] !== '') {
+                $out[] = array('label' => (string) ($field['label'] ?? ''), 'value' => $field['value']);
+            }
+        }
+
+        return $out;
     }
 
     /**

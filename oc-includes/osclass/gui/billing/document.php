@@ -35,7 +35,18 @@ foreach ($page['lines'] as $line) {
         $others[] = $line;
     }
 }
-$buyer = (array) $page['buyer'];
+$buyer     = (array) $page['buyer'];
+$codeLabel = (string) ($page['codeLabel'] ?? '') !== '' ? (string) $page['codeLabel'] : __('Tax code');
+$hasTax    = false;
+foreach ($items as $line) {
+    $hasTax = $hasTax || is_array($line['tax'] ?? null);
+}
+$buyerFields = array();
+foreach ((array) ($buyer['fields'] ?? array()) as $field) {
+    if (is_array($field) && (string) ($field['value'] ?? '') !== '') {
+        $buyerFields[] = (string) ($field['label'] ?? '') . ': ' . (string) $field['value'];
+    }
+}
 $meta  = array(__('Date') => $page['date']);
 if ($page['taxPoint'] !== '' && $page['taxPoint'] !== $page['date']) {
     $meta[__('Date paid')] = $page['taxPoint'];
@@ -98,12 +109,13 @@ if (($page['refund']['reason'] ?? '') !== '') {
             <?php foreach ($meta as $label => $value) { ?>
                 <div><dt><?php echo osc_esc_html($label); ?></dt><dd><?php echo osc_esc_html((string) $value); ?></dd></div>
             <?php } ?>
-            <?php if (($buyer['name'] ?? '') !== '' || ($buyer['email'] ?? '') !== '' || !empty($buyer['address'])) { ?>
+            <?php if (($buyer['name'] ?? '') !== '' || ($buyer['email'] ?? '') !== '' || !empty($buyer['address']) || $buyerFields !== array()) { ?>
                 <div>
                     <dt><?php echo osc_esc_html(__('Billed to')); ?></dt>
                     <dd><?php echo implode('<br>', array_map('osc_esc_html', array_unique(array_filter(array_merge(
                         array((string) ($buyer['name'] ?? ''), (string) ($buyer['email'] ?? '')),
-                        array_map('strval', (array) ($buyer['address'] ?? array()))
+                        array_map('strval', (array) ($buyer['address'] ?? array())),
+                        $buyerFields
                     ), static fn (string $row): bool => $row !== '')))); ?></dd>
                 </div>
             <?php } ?>
@@ -114,6 +126,9 @@ if (($page['refund']['reason'] ?? '') !== '') {
                     <th scope="col"><?php echo osc_esc_html(__('Item')); ?></th>
                     <th scope="col" class="rc-num"><?php echo osc_esc_html(__('Qty')); ?></th>
                     <th scope="col" class="rc-num rc-price"><?php echo osc_esc_html(__('Price')); ?></th>
+                    <?php if ($hasTax) { ?>
+                        <th scope="col" class="rc-num rc-tax"><?php echo osc_esc_html(__('Tax')); ?></th>
+                    <?php } ?>
                     <th scope="col" class="rc-num"><?php echo osc_esc_html(__('Amount')); ?></th>
                 </tr>
             </thead>
@@ -128,9 +143,16 @@ if (($page['refund']['reason'] ?? '') !== '') {
                             <?php if (($line['sku'] ?? '') !== '') { ?>
                                 <small><?php echo osc_esc_html(sprintf(__('SKU %s'), (string) $line['sku'])); ?></small>
                             <?php } ?>
+                            <?php if (is_array($line['tax'] ?? null) && (string) ($line['tax']['code'] ?? '') !== '') { ?>
+                                <small><?php echo osc_esc_html($codeLabel . ' ' . (string) $line['tax']['code']); ?></small>
+                            <?php } ?>
                         </td>
                         <td class="rc-num"><?php echo osc_esc_html((string) ($line['qty'] ?? '')); ?></td>
                         <td class="rc-num rc-price"><?php echo osc_esc_html((string) ($line['unit_text'] ?? '')); ?></td>
+                        <?php if ($hasTax) {
+                            $lineTax = $line['tax'] ?? null;
+                            require __DIR__ . '/parts/line-tax.php';
+                        } ?>
                         <td class="rc-num"><?php echo osc_esc_html($sign . ($line['amount_text'] ?? '')); ?></td>
                     </tr>
                 <?php } ?>
@@ -139,7 +161,11 @@ if (($page['refund']['reason'] ?? '') !== '') {
         <table class="rc-totals">
             <?php foreach ($others as $line) { ?>
                 <tr>
-                    <th scope="row"><?php echo osc_esc_html((string) ($line['title'] ?? '')); ?></th>
+                    <th scope="row"><?php echo osc_esc_html((string) ($line['title'] ?? '')); ?>
+                        <?php if (is_array($line['tax'] ?? null)) { ?>
+                            <small class="rc-sub"><?php echo osc_esc_html(sprintf(__('Tax %1$s: %2$s'), (string) ($line['tax']['rate_text'] ?? \mindstellar\billing\LineTaxView::rateText((array) ($line['tax']['parts'] ?? array()))), $sign . (string) ($line['tax']['amount_text'] ?? ''))); ?></small>
+                        <?php } ?>
+                    </th>
                     <td><?php echo osc_esc_html(!empty($line['included'])
                         ? sprintf(__('%s (included)'), $sign . ($line['unit_text'] ?? ''))
                         : $sign . ($line['amount_text'] ?? '')); ?></td>

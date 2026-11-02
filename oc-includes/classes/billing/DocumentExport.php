@@ -32,7 +32,7 @@ final class DocumentExport
     public static function csv(array $filters): string
     {
         $out = fopen('php://temp', 'w+');
-        fputcsv($out, array('number', 'date', 'order', 'buyer', 'total', 'currency'), ',', '"', '');
+        fputcsv($out, array('number', 'date', 'order', 'buyer', 'net', 'tax', 'total', 'currency'), ',', '"', '');
         for ($offset = 0;; $offset += self::CHUNK) {
             $docs = DocumentStore::search($filters, self::CHUNK, $offset);
             foreach ($docs as $doc) {
@@ -56,16 +56,35 @@ final class DocumentExport
         $name     = trim((string) ($buyer['name'] ?? ''));
         $email    = trim((string) ($buyer['email'] ?? ''));
         $decimals = (int) ($doc->data['currency']['decimals'] ?? Money::decimals($doc->currency));
-        $total    = Money::fromMicros(DocumentPage::signedTotal($doc), $decimals);
+        $signed   = DocumentPage::signedTotal($doc);
+        $tax      = self::taxMicros($doc) * ($doc->isCreditNote() ? -1 : 1);
+        $total    = Money::fromMicros($signed, $decimals);
 
         return array(
             self::safe($doc->number),
             $doc->date,
             (string) $doc->orderId,
             self::safe($name === '' ? $email : trim($name . ($email !== '' ? ' <' . $email . '>' : ''))),
+            Money::fromMicros($signed - $tax, $decimals),
+            Money::fromMicros($tax, $decimals),
             $total,
             $doc->currency,
         );
+    }
+
+    /**
+     * The tax a document holds, in micros: every tax line, counted once whether the price included it or not.
+     */
+    private static function taxMicros(Document $doc): int
+    {
+        $tax = 0;
+        foreach ((array) ($doc->data['lines'] ?? array()) as $line) {
+            if (is_array($line) && ($line['kind'] ?? '') === OrderLineStore::KIND_TAX) {
+                $tax += (int) (!empty($line['included']) ? ($line['unit'] ?? 0) : ($line['amount'] ?? 0));
+            }
+        }
+
+        return $tax;
     }
 
     /**
