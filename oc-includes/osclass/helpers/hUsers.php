@@ -1375,7 +1375,7 @@ function osc_address_formats(): array
 
 /**
  * Prints the country address formats as JSON and the script that reshapes an address form to the
- * chosen country. Call it after the form; a second call prints nothing. The form carries
+ * chosen country and fills the State field from the shop's regions. Call it after the form; a second call prints nothing. The form carries
  * `data-address-form`, its fields are found by `name` and their wrappers by
  * `data-address-field="<name>"`.
  *
@@ -1390,7 +1390,9 @@ function osc_address_form_script(): void
     $printed = true;
     $json    = json_encode(osc_address_formats(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
     echo '<script type="application/json" id="osc-address-formats" data-required="' . osc_esc_html(_m('This field is needed.'))
-        . '" data-pattern="' . osc_esc_html(_m('Enter a valid %1$s, such as %2$s.')) . '">' . $json . '</script>' . "\n";
+        . '" data-pattern="' . osc_esc_html(_m('Enter a valid %1$s, such as %2$s.'))
+        . '" data-choose="' . osc_esc_html(_m('Choose…'))
+        . '" data-regions-url="' . osc_esc_html(osc_base_url(true) . '?page=ajax&action=regions&countryId=') . '">' . $json . '</script>' . "\n";
     echo '<script src="' . osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/address-form.js'))) . '" defer></script>' . "\n";
 }
 

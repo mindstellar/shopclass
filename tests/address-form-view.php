@@ -29,6 +29,10 @@ function _m($text)
 }
 function osc_get_countries()
 {
+    if (!empty($GLOBALS['one_country'])) {
+        return array(array('pk_c_code' => 'GB', 's_name' => 'United Kingdom'));
+    }
+
     return array(
         array('pk_c_code' => 'US', 's_name' => 'United States'),
         array('pk_c_code' => 'GB', 's_name' => 'United Kingdom'),
@@ -171,5 +175,28 @@ pin('the script reads the JSON, the form hook and the field wrappers', array(tru
     str_contains($js, 'data-address-field'),
 ));
 pin('the script needs no jQuery', false, (bool) preg_match('/jQuery|\$\(/', $js));
+
+pin('the JSON block names the regions ajax url and the Choose label', array(true, true), array(
+    str_contains($gb, 'data-regions-url="http://localhost/index.php?page=ajax&amp;action=regions&amp;countryId="'),
+    str_contains($gb, 'data-choose="Choose…"'),
+));
+pin('with several countries the form has a Country select', array(1, 0), array(
+    substr_count($gb, '<select class="oe-input" id="oe-addr-country"'),
+    substr_count($gb, 'type="hidden" name="country"'),
+));
+$GLOBALS['one_country'] = true;
+$one = $render('GB');
+pin('with one country the form sends it hidden and shows no Country box', array(0, 1, true), array(
+    substr_count($one, 'id="oe-addr-country"'),
+    substr_count($one, 'type="hidden" name="country" value="GB"'),
+    str_contains($one, 'data-address-field="postcode"'),
+));
+unset($GLOBALS['one_country']);
+
+$node = trim((string) shell_exec('command -v node 2>/dev/null'));
+if ($node !== '') {
+    exec(escapeshellarg($node) . ' ' . escapeshellarg(__DIR__ . '/address-form-js.test.mjs') . ' 2>&1', $nodeOut, $nodeCode);
+    pin('address-form.js passes its stub-DOM tests', 0, $nodeCode);
+}
 
 exit(harness_result());

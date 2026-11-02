@@ -22,6 +22,7 @@ check out, and you ship the orders. It needs a theme made for shops, such as Ais
    **Cash on delivery only in** limits cash on delivery to the countries, regions or cities you pick
    (a buyer's address must be inside one); empty offers it everywhere you deliver.
    **Store address** (country, region, city) is used for a product with no location of its own.
+   **Product weights in** picks grams and kilograms or ounces and pounds for every weight field.
 4. **Appearance**: activate the shop theme. If it asks for plugins, one screen installs and turns
    them on for you.
 5. Install a payment method (see below), or use the built-in bank transfer and cash on delivery.
@@ -51,7 +52,8 @@ as Black / M, each with its own SKU, price, stock and an optional old price, sho
 The shopper picks the options on the product page.
 
 - **Stock** is counted per row. At 0 the row is out of stock. Leave it blank to not count.
-- **Weight** and **Shipping class** are for the Shipping plugin.
+- **Weight** and **Shipping class** are for the Shipping plugin. Weight is typed in grams, or in
+  ounces when **Product weights in** is ounces and pounds.
 - Every order takes the stock when it is placed. A shopper cannot order the last unit someone else
   holds. A card order still unpaid after **Hold stock for card payments (minutes)** is cancelled
   and its stock goes back on sale.
@@ -116,7 +118,7 @@ Digital Goods on, a Downloads entry lists what they bought. An admin signed in s
 
 **Addresses** keeps up to 10 delivery addresses. The default one is also the account's own
 address. At checkout the saved addresses show as cards with the default chosen; "Use a new
-address" opens the form, and "Save this address" (ticked) adds it to the book. The form follows the country: it asks for a state or county only where people write one, names the postcode field as that country does (Postcode, ZIP code, PIN code) and checks its shape. Phone numbers may start with `+` and a country code. The first address
+address" opens the form, and "Save this address" (ticked) adds it to the book. The form follows the country: it asks for a state or county only where people write one, names the postcode field as that country does (Postcode, ZIP code, PIN code) and checks its shape. State is a list of the site's regions for that country, or a text box when there are none. When the site has only one country, the Country box is hidden. Phone numbers may start with `+` and a country code. The first address
 saved becomes the default. A classifieds site has no Addresses page.
 
 ## 6. Customise

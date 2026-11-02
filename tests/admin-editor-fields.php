@@ -228,6 +228,12 @@ if (!function_exists('osc_is_shop_mode')) {
         return !empty($GLOBALS['fixtureShop']);
     }
 }
+if (!function_exists('osc_weight_unit')) {
+    function osc_weight_unit(): string
+    {
+        return 'metric';
+    }
+}
 if (!function_exists('osc_mode_text')) {
     function osc_mode_text(string $classifieds, string $shop): string
     {

@@ -442,6 +442,16 @@ spaces and `- . ( ) /` allowed.
 Mark the form `data-address-form` and each field's wrapper `data-address-field="<name>"`; fields
 are found by `name`. The page works without the script.
 
+The script also fills the State field from the shop's own regions for the chosen country: a list
+when the shop has regions for it, else a text box. A saved name the list lacks stays as its own
+option. When the shop has one country, the form shows no Country box and sends that country. On
+each country change the form fires `osc:address-country` (it bubbles) with `detail.country`,
+`detail.format` and `detail.regions`, so a theme can build its own widget and only style it.
+
+Product weights are stored in grams. `osc_weight_unit()` is the shop's unit (`metric` or
+`imperial`, Settings → Billing → Shop settings); `osc_weight_display()`, `osc_weight_input()` and
+`osc_weight_parse()` turn grams into the shop's unit for a page or a form, and back.
+
 A theme that ships its own `user-addresses.php` gets these view variables:
 
 | Variable | Holds |

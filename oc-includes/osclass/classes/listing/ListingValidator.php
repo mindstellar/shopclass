@@ -368,7 +368,9 @@ final class ListingValidator
         }
         $weight = $fields['i_weight'] ?? null;
         if ($weight !== null && (!is_int($weight) || $weight < 0 || $weight > VariantStore::MAX_WEIGHT)) {
-            $errors[] = self::entry($base . '/weight', 'invalid', $label . _m('Weight must be a whole number of grams, 0 or more.'));
+            $errors[] = self::entry($base . '/weight', 'invalid', $label . (function_exists('osc_weight_unit') && osc_weight_unit() === 'imperial'
+                ? _m('Weight must be a number of ounces, 0 or more.')
+                : _m('Weight must be a whole number of grams, 0 or more.')));
         }
 
         return $errors;

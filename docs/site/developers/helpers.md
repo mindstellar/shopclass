@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -884,7 +884,7 @@ Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (140)
+### hPreference (146)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -1030,6 +1030,12 @@ Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_watermark_text()` | Return watermark text |
 | `osc_watermark_text_color()` | Return watermark text color |
 | `osc_week_starts_at()` | Gets week start day |
+| `osc_weight_display(int $grams)` | A weight for display: "450 g" or "1.25 kg"; "8 oz" or "1.5 lb" on an imperial site. |
+| `osc_weight_grams_per(string $unit)` | Grams in one of a weight unit: 'g', 'kg', 'oz' or 'lb'. |
+| `osc_weight_input(int $grams)` | A stored weight as a form field shows it, in the small unit: grams, or ounces on an imperial site. |
+| `osc_weight_parse($value)` | A weight typed in the form's small unit as whole grams; ounces are rounded. Text that is not a number gives 0. |
+| `osc_weight_started(int $grams, ?bool $imperial = null)` | The started kilos a weight in grams takes, or started pounds on an imperial site. A pound counts as 454 g, the whole grams 16 oz are stored as, so a product typed as 1 lb is one pound. |
+| `osc_weight_unit()` | The unit product weights are shown and typed in: 'metric' (g, kg) or 'imperial' (oz, lb). Weights are always stored in grams. |
 
 ### hPremium (47)
 
@@ -1352,7 +1358,7 @@ Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do 
 | Helper | What it does |
 |---|---|
 | `osc_address_book_enabled()` | Whether the account area offers the address book: in shop mode only, since only goods orders are delivered. |
-| `osc_address_form_script()` | Prints the country address formats as JSON and the script that reshapes an address form to the chosen country. Call it after the form; a second call prints nothing. The form carries `data-address-form`, its fields are found by `name` and their wrappers by `data-address-field="<name>"`. |
+| `osc_address_form_script()` | Prints the country address formats as JSON and the script that reshapes an address form to the chosen country and fills the State field from the shop's regions. Call it after the form; a second call prints nothing. The form carries `data-address-form`, its fields are found by `name` and their wrappers by `data-address-field="<name>"`. |
 | `osc_address_formats()` | The address format of every country the site offers, by country code: `fields` (in order), `required`, `state` and `postcode` labels (translated; empty when the field is not asked), `pattern` (null for none) and an `example` postcode. |
 | `osc_address_picker(array $opts = array())` | The checkout address picker for the signed-in buyer: each saved address as a radio card, the default chosen, and "Use a new address". The theme wraps its own address fields in an element with `data-address-form`; the picker fills them from the chosen address, hides them while a saved one is chosen and fires `osc:address` ({id, address}) on each change. Prints nothing for a buyer with no saved address. |
 | `osc_address_save_field(array $opts = array())` | The "Save this address" box for a typed checkout address, ticked by default. Shown with the address fields; nothing once the address book is full. |

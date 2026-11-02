@@ -541,7 +541,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'price'         => __('Price'),
             'compareAt'     => __('Old price'),
             'stock'         => __('Stock'),
-            'weight'        => __('Weight (g)'),
+            'weight'        => osc_weight_unit() === 'imperial' ? __('Weight (oz)') : __('Weight (g)'),
             'shippingClass' => __('Shipping class'),
             'photoId'       => __('Photo'),
         );
@@ -615,7 +615,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 echo '<td data-option-cell data-col-name="' . osc_esc_html($sellValues['options'][$k]['name'] ?? '') . '"><input type="hidden" name="' . $variantBase . '[options][' . (int) $k . ']" value="' . osc_esc_html($variantValue) . '" data-field="options">'
                     . '<span data-option-text>' . osc_esc_html($variantValue) . '</span></td>';
             }
-            foreach (array('sku' => array('text', 64, ''), 'price' => array('text', 0, 'decimal'), 'compareAt' => array('text', 0, 'decimal'), 'stock' => array('text', 0, 'numeric'), 'weight' => array('text', 0, 'numeric'), 'shippingClass' => array('text', 40, '')) as $variantKey => $variantSpec) {
+            foreach (array('sku' => array('text', 64, ''), 'price' => array('text', 0, 'decimal'), 'compareAt' => array('text', 0, 'decimal'), 'stock' => array('text', 0, 'numeric'), 'weight' => array('text', 0, 'decimal'), 'shippingClass' => array('text', 40, '')) as $variantKey => $variantSpec) {
                 echo '<td data-col-name="' . osc_esc_html($variantCols[$variantKey]) . '"><input type="text" class="form-control form-control-sm" name="' . $variantBase . '[' . $variantKey . ']" value="' . osc_esc_html($variantRow[$variantKey]) . '"'
                     . ' data-field="' . $variantKey . '" autocomplete="off" aria-label="' . osc_esc_html($variantCols[$variantKey]) . '"'
                     . ($variantSpec[1] > 0 ? ' maxlength="' . $variantSpec[1] . '"' : '')
@@ -647,7 +647,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $itemSection('sec-shipping', __('Shipping'), __('Used to work out delivery cost'), array('attrs' => array('data-osc-needs-sell' => true)));
         echo '<div data-osc-physical-only>';
         echo '<div class="osc-editor-cols" data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
-        $itemSellField('weight', _x('Weight', 'product weight'), 'numeric', 0, '', _x('g', 'unit: grams'));
+        $itemSellField('weight', _x('Weight', 'product weight'), 'decimal', 0, '', osc_weight_unit() === 'imperial' ? _x('oz', 'unit: ounces') : _x('g', 'unit: grams'));
         $itemSellField('shippingClass', __('Shipping class'), '', 40, __('A name the Shipping plugin groups items by, such as bulky.'));
         echo '</div>';
         echo '<p class="form-text" data-variant-with-options' . ($hasOptions ? '' : ' hidden') . '>'
