@@ -53,4 +53,10 @@ pin('host 16M is raised to 32M', '32M', limit_after_boot('16M'));
 pin('128K wanted never lowers 16M', '16M', limit_after_boot('16M', '128K'));
 pin('unlimited wanted lifts 512M', '-1', limit_after_boot('512M', '-1'));
 
+harness_section('the early parser agrees with Formatting::iniBytes()');
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
+require_once ABS_PATH . 'oc-includes/osclass/default-constants.php';
+$sizes = array('-1', '900', '512k', '128M', '2G');
+pin('same bytes for ' . implode(', ', $sizes), array_map(array(\mindstellar\utility\Formatting::class, 'iniBytes'), $sizes), array_map('osc_ini_bytes', $sizes));
+
 exit(harness_result());

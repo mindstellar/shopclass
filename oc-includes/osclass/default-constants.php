@@ -107,6 +107,7 @@ if (!defined('OSC_MEMORY_LIMIT')) {
 if (!function_exists('osc_ini_bytes')) {
     /**
      * A php.ini size such as 128M, 1G or 512K in bytes; -1 (unlimited) comes back as -1.
+     * It runs before the autoloader, so it cannot call Formatting::iniBytes(); a test keeps the two equal.
      */
     function osc_ini_bytes(string $size): int
     {
