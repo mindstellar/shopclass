@@ -33,6 +33,7 @@ final class MailComposing extends Event implements Bridged
         'order_delivered',
         'order_cancelled',
         'order_refunded',
+        'order_part_refunded',
         'admin_new_order',
         'product_alert',
         'listing_unpaid_reminder',

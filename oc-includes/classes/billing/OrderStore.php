@@ -468,7 +468,7 @@ final class OrderStore extends Model
      */
     public static function markMailSent(int $orderId, string $kind): bool
     {
-        if (!preg_match('/^[a-z]{1,20}$/', $kind)) {
+        if (!preg_match('/^([a-z]{1,20}|doc:[0-9]{1,10})$/', $kind)) {
             return false;
         }
 
