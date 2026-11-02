@@ -343,9 +343,46 @@ final class BillingSettingsScreen
             )
                 ->set('rows', 4)
                 ->width('key')
+            ->group(
+                __('Invoices'),
+                __('A numbered invoice is made when an order is paid, and a credit note when money is refunded. '
+                   . 'Numbers restart each year, e.g. INV-2026-00042.')
+            )
+            ->checkbox('billing_invoice_on', __('Issue numbered invoices'))
+                ->rowLabel(__('Invoices'))
+                ->default(true)
+            ->text('billing_invoice_prefix', __('Invoice number prefix'), __('Up to 12 capital letters, digits, dashes or slashes.'))
+                ->default('INV-')
+                ->width('num')
+                ->attrs(array('maxlength' => '12'))
+                ->sanitize(self::documentPrefix('INV-'))
+                ->validate(self::documentPrefixError())
+            ->text('billing_credit_prefix', __('Credit note number prefix'), __('Same rules. Credit notes have their own numbers.'))
+                ->default('CN-')
+                ->width('num')
+                ->attrs(array('maxlength' => '12'))
+                ->sanitize(self::documentPrefix('CN-'))
+                ->validate(self::documentPrefixError())
             ->register();
 
         return self::PAGE_RECEIPTS;
+    }
+
+    /** Trim and capitalise a posted document prefix; an empty one falls back to the default. */
+    private static function documentPrefix(string $fallback): \Closure
+    {
+        return static function ($value) use ($fallback): string {
+            $value = strtoupper(trim((string) $value));
+
+            return $value === '' ? $fallback : $value;
+        };
+    }
+
+    private static function documentPrefixError(): \Closure
+    {
+        return static fn ($value): ?string => preg_match('/^[A-Z0-9\/-]{1,12}$/', (string) $value) === 1
+            ? null
+            : __('A prefix is up to 12 capital letters, digits, dashes or slashes.');
     }
 
     /**
