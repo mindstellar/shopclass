@@ -60181,6 +60181,60 @@
                 ],
                 "description": "An amount: a decimal string, its currency code and the site's formatting."
             },
+            "CheckoutField": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "pattern": "^[a-z0-9_]{1,32}$"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "required": {
+                        "type": "boolean"
+                    },
+                    "max": {
+                        "type": "integer",
+                        "description": "The longest value, in characters."
+                    },
+                    "help": {
+                        "type": "string"
+                    },
+                    "autocomplete": {
+                        "type": "string",
+                        "description": "An HTML autocomplete token; empty for none."
+                    }
+                },
+                "required": [
+                    "id",
+                    "label",
+                    "required",
+                    "max",
+                    "help",
+                    "autocomplete"
+                ],
+                "description": "An extra text field the checkout asks for, such as a tax number. Send its answer in the order's fields."
+            },
+            "OrderField": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string"
+                    },
+                    "value": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "label",
+                    "value"
+                ]
+            },
             "OrderAddress": {
                 "type": "object",
                 "properties": {
@@ -60345,6 +60399,15 @@
                         "minLength": 0,
                         "maxLength": 200,
                         "description": "A coupon code, read as GET cart/quote reads it."
+                    },
+                    "fields": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "minLength": 0,
+                            "maxLength": 100
+                        },
+                        "description": "Answers to the quote's checkout_fields, by field id. An id the checkout does not ask for is ignored."
                     }
                 },
                 "required": [
@@ -60442,6 +60505,54 @@
                     "included": {
                         "type": "boolean",
                         "description": "True on a tax line for tax already in the prices: its amount is 0 and its unit is the tax."
+                    },
+                    "tax": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "included": {
+                                "type": "boolean",
+                                "description": "True when the tax is already in the price."
+                            },
+                            "base": {
+                                "$ref": "#/components/schemas/Amount"
+                            },
+                            "amount": {
+                                "$ref": "#/components/schemas/Amount"
+                            },
+                            "rate_text": {
+                                "type": "string",
+                                "description": "Such as \"18%\" or \"9% + 9%\"."
+                            },
+                            "parts": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "amount": {
+                                            "$ref": "#/components/schemas/Amount"
+                                        }
+                                    },
+                                    "required": [
+                                        "label",
+                                        "amount"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "included",
+                            "base",
+                            "amount",
+                            "rate_text",
+                            "parts"
+                        ],
+                        "description": "The line's own tax; null when the shop did not break the tax down by line."
                     }
                 },
                 "required": [
@@ -60453,7 +60564,8 @@
                     "unit",
                     "amount",
                     "listing",
-                    "included"
+                    "included",
+                    "tax"
                 ],
                 "description": "A discount line's amount is negative."
             },
@@ -60797,6 +60909,13 @@
                         },
                         "description": "The order's invoice and credit notes, oldest first. Empty when none was issued."
                     },
+                    "fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderField"
+                        },
+                        "description": "The buyer's answers to the checkout fields; empty answers are not kept."
+                    },
                     "refunded_total": {
                         "$ref": "#/components/schemas/Amount",
                         "description": "The sum of the credit notes; zero when nothing was refunded through one."
@@ -60833,6 +60952,7 @@
                     "gateway",
                     "receipt_url",
                     "documents",
+                    "fields",
                     "refunded_total",
                     "can_cancel",
                     "pay_instructions",
@@ -60986,6 +61106,54 @@
                             "null"
                         ],
                         "description": "Set when stock is tracked and 5 or fewer are left, or fewer than asked for."
+                    },
+                    "tax": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "properties": {
+                            "included": {
+                                "type": "boolean",
+                                "description": "True when the tax is already in the price."
+                            },
+                            "base": {
+                                "$ref": "#/components/schemas/Amount"
+                            },
+                            "amount": {
+                                "$ref": "#/components/schemas/Amount"
+                            },
+                            "rate_text": {
+                                "type": "string",
+                                "description": "Such as \"18%\" or \"9% + 9%\"."
+                            },
+                            "parts": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "label": {
+                                            "type": "string"
+                                        },
+                                        "amount": {
+                                            "$ref": "#/components/schemas/Amount"
+                                        }
+                                    },
+                                    "required": [
+                                        "label",
+                                        "amount"
+                                    ]
+                                }
+                            }
+                        },
+                        "required": [
+                            "included",
+                            "base",
+                            "amount",
+                            "rate_text",
+                            "parts"
+                        ],
+                        "description": "The line's own tax; null when the shop did not break the tax down by line."
                     }
                 },
                 "required": [
@@ -60996,7 +61164,8 @@
                     "unit",
                     "amount",
                     "available",
-                    "stock_left"
+                    "stock_left",
+                    "tax"
                 ]
             },
             "QuoteMethod": {
@@ -61285,6 +61454,14 @@
                             "$ref": "#/components/schemas/QuoteProblem"
                         }
                     },
+                    "checkout_fields": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CheckoutField"
+                        },
+                        "maxItems": 8,
+                        "description": "Extra text fields to ask the buyer for before placing the order."
+                    },
                     "open_orders": {
                         "type": "object",
                         "properties": {
@@ -61314,7 +61491,8 @@
                     "totals",
                     "free_over",
                     "gateways",
-                    "problems"
+                    "problems",
+                    "checkout_fields"
                 ]
             },
             "QuoteDocument": {

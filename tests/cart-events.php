@@ -116,6 +116,12 @@ $started = new CheckoutStarting($cart);
 $started->refuse('/coupon', 'expired', 'Gone.');
 pin('refuse() records and stops the run', [[true], [['pointer' => '/coupon', 'code' => 'expired', 'message' => 'Gone.']]], [[$started->isPropagationStopped()], $started->refusals()]);
 
+harness_section('Checkout fields');
+
+$answers = new CheckoutStarting(['fields' => ['tax_id' => 'de1']], [['id' => 'tax_id', 'max' => 12]]);
+$answers->setField('tax_id', strtoupper($answers->field('tax_id')));
+pin('CheckoutStarting reads and sets the asked fields', ['DE1', ['tax_id' => 'DE1']], [$answers->field('tax_id'), $answers->fields()]);
+
 harness_section('Line tax');
 
 $part = static fn (string $tax, int $amount = 1, int $bp = 1000, string $label = 'VAT'): array => ['tax' => $tax, 'label' => $label, 'bp' => $bp, 'amount' => $amount];

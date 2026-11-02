@@ -26,7 +26,7 @@ final class OrderSchema
 {
     /** Every component name, known without building a schema. */
     public const NAMES = [
-        'Amount', 'OrderAddress', 'OrderAddressInput', 'OrderLineInput', 'OrderInput',
+        'Amount', 'CheckoutField', 'OrderField', 'OrderAddress', 'OrderAddressInput', 'OrderLineInput', 'OrderInput',
         'OrderLine', 'OrderShipment', 'OrderGateway', 'OrderInvoice', 'Order', 'OrderNext',
         'OrderDocument', 'OrderPage', 'OrderPlaced',
         'QuoteLine', 'QuoteMethod', 'QuoteAdjustment', 'QuoteTax', 'QuoteTotals', 'QuoteGateway', 'QuoteProblem',
@@ -50,6 +50,13 @@ final class OrderSchema
             'currency'  => ['type' => 'string'],
             'formatted' => ['type' => 'string'],
         ], ['amount', 'currency', 'formatted']);
+        $lineTax = $maybe(Schema::object([
+            'included'  => ['type' => 'boolean', 'description' => 'True when the tax is already in the price.'],
+            'base'      => $amount,
+            'amount'    => $amount,
+            'rate_text' => ['type' => 'string', 'description' => 'Such as "18%" or "9% + 9%".'],
+            'parts'     => ['type' => 'array', 'items' => Schema::object(['label' => ['type' => 'string'], 'amount' => $amount], ['label', 'amount'])],
+        ], ['included', 'base', 'amount', 'rate_text', 'parts']), 'The line\'s own tax; null when the shop did not break the tax down by line.');
         $addr = [];
         foreach (GoodsCheckout::ADDRESS as $field => $max) {
             $addr[$field] = $text($max);
@@ -79,6 +86,19 @@ final class OrderSchema
         return [
             'Amount' => $money + ['description' => 'An amount: a decimal string, its currency code and the site\'s formatting.'],
 
+            'CheckoutField' => Schema::object([
+                'id'           => ['type' => 'string', 'pattern' => '^[a-z0-9_]{1,32}$'],
+                'label'        => ['type' => 'string'],
+                'required'     => ['type' => 'boolean'],
+                'max'          => ['type' => 'integer', 'description' => 'The longest value, in characters.'],
+                'help'         => ['type' => 'string'],
+                'autocomplete' => ['type' => 'string', 'description' => 'An HTML autocomplete token; empty for none.'],
+            ], ['id', 'label', 'required', 'max', 'help', 'autocomplete']) + ['description' => 'An extra text field the checkout asks for, such as a tax number. Send its answer in the order\'s fields.'],
+            'OrderField' => Schema::object([
+                'id'    => ['type' => 'string'],
+                'label' => ['type' => 'string'],
+                'value' => ['type' => 'string'],
+            ], ['id', 'label', 'value']),
             'OrderAddress'      => Schema::object($addr, array_keys($addr)),
             'OrderAddressInput' => Schema::object($addr + [
                 'id'   => ['type' => 'string', 'maxLength' => 16, 'description' => 'One of your saved addresses (GET account/addresses); the other fields are then ignored.'],
@@ -95,6 +115,7 @@ final class OrderSchema
                 'gateway'         => $text(64, 1),
                 'note'            => $text(500),
                 'coupon'          => $text(200) + ['description' => 'A coupon code, read as GET cart/quote reads it.'],
+                'fields'          => ['type' => 'object', 'additionalProperties' => $text(100), 'description' => 'Answers to the quote\'s checkout_fields, by field id. An id the checkout does not ask for is ignored.'],
             ], ['lines', 'address', 'gateway']) + ['description' => 'Prices, totals and stock are worked out on the server; an amount sent is ignored.'],
 
             'OrderLine' => Schema::object([
@@ -107,7 +128,8 @@ final class OrderSchema
                 'amount'  => $amount,
                 'listing' => $sold,
                 'included' => ['type' => 'boolean', 'description' => 'True on a tax line for tax already in the prices: its amount is 0 and its unit is the tax.'],
-            ], ['kind', 'title', 'options', 'sku', 'qty', 'unit', 'amount', 'listing', 'included']) + ['description' => 'A discount line\'s amount is negative.'],
+                'tax'     => $lineTax,
+            ], ['kind', 'title', 'options', 'sku', 'qty', 'unit', 'amount', 'listing', 'included', 'tax']) + ['description' => 'A discount line\'s amount is negative.'],
             'OrderShipment' => Schema::object([
                 'n'            => ['type' => 'integer', 'description' => 'The parcel number, from 1.'],
                 'shipped_at'   => Schema::time(),
@@ -145,11 +167,12 @@ final class OrderSchema
                 'gateway'     => Schema::ref('OrderGateway'),
                 'receipt_url' => Schema::nullable('string', 'The printable receipt, once the order is paid.'),
                 'documents'   => ['type' => 'array', 'items' => Schema::ref('OrderInvoice'), 'description' => 'The order\'s invoice and credit notes, oldest first. Empty when none was issued.'],
+                'fields'      => ['type' => 'array', 'items' => Schema::ref('OrderField'), 'description' => 'The buyer\'s answers to the checkout fields; empty answers are not kept.'],
                 'refunded_total' => $amount + ['description' => 'The sum of the credit notes; zero when nothing was refunded through one.'],
                 'can_cancel'  => ['type' => 'boolean', 'description' => 'True while the buyer may cancel it: a pending bank transfer or cash on delivery order.'],
                 'pay_instructions' => Schema::nullable('string', 'How to pay a pending bank transfer order: the shop\'s instructions and the reference to quote.'),
                 'can_pay'     => ['type' => 'boolean', 'description' => 'True while the buyer may start paying again: a pending card order.'],
-            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'shipments', 'packed_at', 'gateway', 'receipt_url', 'documents', 'refunded_total', 'can_cancel', 'pay_instructions', 'can_pay']),
+            ], ['id', 'number', 'kind', 'label', 'status', 'placed_at', 'paid_at', 'total', 'lines', 'shipping', 'shipments', 'packed_at', 'gateway', 'receipt_url', 'documents', 'fields', 'refunded_total', 'can_cancel', 'pay_instructions', 'can_pay']),
             'OrderNext' => Schema::object([
                 'kind'    => ['type' => 'string', 'enum' => ['redirect', 'html']],
                 'payload' => ['type' => 'string', 'description' => 'redirect: the URL to send the buyer to. html: the gateway\'s own markup, to print as it is.'],
@@ -172,7 +195,8 @@ final class OrderSchema
                 'amount'     => $amount,
                 'available'  => ['type' => 'boolean', 'description' => 'False when there is not enough in stock; the line then stays out of the totals.'],
                 'stock_left' => Schema::nullable('integer', 'Set when stock is tracked and 5 or fewer are left, or fewer than asked for.'),
-            ], ['variant', 'qty', 'listing', 'options', 'unit', 'amount', 'available', 'stock_left']),
+                'tax'        => $lineTax,
+            ], ['variant', 'qty', 'listing', 'options', 'unit', 'amount', 'available', 'stock_left', 'tax']),
             'QuoteMethod' => Schema::object([
                 'id'     => ['type' => 'string'],
                 'label'  => ['type' => 'string'],
@@ -223,8 +247,9 @@ final class OrderSchema
                 'free_over'        => $maybe(Schema::object(['amount' => $amount, 'remaining' => $amount], ['amount', 'remaining']), 'Free delivery from this subtotal, and how much is left to reach it.'),
                 'gateways'         => ['type' => 'array', 'items' => Schema::ref('QuoteGateway')],
                 'problems'         => ['type' => 'array', 'items' => Schema::ref('QuoteProblem')],
+                'checkout_fields'  => ['type' => 'array', 'items' => Schema::ref('CheckoutField'), 'maxItems' => 8, 'description' => 'Extra text fields to ask the buyer for before placing the order.'],
                 'open_orders'      => Schema::object(['count' => ['type' => 'integer'], 'limit' => ['type' => 'integer']], ['count', 'limit']) + ['description' => 'Only for a signed-in buyer: their unpaid bank transfer orders and the most they may hold. A limit of 0 means none.'],
-            ], ['currency', 'lines', 'needs_shipping', 'shipping_methods', 'shipping', 'discounts', 'taxes', 'fees', 'totals', 'free_over', 'gateways', 'problems']),
+            ], ['currency', 'lines', 'needs_shipping', 'shipping_methods', 'shipping', 'discounts', 'taxes', 'fees', 'totals', 'free_over', 'gateways', 'problems', 'checkout_fields']),
             'QuoteDocument' => Schema::object(['data' => Schema::ref('Quote')], ['data']),
         ];
     }

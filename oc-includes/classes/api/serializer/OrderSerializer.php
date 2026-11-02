@@ -16,6 +16,7 @@ use mindstellar\billing\CartPricer;
 use mindstellar\billing\Document;
 use mindstellar\billing\DocumentPage;
 use mindstellar\billing\DocumentStore;
+use mindstellar\billing\LineTax;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\PaymentGatewayRegistry;
@@ -86,6 +87,7 @@ final class OrderSerializer
                 'amount'     => $money((int) $line['amount']),
                 'available'  => (bool) $line['available'],
                 'stock_left' => $line['stock_left'],
+                'tax'        => $this->lineTax($quote->lineTax(OrderLineStore::KIND_ITEM, (int) $line['line']), $currency),
             );
         }
         $adjust = static fn (array $rows): array => array_map(static fn (array $row): array => array(
@@ -138,6 +140,14 @@ final class OrderSerializer
                 'pointer' => $p['pointer'],
                 'message' => $p['message'],
             ), array_values($quote->problems())),
+            'checkout_fields'  => array_map(static fn (array $f): array => array(
+                'id'           => $f['id'],
+                'label'        => $f['label'],
+                'required'     => $f['required'],
+                'max'          => $f['max'],
+                'help'         => $f['help'],
+                'autocomplete' => $f['autocomplete'],
+            ), $quote->checkoutFields()),
         );
     }
 
@@ -190,6 +200,7 @@ final class OrderSerializer
                 'amount'  => $this->amount((int) $line['amount'], $currency, $ship),
                 'listing' => $item && !empty($line['item_id']) ? ($refs[(int) $line['item_id']] ?? null) : null,
                 'included' => $line['kind'] === OrderLineStore::KIND_TAX && ($meta['included'] ?? false) === true,
+                'tax'     => $this->lineTax(OrderLineStore::lineTax($line), $currency),
             );
         }
         $gateway = PaymentGatewayRegistry::getInstance()->get($order->getGateway());
@@ -217,11 +228,50 @@ final class OrderSerializer
                 'currency' => strtoupper($doc->currency),
                 'url'      => DocumentPage::url($doc),
             ), $docs),
+            'fields'      => self::fields($order),
             'refunded_total' => $this->amount(array_sum(array_map(static fn (Document $doc): int => $doc->isCreditNote() ? $doc->total : 0, $docs)), $currency),
             'can_cancel'  => $order->buyerMayCancel(),
             'pay_instructions' => PaymentGatewayRegistry::getInstance()->instructions($order),
             'can_pay'     => $order->canPayAgain() && $gateway !== null && $gateway->isConfigured(),
         );
+    }
+
+    /**
+     * A line's own tax as the API shows it, or null.
+     *
+     * @return array<string,mixed>|null
+     */
+    private function lineTax(?LineTax $tax, string $currency): ?array
+    {
+        if ($tax === null) {
+            return null;
+        }
+        $rate = static fn (int $bp): string => rtrim(rtrim(number_format($bp / 100, 2, '.', ''), '0'), '.') . '%';
+
+        return array(
+            'included'  => $tax->included,
+            'base'      => $this->amount($tax->base, $currency),
+            'amount'    => $this->amount($tax->amount, $currency),
+            'rate_text' => implode(' + ', array_map(static fn (array $part): string => $rate($part['bp']), $tax->parts)),
+            'parts'     => array_map(fn (array $part): array => array('label' => $part['label'], 'amount' => $this->amount($part['amount'], $currency)), $tax->parts),
+        );
+    }
+
+    /**
+     * The buyer's answers to the checkout fields.
+     *
+     * @return list<array{id:string,label:string,value:string}>
+     */
+    private static function fields(Order $order): array
+    {
+        $out = array();
+        foreach (is_array($order->meta('_fields')) ? $order->meta('_fields') : array() as $id => $field) {
+            if (is_array($field) && is_string($field['value'] ?? null) && $field['value'] !== '') {
+                $out[] = array('id' => (string) $id, 'label' => (string) ($field['label'] ?? $id), 'value' => $field['value']);
+            }
+        }
+
+        return $out;
     }
 
     /**
