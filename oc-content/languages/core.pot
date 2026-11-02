@@ -579,7 +579,7 @@ msgid_plural "%s files"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-includes/osclass/helpers/hPreference.php
+#: oc-includes/classes/listing/Weight.php
 msgid "%s g"
 msgstr ""
 
@@ -662,11 +662,11 @@ msgid ""
 "will be back shortly — thanks for your patience."
 msgstr ""
 
-#: oc-includes/osclass/helpers/hPreference.php
+#: oc-includes/classes/listing/Weight.php
 msgid "%s kg"
 msgstr ""
 
-#: oc-includes/osclass/helpers/hPreference.php
+#: oc-includes/classes/listing/Weight.php
 msgid "%s lb"
 msgstr ""
 
@@ -705,7 +705,7 @@ msgid_plural "%s orders"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-includes/osclass/helpers/hPreference.php
+#: oc-includes/classes/listing/Weight.php
 msgid "%s oz"
 msgstr ""
 

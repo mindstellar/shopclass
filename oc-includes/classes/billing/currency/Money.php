@@ -25,19 +25,13 @@ final class Money
      */
     public static function decimals(?string $currency = null): int
     {
-        $code = '';
-        try {
-            $code = strtoupper(trim($currency ?? (function_exists('osc_currency') ? (string) osc_currency() : '')));
-            if ($code === '') {
-                $code = 'USD';
-            }
-
-            return CurrencyService::make()->decimals($code);
-        } catch (\mindstellar\database\DbException $e) {
-            throw $e;
-        } catch (\Throwable) {
-            return CurrencyCode::decimals($code === '' ? 'USD' : $code);
+        $code = strtoupper(trim($currency ?? (function_exists('osc_currency') ? (string) osc_currency() : '')));
+        $code = $code === '' ? 'USD' : $code;
+        if (!defined('DB_TABLE_PREFIX')) {
+            return CurrencyCode::decimals($code);
         }
+
+        return CurrencyService::make()->decimals($code);
     }
 
     /**

@@ -1140,7 +1140,7 @@ function osc_distance_unit()
  */
 function osc_weight_unit(): string
 {
-    return getPreference('weight_unit') === 'imperial' ? 'imperial' : 'metric';
+    return \mindstellar\listing\Weight::unit();
 }
 
 /**
@@ -1153,25 +1153,7 @@ function osc_weight_unit(): string
  */
 function osc_weight_grams_per(string $unit): float
 {
-    return match ($unit) {
-        'kg'    => 1000.0,
-        'oz'    => 28.349523125,
-        'lb'    => 453.59237,
-        default => 1.0,
-    };
-}
-
-/**
- * Grams in the given unit, as text with up to two decimals and no trailing zeros.
- *
- * @param int    $grams
- * @param string $unit 'g', 'kg', 'oz' or 'lb'
- *
- * @return string
- */
-function _osc_weight_in(int $grams, string $unit): string
-{
-    return rtrim(rtrim(number_format($grams / osc_weight_grams_per($unit), 2, '.', ''), '0'), '.');
+    return \mindstellar\listing\Weight::gramsPer($unit);
 }
 
 /**
@@ -1184,11 +1166,7 @@ function _osc_weight_in(int $grams, string $unit): string
  */
 function osc_weight_display(int $grams): string
 {
-    if (osc_weight_unit() === 'imperial') {
-        return $grams < osc_weight_grams_per('lb') ? sprintf(__('%s oz'), _osc_weight_in($grams, 'oz')) : sprintf(__('%s lb'), _osc_weight_in($grams, 'lb'));
-    }
-
-    return $grams < 1000 ? sprintf(__('%s g'), $grams) : sprintf(__('%s kg'), _osc_weight_in($grams, 'kg'));
+    return \mindstellar\listing\Weight::display($grams);
 }
 
 /**
@@ -1201,7 +1179,7 @@ function osc_weight_display(int $grams): string
  */
 function osc_weight_input(int $grams): string
 {
-    return osc_weight_unit() === 'imperial' ? _osc_weight_in($grams, 'oz') : (string) $grams;
+    return \mindstellar\listing\Weight::input($grams);
 }
 
 /**
@@ -1215,12 +1193,7 @@ function osc_weight_input(int $grams): string
  */
 function osc_weight_parse($value): int
 {
-    $text = str_replace(',', '.', trim((string) $value));
-    if (preg_match('/^\d{1,12}(\.\d{1,6})?$/', $text) !== 1) {
-        return 0;
-    }
-
-    return (int) round((float) $text * (osc_weight_unit() === 'imperial' ? osc_weight_grams_per('oz') : 1));
+    return \mindstellar\listing\Weight::parse($value);
 }
 
 /**
@@ -1235,9 +1208,7 @@ function osc_weight_parse($value): int
  */
 function osc_weight_started(int $grams, ?bool $imperial = null): int
 {
-    $per = ($imperial ?? osc_weight_unit() === 'imperial') ? (int) round(16 * osc_weight_grams_per('oz')) : 1000;
-
-    return intdiv(max(0, $grams) + $per - 1, $per);
+    return \mindstellar\listing\Weight::started($grams, $imperial);
 }
 
 /**

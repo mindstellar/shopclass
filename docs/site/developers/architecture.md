@@ -121,7 +121,7 @@ namespace and stay in `oc-includes/osclass/classes/`: all of `controller`, `acti
 | `fields` | `classes/listing/fields/` | Custom fields and their types |
 | `form` | `classes/core/form/`, `osclass/classes/form/` | Old form renderers kept for themes, `FormBuilder`, and the site's custom forms (`builder/`) |
 | `http` | `classes/core/http/` | Outgoing HTTPS requests for core and plugins: `HttpClient`, `CurlHttpClient` |
-| `image` | `classes/media/image/` | Photo processing: `Processor` (fit, formats, quality, watermark, pixel limit) over an `Engine`, `GdEngine` or `ImagickEngine` |
+| `image` | `classes/media/image/` | Photo processing: `Processor` (fit, formats, quality, watermark, pixel limit) over an `Engine`, `GdEngine` or `ImagickEngine`. The old `ImageProcessing` class is a deprecated wrapper; new code calls `Processor::site()->open()` |
 | `install` | `classes/core/install/` | The first-run installer: what it can set up for a shop site |
 | `job` | `classes/core/job/` | The background job queue |
 | `live` | `classes/messaging/live/` | Push to open browsers: publisher, status |
