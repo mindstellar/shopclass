@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1275 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -884,7 +884,7 @@ Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (140)
+### hPreference (144)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -1030,6 +1030,10 @@ Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_watermark_text()` | Return watermark text |
 | `osc_watermark_text_color()` | Return watermark text color |
 | `osc_week_starts_at()` | Gets week start day |
+| `osc_weight_display(int $grams)` | A weight for display: "450 g" or "1.25 kg"; "8 oz" or "1.5 lb" on an imperial site. |
+| `osc_weight_input(int $grams)` | A stored weight as a form field shows it, in the small unit: grams, or ounces on an imperial site. |
+| `osc_weight_parse($value)` | A weight typed in the form's small unit as whole grams; ounces are rounded. Text that is not a number gives 0. |
+| `osc_weight_unit()` | The unit product weights are shown and typed in: 'metric' (g, kg) or 'imperial' (oz, lb). Weights are always stored in grams. |
 
 ### hPremium (47)
 

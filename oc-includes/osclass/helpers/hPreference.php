@@ -1132,6 +1132,81 @@ function osc_distance_unit()
 }
 
 /**
+ * The unit product weights are shown and typed in: 'metric' (g, kg) or 'imperial' (oz, lb).
+ * Weights are always stored in grams.
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_weight_unit(): string
+{
+    return getPreference('weight_unit') === 'imperial' ? 'imperial' : 'metric';
+}
+
+/**
+ * Grams as text with up to two decimals and no trailing zeros.
+ *
+ * @param float $value
+ *
+ * @return string
+ */
+function _osc_weight_number(float $value): string
+{
+    return rtrim(rtrim(number_format($value, 2, '.', ''), '0'), '.');
+}
+
+/**
+ * A weight for display: "450 g" or "1.25 kg"; "8 oz" or "1.5 lb" on an imperial site.
+ *
+ * @param int $grams
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_weight_display(int $grams): string
+{
+    if (osc_weight_unit() === 'imperial') {
+        return $grams < 453.59237
+            ? _osc_weight_number($grams / 28.349523125) . ' oz'
+            : _osc_weight_number($grams / 453.59237) . ' lb';
+    }
+
+    return $grams < 1000 ? $grams . ' g' : _osc_weight_number($grams / 1000) . ' kg';
+}
+
+/**
+ * A stored weight as a form field shows it, in the small unit: grams, or ounces on an imperial site.
+ *
+ * @param int $grams
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_weight_input(int $grams): string
+{
+    return osc_weight_unit() === 'imperial' ? _osc_weight_number($grams / 28.349523125) : (string) $grams;
+}
+
+/**
+ * A weight typed in the form's small unit as whole grams; ounces are rounded. Text that is not a
+ * number gives 0.
+ *
+ * @param mixed $value
+ *
+ * @return int
+ * @since 7.1.0
+ */
+function osc_weight_parse($value): int
+{
+    $text = str_replace(',', '.', trim((string) $value));
+    if (preg_match('/^\d{1,12}(\.\d{1,6})?$/', $text) !== 1) {
+        return 0;
+    }
+
+    return (int) round((float) $text * (osc_weight_unit() === 'imperial' ? 28.349523125 : 1));
+}
+
+/**
  * How long latest searches are kept before they are purged.
  *
  * @return string

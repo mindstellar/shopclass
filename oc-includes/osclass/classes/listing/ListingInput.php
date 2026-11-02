@@ -126,13 +126,14 @@ final class ListingInput
             }
         }
         $text  = static fn ($value): string => $value === null ? '' : (string) $value;
+        $mass  = static fn ($value): string => is_int($value) || (is_string($value) && ctype_digit($value)) ? osc_weight_input((int) $value) : $text($value);
         $price = static fn ($value): string => is_numeric($value) ? (string) osc_prepare_price($value, $currency) : $text($value);
         $shown = static fn (array $row): array => array(
             'sku'           => $text($row['s_sku'] ?? null),
             'price'         => $price($row['i_price'] ?? null),
             'compareAt'     => $price($row['i_compare_price'] ?? null),
             'stock'         => $text($row['i_stock'] ?? null),
-            'weight'        => $text($row['i_weight'] ?? null),
+            'weight'        => $mass($row['i_weight'] ?? null),
             'shippingClass' => $text($row['s_shipping_class'] ?? null),
         );
 
@@ -320,10 +321,14 @@ final class ListingInput
                 $fields[$column] = $price === null ? null : (Money::parse($price, $decimals) ?? $price);
             }
         }
-        foreach (array('stock' => 'i_stock', 'weight' => 'i_weight') as $key => $column) {
-            if (array_key_exists($key, $raw)) {
-                $fields[$column] = $whole($text($key));
-            }
+        if (array_key_exists('stock', $raw)) {
+            $fields['i_stock'] = $whole($text('stock'));
+        }
+        if (array_key_exists('weight', $raw)) {
+            // Ounces are converted to grams; anything that is not a number is left for the validator.
+            $weight            = $text('weight');
+            $fields['i_weight'] = $weight !== null && osc_weight_unit() === 'imperial' && preg_match('/^\d{1,12}([.,]\d{1,6})?$/', $weight) === 1
+                ? osc_weight_parse($weight) : $whole($weight);
         }
 
         return $fields;

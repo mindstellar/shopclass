@@ -541,7 +541,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'price'         => __('Price'),
             'compareAt'     => __('Old price'),
             'stock'         => __('Stock'),
-            'weight'        => __('Weight (g)'),
+            'weight'        => osc_weight_unit() === 'imperial' ? __('Weight (oz)') : __('Weight (g)'),
             'shippingClass' => __('Shipping class'),
             'photoId'       => __('Photo'),
         );
@@ -647,7 +647,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $itemSection('sec-shipping', __('Shipping'), __('Used to work out delivery cost'), array('attrs' => array('data-osc-needs-sell' => true)));
         echo '<div data-osc-physical-only>';
         echo '<div class="osc-editor-cols" data-variant-default' . ($hasOptions ? ' hidden' : '') . '>';
-        $itemSellField('weight', _x('Weight', 'product weight'), 'numeric', 0, '', _x('g', 'unit: grams'));
+        $itemSellField('weight', _x('Weight', 'product weight'), 'numeric', 0, '', osc_weight_unit() === 'imperial' ? _x('oz', 'unit: ounces') : _x('g', 'unit: grams'));
         $itemSellField('shippingClass', __('Shipping class'), '', 40, __('A name the Shipping plugin groups items by, such as bulky.'));
         echo '</div>';
         echo '<p class="form-text" data-variant-with-options' . ($hasOptions ? '' : ' hidden') . '>'

@@ -375,6 +375,11 @@ final class BillingSettingsScreen
                 )
                 ->field(self::money('billing_shipping_flat', __('Delivery charge'), __('0 makes delivery free.'), osc_get_int_preference('billing_shipping_flat', 0, 0)))
                 ->field(self::money('billing_free_over', __('Free delivery from'), __('Orders of this much or more ship free. 0 means never.'), osc_get_int_preference('billing_free_over', 0, 0)))
+                ->select('weight_unit', __('Product weights in'), array(
+                    'metric'   => __('Grams and kilograms'),
+                    'imperial' => __('Ounces and pounds'),
+                ))
+                    ->hint(__('Weights are kept in grams. Changing this does not change any price.'))
                 ->group(
                     __('Cash on delivery'),
                     __('The buyer pays the courier. Ship the order unpaid; marking it delivered marks it paid.')

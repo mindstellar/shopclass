@@ -66,6 +66,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The State box in an address form lists the shop's own regions for the chosen country, and the Country box is hidden when the shop has one country. A theme can listen for `osc:address-country`.
 - Each currency has a **Decimals** setting (JPY 0, KWD 3, most 2) that every price, order, receipt and e-mail follows; the API shows it as `decimals`.
 - `GET /countries` lists each country's `address_format`.
+- **Settings → Billing → Shop** sets product weights in grams and kilograms or ounces and pounds. Weights stay stored in grams, and the API always uses grams. `osc_weight_unit()`, `osc_weight_display()`, `osc_weight_input()` and `osc_weight_parse()` read and convert them.
 - The installer offers Stripe and PayPal beside Razorpay.
 
 ### Breaking
