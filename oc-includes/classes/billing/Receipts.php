@@ -54,9 +54,6 @@ final class Receipts
     /** Job kind of the mail with an invoice issued after the receipt went out. */
     public const MAIL_INVOICE = 'invoice';
 
-    /** Gateways that leave an order unpaid until the shop hears the money came in. */
-    private const HELD_GATEWAYS = array('offline', 'cod');
-
     /** Preference: e-mail a receipt when an order is paid. On unless switched off. */
     public const PREF_EMAIL = 'billing_receipt_email';
 
@@ -160,7 +157,7 @@ final class Receipts
     public static function afterPlaced($orderId, $userId = 0): void
     {
         $order = OrderStore::find((int) $orderId);
-        if ($order === null || !$order->isGoods() || !in_array($order->getGateway(), self::HELD_GATEWAYS, true)) {
+        if ($order === null || !$order->isGoods() || !in_array($order->getGateway(), Billing::HOLDS_STOCK, true)) {
             return;
         }
         self::notify(self::MAIL_PLACED, $order->getId());

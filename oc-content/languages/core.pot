@@ -957,8 +957,7 @@ msgstr ""
 msgid ""
 "<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order "
 "{ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can "
-"take 3-5 working days to show up.</p>{ORDER_LINES}<p>{CREDIT_NOTE_LINK}</"
-"p><p>{ORDER_LINK}</p>"
+"take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>"
 msgstr ""
 
 #: oc-includes/classes/core/mail/CoreEmails.php

@@ -2312,7 +2312,8 @@ final class CoreEmails
 
                 return array(
                     __('Your order {ORDER_NUMBER} was refunded'),
-                    __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>'),
+                    // The credit note link goes in outside the string, so its finished translations stay.
+                    str_replace('<p>{ORDER_LINK}</p>', '<p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>', __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>')),
                 );
             case 'order_part_refunded':
                 if ($order !== null && in_array($order->getGateway(), Billing::HOLDS_STOCK, true)) {
