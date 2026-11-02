@@ -75,7 +75,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The installer offers Stripe and PayPal beside Razorpay.
 - **Invoices and credit notes**: every paid order gets a numbered invoice (`INV-2026-00042`), and every refund a credit note (`CN-2026-00003`) with its tax shown in proportion. Numbers restart each year. **Settings → Billing → Receipts** turns them off and sets the prefixes; **Billing → Invoices** lists them with a CSV download. Orders paid before 7.1 get none.
 - Buyers see the invoice and credit notes in their account and in the receipt mail; the REST order has `documents[]` and `refunded_total`.
-- **Partial refunds**: **Refund part** on a shop order refunds an amount or some units, with a reason and an option to return them to stock. The order shows **Partly refunded** until the credit notes add up to what was paid, then becomes refunded.
+- **Partial refunds**: **Refund part** on a shop order refunds an amount or some units, with a reason and an option to return them to stock. The order shows **Partly refunded** until the credit notes add up to what was paid, then becomes refunded. Only orders with an invoice can be refunded in part.
 - Stripe, PayPal and Razorpay refund part of an order through the provider. A gateway adds this with `PartialRefundableGateway::refundPart()`; other gateways record the refund only.
 - Hooks `billing_document_compose` and `billing_document_issued`; the buyer gets a mail when a partial refund is made (`email_order_part_refunded`).
 

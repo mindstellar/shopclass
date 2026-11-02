@@ -10,7 +10,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-use mindstellar\billing\Invoices;
+use mindstellar\billing\DocumentPage;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStock;
@@ -296,7 +296,7 @@ foreach ($order->getMeta() as $key => $value) {
                                     </td>
                                     <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($doc->date, true); ?></td>
                                     <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(($credit ? '−' : '') . osc_admin_money($doc->total, $doc->currency)); ?></td>
-                                    <td><a href="<?php echo osc_esc_html(Invoices::url($doc)); ?>" target="_blank" rel="noopener"><?php _e('View'); ?></a></td>
+                                    <td><a href="<?php echo osc_esc_html(DocumentPage::url($doc)); ?>" target="_blank" rel="noopener"><?php _e('View'); ?></a></td>
                                 </tr>
                             <?php } ?>
                             </tbody>

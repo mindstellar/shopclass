@@ -2655,6 +2655,10 @@ msgstr ""
 msgid "Rebuild queued."
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Receipt"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
 msgid "Receipt settings have been updated"
 msgstr ""

@@ -11,7 +11,7 @@
  */
 
 use mindstellar\billing\Document;
-use mindstellar\billing\Invoices;
+use mindstellar\billing\DocumentPage;
 
 osc_admin_page(array(
     'section' => __('Billing'),
@@ -101,7 +101,7 @@ $typeWords  = array(Document::INVOICE => __('Invoices'), Document::CREDIT_NOTE =
                     $buyer  = (array) ($doc->data['buyer'] ?? array()); ?>
                     <tr>
                         <td data-col-name="<?php echo osc_esc_html(__('Number')); ?>">
-                            <a href="<?php echo osc_esc_html(Invoices::url($doc)); ?>" target="_blank" rel="noopener"><?php echo osc_esc_html($doc->number); ?></a>
+                            <a href="<?php echo osc_esc_html(DocumentPage::url($doc)); ?>" target="_blank" rel="noopener"><?php echo osc_esc_html($doc->number); ?></a>
                             <?php if ($credit) { ?><span class="text-muted">· <?php _e('Credit note'); ?></span><?php } ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($doc->date, true); ?></td>

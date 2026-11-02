@@ -85,7 +85,7 @@ Every paid order gets a numbered invoice, such as `INV-2026-00042`. Each refund 
 
 ### Refunding part of an order
 
-Open the order and use **Refund part**. Enter an amount, or the units to refund, and a reason, and choose whether the units go back on sale (on by default for items not yet shipped). If the payment plugin supports it, the money goes back through the provider; otherwise the refund is recorded and you send the money yourself. Each partial refund makes a credit note and a mail to the buyer. The order shows **Partly refunded** until the credit notes add up to what was paid, then it becomes **Refunded**. A credit pack order is refunded whole.
+Open the order and use **Refund part**. Enter an amount, or the units to refund, and a reason, and choose whether the units go back on sale (on by default for items not yet shipped). If the payment plugin supports it, the money goes back through the provider; otherwise the refund is recorded and you send the money yourself. Each partial refund makes a credit note and a mail to the buyer. The order shows **Partly refunded** until the credit notes add up to what was paid, then it becomes **Refunded**. Refund part needs an invoice: an order without one, such as one paid before 7.1 or while invoices were off, can only be refunded in full. A credit pack order is refunded whole.
 
 A card payment that arrives after its order was cancelled is refunded by the payment plugin.
 

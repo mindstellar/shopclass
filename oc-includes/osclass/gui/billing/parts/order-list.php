@@ -12,6 +12,8 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\billing\DocumentPage;
+use mindstellar\billing\DocumentStore;
 use mindstellar\billing\gateway\CashOnDeliveryGateway;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
@@ -55,6 +57,7 @@ $col = array(
     'status'  => _m('Status'),
 );
 $currencies = CurrencyService::make();
+$documents  = DocumentStore::forOrders(array_map(static fn (Order $o): int => $o->getId(), $orders));
 ?>
 <div class="oe-scroll">
 <table class="oe-table">
@@ -101,7 +104,10 @@ $currencies = CurrencyService::make();
                     echo osc_esc_html($word); ?>
                 </span>
                 <?php if (Receipts::available($order)) { ?>
-                    <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(_m('Invoice')); ?></a>
+                    <a href="<?php echo osc_esc_html(Receipts::url($order->getId())); ?>"><?php echo osc_esc_html(isset($documents[$order->getId()]) ? _m('Receipt') : _m('Invoice')); ?></a>
+                <?php } ?>
+                <?php foreach ($documents[$order->getId()] ?? array() as $document) { ?>
+                    <a href="<?php echo osc_esc_html(DocumentPage::url($document)); ?>"><?php echo osc_esc_html($document->number); ?></a>
                 <?php } ?>
                 <?php if ($order->buyerMayCancel()) { ?>
                     <form class="oe-inline-form nocsrf" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>">

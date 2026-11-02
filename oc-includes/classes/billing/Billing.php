@@ -17,6 +17,7 @@ use mindstellar\billing\event\OrderFailed;
 use mindstellar\billing\event\OrderPaid;
 use mindstellar\boot\CoreServices;
 use mindstellar\database\Db;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -222,6 +223,8 @@ final class Billing
                     $order->getId()
                 );
             }
+            // Committed with the paid status, so a request that dies before the invoice still leaves the job.
+            Invoices::queueForPaid($order);
 
             return true;
         });
@@ -251,7 +254,17 @@ final class Billing
     public static function deliver(Order $order): bool
     {
         $collected = false;
-        if (!OrderStore::deliver($order->getId(), $collected)) {
+        $delivered = Db::transaction(static function () use ($order, &$collected): bool {
+            if (!OrderStore::deliver($order->getId(), $collected)) {
+                return false;
+            }
+            if ($collected) {
+                Invoices::queueForPaid($order);
+            }
+
+            return true;
+        });
+        if (!$delivered) {
             return false;
         }
         if ($collected) {
@@ -713,10 +726,13 @@ final class Billing
         for ($try = 0; $try < 2; $try++) {
             try {
                 $note = DocumentStore::atomic(static function () use ($draft, $lines, $restock, $order, &$closed) {
+                    // Order row first, then stock, then the note's counter, as refund() does.
                     $closed = false;
-                    $note   = Invoices::storeNote($draft);
-                    if (!$note instanceof Document) {
-                        return $note;
+                    if (DocumentStore::lockOrder($order->getId()) === null) {
+                        return null;
+                    }
+                    if (DocumentStore::refundedTotal($order->getId()) !== $draft['refunded']) {
+                        return false;
                     }
                     if ($lines !== null && $lines !== array()) {
                         OrderStock::releaseLines($order->getId(), $lines, $restock);
@@ -725,6 +741,10 @@ final class Billing
                     if ((int) $draft['refunded'] + (int) $draft['amount'] >= $order->getAmount() && OrderStore::refund($order->getId())) {
                         $closed = true;
                         OrderStock::release($order->getId());
+                    }
+                    $note = Invoices::storeNote($draft);
+                    if (!$note instanceof Document) {
+                        throw new RuntimeException('credit note not stored');
                     }
 
                     return $note;

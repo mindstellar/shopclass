@@ -223,7 +223,8 @@ public function refundPart(Order $order, int $amount, string $key): CallbackResu
 
 Core checks the amount against what is left to refund and holds the order's refund lock. On
 `refunded()` or `refundPending()` it issues the credit note with your refund id; on `ignored()` it
-changes nothing. The order becomes refunded when the credit notes reach the paid total, so a full
+changes nothing. Throw when the outcome is unknown, such as a timeout or a 5xx: the key stays open,
+so the admin's retry sends the same key. The order becomes refunded when the credit notes reach the paid total, so a full
 refund webhook that arrives later adds only the remainder. Guard the `implements` with
 `interface_exists()` if your plugin must run on older cores.
 

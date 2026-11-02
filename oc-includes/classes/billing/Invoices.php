@@ -52,20 +52,21 @@ final class Invoices
     }
 
     /**
-     * Issue the invoice of a paid order, once. A second call gives the stored invoice.
+     * Issue the invoice of a paid order, once. A second call gives the stored invoice, even with
+     * invoices switched off since.
      *
      * @return Document|null null when the order takes none: unpaid, free, or invoices are off
      * @throws Throwable when composing or storing fails; issueOrQueue() catches it
      */
     public static function issue(Order $order): ?Document
     {
-        $order = OrderStore::find($order->getId());
-        if ($order === null || !self::invoiceable($order)) {
-            return null;
-        }
         $existing = DocumentStore::invoiceOf($order->getId());
         if ($existing !== null) {
             return $existing;
+        }
+        $order = OrderStore::find($order->getId());
+        if ($order === null || !self::invoiceable($order)) {
+            return null;
         }
 
         for ($try = 0; $try < 2; $try++) {
@@ -73,12 +74,16 @@ final class Invoices
             $amount = $order->getAmount();
             $result = DocumentStore::atomic(static function () use ($order, $data, $amount) {
                 $locked = DocumentStore::lockOrder($order->getId());
-                if ($locked === null || !self::invoiceable($locked)) {
+                if ($locked === null) {
                     return null;
                 }
+                // Checked again under the lock: a webhook and the retry job may issue at once.
                 $existing = DocumentStore::invoiceOf($locked->getId());
                 if ($existing !== null) {
                     return $existing;
+                }
+                if (!self::invoiceable($locked)) {
+                    return null;
                 }
                 if ($locked->getAmount() !== $amount) {
                     return false;
@@ -107,36 +112,6 @@ final class Invoices
             self::logFailure('invoice', $order->getId(), $e);
             self::queue($order->getId());
         }
-    }
-
-    /**
-     * Issue a credit note against the order's invoice for an amount and, optionally, item lines.
-     *
-     * @param Order          $order
-     * @param int            $amount      Micros, at most what is left to refund
-     * @param array<int,int> $lines       Item line id => units returned with this note
-     * @param string         $reason      Plain text
-     * @param string|null    $providerRef The provider's refund id
-     * @param array<int,int> $restock     Item line id => units put back in stock
-     *
-     * @return Document|null null when the order has no invoice, or the amount or a line is more
-     *                       than is left to refund
-     * @throws Throwable when composing or storing fails
-     */
-    public static function creditNote(Order $order, int $amount, array $lines, string $reason, ?string $providerRef, array $restock): ?Document
-    {
-        for ($try = 0; $try < 2; $try++) {
-            $draft = self::draftNote($order->getId(), $amount, $lines, $reason, $providerRef, $restock);
-            if ($draft === null) {
-                return null;
-            }
-            $result = DocumentStore::atomic(static fn () => self::storeNote($draft));
-            if ($result !== false) {
-                return $result;
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -276,30 +251,6 @@ final class Invoices
         if ($draft !== null && DocumentStore::atomic(static fn () => self::storeNote($draft)) === false) {
             throw new RuntimeException('credit note changed while it was issued');
         }
-    }
-
-    /**
-     * The document's printable page.
-     */
-    public static function url(Document $document): string
-    {
-        return osc_core_url('billing_document', array('id' => $document->id));
-    }
-
-    /**
-     * Whether a visitor may see a document: an admin, or the order's buyer.
-     */
-    public static function canView(Document $document, int $userId, bool $isAdmin): bool
-    {
-        if ($isAdmin) {
-            return true;
-        }
-        if ($userId < 1) {
-            return false;
-        }
-        $order = OrderStore::find($document->orderId);
-
-        return $order !== null && $order->getUserId() === $userId;
     }
 
     /**
@@ -642,6 +593,17 @@ final class Invoices
     private static function textLines(string $text): array
     {
         return array_values(array_filter(array_map('trim', explode("\n", str_replace("\r\n", "\n", $text))), static fn (string $l): bool => $l !== ''));
+    }
+
+    /**
+     * Queue the job that issues the order's invoice. Called inside the paid write, so a paid order
+     * always has the job even when the request dies before the invoice is issued.
+     */
+    public static function queueForPaid(Order $order): void
+    {
+        if (self::enabled() && $order->getAmount() > 0) {
+            self::queue($order->getId());
+        }
     }
 
     private static function queue(int $orderId): void

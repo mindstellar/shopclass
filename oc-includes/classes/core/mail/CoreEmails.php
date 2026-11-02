@@ -19,8 +19,8 @@ namespace mindstellar\mail;
 use Admin;
 use Item;
 use mindstellar\billing\Document;
+use mindstellar\billing\DocumentPage;
 use mindstellar\billing\DocumentStore;
-use mindstellar\billing\Invoices;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
@@ -2217,7 +2217,7 @@ final class CoreEmails
      */
     private static function noteWords(Document $note): array
     {
-        $url = Invoices::url($note);
+        $url = DocumentPage::url($note);
 
         return array(
             '{CREDIT_NOTE_NUMBER}' => osc_esc_html($note->number),

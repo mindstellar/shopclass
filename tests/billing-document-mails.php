@@ -21,8 +21,8 @@ require_once __DIR__ . '/lib/api-admin-kit.php';
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
 use mindstellar\billing\CheckoutIntent;
+use mindstellar\billing\DocumentPage;
 use mindstellar\billing\DocumentStore;
-use mindstellar\billing\Invoices;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\OrderStore;
@@ -162,7 +162,7 @@ $sent    = $mails();
 $receipt = $ofType($sent, 'Your order');
 check('an invoice was issued', $invoice !== null);
 check('the receipt names its number', count($receipt) === 1 && str_contains($receipt[0]['body'], $invoice->number));
-check('and links it', str_contains($receipt[0]['body'], 'href="' . Invoices::url($invoice) . '"'));
+check('and links it', str_contains($receipt[0]['body'], 'href="' . DocumentPage::url($invoice) . '"'));
 
 harness_section('a part refund sends one mail');
 $tee = 0;
@@ -176,7 +176,7 @@ $note = array_values(array_filter(DocumentStore::forOrder($order->getId()), stat
 $sent = $mails();
 check('one note', count($note) === 1);
 check('one part refund mail to the buyer', count($sent) === 1 && $sent[0]['to'] === 'tom@example.test' && str_contains($sent[0]['subject'], 'Part of your order'));
-check('with the note number and link', str_contains($sent[0]['body'], $note[0]->number) && str_contains($sent[0]['body'], 'href="' . Invoices::url($note[0]) . '"') && str_contains($sent[0]['body'], 'We refunded'));
+check('with the note number and link', str_contains($sent[0]['body'], $note[0]->number) && str_contains($sent[0]['body'], 'href="' . DocumentPage::url($note[0]) . '"') && str_contains($sent[0]['body'], 'We refunded'));
 $orderId = $order->getId();
 Receipts::afterDocumentIssued($note[0]->id, $orderId, 'credit_note');
 pin('a replay sends nothing', [], $mails());
@@ -201,7 +201,7 @@ $last  = end($notes);
 pin('three notes', 3, count($notes));
 pin('no part refund mail for it', [], $ofType($sent, 'Part of'));
 $ref = $ofType($sent, 'refunded');
-check('the refunded mail goes once and links the last note', count($ref) === 1 && str_contains($ref[0]['body'], 'href="' . Invoices::url($last) . '"') && str_contains($ref[0]['body'], $last->number));
+check('the refunded mail goes once and links the last note', count($ref) === 1 && str_contains($ref[0]['body'], 'href="' . DocumentPage::url($last) . '"') && str_contains($ref[0]['body'], $last->number));
 
 harness_section('a closing part refund sends no part mail');
 $order2 = $make();

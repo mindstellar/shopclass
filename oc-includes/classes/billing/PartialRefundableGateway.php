@@ -26,8 +26,9 @@ interface PartialRefundableGateway extends RefundableGateway
      * Return CallbackResult::refunded() or CallbackResult::refundPending() with this order's id
      * once the provider has accepted it, with the provider's refund id as the external ref; core
      * then issues the credit note. Return CallbackResult::ignored() with a short reason when it
-     * refused; core changes nothing. Send $key as the provider's idempotency key, so a retry of
-     * the same refund is not paid twice.
+     * refused; core changes nothing. Throw when the outcome is unknown, such as a timeout or a 5xx:
+     * the key stays open and the retry sends it again. Send $key as the provider's idempotency
+     * key, so a retry of the same refund is not paid twice.
      *
      * @param Order  $order  A paid order of this gateway
      * @param int    $amount Micros in the order's currency, at most what is left to refund

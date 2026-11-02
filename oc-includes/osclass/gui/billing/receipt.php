@@ -16,9 +16,11 @@ if (!defined('ABS_PATH')) {
  * A printable payment receipt: a whole page of its own, so it prints the same under any
  * theme and in the admin.
  *
- * Expects $receipt (Receipts::vars()), $backUrl and $backLabel. Every value is escaped here.
+ * Expects $receipt (Receipts::vars()), $backUrl and $backLabel, and $documents (the order's
+ * invoice and credit notes). Every value is escaped here.
  *
  * @var array<string,mixed> $receipt
+ * @var \mindstellar\billing\Document[] $documents
  * @var string              $backUrl
  * @var string              $backLabel
  */
@@ -66,6 +68,10 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
 <div class="rc-wrap">
     <div class="rc-tools">
         <a href="<?php echo osc_esc_html($backUrl); ?>"><?php echo osc_esc_html($backLabel); ?></a>
+        <?php foreach ($documents ?? array() as $document) { ?>
+            <a href="<?php echo osc_esc_html(\mindstellar\billing\DocumentPage::url($document)); ?>"><?php
+                echo osc_esc_html(sprintf($document->isCreditNote() ? __('Credit note %s') : __('Invoice %s'), $document->number)); ?></a>
+        <?php } ?>
         <button type="button" class="rc-print" onclick="window.print()"><?php echo osc_esc_html(__('Print / Save as PDF')); ?></button>
     </div>
     <main class="rc-paper">

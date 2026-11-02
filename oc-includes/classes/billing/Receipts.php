@@ -51,6 +51,9 @@ final class Receipts
     /** Job kind of the mail for one credit note that leaves part of an order's money unrefunded. */
     public const MAIL_PART_REFUNDED = 'part_refunded';
 
+    /** Job kind of the mail with an invoice issued after the receipt went out. */
+    public const MAIL_INVOICE = 'invoice';
+
     /** Gateways that leave an order unpaid until the shop hears the money came in. */
     private const HELD_GATEWAYS = array('offline', 'cod');
 
@@ -310,8 +313,9 @@ final class Receipts
     }
 
     /**
-     * `billing_document_issued`: tell the buyer about a credit note that does not close the order.
-     * The note that closes it is linked from the refunded mail.
+     * `billing_document_issued`: tell the buyer about a credit note that does not close the order,
+     * or an invoice issued after the receipt went out. The note that closes it is linked from the
+     * refunded mail.
      *
      * @param int    $documentId
      * @param int    $orderId
@@ -321,13 +325,14 @@ final class Receipts
      */
     public static function afterDocumentIssued($documentId, $orderId = 0, $type = ''): void
     {
-        if ($type !== Document::CREDIT_NOTE) {
+        if ($type !== Document::CREDIT_NOTE && $type !== Document::INVOICE) {
             return;
         }
         $documentId = (int) $documentId;
         $orderId    = (int) $orderId;
+        $kind       = $type === Document::INVOICE ? self::MAIL_INVOICE : self::MAIL_PART_REFUNDED;
         try {
-            if (self::sendPartRefunded($documentId)) {
+            if ($kind === self::MAIL_INVOICE ? self::sendLateInvoice($documentId) : self::sendPartRefunded($documentId)) {
                 return;
             }
         } catch (Throwable $e) {
@@ -337,12 +342,52 @@ final class Receipts
         try {
             osc_job_enqueue(
                 self::MAIL_JOB,
-                array('order_id' => $orderId, 'kind' => self::MAIL_PART_REFUNDED, 'doc' => $documentId),
+                array('order_id' => $orderId, 'kind' => $kind, 'doc' => $documentId),
                 array('unique_key' => 'order:' . $orderId . ':doc:' . $documentId, 'delay' => 60)
             );
         } catch (Throwable $e) {
             self::logFailure($orderId, $e);
         }
+    }
+
+    /**
+     * Send the invoice link when the invoice was issued after the receipt mail went out without it.
+     *
+     * @param int $documentId
+     *
+     * @return bool true when the mail went, or there is nothing to send; false to try again
+     */
+    public static function sendLateInvoice(int $documentId): bool
+    {
+        $document = DocumentStore::find($documentId);
+        if ($document === null || $document->isCreditNote()) {
+            return true;
+        }
+        $order = OrderStore::find($document->orderId);
+        if ($order === null || $order->meta(OrderStore::RECEIPT_SENT) === null || $order->meta('_mail_' . self::MAIL_INVOICE) !== null) {
+            return true;
+        }
+        $vars = self::vars($order);
+        if ($vars['email'] === '') {
+            return true;
+        }
+        $html = '<p>' . osc_esc_html(sprintf(__('The invoice for your order %1$s from %2$s is ready.'), $vars['label'], $vars['site'])) . '</p>'
+                . '<p><a href="' . osc_esc_html(DocumentPage::url($document)) . '">'
+                . osc_esc_html(sprintf(__('View invoice %s'), $document->number)) . '</a></p>';
+        $params = array(
+            'from'      => _osc_from_email_aux(),
+            'from_name' => osc_page_title(),
+            'to'        => $vars['email'],
+            'to_name'   => $vars['name'],
+            'subject'   => sprintf(__('Invoice %1$s from %2$s'), $document->number, $vars['site']),
+            'body'      => $html,
+        );
+        $sent = self::$mailer !== null ? (bool) (self::$mailer)($params) : (bool) osc_sendMail($params);
+        if ($sent) {
+            OrderStore::markMailSent($order->getId(), self::MAIL_INVOICE);
+        }
+
+        return $sent;
     }
 
     /**
@@ -467,7 +512,7 @@ final class Receipts
         $invoice = DocumentStore::invoiceOf($order->getId());
         if ($invoice !== null) {
             $vars['invoice_number'] = $invoice->number;
-            $vars['invoice_url']    = Invoices::url($invoice);
+            $vars['invoice_url']    = DocumentPage::url($invoice);
         }
 
         $params = array(
@@ -507,6 +552,7 @@ final class Receipts
             $sent = match ($kind) {
                 self::MAIL_PART_SHIPPED  => self::sendPartShipped((int) $job->get('order_id'), (int) $job->get('n')),
                 self::MAIL_PART_REFUNDED => self::sendPartRefunded((int) $job->get('doc')),
+                self::MAIL_INVOICE       => self::sendLateInvoice((int) $job->get('doc')),
                 default                  => self::sendNotice($kind, (int) $job->get('order_id')),
             };
             if (!$sent) {
@@ -569,7 +615,8 @@ final class Receipts
      */
     public static function render(Order $order, string $backUrl, string $backLabel): void
     {
-        $receipt = self::vars($order);
+        $receipt   = self::vars($order);
+        $documents = DocumentStore::forOrder($order->getId());
         require ABS_PATH . 'oc-includes/osclass/gui/billing/receipt.php';
     }
 

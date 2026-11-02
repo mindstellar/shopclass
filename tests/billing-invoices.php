@@ -20,7 +20,9 @@ require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 
 use mindstellar\billing\Billing;
+use mindstellar\billing\CallbackResult;
 use mindstellar\billing\Document;
+use mindstellar\billing\DocumentPage;
 use mindstellar\billing\DocumentStore;
 use mindstellar\billing\event\DocumentComposing;
 use mindstellar\billing\gateway\CashOnDeliveryGateway;
@@ -85,6 +87,7 @@ $goods = static function (string $gateway = 'offline') use ($sue, $m): Order {
     return $order;
 };
 $itemLine = static fn (Order $o): int => OrderLineStore::itemLines($o->getId())[0]['id'];
+$refundPart = static fn (Order $o, int $amount, array $lines, string $reason): CallbackResult => Billing::refundPart(OrderStore::find($o->getId()), $amount, $lines, $reason, false, false);
 
 harness_section('a paid goods order gets one invoice');
 $paid = $goods();
@@ -103,12 +106,13 @@ pin('the item line keeps its line id, options and sku', [$itemLine($paid), 'Size
 pin('display text is frozen', [$m(27.5), true], [$data['totals']['total'] ?? null, ($data['totals']['total_text'] ?? '') !== '']);
 pin('it is titled Invoice, has no refund and no invoice ref', ['Invoice', null, null], [$data['wording']['title'] ?? null, array_key_exists('refund', $data) ? $data['refund'] : 'x', array_key_exists('ref_invoice', $data) ? $data['ref_invoice'] : 'x']);
 pin('the hook heard it once', [[$paid->getId(), Document::INVOICE]], $issued);
+pin('the paid write queued the invoice job too', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . Invoices::JOB . "' AND s_unique = 'order:" . $paid->getId() . "'")->fetch_row()[0]);
 
 harness_section('a replayed webhook issues nothing more');
 $issued = [];
 check('markPaid again does not settle', !Billing::markPaid($paid, 'bank-1'));
-pin('still one invoice', 1, $count($paid->getId(), Document::INVOICE));
 pin('issue() again gives the same invoice', $inv?->id, Invoices::issue(OrderStore::find($paid->getId()))?->id);
+pin('still one invoice', 1, $count($paid->getId(), Document::INVOICE));
 pin('and the hook stays quiet', [], $issued);
 
 harness_section('cash on delivery is invoiced when delivered');
@@ -188,31 +192,43 @@ try {
 }
 check('while the plugin still throws, the job throws to retry', $threw);
 $events->remove(DocumentComposing::class, $boom);
+OrderStore::markReceiptSent($late->getId());
+$mails           = [];
+Receipts::$mailer = static function (array $params) use (&$mails): bool {
+    $mails[] = $params;
+
+    return true;
+};
 $handler(new \mindstellar\job\Job([], ['order_id' => $late->getId()]));
 pin('the retry issues it', 1, $count($late->getId(), Document::INVOICE));
+$lateInv = DocumentStore::invoiceOf($late->getId());
+pin('the receipt went without it, so the buyer gets its link', [1, true], [count($mails), $lateInv !== null && str_contains($mails[0]['body'] ?? '', 'href="' . DocumentPage::url($lateInv) . '"')]);
 $handler(new \mindstellar\job\Job([], ['order_id' => $late->getId()]));
 pin('a second run issues no other', 1, $count($late->getId(), Document::INVOICE));
+pin('and sends no second mail', 1, count($mails));
+Receipts::$mailer = static fn (array $params): bool => true;
 
 harness_section('credit notes take tax in proportion');
 $part  = $goods();
 Billing::markPaid($part);
 $pinv  = DocumentStore::invoiceOf($part->getId());
 $line  = $itemLine($part);
-pin('an amount above what was paid is refused', null, Invoices::creditNote(OrderStore::find($part->getId()), $m(30), [], 'Too much', null, []));
-pin('more units than the line has are refused', null, Invoices::creditNote(OrderStore::find($part->getId()), $m(10), [$line => 3], 'Too many', null, []));
+pin('an amount above what was paid is refused', CallbackResult::OUTCOME_IGNORED, $refundPart($part, $m(30), [], 'Too much')->getOutcome());
+pin('more units than the line has are refused', CallbackResult::OUTCOME_IGNORED, $refundPart($part, $m(10), [$line => 3], 'Too many')->getOutcome());
 $issued = [];
-$note1 = Invoices::creditNote(OrderStore::find($part->getId()), $m(10), [$line => 1], 'Damaged', 're_1', [$line => 1]);
+pin('a part refund is recorded', CallbackResult::OUTCOME_REFUNDED, $refundPart($part, $m(10), [$line => 1], 'Damaged')->getOutcome());
+$note1 = DocumentStore::forOrder($part->getId())[1] ?? null;
 pin('a credit note in its own series for the amount', ['CN-' . date('Y') . '-00001', $m(10)], [$note1?->number, $note1?->total]);
 $n1 = $note1?->data ?? [];
 pin('it refers to the invoice', ['number' => $pinv?->number, 'date' => $pinv?->date], $n1['ref_invoice'] ?? null);
-pin('it keeps the reason, provider ref and restock', ['reason' => 'Damaged', 'provider_ref' => 're_1', 'restocked' => [$line => 1]], $n1['refund'] ?? null);
+pin('it keeps the reason, and no provider ref when only recorded', ['Damaged', null], [$n1['refund']['reason'] ?? null, array_key_exists('provider_ref', $n1['refund'] ?? []) ? $n1['refund']['provider_ref'] : 'x']);
 $taxOf = static fn (array $d): array => array_values(array_map(static fn (array $l): int => $l['amount'], array_filter($d['lines'] ?? [], static fn (array $l): bool => $l['kind'] === 'tax')));
 pin('tax is 2.50 × 10/27.50, rounded to cents', [$m(0.91)], $taxOf($n1));
 pin('the returned unit is listed with its line id', [[$line, 1]], array_values(array_map(static fn (array $l): array => [$l['line_id'], $l['qty']], array_filter($n1['lines'] ?? [], static fn (array $l): bool => $l['kind'] === 'item'))));
 pin('it is titled Credit note', 'Credit note', $n1['wording']['title'] ?? null);
 pin('the hook heard it', [[$part->getId(), Document::CREDIT_NOTE]], $issued);
 pin('the refunded qty counts it', 1, DocumentStore::refundedQty($part->getId())[$line] ?? 0);
-pin('a second unit past the first plus two is refused', null, Invoices::creditNote(OrderStore::find($part->getId()), $m(1), [$line => 2], 'x', null, []));
+pin('a second unit past the first plus two is refused', CallbackResult::OUTCOME_IGNORED, $refundPart($part, $m(1), [$line => 2], 'x')->getOutcome());
 pin('the order is not refunded yet', Order::STATUS_PAID, OrderStore::find($part->getId())?->getStatus());
 
 harness_section('a full refund issues the remainder');
@@ -224,7 +240,7 @@ pin('it lists the unit not yet refunded', [[$line, 1]], array_values(array_map(s
 pin('the notes add up to the paid amount', $m(27.5), DocumentStore::refundedTotal($part->getId()));
 check('a replayed refund does nothing', !Billing::refund(OrderStore::find($part->getId())));
 pin('still two notes', 2, $count($part->getId(), Document::CREDIT_NOTE));
-pin('nothing is left to refund', null, Invoices::creditNote(OrderStore::find($part->getId()), $m(1), [], 'x', null, []));
+pin('nothing is left to refund', CallbackResult::OUTCOME_IGNORED, $refundPart($part, $m(1), [], 'x')->getOutcome());
 
 harness_section('a full refund with no earlier note mirrors the invoice');
 $whole = $goods();
@@ -235,6 +251,24 @@ pin('one note for the whole amount', [1, $m(27.5)], [count($wn), $wn[0]->total ?
 pin('with the invoice\'s lines', array_map(static fn (array $l): array => [$l['kind'], $l['qty'], $l['amount']], DocumentStore::invoiceOf($whole->getId())?->data['lines'] ?? []), array_map(static fn (array $l): array => [$l['kind'], $l['qty'], $l['amount']], $wn[0]->data['lines'] ?? []));
 pin('and no reason', null, $wn[0]->data['refund']['provider_ref'] ?? null);
 
+harness_section('switching invoices off still finishes an invoiced order');
+$offRef = $goods();
+Billing::markPaid($offRef);
+$offInv = DocumentStore::invoiceOf($offRef->getId());
+$events->listen(DocumentComposing::class, $boom);
+check('the refund goes through while composing throws', Billing::refund(OrderStore::find($offRef->getId())));
+$events->remove(DocumentComposing::class, $boom);
+pin('no credit note yet', 0, $count($offRef->getId(), Document::CREDIT_NOTE));
+Preference::getInstance()->set('billing_invoice_on', '0');
+scratchdb_forget_cache();
+osc_reset_preferences();
+pin('issue() still gives the stored invoice', $offInv?->id, Invoices::issue(OrderStore::find($offRef->getId()))?->id);
+$handler(new \mindstellar\job\Job([], ['order_id' => $offRef->getId()]));
+pin('the job issues the missing credit note', [1, $m(27.5)], [$count($offRef->getId(), Document::CREDIT_NOTE), DocumentStore::refundedTotal($offRef->getId())]);
+Preference::getInstance()->set('billing_invoice_on', '1');
+scratchdb_forget_cache();
+osc_reset_preferences();
+
 harness_section('a credit pack refund');
 check('the pack refunds', Billing::refund(OrderStore::find($pack->getId())));
 pin('one note for the pack', [1, $m(5)], [$count($pack->getId(), Document::CREDIT_NOTE), DocumentStore::refundedTotal($pack->getId())]);
@@ -242,11 +276,11 @@ pin('one note for the pack', [1, $m(5)], [$count($pack->getId(), Document::CREDI
 harness_section('orders without an invoice');
 $old = OrderStore::create($sue, 'offline', $m(8), 'USD', 0, ['_kind' => Order::KIND_GOODS]);
 OrderStore::settle($old->getId(), Order::STATUS_PAID, 'old-ref');
-pin('a credit note needs an invoice', null, Invoices::creditNote(OrderStore::find($old->getId()), $m(1), [], 'x', null, []));
+pin('a part refund needs an invoice', CallbackResult::OUTCOME_IGNORED, $refundPart($old, $m(1), [], 'x')->getOutcome());
 check('an old order still refunds', Billing::refund(OrderStore::find($old->getId())));
 pin('with no credit note', 0, count($docs($old->getId())));
 
 harness_section('who may view');
-pin('the buyer and an admin may, another user may not', [true, true, false, false], [Invoices::canView($inv, $sue, false), Invoices::canView($inv, 0, true), Invoices::canView($inv, $sue + 99, false), Invoices::canView($inv, 0, false)]);
+pin('the buyer and an admin may, another user may not', [true, true, false, false], [DocumentPage::canView($inv, $sue, false), DocumentPage::canView($inv, 0, true), DocumentPage::canView($inv, $sue + 99, false), DocumentPage::canView($inv, 0, false)]);
 
 exit(harness_result());

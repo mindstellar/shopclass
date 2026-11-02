@@ -4338,6 +4338,10 @@ msgstr ""
 msgid "Credit note"
 msgstr ""
 
+#: oc-includes/osclass/gui/billing/receipt.php
+msgid "Credit note %s"
+msgstr ""
+
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid "Credit note number prefix"
 msgstr ""
@@ -7296,6 +7300,14 @@ msgstr ""
 #: oc-includes/classes/billing/DocumentPage.php
 #: oc-includes/classes/billing/Invoices.php
 msgid "Invoice"
+msgstr ""
+
+#: oc-includes/classes/billing/Receipts.php
+msgid "Invoice %1$s from %2$s"
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/receipt.php
+msgid "Invoice %s"
 msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
@@ -14806,6 +14818,10 @@ msgstr ""
 
 #: oc-includes/classes/market/Installer.php
 msgid "The installation directory is not writable."
+msgstr ""
+
+#: oc-includes/classes/billing/Receipts.php
+msgid "The invoice for your order %1$s from %2$s is ready."
 msgstr ""
 
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php

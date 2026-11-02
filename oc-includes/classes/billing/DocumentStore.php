@@ -44,7 +44,9 @@ final class DocumentStore extends Model
 
     /**
      * Number and store a document for an order. The order row is locked first, then the counter,
-     * and both writes share one transaction, so a failure leaves no gap in the series.
+     * and both writes share one transaction, so a failure leaves no gap in the series. A caller that
+     * also moves stock or credits does that before this call: order row, then stock and wallet,
+     * then the counter last.
      *
      * @param string              $type  Document::INVOICE or Document::CREDIT_NOTE
      * @param Order               $order
@@ -93,7 +95,7 @@ final class DocumentStore extends Model
 
     /**
      * Read the order row FOR UPDATE, inside the caller's transaction: always the first lock a
-     * document write takes.
+     * document write takes. Lock order is the order row, then stock and wallet, then the counter.
      */
     public static function lockOrder(int $orderId): ?Order
     {
