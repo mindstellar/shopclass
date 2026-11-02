@@ -23,6 +23,7 @@ use mindstellar\billing\OrderStore;
 use mindstellar\billing\PackageStore;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
+use mindstellar\billing\Shipments;
 use mindstellar\billing\Wallet;
 use mindstellar\boot\CoreServices;
 use mindstellar\currency\Money;
@@ -88,6 +89,18 @@ class CAdminBilling extends AdminSecBaseModel
                 break;
             case ('order_ship'):
                 $this->orderShipPost();
+                break;
+            case ('order_processing'):
+                $this->orderProcessingPost();
+                break;
+            case ('order_shipment'):
+                $this->orderShipmentPost();
+                break;
+            case ('order_shipment_tracking'):
+                $this->orderShipmentTrackingPost();
+                break;
+            case ('order_packed'):
+                $this->orderPackedPost();
                 break;
             case ('order_tracking'):
                 $this->orderTrackingPost();
@@ -198,6 +211,7 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('entries', $this->ledgerForOrder($order->getId()));
         $this->_exportVariableToView('balance', Wallet::balance($order->getUserId()));
         $this->_exportVariableToView('lines', $order->isGoods() ? OrderLineStore::ofOrder($order->getId()) : array());
+        $this->_exportVariableToView('actors', $order->isGoods() ? $this->actorNames($order) : array());
         $this->_exportVariableToView('carriers', $order->isGoods() ? CoreServices::dispatcher()->dispatch(new CarriersListing())->names() : array());
 
         $this->doView('billing/order.php');
@@ -325,6 +339,151 @@ class CAdminBilling extends AdminSecBaseModel
         }
 
         $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * Start processing a paid goods order, or a cash on delivery one that is still unpaid.
+     *
+     * @return void
+     */
+    private function orderProcessingPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        if (OrderStore::process($order->getId())) {
+            osc_add_flash_ok_message(sprintf(_m('Order #%d is being processed'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Only a paid order, or an unpaid cash on delivery one, can start processing'), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * Send a parcel of the quantities posted for each item line. The order is shipped when
+     * nothing is left open, and is processing until then.
+     *
+     * @return void
+     */
+    private function orderShipmentPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        $typed = $this->trackingInput();
+        if ($typed === null) {
+            return;
+        }
+        ['carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url] = $typed;
+
+        $lines = null;
+        if (OrderLineStore::itemLines($order->getId()) !== array()) {
+            $lines = array();
+            foreach (Params::getParamArray('qty') as $lineId => $qty) {
+                if (is_scalar($qty) && (int) $qty > 0) {
+                    $lines[(int) $lineId] = (int) $qty;
+                }
+            }
+            if ($lines === array()) {
+                osc_add_flash_warning_message(_m('Choose how many of at least one item to ship'), 'admin');
+                $this->redirectTo($this->orderUrl($order));
+
+                return;
+            }
+        }
+
+        $n = Shipments::add($order->getId(), $lines, $carrier, $tracking, $url);
+        if ($n === null) {
+            osc_add_flash_warning_message(_m('That parcel could not be sent. The order may have changed, or a quantity is more than is left to ship'), 'admin');
+        } elseif (OrderStore::find($order->getId())?->getStatus() === Order::STATUS_SHIPPED) {
+            osc_add_flash_ok_message(sprintf(_m('Order #%d is marked shipped'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_ok_message(sprintf(_m('Parcel %1$d of order #%2$d is sent'), $n, $order->getId()), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * Correct the carrier and tracking of one parcel.
+     *
+     * @return void
+     */
+    private function orderShipmentTrackingPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        $typed = $this->trackingInput();
+        if ($typed === null) {
+            return;
+        }
+        ['carrier' => $carrier, 'tracking' => $tracking, 'trackingUrl' => $url] = $typed;
+
+        if (Shipments::setTracking($order->getId(), Params::getParamInt('n'), $carrier, $tracking, $url)) {
+            osc_add_flash_ok_message(sprintf(_m('Tracking of order #%d is updated'), $order->getId()), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('That parcel could not be found'), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * Mark an order packed, or clear the mark. A label for staff; the buyer sees nothing.
+     *
+     * @return void
+     */
+    private function orderPackedPost()
+    {
+        osc_csrf_check();
+
+        $order = $this->goodsOrder();
+        if ($order === null) {
+            return;
+        }
+        $on = Params::getParamInt('packed') === 1;
+        if (Shipments::markPacked($order->getId(), $on)) {
+            osc_add_flash_ok_message($on ? _m('The order is marked packed') : _m('The packed mark is removed'), 'admin');
+        } else {
+            osc_add_flash_warning_message(_m('Only an order that can ship can be marked packed'), 'admin');
+        }
+
+        $this->redirectTo($this->orderUrl($order));
+    }
+
+    /**
+     * Who is named in the order's history and parcels, as "admin:4" => "Name".
+     *
+     * @return array<string,string>
+     */
+    private function actorNames(Order $order): array
+    {
+        $names = array();
+        $rows  = array_merge($order->history(), $order->shipments(), array($order->packed() ?? array()));
+        foreach ($rows as $row) {
+            $id = (int) ($row['id'] ?? 0);
+            if (($row['by'] ?? '') === 'admin' && $id > 0 && !isset($names['admin:' . $id])) {
+                $admin = Admin::getInstance()->findByPrimaryKey($id);
+                $name  = is_array($admin) ? trim((string) ($admin['s_name'] ?? '')) : '';
+                if ($name === '' && is_array($admin)) {
+                    $name = (string) ($admin['s_username'] ?? '');
+                }
+                $names['admin:' . $id] = $name !== '' ? $name : sprintf(_m('Admin #%d'), $id);
+            }
+        }
+
+        return $names;
     }
 
     /**
