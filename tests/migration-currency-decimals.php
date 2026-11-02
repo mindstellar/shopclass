@@ -10,7 +10,7 @@
 
 /**
  * Migration 0091 adds t_currency.i_decimals, sets each currency to its ISO 4217 digits, and can
- * run again. A fresh struct.sql install already has the column.
+ * run again, keeping a value an admin set. A fresh struct.sql install already has the column.
  *
  * Usage:  php tests/migration-currency-decimals.php
  */
@@ -37,8 +37,10 @@ $mig->up($conn);
 $got = static fn (): array => $admin->query("SELECT pk_c_code, i_decimals FROM {$p}t_currency ORDER BY pk_c_code")->fetch_all(MYSQLI_NUM);
 pin('JPY 0, KWD 3, USD 2', [['JPY', '0'], ['KWD', '3'], ['USD', '2']], $got());
 
-$admin->query("UPDATE {$p}t_currency SET i_decimals = 9");
+$admin->query("UPDATE {$p}t_currency SET i_decimals = 4 WHERE pk_c_code = 'USD'");
+$admin->query("UPDATE {$p}t_currency SET i_decimals = 1 WHERE pk_c_code = 'KWD'");
+$admin->query("UPDATE {$p}t_currency SET i_decimals = 2 WHERE pk_c_code = 'JPY'");
 $mig->up($conn);
-pin('a second run sets the values again and adds no column', [[['JPY', '0'], ['KWD', '3'], ['USD', '2']], 1], [$got(), $cols()]);
+pin('a second run keeps values an admin set, fixes a row left at the default, and adds no column', [[['JPY', '0'], ['KWD', '1'], ['USD', '4']], 1], [$got(), $cols()]);
 
 exit(harness_result());

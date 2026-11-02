@@ -20,6 +20,9 @@ that many decimals everywhere: listings, cart, orders, receipts, e-mails and the
 amount still drops its decimals ("$12", not "$12.00"). The language's own decimal setting no
 longer changes money.
 
+Changing Decimals on a currency in use changes how its prices show at once. Saved prices keep
+their full value; a price saved after the change is rounded to the new number of decimals.
+
 A single-country site should offer exactly one. Every extra currency is another
 decision on the publish form and another thing to compare in search results.
 

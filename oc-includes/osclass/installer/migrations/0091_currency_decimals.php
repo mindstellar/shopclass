@@ -33,11 +33,15 @@ return new class () implements MigrationInterface {
         if (!$this->columnExists($conn, $table, 'i_decimals')) {
             $conn->execute('ALTER TABLE ' . $table . ' ADD COLUMN i_decimals TINYINT UNSIGNED NOT NULL DEFAULT 2');
         }
-        foreach ($conn->select('SELECT pk_c_code FROM ' . $table) as $row) {
-            $conn->execute(
-                'UPDATE ' . $table . ' SET i_decimals = ? WHERE pk_c_code = ?',
-                array(CurrencyCode::decimals((string) $row['pk_c_code']), $row['pk_c_code'])
-            );
+        // Only rows still at the column default change, so a re-run keeps an admin's own value.
+        foreach ($conn->select('SELECT pk_c_code FROM ' . $table . ' WHERE i_decimals = 2') as $row) {
+            $iso = CurrencyCode::decimals((string) $row['pk_c_code']);
+            if ($iso !== 2) {
+                $conn->execute(
+                    'UPDATE ' . $table . ' SET i_decimals = ? WHERE pk_c_code = ? AND i_decimals = 2',
+                    array($iso, $row['pk_c_code'])
+                );
+            }
         }
     }
 };

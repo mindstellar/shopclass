@@ -190,7 +190,7 @@ curl -X DELETE $API/admin/users/23/sessions/9 -H "Authorization: Bearer $KEY"
 | `POST /admin/categories` | Add one. Needs `translations`. The slug is made from the name. Optional: `parent_id`, `expiration_days`, `price_enabled`, `enabled`. |
 | `PATCH /admin/categories/{id}` | Edit. A new slug keeps the old one redirecting. `apply_to_subcategories` copies the expiry and price setting down. `enabled: false` on a top category takes its subcategories and their listings with it. |
 | `DELETE /admin/categories/{id}` | Delete with its subcategories and their listings. A large one answers `202` with no body and no `Location`: it is hidden now and emptied in the background. Read `GET /admin/categories/{id}` until it answers `404`. |
-| `GET`, `PATCH`, `DELETE /admin/currencies/{code}`, `POST /admin/currencies` | Add, rename or change the symbol of, or delete a currency. A currency a listing uses, or the site default, cannot be deleted (`409`). |
+| `GET`, `PATCH`, `DELETE /admin/currencies/{code}`, `POST /admin/currencies` | Add, rename or change the symbol or `decimals` (0 to 4) of, or delete a currency. A currency a listing uses, or the site default, cannot be deleted (`409`). |
 | `GET`, `PATCH`, `DELETE /admin/custom-fields/{id}`, `POST /admin/custom-fields` | Custom fields: `name`, `type`, `slug`, `required`, `searchable`, `options`, `categories`. Deleting a field deletes its values. |
 | `GET`, `PATCH`, `DELETE /admin/regions/{id}`, `POST /admin/regions` | Regions. `POST` takes `country` and `name`. A `country` that does not exist is a `422` on `/country`. |
 | `GET`, `PATCH`, `DELETE /admin/cities/{id}`, `POST /admin/cities` | Cities. `POST` takes `region_id` and `name`. A `region_id` that does not exist is a `422` on `/region_id`. |
