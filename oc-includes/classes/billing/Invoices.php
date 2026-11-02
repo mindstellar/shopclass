@@ -766,6 +766,23 @@ final class Invoices
     }
 
     /**
+     * What an invoice for this order calls a line's tax code, for pages that show it live.
+     */
+    public static function codeLabel(Order $order): string
+    {
+        $default = __('Tax code');
+        try {
+            $event = new DocumentComposing(array('wording' => array('code_label' => $default)), $order, Document::INVOICE);
+            CoreServices::dispatcher()->dispatch($event);
+            $label = $event->data()['wording']['code_label'] ?? '';
+        } catch (Throwable) {
+            return $default;
+        }
+
+        return is_string($label) && trim($label) !== '' ? trim($label) : $default;
+    }
+
+    /**
      * Let listeners shape the body, then put back the fields they may not change.
      *
      * @param array<string,mixed> $data

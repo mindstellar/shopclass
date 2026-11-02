@@ -257,7 +257,11 @@ final class CartPricer
             }
         }
         if ($fault !== null) {
-            trigger_error('Line tax dropped for this cart: ' . $fault . '.', E_USER_WARNING);
+            static $warned = array();
+            if (!isset($warned[$fault])) {
+                $warned[$fault] = true;
+                trigger_error('Line tax dropped for this cart: ' . $fault . '.', E_USER_WARNING);
+            }
 
             return $none;
         }

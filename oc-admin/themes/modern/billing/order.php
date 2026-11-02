@@ -91,6 +91,7 @@ $shipments  = $order->shipments();
 $history    = $order->history();
 $shippedQty = $order->shippedQty();
 $lineTaxes  = array();
+$codeLabel  = \mindstellar\billing\Invoices::codeLabel($order);
 foreach ($lines as $l) {
     $lt = \mindstellar\billing\OrderLineStore::lineTax($l);
     if ($lt !== null) {
@@ -377,7 +378,7 @@ foreach ($order->getMeta() as $key => $value) {
                                             <br><span class="text-muted"><?php echo osc_esc_html(implode(', ', $options)); ?></span>
                                         <?php } ?>
                                         <?php if (($lineTaxes[(int) $line['id']]['code'] ?? '') !== '') { ?>
-                                            <br><span class="text-muted"><?php echo osc_esc_html(__('Tax code') . ' ' . $lineTaxes[(int) $line['id']]['code']); ?></span>
+                                            <br><span class="text-muted"><?php echo osc_esc_html($codeLabel . ' ' . $lineTaxes[(int) $line['id']]['code']); ?></span>
                                         <?php } ?>
                                     </td>
                                     <td><?php echo osc_esc_html((string) $line['sku']); ?></td>
