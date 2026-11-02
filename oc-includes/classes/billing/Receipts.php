@@ -536,7 +536,7 @@ final class Receipts
      *
      * @return array{logo:string,accent:string}
      */
-    private static function brand(): array
+    public static function brand(): array
     {
         $mail   = (array) osc_apply_filter('mail_layout_vars', array(
             'body'      => '',

@@ -346,6 +346,28 @@ $show = $call('GET', 'account/orders/' . $paidId, null, $tomKey)->body()['data']
 pin('shipped: carrier and tracking, an http tracking link is withheld', ['shipped', 'DHL', 'JD0001', null, true], [$show['status'], $show['shipping']['carrier'], $show['shipping']['tracking'], $show['shipping']['tracking_url'], $show['shipping']['shipped_at'] !== null]);
 pin('and it still matches the schema', [], api_admin_schema_errors('OrderDocument', $call('GET', 'account/orders/' . $paidId, null, $tomKey)));
 
+harness_section('invoices and credit notes');
+pin('an order with no document lists none', [[], '0.00'], (static function () use ($call, $paidId, $tomKey) {
+    $d = $call('GET', 'account/orders/' . $paidId, null, $tomKey)->body()['data'];
+
+    return [$d['documents'], $d['refunded_total']['amount']];
+})());
+$invoiceDoc = \mindstellar\billing\DocumentStore::insert(\mindstellar\billing\Document::INVOICE, OrderStore::find($paidId), 5_000_000, ['v' => 1], '2026-03-01 10:00:00');
+$noteDoc    = \mindstellar\billing\DocumentStore::insert(\mindstellar\billing\Document::CREDIT_NOTE, OrderStore::find($paidId), 2_000_000, ['v' => 1], '2026-03-02 10:00:00');
+$r          = $call('GET', 'account/orders/' . $paidId, null, $tomKey);
+$d          = $r->body()['data'];
+pin('the invoice and the note come oldest first, with a link', [['invoice', $invoiceDoc->number], ['credit_note', $noteDoc->number], true], [
+    [$d['documents'][0]['type'], $d['documents'][0]['number']],
+    [$d['documents'][1]['type'], $d['documents'][1]['number']],
+    str_contains($d['documents'][0]['url'], 'billing_document'),
+]);
+pin('a document carries its total and currency', ['5.00', 'USD', '2.00'], [$d['documents'][0]['total']['amount'], $d['documents'][0]['currency'], $d['documents'][1]['total']['amount']]);
+pin('refunded_total adds the credit notes only', '2.00', $d['refunded_total']['amount']);
+pin('and the order still matches the schema', [], api_admin_schema_errors('OrderDocument', $r));
+$list = $call('GET', 'account/orders', null, $tomKey)->body()['data'];
+$mine = array_values(array_filter($list, static fn ($row) => $row['id'] === $paidId))[0];
+pin('the list carries them too', 2, count($mine['documents']));
+
 harness_section('partial shipments');
 $lineIds = array_map(static fn ($l) => $l['id'], array_values(array_filter(\mindstellar\billing\OrderLineStore::ofOrders([$paidId])[$paidId], static fn ($l) => $l['kind'] === 'item')));
 $none    = $call('GET', 'account/orders/' . $paidId, null, $tomKey)->body()['data'];

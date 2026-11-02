@@ -165,6 +165,28 @@ final class DocumentStore extends Model
     }
 
     /**
+     * The documents of several orders in one query, by order id, oldest first. An order with none has no entry.
+     *
+     * @param int[] $orderIds
+     *
+     * @return array<int,list<Document>>
+     */
+    public static function forOrders(array $orderIds): array
+    {
+        $orderIds = array_values(array_unique(array_map('intval', $orderIds)));
+        if ($orderIds === array()) {
+            return array();
+        }
+        $rows = self::table()->whereIn('fk_i_order_id', $orderIds)->orderBy('pk_i_id')->get();
+        $out  = array();
+        foreach ($rows as $row) {
+            $out[(int) $row['fk_i_order_id']][] = Document::fromRow($row);
+        }
+
+        return $out;
+    }
+
+    /**
      * The order's invoice, or null when it has none.
      */
     public static function invoiceOf(int $orderId): ?Document

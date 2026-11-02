@@ -60539,6 +60539,49 @@
                     "name"
                 ]
             },
+            "OrderInvoice": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "enum": [
+                            "invoice",
+                            "credit_note"
+                        ]
+                    },
+                    "number": {
+                        "type": "string",
+                        "description": "Such as INV-2026-00042 or CN-2026-00003."
+                    },
+                    "date": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "RFC 3339, UTC.",
+                        "format": "date-time"
+                    },
+                    "total": {
+                        "$ref": "#/components/schemas/Amount"
+                    },
+                    "currency": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string",
+                        "description": "The printable page; only the buyer and the admins can open it."
+                    }
+                },
+                "required": [
+                    "type",
+                    "number",
+                    "date",
+                    "total",
+                    "currency",
+                    "url"
+                ],
+                "description": "An invoice or credit note issued for an order."
+            },
             "Order": {
                 "type": "object",
                 "properties": {
@@ -60747,6 +60790,17 @@
                         ],
                         "description": "The printable receipt, once the order is paid."
                     },
+                    "documents": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderInvoice"
+                        },
+                        "description": "The order's invoice and credit notes, oldest first. Empty when none was issued."
+                    },
+                    "refunded_total": {
+                        "$ref": "#/components/schemas/Amount",
+                        "description": "The sum of the credit notes; zero when nothing was refunded through one."
+                    },
                     "can_cancel": {
                         "type": "boolean",
                         "description": "True while the buyer may cancel it: a pending bank transfer or cash on delivery order."
@@ -60778,6 +60832,8 @@
                     "packed_at",
                     "gateway",
                     "receipt_url",
+                    "documents",
+                    "refunded_total",
                     "can_cancel",
                     "pay_instructions",
                     "can_pay"
