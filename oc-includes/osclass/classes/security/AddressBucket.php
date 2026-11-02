@@ -30,13 +30,13 @@ final class AddressBucket
         if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) === false) {
             return $ip;
         }
-        $packed = (string) inet_pton($ip);
         // An IPv4-mapped address (::ffff:a.b.c.d) is that IPv4 client, not a /64.
-        if (str_starts_with($packed, str_repeat("\0", 10) . "\xff\xff")) {
-            return (string) inet_ntop(substr($packed, 12));
+        $v4 = AddressGuard::mappedV4($ip);
+        if ($v4 !== null) {
+            return $v4;
         }
 
-        return (string) inet_ntop(substr($packed, 0, 8) . str_repeat("\0", 8)) . '/64';
+        return (string) inet_ntop(substr((string) inet_pton($ip), 0, 8) . str_repeat("\0", 8)) . '/64';
     }
 
     /**
