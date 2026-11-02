@@ -17,16 +17,16 @@ use mindstellar\billing\CheckoutIntent;
 use mindstellar\billing\DashboardLinkGateway;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
-use mindstellar\billing\RefundableGateway;
+use mindstellar\billing\PartialRefundableGateway;
 use mindstellar\security\SigningKey;
 
 /**
  * A payment gateway that moves no money. The test checkout page plays the provider:
  * it signs a callback and hands it to Billing::handleCallback(), the same entry point
- * core's webhook route uses. It also accepts refunds from the admin order screen, and
+ * core's webhook route uses. It also accepts full and partial refunds from the admin order screen, and
  * links each order to its test checkout page as its dashboard.
  */
-final class TestGateway implements RefundableGateway, DashboardLinkGateway
+final class TestGateway implements PartialRefundableGateway, DashboardLinkGateway
 {
     /** Gateway id stored on every order. */
     public const ID = 'test';
@@ -164,6 +164,28 @@ final class TestGateway implements RefundableGateway, DashboardLinkGateway
         }
 
         return CallbackResult::refunded($order->getId(), 'test_refund_' . $order->getId());
+    }
+
+    /**
+     * Refund part of an order from the admin order screen. The refund id is made from the key,
+     * so a retry of the same refund gives the same id.
+     *
+     * @param Order  $order
+     * @param int    $amount
+     * @param string $key
+     *
+     * @return CallbackResult
+     */
+    public function refundPart(Order $order, int $amount, string $key): CallbackResult
+    {
+        if (!self::enabled()) {
+            return CallbackResult::ignored(__('Test payments are switched off', 'test-gateway'));
+        }
+        if ($order->getGateway() !== self::ID || !$order->isPaid() || $amount < 1 || $amount > $order->getAmount()) {
+            return CallbackResult::ignored(__('Not a paid test order', 'test-gateway'));
+        }
+
+        return CallbackResult::refunded($order->getId(), 'test_refund_' . substr(hash('sha256', $key), 0, 16));
     }
 
     /**
