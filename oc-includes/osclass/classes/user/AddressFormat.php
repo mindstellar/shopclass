@@ -86,6 +86,41 @@ final class AddressFormat
     }
 
     /**
+     * The address lines in the country's order, without name, phone or country: the postcode joins
+     * the city or state next to it, as the post writes it ("10119 Berlin", "TX 73301").
+     *
+     * @param array<string,mixed> $address ADDRESS keys
+     *
+     * @return list<string>
+     */
+    public static function lines(array $address): array
+    {
+        $tokens = array();
+        foreach (self::for((string) ($address['country'] ?? ''))['fields'] as $field) {
+            $value = trim((string) ($address[$field] ?? ''));
+            if ($value !== '') {
+                $tokens[] = array($field, $value);
+            }
+        }
+        $place = static fn (int $i): bool => isset($tokens[$i]) && in_array($tokens[$i][0], array('city', 'state'), true);
+        foreach ($tokens as $i => $token) {
+            if ($token[0] !== 'postcode') {
+                continue;
+            }
+            if ($place($i - 1)) {
+                $tokens[$i - 1][1] .= ' ' . $token[1];
+                unset($tokens[$i]);
+            } elseif ($place($i + 1)) {
+                $tokens[$i + 1][1] = $token[1] . ' ' . $tokens[$i + 1][1];
+                unset($tokens[$i]);
+            }
+            break;
+        }
+
+        return array_values(array_column($tokens, 1));
+    }
+
+    /**
      * What is missing or malformed in a cleaned address: the fields its country needs (when
      * $ships), a typed postcode against the country's pattern, and the phone. Lengths are not checked.
      *

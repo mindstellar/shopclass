@@ -1409,28 +1409,7 @@ function osc_address_text(array $address): string
         $names = array_column((array) osc_get_countries(), 's_name', 'pk_c_code');
     }
     $country = (string) ($address['country'] ?? '');
-    $tokens  = array();
-    foreach (\mindstellar\user\AddressFormat::for($country)['fields'] as $field) {
-        $value = trim((string) ($address[$field] ?? ''));
-        if ($value !== '') {
-            $tokens[] = array($field, $value);
-        }
-    }
-    $place = static fn (int $i): bool => isset($tokens[$i]) && in_array($tokens[$i][0], array('city', 'state'), true);
-    foreach ($tokens as $i => $token) {
-        if ($token[0] !== 'postcode') {
-            continue;
-        }
-        if ($place($i - 1)) {
-            $tokens[$i - 1][1] .= ' ' . $token[1];
-            unset($tokens[$i]);
-        } elseif ($place($i + 1)) {
-            $tokens[$i + 1][1] = $token[1] . ' ' . $tokens[$i + 1][1];
-            unset($tokens[$i]);
-        }
-        break;
-    }
-    $parts = array_column($tokens, 1);
+    $parts   = \mindstellar\user\AddressFormat::lines($address);
     if ($country !== '') {
         $parts[] = (string) ($names[$country] ?? $country);
     }

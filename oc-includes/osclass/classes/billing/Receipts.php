@@ -506,12 +506,13 @@ final class Receipts
             );
         }
         $fulfilment = $order->fulfilment() ?? array();
-        $address    = array();
-        foreach ((array) ($fulfilment['address'] ?? array()) as $key => $part) {
-            if (is_string($part) && trim($part) !== '') {
-                $address[] = $key === 'country' ? self::countryName(trim($part)) : trim($part);
-            }
-        }
+        // Name and phone first, then the lines in the country's own order, then the country.
+        $raw     = array_filter((array) ($fulfilment['address'] ?? array()), 'is_string');
+        $address = array_values(array_filter(array_merge(
+            array(trim((string) ($raw['name'] ?? '')), trim((string) ($raw['phone'] ?? ''))),
+            \mindstellar\user\AddressFormat::lines($raw),
+            array(trim((string) ($raw['country'] ?? '')) === '' ? '' : self::countryName(trim((string) $raw['country'])))
+        ), static fn (string $part): bool => $part !== ''));
         $note    = $order->meta('_note');
         $details = array(
             'lines'        => $lines,

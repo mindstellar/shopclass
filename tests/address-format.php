@@ -72,6 +72,9 @@ pin('two plus signs fail', 'pattern', AddressFormat::phoneProblem('+1+2')[0] ?? 
 pin('letters fail', 'pattern', AddressFormat::phoneProblem('555-CALL-ME')[0] ?? '');
 pin('more than 15 digits fail', 'pattern', AddressFormat::phoneProblem('1234567890123456')[0] ?? '');
 
+pin('lines() writes a German address with the postcode before the city', ['Torstraße 14', '10119 Berlin'], AddressFormat::lines(['country' => 'DE', 'line1' => 'Torstraße 14', 'city' => 'Berlin', 'postcode' => '10119', 'state' => 'ignored']));
+pin('lines() writes a US address with the ZIP after the state', ['1 Main St', 'Austin', 'TX 73301'], AddressFormat::lines(['country' => 'US', 'line1' => '1 Main St', 'city' => 'Austin', 'state' => 'TX', 'postcode' => '73301']));
+
 $data = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/user/AddressFormatData.php');
 check('the generated data keeps its credit to Google and its CC BY 4.0 licence', str_contains($data, 'copyright Google LLC') && str_contains($data, 'https://creativecommons.org/licenses/by/4.0/') && str_contains($data, 'Changed:'));
 check('the data covers about every country', count(\mindstellar\user\AddressFormatData::MAP) > 240);
