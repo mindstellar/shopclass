@@ -67,7 +67,7 @@ final class FakeLinks implements Links
         return 'https://site.test/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
-    public function price(?int $micros, string $symbol): string
+    public function price(?int $micros, string $symbol, ?string $code = null): string
     {
         return $micros === null ? 'Check with seller' : number_format($micros / 1000000, 2) . ' ' . $symbol;
     }

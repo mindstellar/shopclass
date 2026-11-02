@@ -169,7 +169,7 @@ $api = new class () implements \mindstellar\api\serializer\Links {
         return 'https://x.test/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
-    public function price(?int $micros, string $symbol): string
+    public function price(?int $micros, string $symbol, ?string $code = null): string
     {
         return '';
     }

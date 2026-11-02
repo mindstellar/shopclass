@@ -223,6 +223,17 @@ $service->update('USD', null, null, 4);
 pin('an update stores new decimals', 4, $service->decimals('USD'));
 $service->update('USD', 'Renamed dollar', null);
 pin('an update without decimals keeps them', 4, $service->decimals('USD'));
+if (!function_exists('_osc_user_locale_row')) {
+    function _osc_user_locale_row(): array
+    {
+        return ['s_thousands_sep' => ',', 's_dec_point' => '.', 's_currency_format' => '{CURRENCY}{NUMBER}', 'pk_c_code' => 'en_US'];
+    }
+}
+pin(
+    'orders show JPY and KWD with their own decimals',
+    [\mindstellar\currency\Money::display(1234500000, '¥', 0), \mindstellar\currency\Money::display(1234567000, 'KD', 3)],
+    [$service->money(1234500000, 'JPY'), $service->money(1234567000, 'KWD')]
+);
 
 function CurrencyStoreRow(string $code): string
 {

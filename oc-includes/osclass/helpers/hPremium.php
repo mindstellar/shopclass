@@ -258,7 +258,7 @@ function osc_premium_price()
  */
 function osc_premium_formated_price()
 {
-    return osc_format_price(osc_premium_price(), osc_premium_currency_symbol());
+    return osc_format_price(osc_premium_price(), osc_premium_currency_symbol(), osc_premium_currency());
 }
 
 /**

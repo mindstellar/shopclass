@@ -20,8 +20,8 @@ final class Money
     public const MICROS = 1000000;
 
     /**
-     * The decimals a currency shows. With no code it is the site currency; if the lookup fails it
-     * is the ISO 4217 default.
+     * The decimals a currency shows. With no code it is the site currency. With no database set up
+     * (tests, the installer) it is the ISO 4217 default; a failed query still throws.
      */
     public static function decimals(?string $currency = null): int
     {
@@ -33,6 +33,8 @@ final class Money
             }
 
             return CurrencyService::make()->decimals($code);
+        } catch (\mindstellar\database\DbException $e) {
+            throw $e;
         } catch (\Throwable) {
             return CurrencyCode::decimals($code === '' ? 'USD' : $code);
         }

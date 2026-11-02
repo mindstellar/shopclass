@@ -133,7 +133,7 @@ mindstellar\api\serializer\ExtensionMembers::OBJECTS = ["listing","user","catego
 mindstellar\api\serializer\ExtensionMembers::SLUG = "/^[a-z0-9-]+$/D"
 mindstellar\api\serializer\Links::public api(string $path, ?string $version = NULL): string
 mindstellar\api\serializer\Links::public avatar(int $userId): string
-mindstellar\api\serializer\Links::public price(?int $micros, string $symbol): string
+mindstellar\api\serializer\Links::public price(?int $micros, string $symbol, ?string $code = NULL): string
 mindstellar\api\serializer\Links::public user(int $id, string $username): string
 mindstellar\api\serializer\SparseFieldset::public wants(string $member): bool
 mindstellar\api\serializer\ViewContext::ADMIN = "admin"

@@ -161,7 +161,7 @@ final class AddressFormat
             } elseif ($field === 'phone') {
                 $error = self::phoneProblem($value);
             } elseif ($field === 'postcode' && $format['pattern'] !== null && preg_match('/' . $format['pattern'] . '/iu', $value) !== 1) {
-                $error = array('pattern', sprintf(_m('Enter a valid %1$s, such as %2$s.'), mb_strtolower($format['postcode'], 'UTF-8'), $format['example']));
+                $error = array('pattern', sprintf(_m('%1$s should look like %2$s.'), $format['postcode'], $format['example']));
             }
             if ($error !== null) {
                 $out[] = array('pointer' => $at . '/' . $field, 'code' => $error[0], 'message' => $error[1]);

@@ -372,7 +372,7 @@ $kit    = new ApiServices(
             return 'http://localhost/api/' . ($version ?? 'v1') . '/' . $path;
         }
 
-        public function price(?int $micros, string $symbol): string
+        public function price(?int $micros, string $symbol, ?string $code = null): string
         {
             return '';
         }
