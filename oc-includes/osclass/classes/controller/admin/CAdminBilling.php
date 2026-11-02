@@ -16,7 +16,11 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\ListPaging;
 use mindstellar\billing\Billing;
 use mindstellar\billing\CallbackResult;
+use mindstellar\billing\Document;
+use mindstellar\billing\DocumentExport;
+use mindstellar\billing\DocumentStore;
 use mindstellar\billing\event\CarriersListing;
+use mindstellar\billing\Invoices;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\OrderStore;
@@ -117,6 +121,15 @@ class CAdminBilling extends AdminSecBaseModel
             case ('order_refund_gateway'):
                 $this->orderRefundGatewayPost();
                 break;
+            case ('order_refund_part'):
+                $this->orderRefundPartPost();
+                break;
+            case ('documents'):
+                $this->documentsView();
+                break;
+            case ('documents_csv'):
+                $this->documentsCsv();
+                break;
             case ('credits'):
                 $this->creditsView();
                 break;
@@ -175,6 +188,7 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('gateways', OrderStore::knownGateways());
         $this->_exportVariableToView('filters', $filters);
         $this->_exportVariableToView('toShip', $toShip);
+        $this->_exportVariableToView('showDocuments', $this->showDocuments());
         $this->_exportVariableToView('total', $total);
         $this->_exportVariableToView('pageNum', $page);
         $this->_exportVariableToView('perPage', self::PER_PAGE);
@@ -212,6 +226,7 @@ class CAdminBilling extends AdminSecBaseModel
         $this->_exportVariableToView('balance', Wallet::balance($order->getUserId()));
         $this->_exportVariableToView('lines', $order->isGoods() ? OrderLineStore::ofOrder($order->getId()) : array());
         $this->_exportVariableToView('actors', $order->isGoods() ? $this->actorNames($order) : array());
+        $this->exportDocuments($order);
         $this->_exportVariableToView('carriers', $order->isGoods() ? CoreServices::dispatcher()->dispatch(new CarriersListing())->names() : array());
 
         $this->doView('billing/order.php');
@@ -665,6 +680,165 @@ class CAdminBilling extends AdminSecBaseModel
         }
 
         $this->redirectTo($back);
+    }
+
+    /**
+     * What the order page needs for documents and part refunds: the documents, what is left to
+     * refund, and for each item line the units not yet refunded.
+     */
+    private function exportDocuments(Order $order): void
+    {
+        $id      = $order->getId();
+        $docs    = DocumentStore::forOrder($id);
+        $invoice = DocumentStore::invoiceOf($id);
+        $left    = $invoice === null ? 0 : max(0, $invoice->total - DocumentStore::refundedTotal($id));
+        $rows    = array();
+        if ($order->isGoods() && $invoice !== null) {
+            $refunded = DocumentStore::refundedQty($id);
+            foreach (OrderLineStore::itemLines($id) as $line) {
+                $open = (int) $line['qty'] - ($refunded[$line['id']] ?? 0);
+                if ($open > 0) {
+                    $rows[] = array('id' => (int) $line['id'], 'title' => (string) $line['title'], 'open' => $open);
+                }
+            }
+        }
+        $this->_exportVariableToView('documents', $docs);
+        $this->_exportVariableToView('refundLeft', $left);
+        $this->_exportVariableToView('refundRows', $rows);
+        $this->_exportVariableToView('partlyRefunded', $order->isPaid() && $order->getStatus() !== Order::STATUS_REFUNDED && DocumentStore::refundedTotal($id) > 0);
+        $this->_exportVariableToView('partGateway', Billing::partRefundableGateway($order));
+    }
+
+    /**
+     * Refund part of a paid goods order: an amount, units of its lines, or both.
+     *
+     * @return void
+     */
+    private function orderRefundPartPost()
+    {
+        $id   = Params::getParamInt('id');
+        $back = osc_admin_base_url(true) . '?page=billing&action=order&id=' . $id;
+
+        if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
+            $this->redirectTo($back);
+        }
+        osc_csrf_check();
+
+        $order = OrderStore::find($id);
+        if ($order === null || !$order->isGoods()) {
+            osc_add_flash_error_message(_m('That order no longer exists'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=billing');
+        }
+
+        $amount = 0;
+        $typed  = Params::getParamString('amount');
+        if (trim($typed) !== '') {
+            $amount = Money::parse($typed, Money::decimals($order->getCurrency()));
+            if ($amount === null || $amount < 1) {
+                osc_add_flash_error_message(_m('Enter the amount as a number above zero'), 'admin');
+                $this->redirectTo($back);
+            }
+        }
+        $lines = array();
+        foreach (Params::getParamArray('qty') as $lineId => $qty) {
+            if ((int) $lineId > 0 && is_numeric($qty) && (int) $qty > 0) {
+                $lines[(int) $lineId] = (int) $qty;
+            }
+        }
+        $reason = Receipts::plain(Params::getParamString('reason'), 200);
+
+        $result = Billing::refundPart(
+            $order,
+            (int) $amount,
+            $lines,
+            $reason,
+            Params::getParamInt('restock') === 1,
+            Params::getParamInt('via') === 1
+        );
+
+        if ($result->getOutcome() === CallbackResult::OUTCOME_REFUNDED) {
+            osc_add_flash_ok_message(sprintf(_m('Part of order #%d is refunded.'), $order->getId()), 'admin');
+        } elseif ($result->getOutcome() === CallbackResult::OUTCOME_PENDING) {
+            osc_add_flash_info_message(
+                sprintf(_m('The refund was sent. %s'), osc_esc_html($result->getMessage() !== '' ? $result->getMessage() : _m('The credit note is made.'))),
+                'admin'
+            );
+        } else {
+            $reasonText = $result->getMessage() !== '' ? $result->getMessage() : _m('No reason was given');
+            osc_add_flash_error_message(sprintf(_m('The refund was not made: %s'), osc_esc_html($reasonText)), 'admin');
+        }
+
+        $this->redirectTo($back);
+    }
+
+    /**
+     * Whether the Invoices tab shows: invoices are on, or some were issued before they were turned off.
+     */
+    private function showDocuments(): bool
+    {
+        return Invoices::enabled() || DocumentStore::count(array()) > 0;
+    }
+
+    /**
+     * The filters of the Invoices list, read from the request.
+     *
+     * @return array{type:string,from:string,to:string}
+     */
+    private function documentFilters(): array
+    {
+        $day  = static fn (string $v): string => preg_match('/^\d{4}-\d{2}-\d{2}$/', $v) === 1 ? $v : '';
+        $type = Params::getParamString('type');
+
+        return array(
+            'type' => in_array($type, Document::TYPES, true) ? $type : '',
+            'from' => $day(Params::getParamString('from')),
+            'to'   => $day(Params::getParamString('to')),
+        );
+    }
+
+    /**
+     * Invoices and credit notes, newest first, with a date range and a type filter.
+     *
+     * @return void
+     */
+    private function documentsView()
+    {
+        $filters = $this->documentFilters();
+        $page    = ListPaging::page();
+        $docs    = DocumentStore::search($filters, self::PER_PAGE, ListPaging::start($page, self::PER_PAGE));
+
+        $this->_exportVariableToView('documents', $docs);
+        $this->_exportVariableToView('showDocuments', true);
+        $this->_exportVariableToView('filters', $filters);
+        $this->_exportVariableToView('total', DocumentStore::count($filters));
+        $this->_exportVariableToView('pageNum', $page);
+        $this->_exportVariableToView('perPage', self::PER_PAGE);
+
+        $this->doView('billing/documents.php');
+    }
+
+    /**
+     * The same list as a CSV file, every match (not one page).
+     *
+     * @return void
+     */
+    private function documentsCsv()
+    {
+        $this->sendCsv(DocumentExport::csv($this->documentFilters()), 'invoices-' . date('Y-m-d') . '.csv');
+    }
+
+    /**
+     * Send a CSV file and end the request.
+     */
+    protected function sendCsv(string $csv, string $name): void
+    {
+        while (ob_get_level() > 0 && @ob_end_clean()) {
+        }
+        header('Content-Type: text/csv; charset=utf-8');
+        header('Content-Disposition: attachment; filename="' . $name . '"');
+        header('Cache-Control: no-store');
+        echo $csv;
+        exit;
     }
 
     /**

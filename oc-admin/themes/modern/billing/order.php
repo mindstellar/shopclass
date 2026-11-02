@@ -10,11 +10,13 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\billing\Invoices;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\Receipts;
+use mindstellar\currency\Money;
 
 osc_admin_page(array(
     'section' => __('Billing'),
@@ -94,6 +96,12 @@ foreach ($itemLines as $l) {
     $lineTitles[(int) $l['id']] = (string) $l['title'];
 }
 $trackUrl   = Receipts::httpsUrl((string) ($fulfil['tracking_url'] ?? ''));
+$documents  = is_array(__get('documents')) ? __get('documents') : array();
+$refundLeft = (int) __get('refundLeft');
+$refundRows = is_array(__get('refundRows')) ? __get('refundRows') : array();
+$partly     = (bool) __get('partlyRefunded');
+$partGateway = is_object(__get('partGateway')) ? __get('partGateway') : null;
+$canRefundPart = $order->isPaid() && $order->getStatus() !== Order::STATUS_REFUNDED && $refundLeft > 0 && $refundRows !== array();
 $refundSent = $order->isPaid() && $order->meta(OrderStore::REFUND_REQUESTED) !== null;
 
 // The view layer hands back '' for anything exported as null, so "absent" has to be
@@ -140,7 +148,8 @@ $rows = array(
     array(
         'label' => __('Status'),
         'value' => '<span class="osc-status status-' . osc_esc_html($order->getStatus()) . '">'
-                   . osc_esc_html($statusWord) . '</span>',
+                   . osc_esc_html($statusWord) . '</span>'
+                   . ($partly ? ' <span class="osc-status status-refunded">' . osc_esc_html(__('Partly refunded')) . '</span>' : ''),
         'html'  => true,
     ),
     array('label' => __('Amount'), 'value' => osc_admin_money($order->getAmount(), $order->getCurrency())),
@@ -264,6 +273,37 @@ foreach ($order->getMeta() as $key => $value) {
             <?php osc_admin_panel_open(_x('Order', 'purchase order'), array('class' => 'billing-detail-summary')); ?>
                 <?php osc_admin_definition($rows); ?>
             <?php osc_admin_panel_close(); ?>
+
+            <?php if ($documents !== array()) { ?>
+                <?php osc_admin_panel_open(__('Documents')); ?>
+                    <div class="table-responsive">
+                        <table class="table order-documents osc-table-stack">
+                            <thead>
+                            <tr>
+                                <th scope="col"><?php _e('Number'); ?></th>
+                                <th scope="col"><?php _e('Date'); ?></th>
+                                <th scope="col" class="col-numeric"><?php _e('Total'); ?></th>
+                                <th scope="col"><span class="visually-hidden"><?php _e('View'); ?></span></th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($documents as $doc) {
+                                $credit = $doc->isCreditNote(); ?>
+                                <tr>
+                                    <td data-col-name="<?php echo osc_esc_html(__('Number')); ?>">
+                                        <?php echo osc_esc_html($doc->number); ?>
+                                        <?php if ($credit) { ?><span class="text-muted">· <?php _e('Credit note'); ?></span><?php } ?>
+                                    </td>
+                                    <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($doc->date, true); ?></td>
+                                    <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(($credit ? '−' : '') . osc_admin_money($doc->total, $doc->currency)); ?></td>
+                                    <td><a href="<?php echo osc_esc_html(Invoices::url($doc)); ?>" target="_blank" rel="noopener"><?php _e('View'); ?></a></td>
+                                </tr>
+                            <?php } ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php osc_admin_panel_close(); ?>
+            <?php } ?>
 
             <?php $publishFailed = $order->meta(OrderStore::PUBLISH_FAILED);
             if ($listingId !== null && is_array($publishFailed)) { ?>
@@ -648,6 +688,19 @@ foreach ($order->getMeta() as $key => $value) {
             <?php /* Last in the column, and the only red on the screen. A refund is the one
                      action here that takes something away, so it does not get to be the first
                      thing an admin's eye lands on. */ ?>
+            <?php if ($canRefundPart) { ?>
+                <?php osc_admin_panel_open(__('Refund part')); ?>
+                    <p class="panel-subtitle">
+                        <?php echo osc_esc_html(sprintf(
+                            __('Refund an amount or some of the units. A credit note is made. Up to %s is left to refund.'),
+                            osc_admin_money($refundLeft, $order->getCurrency())
+                        )); ?>
+                    </p>
+                    <button type="button" class="btn btn-dim"
+                            data-osc-dialog-open="#order-refund-part-dialog"><?php _e('Refund part'); ?></button>
+                <?php osc_admin_panel_close(); ?>
+            <?php } ?>
+
             <?php if ($order->isPaid()) { ?>
                 <?php osc_admin_panel_open(__('Refund')); ?>
                     <?php if ($refundable) { ?>
@@ -728,6 +781,66 @@ foreach ($order->getMeta() as $key => $value) {
                     $userName
                 ),
             'confirm' => __('Refund'),
+        ));
+    }
+    if ($canRefundPart) {
+        $decimals = Money::decimals($order->getCurrency());
+        ob_start(); ?>
+        <div class="order-refund-part-fields">
+            <?php osc_admin_text(array(
+                'id'    => 'refund-part-amount',
+                'name'  => 'amount',
+                'label' => sprintf(__('Amount (%s)'), $order->getCurrency()),
+                'attrs' => array('inputmode' => 'decimal', 'autocomplete' => 'off', 'placeholder' => Money::fromMicros($refundLeft, $decimals)),
+                'help'  => __('Leave empty to refund the chosen units with their share of tax.'),
+            )); ?>
+            <?php foreach ($refundRows as $row) {
+                osc_admin_number(array(
+                    'id'    => 'refund-part-qty-' . $row['id'],
+                    'name'  => 'qty[' . $row['id'] . ']',
+                    'label' => sprintf(__('%1$s, units (up to %2$d)'), $row['title'], $row['open']),
+                    'attrs' => array('min' => 0, 'max' => $row['open'], 'step' => 1, 'placeholder' => '0'),
+                ));
+            } ?>
+            <?php osc_admin_text(array(
+                'id'    => 'refund-part-reason',
+                'name'  => 'reason',
+                'label' => __('Reason'),
+                'attrs' => array('maxlength' => 200),
+                'help'  => __('Printed on the credit note.'),
+            )); ?>
+            <?php osc_admin_checkbox(array(
+                'id'      => 'refund-part-restock',
+                'name'    => 'restock',
+                'label'   => __('Put the units back in stock'),
+                'checked' => $shippedQty === array(),
+                'help'    => __('Off for units that were shipped and are not coming back.'),
+            )); ?>
+            <?php if ($partGateway !== null) {
+                osc_admin_checkbox(array(
+                    'id'      => 'refund-part-via',
+                    'name'    => 'via',
+                    'label'   => sprintf(__('Send the money back through %s'), $partGateway->getName()),
+                    'checked' => true,
+                    'help'    => __('Off to only record a refund you have already made.'),
+                ));
+            } else { ?>
+                <p class="panel-subtitle mb-0"><?php _e('Nothing is sent to the payment provider. Refund the money there, this records it.'); ?></p>
+            <?php } ?>
+        </div>
+        <?php
+        osc_admin_confirm_dialog(array(
+            'id'        => 'order-refund-part-dialog',
+            'url'       => $actionUrl,
+            'fields'    => array(
+                'page'   => 'billing',
+                'action' => 'order_refund_part',
+                'id'     => (int) $order->getId(),
+            ),
+            'title'     => sprintf(__('Refund part of order #%d'), $order->getId()),
+            'text'      => __('This cannot be undone.'),
+            'body_html' => (string) ob_get_clean(),
+            'confirm'   => __('Refund part'),
         ));
     }
     if ($canCancel) {
