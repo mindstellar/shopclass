@@ -13,6 +13,9 @@ declare(strict_types=1);
 namespace mindstellar\api\serializer;
 
 use mindstellar\billing\CartPricer;
+use mindstellar\billing\Document;
+use mindstellar\billing\DocumentPage;
+use mindstellar\billing\DocumentStore;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\PaymentGatewayRegistry;
@@ -157,17 +160,19 @@ final class OrderSerializer
         }
         $lines = OrderLineStore::ofOrders($goods);
         $refs  = $this->listingRefs($lines);
+        $docs  = DocumentStore::forOrders(array_map(static fn (Order $order): int => $order->getId(), $orders));
 
-        return array_map(fn (Order $order): array => $this->order($order, $lines[$order->getId()] ?? array(), $refs), $orders);
+        return array_map(fn (Order $order): array => $this->order($order, $lines[$order->getId()] ?? array(), $refs, $docs[$order->getId()] ?? array()), $orders);
     }
 
     /**
      * @param array<int,array<string,mixed>>                          $lines the order's stored lines
      * @param array<int,array{id:int,url:string,photo:array|null}>    $refs  live listings by id
+     * @param list<Document>                                          $docs  the order's invoice and credit notes
      *
      * @return array<string,mixed>
      */
-    private function order(Order $order, array $lines, array $refs): array
+    private function order(Order $order, array $lines, array $refs, array $docs): array
     {
         $currency = $order->getCurrency();
         $out      = array();
@@ -204,6 +209,15 @@ final class OrderSerializer
             'packed_at'   => Format::time($order->packed()['at'] ?? null),
             'gateway'     => array('id' => $order->getGateway(), 'name' => $gateway === null ? $order->getGateway() : $gateway->getName()),
             'receipt_url' => Receipts::available($order) ? Receipts::url($order->getId()) : null,
+            'documents'   => array_map(fn (Document $doc): array => array(
+                'type'     => $doc->type,
+                'number'   => $doc->number,
+                'date'     => Format::time($doc->date),
+                'total'    => $this->amount($doc->total, $doc->currency),
+                'currency' => strtoupper($doc->currency),
+                'url'      => DocumentPage::url($doc),
+            ), $docs),
+            'refunded_total' => $this->amount(array_sum(array_map(static fn (Document $doc): int => $doc->isCreditNote() ? $doc->total : 0, $docs)), $currency),
             'can_cancel'  => $order->buyerMayCancel(),
             'pay_instructions' => PaymentGatewayRegistry::getInstance()->instructions($order),
             'can_pay'     => $order->canPayAgain() && $gateway !== null && $gateway->isConfigured(),

@@ -61,6 +61,9 @@ final class OrderStore extends Model
     /** s_meta key: when and by whom the order was marked packed. */
     public const PACKED = '_packed';
 
+    /** s_meta key: the newest partial refund sent to the provider, {n, amount, done}. */
+    public const PART_REFUND = '_part_refund';
+
     /** The search() filter of orders waiting to ship: paid and processing goods orders, and unpaid cash on delivery ones. */
     public const TO_SHIP = array('goods' => true, 'to_ship' => true);
 
@@ -325,6 +328,54 @@ final class OrderStore extends Model
     }
 
     /**
+     * The number n of the provider key order:<id>:refund:<n> for a partial refund of $amount. A
+     * retry of an unfinished refund of the same amount gets the same n; anything else a new one.
+     *
+     * @param int $orderId
+     * @param int $amount Micros
+     * @param int $notes  Credit notes the order has, so n never repeats an older refund
+     *
+     * @return int|null null when the order is not settled
+     */
+    public static function partRefundKey(int $orderId, int $amount, int $notes): ?int
+    {
+        $n  = null;
+        $ok = self::changeMeta($orderId, static function (array $meta) use ($amount, $notes, &$n): array {
+            $last  = is_array($meta[self::PART_REFUND] ?? null) ? $meta[self::PART_REFUND] : array();
+            $lastN = (int) ($last['n'] ?? 0);
+            if ($lastN > 0 && empty($last['done']) && (int) ($last['amount'] ?? 0) === $amount) {
+                $n = $lastN;
+
+                return $meta;
+            }
+            $n = max($lastN, $notes) + 1;
+            $meta[self::PART_REFUND] = array('n' => $n, 'amount' => $amount, 'done' => false);
+
+            return $meta;
+        }, Order::SETTLED);
+
+        return $ok ? $n : null;
+    }
+
+    /**
+     * Close the newest partial refund key, so the next refund takes a new one.
+     *
+     * @param int $orderId
+     *
+     * @return bool whether the mark is stored
+     */
+    public static function partRefundDone(int $orderId): bool
+    {
+        return self::changeMeta($orderId, static function (array $meta): array {
+            if (is_array($meta[self::PART_REFUND] ?? null)) {
+                $meta[self::PART_REFUND]['done'] = true;
+            }
+
+            return $meta;
+        });
+    }
+
+    /**
      * Record that the order's receipt e-mail was sent.
      *
      * @param int $orderId
@@ -417,7 +468,7 @@ final class OrderStore extends Model
      */
     public static function markMailSent(int $orderId, string $kind): bool
     {
-        if (!preg_match('/^[a-z]{1,20}$/', $kind)) {
+        if (!preg_match('/^([a-z]{1,20}|doc:[0-9]{1,10})$/', $kind)) {
             return false;
         }
 

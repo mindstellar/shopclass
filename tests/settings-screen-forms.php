@@ -1271,6 +1271,16 @@ pin('a store country a listing would refuse is refused here', array('warning:Cou
 pin('and the stored one is kept', array('Spain', 'STRING'), pref($admin, 'shop_country'));
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('shop_country' => 'Spain', 'shop_region' => 'Madrid', 'shop_city' => str_repeat('a', 101)) + $shop);
 pin('so is a city longer than a listing holds', array('warning:City must be 100 characters or fewer'), flashed($run));
+$run = drive('CAdminSettingsBilling', 'billing_receipts_post', array('billing_invoice_on' => '1', 'billing_invoice_prefix' => 'inv/', 'billing_credit_prefix' => 'cn-'));
+pin('the receipts form checks the CSRF token', array('billing_receipts_post'), $run['csrf']);
+pin('invoice prefixes are stored in capitals', array(array('INV/', 'STRING'), array('CN-', 'STRING'), array('1', 'BOOLEAN')), array(pref($admin, 'billing_invoice_prefix'), pref($admin, 'billing_credit_prefix'), pref($admin, 'billing_invoice_on')));
+$run = drive('CAdminSettingsBilling', 'billing_receipts_post', array('billing_invoice_on' => '1', 'billing_invoice_prefix' => 'IN V!', 'billing_credit_prefix' => 'CN-'));
+check('a prefix with a space or symbol is refused', str_starts_with((string) (flashed($run)[0] ?? ''), 'warning:'), json_encode(flashed($run)));
+pin('and the stored prefix is kept', array('INV/', 'STRING'), pref($admin, 'billing_invoice_prefix'));
+$run = drive('CAdminSettingsBilling', 'billing_receipts_post', array('billing_invoice_on' => '1', 'billing_invoice_prefix' => 'ABCDEFGHIJKLM', 'billing_credit_prefix' => 'CN-'));
+check('a prefix over 12 characters is refused', str_starts_with((string) (flashed($run)[0] ?? ''), 'warning:'), json_encode(flashed($run)));
+drive('CAdminSettingsBilling', 'billing_receipts_post', array('billing_invoice_prefix' => 'INV-', 'billing_credit_prefix' => 'CN-'));
+pin('an unticked box turns invoices off', array('0', 'BOOLEAN'), pref($admin, 'billing_invoice_on'));
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shipping_flat' => 'lots') + $shop);
 pin('an amount that is not a number is refused', array('warning:Enter an amount, e.g. 49 or 49.50.'), flashed($run));
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));

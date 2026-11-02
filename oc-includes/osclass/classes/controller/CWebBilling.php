@@ -12,6 +12,8 @@
 use mindstellar\admin\ListPaging;
 use mindstellar\auth\Actor;
 use mindstellar\billing\Billing;
+use mindstellar\billing\DocumentPage;
+use mindstellar\billing\DocumentStore;
 use mindstellar\billing\Feature;
 use mindstellar\billing\FeatureRegistry;
 use mindstellar\billing\ItemUpgradeStore;
@@ -103,7 +105,7 @@ class CWebBilling extends WebSecBaseModel
     public function doModel()
     {
         // A shop has no credits or pay step; only the order pages stay.
-        if (osc_is_shop_mode() && !in_array($this->action, array('orders', 'receipt', 'cancel'), true)) {
+        if (osc_is_shop_mode() && !in_array($this->action, array('orders', 'receipt', 'document', 'cancel'), true)) {
             $this->do404();
 
             return;
@@ -122,6 +124,9 @@ class CWebBilling extends WebSecBaseModel
                 break;
             case ('receipt'):
                 $this->receiptView();
+                break;
+            case ('document'):
+                $this->documentView();
                 break;
             case ('cancel'):
                 $this->cancelPost();
@@ -193,6 +198,24 @@ class CWebBilling extends WebSecBaseModel
         $this->_exportVariableToView('pageNum', $page);
         $this->_exportVariableToView('perPage', self::PER_PAGE);
         $this->doView('user-billing-orders.php');
+    }
+
+    /**
+     * The printable invoice or credit note of one of the user's own orders. Anyone else's, or
+     * an unknown number, is a 404.
+     *
+     * @return void
+     */
+    private function documentView()
+    {
+        $document = DocumentStore::find(Params::getParamInt('id'));
+        if ($document === null || !DocumentPage::canView($document, (int) osc_logged_user_id(), false)) {
+            $this->do404();
+
+            return;
+        }
+
+        DocumentPage::render($document, osc_billing_orders_url(), _m('Back to your orders'));
     }
 
     /**

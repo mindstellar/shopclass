@@ -18,6 +18,9 @@ namespace mindstellar\mail;
 
 use Admin;
 use Item;
+use mindstellar\billing\Document;
+use mindstellar\billing\DocumentPage;
+use mindstellar\billing\DocumentStore;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderLineStore;
@@ -2006,6 +2009,19 @@ final class CoreEmails
     }
 
     /**
+     * Tell the buyer part of their order was refunded: how much, and the credit note.
+     *
+     * @param Order    $order
+     * @param Document $document The credit note
+     *
+     * @return void
+     */
+    public static function orderPartRefunded($order, Document $document)
+    {
+        self::instance()->mailOrder('order_part_refunded', $order, array(), $document);
+    }
+
+    /**
      * Tell the shop owner a goods order came in that is paid or will be paid on delivery.
      *
      * @param Order $order
@@ -2149,7 +2165,7 @@ final class CoreEmails
         return $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item)));
     }
 
-    public function mailOrder(string $kind, Order $order, array $parcel = array()): void
+    public function mailOrder(string $kind, Order $order, array $parcel = array(), ?Document $document = null): void
     {
         $extra = array();
         if ($kind === 'order_part_shipped') {
@@ -2169,7 +2185,13 @@ final class CoreEmails
             }
             $extra = array('{ORDER_PRODUCTS}' => $rate === '' ? '' : '<ul>' . $rate . '</ul>');
         } elseif ($kind === 'order_refunded') {
-            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(CurrencyService::make()->money($order->getAmount(), $order->getCurrency())));
+            $notes = array_values(array_filter(DocumentStore::forOrder($order->getId()), static fn (Document $d): bool => $d->isCreditNote()));
+            $last  = $notes === array() ? null : $notes[count($notes) - 1];
+            $total = $last !== null ? DocumentStore::refundedTotal($order->getId()) : $order->getAmount();
+            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(CurrencyService::make()->money($total, $order->getCurrency())));
+            $extra += $last !== null ? self::noteWords($last) : array('{CREDIT_NOTE_LINK}' => '', '{CREDIT_NOTE_NUMBER}' => '');
+        } elseif ($kind === 'order_part_refunded' && $document !== null) {
+            $extra = array('{REFUND_AMOUNT}' => osc_esc_html(CurrencyService::make()->money($document->total, $document->currency))) + self::noteWords($document);
         }
         $howToPay = $kind === 'order_placed' ? PaymentGatewayRegistry::getInstance()->instructions($order) : null;
         if ($howToPay !== null) {
@@ -2187,6 +2209,21 @@ final class CoreEmails
                 : $body . '{PAYMENT_INSTRUCTIONS}';
         }
         $this->deliver(new MailComposing($kind, $mail['to'], $mail['toName'], $title, $body, $mail['words'], $mail['htmlWords'], $order, null, null, array($order)));
+    }
+
+    /**
+     * The number and link of a credit note, as escaped HTML for the refund mails.
+     *
+     * @return array<string,string>
+     */
+    private static function noteWords(Document $note): array
+    {
+        $url = DocumentPage::url($note);
+
+        return array(
+            '{CREDIT_NOTE_NUMBER}' => osc_esc_html($note->number),
+            '{CREDIT_NOTE_LINK}'   => '<a href="' . osc_esc_html($url) . '">' . osc_esc_html(sprintf(__('View credit note %s'), $note->number)) . '</a>',
+        );
     }
 
     /**
@@ -2266,7 +2303,12 @@ final class CoreEmails
             case 'order_refunded':
                 return array(
                     __('Your order {ORDER_NUMBER} was refunded'),
-                    __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{ORDER_LINK}</p>'),
+                    __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p>{ORDER_LINES}<p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>'),
+                );
+            case 'order_part_refunded':
+                return array(
+                    __('Part of your order {ORDER_NUMBER} was refunded'),
+                    __('<p>Hi {USER_NAME},</p><p>We refunded {REFUND_AMOUNT} for order {ORDER_NUMBER} to your original payment method ({PAYMENT_METHOD}). It can take 3-5 working days to show up.</p><p>{CREDIT_NOTE_LINK}</p><p>{ORDER_LINK}</p>'),
                 );
             default:
                 return array(

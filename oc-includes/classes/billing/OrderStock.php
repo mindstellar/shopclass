@@ -109,6 +109,70 @@ final class OrderStock
     }
 
     /**
+     * Take refunded units out of what the order holds, so a later release() cannot give them back
+     * again. With $restock they go back to stock now; without, they stay gone (shipped and kept).
+     *
+     * @param array<int,int> $lines line id => units refunded
+     *
+     * @return array<int,int> the units given back to stock, line id => qty
+     * @throws \mindstellar\database\DbException
+     */
+    public static function releaseLines(int $orderId, array $lines, bool $restock = true): array
+    {
+        $back = array();
+        OrderStore::withMeta($orderId, static function (array $meta) use ($orderId, $lines, $restock, &$back): array {
+            if (!array_key_exists(self::TAKEN, $meta)) {
+                return $meta;
+            }
+            $taken = self::quantities($meta[self::TAKEN]);
+            $move  = array();
+            foreach ($lines as $lineId => $qty) {
+                $n = min((int) $qty, $taken[(int) $lineId] ?? 0);
+                if ($n > 0) {
+                    $move[(int) $lineId] = $n;
+                }
+            }
+            if ($move === array()) {
+                return $meta;
+            }
+            if ($restock) {
+                $variants = array();
+                foreach (OrderLineStore::itemLines($orderId, true) as $line) {
+                    if (isset($move[$line['id']]) && $line['variant_id'] !== null) {
+                        $variants[$line['id']] = $line['variant_id'];
+                    }
+                }
+                asort($variants);
+                foreach ($variants as $lineId => $variantId) {
+                    VariantStore::adjustStock($variantId, $move[$lineId]);
+                    $back[$lineId] = $move[$lineId];
+                }
+            }
+            foreach ($move as $lineId => $n) {
+                $taken[$lineId] -= $n;
+                if ($taken[$lineId] < 1) {
+                    unset($taken[$lineId]);
+                }
+            }
+            $meta[self::TAKEN] = $taken;
+
+            return $meta;
+        });
+
+        return $back;
+    }
+
+    /**
+     * What the order still holds, line id => qty.
+     *
+     * @return array<int,int>
+     */
+    public static function held(Order $order): array
+    {
+        return self::quantities($order->meta(self::TAKEN));
+    }
+
+    /**
      * The lines whose variant counts stock (or is gone, so it cannot be taken), in variant order
      * so two orders lock the same rows in the same order.
      *

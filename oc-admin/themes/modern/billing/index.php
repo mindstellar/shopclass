@@ -57,6 +57,13 @@ $isFiltered = $toShip
     )) : array()); ?>
 
 
+    <?php if ((bool) __get('showDocuments')) {
+        osc_admin_tab_nav(array(
+            array('label' => __('Orders'), 'url' => $base, 'active' => true),
+            array('label' => __('Invoices'), 'url' => $base . '&action=documents', 'active' => false),
+        ));
+    } ?>
+
     <?php osc_admin_toolbar_open(); ?>
         <?php osc_admin_list_filter(array(
             'page'   => 'billing',

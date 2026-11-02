@@ -1262,6 +1262,10 @@ msgid ""
 "new password."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Enter the amount as a number above zero"
+msgstr ""
+
 #: oc-includes/classes/webhook/WebhookService.php
 msgid ""
 "Enter the full web address of the endpoint, such as https://example.com/"
@@ -2336,6 +2340,10 @@ msgstr ""
 msgid "Parish"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Part of order #%d is refunded."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-login-content.php
 #: oc-includes/osclass/gui/account/user-register-content.php
 #: oc-includes/osclass/gui/account/user-signin-content.php
@@ -2645,6 +2653,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Rebuild queued."
+msgstr ""
+
+#: oc-includes/osclass/gui/billing/parts/order-list.php
+msgid "Receipt"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsBilling.php
@@ -3188,6 +3200,10 @@ msgstr ""
 msgid "That custom URL no longer exists"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "That document does not exist"
+msgstr ""
+
 #: oc-includes/classes/core/security/MessageHold.php
 msgid ""
 "That file cannot be attached. Attach a picture, PDF, text or office document "
@@ -3444,6 +3460,10 @@ msgstr ""
 #: oc-includes/classes/location/LocationService.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "The country code must be two letters, like IN or DE"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "The credit note is made."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php

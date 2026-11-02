@@ -202,6 +202,38 @@ is never sent twice; the admin checks the provider and uses **Record a refund**.
 If the provider also sends a refund webhook, return `refunded()` from
 `handleCallback()` as before. Core ignores the second one for an order already refunded.
 
+## Partial refunds
+
+Implement `mindstellar\billing\PartialRefundableGateway` (it extends `RefundableGateway`) and add
+`refundPart()`. The admin order page then offers **Refund part** through the provider; without it
+the refund is recorded only.
+
+```php
+public function refundPart(Order $order, int $amount, string $key): CallbackResult
+{
+    // $amount is micros of the order's currency; $key is the same on every retry of one refund.
+    $response = $this->api->refund($order->getExternalRef(), $amount, $key);
+    if (!$response->ok) {
+        return CallbackResult::ignored($response->message);
+    }
+
+    return CallbackResult::refunded($order->getId(), $response->id);
+}
+```
+
+Core checks the amount against what is left to refund and holds the order's refund lock. On
+`refunded()` or `refundPending()` it issues the credit note with your refund id; on `ignored()` it
+changes nothing. Throw when the outcome is unknown, such as a timeout or a 5xx: the key stays open,
+so the admin's retry sends the same key. The order becomes refunded when the credit notes reach the paid total, so a full
+refund webhook that arrives later adds only the remainder. Guard the `implements` with
+`interface_exists()` if your plugin must run on older cores.
+
+## Invoices
+
+Core issues a numbered invoice after `markPaid()` and a credit note after each refund. A gateway
+does nothing for this. Plugins add lines to the frozen document with the `billing_document_compose`
+event and react to `billing_document_issued`.
+
 ## Declaring its settings page
 
 `settings.php` returns the spec; `index.php` registers it:
