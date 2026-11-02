@@ -4556,6 +4556,11 @@ msgstr ""
 msgid "Decimal point: this field is required"
 msgstr ""
 
+#: oc-admin/themes/modern/settings/currencies.php
+#: oc-admin/themes/modern/settings/currency_form.php
+msgid "Decimals"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Decor & Lighting"
@@ -4976,6 +4981,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-shop.php
 msgid "Digital file"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/currency_form.php
+msgid "Digits after the point in prices, from 0 to 4. Yen has 0, dinar has 3."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/frm.php

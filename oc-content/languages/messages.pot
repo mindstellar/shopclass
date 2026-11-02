@@ -27,6 +27,10 @@ msgstr ""
 msgid "%1$s is longer than %2$d characters."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "%1$s should look like %2$s."
+msgstr ""
+
 #: oc-includes/osclass/classes/billing/GoodsCheckout.php
 msgid "%1$s × %2$d"
 msgstr ""
@@ -636,6 +640,10 @@ msgstr ""
 msgid "Buying credits is not available on this site."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "CEP"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -917,6 +925,10 @@ msgstr ""
 msgid "Country too short."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "County"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-register-content.php
 msgid "Create account"
 msgstr ""
@@ -1001,6 +1013,10 @@ msgstr ""
 #: oc-includes/osclass/gui/billing/parts/order-list.php
 #: oc-includes/osclass/gui/billing/wallet-content.php
 msgid "Date"
+msgstr ""
+
+#: oc-includes/osclass/classes/currency/CurrencyService.php
+msgid "Decimals must be between 0 and 4."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-addresses-content.php
@@ -1124,6 +1140,10 @@ msgstr ""
 msgid "Edit your profile"
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Eircode"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-recover-content.php
 #: oc-includes/osclass/gui/account/user-register-content.php
 #: oc-includes/osclass/gui/account/user-signin-content.php
@@ -1154,6 +1174,10 @@ msgstr ""
 msgid "Email too long."
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Emirate"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid "Empty passwords are not allowed. Please provide a password"
 msgstr ""
@@ -1172,12 +1196,16 @@ msgstr ""
 msgid "Ends: %s"
 msgstr ""
 
-#: oc-includes/osclass/classes/user/AddressBook.php
-msgid "Enter a mobile number with at least 8 digits."
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Enter a name for this package"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Enter a phone number, with the country code if it is abroad."
+msgstr ""
+
+#: oc-includes/osclass/helpers/hUsers.php
+msgid "Enter a valid %1$s, such as %2$s."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSitemap.php
@@ -1362,6 +1390,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid "Go to the home page"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Governorate"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItemComments.php
@@ -1708,7 +1740,6 @@ msgid "Messages, %d unread"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
-#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Mobile"
 msgstr ""
@@ -2232,12 +2263,8 @@ msgstr ""
 msgid "Orders are not available on this site."
 msgstr ""
 
-#: oc-includes/osclass/classes/user/AddressBook.php
-msgid "PIN code needs 6 digits."
-msgstr ""
-
-#: oc-includes/osclass/gui/account/user-addresses-content.php
-msgid "PIN code or postcode"
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "PIN code"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -2328,6 +2355,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/PermalinkSettingsScreen.php
 msgid "Permalinks structure updated."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "Phone"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
@@ -2436,8 +2467,18 @@ msgstr ""
 msgid "Post comment"
 msgstr ""
 
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Postal code"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 msgid "Postcode"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Prefecture"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
@@ -2486,6 +2527,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/row-actions.php
 msgid "Promote:"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "Province"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -2582,6 +2627,7 @@ msgid "Refunded"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
+#: oc-includes/osclass/classes/user/AddressFormat.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Region"
@@ -2985,8 +3031,13 @@ msgstr ""
 msgid "Star ratings are turned off on this site"
 msgstr ""
 
-#: oc-includes/osclass/gui/account/user-addresses-content.php
+#: oc-includes/osclass/classes/user/AddressFormat.php
 msgid "State"
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+#: oc-includes/osclass/gui/account/user-addresses-content.php
+msgid "State / Province"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/parts/order-list.php
@@ -3991,6 +4042,8 @@ msgid "This conversation was reported and is waiting for review."
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AddressBook.php
+#: oc-includes/osclass/classes/user/AddressFormat.php
+#: oc-includes/osclass/helpers/hUsers.php
 msgid "This field is needed."
 msgstr ""
 
@@ -4962,6 +5015,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/security/Csrf.php
 msgid "Your session has expired, please reload the page and try again."
+msgstr ""
+
+#: oc-includes/osclass/classes/user/AddressFormat.php
+msgid "ZIP code"
 msgstr ""
 
 #: oc-includes/osclass/classes/user/AccountService.php
