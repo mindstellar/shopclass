@@ -61,4 +61,14 @@ final class CurrencyCode
             default                            => 2,
         };
     }
+
+    /**
+     * Every code whose decimals are not 2, as code => digits; the add screen hands it to its script.
+     *
+     * @return array<string,int>
+     */
+    public static function exceptions(): array
+    {
+        return array_fill_keys(self::ZERO, 0) + array_fill_keys(self::THREE, 3);
+    }
 }
