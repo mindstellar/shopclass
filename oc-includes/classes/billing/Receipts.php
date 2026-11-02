@@ -48,6 +48,9 @@ final class Receipts
     /** Job kind of the mail for one parcel of an order that is not yet fully shipped. */
     public const MAIL_PART_SHIPPED = 'part_shipped';
 
+    /** Job kind of the mail for one credit note that leaves part of an order's money unrefunded. */
+    public const MAIL_PART_REFUNDED = 'part_refunded';
+
     /** Gateways that leave an order unpaid until the shop hears the money came in. */
     private const HELD_GATEWAYS = array('offline', 'cod');
 
@@ -307,6 +310,71 @@ final class Receipts
     }
 
     /**
+     * `billing_document_issued`: tell the buyer about a credit note that does not close the order.
+     * The note that closes it is linked from the refunded mail.
+     *
+     * @param int    $documentId
+     * @param int    $orderId
+     * @param string $type
+     *
+     * @return void
+     */
+    public static function afterDocumentIssued($documentId, $orderId = 0, $type = ''): void
+    {
+        if ($type !== Document::CREDIT_NOTE) {
+            return;
+        }
+        $documentId = (int) $documentId;
+        $orderId    = (int) $orderId;
+        try {
+            if (self::sendPartRefunded($documentId)) {
+                return;
+            }
+        } catch (Throwable $e) {
+            self::logFailure($orderId, $e);
+        }
+
+        try {
+            osc_job_enqueue(
+                self::MAIL_JOB,
+                array('order_id' => $orderId, 'kind' => self::MAIL_PART_REFUNDED, 'doc' => $documentId),
+                array('unique_key' => 'order:' . $orderId . ':doc:' . $documentId, 'delay' => 60)
+            );
+        } catch (Throwable $e) {
+            self::logFailure($orderId, $e);
+        }
+    }
+
+    /**
+     * Send the "part of your order was refunded" mail for one credit note, once per note.
+     *
+     * @param int $documentId
+     *
+     * @return bool true when the mail went, or there is nothing to send; false to try again
+     */
+    public static function sendPartRefunded(int $documentId): bool
+    {
+        $document = DocumentStore::find($documentId);
+        if ($document === null || !$document->isCreditNote()) {
+            return true;
+        }
+        $order = OrderStore::find($document->orderId);
+        if ($order === null || !$order->isGoods() || $order->meta('_mail_doc:' . $documentId) !== null
+            || DocumentStore::refundedTotal($order->getId()) >= $order->getAmount()) {
+            return true;
+        }
+
+        CoreEmails::resetOrderMailFailure();
+        CoreEmails::orderPartRefunded($order, $document);
+        if (CoreEmails::orderMailFailed()) {
+            return false;
+        }
+        OrderStore::markMailSent($order->getId(), 'doc:' . $documentId);
+
+        return true;
+    }
+
+    /**
      * Send one order mail, or queue it when that fails. Never throws.
      *
      * @param string $kind One of the MAIL_* constants
@@ -396,6 +464,11 @@ final class Receipts
         if ($vars['email'] === '') {
             return true;
         }
+        $invoice = DocumentStore::invoiceOf($order->getId());
+        if ($invoice !== null) {
+            $vars['invoice_number'] = $invoice->number;
+            $vars['invoice_url']    = Invoices::url($invoice);
+        }
 
         $params = array(
             'from'      => _osc_from_email_aux(),
@@ -431,9 +504,11 @@ final class Receipts
         osc_job_describe(self::JOB, __('Payment receipt e-mail'));
         osc_job_register_handler(self::MAIL_JOB, static function ($job) {
             $kind = (string) $job->get('kind');
-            $sent = $kind === self::MAIL_PART_SHIPPED
-                ? self::sendPartShipped((int) $job->get('order_id'), (int) $job->get('n'))
-                : self::sendNotice($kind, (int) $job->get('order_id'));
+            $sent = match ($kind) {
+                self::MAIL_PART_SHIPPED  => self::sendPartShipped((int) $job->get('order_id'), (int) $job->get('n')),
+                self::MAIL_PART_REFUNDED => self::sendPartRefunded((int) $job->get('doc')),
+                default                  => self::sendNotice($kind, (int) $job->get('order_id')),
+            };
             if (!$sent) {
                 throw new RuntimeException('order e-mail not sent');
             }
@@ -777,6 +852,10 @@ final class Receipts
         $html .= '</table>'
                  . '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['url']) . '">'
                  . osc_esc_html(__('View or print your receipt')) . '</a></p>';
+        if (($vars['invoice_url'] ?? '') !== '') {
+            $html .= '<p><a href="' . osc_esc_html($vars['invoice_url']) . '">'
+                     . osc_esc_html(sprintf(__('View invoice %s'), $vars['invoice_number'])) . '</a></p>';
+        }
         if (($vars['wallet'] ?? '') !== '') {
             $html .= '<p><a href="' . osc_esc_html($vars['wallet']) . '">'
                      . osc_esc_html(__('Use your credits')) . '</a></p>';
@@ -808,6 +887,10 @@ final class Receipts
         $html .= '<p>' . osc_esc_html(__('We will send you another e-mail when your order ships.')) . '</p>'
                  . '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['url']) . '">'
                  . osc_esc_html(__('View or print your receipt')) . '</a></p>';
+        if (($vars['invoice_url'] ?? '') !== '') {
+            $html .= '<p><a href="' . osc_esc_html($vars['invoice_url']) . '">'
+                     . osc_esc_html(sprintf(__('View invoice %s'), $vars['invoice_number'])) . '</a></p>';
+        }
         if ($vars['business'] !== '') {
             $html .= '<p style="color:#666">' . nl2br(osc_esc_html($vars['business']), false) . '</p>';
         }

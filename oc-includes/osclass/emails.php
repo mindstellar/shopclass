@@ -318,6 +318,7 @@ osc_add_hook('billing_shipment_add_after', array(\mindstellar\billing\Receipts::
 osc_add_hook('billing_order_delivered', array(\mindstellar\billing\Receipts::class, 'afterDelivered'));
 osc_add_hook('billing_order_cancelled', array(\mindstellar\billing\Receipts::class, 'afterCancelled'));
 osc_add_hook('billing_order_refunded', array(\mindstellar\billing\Receipts::class, 'afterRefunded'));
+osc_add_hook('billing_document_issued', array(\mindstellar\billing\Receipts::class, 'afterDocumentIssued'));
 
 /**
  * Report the outcome of an automatic core upgrade to every administrator.

@@ -224,7 +224,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 639 names. Generated from the source; do not edit by hand.
+Core fires 645 names. Generated from the source; do not edit by hand.
 
 ### Admin (81)
 
@@ -341,7 +341,7 @@ Core fires 639 names. Generated from the source; do not edit by hand.
 | `edit_comment` | action | `$id` | `oc-includes/classes/listing/moderation/CommentModeration.php` |
 | `enable_comment` | action | `$id` | `oc-includes/classes/listing/moderation/CommentModeration.php` |
 
-### Email (133)
+### Email (137)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -419,6 +419,10 @@ Core fires 639 names. Generated from the source; do not edit by hand.
 | `email_order_delivered_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_delivered_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_delivered_title_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_refunded_description` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_refunded_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_refunded_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
+| `email_order_part_refunded_title_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_part_shipped_description` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_part_shipped_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_order_part_shipped_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
@@ -561,7 +565,7 @@ Core fires 639 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/classes/search/query/PluginClauses.php` |
 
-### Other (253)
+### Other (255)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -637,6 +641,8 @@ Core fires 639 names. Generated from the source; do not edit by hand.
 | `before_validating_login` | action | none | `oc-includes/classes/user/auth/SignIn.php` |
 | `billing_can_publish` | filter | `$allowed, $userId, $ctx` | `oc-includes/classes/billing/EntitlementStore.php` |
 | `billing_credits_changed` | action | `$userId, $delta, $reason` | `oc-includes/classes/billing/Wallet.php` |
+| `billing_document_compose` | event | `DocumentComposing` | `oc-includes/classes/billing/event/DocumentComposing.php` |
+| `billing_document_issued` | event | `DocumentIssued` | `oc-includes/classes/billing/event/DocumentIssued.php` |
 | `billing_feature_applied` | action | `$featureId, $userId, $price` | `oc-includes/classes/billing/Billing.php` |
 | `billing_feature_duration` | filter | `$days, $this->id, $userId` | `oc-includes/classes/billing/Feature.php` |
 | `billing_feature_price` | filter | `$price, $this->id, $userId` | `oc-includes/classes/billing/Feature.php` |
