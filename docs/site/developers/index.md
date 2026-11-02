@@ -46,6 +46,7 @@ Worth knowing before you port something:
 | Run your code inside core | [Hooks and filters](/docs/developers/hooks/) |
 | Find the `osc_*` helper for a job | [Helper functions](/docs/developers/helpers/) |
 | Know which core class to call, and where hooks fire | [Architecture](/docs/developers/architecture/) |
+| Report tax per line and ask for a tax number at checkout | [Tax per line and checkout fields](/docs/developers/shop-tax/) |
 | Add a page of your own | [Routes](/docs/developers/routes/) |
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |
 | Add an admin settings page | [Settings pages](/docs/developers/settings-pages/) |
