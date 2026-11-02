@@ -232,6 +232,7 @@ final class OrderStore extends Model
      *
      * @return bool whether this call was the one that changed the row
      * @throws InvalidArgumentException on an unknown status
+     * @throws DbException on a database error other than a reference another order holds
      */
     public static function settle(
         int $id,
@@ -262,9 +263,11 @@ final class OrderStore extends Model
             });
         } catch (DbException $e) {
             // uq_gateway_ref: this external reference is already attached to another
-            // order, which means the callback is being replayed against the wrong
-            // record. Refuse rather than overwrite.
-            return false;
+            // order, so the callback is replayed against the wrong record. Any other error goes up.
+            if ((int) $e->getCode() === 1062) {
+                return false;
+            }
+            throw $e;
         }
     }
 
@@ -669,8 +672,8 @@ final class OrderStore extends Model
     }
 
     /**
-     * Close a pending order unpaid, or a cash on delivery order not paid yet (in processing, or a
-     * parcel the buyer refused), giving back any stock it holds. Fires `OrderCancelled` once the write commits.
+     * Close a pending order unpaid, or a cash on delivery order not paid yet (in processing with no
+     * parcel out, or a parcel the buyer refused), giving back any stock it holds. Fires `OrderCancelled` once the write commits.
      *
      * @param int         $id
      * @param string|null $from The status the caller checked; null picks it from the order
@@ -684,7 +687,9 @@ final class OrderStore extends Model
             $from  = $order !== null && $order->awaitsCash() ? $order->getStatus() : Order::STATUS_PENDING;
         }
         $userId = Db::transaction(static function () use ($id, $from): ?int {
-            $userId = self::transition($id, $from, Order::STATUS_CANCELLED, static fn (array $meta): array => $meta);
+            // A parcel already out of a processing order keeps it open: its stock must not go back.
+            $userId = self::transition($id, $from, Order::STATUS_CANCELLED, static fn (array $meta, string $status): ?array
+                => $status === Order::STATUS_PROCESSING && !empty($meta[self::SHIPMENTS]) ? null : $meta);
             if ($userId !== null) {
                 OrderStock::release($id);
             }

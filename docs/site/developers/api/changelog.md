@@ -75,6 +75,13 @@ None.
 
 ## Changes
 
+### v1: order parcels
+
+Added to v1 on 2026-11-02.
+
+- An order has `shipments`: one entry per parcel with its lines, carrier and tracking. `packed_at` is when the seller marked it packed, else `null`.
+- An order `status` can be `processing`: paid and being prepared, or part sent.
+
 ### v1: currency decimals and country address format
 
 Added to v1 on 2026-11-02.

@@ -104,6 +104,19 @@ pin('the parcel and the shipped order were heard', array(array('billing_shipment
 pin('one history entry per move', array(array('pending', 'paid'), array('paid', 'processing'), array('processing', 'shipped')), array_map(static fn (array $e): array => array($e['from'], $e['to']), $now->history()));
 pin('no parcel after it shipped', null, Shipments::add($id, array($tee => 1), 'DHL', 'P3', ''));
 
+harness_section('a line ships in parts');
+[$part, $pTee, $pMug] = $order();
+Shipments::add($part, array($pTee => 1, $pMug => 1), 'DHL', 'Q1', '');
+pin('one of three tees and the mug leave it processing', 'processing', $status($part));
+Shipments::add($part, array($pTee => 1), 'DHL', 'Q2', '');
+pin('two of three tees still leave it processing', 'processing', $status($part));
+Shipments::add($part, array($pTee => 1), 'DHL', 'Q3', '');
+pin('the last tee ships it', 'shipped', $status($part));
+
+[$half, $hTee] = $order();
+Shipments::add($half, array($hTee => 3), 'DHL', 'H1', '');
+pin('every tee but no mug leaves it processing', 'processing', $status($half));
+
 harness_section('tracking per parcel');
 check('parcel 1 can be corrected', Shipments::setTracking($id, 1, 'DHL', 'P1b', ''));
 $now = OrderStore::find($id);
@@ -134,7 +147,9 @@ harness_section('cash on delivery');
 pin('a pending COD order ships a part', 1, Shipments::add($cod, array($cTee => 1), 'DHL', 'C1', ''));
 $now = OrderStore::find($cod);
 pin('it is processing and waits for the cash', array('processing', true), array($now->getStatus(), $now->awaitsCash()));
-check('it can be cancelled with a part out', OrderStore::cancel($cod));
+pin('it cannot be cancelled with a part out', array(false, 'processing'), array(OrderStore::cancel($cod), $status($cod)));
+[$codNone] = $order(CashOnDeliveryGateway::ID);
+check('a COD order with nothing out can be cancelled', OrderStore::cancel($codNone));
 
 harness_section('packed');
 [$pack] = $order();

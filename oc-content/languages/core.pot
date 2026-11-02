@@ -1094,7 +1094,9 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
-msgid "A label for staff while you pack. The buyer is not told."
+msgid ""
+"A label for staff while you pack. The buyer gets no mail, but the API shows "
+"when it was packed."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -15293,7 +15295,7 @@ msgid "This order cannot be refunded "
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
-msgid "This order is marked packed. Only staff see this."
+msgid "This order is marked packed. The buyer gets no mail about it."
 msgstr ""
 
 #: oc-includes/classes/admin/ajax/MarketAjax.php

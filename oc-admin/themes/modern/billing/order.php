@@ -79,6 +79,7 @@ $balance = (int)__get('balance');
 $refundable = (bool)__get('refundable');
 $dashboardUrl = (string) __get('dashboardUrl');
 $isGoods    = $order->isGoods();
+$canCancel  = $order->isPending() || ($isGoods && $order->awaitsCash() && !($order->getStatus() === Order::STATUS_PROCESSING && $order->shipments() !== array()));
 $lines      = is_array(__get('lines')) ? __get('lines') : array();
 $fulfil     = $order->fulfilment() ?? array();
 $address    = is_array($fulfil['address'] ?? null) ? $fulfil['address'] : array();
@@ -553,8 +554,8 @@ foreach ($order->getMeta() as $key => $value) {
 
                 <?php osc_admin_panel_open(__('Packed')); ?>
                     <p class="panel-subtitle"><?php echo osc_esc_html($order->packed() !== null
-                        ? __('This order is marked packed. Only staff see this.')
-                        : __('A label for staff while you pack. The buyer is not told.')); ?></p>
+                        ? __('This order is marked packed. The buyer gets no mail about it.')
+                        : __('A label for staff while you pack. The buyer gets no mail, but the API shows when it was packed.')); ?></p>
                     <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
                         <input type="hidden" name="page" value="billing"/>
                         <input type="hidden" name="action" value="order_packed"/>
@@ -627,7 +628,7 @@ foreach ($order->getMeta() as $key => $value) {
                 <?php osc_admin_panel_close(); ?>
             <?php } ?>
 
-            <?php if ($order->isPending() || ($isGoods && $order->awaitsCash())) { ?>
+            <?php if ($canCancel) { ?>
                 <?php osc_admin_panel_open(__('Cancel this order')); ?>
                     <p class="panel-subtitle"><?php echo osc_esc_html($isGoods
                         ? __('Close an order that will not be paid. Stock held for it goes back on sale.')
@@ -729,7 +730,7 @@ foreach ($order->getMeta() as $key => $value) {
             'confirm' => __('Refund'),
         ));
     }
-    if ($order->isPending() || ($isGoods && $order->awaitsCash())) {
+    if ($canCancel) {
         osc_admin_confirm_dialog(array(
             'id'      => 'order-cancel-dialog',
             'url'     => $actionUrl,

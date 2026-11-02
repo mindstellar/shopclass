@@ -80,11 +80,12 @@ the site is busy and moderate from the admin lists instead.
 
 ## Order e-mails
 
-A shop sends the buyer six mails. Each goes once per order, and a failed send is tried again later.
+A shop sends the buyer seven mails. Each goes once per order, except one per parcel, and a failed send is tried again later.
 
 - **Order received**: a bank transfer or cash on delivery order was placed. You get a new-order mail too.
 - **Order confirmation and receipt**: the order was paid. Turn it off with the **Receipt e-mail** setting under Billing.
-- **Shipped**: you marked it shipped, with the carrier and tracking link.
+- **Part shipped**: one per parcel that leaves items still to send, with its items and tracking link.
+- **Shipped**: the last item went, with the carrier and tracking link.
 - **Delivered**: with a "Rate it" link for each product.
 - **Cancelled**: an unpaid order was cancelled.
 - **Refunded**: the amount and how long it takes to show up.

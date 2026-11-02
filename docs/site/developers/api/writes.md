@@ -537,7 +537,8 @@ The `201` has the order in `data` and where to pay in `next`: `{ "kind": "redire
 | Included tax | A tax line already in the prices is stored with `amount` 0, `unit` the tax and `included` true, so the lines still add up to `total`. |
 | Retry | Send an `Idempotency-Key`: a repeat gets the first order back and does not ask the gateway again. |
 | Limit | 20 orders an hour per user: `429 rate_limited`. A refused request (`422`) is not counted. |
-| `status` | `pending`, `paid`, `shipped`, `delivered`, `failed`, `refunded`, `cancelled`. |
+| `status` | `pending`, `paid`, `processing`, `shipped`, `delivered`, `failed`, `refunded`, `cancelled`. `processing` is paid and being prepared, or part sent. |
+| Parcels | `shipments` lists each parcel: `n`, `shipped_at`, `carrier`, `tracking`, `tracking_url` and its `lines` (`line_id`, `title`, `qty`). `packed_at` is when the seller marked the order packed, else `null`. |
 | Lines | `kind` is `item`, `shipping`, `tax`, `discount` or `fee`; a discount's amount is negative. `listing` links the live listing and is `null` once it is gone. |
 | Cancel | `POST /account/orders/{id}/cancel`, only while `can_cancel` is true: a pending bank transfer or cash on delivery order. `200` with the order, else `409 conflict`. |
 | Pay again | A pending card order has `can_pay` true instead. `POST /account/orders/{id}/pay` asks the gateway again and answers `200` with the order and a new `next`; any other order is `409 conflict`. |

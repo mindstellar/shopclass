@@ -57,6 +57,9 @@ $entry = OrderStore::find($order->getId())->history()[0];
 check('the entry carries the time', is_string($entry['at']) && strtotime($entry['at']) !== false);
 check('a replayed settle is refused', !OrderStore::settle($order->getId(), Order::STATUS_PAID, 'ref-h1'));
 pin('and adds nothing', 1, count(OrderStore::find($order->getId())->history()));
+$twin = $goods();
+check('a ref another order holds is refused, not thrown', !OrderStore::settle($twin->getId(), Order::STATUS_PAID, 'ref-h1'));
+pin('and the twin stays pending with no history', array('pending', array()), array(OrderStore::find($twin->getId())->getStatus(), OrderStore::find($twin->getId())->history()));
 
 OrderHistory::actAs(OrderHistory::BY_ADMIN, 4);
 check('admin 4 starts processing it', OrderStore::process($order->getId()));
