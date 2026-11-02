@@ -20,6 +20,12 @@ final class CurrencyCode
     /** For schemas; `valid()` adds the end anchor a trailing newline cannot slip past. */
     public const PATTERN = '^[A-Z]{3}$';
 
+    /** Currencies with no minor unit (ISO 4217). */
+    private const ZERO = ['BIF', 'CLP', 'DJF', 'GNF', 'ISK', 'JPY', 'KMF', 'KRW', 'PYG', 'RWF', 'UGX', 'VND', 'VUV', 'XAF', 'XOF', 'XPF'];
+
+    /** Currencies with three minor digits (ISO 4217). */
+    private const THREE = ['BHD', 'IQD', 'JOD', 'KWD', 'LYD', 'OMR', 'TND'];
+
     private function __construct()
     {
     }
@@ -40,5 +46,19 @@ final class CurrencyCode
         $code = strtoupper(trim($code));
 
         return self::valid($code) ? $code : null;
+    }
+
+    /**
+     * The ISO 4217 minor-unit digits of $code: 0, 3, or 2 for every other code.
+     */
+    public static function decimals(string $code): int
+    {
+        $code = strtoupper(trim($code));
+
+        return match (true) {
+            in_array($code, self::ZERO, true)  => 0,
+            in_array($code, self::THREE, true) => 3,
+            default                            => 2,
+        };
     }
 }

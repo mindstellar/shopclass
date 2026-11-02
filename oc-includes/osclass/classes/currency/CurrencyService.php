@@ -63,6 +63,16 @@ final class CurrencyService
     }
 
     /**
+     * The decimals a currency shows: its row, or the ISO default before the column exists.
+     */
+    public function decimals(string $code): int
+    {
+        $row = $this->findMany(array($code))[strtoupper($code)] ?? null;
+
+        return isset($row['i_decimals']) ? (int) $row['i_decimals'] : CurrencyCode::decimals($code);
+    }
+
+    /**
      * An order amount as the shop shows it, e.g. "₹448" or "−₹150". Only a zero delivery
      * charge reads "Free".
      */
@@ -117,12 +127,13 @@ final class CurrencyService
      * @throws ConflictException when a currency with this code exists
      * @throws \RuntimeException when the row is not written
      */
-    public function create(string $code, string $name, string $symbol): string
+    public function create(string $code, string $name, string $symbol, ?int $decimals = null): string
     {
         $code = CurrencyCode::normalize($code);
         if ($code === null) {
             throw new InvalidException('/code', 'pattern', _m('The currency code is not in the correct format'));
         }
+        $decimals = $this->checkedDecimals($decimals) ?? CurrencyCode::decimals($code);
         if ($this->find($code) !== null) {
             throw new ConflictException(_m('A currency with this code already exists.'));
         }
@@ -130,6 +141,7 @@ final class CurrencyService
             'pk_c_code'     => $code,
             's_name'        => AdminText::clean($name),
             's_description' => AdminText::clean($symbol),
+            'i_decimals'    => $decimals,
         ]);
         if (!$saved) {
             // Another request added the same code between the check and this insert.
@@ -137,6 +149,7 @@ final class CurrencyService
                 ? new ConflictException(_m('A currency with this code already exists.'))
                 : new \RuntimeException('The currency could not be saved.');
         }
+        CacheGroup::invalidate('currency');
         osc_purge_page_cache('currency');
 
         return $code;
@@ -147,15 +160,19 @@ final class CurrencyService
      *
      * @return bool whether anything changed
      * @throws NotFoundException
+     * @throws InvalidException for decimals outside 0 to 4
      */
-    public function update(string $code, ?string $name, ?string $symbol): bool
+    public function update(string $code, ?string $name, ?string $symbol, ?int $decimals = null): bool
     {
-        $row     = $this->find($code) ?? throw new NotFoundException(_m('No such currency.'));
-        $changed = (int) $this->currencies->update([
+        $decimals = $this->checkedDecimals($decimals);
+        $row      = $this->find($code) ?? throw new NotFoundException(_m('No such currency.'));
+        $changed  = (int) $this->currencies->update([
             's_name'        => AdminText::clean($name ?? $row['s_name']),
             's_description' => AdminText::clean($symbol ?? $row['s_description']),
+            'i_decimals'    => $decimals ?? (int) ($row['i_decimals'] ?? CurrencyCode::decimals($code)),
         ], ['pk_c_code' => $code]) > 0;
         if ($changed) {
+            CacheGroup::invalidate('currency');
             osc_purge_page_cache('currency');
         }
 
@@ -180,6 +197,19 @@ final class CurrencyService
         if ((int) $this->currencies->delete(['pk_c_code' => $code]) <= 0) {
             throw new \RuntimeException('The currency could not be deleted.');
         }
+        CacheGroup::invalidate('currency');
         osc_purge_page_cache('currency');
+    }
+
+    /**
+     * @throws InvalidException when $decimals is set and outside 0 to 4
+     */
+    private function checkedDecimals(?int $decimals): ?int
+    {
+        if ($decimals !== null && ($decimals < 0 || $decimals > 4)) {
+            throw new InvalidException('/decimals', 'range', _m('Decimals must be between 0 and 4.'));
+        }
+
+        return $decimals;
     }
 }

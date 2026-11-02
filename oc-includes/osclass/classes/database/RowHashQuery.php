@@ -47,7 +47,7 @@ final class RowHashQuery extends Model
         't_category_description' => ['fk_i_category_id', 'fk_c_locale_code', 's_name', 's_description', 's_slug'],
         't_meta_fields'          => ['pk_i_id', 's_name', 's_slug', 'e_type', 's_options', 'b_required', 'b_searchable', 's_meta', 'i_position', 'fk_i_group_id'],
         't_meta_categories'      => ['fk_i_category_id', 'fk_i_field_id'],
-        't_currency'             => ['pk_c_code', 's_name', 's_description', 'b_enabled'],
+        't_currency'             => ['pk_c_code', 's_name', 's_description', 'b_enabled', 'i_decimals'],
         't_region'               => ['pk_i_id', 'fk_c_country_code', 's_name', 's_slug', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'],
         't_city'                 => ['pk_i_id', 'fk_i_region_id', 's_name', 's_slug', 'fk_c_country_code', 'b_active', 'i_source_id', 'd_coord_lat', 'd_coord_long'],
         't_city_area'            => ['pk_i_id', 'fk_i_city_id', 's_name'],

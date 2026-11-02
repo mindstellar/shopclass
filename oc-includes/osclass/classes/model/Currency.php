@@ -36,7 +36,7 @@ class Currency extends DAO
         parent::__construct();
         $this->setTableName('t_currency');
         $this->setPrimaryKey('pk_c_code');
-        $this->setFields(array('pk_c_code', 's_name', 's_description', 'b_enabled'));
+        $this->setFields(array('pk_c_code', 's_name', 's_description', 'b_enabled', 'i_decimals'));
     }
 
     /**

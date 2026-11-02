@@ -79,7 +79,7 @@ pin('table name is unchanged', DB_TABLE_PREFIX . 't_currency', $model->getTableN
 pin('primary key is unchanged', 'pk_c_code', $model->getPrimaryKey());
 pin(
     'field allowlist is unchanged',
-    array('pk_c_code', 's_name', 's_description', 'b_enabled'),
+    array('pk_c_code', 's_name', 's_description', 'b_enabled', 'i_decimals'),
     $model->getFields()
 );
 pin(
@@ -100,7 +100,7 @@ $resetCache();
 $row = $model->findByPrimaryKey('USD');
 
 check('a match returns an array', is_array($row), describe($row));
-pin('the row carries exactly the four schema columns', array('pk_c_code', 's_name', 's_description', 'b_enabled'), array_keys($row));
+pin('the row carries exactly the schema columns', array('pk_c_code', 's_name', 's_description', 'b_enabled', 'i_decimals'), array_keys($row));
 pin('pk_c_code round-trips', 'USD', $row['pk_c_code']);
 pin('s_name round-trips', 'US Dollar', $row['s_name']);
 pin('b_enabled is the string "1", not int 1 (C4)', '1', $row['b_enabled']);
@@ -174,6 +174,60 @@ pin('a warm entry survives an external update — the map is never invalidated',
 
 $resetCache();
 pin('after a reset the new value is read', 'Renamed', $model->findByPrimaryKey('USD')['s_name']);
+
+/* ----------------------------------------------------------------------------
+ * Decimals (CurrencyCode and CurrencyService).
+ * ------------------------------------------------------------------------- */
+harness_section('Currency decimals');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hHttpCache.php';
+
+use mindstellar\currency\CurrencyCode;
+use mindstellar\currency\CurrencyService;
+use mindstellar\exception\InvalidException;
+
+if (!function_exists('_m')) {
+    function _m(string $text): string
+    {
+        return $text;
+    }
+}
+
+pin('ISO digits: JPY 0, KWD 3, USD 2, lower case ok', [0, 3, 2, 0], [CurrencyCode::decimals('JPY'), CurrencyCode::decimals('KWD'), CurrencyCode::decimals('USD'), CurrencyCode::decimals('jpy')]);
+
+$service = CurrencyService::make();
+$service->create('JPY', 'Japanese yen', '¥');
+$service->create('KWD', 'Kuwaiti dinar', 'KD', 3);
+$service->create('CHF', 'Swiss franc', 'Fr');
+pin('a new currency without decimals gets the ISO default', [0, 3, 2], [$service->decimals('JPY'), $service->decimals('KWD'), $service->decimals('CHF')]);
+pin('the row stores it', '0', (string) CurrencyStoreRow('JPY'));
+
+$thrown = null;
+try {
+    $service->update('USD', null, null, 5);
+} catch (InvalidException $e) {
+    $thrown = $e;
+}
+check('an update to 5 decimals is refused', $thrown instanceof InvalidException);
+pin('and USD keeps 2', 2, $service->decimals('USD'));
+$thrown = null;
+try {
+    $service->create('XYZ', 'Test', 'T', -1);
+} catch (InvalidException $e) {
+    $thrown = $e;
+}
+check('a create with -1 decimals is refused', $thrown instanceof InvalidException);
+
+$service->decimals('USD');
+$service->update('USD', null, null, 4);
+pin('an update stores new decimals', 4, $service->decimals('USD'));
+$service->update('USD', 'Renamed dollar', null);
+pin('an update without decimals keeps them', 4, $service->decimals('USD'));
+
+function CurrencyStoreRow(string $code): string
+{
+    return (string) \mindstellar\currency\CurrencyStore::find($code)['i_decimals'];
+}
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
