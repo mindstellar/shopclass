@@ -106,6 +106,7 @@ pin('every order line is copied with its id, qty and micros', [['item', 2, $m(20
 pin('the item line keeps its line id, options and sku', [$itemLine($paid), 'Size: M', 'TEE-M'], [$data['lines'][0]['line_id'] ?? null, $data['lines'][0]['options'] ?? null, $data['lines'][0]['sku'] ?? null]);
 pin('display text is frozen', [$m(27.5), true], [$data['totals']['total'] ?? null, ($data['totals']['total_text'] ?? '') !== '']);
 pin('it is titled Invoice, has no refund and no invoice ref', ['Invoice', null, null], [$data['wording']['title'] ?? null, array_key_exists('refund', $data) ? $data['refund'] : 'x', array_key_exists('ref_invoice', $data) ? $data['ref_invoice'] : 'x']);
+pin('an order without line tax has none on its lines, no buyer fields, the default code label', [false, [], 'Tax code'], [isset($data['lines'][0]['tax']), $data['buyer']['fields'] ?? null, $data['wording']['code_label'] ?? null]);
 pin('the hook heard it once', [[$paid->getId(), Document::INVOICE]], $issued);
 pin('the paid write queued the invoice job too', 1, (int) $admin->query("SELECT COUNT(*) FROM {$p}t_job_queue WHERE s_type = '" . Invoices::JOB . "' AND s_unique = 'order:" . $paid->getId() . "'")->fetch_row()[0]);
 
