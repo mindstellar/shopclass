@@ -702,7 +702,7 @@ class CAdminBilling extends AdminSecBaseModel
 
         $data = array(
             's_name'     => $name,
-            'i_amount'   => Money::toMicros($amountRaw),
+            'i_amount'   => Money::toMicros(round((float) $amountRaw, Money::decimals($currency))),
             's_currency' => $currency,
             'i_credits'  => $credits,
             'i_position' => max(0, $position),

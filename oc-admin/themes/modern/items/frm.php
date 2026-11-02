@@ -450,11 +450,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         if (osc_price_enabled_at_items()) {
             $currencies = osc_get_currencies();
             $itemPrice  = $itemTyped('price', $itemRecord['i_price'] ?? '');
-            $itemPrice  = $itemPrice === '' ? '' : osc_prepare_price($itemPrice);
             $currency   = $itemTyped(
                 'currency',
                 $itemRecord['fk_c_currency_code'] ?? Preference::getInstance()->get('currency')
             );
+            $itemPrice  = $itemPrice === '' ? '' : osc_prepare_price($itemPrice, (string) $currency);
             // The category script hides this whole block for a category that takes no price, by
             // the wrapper the price input sits in -- so the label belongs inside it.
             echo '<div class="osc-field item-price osc-price-field">';

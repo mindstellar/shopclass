@@ -316,7 +316,7 @@ final class ListingInput
         foreach (array('price' => 'i_price', 'compareAt' => 'i_compare_price') as $key => $column) {
             if (array_key_exists($key, $raw)) {
                 $price           = $text($key);
-                $fields[$column] = $price === null ? null : (Money::parse($price) ?? $price);
+                $fields[$column] = $price === null ? null : (Money::parse($price, Money::decimals()) ?? $price);
             }
         }
         foreach (array('stock' => 'i_stock', 'weight' => 'i_weight') as $key => $column) {
@@ -533,8 +533,10 @@ final class ListingInput
         }
 
         if ($aItem['price'] !== null) {
-            // A price that is not a number after the locale's separators are read is no price.
-            $aItem['price'] = Money::parse((string) $aItem['price']);
+            // A price that is not a number after the locale's separators are read is no price; one with more
+            // decimals than its currency has is rounded.
+            $currencyCode   = (string) ($aItem['currency'] ?? '');
+            $aItem['price'] = Money::parse((string) $aItem['price'], Money::decimals($currencyCode === '' ? null : $currencyCode));
         }
 
         if ($aItem['catId'] == '') {

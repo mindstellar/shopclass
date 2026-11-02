@@ -78,7 +78,7 @@ final class CurrencyService
      */
     public function money(int $micros, string $code, bool $delivery = false): string
     {
-        return $delivery && $micros === 0 ? __('Free') : Money::display($micros, $this->symbol($code));
+        return $delivery && $micros === 0 ? __('Free') : Money::display($micros, $this->symbol($code), $this->decimals($code));
     }
 
     /**

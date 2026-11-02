@@ -162,15 +162,16 @@ class Utils
     /**
      * Prepare Price for osclass
      *
-     * @param int|float $price stored price, in millionths
+     * @param int|float   $price    stored price, in millionths
+     * @param string|null $currency code whose decimals apply; the site currency when empty
      *
      * @return string
      */
-    public static function preparePrice($price)
+    public static function preparePrice($price, $currency = null)
     {
         return number_format(
             $price / \mindstellar\currency\Money::MICROS,
-            osc_locale_num_dec(),
+            \mindstellar\currency\Money::decimals($currency === null || $currency === '' ? null : (string) $currency),
             osc_locale_dec_point(),
             osc_locale_thousands_sep()
         );

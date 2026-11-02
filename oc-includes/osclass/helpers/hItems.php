@@ -1742,11 +1742,12 @@ function osc_reset_custom_items()
  * Formats the price using the appropiate currency.
  *
  * @param float|int|null $price  In millionths of the currency unit
- * @param string|null    $symbol Defaults to the current item's currency symbol
+ * @param string|null    $symbol   Defaults to the current item's currency symbol
+ * @param string|null    $currency Code whose decimals apply; defaults to the current item's, then the site's
  *
  * @return string
  */
-function osc_format_price($price, $symbol = null)
+function osc_format_price($price, $symbol = null, $currency = null)
 {
     if ($price === null) {
         return osc_apply_filter('item_price_null', __('Check with seller'));
@@ -1759,7 +1760,12 @@ function osc_format_price($price, $symbol = null)
         $symbol = osc_item_currency_symbol();
     }
 
-    $currencyFormat = \mindstellar\currency\Money::display((int) round((float) $price), (string) $symbol);
+    $code           = $currency !== null && $currency !== '' ? (string) $currency : osc_item_currency();
+    $currencyFormat = \mindstellar\currency\Money::display(
+        (int) round((float) $price),
+        (string) $symbol,
+        \mindstellar\currency\Money::decimals($code === '' ? null : $code)
+    );
 
     return osc_apply_filter('item_price', $currencyFormat);
 }
