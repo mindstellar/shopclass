@@ -224,7 +224,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 645 names. Generated from the source; do not edit by hand.
+Core fires 646 names. Generated from the source; do not edit by hand.
 
 ### Admin (81)
 
@@ -565,7 +565,7 @@ Core fires 645 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/classes/search/query/PluginClauses.php` |
 
-### Other (255)
+### Other (256)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -671,6 +671,7 @@ Core fires 645 names. Generated from the source; do not edit by hand.
 | `cart_tax_lines` | event | `CartTaxLines` | `oc-includes/classes/billing/event/CartTaxLines.php` |
 | `cart_totals` | event | `CartFees` | `oc-includes/classes/billing/event/CartFees.php` |
 | `change_email_confirm` | action | `Params::getParam('userId'), $change['old'], $change['new']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
+| `checkout_fields` | event | `CheckoutFields` | `oc-includes/classes/billing/event/CheckoutFields.php` |
 | `cli_commands` | filter | `array()` | `oc-includes/classes/core/cli/Cli.php` |
 | `contact_form` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_form_after` | action | none | `oc-includes/osclass/gui/contact-content.php` |

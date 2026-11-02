@@ -19,6 +19,7 @@ use mindstellar\billing\event\CartProblems;
 use mindstellar\billing\event\CartShipping;
 use mindstellar\billing\event\CartShippingLines;
 use mindstellar\billing\event\CartTaxLines;
+use mindstellar\billing\event\CheckoutFields;
 use mindstellar\billing\event\Line;
 use mindstellar\boot\CoreServices;
 use mindstellar\event\DispatcherInterface;
@@ -68,7 +69,7 @@ final class CartPricer
      * Price the cart.
      *
      * @param array<int,mixed>    $lines {variant, qty} each
-     * @param array<string,mixed> $ctx   address, shipping_method, gateway, user_id, locale, coupon; all
+     * @param array<string,mixed> $ctx   address, shipping_method, gateway, user_id, locale, coupon, fields; all
      *                                  optional. address is the full GoodsCheckout::ADDRESS set when
      *                                  placing, or quoteAddress()'s country, state and postcode
      *
@@ -185,12 +186,36 @@ final class CartPricer
         $cart['tax_lines']       = $extra['tax'];
         $lineTax                 = self::checkedLineTax($taxEvent->lineTax(), $extra['tax']);
 
+        $given          = self::fieldValues($ctx['fields'] ?? null);
+        $cart['fields'] = $given;
+        $asked          = $this->events()->dispatch(new CheckoutFields($cart))->fields();
+        $cart['fields'] = array_map(static fn (array $f): string => $given[$f['id']] ?? '', array_column($asked, null, 'id'));
+
         $extra['fee'] = $this->fees($cart, $subtotal, $extra);
         $totals       = self::sum($subtotal, $extra);
         $freeOver     = $cart['needs_shipping'] ? $this->freeOver($subtotal, $cart) : null;
         $problems     = array_merge($problems, self::problems($this->events()->dispatch(new CartProblems($cart))->rawProblems()));
 
-        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $freeOver, $problems, $cart, $lineTax);
+        return new Quote($currency, $items, $methods, $chosen, $extra, $totals, $freeOver, $problems, $cart, $lineTax, $asked);
+    }
+
+    /**
+     * The buyer's field values as text, by id, for the ids that can name a field.
+     *
+     * @param mixed $fields
+     *
+     * @return array<string,string>
+     */
+    private static function fieldValues($fields): array
+    {
+        $out = array();
+        foreach (is_array($fields) ? $fields : array() as $id => $value) {
+            if (is_string($value) && preg_match('/^[a-z0-9_]{1,32}$/', (string) $id) === 1) {
+                $out[(string) $id] = CheckoutFields::value($value);
+            }
+        }
+
+        return $out;
     }
 
     /**

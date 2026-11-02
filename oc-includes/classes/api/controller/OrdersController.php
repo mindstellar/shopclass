@@ -140,7 +140,8 @@ final class OrdersController
             (string) ($input['shipping_method'] ?? ''),
             (string) ($input['gateway'] ?? ''),
             (string) ($input['note'] ?? ''),
-            is_string($input['coupon'] ?? null) ? $input['coupon'] : null
+            is_string($input['coupon'] ?? null) ? $input['coupon'] : null,
+            (array) ($input['fields'] ?? array())
         );
         $this->api->limiter()->hit($bucket);
         $next = $placed['next'];

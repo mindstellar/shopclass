@@ -383,6 +383,7 @@ filter cart_shipping_methods
 filter cart_tax_lines
 filter cart_totals
 filter category_suggestions
+filter checkout_fields
 filter cli_commands
 filter comment_bulk_filter
 filter comments_processing_row

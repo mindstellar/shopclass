@@ -31,7 +31,7 @@ use mindstellar\user\UserStore;
  * placement, so a short line is refused before the buyer pays. A card order still unpaid after
  * billing_card_hold_minutes is cancelled by a queued job; Billing::HOLDS_STOCK orders wait billing_hold_days.
  *
- * Fires `cart_checkout_before` ($cart) before the write and `billing_order_placed`
+ * Fires `cart_checkout_before` ($cart; a listener may read and normalise the extra fields) before the write and `billing_order_placed`
  * ($orderId, $userId) once the gateway has answered.
  */
 final class GoodsCheckout
@@ -56,14 +56,15 @@ final class GoodsCheckout
      * @param array<string,mixed> $address ADDRESS keys
      * @param string              $note    what the buyer asked of the seller, kept with the order
      * @param string|null         $coupon  the code the buyer entered; the cart filters see CartPricer::coupon() of it
+     * @param array<string,mixed> $fields  the buyer's answers to the extra checkout fields, by field id; ids the checkout does not ask for are dropped
      *
      * @return array{order:Order,next:CheckoutIntent}
      * @throws InvalidException with `/lines/n` (not_buyable, out_of_stock, qty), `/lines` (empty),
-     *                          `/address/<field>`, `/address/id` (unknown), `/shipping_method` (unknown), `/gateway` (unavailable, too_many_open),
+     *                          `/address/<field>`, `/address/id` (unknown), `/shipping_method` (unknown), `/gateway` (unavailable, too_many_open), `/fields/<id>` (required, maxLength),
      *                          or `rejected` at a `cart_problems` entry's pointer, with its message
      * @throws \mindstellar\database\DbException
      */
-    public function place(int $userId, array $lines, array $address, string $shippingMethod, string $gatewayId, string $note = '', ?string $coupon = null): array
+    public function place(int $userId, array $lines, array $address, string $shippingMethod, string $gatewayId, string $note = '', ?string $coupon = null, array $fields = array()): array
     {
         $user = $userId > 0 ? UserStore::find($userId) : null;
         if ($user === null) {
@@ -81,6 +82,7 @@ final class GoodsCheckout
             'gateway'         => $gatewayId,
             'user_id'         => $userId,
             'coupon'          => $coupon,
+            'fields'          => $fields,
         ));
         $ships = $quote->needsShipping();
         if ($ships) {
@@ -109,15 +111,29 @@ final class GoodsCheckout
         if (isset($gateways[$gatewayId]) && $gatewayId === gateway\OfflineGateway::ID && self::holdsTooMany($userId)) {
             $errors[] = array('pointer' => '/gateway', 'code' => 'too_many_open', 'message' => _m('Pay for or cancel your open bank transfer orders first.'));
         }
+        $given = $quote->cart()['fields'] ?? array();
+        foreach ($quote->checkoutFields() as $field) {
+            $problem = AddressBook::problem($field['id'], (string) ($given[$field['id']] ?? ''), $field['max'], $field['required']);
+            if ($problem !== null) {
+                $errors[] = array('pointer' => '/fields/' . $field['id'], 'code' => $problem[0], 'message' => $problem[1]);
+            }
+        }
         if ($errors !== array()) {
             throw InvalidException::all($errors);
         }
 
         $cart = $quote->cart();
         $events  = $this->events ??= CoreServices::dispatcher();
-        $started = $events->dispatch(new CheckoutStarting($cart));
+        $started = $events->dispatch(new CheckoutStarting($cart, $quote->checkoutFields()));
         if ($started->refusals() !== array()) {
             throw InvalidException::all($started->refusals());
+        }
+        $answers = array();
+        foreach ($quote->checkoutFields() as $field) {
+            $value = $started->field($field['id']);
+            if ($value !== '') {
+                $answers[$field['id']] = array('label' => $field['label'], 'value' => $value, 'invoice' => $field['invoice']);
+            }
         }
 
         $meta = array(
@@ -134,6 +150,9 @@ final class GoodsCheckout
             $meta['_address'] = $address;
         } elseif ($address['country'] !== '' || $address['state'] !== '') {
             $meta['_address'] = array_filter(array_intersect_key($address, array('state' => 1, 'country' => 1)), static fn (string $v): bool => $v !== '');
+        }
+        if ($answers !== array()) {
+            $meta['_fields'] = $answers;
         }
         $note = mb_substr(trim($note), 0, 500, 'UTF-8');
         if ($note !== '') {
