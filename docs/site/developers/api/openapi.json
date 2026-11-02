@@ -60456,6 +60456,73 @@
                 ],
                 "description": "A discount line's amount is negative."
             },
+            "OrderShipment": {
+                "type": "object",
+                "properties": {
+                    "n": {
+                        "type": "integer",
+                        "description": "The parcel number, from 1."
+                    },
+                    "shipped_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "RFC 3339, UTC.",
+                        "format": "date-time"
+                    },
+                    "carrier": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "tracking": {
+                        "type": [
+                            "string",
+                            "null"
+                        ]
+                    },
+                    "tracking_url": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "https only."
+                    },
+                    "lines": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "line_id": {
+                                    "type": "integer"
+                                },
+                                "title": {
+                                    "type": "string"
+                                },
+                                "qty": {
+                                    "type": "integer"
+                                }
+                            },
+                            "required": [
+                                "line_id",
+                                "title",
+                                "qty"
+                            ]
+                        }
+                    }
+                },
+                "required": [
+                    "n",
+                    "shipped_at",
+                    "carrier",
+                    "tracking",
+                    "tracking_url",
+                    "lines"
+                ],
+                "description": "One parcel of an order."
+            },
             "OrderGateway": {
                 "type": "object",
                 "properties": {
@@ -60654,6 +60721,21 @@
                         ],
                         "description": "Null for a credits order."
                     },
+                    "shipments": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/OrderShipment"
+                        },
+                        "description": "Parcels sent so far, oldest first. Empty until the first one goes."
+                    },
+                    "packed_at": {
+                        "type": [
+                            "string",
+                            "null"
+                        ],
+                        "description": "When the seller marked it packed; null if not. RFC 3339, UTC.",
+                        "format": "date-time"
+                    },
                     "gateway": {
                         "$ref": "#/components/schemas/OrderGateway"
                     },
@@ -60691,6 +60773,8 @@
                     "total",
                     "lines",
                     "shipping",
+                    "shipments",
+                    "packed_at",
                     "gateway",
                     "receipt_url",
                     "can_cancel",
