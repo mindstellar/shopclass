@@ -23,6 +23,8 @@ use mindstellar\billing\event\CartShipping;
 use mindstellar\billing\event\CartShippingLines;
 use mindstellar\billing\event\CartTaxLines;
 use mindstellar\billing\event\CheckoutStarting;
+use mindstellar\billing\event\DocumentComposing;
+use mindstellar\billing\event\DocumentIssued;
 use mindstellar\billing\event\OrderCancelled;
 use mindstellar\billing\event\OrderDelivered;
 use mindstellar\billing\event\OrderFailed;
@@ -115,6 +117,8 @@ final class CoreServices
         'admin_payment_test_modes' => PaymentTestModes::class,
         'billing_receipt_details' => ReceiptComposing::class,
         'billing_order_return_url' => OrderReturnUrlResolving::class,
+        'billing_document_compose' => DocumentComposing::class,
+        'billing_document_issued' => DocumentIssued::class,
         'email_order_placed_title' => MailComposing::class,
         'email_order_placed_description' => MailComposing::class,
         'email_order_placed_title_after' => MailComposing::class,
