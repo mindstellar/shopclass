@@ -54924,12 +54924,63 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "address_format": {
+                        "type": "object",
+                        "properties": {
+                            "fields": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                },
+                                "description": "The address fields to ask for, in this country's order. A field not listed is not asked for."
+                            },
+                            "required": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string"
+                                }
+                            },
+                            "labels": {
+                                "type": "object",
+                                "properties": {
+                                    "state": {
+                                        "type": "string"
+                                    },
+                                    "postcode": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "state",
+                                    "postcode"
+                                ]
+                            },
+                            "pattern": {
+                                "type": [
+                                    "string",
+                                    "null"
+                                ],
+                                "description": "A regular expression a typed postcode must match, case-insensitive; null for none."
+                            },
+                            "example": {
+                                "type": "string"
+                            }
+                        },
+                        "required": [
+                            "fields",
+                            "required",
+                            "labels",
+                            "pattern",
+                            "example"
+                        ]
                     }
                 },
                 "required": [
                     "code",
                     "name",
-                    "slug"
+                    "slug",
+                    "address_format"
                 ]
             },
             "Region": {
@@ -55048,12 +55099,19 @@
                             "string",
                             "null"
                         ]
+                    },
+                    "decimals": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4,
+                        "description": "Digits after the point in a price in this currency."
                     }
                 },
                 "required": [
                     "code",
                     "name",
-                    "symbol"
+                    "symbol",
+                    "decimals"
                 ]
             },
             "Comment": {
@@ -56771,12 +56829,10 @@
                     "phone",
                     "line1",
                     "city",
-                    "state",
-                    "postcode",
                     "country"
                 ],
                 "additionalProperties": false,
-                "description": "An Indian PIN code (country IN) has 6 digits; a mobile number has at least 8."
+                "description": "The country decides whether state and postcode are needed and what a postcode looks like (see address_format on GET /countries). A phone number has 4 to 15 digits, with an optional leading +."
             },
             "SearchSuggestions": {
                 "type": "object",
@@ -58797,6 +58853,12 @@
                         "type": "string",
                         "minLength": 0,
                         "maxLength": 80
+                    },
+                    "decimals": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4,
+                        "description": "Digits after the point; left out, the ISO 4217 default for the code."
                     }
                 },
                 "required": [
@@ -58817,6 +58879,12 @@
                         "type": "string",
                         "minLength": 0,
                         "maxLength": 80
+                    },
+                    "decimals": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 4,
+                        "description": "Digits after the point; left out, the ISO 4217 default for the code."
                     }
                 },
                 "additionalProperties": false

@@ -62,6 +62,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Shop admin: one test-mode notice for all payment methods, filter chips, a Waiting for payment tab, and courier suggestions on the order page (`admin_billing_carriers`).
 - Tests also run as a shop site in CI.
 - **Listings → Settings** can make a name required when a guest posts a listing; it is off by default.
+- Addresses follow the country: the account form and checkout ask for a state or county only where people write one, label the postcode as that country does, and check its shape. `osc_address_formats()` and `osc_address_form_script()` let a theme use the same rules.
+- Each currency has a **Decimals** setting (JPY 0, KWD 3, most 2) that every price, order, receipt and e-mail follows; the API shows it as `decimals`.
+- `GET /countries` lists each country's `address_format`.
+- The installer offers Stripe and PayPal beside Razorpay.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
@@ -69,6 +73,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Releases ship only `shopclass_v*.zip`; `osclass_v*.zip` is no longer built.
 
 ### Changed
+- Money uses the currency's decimals, not the language's: `Money::format()`, `osc_format_price()` and `osc_prepare_price()` now print JPY with none and KWD with three.
+- An address no longer needs a state or postcode everywhere, and a phone may start with `+` and a country code; the fixed 8-digit phone and 6-digit PIN rules are gone. Money no longer follows the language's decimal setting.
 - Core now bundles symfony/http-client 7.4 (was 5.4) with async-aws/s3 3.5; a plugin that implements Symfony's HTTP client interfaces needs the 7.x signatures.
 - `ImageProcessing` and `ImageResizer` are deprecated; use `mindstellar\image\Processor`.
 - A listing photo upload is turned upright and saved once.

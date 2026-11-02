@@ -273,7 +273,7 @@ final class ListingSerializer
         return [
             'amount'    => (string) Format::amount($item['i_price']),
             'currency'  => $code === null ? null : strtoupper($code),
-            'formatted' => $this->links->price((int) $item['i_price'], $symbol),
+            'formatted' => $this->links->price((int) $item['i_price'], $symbol, $code),
         ];
     }
 

@@ -13,6 +13,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\currency\CurrencyCode;
+
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
     'title'   => __('Currencies'),
@@ -46,6 +48,7 @@ foreach ($aCurrencies as $currency) {
     $row[]   = $currency['pk_c_code'] . $actions;
     $row[]   = $currency['s_name'];
     $row[]   = $currency['s_description'];
+    $row[]   = (string) ($currency['i_decimals'] ?? CurrencyCode::decimals((string) $currency['pk_c_code']));
     $aData[] = $row;
 }
 
@@ -79,6 +82,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     <th><?php _e('Code'); ?></th>
                     <th><?php _e('Name'); ?></th>
                     <th><?php _ex('Symbol', 'currency symbol'); ?></th>
+                    <th><?php _e('Decimals'); ?></th>
                 </tr>
                 </thead>
                 <tbody>
@@ -91,6 +95,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 echo 'data-col-name="'. osc_esc_html(__('Code')) .'"';
                             } elseif ($key === 2) {
                                 echo 'data-col-name="'. osc_esc_html(__('Name')) .'"';
+                            } elseif ($key === 4) {
+                                echo 'data-col-name="'. osc_esc_html(__('Decimals')) .'"';
                             } else {
                                 echo 'data-col-name="'. osc_esc_html(__('Currency symbol')) .'"';
                             } ?>>

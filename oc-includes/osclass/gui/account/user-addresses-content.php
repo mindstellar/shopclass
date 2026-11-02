@@ -46,17 +46,25 @@ $addrAria = static function (string $id, string $error): string {
 
     return $out;
 };
-$addrField = static function (string $name, string $label, string $autocomplete, int $max, bool $required = true) use ($addrForm, $addrErrors, $addrAria): void {
+$addrField = static function (string $name, string $label, string $autocomplete, int $max, bool $required = true, bool $shown = true) use ($addrForm, $addrErrors, $addrAria): void {
     $id    = 'oe-addr-' . $name;
     $error = (string) ($addrErrors[$name] ?? '');
-    osc_gui_field($id, $label, static function () use ($id, $name, $addrForm, $max, $autocomplete, $required, $error, $addrAria): void { ?>
+    echo '<div data-address-field="' . osc_esc_html($name) . '"' . ($shown ? '' : ' hidden') . '>';
+    osc_gui_field($id, $label, static function () use ($id, $name, $addrForm, $max, $autocomplete, $required, $shown, $error, $addrAria): void { ?>
         <input class="oe-input" id="<?php echo osc_esc_html($id); ?>" type="<?php echo $name === 'phone' ? 'tel' : 'text'; ?>"
                name="<?php echo osc_esc_html($name); ?>" value="<?php echo osc_esc_html((string) ($addrForm[$name] ?? '')); ?>"
                maxlength="<?php echo $max; ?>" autocomplete="<?php echo osc_esc_html($autocomplete); ?>"<?php
             echo $required ? ' required' : '';
+            echo $shown ? '' : ' disabled';
             echo $addrAria($id, $error); ?> />
     <?php }, '', $error);
+    echo '</div>';
 };
+$addrCountry = strtoupper((string) ($addrForm['country'] ?? ''));
+if (!isset($addrCountries[$addrCountry])) {
+    $addrCountry = (string) array_key_first($addrCountries);
+}
+$addrFormat = \mindstellar\user\AddressFormat::for($addrCountry);
 ?>
 <div class="oe-account">
     <div class="oe-account-main">
@@ -96,7 +104,7 @@ $addrField = static function (string $name, string $label, string $autocomplete,
         <?php if ($addrFull) { ?>
             <p class="oe-muted"><?php echo osc_esc_html(sprintf(_m('You can keep up to %d addresses. Delete one to add another.'), \mindstellar\user\AddressBook::MAX)); ?></p>
         <?php } else { ?>
-            <form class="nocsrf" id="oe-addr-form" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>" novalidate>
+            <form class="nocsrf" id="oe-addr-form" method="post" action="<?php echo osc_esc_html(osc_base_url(true)); ?>" data-address-form novalidate>
                 <?php echo osc_csrf_token_form(); ?>
                 <input type="hidden" name="page" value="user" />
                 <input type="hidden" name="action" value="addresses_post" />
@@ -108,19 +116,7 @@ $addrField = static function (string $name, string $label, string $autocomplete,
                         <?php
                         $addrField('label', _m('Label (Home, Work)'), 'off', 40, false);
                         $addrField('name', _m('Full name'), 'name', 100);
-                        $addrField('phone', _m('Mobile'), 'tel', 40);
-                        $addrField('line1', _m('Address'), 'street-address', 100);
-                        ?>
-                    </div>
-                    <div class="oe-grid">
-                        <?php
-                        $addrField('city', _m('City'), 'address-level2', 100);
-                        $addrField('state', _m('State'), 'address-level1', 100);
-                        $addrField('postcode', _m('PIN code or postcode'), 'postal-code', 15);
-                        $addrCountry = strtoupper((string) ($addrForm['country'] ?? ''));
-                        if (!isset($addrCountries[$addrCountry])) {
-                            $addrCountry = (string) array_key_first($addrCountries);
-                        }
+                        $addrField('phone', _m('Phone'), 'tel', 40);
                         $addrCountryError = (string) ($addrErrors['country'] ?? '');
                         osc_gui_field('oe-addr-country', _m('Country'), static function () use ($addrCountries, $addrCountry, $addrCountryError, $addrAria): void { ?>
                             <select class="oe-input" id="oe-addr-country" name="country" autocomplete="country"<?php
@@ -131,6 +127,24 @@ $addrField = static function (string $name, string $label, string $autocomplete,
                                 <?php } ?>
                             </select>
                         <?php }, '', $addrCountryError); ?>
+                    </div>
+                    <div class="oe-grid" data-address-fields>
+                        <?php
+                        $addrLabels = array(
+                            'line1'    => array(_m('Address'), 'street-address', 100),
+                            'city'     => array(_m('City'), 'address-level2', 100),
+                            'state'    => array($addrFormat['state'] !== '' ? $addrFormat['state'] : _m('State / Province'), 'address-level1', 100),
+                            'postcode' => array($addrFormat['postcode'] !== '' ? $addrFormat['postcode'] : _m('Postcode'), 'postal-code', 15),
+                        );
+                        $addrOrder = array_merge(
+                            array_values(array_intersect($addrFormat['fields'], array_keys($addrLabels))),
+                            array_values(array_diff(array_keys($addrLabels), $addrFormat['fields']))
+                        );
+                        foreach ($addrOrder as $addrName) {
+                            [$addrText, $addrAuto, $addrMax] = $addrLabels[$addrName];
+                            $addrField($addrName, $addrText, $addrAuto, $addrMax, in_array($addrName, $addrFormat['required'], true), in_array($addrName, $addrFormat['fields'], true));
+                        }
+                        ?>
                     </div>
                     <?php if ($addrId === '' && $addrList !== array()) { ?>
                         <label class="oe-check">
@@ -147,7 +161,8 @@ $addrField = static function (string $name, string $label, string $autocomplete,
             </form>
         <?php } ?>
 
-        <?php osc_run_hook('account_page_after', 'user-addresses'); ?>
+        <?php osc_address_form_script();
+        osc_run_hook('account_page_after', 'user-addresses'); ?>
     </div>
 
     <?php require __DIR__ . '/nav.php'; ?>

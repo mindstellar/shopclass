@@ -252,8 +252,8 @@ final class AddressBook
     }
 
     /**
-     * The fields cleaned and checked: every field but label is needed, the country is one of the
-     * site's, a mobile has at least 8 digits and an Indian PIN code has 6.
+     * The fields cleaned and checked: the country is one of the site's, and the fields its address
+     * format needs are filled, a postcode matches its country's pattern and a phone looks like one.
      *
      * @param array<string,mixed> $input
      * @param string              $at    the pointer the fields sit under, e.g. `/address`
@@ -264,22 +264,26 @@ final class AddressBook
     public static function check(array $input, string $at = ''): array
     {
         $out    = array();
-        $errors = array();
+        $found  = array();
         foreach (self::FIELDS as $field => $max) {
             $value       = self::clean($field, $input[$field] ?? '');
             $out[$field] = $value;
-            $error       = self::problem($field, $value, $max, $field !== 'label');
-            if ($error === null && $field === 'phone' && strlen((string) preg_replace('/\D+/', '', $value)) < 8) {
-                $error = array('pattern', _m('Enter a mobile number with at least 8 digits.'));
-            } elseif ($error === null && $field === 'country' && (new LocationQuery())->lineage($value, 0, 0)['country'] === null) {
+            $error       = self::problem($field, $value, $max, false);
+            if ($error === null && $field === 'country' && $value !== '' && (new LocationQuery())->lineage($value, 0, 0)['country'] === null) {
                 $error = array('unknown', _m('Choose a country from the list.'));
             }
             if ($error !== null) {
-                $errors[] = array('pointer' => $at . '/' . $field, 'code' => $error[0], 'message' => $error[1]);
+                $found[$at . '/' . $field] = array('pointer' => $at . '/' . $field, 'code' => $error[0], 'message' => $error[1]);
             }
         }
-        if ($out['country'] === 'IN' && $out['postcode'] !== '' && preg_match('/^\d{6}$/', $out['postcode']) !== 1) {
-            $errors[] = array('pointer' => $at . '/postcode', 'code' => 'pattern', 'message' => _m('PIN code needs 6 digits.'));
+        foreach (AddressFormat::problems($out, $at, true) as $error) {
+            $found += array($error['pointer'] => $error);
+        }
+        $errors = array();
+        foreach (array_keys(self::FIELDS) as $field) {
+            if (isset($found[$at . '/' . $field])) {
+                $errors[] = $found[$at . '/' . $field];
+            }
         }
         if ($errors !== array()) {
             throw InvalidException::all($errors);

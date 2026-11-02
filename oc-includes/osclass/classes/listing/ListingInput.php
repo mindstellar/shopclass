@@ -93,11 +93,12 @@ final class ListingInput
      * fill the option editor, `photos` its photo choice (id => label), and `errors` holds a
      * refused save's messages by row index, or under 'options' for the option names.
      *
-     * @param int $itemId 0 for a new listing
+     * @param int         $itemId   0 for a new listing
+     * @param string|null $currency the listing's currency code; the site currency when null
      *
      * @return array{sell:bool,sku:string,price:string,compareAt:string,stock:string,weight:string,shippingClass:string,hasOptions:bool,options:array<int,array{name:string,values:array<int,string>}>,variants:array<int,array<string,mixed>>,photos:array<int,string>,errors:array<int|string,array<int,string>>}
      */
-    public static function productForm(int $itemId): array
+    public static function productForm(int $itemId, ?string $currency = null): array
     {
         $photoIds = $itemId > 0 ? array_map(static fn (array $photo): int => (int) $photo['pk_i_id'], PhotoStore::ofItems(array($itemId))) : array();
         $kept     = Session::getInstance()->_getForm('product');
@@ -125,7 +126,7 @@ final class ListingInput
             }
         }
         $text  = static fn ($value): string => $value === null ? '' : (string) $value;
-        $price = static fn ($value): string => is_numeric($value) ? (string) osc_prepare_price($value) : $text($value);
+        $price = static fn ($value): string => is_numeric($value) ? (string) osc_prepare_price($value, $currency) : $text($value);
         $shown = static fn (array $row): array => array(
             'sku'           => $text($row['s_sku'] ?? null),
             'price'         => $price($row['i_price'] ?? null),
@@ -249,12 +250,12 @@ final class ListingInput
      *
      * @return array{sell:bool,fields:array<string,int|string|null>,variants?:array<int,array{options:array<string,string>,fields:array<string,int|string|null>}>}|null
      */
-    private static function product(mixed $raw): ?array
+    private static function product(mixed $raw, int $decimals): ?array
     {
         if (!is_array($raw)) {
             return null;
         }
-        $product = array('sell' => !empty($raw['sell']), 'fields' => self::variantFields($raw));
+        $product = array('sell' => !empty($raw['sell']), 'fields' => self::variantFields($raw, $decimals));
         if (empty($raw['hasOptions'])) {
             return $product;
         }
@@ -278,7 +279,7 @@ final class ListingInput
                     $options[self::optionText($name)] = self::optionText($value);
                 }
             }
-            $fields = self::variantFields($row);
+            $fields = self::variantFields($row, $decimals);
             if (array_key_exists('photoId', $row)) {
                 $photo                      = is_scalar($row['photoId']) ? trim((string) $row['photoId']) : '';
                 $fields['fk_i_resource_id'] = $photo === '' ? null : (preg_match('/^\d{1,10}$/', $photo) === 1 ? (int) $photo : $photo);
@@ -297,7 +298,7 @@ final class ListingInput
      *
      * @return array<string,int|string|null>
      */
-    private static function variantFields(array $raw): array
+    private static function variantFields(array $raw, int $decimals): array
     {
         $text = static function (string $key) use ($raw): ?string {
             $value = isset($raw[$key]) && is_scalar($raw[$key]) ? trim((string) Params::purifyText($raw[$key])) : '';
@@ -316,7 +317,7 @@ final class ListingInput
         foreach (array('price' => 'i_price', 'compareAt' => 'i_compare_price') as $key => $column) {
             if (array_key_exists($key, $raw)) {
                 $price           = $text($key);
-                $fields[$column] = $price === null ? null : (Money::parse($price) ?? $price);
+                $fields[$column] = $price === null ? null : (Money::parse($price, $decimals) ?? $price);
             }
         }
         foreach (array('stock' => 'i_stock', 'weight' => 'i_weight') as $key => $column) {
@@ -532,9 +533,12 @@ final class ListingInput
             $aItem['address'] = null;
         }
 
+        $currencyCode = (string) ($aItem['currency'] ?? '');
+        $decimals     = Money::decimals($currencyCode === '' ? null : $currencyCode);
         if ($aItem['price'] !== null) {
-            // A price that is not a number after the locale's separators are read is no price.
-            $aItem['price'] = Money::parse((string) $aItem['price']);
+            // A price that is not a number after the locale's separators are read is no price; one with more
+            // decimals than its currency has is rounded.
+            $aItem['price'] = Money::parse((string) $aItem['price'], $decimals);
         }
 
         if ($aItem['catId'] == '') {
@@ -542,7 +546,7 @@ final class ListingInput
         }
 
         // Only an admin sells a listing; for anyone else the member is ignored.
-        $product = $admin ? self::product($form['product'] ?? null) : null;
+        $product = $admin ? self::product($form['product'] ?? null, $decimals) : null;
         if ($product !== null) {
             $aItem['product'] = $product;
         }

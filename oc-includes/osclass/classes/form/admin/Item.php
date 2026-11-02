@@ -238,7 +238,7 @@ class Item extends FormInputs
         $attr['autocomplete'] = 'off';
 
         try {
-            echo (new self())->text('price', isset($item['i_price']) ? osc_prepare_price($item['i_price']) : null, $attr);
+            echo (new self())->text('price', isset($item['i_price']) ? osc_prepare_price($item['i_price'], $item['fk_c_currency_code'] ?? null) : null, $attr);
         } catch (Exception $e) {
             if (OSC_DEBUG) {
                 trigger_error($e->getTraceAsString());

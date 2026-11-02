@@ -155,7 +155,7 @@ final class TestLinks implements Links
         return 'http://localhost/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
-    public function price(?int $micros, string $symbol): string
+    public function price(?int $micros, string $symbol, ?string $code = null): string
     {
         return number_format((int) $micros / 1000000, 2) . ' ' . $symbol;
     }
@@ -315,7 +315,7 @@ $lazy       = Definitions::lazy(Schema::names(), static function () use (&$lazyB
     return Schema::components();
 });
 $r    = $get('currencies', array(), $publicKey, $makeKernel(new ApiSettings(true, userKeys: true), new Validator($lazy)));
-pin('the currency list matches the stored currencies', array(array('code' => 'USD', 'name' => 'US Dollar', 'symbol' => 'US Dollar')), $r->body()['data']);
+pin('the currency list matches the stored currencies', array(array('code' => 'USD', 'name' => 'US Dollar', 'symbol' => 'US Dollar', 'decimals' => 2)), $r->body()['data']);
 check('a request whose route follows no $ref never builds the component schemas', $lazyBuilds === 0);
 Preference::getInstance()->set('pageTitle', 'Renamed site');
 pin('the site root follows a settings change at once', 'Renamed site', $get('', array(), $publicKey)->body()['data']['name']);
@@ -337,7 +337,7 @@ pin('fields= trims a category', array('id', 'slug'), array_keys($get('categories
 
 harness_reset_container();
 harness_section('locations');
-pin('the country list has code, name and slug', array(array('code' => 'US', 'name' => 'United States', 'slug' => 'us')), $get('countries', array(), $publicKey)->body()['data']);
+pin('the country list has code, name and slug', array(array('code' => 'US', 'name' => 'United States', 'slug' => 'us')), array_map(static fn (array $c): array => array_intersect_key($c, array_flip(array('code', 'name', 'slug'))), $get('countries', array(), $publicKey)->body()['data']));
 pin('a country\'s regions', array('Alpha'), array_column($get('countries/us/regions', array(), $publicKey)->body()['data'], 'name'));
 pin('an unknown country is 404', 404, $get('countries/zz/regions', array(), $publicKey)->status());
 pin('a region\'s cities', array('Aville'), array_column($get('regions/' . $region . '/cities', array(), $publicKey)->body()['data'], 'name'));

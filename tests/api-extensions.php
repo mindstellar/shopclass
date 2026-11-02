@@ -60,7 +60,7 @@ final class PlainLinks implements Links
         return 'https://site.test/api/' . ($version ?? 'v1') . '/' . $path;
     }
 
-    public function price(?int $micros, string $symbol): string
+    public function price(?int $micros, string $symbol, ?string $code = null): string
     {
         return (string) $micros;
     }

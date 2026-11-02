@@ -49,8 +49,8 @@ final class SiteLinks implements Links
         return osc_api_url($path, $version);
     }
 
-    public function price(?int $micros, string $symbol): string
+    public function price(?int $micros, string $symbol, ?string $code = null): string
     {
-        return (string) osc_format_price($micros, $symbol);
+        return (string) osc_format_price($micros, $symbol, $code);
     }
 }

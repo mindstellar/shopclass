@@ -26,7 +26,7 @@ $typed  = is_array(__get('typed')) ? __get('typed') : array();
 $errors = is_array(__get('errors')) ? __get('errors') : array();
 
 $name     = $typed['name'] ?? ($isEdit ? $package['s_name'] : '');
-$amount   = $typed['amount'] ?? ($isEdit ? \mindstellar\currency\Money::fromMicros((int) $package['i_amount']) : '');
+$amount   = $typed['amount'] ?? ($isEdit ? \mindstellar\currency\Money::fromMicros((int) $package['i_amount'], \mindstellar\currency\Money::decimals((string) $package['s_currency'])) : '');
 $currency = $typed['currency'] ?? ($isEdit ? $package['s_currency'] : osc_billing_currency());
 $credits  = $typed['credits'] ?? ($isEdit ? (int) $package['i_credits'] : '');
 $position = $typed['position'] ?? ($isEdit ? (int) $package['i_position'] : 0);

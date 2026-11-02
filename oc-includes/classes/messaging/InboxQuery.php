@@ -91,7 +91,7 @@ final class InboxQuery
             'url'       => osc_item_url_ns($itemId),
             'live'      => $item['live'],
             'photo_url' => $item['photo_url'],
-            'price'     => (string) osc_format_price($item['price'], $symbol),
+            'price'     => (string) osc_format_price($item['price'], $symbol, $item['currency']),
         );
     }
 

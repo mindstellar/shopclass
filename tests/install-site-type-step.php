@@ -69,6 +69,8 @@ $online = new ShopSetup(
     array(
         'shipping' => array($release('0.1.1')),
         'tax'      => array($release('0.1.0')),
+        'stripe'   => array($release('0.1.0')),
+        'paypal'   => array($release('0.1.0')),
         'razorpay' => array($release('0.1.0')),
         'tax-gst'  => array($release('0.1.0')),
         'promotions' => array($release('0.2.0', '99.0.0')),
@@ -97,6 +99,9 @@ check('the Shop card can be chosen', $shopRadio($html) !== '' && !str_contains($
 check('no offline note', !str_contains($html, 'Needs internet'));
 check('the plugin list starts hidden while classifieds is picked', (bool) preg_match('/id="ins-shop-plugins"\s+hidden/', $html));
 check('shipping is offered and ticked', str_contains($box($html, 'shipping'), 'checked'));
+check('stripe, paypal and razorpay are offered in that order, all unticked', array_column($online->offer()['plugins'], 'slug') === array('shipping', 'tax', 'stripe', 'paypal', 'razorpay')
+    && array_column(array_filter($online->offer()['plugins'], static fn (array $p): bool => in_array($p['slug'], array('stripe', 'paypal', 'razorpay'), true)), 'checked') === array(false, false, false));
+check('a gateway the catalogue lacks is left out', array_search('paypal', array_column((new ShopSetup(array('aisle' => array($release('1.0.0'))), array('aisle' => array('slug' => 'aisle')), array('stripe' => array($release('0.1.0'))), array()))->offer()['plugins'], 'slug'), true) === false);
 check('razorpay is offered unticked', $box($html, 'razorpay') !== '' && !str_contains($box($html, 'razorpay'), 'checked'));
 check('a plugin the catalogue lacks is not offered', $box($html, 'analytics') === '');
 check('a plugin Aisle does not ask for is not offered', $box($html, 'tax-gst') === '');

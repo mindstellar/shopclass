@@ -114,6 +114,17 @@ pin('matches the schema', [], api_admin_schema_errors('CurrencyDocument', $r));
 pin('Location names it, and a GET there reads it', ['http://localhost/api/v1/admin/currencies/GBP', 200, 'GBP', 404], [
     $r->header('Location'), $call('GET', 'admin/currencies/GBP', null, $boss)->status(), $call('GET', 'admin/currencies/GBP', null, $boss)->body()['data']['code'] ?? null, $call('GET', 'admin/currencies/ZZZ', null, $boss)->status(),
 ]);
+$r = $call('POST', 'admin/currencies', ['code' => 'JPY', 'name' => 'Yen', 'symbol' => '¥'], $boss);
+pin('a new JPY gets 0 decimals from ISO', [201, 0], [$r->status(), $r->body()['data']['decimals'] ?? null]);
+pin('and USD in the public list shows 2, JPY 0', [2, 0], (static function () use ($call, $boss): array {
+    $by = array_column($call('GET', 'currencies', null, $boss)->body()['data'] ?? [], 'decimals', 'code');
+    return [$by['USD'] ?? null, $by['JPY'] ?? null];
+})());
+$r = $call('PATCH', 'admin/currencies/JPY', ['decimals' => 3], $boss);
+pin('PATCH decimals 3 saves', [200, 3, 3], [$r->status(), $r->body()['data']['decimals'] ?? null, $call('GET', 'admin/currencies/JPY', null, $boss)->body()['data']['decimals'] ?? null]);
+$r = $call('PATCH', 'admin/currencies/JPY', ['decimals' => 7], $boss);
+pin('decimals 7 is 422 at /decimals', [422, true], [$r->status(), str_contains((string) json_encode($r->body()), '/decimals')]);
+$call('DELETE', 'admin/currencies/JPY', null, $boss);
 pin('the same code again is 409', '409 conflict', api_admin_code($call('POST', 'admin/currencies', ['code' => 'GBP', 'name' => 'Pound two'], $boss)));
 $racer = new class () extends \Currency {
     public function insert($values)

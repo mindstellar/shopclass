@@ -13,12 +13,26 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\currency\CurrencyCode;
+
 //customize Head
 function customHead()
 {
     ?>
     <script type="text/javascript">
         document.addEventListener('DOMContentLoaded', function () {
+            var code = document.querySelector('input[name=pk_c_code]');
+            var decimals = document.querySelector('input[name=i_decimals]');
+            var odd = <?php echo json_encode(CurrencyCode::exceptions(), JSON_FORCE_OBJECT); ?>;
+            if (code && decimals && !code.disabled) {
+                code.addEventListener('input', function () {
+                    var c = code.value.trim().toUpperCase();
+                    if (c.length === 3 && !decimals.dataset.touched) {
+                        decimals.value = Object.prototype.hasOwnProperty.call(odd, c) ? odd[c] : 2;
+                    }
+                });
+                decimals.addEventListener('input', function () { decimals.dataset.touched = '1'; });
+            }
             oscValidateForm(document.querySelector('form[name=currency_form]'), {
                 rules: {
                     pk_c_code: { required: true, minlength: 3, maxlength: 3 },
@@ -131,6 +145,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         'label' => __('Currency symbol'),
                         'value' => $aCurrency['s_description'],
                         'width' => 'num',
+                    ));
+                    osc_admin_number(array(
+                        'name'      => 'i_decimals',
+                        'label'     => __('Decimals'),
+                        'value'     => $aCurrency['i_decimals'] ?? CurrencyCode::decimals((string) $aCurrency['pk_c_code']),
+                        'min'       => 0,
+                        'max'       => 4,
+                        'step'      => 1,
+                        'help'      => __('Digits after the point in prices, from 0 to 4. Yen has 0, dinar has 3.'),
                     ));
                     osc_admin_text(array(
                         'name'  => 's_name',

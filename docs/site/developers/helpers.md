@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1269 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1271 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -558,7 +558,7 @@ Core defines 1269 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_count_items()` | Gets number of items in current array items |
 | `osc_count_latest_items($total_latest_items = null, $options = array())` | Gets number of latest items |
 | `osc_delete_comment_url()` | Gets  link to delete the current comment of current item |
-| `osc_format_price($price, $symbol = null)` | Formats the price using the appropiate currency. |
+| `osc_format_price($price, $symbol = null, $currency = null)` | Formats the price using the appropiate currency. |
 | `osc_get_item_meta()` | Gets item meta fields |
 | `osc_get_item_resources()` | Gets current resource of current array resources of current item |
 | `osc_has_custom_items()` | Gets next item of custom items |
@@ -1345,16 +1345,18 @@ Core defines 1269 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_unregister_script($id)` | Remove script from the queue, so it will not be loaded |
 | `osc_unregister_style($id)` | Remove style from the queue, so it will not be loaded |
 
-### hUsers (79)
+### hUsers (81)
 
 `oc-includes/osclass/helpers/hUsers.php`
 
 | Helper | What it does |
 |---|---|
 | `osc_address_book_enabled()` | Whether the account area offers the address book: in shop mode only, since only goods orders are delivered. |
+| `osc_address_form_script()` | Prints the country address formats as JSON and the script that reshapes an address form to the chosen country. Call it after the form; a second call prints nothing. The form carries `data-address-form`, its fields are found by `name` and their wrappers by `data-address-field="<name>"`. |
+| `osc_address_formats()` | The address format of every country the site offers, by country code: `fields` (in order), `required`, `state` and `postcode` labels (translated; empty when the field is not asked), `pattern` (null for none) and an `example` postcode. |
 | `osc_address_picker(array $opts = array())` | The checkout address picker for the signed-in buyer: each saved address as a radio card, the default chosen, and "Use a new address". The theme wraps its own address fields in an element with `data-address-form`; the picker fills them from the chosen address, hides them while a saved one is chosen and fires `osc:address` ({id, address}) on each change. Prints nothing for a buyer with no saved address. |
 | `osc_address_save_field(array $opts = array())` | The "Save this address" box for a typed checkout address, ticked by default. Shown with the address fields; nothing once the address book is full. |
-| `osc_address_text(array $address)` | One saved address on a line: "1 Main St, Austin, Texas 73301, United States · 5550100". |
+| `osc_address_text(array $address)` | One saved address on a line, in its country's order and without fields the country does not use: "1 Main St, Austin, Texas 73301, United States · 5550100". |
 | `osc_admin_is_browsing()` | Whether a signed-in admin is browsing the site, for display and preview only: it grants no admin power, and permission checks must use osc_is_admin_user_logged_in() instead. |
 | `osc_alert()` | Gets current alert fomr view |
 | `osc_alert_criteria(?array $alert = null)` | What an alert searches for, as labelled parts: each entry is ['label', 'value']. Empty for an alert on all listings. A paused alert (one the upgrade could not keep) returns one 'held' entry. Defaults to the current alert in the loop. |
@@ -1593,7 +1595,7 @@ Core defines 1269 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_package_installs_disabled()` | Whether installing/updating market packages (plugins/themes) is disabled for this installation. Distinct from osc_self_update_disabled(): that flag stops core from overwriting itself on an immutable deployment. Packages are not core — on a deployment where oc-content is a persistent volume, a package write survives a redeploy just fine, so this defaults to enabled and is only set where the site owner has no persistent oc-content to write into. |
 | `osc_phpmailer_limit_smtp_wait($mail)` | Apply osc_phpmailer_smtp_timeout_seconds() to a PHPMailer instance and to the SMTP object it will use on send(). |
 | `osc_phpmailer_smtp_timeout_seconds()` | Seconds PHPMailer may wait on one SMTP connect or command. |
-| `osc_prepare_price($price)` | Format a stored integer price for display. |
+| `osc_prepare_price($price, $currency = null)` | Format a stored integer price for display. |
 | `osc_prune_array(&$input)` | Drop null and empty elements from an array in place, recursively. |
 | `osc_redirect_to($url, $code = null)` | Flush pending flash messages, send a Location header and end the request. |
 | `osc_replace_double_slash($path)` | replace double slash with single slash |

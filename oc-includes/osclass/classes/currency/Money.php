@@ -20,26 +20,48 @@ final class Money
     public const MICROS = 1000000;
 
     /**
-     * Two decimals in the site's locale and the currency code: "1,234.50 EUR".
+     * The decimals a currency shows. With no code it is the site currency. With no database set up
+     * (tests, the installer) it is the ISO 4217 default; a failed query still throws.
+     */
+    public static function decimals(?string $currency = null): int
+    {
+        $code = '';
+        try {
+            $code = strtoupper(trim($currency ?? (function_exists('osc_currency') ? (string) osc_currency() : '')));
+            if ($code === '') {
+                $code = 'USD';
+            }
+
+            return CurrencyService::make()->decimals($code);
+        } catch (\mindstellar\database\DbException $e) {
+            throw $e;
+        } catch (\Throwable) {
+            return CurrencyCode::decimals($code === '' ? 'USD' : $code);
+        }
+    }
+
+    /**
+     * The currency's decimals in the site's locale, then the currency code: "1,234.50 EUR".
      *
      * @deprecated since 7.1.0 use CurrencyService::money() instead, which shows amounts as orders and receipts do
      */
-    public static function format(int $micros, string $currency): string
+    public static function format(int $micros, string $currency, ?int $decimals = null): string
     {
-        return number_format($micros / self::MICROS, 2, osc_locale_dec_point(), osc_locale_thousands_sep())
+        return number_format($micros / self::MICROS, $decimals ?? self::decimals($currency), osc_locale_dec_point(), osc_locale_thousands_sep())
                . ' ' . strtoupper($currency);
     }
 
     /**
      * An amount as the shop shows it, in the locale's currency format: "₹1,234", "₹1,234.50",
-     * "−₹150", "₹0". Whole amounts drop their decimals; zero is never "Free". A negative
-     * amount takes the minus sign (U+2212), as the cart and checkout show it.
+     * "−₹150", "₹0". The decimals are the currency's (the site currency when $decimals is null);
+     * whole amounts drop them, and zero is never "Free". A negative amount takes the minus sign
+     * (U+2212), as the cart and checkout show it.
      */
-    public static function display(int $micros, string $symbol): string
+    public static function display(int $micros, string $symbol, ?int $decimals = null): string
     {
         $locale   = _osc_user_locale_row();
         $value    = abs($micros) / self::MICROS;
-        $decimals = (int) $locale['i_num_dec'];
+        $decimals = max(0, $decimals ?? self::decimals());
         $rounded  = round($value, $decimals);
         if ($decimals > 0 && $rounded == floor($rounded)) {
             $decimals = 0;
@@ -84,17 +106,18 @@ final class Money
     }
 
     /**
-     * Micros as a plain two-decimal amount ("12.50"), for a form field.
+     * Micros as a plain amount ("12.50"), for a form field. Null decimals is the site currency's.
      */
-    public static function fromMicros(int $micros): string
+    public static function fromMicros(int $micros, ?int $decimals = null): string
     {
-        return number_format($micros / self::MICROS, 2, '.', '');
+        return number_format($micros / self::MICROS, $decimals ?? self::decimals(), '.', '');
     }
 
     /**
      * An amount typed in the site's locale ("1.234,50") as micros, or null when it is not a number.
+     * With $decimals set it is rounded half-up to that many decimals first.
      */
-    public static function parse(string $input): ?int
+    public static function parse(string $input, ?int $decimals = null): ?int
     {
         $amount = str_replace(
             array(osc_locale_thousands_sep(), osc_locale_dec_point()),
@@ -102,6 +125,10 @@ final class Money
             trim($input)
         );
 
-        return is_numeric($amount) ? self::toMicros($amount) : null;
+        if (!is_numeric($amount)) {
+            return null;
+        }
+
+        return self::toMicros($decimals === null ? $amount : round((float) $amount, $decimals));
     }
 }

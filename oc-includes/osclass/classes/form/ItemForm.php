@@ -523,7 +523,7 @@ class ItemForm extends Form
         }
         parent::generic_input_text(
             'price',
-            isset($item['i_price']) ? osc_prepare_price($item['i_price']) : null
+            isset($item['i_price']) ? osc_prepare_price($item['i_price'], $item['fk_c_currency_code'] ?? null) : null
         );
     }
 

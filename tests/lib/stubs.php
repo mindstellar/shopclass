@@ -25,6 +25,13 @@ if (!function_exists('__')) {
     }
 }
 
+if (!function_exists('_m')) {
+    function _m($key)
+    {
+        return $key;
+    }
+}
+
 if (!function_exists('_x')) {
     function _x($key, $context, $domain = 'core')
     {

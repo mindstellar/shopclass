@@ -51,8 +51,9 @@ interface Links
 
     /**
      * A price as the site shows it, e.g. "12.50 €"; "Free" for 0 and the theme's text for null.
+     * $code sets the decimals; the site currency's when null.
      *
      * @api
      */
-    public function price(?int $micros, string $symbol): string;
+    public function price(?int $micros, string $symbol, ?string $code = null): string;
 }

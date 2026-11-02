@@ -54,6 +54,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_currency (
     s_name VARCHAR(40) NOT NULL,
     s_description VARCHAR(80) NULL,
     b_enabled TINYINT(1) NOT NULL DEFAULT 1,
+    i_decimals TINYINT UNSIGNED NOT NULL DEFAULT 2,
 
         PRIMARY KEY (pk_c_code),
         UNIQUE KEY uk_currency_name (s_name)

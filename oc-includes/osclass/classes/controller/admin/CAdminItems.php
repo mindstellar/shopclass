@@ -713,7 +713,7 @@ class CAdminItems extends AdminSecBaseModel
     {
         $this->_exportVariableToView('actions', $this->itemStateActions($item));
         $this->_exportVariableToView('itemStatus', $this->itemStatePills($item));
-        $this->_exportVariableToView('itemProduct', ListingInput::productForm((int) ($item['pk_i_id'] ?? 0)));
+        $this->_exportVariableToView('itemProduct', ListingInput::productForm((int) ($item['pk_i_id'] ?? 0), (string) ($item['fk_c_currency_code'] ?? '') ?: null));
         $this->_exportVariableToView('itemActions', $this->itemStateMoves($item));
 
         $expired = ListingStatus::isExpired($item);

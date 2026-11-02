@@ -419,7 +419,7 @@ $services = new \mindstellar\api\ApiServices(new \mindstellar\apikey\ApiSettings
         return 'http://localhost/api/v1/' . $path;
     }
 
-    public function price(?int $micros, string $symbol): string
+    public function price(?int $micros, string $symbol, ?string $code = null): string
     {
         return '';
     }

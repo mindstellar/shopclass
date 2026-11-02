@@ -63,6 +63,7 @@ final class AdminSchema
         $list   = static fn (string $name): array => Schema::wholeList($name);
         $page   = $list;
         $id     = ['type' => 'integer', 'minimum' => 1];
+        $decimals = ['type' => 'integer', 'minimum' => 0, 'maximum' => 4, 'description' => 'Digits after the point; left out, the ISO 4217 default for the code.'];
         $name   = $text(100, 1);
         $names  = [
             'type'                 => 'object',
@@ -208,8 +209,9 @@ final class AdminSchema
                 'code'   => ['type' => 'string', 'pattern' => CurrencyCode::PATTERN],
                 'name'   => $text(40, 1),
                 'symbol' => $text(80),
+                'decimals' => $decimals,
             ], ['code', 'name']),
-            'CurrencyPatch'         => $input(['name' => $text(40, 1), 'symbol' => $text(80)]),
+            'CurrencyPatch'         => $input(['name' => $text(40, 1), 'symbol' => $text(80), 'decimals' => $decimals]),
             'CurrencyDocument'      => $doc('Currency'),
             'AdminCustomField'            => Schema::object([
                 'id'         => ['type' => 'integer'],

@@ -493,6 +493,14 @@ final class BillingSettingsScreen
     }
 
     /**
+     * The decimals of the billing currency, the site's when billing has none yet.
+     */
+    private static function decimals(): int
+    {
+        return Money::decimals(function_exists('osc_billing_currency') ? osc_billing_currency() : null);
+    }
+
+    /**
      * A money field: typed in the site's number format, stored as micros, drawn from what is stored.
      *
      * @return array<string,mixed>
@@ -505,12 +513,12 @@ final class BillingSettingsScreen
             'label'      => $label,
             'help'       => $help,
             'width'      => 'num',
-            'default'    => Money::fromMicros($stored),
+            'default'    => Money::fromMicros($stored, self::decimals()),
             'write_only' => true,
             'validate'   => static fn ($value): ?string => trim((string) $value) === '' || Money::parse((string) $value) !== null
                 ? null
                 : _m('Enter an amount, e.g. 49 or 49.50.'),
-            'persist'    => static fn ($value): string => (string) max(0, Money::parse((string) $value) ?? 0),
+            'persist'    => static fn ($value): string => (string) max(0, Money::parse((string) $value, self::decimals()) ?? 0),
         );
     }
 

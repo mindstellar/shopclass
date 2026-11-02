@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\currency\CurrencyCode;
 use mindstellar\currency\CurrencyService;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\InvalidException;
@@ -47,10 +48,12 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
         switch (Params::getParam('type')) {
             case ('add'):
                 // calling add currency view
+                $newCode   = CurrencyCode::normalize(Params::getParamString('code')) ?? '';
                 $aCurrency = array(
-                    'pk_c_code'     => '',
+                    'pk_c_code'     => $newCode,
                     's_name'        => '',
                     's_description' => '',
+                    'i_decimals'    => CurrencyCode::decimals($newCode),
                 );
                 $this->_exportVariableToView('aCurrency', $aCurrency);
                 $this->_exportVariableToView('typeForm', 'add_post');
@@ -60,7 +63,12 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
             case ('add_post'):
                 osc_csrf_check();
                 try {
-                    $this->service()->create(Params::getParamString('pk_c_code'), Params::getParamString('s_name'), Params::getParamString('s_description'));
+                    $this->service()->create(
+                        Params::getParamString('pk_c_code'),
+                        Params::getParamString('s_name'),
+                        Params::getParamString('s_description'),
+                        $this->postedDecimals()
+                    );
                     osc_add_flash_ok_message(_m('Currency added'), 'admin');
                 } catch (InvalidException $e) {
                     osc_add_flash_error_message($e->getMessage(), 'admin');
@@ -101,11 +109,18 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 osc_csrf_check();
                 $currencyCode = trim(Params::getParamString('pk_c_code'));
                 try {
-                    if ($this->service()->update($currencyCode, Params::getParamString('s_name'), Params::getParamString('s_description'))) {
+                    if ($this->service()->update(
+                        $currencyCode,
+                        Params::getParamString('s_name'),
+                        Params::getParamString('s_description'),
+                        $this->postedDecimals()
+                    )) {
                         osc_add_flash_ok_message(_m('Currency updated'), 'admin');
                     } else {
                         osc_add_flash_info_message(_m('No changes were made'), 'admin');
                     }
+                } catch (InvalidException $e) {
+                    osc_add_flash_error_message($e->getMessage(), 'admin');
                 } catch (NotFoundException $e) {
                     osc_add_flash_warning_message(sprintf(_m("The currency code '%s' doesn't exist"), $currencyCode), 'admin');
                 }
@@ -177,6 +192,12 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
                 $this->doView('settings/currencies.php');
                 break;
         }
+    }
+
+    /** The Decimals box as a number, or null when it was left empty. */
+    private function postedDecimals(): ?int
+    {
+        return trim(Params::getParamString('i_decimals')) === '' ? null : Params::getParamInt('i_decimals');
     }
 
     private function service(): CurrencyService

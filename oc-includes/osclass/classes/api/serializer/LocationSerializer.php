@@ -12,6 +12,9 @@ declare(strict_types=1);
 
 namespace mindstellar\api\serializer;
 
+use mindstellar\currency\CurrencyCode;
+use mindstellar\user\AddressFormat;
+
 /**
  * The reference lists: countries, regions, cities, city areas and currencies.
  */
@@ -24,10 +27,20 @@ final class LocationSerializer
      */
     public function country(array $row): array
     {
+        $code   = strtoupper((string) ($row['pk_c_code'] ?? ''));
+        $format = AddressFormat::for($code);
+
         return [
-            'code' => strtoupper((string) ($row['pk_c_code'] ?? '')),
-            'name' => Format::plain($row['s_name'] ?? ''),
-            'slug' => Format::text($row['s_slug'] ?? null),
+            'code'           => $code,
+            'name'           => Format::plain($row['s_name'] ?? ''),
+            'slug'           => Format::text($row['s_slug'] ?? null),
+            'address_format' => [
+                'fields'   => $format['fields'],
+                'required' => $format['required'],
+                'labels'   => ['state' => $format['state'], 'postcode' => $format['postcode']],
+                'pattern'  => $format['pattern'],
+                'example'  => $format['example'],
+            ],
         ];
     }
 
@@ -89,10 +102,13 @@ final class LocationSerializer
      */
     public function currency(array $row): array
     {
+        $code = strtoupper((string) ($row['pk_c_code'] ?? ''));
+
         return [
-            'code'   => strtoupper((string) ($row['pk_c_code'] ?? '')),
-            'name'   => Format::plain($row['s_name'] ?? ''),
-            'symbol' => Format::text($row['s_description'] ?? null),
+            'code'     => $code,
+            'name'     => Format::plain($row['s_name'] ?? ''),
+            'symbol'   => Format::text($row['s_description'] ?? null),
+            'decimals' => isset($row['i_decimals']) ? Format::int($row['i_decimals']) : CurrencyCode::decimals($code),
         ];
     }
 }

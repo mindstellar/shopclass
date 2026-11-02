@@ -20,6 +20,7 @@ use mindstellar\database\Db;
 use mindstellar\event\DispatcherInterface;
 use mindstellar\exception\InvalidException;
 use mindstellar\user\AddressBook;
+use mindstellar\user\AddressFormat;
 use mindstellar\user\UserStore;
 
 /**
@@ -276,7 +277,7 @@ final class GoodsCheckout
     }
 
     /**
-     * The address trimmed to ADDRESS; with $required, every field but line2 is needed.
+     * The address trimmed to ADDRESS; with $required, the fields its country needs are filled (never line2).
      *
      * @param array<string,mixed> $address
      *
@@ -289,12 +290,18 @@ final class GoodsCheckout
         $errors = array();
         foreach (self::ADDRESS as $field => $max) {
             $value   = AddressBook::clean($field, $address[$field] ?? '');
-            $problem = AddressBook::problem($field, $value, $max, $required && $field !== 'line2');
+            $problem = AddressBook::problem($field, $value, $max, false);
             if ($problem !== null) {
-                $errors[] = array('pointer' => '/address/' . $field, 'code' => $problem[0], 'message' => $problem[1]);
+                $errors[$field] = array('pointer' => '/address/' . $field, 'code' => $problem[0], 'message' => $problem[1]);
             }
             $out[$field] = $value;
         }
+        if ($required) {
+            foreach (AddressFormat::problems($out, '/address', true) as $problem) {
+                $errors += array(substr($problem['pointer'], 9) => $problem);
+            }
+        }
+        $errors = array_values($errors);
         if ($errors !== array()) {
             throw InvalidException::all($errors);
         }

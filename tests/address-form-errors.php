@@ -57,6 +57,9 @@ function osc_csrf_token_form()
 function osc_show_flash_message()
 {
 }
+function osc_address_form_script()
+{
+}
 function osc_run_hook($hook, ...$args)
 {
 }

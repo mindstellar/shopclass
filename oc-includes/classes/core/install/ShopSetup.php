@@ -35,6 +35,8 @@ final class ShopSetup
         'shipping'      => true,
         'tax'           => true,
         'promotions'    => true,
+        'stripe'        => false,
+        'paypal'        => false,
         'razorpay'      => false,
         'shop-emails'   => true,
         'analytics'     => false,

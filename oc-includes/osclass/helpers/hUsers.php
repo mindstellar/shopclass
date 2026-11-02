@@ -1145,7 +1145,7 @@ function _osc_product_alert_criteria(array $product): array
     }
     if ($product['below'] !== null) {
         $currency       = is_array($item) ? Currency::getInstance()->findByPrimaryKey($item['fk_c_currency_code'] ?? '') : false;
-        $parts['below'] = array('label' => _m('Below'), 'value' => osc_format_price($product['below'], is_array($currency) ? (string) $currency['s_description'] : ''));
+        $parts['below'] = array('label' => _m('Below'), 'value' => osc_format_price($product['below'], is_array($currency) ? (string) $currency['s_description'] : '', is_array($currency) ? (string) $currency['pk_c_code'] : null));
     }
 
     return $parts;
@@ -1352,7 +1352,51 @@ function osc_address_book_enabled(): bool
 }
 
 /**
- * One saved address on a line: "1 Main St, Austin, Texas 73301, United States · 5550100".
+ * The address format of every country the site offers, by country code: `fields` (in order),
+ * `required`, `state` and `postcode` labels (translated; empty when the field is not asked),
+ * `pattern` (null for none) and an `example` postcode.
+ *
+ * @return array<string,array{fields:list<string>,required:list<string>,state:string,postcode:string,pattern:?string,example:string}>
+ *
+ * @since 7.1.0
+ */
+function osc_address_formats(): array
+{
+    $formats = array();
+    foreach ((array) osc_get_countries() as $country) {
+        $code = (string) ($country['pk_c_code'] ?? '');
+        if ($code !== '') {
+            $formats[$code] = \mindstellar\user\AddressFormat::for($code);
+        }
+    }
+
+    return $formats;
+}
+
+/**
+ * Prints the country address formats as JSON and the script that reshapes an address form to the
+ * chosen country. Call it after the form; a second call prints nothing. The form carries
+ * `data-address-form`, its fields are found by `name` and their wrappers by
+ * `data-address-field="<name>"`.
+ *
+ * @since 7.1.0
+ */
+function osc_address_form_script(): void
+{
+    static $printed = false;
+    if ($printed) {
+        return;
+    }
+    $printed = true;
+    $json    = json_encode(osc_address_formats(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE);
+    echo '<script type="application/json" id="osc-address-formats" data-required="' . osc_esc_html(_m('This field is needed.'))
+        . '" data-pattern="' . osc_esc_html(_m('Enter a valid %1$s, such as %2$s.')) . '">' . $json . '</script>' . "\n";
+    echo '<script src="' . osc_esc_html(osc_asset_url_versioned(osc_assets_url('osclass/address-form.js'))) . '" defer></script>' . "\n";
+}
+
+/**
+ * One saved address on a line, in its country's order and without fields the country does not
+ * use: "1 Main St, Austin, Texas 73301, United States · 5550100".
  *
  * @param array<string,mixed> $address an address from the address book
  */
@@ -1363,9 +1407,31 @@ function osc_address_text(array $address): string
         $names = array_column((array) osc_get_countries(), 's_name', 'pk_c_code');
     }
     $country = (string) ($address['country'] ?? '');
-    $country = (string) ($names[$country] ?? $country);
-    $place = trim((string) ($address['state'] ?? '') . ' ' . (string) ($address['postcode'] ?? ''));
-    $parts = array_filter(array((string) ($address['line1'] ?? ''), (string) ($address['city'] ?? ''), $place, $country), static fn (string $part): bool => trim($part) !== '');
+    $tokens  = array();
+    foreach (\mindstellar\user\AddressFormat::for($country)['fields'] as $field) {
+        $value = trim((string) ($address[$field] ?? ''));
+        if ($value !== '') {
+            $tokens[] = array($field, $value);
+        }
+    }
+    $place = static fn (int $i): bool => isset($tokens[$i]) && in_array($tokens[$i][0], array('city', 'state'), true);
+    foreach ($tokens as $i => $token) {
+        if ($token[0] !== 'postcode') {
+            continue;
+        }
+        if ($place($i - 1)) {
+            $tokens[$i - 1][1] .= ' ' . $token[1];
+            unset($tokens[$i]);
+        } elseif ($place($i + 1)) {
+            $tokens[$i + 1][1] = $token[1] . ' ' . $tokens[$i + 1][1];
+            unset($tokens[$i]);
+        }
+        break;
+    }
+    $parts = array_column($tokens, 1);
+    if ($country !== '') {
+        $parts[] = (string) ($names[$country] ?? $country);
+    }
     $text  = implode(', ', $parts);
     $phone = trim((string) ($address['phone'] ?? ''));
 

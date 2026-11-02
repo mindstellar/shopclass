@@ -736,13 +736,14 @@ function osc_replace_double_slash($path)
 /**
  * Format a stored integer price for display.
  *
- * @param int|string $price Price in the currency's smallest stored unit
+ * @param int|string  $price    Price in the currency's smallest stored unit
+ * @param string|null $currency Code whose decimals apply; the site currency when empty
  *
  * @return string
  */
-function osc_prepare_price($price)
+function osc_prepare_price($price, $currency = null)
 {
-    return Utils::preparePrice($price);
+    return Utils::preparePrice($price, $currency);
 }
 
 /**
