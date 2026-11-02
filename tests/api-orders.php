@@ -349,7 +349,8 @@ pin('and it still matches the schema', [], api_admin_schema_errors('OrderDocumen
 harness_section('partial shipments');
 $lineIds = array_map(static fn ($l) => $l['id'], array_values(array_filter(\mindstellar\billing\OrderLineStore::ofOrders([$paidId])[$paidId], static fn ($l) => $l['kind'] === 'item')));
 $none    = $call('GET', 'account/orders/' . $paidId, null, $tomKey)->body()['data'];
-pin('an order with no parcels lists none and is not packed', [[], null], [$none['shipments'], $none['packed_at']]);
+$unshipped = $call('GET', 'account/orders/' . $o['id'], null, $tomKey)->body()['data'];
+pin('an order with no parcels lists none and is not packed', [[], null], [$unshipped['shipments'], $unshipped['packed_at']]);
 $meta = [
     '_kind'      => Order::KIND_GOODS,
     '_shipping'  => ['carrier' => 'DHL', 'tracking' => 'P1', 'url' => 'https://t.example.test/P1', 'shipped_at' => '2026-11-02 10:00:00'],
