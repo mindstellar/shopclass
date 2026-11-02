@@ -22,6 +22,7 @@ final class AddressFormat
 {
     private const STD = array('line1', 'line2', 'city', 'state', 'postcode');
 
+    /** What an unknown country needs; a known one needs line1 plus what its post requires. */
     private const BASE = array('line1', 'city');
 
     /** Our changes on top of the generated data, by country: label types the post itself uses. */
@@ -61,7 +62,7 @@ final class AddressFormat
 
         return array(
             'fields'   => $fields,
-            'required' => array_values(array_intersect($fields, array_merge(self::BASE, $needed))),
+            'required' => array_values(array_intersect($fields, array_merge(array('line1'), $needed))),
             'state'    => $state === null ? '' : self::stateLabel($state),
             'postcode' => $postcode === null ? '' : self::postcodeLabel($postcode),
             'pattern'  => $pattern,
