@@ -4510,6 +4510,10 @@ msgid "Website"
 msgstr ""
 
 #: oc-includes/osclass/classes/listing/ListingValidator.php
+msgid "Weight must be a number of ounces, 0 or more."
+msgstr ""
+
+#: oc-includes/osclass/classes/listing/ListingValidator.php
 msgid "Weight must be a whole number of grams, 0 or more."
 msgstr ""
 

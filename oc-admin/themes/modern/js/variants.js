@@ -16,7 +16,7 @@
     'use strict';
 
     var FIELDS = ['sku', 'price', 'compareAt', 'stock', 'weight', 'shippingClass'];
-    var MODES = {sku: '', price: 'decimal', compareAt: 'decimal', stock: 'numeric', weight: 'numeric', shippingClass: ''};
+    var MODES = {sku: '', price: 'decimal', compareAt: 'decimal', stock: 'numeric', weight: 'decimal', shippingClass: ''};
     var LENGTHS = {sku: 64, shippingClass: 40};
 
     function init() {
