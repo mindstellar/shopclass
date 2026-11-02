@@ -1262,6 +1262,10 @@ msgid ""
 "new password."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Enter the amount as a number above zero"
+msgstr ""
+
 #: oc-includes/classes/webhook/WebhookService.php
 msgid ""
 "Enter the full web address of the endpoint, such as https://example.com/"
@@ -2334,6 +2338,10 @@ msgstr ""
 
 #: oc-includes/classes/user/AddressFormat.php
 msgid "Parish"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "Part of order #%d is refunded."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-login-content.php
@@ -3444,6 +3452,10 @@ msgstr ""
 #: oc-includes/classes/location/LocationService.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "The country code must be two letters, like IN or DE"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
+msgid "The credit note is made."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php
