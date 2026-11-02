@@ -18,7 +18,7 @@ use mindstellar\event\Bridged;
 use mindstellar\event\Event;
 
 /**
- * An order changed status. Listen to this class to hear all six moves, or to one subclass for a
+ * An order changed status. Listen to this class to hear all seven moves, or to one subclass for a
  * single move. Old callbacks on the matching `billing_order_*` hook get ($orderId, $userId).
  */
 abstract class OrderEvent extends Event implements Bridged

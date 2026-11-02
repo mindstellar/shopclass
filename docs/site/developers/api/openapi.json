@@ -60497,6 +60497,7 @@
                         "enum": [
                             "pending",
                             "paid",
+                            "processing",
                             "failed",
                             "refunded",
                             "cancelled",

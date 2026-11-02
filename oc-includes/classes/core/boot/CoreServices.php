@@ -28,10 +28,12 @@ use mindstellar\billing\event\OrderDelivered;
 use mindstellar\billing\event\OrderFailed;
 use mindstellar\billing\event\OrderPaid;
 use mindstellar\billing\event\OrderPlaced;
+use mindstellar\billing\event\OrderProcessing;
 use mindstellar\billing\event\OrderReturnUrlResolving;
 use mindstellar\billing\event\OrderShipped;
 use mindstellar\billing\event\PaymentTestModes;
 use mindstellar\billing\event\ReceiptComposing;
+use mindstellar\billing\event\ShipmentAdded;
 use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\billing\GoodsCheckout;
 use mindstellar\billing\ListingCheckout;
@@ -103,9 +105,11 @@ final class CoreServices
         'billing_order_placed' => OrderPlaced::class,
         'billing_order_paid' => OrderPaid::class,
         'billing_order_failed' => OrderFailed::class,
+        'billing_order_processing' => OrderProcessing::class,
         'billing_order_shipped' => OrderShipped::class,
         'billing_order_delivered' => OrderDelivered::class,
         'billing_order_cancelled' => OrderCancelled::class,
+        'billing_shipment_add_after' => ShipmentAdded::class,
         'billing_tracking_url' => TrackingUrlResolving::class,
         'admin_billing_carriers' => CarriersListing::class,
         'admin_payment_test_modes' => PaymentTestModes::class,
@@ -119,6 +123,10 @@ final class CoreServices
         'email_order_shipped_description' => MailComposing::class,
         'email_order_shipped_title_after' => MailComposing::class,
         'email_order_shipped_description_after' => MailComposing::class,
+        'email_order_part_shipped_title' => MailComposing::class,
+        'email_order_part_shipped_description' => MailComposing::class,
+        'email_order_part_shipped_title_after' => MailComposing::class,
+        'email_order_part_shipped_description_after' => MailComposing::class,
         'email_order_delivered_title' => MailComposing::class,
         'email_order_delivered_description' => MailComposing::class,
         'email_order_delivered_title_after' => MailComposing::class,
