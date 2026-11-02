@@ -334,12 +334,34 @@ function ghGetReleases(string $ownerRepo, bool $offline, string $cacheDir, ?stri
             : ['releases' => $cached, 'error' => null, 'fatal' => false];
     }
 
+    // The ETag of the first page lets an unchanged list come back as a 304, which
+    // GitHub does not count against an authenticated rate limit.
+    $etagFile = $cacheFile . '.etag';
+    $cachedEtag = is_file($etagFile) ? trim((string) @file_get_contents($etagFile)) : '';
+    if (!preg_match('/^(W\/)?"[^"\r\n]*"$/', $cachedEtag)) {
+        $cachedEtag = '';
+    }
     $all = [];
+    $etag = '';
     $url = "https://api.github.com/repos/{$ownerRepo}/releases?per_page=100";
     $hops = 0;
     while ($url !== null && $hops < 10) {
         $hops++;
-        $resp = httpGet($url, githubHeaders($token));
+        $headers = githubHeaders($token);
+        if ($hops === 1 && $cachedEtag !== '') {
+            $headers[] = 'If-None-Match: ' . $cachedEtag;
+        }
+        $resp = httpGet($url, $headers);
+        if ($hops === 1 && $resp['status'] === 304) {
+            $cached = readJsonFile($cacheFile);
+            if ($cached !== null) {
+                return ['releases' => $cached, 'error' => null, 'fatal' => false];
+            }
+            $resp = httpGet($url, githubHeaders($token));
+        }
+        if ($hops === 1) {
+            $etag = (string) ($resp['headers']['etag'] ?? '');
+        }
         if ($resp['status'] !== 200) {
             $cached = readJsonFile($cacheFile);
             $detail = $resp['error'] ?? "HTTP {$resp['status']}";
@@ -364,18 +386,30 @@ function ghGetReleases(string $ownerRepo, bool $offline, string $cacheDir, ?stri
     }
 
     writeJsonFile($cacheFile, $all);
+    if ($etag !== '') {
+        @file_put_contents($etagFile, $etag);
+    } elseif (is_file($etagFile)) {
+        @unlink($etagFile);
+    }
 
     return ['releases' => $all, 'error' => null, 'fatal' => false];
 }
 
-/**
- * Downloads a release asset's raw bytes, cached by URL. The host allowlist is
- * checked by the caller before this is ever invoked — this function assumes
- * the URL already cleared it.
- */
-function ghDownloadAsset(string $url, bool $offline, string $cacheDir): ?string
+/** What changes when a release asset is uploaded again: its updated_at and size. */
+function assetVersion(array $asset): string
 {
-    $cacheFile = $cacheDir . '/assets/' . sha1($url) . '.bin';
+    return (string) ($asset['updated_at'] ?? '') . '|' . (string) ($asset['size'] ?? '');
+}
+
+/**
+ * Downloads a release asset's raw bytes, cached by URL and $version (from
+ * assetVersion()), so a file uploaded again under the same URL is fetched again.
+ * The host allowlist is checked by the caller before this is ever invoked — this
+ * function assumes the URL already cleared it.
+ */
+function ghDownloadAsset(string $url, bool $offline, string $cacheDir, string $version = ''): ?string
+{
+    $cacheFile = $cacheDir . '/assets/' . sha1($url . "\n" . $version) . '.bin';
     if (is_file($cacheFile)) {
         $bytes = @file_get_contents($cacheFile);
 
@@ -741,13 +775,13 @@ function discoverExternalPackages(string $root, string $type, array &$errors): a
  *
  * @return array{ok:bool, entry:?array, artwork_zip_bytes:?string, artwork_slug_dir:?string, error:?string}
  */
-function resolveOneRelease(string $slug, string $type, string $assetUrl, string $publishedAt, int $downloadCount, bool $offline, string $cacheDir): array
+function resolveOneRelease(string $slug, string $type, string $assetUrl, string $publishedAt, int $downloadCount, bool $offline, string $cacheDir, string $assetVersion = ''): array
 {
     if (!isAllowedDownloadUrl($assetUrl)) {
         return ['ok' => false, 'entry' => null, 'artwork_zip_bytes' => null, 'artwork_slug_dir' => null, 'error' => "refusing to emit a download URL outside the host allowlist: {$assetUrl}"];
     }
 
-    $bytes = ghDownloadAsset($assetUrl, $offline, $cacheDir);
+    $bytes = ghDownloadAsset($assetUrl, $offline, $cacheDir, $assetVersion);
     if ($bytes === null) {
         return ['ok' => false, 'entry' => null, 'artwork_zip_bytes' => null, 'artwork_slug_dir' => null, 'error' => $offline ? "not cached (offline): {$assetUrl}" : "could not download: {$assetUrl}"];
     }
@@ -838,7 +872,7 @@ function resolveInRepoVersions(string $slug, string $type, array $allReleases, b
             continue;
         }
 
-        $resolved = resolveOneRelease($slug, $type, (string) $chosen['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($chosen['download_count'] ?? 0), $offline, $cacheDir);
+        $resolved = resolveOneRelease($slug, $type, (string) $chosen['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($chosen['download_count'] ?? 0), $offline, $cacheDir, assetVersion($chosen));
         if (!$resolved['ok']) {
             $notes[] = "{$tag}: {$resolved['error']}";
             $hadError = true;
@@ -898,7 +932,7 @@ function resolveExternalVersions(string $slug, string $type, array $manifest, bo
             $notes[] = "{$tag}: asset_pattern matched " . count($matchingAssets) . ' assets — using ' . $matchingAssets[0]['name'];
         }
 
-        $resolved = resolveOneRelease($slug, $type, (string) $matchingAssets[0]['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($matchingAssets[0]['download_count'] ?? 0), $offline, $cacheDir);
+        $resolved = resolveOneRelease($slug, $type, (string) $matchingAssets[0]['browser_download_url'], (string) ($release['published_at'] ?? ''), (int) ($matchingAssets[0]['download_count'] ?? 0), $offline, $cacheDir, assetVersion($matchingAssets[0]));
         if (!$resolved['ok']) {
             $notes[] = "{$tag}: {$resolved['error']}";
             $hadError = true;
