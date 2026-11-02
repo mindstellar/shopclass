@@ -136,7 +136,7 @@ final class AdminSchema
             ], ['id', 'listing_id', 'status', 'approved', 'blocked', 'title', 'body', 'author', 'rating', 'published_at']),
             'AdminCommentPatch'     => $input([
                 'title'        => $text(200),
-                'body'         => $text(5000, 1),
+                'body'         => $text(5000) + ['description' => 'Needed unless the comment has a rating.'],
                 'author_name'  => $text(100),
                 'author_email' => ['type' => 'string', 'format' => 'email', 'maxLength' => 100],
                 'approved'     => ['type' => 'boolean', 'description' => 'true approves it, and its author is told; false holds it back.'],

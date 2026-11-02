@@ -385,6 +385,9 @@ $webEditComment = $record(static fn () => $web['editComment']($a, 'Edited', 'tom
 $apiEditComment = $record(static fn () => $call('PATCH', 'admin/comments/' . $b, ['body' => 'Edited'], $boss));
 pin('an edit fires edit_comment on both sides', [['edit_comment'], ['edit_comment']], [$webEditComment, $apiEditComment]);
 pin('a bad author e-mail is refused on both sides', [false, 422], [$web['editComment']($a, 'Edited', 'not an address'), $call('PATCH', 'admin/comments/' . $b, ['author_email' => 'not an address'], $boss)->status()]);
+$rated = seed_exec($admin, "INSERT INTO {$p}t_item_comment (fk_i_item_id, dt_pub_date, s_title, s_author_name, s_author_email, s_body, b_enabled, b_active, b_spam, fk_i_user_id, i_rating) VALUES (?, NOW(), '', 'Tom', 'tom@example.test', 'Good', 1, 1, 0, ?, 4)", 'ii', [$sueCar, $tom]);
+pin('a rated comment may lose its text on both sides', [true, 200], [$web['editComment']($rated, '', 'tom@example.test'), $call('PATCH', 'admin/comments/' . $rated, ['body' => ''], $boss)->status()]);
+pin('a comment without a rating still needs text on both sides', [false, 422], [$web['editComment']($a, ' ', 'tom@example.test'), $call('PATCH', 'admin/comments/' . $b, ['body' => ''], $boss)->status()]);
 $webDrop = $record(static fn () => $web['moderate']('delete', $a));
 $apiDrop = $record(static fn () => $call('DELETE', 'admin/comments/' . $b, null, $boss));
 pin('a delete fires delete_comment on both sides', [['delete_comment'], ['delete_comment']], [$webDrop, $apiDrop]);

@@ -131,10 +131,11 @@ final class CommentModeration
 
     /**
      * Change a comment's text and author, stored as plain text as the comment form stores it.
+     * A comment with a star rating may have no text, as when it was posted.
      *
      * @param array{title:string,body:string,author_name:string,author_email:string} $fields
      *
-     * @throws InvalidException for an empty body or an author e-mail that is not an address
+     * @throws InvalidException for an empty body without a rating or an author e-mail that is not an address
      */
     public function edit(int $id, array $fields): void
     {
@@ -148,7 +149,7 @@ final class CommentModeration
         if (!osc_validate_email($row['s_author_email'], true)) {
             $errors[] = ['pointer' => '/author_email', 'code' => 'format', 'message' => _m('Email is not correct')];
         }
-        if ($row['s_body'] === '') {
+        if ($row['s_body'] === '' && ($this->comments->findByPrimaryKey($id)['i_rating'] ?? null) === null) {
             $errors[] = ['pointer' => '/body', 'code' => 'minLength', 'message' => _m('Comment is required')];
         }
         if ($errors !== []) {

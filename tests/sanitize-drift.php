@@ -20,6 +20,8 @@
  * - Escape::js() must match osc_esc_js() line for line; the two-array
  *   str_replace() it used to call breaks under PHP 8.
  * - Sanitize::title() keeps a title's punctuation; it only drops tags and control characters.
+ * - Options a caller passes to Sanitize::string(), float(), email() and encoded() reach
+ *   filter_var(): flags replace the defaults, `options` add to them.
  * - Every osc_sanitize_* helper forwards to Sanitize and gives the same output,
  *   including the cases where the two used to differ.
  *
@@ -170,6 +172,16 @@ pin('osc_sanitize_text() walks arrays', array('a' => $sanitize->text($dirty)), o
 pin('osc_sanitize_html() matches Sanitize::richHtml()', '<p>hi</p>', osc_sanitize_html($dirty));
 pin('Sanitize::richHtml() keeps markup', '<p>hi</p>', $sanitize->richHtml($dirty));
 pin('Sanitize::html() still escapes, unlike richHtml()', '&lt;p&gt;', $sanitize->html('<p>'));
+
+harness_section('caller options reach filter_var()');
+
+$sanitize = new Sanitize();
+pin('string() keeps quotes by default', 'a"b', $sanitize->string('a"b'));
+pin('string() with flags 0 encodes them', 'a&quot;b', $sanitize->string('a"b', ['flags' => 0]));
+pin('string() takes bare int flags', 'a&quot;b', $sanitize->string('a"b', 0));
+pin('float() keeps the point by default', '1.5', $sanitize->float('1.5'));
+pin('float() with flags 0 drops it', '15', $sanitize->float('1.5', ['flags' => 0]));
+pin('email() still strips bad characters', 'a@b.test', $sanitize->email('a <@b.test'));
 
 harness_section('Escape::js() matches osc_esc_js()');
 

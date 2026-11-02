@@ -104,9 +104,34 @@ if (!defined('OSC_MEMORY_LIMIT')) {
     define('OSC_MEMORY_LIMIT', '32M');
 }
 
-if (function_exists('memory_get_usage') && ((int) @ini_get('memory_limit') < abs((int) OSC_MEMORY_LIMIT))) {
-    @ini_set('memory_limit', OSC_MEMORY_LIMIT);
+if (!function_exists('osc_ini_bytes')) {
+    /**
+     * A php.ini size such as 128M, 1G or 512K in bytes; -1 (unlimited) comes back as -1.
+     */
+    function osc_ini_bytes(string $size): int
+    {
+        $size = trim($size);
+        if ($size === '' || (int) $size < 0) {
+            return -1;
+        }
+        $bytes = (int) $size;
+
+        return match (strtoupper(substr($size, -1))) {
+            'G'     => $bytes * 1073741824,
+            'M'     => $bytes * 1048576,
+            'K'     => $bytes * 1024,
+            default => $bytes,
+        };
+    }
 }
+
+// Only ever raise the limit; a host's bigger or unlimited setting stays.
+$oscMemoryNow = osc_ini_bytes((string) ini_get('memory_limit'));
+$oscMemoryWant = osc_ini_bytes((string) OSC_MEMORY_LIMIT);
+if ($oscMemoryNow !== -1 && ($oscMemoryWant === -1 || $oscMemoryNow < $oscMemoryWant)) {
+    @ini_set('memory_limit', (string) OSC_MEMORY_LIMIT);
+}
+unset($oscMemoryNow, $oscMemoryWant);
 
 if (!defined('CLI')) {
     define('CLI', false);

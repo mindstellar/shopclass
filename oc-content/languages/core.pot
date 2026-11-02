@@ -6141,6 +6141,10 @@ msgid ""
 "the receiver can switch over."
 msgstr ""
 
+#: oc-includes/classes/admin/form/MainSettingsScreen.php
+msgid "For calendars in plugins and themes."
+msgstr ""
+
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
 msgid ""
 "For new photos only. WebP is about a third smaller than JPEG and keeps "

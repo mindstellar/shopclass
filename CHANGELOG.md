@@ -146,3 +146,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Titles keep their punctuation, and mail subjects no longer show `&amp;`.
 - The order number keeps the prefix it was placed with.
 - Sign-up no longer says an activation mail was sent when mail is blocked.
+- The memory limit at start-up is only raised, never cut; a host's 1G or unlimited setting stays.
+- An admin can edit a rated comment down to no text, on the screen and in the API.
+- Options passed to `Sanitize` string, float, email and encoded methods now reach the filter.
+- Saving General Settings with an address lookup set up queues map positions for older listings.
+- S3 storage errors and skipped mail attachments are written to the error log.

@@ -238,6 +238,7 @@ final class Mailer
                             try {
                                 $mail->addAttachment($attachment['path'], $attachment['name']);
                             } catch (\PHPMailer\PHPMailer\Exception $e) {
+                                error_log('Mailer: attachment skipped: ' . $e->getMessage());
                                 continue;
                             }
                         }
@@ -245,6 +246,7 @@ final class Mailer
                         try {
                             $mail->addAttachment($attachment);
                         } catch (\PHPMailer\PHPMailer\Exception $e) {
+                            error_log('Mailer: attachment skipped: ' . $e->getMessage());
                             continue;
                         }
                     }
