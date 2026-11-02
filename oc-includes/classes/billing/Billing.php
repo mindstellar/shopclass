@@ -232,6 +232,7 @@ final class Billing
             try {
                 CoreServices::dispatcher()->dispatch(new OrderPaid($order->getId(), $order->getUserId(), $order->getCredits()));
             } finally {
+                Invoices::issueOrQueue($order);
                 Receipts::afterPaid($order);
             }
         }
@@ -258,6 +259,7 @@ final class Billing
             try {
                 CoreServices::dispatcher()->dispatch(new OrderPaid($order->getId(), $order->getUserId(), $order->getCredits()));
             } finally {
+                Invoices::issueOrQueue($order);
                 Receipts::afterPaid($order);
             }
         }
@@ -278,7 +280,9 @@ final class Billing
      */
     public static function refund(Order $order): bool
     {
-        $reversed = Db::transaction(static function () use ($order): bool {
+        // The credit note for what is left is composed first and stored with the status write.
+        $draft    = Invoices::remainderDraft($order);
+        $reversed = Db::transaction(static function () use ($order, &$draft): bool {
             if (!OrderStore::refund($order->getId())) {
                 return false;
             }
@@ -297,8 +301,16 @@ final class Billing
                 );
             }
 
+            if ($draft !== null && Invoices::storeNote($draft) === false) {
+                // Another note was stored since the draft, so the remainder is issued after commit.
+                $draft = false;
+            }
+
             return true;
         });
+        if ($reversed && $draft === false) {
+            Invoices::issueOrQueue($order);
+        }
 
         if ($reversed) {
             self::log('refunded', $order, $order->getExternalRef());
@@ -618,7 +630,7 @@ final class Billing
     }
 
     /**
-     * Register the held-stock release job; called from `register_jobs`.
+     * Register the held-stock release, card hold and invoice jobs; called from `register_jobs`.
      */
     public static function registerJobs(): void
     {
@@ -632,6 +644,7 @@ final class Billing
             self::expireCardHold((int) $job->get('order', 0));
         });
         osc_job_describe(self::JOB_CARD_HOLD, __('Cancel unpaid card orders'));
+        Invoices::registerJobs();
     }
 
     /**

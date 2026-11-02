@@ -71,7 +71,7 @@ final class DocumentStore extends Model
         $year = (int) $m[1];
 
         return self::atomic(static function () use ($type, $order, $total, $data, $date, $year): Document {
-            if (Db::selectOne('SELECT pk_i_id FROM ' . DB_TABLE_PREFIX . 't_billing_order WHERE pk_i_id = ? FOR UPDATE', array($order->getId())) === null) {
+            if (self::lockOrder($order->getId()) === null) {
                 throw new InvalidArgumentException('Documents: no order ' . $order->getId());
             }
             $number = self::prefix($type) . $year . '-' . str_pad((string) self::nextSeq($type, $year), 5, '0', STR_PAD_LEFT);
@@ -89,6 +89,17 @@ final class DocumentStore extends Model
 
             return new Document($id, $type, $number, $date, $order->getId(), $total, $order->getCurrency(), $data);
         });
+    }
+
+    /**
+     * Read the order row FOR UPDATE, inside the caller's transaction: always the first lock a
+     * document write takes.
+     */
+    public static function lockOrder(int $orderId): ?Order
+    {
+        $row = Db::selectOne('SELECT * FROM ' . DB_TABLE_PREFIX . 't_billing_order WHERE pk_i_id = ? FOR UPDATE', array($orderId));
+
+        return $row === null ? null : Order::fromRow($row);
     }
 
     /**

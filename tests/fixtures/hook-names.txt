@@ -92,6 +92,7 @@ action before_user_register
 action before_username_change
 action before_validating_login
 action billing_credits_changed
+action billing_document_issued
 action billing_feature_applied
 action billing_order_cancelled
 action billing_order_delivered
@@ -363,6 +364,7 @@ filter api_webhook_payload
 filter ban_rule_bulk_filter
 filter base_url
 filter billing_can_publish
+filter billing_document_compose
 filter billing_feature_duration
 filter billing_feature_price
 filter billing_listing_limit_message
