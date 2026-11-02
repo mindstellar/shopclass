@@ -181,8 +181,9 @@ rate-limit stores.
 
 ### Where new code goes
 
-| You are adding | Put it in |
+| You are adding | Put it in (paths are in `oc-includes/`) |
 |---|---|
+| A new module | `classes/<feature>/`, or `classes/core/<name>/` for engine parts, plus one `mindstellar\<name>\` line in the PSR-4 block of `composer.json`. Never `osclass/classes/`. |
 | A page or an action on a page | A method on its `CWeb*` or `CAdmin*` controller in `osclass/classes/controller/` |
 | An admin ajax action | The area's `…Ajax` class in `classes/admin/ajax/` |
 | An API endpoint | `classes/api/controller/` |

@@ -38,7 +38,7 @@ is refused at resolution rather than at runtime on somebody's shared host.
 
 ## Static analysis
 
-PHPStan (level 5) checks `oc-includes/osclass` and `oc-admin`. It comes with the
+PHPStan (level 5) checks `oc-includes/classes`, `oc-includes/osclass` and `oc-admin`. It comes with the
 `composer lint:install` linters:
 
 ```bash

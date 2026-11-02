@@ -82,7 +82,6 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `ImageProcessing` and `ImageResizer` are deprecated; use `mindstellar\image\Processor`.
 - A listing photo upload is turned upright and saved once.
 - Prices in Indian locales (en_IN, hi_IN) show Indian digit grouping, e.g. ₹12,34,567.
-- Modules new in 7.1 live in `oc-includes/classes/`, grouped by feature; class names do not change.
 - An update to a new X.Y release replaces `oc-admin` and `oc-includes` whole, so files the release dropped are removed. The database step then runs on its own page.
 - In shop mode there is no public user profile; the page and `GET /users/{id}` answer 404.
 - In shop mode credit packages are hidden: the Packages and Credits menus, the buy-credits and pay-to-publish pages, and `POST /listings/{id}/publish`.
