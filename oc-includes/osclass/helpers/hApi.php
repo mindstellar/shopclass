@@ -356,4 +356,4 @@ osc_add_hook('admin_signout_all_after', static function ($adminId): void {
 });
 
 // The REST API registers its request handler and turns core events into webhooks.
-require_once __DIR__ . '/../classes/api/boot.php';
+require_once __DIR__ . '/../../classes/api/boot.php';

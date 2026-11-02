@@ -1,0 +1,767 @@
+<?php
+
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+namespace mindstellar\database;
+
+use mysqli;
+use Throwable;
+
+/**
+ * Class Connection
+ *
+ * Injection-safe query API over the singleton mysqli connection managed by
+ * ConnectionManager. New code and plugins should use this instead of building
+ * SQL strings by hand: every value in $params is escaped for the connection and
+ * sent in place of its '?' (or as a real prepared statement with OSC_DB_REAL_PREPARES),
+ * so it can never be interpreted as SQL.
+ *
+ * $params bind VALUES only. Table/column names can never be bound parameters —
+ * validate any dynamic identifier against an allowlist before interpolating it
+ * into $sql.
+ *
+ * This sits BESIDE the legacy DBCommandClass, which is untouched.
+ *
+ * @package mindstellar\database
+ */
+class Connection
+{
+    /**
+     * Shared instance.
+     *
+     * @var Connection|null
+     */
+    private static $shared;
+
+    /**
+     * The underlying mysqli connection.
+     *
+     * @var mysqli
+     */
+    private $conn;
+
+    /**
+     * Bind to a specific mysqli handle, or to the shared Shopclass one when none
+     * is given. Passing a handle is what lets a caller work against a database
+     * other than the configured one -- the upgrade tooling builds scratch
+     * databases and drives them through the same code paths.
+     *
+     * @param \mysqli|null $conn
+     *
+     * @throws DbException when no mysqli connection is available
+     */
+    public function __construct(?\mysqli $conn = null)
+    {
+        if ($conn === null) {
+            $conn = ConnectionManager::getInstance()->getHandle();
+        }
+        if (!$conn instanceof mysqli) {
+            throw new DbException('No database connection available');
+        }
+        $this->conn = $conn;
+    }
+
+    /**
+     * Shared Connection instance bound to the singleton mysqli.
+     *
+     * @return Connection
+     * @throws DbException when no mysqli connection is available
+     */
+    public static function getInstance(): self
+    {
+        if (!self::$shared instanceof self) {
+            self::$shared = new self();
+        }
+
+        return self::$shared;
+    }
+
+    /**
+     * @deprecated 7.0.0 Use getInstance().
+     */
+    public static function instance(): self
+    {
+        return self::getInstance();
+    }
+
+    /**
+     * Run a SELECT and return every row as an associative array.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params Positional values for the '?' placeholders in $sql
+     *
+     * @return array<int,array<string,mixed>> List of rows (empty when none match)
+     * @throws DbException
+     */
+    public function select(string $sql, array $params = []): array
+    {
+        $start = microtime(true);
+        try {
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $result = $this->run(function () use ($text) {
+                    return $this->conn->query($text);
+                }, $sql);
+                if (!$result instanceof \mysqli_result) {
+                    throw new DbException('Database query failed');
+                }
+
+                $rows = $result->fetch_all(MYSQLI_ASSOC);
+                $result->free();
+
+                return $rows;
+            }
+
+            return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt): array {
+                $result = $stmt->get_result();
+                if (!$result instanceof \mysqli_result) {
+                    throw new DbException('Database query failed');
+                }
+                $rows = $result->fetch_all(MYSQLI_ASSOC);
+                $result->free();
+
+                return $rows;
+            });
+        } finally {
+            $this->logQuery($sql, $params, $start);
+        }
+    }
+
+    /**
+     * Run a SELECT and return the first row, or null when there are no rows.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @return array<string,mixed>|null
+     * @throws DbException
+     */
+    public function selectOne(string $sql, array $params = []): ?array
+    {
+        $rows = $this->select($sql, $params);
+
+        return $rows[0] ?? null;
+    }
+
+    /**
+     * Run a SELECT and return the first column of the first row, or null.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @return mixed
+     * @throws DbException
+     */
+    public function scalar(string $sql, array $params = [])
+    {
+        $row = $this->selectOne($sql, $params);
+        if ($row === null) {
+            return null;
+        }
+
+        foreach ($row as $value) {
+            return $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * Run an INSERT/UPDATE/DELETE and return the number of affected rows.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @return int
+     * @throws DbException
+     */
+    public function execute(string $sql, array $params = []): int
+    {
+        $start = microtime(true);
+        try {
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $this->run(function () use ($text) {
+                    return $this->conn->query($text);
+                }, $sql);
+
+                return (int) $this->conn->affected_rows;
+            }
+
+            return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt): int {
+                return (int) $stmt->affected_rows;
+            });
+        } finally {
+            $this->logQuery($sql, $params, $start);
+        }
+    }
+
+    /**
+     * Run a multi-statement script -- a schema file, a locale template, an
+     * uploaded import -- and return how many statements were executed.
+     *
+     * Statements run one at a time rather than through multi_query, so a failure
+     * names the statement that caused it and no result set is left undrained.
+     * Execution stops at the first failure; MySQL auto-commits DDL, so a script
+     * that fails part way leaves the statements before it applied.
+     *
+     * @param string $sql
+     *
+     * @return int
+     * @throws DbException on the first failing statement
+     */
+    public function executeScript(string $sql): int
+    {
+        $executed = 0;
+        foreach (SqlScript::statements($sql) as $statement) {
+            $this->execute($statement);
+            $executed++;
+        }
+
+        return $executed;
+    }
+
+    /**
+     * Run an INSERT and return the generated AUTO_INCREMENT id.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @return int
+     * @throws DbException
+     */
+    public function insertGetId(string $sql, array $params = []): int
+    {
+        $start = microtime(true);
+        try {
+            $text = $this->inline($sql, $params);
+            if ($text !== null) {
+                $this->run(function () use ($text) {
+                    return $this->conn->query($text);
+                }, $sql);
+
+                return (int) $this->conn->insert_id;
+            }
+
+            $conn = $this->conn;
+
+            return $this->withStatement($sql, $params, static function (\mysqli_stmt $stmt) use ($conn): int {
+                return (int) $conn->insert_id;
+            });
+        } finally {
+            $this->logQuery($sql, $params, $start);
+        }
+    }
+
+    /**
+     * The database server version string, e.g. "8.0.36" or "10.11.6-MariaDB".
+     * Diagnostics only (system-info screen, upgrade reports) -- a narrow accessor so
+     * those callers depend on Connection instead of reaching for the raw mysqli handle.
+     *
+     * @return string
+     */
+    public function serverInfo(): string
+    {
+        return (string) $this->conn->get_server_info();
+    }
+
+    /**
+     * The driver's last error message on this connection, or '' when the last
+     * statement succeeded. For surfacing a failure in admin tooling; it is not a
+     * substitute for the DbException that select()/execute() raise on error.
+     *
+     * @return string
+     */
+    public function lastError(): string
+    {
+        return (string) $this->conn->error;
+    }
+
+    /**
+     * Escape a value for interpolation into a raw SQL string, WITHOUT surrounding
+     * quotes.
+     *
+     * New code must NOT use this -- pass values as bound parameters to
+     * select()/execute() instead, which is injection-safe by construction. It exists
+     * only for the legacy Search builder, which emits one SQL string that is also
+     * handed to the sql_search_conditions plugin filter as raw fragments; a
+     * bound-parameter channel is not available there without breaking that public hook.
+     *
+     * @param string $value
+     *
+     * @return string
+     */
+    public function escape(string $value): string
+    {
+        return $this->conn->real_escape_string($value);
+    }
+
+    /**
+     * The underlying mysqli handle, for sibling infrastructure in this package (the
+     * Db transaction helper) that must issue raw transaction/savepoint statements
+     * mysqli exposes but this wrapper intentionally does not. Application code must
+     * use the query methods above and never touch the handle directly.
+     *
+     * @return mysqli
+     */
+    public function handle(): mysqli
+    {
+        return $this->conn;
+    }
+
+    /**
+     * Begin a transaction. Delegates to Db so Connection is a one-stop entry point.
+     *
+     * @return bool
+     */
+    public function beginTransaction(): bool
+    {
+        return Db::beginTransaction();
+    }
+
+    /**
+     * Commit the current transaction.
+     *
+     * @return bool
+     */
+    public function commit(): bool
+    {
+        return Db::commit();
+    }
+
+    /**
+     * Roll back the current transaction.
+     *
+     * @return bool
+     */
+    public function rollBack(): bool
+    {
+        return Db::rollBack();
+    }
+
+    /**
+     * Run $fn inside a transaction (or savepoint when nested).
+     *
+     * @param callable $fn
+     *
+     * @return mixed
+     * @throws Throwable
+     */
+    public function transaction(callable $fn)
+    {
+        return Db::transaction($fn);
+    }
+
+    /**
+     * Take a server-wide named lock, waiting up to $wait seconds. Returns the call that
+     * releases it, or null when another session holds it.
+     *
+     * @param string $name at most 64 characters
+     * @param int    $wait
+     *
+     * @return \Closure|null
+     * @throws DbException
+     */
+    public function namedLock(string $name, int $wait): ?\Closure
+    {
+        if ((int) $this->scalar('SELECT IS_USED_LOCK(?) = CONNECTION_ID()', array($name)) === 1) {
+            // Already ours: taking it again would release it early on MySQL before 5.7.5.
+            return static function (): void {
+            };
+        }
+        if ((int) $this->scalar('SELECT GET_LOCK(?, ?)', array($name, $wait)) !== 1) {
+            return null;
+        }
+
+        return function () use ($name): void {
+            try {
+                $this->scalar('SELECT RELEASE_LOCK(?)', array($name));
+            } catch (Throwable $e) {
+                // The server drops the lock with the session anyway.
+            }
+        };
+    }
+
+    /**
+     * Run $fn under a named lock, then release it. When the lock is not taken, $busy answers
+     * instead, given the DbException that stopped it or null when another session holds it.
+     *
+     * @param string        $name
+     * @param int           $wait seconds to wait for the lock
+     * @param callable      $fn
+     * @param callable|null $busy without it, a held lock answers null and an error is thrown
+     *
+     * @return mixed
+     * @throws DbException when the lock query fails and no $busy is given
+     */
+    public function withNamedLock(string $name, int $wait, callable $fn, ?callable $busy = null)
+    {
+        try {
+            $release = $this->namedLock($name, $wait);
+        } catch (DbException $e) {
+            if ($busy === null) {
+                throw $e;
+            }
+
+            return $busy($e);
+        }
+        if ($release === null) {
+            return $busy === null ? null : $busy(null);
+        }
+        try {
+            return $fn();
+        } finally {
+            $release();
+        }
+    }
+
+    /**
+     * Whether values go to the server as real prepared statements, which costs a prepare and
+     * a close trip per query. Off by default; define OSC_DB_REAL_PREPARES as true to turn it on.
+     */
+    private static function realPrepares(): bool
+    {
+        return \defined('OSC_DB_REAL_PREPARES') && OSC_DB_REAL_PREPARES;
+    }
+
+    /**
+     * $sql with each '?' placeholder replaced by its value, escaped for this connection, so the
+     * query goes in one trip. A '?' inside a quoted string, a quoted name or a comment is kept.
+     * Null tells the caller to use withStatement(): OSC_DB_REAL_PREPARES is on, or the server could
+     * split this SQL into strings and comments differently than this scan does (a backslash in
+     * quotes under NO_BACKSLASH_ESCAPES or ANSI_QUOTES, a /*! or /*+ comment it runs, a -- not
+     * followed by a space), which would put a value in the wrong place.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException when a value is not scalar or null, or the counts differ
+     */
+    private function inline(string $sql, array $params): ?string
+    {
+        if ($params === []) {
+            return $sql;
+        }
+        if (self::realPrepares()) {
+            return null;
+        }
+        $params = array_values($params);
+        $out    = '';
+        $next   = 0;
+        $length = \strlen($sql);
+        for ($i = 0; $i < $length; $i++) {
+            $c = $sql[$i];
+            if ($c === "'" || $c === '"' || $c === '`') {
+                $end = strpos($sql, $c, $i + 1);
+                $end = $end === false ? $length : $end;
+                // A backslash means different things under NO_BACKSLASH_ESCAPES and ANSI_QUOTES.
+                if ($c !== '`' && str_contains(substr($sql, $i, $end - $i), '\\')) {
+                    return null;
+                }
+                $out .= substr($sql, $i, $end - $i + 1);
+                $i    = $end;
+            } elseif ($c === '-' && ($sql[$i + 1] ?? '') === '-' && isset($sql[$i + 2]) && $sql[$i + 2] !== ' ') {
+                // MySQL also reads -- before a control character or DEL as a comment; anything but a space goes prepared.
+                return null;
+            } elseif ($c === '/' && \in_array(substr($sql, $i, 3), array('/*!', '/*+', '/*M'), true)) {
+                return null;
+            } elseif ($c === '#' || ($c === '-' && substr($sql, $i, 3) === '-- ')) {
+                $end  = strpos($sql, "\n", $i);
+                $end  = $end === false ? $length : $end;
+                $out .= substr($sql, $i, $end - $i);
+                $i    = $end - 1;
+            } elseif ($c === '/' && ($sql[$i + 1] ?? '') === '*') {
+                $end  = strpos($sql, '*/', $i + 2);
+                $end  = $end === false ? $length : $end + 2;
+                $out .= substr($sql, $i, $end - $i);
+                $i    = $end - 1;
+            } elseif ($c === '?') {
+                if (!\array_key_exists($next, $params)) {
+                    throw new DbException('Database query failed');
+                }
+                $out .= $this->literal($params[$next++]);
+            } else {
+                // Copy up to the next character the scan cares about in one step.
+                $run  = strcspn($sql, "'\"`-/#?", $i + 1);
+                $out .= $c . substr($sql, $i + 1, $run);
+                $i   += $run;
+            }
+        }
+        if ($next !== \count($params)) {
+            throw new DbException('Database query failed');
+        }
+
+        return $out;
+    }
+
+    /**
+     * One value as an SQL literal: a number as it is, text escaped and quoted.
+     *
+     * @throws DbException on a value that is neither scalar nor null, or a float that is not finite
+     */
+    private function literal(mixed $value): string
+    {
+        if (\is_int($value)) {
+            return (string) $value;
+        }
+        if (\is_bool($value)) {
+            return $value ? '1' : '0';
+        }
+        if ($value === null) {
+            return 'NULL';
+        }
+        if (\is_float($value)) {
+            if (!is_finite($value)) {
+                throw new DbException('Database query failed');
+            }
+
+            // An exponent makes MySQL read a float, as a prepared statement sends it, not an exact decimal.
+            $text = var_export($value, true);
+
+            return stripos($text, 'E') === false ? $text . 'E0' : $text;
+        }
+        if (\is_string($value)) {
+            return "'" . $this->conn->real_escape_string($value) . "'";
+        }
+        error_log('Db query: unsupported param type ' . \gettype($value));
+        throw new DbException('Database query failed');
+    }
+
+    /**
+     * Prepare $sql, bind $params as positional parameters, execute, hand the
+     * live statement to $consume, and always close the statement afterwards.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     * @param callable         $consume Receives the executed mysqli_stmt, returns the result
+     *
+     * @return mixed Whatever $consume returns
+     * @throws DbException
+     */
+    private function withStatement(string $sql, array $params, callable $consume)
+    {
+        $stmt = $this->run(function () use ($sql) {
+            return $this->conn->prepare($sql);
+        }, $sql);
+
+        try {
+            $this->bindParams($stmt, $params);
+            $this->run(static function () use ($stmt) {
+                return $stmt->execute();
+            }, $sql);
+
+            return $consume($stmt);
+        } finally {
+            $stmt->close();
+        }
+    }
+
+    /**
+     * Bind $params to $stmt, inferring the mysqli type of each value.
+     *
+     * mysqli_stmt::bind_param takes its arguments by reference, and spreading a
+     * plain array does not preserve references on PHP 8.0, so bind_param is
+     * invoked through call_user_func_array over an array of references into a
+     * local values array.
+     *
+     * @param \mysqli_stmt     $stmt
+     * @param array<int,mixed> $params
+     *
+     * @throws DbException on a param that is neither scalar nor null
+     */
+    private function bindParams(\mysqli_stmt $stmt, array $params): void
+    {
+        $types = '';
+        $values = [];
+        foreach (array_values($params) as $param) {
+            if (is_int($param)) {
+                $types .= 'i';
+                $values[] = $param;
+            } elseif (is_float($param)) {
+                $types .= 'd';
+                $values[] = $param;
+            } elseif (is_bool($param)) {
+                $types .= 'i';
+                $values[] = (int) $param;
+            } elseif ($param === null) {
+                $types .= 's';
+                $values[] = null;
+            } elseif (is_scalar($param)) {
+                $types .= 's';
+                $values[] = (string) $param;
+            } else {
+                // An array/object param would (string)-cast to 'Array' or throw a
+                // raw \Error; fail through the same generic-exception discipline.
+                error_log('Db bind_param: unsupported param type ' . gettype($param));
+                throw new DbException('Database query failed');
+            }
+        }
+
+        $refs = [$types];
+        foreach ($values as $i => $value) {
+            $refs[] = &$values[$i];
+        }
+
+        $this->run(static function () use ($stmt, $refs) {
+            return call_user_func_array([$stmt, 'bind_param'], $refs);
+        }, 'bind_param');
+    }
+
+    /**
+     * Execute $fn, translating any failure into a generic DbException while
+     * logging the real detail (sql + mysqli error, never the param values)
+     * server-side. mysqli_report is in strict/exception mode, so prepare,
+     * execute and query throw mysqli_sql_exception on error.
+     *
+     * @param callable $fn
+     * @param string   $sql Context for the server-side log only
+     *
+     * @return mixed The truthy return value of $fn
+     * @throws DbException
+     */
+    private function run(callable $fn, string $sql)
+    {
+        if ($this === self::$shared) {
+            Db::assertIntact();
+        }
+        try {
+            $result = $fn();
+            if ($result === false) {
+                throw new DbException('Database query failed', (int) $this->conn->errno);
+            }
+
+            return $result;
+        } catch (Throwable $e) {
+            if ($e instanceof \mysqli_sql_exception) {
+                StrictRefusals::record($this->conn, (int) $e->getCode(), $e->getMessage(), $sql);
+            }
+            // Capped, so a failed statement carrying user rows does not copy them into the log.
+            $logged = strlen($sql) > 300 ? substr($sql, 0, 300) . '… (' . strlen($sql) . ' bytes)' : $sql;
+            error_log('Db query failed: ' . $logged . ' -- ' . $e->getMessage());
+            if ($this === self::$shared) {
+                Db::noteError((int) $e->getCode());
+            }
+            if ($e instanceof DbException) {
+                throw $e;
+            }
+            // The message stays generic so no SQL or schema detail reaches an end
+            // user, but the driver's error number is carried through: it is only a
+            // category, and callers such as the installer map it to their own
+            // wording ("cannot reach the server", "access denied", ...).
+            throw new DbException('Database query failed', (int) $e->getCode());
+        }
+    }
+
+    /**
+     * Record a query in the shared debug log when OSC_DEBUG_DB is on, so queries
+     * issued through this API show up in the admin debug panel alongside the legacy
+     * DAO's. Called once per logical query (select/execute/insertGetId) — the other
+     * read helpers delegate to those — so prepared statements count once, not once
+     * per prepare/bind/execute step. The logged SQL has $params inlined so the panel
+     * shows real values; when OSC_DEBUG_DB_EXPLAIN is on a SELECT's plan is captured
+     * too. Debug-only: queries run through inline(), which is stricter than this display form.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     * @param float             $start microtime(true) captured before the query ran
+     */
+    private function logQuery(string $sql, array $params, float $start): void
+    {
+        if (!defined('OSC_DEBUG_DB') || !OSC_DEBUG_DB || !class_exists('\\LogDatabase')) {
+            return;
+        }
+        $display = $params === [] ? $sql : $this->interpolate($sql, $params);
+        $errno   = (int) $this->conn->errno;
+        \LogDatabase::getInstance()->addMessage(
+            $display,
+            microtime(true) - $start,
+            $errno,
+            $errno === 0 ? '' : (string) $this->conn->error
+        );
+
+        if ($errno === 0
+            && defined('OSC_DEBUG_DB_EXPLAIN') && OSC_DEBUG_DB_EXPLAIN
+            && preg_match('/^\s*SELECT\b/i', $sql)
+        ) {
+            $this->explainQuery($sql, $params, $display);
+        }
+    }
+
+    /**
+     * Inline $params into $sql for DISPLAY ONLY — never for execution. Values are
+     * escaped through the live connection and quoted by type so the rendered query
+     * is valid SQL a developer can copy and run.
+     *
+     * @param string           $sql
+     * @param array<int,mixed> $params
+     *
+     * @return string
+     */
+    private function interpolate(string $sql, array $params): string
+    {
+        $values = array_values($params);
+        $i      = 0;
+
+        return (string) preg_replace_callback('/\?/', function () use (&$i, $values) {
+            if (!array_key_exists($i, $values)) {
+                $i++;
+
+                return '?';
+            }
+            try {
+                return $this->literal($values[$i++]);
+            } catch (DbException $e) {
+                return '?';
+            }
+        }, $sql);
+    }
+
+    /**
+     * Run EXPLAIN for a SELECT and record its plan against the display SQL, so the
+     * debug panel can show it under the query. Uses a prepared statement for the
+     * parameterised path (never interpolation) and swallows any failure — a plan is
+     * diagnostics, not part of the request. Goes straight through prepare/execute so
+     * it is not itself logged or recursively explained.
+     *
+     * @param string           $sql     the original SQL (with '?' placeholders)
+     * @param array<int,mixed> $params
+     * @param string           $display the inlined SQL used as the log key
+     */
+    private function explainQuery(string $sql, array $params, string $display): void
+    {
+        try {
+            if ($params === []) {
+                $result = $this->conn->query('EXPLAIN ' . $sql);
+                $rows   = $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+                if ($result instanceof \mysqli_result) {
+                    $result->free();
+                }
+            } else {
+                $rows = $this->withStatement('EXPLAIN ' . $sql, $params, static function (\mysqli_stmt $stmt): array {
+                    $result = $stmt->get_result();
+                    $out    = $result instanceof \mysqli_result ? $result->fetch_all(MYSQLI_ASSOC) : [];
+                    if ($result instanceof \mysqli_result) {
+                        $result->free();
+                    }
+
+                    return $out;
+                });
+            }
+
+            if ($rows !== []) {
+                \LogDatabase::getInstance()->addExplainMessage($display, $rows);
+            }
+        } catch (Throwable $e) {
+            // A plan we could not fetch is not worth failing (or logging) the request over.
+        }
+    }
+}
+
+/* file end: ./oc-includes/classes/core/database/Connection.php */

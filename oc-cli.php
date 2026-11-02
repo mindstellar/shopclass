@@ -31,6 +31,6 @@ if (($cliArgv[0] ?? '') === 'install') {
     require_once __DIR__ . '/oc-load.php';
 }
 
-require_once __DIR__ . '/oc-includes/osclass/classes/cli/Cli.php';
+require_once __DIR__ . '/oc-includes/classes/core/cli/Cli.php';
 
 exit(\mindstellar\cli\Cli::run($cliArgv));
