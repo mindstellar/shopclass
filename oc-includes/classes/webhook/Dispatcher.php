@@ -145,10 +145,10 @@ final class Dispatcher
     private function queue(string $type, array $data, array $options, array $targets, bool $test): string
     {
         $now     = $this->clock->now();
-        // The real millisecond, so ids sort in the order the events happened; a test clock
-        // set to another second keeps its own.
+        // The real millisecond, so ids sort in the order the events happened, even when the second
+        // ticks between the two reads; a test clock set to another second keeps its own.
         $millis  = (int) floor(microtime(true) * 1000);
-        $msgId   = Signer::messageId(intdiv($millis, 1000) === $now ? $millis : $now * 1000);
+        $msgId   = Signer::messageId(in_array(intdiv($millis, 1000) - $now, [0, 1], true) ? $millis : $now * 1000);
         $payload = ['type' => $type, 'id' => $msgId, 'timestamp' => \mindstellar\database\UtcDatetime::rfc3339($now), 'data' => $data];
         if (($data['live'] ?? null) === false) {
             $payload = ['type' => $type, 'id' => $msgId, 'timestamp' => $payload['timestamp'], 'thin' => true, 'data' => $data];
