@@ -27,6 +27,6 @@ if ($lineTax !== null && $rate === '') {
 ?>
 <td class="rc-num rc-tax"><?php if ($lineTax !== null) {
     echo osc_esc_html($rate);
-    $amount = $sign . (string) ($lineTax['amount_text'] ?? '');
+    $amount = \mindstellar\billing\DocumentPage::signed($sign, (string) ($lineTax['amount_text'] ?? ''));
     ?><small><?php echo osc_esc_html(!empty($lineTax['included']) ? sprintf(__('%s incl.'), $amount) : $amount); ?></small><?php
 } ?></td>

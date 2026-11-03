@@ -83,6 +83,7 @@ $html = $show($note);
 pin('amounts are negative', [true, true], [str_contains($html, "\u{2212}\$80.00"), str_contains($html, "\u{2212}\$12.77 (included)")]);
 pin('it names the invoice and the reason', [true, true, true], [str_contains($html, 'For invoice INV-2026-00001'), str_contains($html, 'Damaged'), str_contains($html, 'Total credited')]);
 pin('the page is marked noindex', true, str_contains($html, 'noindex'));
+pin('a negative amount on a credit note turns positive, not a double minus', ['$4.17', "\u{2212}\$4.17", '-x'], [DocumentPage::signed("\u{2212}", "\u{2212}\$4.17"), DocumentPage::signed("\u{2212}", '$4.17'), DocumentPage::signed('', '-x')]);
 
 harness_section('line tax on the page');
 pin('no tax column when no line has tax', [false, false], [str_contains($html, 'rc-num rc-tax'), str_contains($show($invoice), 'rc-num rc-tax')]);

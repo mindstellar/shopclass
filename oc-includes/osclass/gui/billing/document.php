@@ -24,6 +24,7 @@ if (!defined('ABS_PATH')) {
  */
 
 $sign   = (string) $page['sign'];
+$signed = static fn (string $text): string => \mindstellar\billing\DocumentPage::signed($sign, $text);
 $accent = (string) ($page['accent'] ?? '#0b7269');
 $title  = sprintf(__('%1$s %2$s'), $page['title'], $page['number']);
 $items  = array();
@@ -153,7 +154,7 @@ if (($page['refund']['reason'] ?? '') !== '') {
                             $lineTax = $line['tax'] ?? null;
                             require __DIR__ . '/parts/line-tax.php';
                         } ?>
-                        <td class="rc-num"><?php echo osc_esc_html($sign . ($line['amount_text'] ?? '')); ?></td>
+                        <td class="rc-num"><?php echo osc_esc_html($signed((string) ($line['amount_text'] ?? ''))); ?></td>
                     </tr>
                 <?php } ?>
             </tbody>
@@ -163,17 +164,17 @@ if (($page['refund']['reason'] ?? '') !== '') {
                 <tr>
                     <th scope="row"><?php echo osc_esc_html((string) ($line['title'] ?? '')); ?>
                         <?php if (is_array($line['tax'] ?? null)) { ?>
-                            <small class="rc-sub"><?php echo osc_esc_html(sprintf(__('Tax %1$s: %2$s'), (string) ($line['tax']['rate_text'] ?? \mindstellar\billing\LineTaxView::rateText((array) ($line['tax']['parts'] ?? array()))), $sign . (string) ($line['tax']['amount_text'] ?? ''))); ?></small>
+                            <small class="rc-sub"><?php echo osc_esc_html(sprintf(__('Tax %1$s: %2$s'), (string) ($line['tax']['rate_text'] ?? \mindstellar\billing\LineTaxView::rateText((array) ($line['tax']['parts'] ?? array()))), $signed((string) ($line['tax']['amount_text'] ?? '')))); ?></small>
                         <?php } ?>
                     </th>
                     <td><?php echo osc_esc_html(!empty($line['included'])
-                        ? sprintf(__('%s (included)'), $sign . ($line['unit_text'] ?? ''))
-                        : $sign . ($line['amount_text'] ?? '')); ?></td>
+                        ? sprintf(__('%s (included)'), $signed((string) ($line['unit_text'] ?? '')))
+                        : $signed((string) ($line['amount_text'] ?? ''))); ?></td>
                 </tr>
             <?php } ?>
             <tr class="rc-total">
                 <th scope="row"><?php echo osc_esc_html($sign === '' ? __('Total') : __('Total credited')); ?></th>
-                <td><?php echo osc_esc_html($sign . $page['total']); ?></td>
+                <td><?php echo osc_esc_html($signed((string) $page['total'])); ?></td>
             </tr>
         </table>
         <?php if ($page['summary'] !== array()) { ?>

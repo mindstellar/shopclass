@@ -38,15 +38,16 @@ final class OrderSerializer
 
     /**
      * An amount in micros. Only a zero delivery charge reads "Free"; a discount reads "-₹150".
+     * With $fixed a whole amount keeps its decimals, as invoices show it.
      *
      * @return array{amount:string,currency:string,formatted:string}
      */
-    public function amount(int $micros, string $currency, bool $delivery = false): array
+    public function amount(int $micros, string $currency, bool $delivery = false, bool $fixed = false): array
     {
         return array(
             'amount'    => (string) Format::amount($micros),
             'currency'  => strtoupper($currency),
-            'formatted' => $this->currencies->money($micros, $currency, $delivery),
+            'formatted' => $this->currencies->money($micros, $currency, $delivery, $fixed),
         );
     }
 
@@ -226,7 +227,7 @@ final class OrderSerializer
                 'type'     => $doc->type,
                 'number'   => $doc->number,
                 'date'     => Format::time($doc->date),
-                'total'    => $this->amount($doc->total, $doc->currency),
+                'total'    => $this->amount($doc->total, $doc->currency, false, true),
                 'currency' => strtoupper($doc->currency),
                 'url'      => DocumentPage::url($doc),
             ), $docs),

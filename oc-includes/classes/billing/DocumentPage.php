@@ -44,6 +44,18 @@ final class DocumentPage
     }
 
     /**
+     * An amount text with the credit note sign. A negative amount, such as a discount, turns positive.
+     */
+    public static function signed(string $sign, string $text): string
+    {
+        if ($sign === '') {
+            return $text;
+        }
+
+        return str_starts_with($text, $sign) ? substr($text, strlen($sign)) : $sign . $text;
+    }
+
+    /**
      * The total in micros, negated for a credit note.
      */
     public static function signedTotal(Document $document): int
