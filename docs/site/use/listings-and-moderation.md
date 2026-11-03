@@ -18,8 +18,8 @@ Set them before you have users, not after.
 | **Only logged in users can post listings** | Whether publishing needs an account. Off means anyone can post; on cuts spam sharply, and cuts volume too. |
 | **Hold new listings for admin moderation** | New listings from users are disabled until an admin approves them. Listings an admin posts are never held. |
 | **Hold edited listings for admin moderation** | The same, for edits to an existing listing. An admin's own edits are never held. |
-| **Users have to validate their listings** | A new listing stays inactive until the user validates it, with a threshold: **After *n* validated listings the user doesn't need to validate the listings any more**. So regulars post freely while newcomers are checked. |
-| **Logged in users don't need to validate their listings** | Skips that validation step for anyone who is logged in. |
+| **Posters confirm new listings by e-mail** | A new listing stays inactive until the user validates it, with a threshold: **After *n* validated listings the user doesn't need to validate the listings any more**. So regulars post freely while newcomers are checked. |
+| **Signed-in posters skip the e-mail confirmation** | Skips that e-mail step for anyone who is signed in. |
 | **Warn about expiration** | Days of notice a seller gets before a listing expires. 0 sends no warning. |
 | **Search count limit** | The most matches a search page or the API counts. Past it the total shows as "1,000+", which keeps big sites fast. 0 counts every match. New sites start at 1000; updated sites start at 0. |
 | **Attach *n* images per listing** | The photo limit. 0 means no limit. |

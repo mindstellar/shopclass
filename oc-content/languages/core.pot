@@ -8376,14 +8376,6 @@ msgstr ""
 msgid "Log in as user"
 msgstr ""
 
-#: oc-includes/classes/admin/form/ItemSettingsScreen.php
-msgid "Logged in users don't need to validate their listings"
-msgstr ""
-
-#: oc-includes/classes/admin/form/ItemSettingsScreen.php
-msgid "Logged in users don't need to validate their products"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/logs.php
 msgid "Logging"
 msgstr ""
@@ -11300,6 +11292,14 @@ msgstr ""
 msgid "Position %1$d of %2$d, level %3$d"
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Posters confirm new listings by e-mail"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Posters confirm new products by e-mail"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Prams & Car Seats"
 msgstr ""
@@ -13833,6 +13833,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/StorageSettingsScreen.php
 msgid "Signed URLs"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Signed-in posters skip the e-mail confirmation"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -16923,14 +16927,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/UserSettingsScreen.php
 msgid "Users enabled"
-msgstr ""
-
-#: oc-includes/classes/admin/form/ItemSettingsScreen.php
-msgid "Users have to validate their listings"
-msgstr ""
-
-#: oc-includes/classes/admin/form/ItemSettingsScreen.php
-msgid "Users have to validate their products"
 msgstr ""
 
 #: oc-includes/classes/admin/form/CommentSettingsScreen.php

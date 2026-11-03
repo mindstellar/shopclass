@@ -62,7 +62,7 @@ final class ItemSettingsScreen extends SettingsScreen
                 ->set('row', false)
             ->checkbox('moderate_admin_edit', osc_mode_text(__('Hold edited listings for admin moderation'), __('Hold edited products for admin moderation')))
                 ->set('row', false)
-            ->checkbox('moderate_items', osc_mode_text(__('Users have to validate their listings'), __('Users have to validate their products')))
+            ->checkbox('moderate_items', osc_mode_text(__('Posters confirm new listings by e-mail'), __('Posters confirm new products by e-mail')))
                 ->set('row', false)
                 ->persist(static function ($value, array $values) {
                     return $value ? (string)($values['num_moderate_items'] ?? 0) : (string)self::MODERATION_OFF;
@@ -86,7 +86,7 @@ final class ItemSettingsScreen extends SettingsScreen
                 // Not stored: it is the value the switch above stores.
                 ->persist(false)
                 ->default($moderated === self::MODERATION_OFF ? 0 : $moderated)
-            ->checkbox('logged_user_item_validation', osc_mode_text(__("Logged in users don't need to validate their listings"), __("Logged in users don't need to validate their products")))
+            ->checkbox('logged_user_item_validation', __('Signed-in posters skip the e-mail confirmation'))
                 ->set('row', false)
             ->custom('moderated_close', static function () {
                 echo '</div>';

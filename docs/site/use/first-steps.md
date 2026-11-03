@@ -78,7 +78,7 @@ everyone:
 - Whether new listings from users are held for admin approval
   (**Hold new listings for admin moderation**), and whether users must
   validate their own listings before they go live
-  (**Users have to validate their listings**), with a threshold after which a
+  (**Posters confirm new listings by e-mail**), with a threshold after which a
   regular user stops needing to.
 - Whether publishing needs an account.
 - How many photos a listing may carry.
