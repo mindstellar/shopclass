@@ -462,9 +462,6 @@ final class Schema
     }
 
     /**
-     * @return array<string,mixed>
-     */
-    /**
      * GET /search/suggest and GET /search/categories.
      *
      * @return array<string,array<string,mixed>>

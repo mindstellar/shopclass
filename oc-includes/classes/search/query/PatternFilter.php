@@ -163,7 +163,7 @@ final class PatternFilter
     {
         $server = self::serverSettings();
         $min    = defined('OSC_FT_MIN_WORD_LEN') ? max(1, (int)OSC_FT_MIN_WORD_LEN) : $server['min'];
-        $lower  = function_exists('mb_strtolower') ? mb_strtolower($word, 'UTF-8') : strtolower($word);
+        $lower  = mb_strtolower($word, 'UTF-8');
 
         return $this->length($word) >= $min && !isset($server['stop'][$lower]);
     }
@@ -177,7 +177,7 @@ final class PatternFilter
      */
     private function stopword(string $word): bool
     {
-        $lower = function_exists('mb_strtolower') ? mb_strtolower($word, 'UTF-8') : strtolower($word);
+        $lower = mb_strtolower($word, 'UTF-8');
 
         return isset(self::serverSettings()['stop'][$lower]);
     }
@@ -396,7 +396,7 @@ final class PatternFilter
             // Only a leading '-' excludes; one inside a word ("Mid-Century") splits it into parts.
             foreach ((array)preg_split('/[+\-*"()~<>@]+/u', $word, -1, PREG_SPLIT_NO_EMPTY) as $text) {
                 $text = (string)$text;
-                $key  = ($neg ? '-' : '') . (function_exists('mb_strtolower') ? mb_strtolower($text, 'UTF-8') : strtolower($text));
+                $key  = ($neg ? '-' : '') . mb_strtolower($text, 'UTF-8');
                 if (!isset($words[$key])) {
                     $words[$key] = array('neg' => $neg, 'text' => $text);
                 }

@@ -238,7 +238,7 @@ class CAdminPlugins extends AdminSecBaseModel
             }
         } else {
             // DEPRECATED: Disclosed path in URL is deprecated, use routes instead
-            // This will be REMOVED in 3.4
+            // Kept: old plugins still link to file= pages.
             $file = Params::getParamString('file');
             // We pass the GET variables (in case we have somes)
             if (preg_match('|(.+?)\?(.*)|', $file, $match)) {

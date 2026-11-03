@@ -98,7 +98,7 @@ function osc_response_is_cacheable()
     }
     // A physical session means some state was written this request (a form, a flash) — treat the
     // response as personalized even if no user is logged in.
-    if (function_exists('session_status') && session_status() === PHP_SESSION_ACTIVE) {
+    if (session_status() === PHP_SESSION_ACTIVE) {
         return false;
     }
     // Match the proxy's cookie contract exactly, so the app is safe even in front of a cache that

@@ -22,7 +22,7 @@
         var i18n = {};
         try {
             i18n = JSON.parse(app.getAttribute('data-i18n') || '{}');
-        } catch (e) {
+        } catch {
             i18n = {};
         }
         var statusLine = app.querySelector('[data-dep-status-line]');

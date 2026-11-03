@@ -911,7 +911,7 @@ osc.collapse = (function () {
         e.preventDefault();
         try {
             toggle(document.querySelector(trigger.getAttribute('data-osc-collapse')));
-        } catch (err) {
+        } catch {
             // An invalid selector in the markup; nothing to toggle.
         }
     });

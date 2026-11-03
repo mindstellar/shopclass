@@ -579,8 +579,6 @@ function osc_gui_account_view(string $themeView): bool
         return false;
     }
 
-    // user-delete_account keeps its original partial path: it shipped in 6.3.0's
-    // first phase and a theme may already include it through that name.
     // A page may serve more than one route, so the map names its partial where the
     // two differ. user-delete_account keeps its original path: it shipped in
     // 6.3.0's first phase and a theme may already include it through that name.

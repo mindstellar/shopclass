@@ -29,7 +29,7 @@
             var cfg;
             try {
                 cfg = JSON.parse(field.getAttribute('data-osc-richtext') || '{}');
-            } catch (e) {
+            } catch {
                 return;
             }
 
@@ -343,7 +343,7 @@
             var fields;
             try {
                 fields = JSON.parse(input.getAttribute('data-osc-user-fields') || '{}');
-            } catch (e) {
+            } catch {
                 fields = {};
             }
             var form = input.closest('form');
@@ -460,7 +460,7 @@
         var text = {};
         try {
             text = JSON.parse(root.getAttribute('data-strings') || '{}');
-        } catch (e) {
+        } catch {
             text = {};
         }
 
@@ -633,10 +633,10 @@
             xhr.addEventListener('loadend', function () {
                 URL.revokeObjectURL(preview);
                 bar.remove();
-                var answer = null;
+                var answer;
                 try {
                     answer = JSON.parse(xhr.responseText);
-                } catch (e) {
+                } catch {
                     answer = null;
                 }
                 if (xhr.status !== 200 || !answer || answer.success !== true || !answer.uploadName) {

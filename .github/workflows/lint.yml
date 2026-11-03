@@ -1,5 +1,5 @@
 # GitHub Action for Shopclass
-name: Lint PHP
+name: Lint PHP and JS
 on:
   # develop and master are excluded here because the release workflow calls this
   # one for those branches (mirroring test.yml). Without that, a push to either
@@ -76,3 +76,21 @@ jobs:
       # bug was `parent::deleteByPrimaryKey($id)`, with no query in sight.
       - name: No legacy DAO write inside a transaction
         run: php tools/ci/legacy-dao-in-transaction.php
+
+  js:
+    name: Admin JavaScript (eslint)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Lint
+        run: |
+          npm ci --ignore-scripts
+          npm run lint

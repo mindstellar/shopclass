@@ -18,6 +18,8 @@ export default [
             globals: {
                 ...globals.browser,
                 Sortable: 'readonly',
+                tinymce: 'readonly',
+                oscAutocomplete: 'readonly',
             },
         },
     },

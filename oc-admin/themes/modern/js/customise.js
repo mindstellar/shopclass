@@ -705,7 +705,7 @@
                 }
                 throw new Error('save failed');
             })
-            .catch(function (err) {
+            .catch(function () {
                 if (controller.signal.aborted) {
                     putBack();
                     return false;

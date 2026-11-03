@@ -424,7 +424,7 @@ class LoginThrottle
     {
         $account = trim((string)$account);
 
-        return function_exists('mb_strtolower') ? mb_strtolower($account, 'UTF-8') : strtolower($account);
+        return mb_strtolower($account, 'UTF-8');
     }
 
     /**

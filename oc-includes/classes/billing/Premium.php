@@ -17,7 +17,7 @@ use mindstellar\listing\ListingStore;
 /**
  * Time-limited premium listings.
  *
- * A premium listing is exempt from expiry -- Item::liveConditions() reads b_premium = 1
+ * A premium listing is exempt from expiry -- ListingStatus::liveConditions() reads b_premium = 1
  * as "live regardless of dt_expiration" -- so nothing else in the codebase will ever
  * stop showing one. Clearing the flag when its date passes is what makes a premium
  * upgrade sellable by duration instead of granted forever, and it is the only reason

@@ -49,7 +49,7 @@
 
     // The server's rule in short: an http(s) address or a site path, no spaces or quotes.
     function goodUrl(value) {
-        return /^(https?:\/\/[^\s"<>\\]+|\/(?![\/\\])[^\s"<>\\]*)$/i.test(String(value).trim());
+        return /^(https?:\/\/[^\s"<>\\]+|\/(?![/\\])[^\s"<>\\]*)$/i.test(String(value).trim());
     }
 
     function hasLabel(item) {
