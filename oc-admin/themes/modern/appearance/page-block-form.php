@@ -40,11 +40,9 @@ foreach (osc_widget_types() as $pbf_id => $pbf_spec) {
     }
     $pbf_types[$pbf_id] = $pbf_spec;
 }
-$pbf_firstType = '';
-foreach ($pbf_types as $pbf_id => $pbf_spec) {
-    $pbf_firstType = (string)$pbf_id;
-    break;
-}
+// Layout blocks lead the list, so the first type shown is the first layout block.
+uasort($pbf_types, static fn (array $a, array $b): int => (int) empty($a['builder']) <=> (int) empty($b['builder']));
+$pbf_firstType = (string) array_key_first($pbf_types);
 
 ?>
 <form name="page_block_form" id="pageBlockForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
@@ -71,9 +69,10 @@ foreach ($pbf_types as $pbf_id => $pbf_spec) {
         <div class="mb-3">
             <label class="form-sublabel" for="pbfType"><?php _e('Widget type'); ?></label>
             <?php
+            // Each type under its group heading; the types are sorted, so Layout comes first.
             $pbf_options = array();
             foreach ($pbf_types as $pbf_id => $pbf_spec) {
-                $pbf_options[$pbf_id] = $pbf_spec['label'];
+                $pbf_options[!empty($pbf_spec['builder']) ? __('Layout') : __('Content')][$pbf_id] = $pbf_spec['label'];
             }
             osc_admin_select(array(
                 'row'     => false,
@@ -144,6 +143,19 @@ echo json_encode($pbf_desc);
         // Exposed to the page editor so an Edit button can repurpose this add
         // form for a specific block, populating its type + config.
         window.pageBlockFormApplyType = applyType;
+
+        // A field with data-show-name shows only while that field holds data-show-value.
+        function applyShowIf() {
+            form.querySelectorAll('[data-show-name]').forEach(function (field) {
+                var group = field.closest('[data-type-id]');
+                var name  = field.getAttribute('data-show-name');
+                var on    = group ? group.querySelector('input[name="' + name + '"]:checked, select[name="' + name + '"]') : null;
+                field.hidden = !on || on.value !== field.getAttribute('data-show-value');
+            });
+        }
+        form.addEventListener('change', applyShowIf);
+        window.pageBlockFormRefresh = applyShowIf;
+        applyShowIf();
 
         // Sets a field's value, through its editor when it has one.
         window.pageBlockFormSetValue = function (el, value) {

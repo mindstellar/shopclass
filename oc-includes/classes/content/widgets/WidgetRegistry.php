@@ -41,7 +41,7 @@ final class WidgetRegistry extends Registry
      *                              Required. May echo directly or return a string.
      *   'fields'      => array     Optional declarative config schema. Each entry:
      *                              ['name'=>string, 'label'=>string,
-     *                               'type'=>'text'|'number'|'select'|'checkbox'|'textarea'|'richtext',
+     *                               'type'=>'text'|'number'|'select'|'choice'|'checkbox'|'textarea'|'richtext'|'link'|'image',
      *                               'default'=>mixed, 'options'=>array or a callable returning one (select only)].
      *   'form'        => callable  Optional callable(array $config): void that renders
      *                              a custom admin form, overriding 'fields'.
@@ -50,6 +50,9 @@ final class WidgetRegistry extends Registry
      *   'locations'   => string[]  Optional non-empty list of section slugs ([a-z0-9_-]{1,40})
      *                              this type fits. Without it the type fits every section.
      *                              Widgets already placed elsewhere keep rendering.
+     *   'builder'     => bool      Optional. True for a layout block: it fits a page's block canvas
+     *                              and a theme section that lists it, never the Widgets screen.
+     *   'icon'        => string    Optional Bootstrap Icons name shown beside the block in lists.
      *
      * @param string $id   Namespaced slug, [a-z0-9_.-]{1,60}.
      * @param array  $spec Type specification (see above).
@@ -125,18 +128,25 @@ final class WidgetRegistry extends Registry
             'form'        => $spec['form'] ?? null,
             'capability'  => $capability,
             'locations'   => $locations,
+            'builder'     => !empty($spec['builder']),
+            'icon'        => isset($spec['icon']) && is_string($spec['icon']) && preg_match('/^[a-z0-9-]{1,40}$/', $spec['icon'])
+                ? $spec['icon'] : '',
         ];
     }
 
     /**
      * Whether a registered type may be placed in a section. An unknown type
-     * fits nowhere; a type with no 'locations' fits every section.
+     * fits nowhere; a type with no 'locations' fits every section. A builder type
+     * fits a page's block canvas, or a section whose theme lists it ($listed).
      */
-    public function fits(string $id, string $location): bool
+    public function fits(string $id, string $location, bool $listed = false): bool
     {
         $type = $this->get($id);
         if ($type === null) {
             return false;
+        }
+        if ($type['builder']) {
+            return $listed || str_starts_with($location, 'page.');
         }
 
         return $type['locations'] === [] || in_array($location, $type['locations'], true);

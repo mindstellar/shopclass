@@ -229,6 +229,14 @@ div.widget-box-content-no-wrapp li a {
   }
 }
 
+// The head is a flex row, so its buttons sit at its end; the absolute placement shared with
+// widget boxes would anchor them to the next positioned ancestor instead.
+.osc-panel-head > .osc-panel-actions {
+  margin-inline-start: auto;
+  position: static;
+  transform: none;
+}
+
 .osc-panel-body {
   padding: 0.75rem 1rem 1rem;
   position: relative;

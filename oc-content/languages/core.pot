@@ -4075,6 +4075,7 @@ msgstr ""
 msgid "Contact, feed &amp; language"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/page-block-form.php
 #: oc-includes/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Content"
@@ -7803,6 +7804,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Lay-flat binding and thick paper that takes ink well."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/page-block-form.php
+msgid "Layout"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php

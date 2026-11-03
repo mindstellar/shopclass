@@ -303,9 +303,16 @@ class Field
                     echo '<option value="">' . osc_esc_html($spec['placeholder']) . '</option>';
                 }
                 foreach (($spec['options'] ?? array()) as $optValue => $optLabel) {
-                    echo '<option value="' . osc_esc_html($optValue) . '"'
-                        . ((string)$optValue === (string)$value ? ' selected' : '') . '>'
-                        . osc_esc_html($optLabel) . '</option>';
+                    // A nested list is a group: its key is the group label.
+                    if (is_array($optLabel)) {
+                        echo '<optgroup label="' . osc_esc_html((string)$optValue) . '">';
+                        foreach ($optLabel as $subValue => $subLabel) {
+                            echo self::option((string)$subValue, (string)$subLabel, (string)$value);
+                        }
+                        echo '</optgroup>';
+                        continue;
+                    }
+                    echo self::option((string)$optValue, (string)$optLabel, (string)$value);
                 }
                 echo '</select>';
                 break;
@@ -588,6 +595,15 @@ class Field
 
         echo '<p class="field-error" id="' . osc_esc_html($id . '-error') . '">'
             . osc_esc_html($error) . '</p>';
+    }
+
+    /**
+     * One <option>, selected when its value is the field's value.
+     */
+    private static function option(string $value, string $label, string $current): string
+    {
+        return '<option value="' . osc_esc_html($value) . '"' . ($value === $current ? ' selected' : '') . '>'
+            . osc_esc_html($label) . '</option>';
     }
 
     /**

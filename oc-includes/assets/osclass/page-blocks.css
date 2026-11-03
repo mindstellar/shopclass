@@ -1,0 +1,53 @@
+/*
+ * This file is part of Shopclass (Mindstellar).
+ * Copyright (c) 2021-2026 Navjot Tomer (Mindstellar) and contributors
+ *
+ * Distributed under the GNU General Public License v3.0 or later. See LICENSE.
+ *
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ */
+
+/* Layout for the Page builder blocks: grid, gaps and stacking. No colours or fonts; the theme styles the same classes. */
+
+.osc-media-text {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--osc-block-gap, 2rem);
+    align-items: center;
+}
+.osc-media-text--third { grid-template-columns: 1fr 2fr; }
+.osc-media-text--right { grid-template-columns: 1fr 1fr; }
+.osc-media-text--right.osc-media-text--third { grid-template-columns: 2fr 1fr; }
+.osc-media-text--right > figure { order: 2; }
+.osc-media-text > figure { margin: 0; min-width: 0; }
+.osc-media-text > figure > img,
+.osc-media-text > figure > svg { display: block; width: 100%; height: auto; }
+.osc-media-text > .osc-rich-text { min-width: 0; }
+
+.osc-columns {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--osc-block-gap, 2rem);
+}
+.osc-columns--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+.osc-heading--center { text-align: center; }
+.osc-heading--center > p { margin-inline: auto; }
+
+.osc-button-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .75rem;
+}
+.osc-button-row--center { justify-content: center; }
+.osc-button { display: inline-flex; align-items: center; justify-content: center; }
+
+@media (max-width: 639.98px) {
+    .osc-media-text,
+    .osc-media-text--third,
+    .osc-media-text--right,
+    .osc-media-text--right.osc-media-text--third,
+    .osc-columns,
+    .osc-columns--3 { grid-template-columns: minmax(0, 1fr); }
+    .osc-media-text--right > figure { order: 0; }
+}

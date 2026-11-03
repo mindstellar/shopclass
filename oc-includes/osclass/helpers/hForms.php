@@ -181,6 +181,7 @@ function osc_form_context_from_widget($widgetRow)
  * osc_render_form(); an unset/removed form id renders nothing (widget-safety).
  */
 osc_register_widget('core.form', array(
+    'icon'        => 'ui-checks-grid',
     'label'       => 'Form',
     'description' => 'Place a custom form (built in Forms → Manage forms) on this page.',
     'fields'      => array(

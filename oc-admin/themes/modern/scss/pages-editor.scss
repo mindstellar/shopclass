@@ -104,6 +104,20 @@
     }
   }
 
+  // The block type's icon, so a long list reads at a glance.
+  .page-block-icon {
+    align-items: center;
+    background: var(--osc-bench-warm);
+    border: 1px solid var(--osc-rule);
+    border-radius: 4px;
+    color: var(--osc-ink-muted);
+    display: inline-flex;
+    flex: none;
+    height: 30px;
+    justify-content: center;
+    width: 30px;
+  }
+
   .page-block-main {
     display: flex;
     flex: 1 1 auto;

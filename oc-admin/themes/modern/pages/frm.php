@@ -272,6 +272,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                               )); ?>">
                             <i class="bi bi-grip-vertical" aria-hidden="true"></i>
                         </span>
+                        <span class="page-block-icon" aria-hidden="true">
+                            <i class="bi bi-<?php echo osc_esc_html((string) ($widgetTypes[$b['s_type'] ?? '']['icon'] ?? '') ?: 'filetype-html'); ?>"></i>
+                        </span>
                         <span class="page-block-main">
                             <span class="page-block-desc">
                                 <?php echo osc_esc_html($b['s_description']); ?>
@@ -463,6 +466,8 @@ echo json_encode($pb_builder_ids);
                     .forEach(function (c) {
                         if (c.type === 'checkbox') {
                             c.checked = false;
+                        } else if (c.type === 'radio') {
+                            c.checked = c.hasAttribute('data-default');
                         } else if (window.pageBlockFormSetValue) {
                             window.pageBlockFormSetValue(c, '');
                         } else {
@@ -475,6 +480,7 @@ echo json_encode($pb_builder_ids);
                 if (title) { title.textContent = <?php echo json_encode(__('Add widget')); ?>; }
                 if (submit) { submit.textContent = <?php echo json_encode(__('Add widget')); ?>; }
                 if (type && window.pageBlockFormApplyType) { window.pageBlockFormApplyType(type.value); }
+                if (window.pageBlockFormRefresh) { window.pageBlockFormRefresh(); }
                 dialog.showModal();
             }
             function openEdit(row) {
@@ -493,7 +499,16 @@ echo json_encode($pb_builder_ids);
                 try { config = JSON.parse(row.getAttribute('data-config') || '{}') || {}; } catch (e) {}
                 Object.keys(config).forEach(function (key) {
                     var el = document.getElementById(fieldId(typeId, key));
-                    if (!el) { return; }
+                    if (!el) {
+                        // A choice field is a set of radios sharing the field's name.
+                        var group = form.querySelector('[data-type-id="' + typeId + '"]');
+                        if (group) {
+                            group.querySelectorAll('input[type=radio][name="config[' + key + ']"]').forEach(function (r) {
+                                r.checked = r.value === String(config[key]);
+                            });
+                        }
+                        return;
+                    }
                     var val = config[key];
                     if (el.type === 'checkbox') {
                         el.checked = (val && val !== '0' && val !== 0);
@@ -505,6 +520,7 @@ echo json_encode($pb_builder_ids);
                         }
                     }
                 });
+                if (window.pageBlockFormRefresh) { window.pageBlockFormRefresh(); }
                 dialog.showModal();
             }
 

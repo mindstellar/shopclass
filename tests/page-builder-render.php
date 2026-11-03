@@ -43,6 +43,11 @@ function osc_show_widgets($location)
 {
     echo $GLOBALS['widgets'];
 }
+$GLOBALS['styles'] = array();
+function osc_enqueue_style($id, $url = null)
+{
+    $GLOBALS['styles'][] = $id;
+}
 function osc_static_page_id()
 {
     return 42;
@@ -97,6 +102,7 @@ check(
 
 harness_section('the blocks reach the view as the page text');
 
+pin('the block layout stylesheet is queued', array('osc-page-blocks'), $GLOBALS['styles']);
 check('a static_page_text filter is registered', isset($GLOBALS['filters']['static_page_text']));
 $text = osc_apply_filter('static_page_text', 'ORIGINAL', '');
 check('the canvas replaces the editor text', strpos($text, 'BLOCKS') !== false, $text);

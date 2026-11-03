@@ -62,10 +62,16 @@ final class WidgetConfig
                     $config[$name] = ($hasValue && $raw !== '' && $raw !== '0') ? 1 : 0;
                     break;
                 case 'select':
+                case 'choice':
                     // Options may be a callable for a dynamic list, resolved before checking.
                     $allowed       = self::selectAllowedValues($field['options'] ?? array());
                     $value         = $hasValue && is_scalar($raw) ? (string) $raw : (string) $default;
                     $config[$name] = in_array($value, $allowed, true) ? $value : (string) $default;
+                    break;
+                case 'link':
+                    // Read unpurified so a query string survives; a web, mail or site address only.
+                    $hasRaw        = array_key_exists($name, $postedRaw);
+                    $config[$name] = self::linkValue($hasRaw && is_string($postedRaw[$name]) ? $postedRaw[$name] : (string) $default);
                     break;
                 case 'image':
                     // Read unpurified so a query string survives; keep an http(s) URL or a site path.
@@ -138,6 +144,19 @@ final class WidgetConfig
         }
 
         return '';
+    }
+
+    /**
+     * A link a block may point to: what imageValue() keeps, or a mailto: address. Anything else is ''.
+     */
+    public static function linkValue(string $value): string
+    {
+        $value = trim($value);
+        if (preg_match('/^mailto:[^\s<>"]+@[^\s<>"]+$/i', $value)) {
+            return $value;
+        }
+
+        return self::imageValue($value);
     }
 
     /**

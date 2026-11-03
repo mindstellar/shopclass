@@ -91,6 +91,8 @@ osc_register_page_template('core.page_builder', array(
     'description' => 'Compose this page from widget blocks instead of the text editor.',
     'builder'     => true,
     'render'      => static function ($page) {
+        // Block layout only (grid, gaps, stacking), so blocks work on every theme; the theme styles the look.
+        osc_enqueue_style('osc-page-blocks');
         // The theme on screen (a preview counts); a child inherits its parent's canvas.
         $themes  = WebThemes::getInstance();
         $current = (string) ($themes->getCurrentTheme() ?: osc_theme());

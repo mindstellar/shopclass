@@ -377,10 +377,25 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
         'value'    => $val,
         'disabled' => $disabled,
     );
-    ?>
-    <div class="mb-3">
-        <?php if ($fieldType !== 'checkbox') { ?>
+    if (isset($field['placeholder']) && is_string($field['placeholder'])) {
+        $spec['placeholder'] = $field['placeholder'];
+    }
+    // Shown only while another field of the block holds one value (data-show-*, see the block form script).
+    $showIf = isset($field['show_if']) && is_array($field['show_if']) && count($field['show_if']) === 1 ? $field['show_if'] : array();
+    // A section heading opens a group of fields, such as a block's optional button.
+    if (isset($field['section']) && is_string($field['section']) && $field['section'] !== '') { ?>
+        <p class="widget-field-section"><?php echo osc_esc_html($field['section']);
+        if (!empty($field['section_note'])) { ?> <span><?php echo osc_esc_html((string) $field['section_note']); ?></span><?php } ?></p>
+    <?php } ?>
+    <div class="mb-3 widget-field<?php echo !empty($field['half']) ? ' widget-field--half' : ''; ?>"<?php
+    if ($showIf !== array()) {
+        echo ' data-show-name="config[' . osc_esc_html((string) array_key_first($showIf)) . ']" data-show-value="'
+            . osc_esc_html((string) reset($showIf)) . '"';
+    } ?>>
+        <?php if ($fieldType !== 'checkbox' && $fieldType !== 'choice') { ?>
             <label class="form-sublabel" for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
+        <?php } elseif ($fieldType === 'choice') { ?>
+            <span class="form-sublabel" id="<?php echo osc_esc_html($id); ?>-label"><?php echo osc_esc_html($label); ?></span>
         <?php }
 
         switch ($fieldType) {
@@ -402,6 +417,24 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 break;
             case 'number':
                 osc_admin_number($spec);
+                break;
+            case 'choice':
+                // A few short options as one segmented switch; the default is checked on a new block.
+                $current = $val !== '' ? $val : (string) ($field['default'] ?? '');
+                echo '<fieldset class="osc-segmented" aria-labelledby="' . osc_esc_html($id) . '-label">';
+                $i = 0;
+                foreach (widgetConfigSelectOptions($field['options'] ?? array()) as $opt) {
+                    $optId = $id . '-' . $i++;
+                    $icon  = (string) ($field['icons'][$opt['value']] ?? '');
+                    echo '<input type="radio" id="' . osc_esc_html($optId) . '" name="' . osc_esc_html($inputName) . '"'
+                        . ' value="' . osc_esc_html($opt['value']) . '"'
+                        . ($opt['value'] === (string) ($field['default'] ?? '') ? ' data-default="1"' : '')
+                        . ($opt['value'] === $current ? ' checked' : '') . ($disabled ? ' disabled' : '') . ' />'
+                        . '<label for="' . osc_esc_html($optId) . '">'
+                        . (preg_match('/^[a-z0-9-]+$/', $icon) ? '<i class="bi bi-' . $icon . '" aria-hidden="true"></i>' : '')
+                        . osc_esc_html($opt['label']) . '</label>';
+                }
+                echo '</fieldset>';
                 break;
             case 'code':
                 // Raw HTML/JS: a plain monospace textarea, never TinyMCE. The
@@ -449,7 +482,10 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
             default:
                 osc_admin_text($spec);
                 break;
-        } ?>
+        }
+        if (isset($field['help']) && is_string($field['help']) && $field['help'] !== '') { ?>
+            <p class="form-text"><?php echo osc_esc_html($field['help']); ?></p>
+        <?php } ?>
     </div>
     <?php
 }

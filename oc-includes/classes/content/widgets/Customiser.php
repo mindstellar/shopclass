@@ -275,7 +275,7 @@ final class Customiser
                 continue;
             }
             $typeId = is_string($row['type'] ?? null) ? $row['type'] : '';
-            $type   = in_array($typeId, $types, true) && WidgetRegistry::getInstance()->fits($typeId, $slug)
+            $type   = in_array($typeId, $types, true) && WidgetRegistry::getInstance()->fits($typeId, $slug, true)
                 ? WidgetRegistry::getInstance()->get($typeId)
                 : null;
             if ($type === null) {

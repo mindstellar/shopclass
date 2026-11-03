@@ -514,6 +514,7 @@ function _osc_menu_list(array $items): string
  */
 osc_register_widget('core.rich_text', array(
     'label'       => 'Rich text',
+    'icon'        => 'text-paragraph',
     'description' => 'A block of formatted text: headings, bold, lists and links. Blank lines become paragraphs.',
     'fields'      => array(
         array(
@@ -535,6 +536,7 @@ osc_register_widget('core.rich_text', array(
  * Core prints the markup only; the theme styles .osc-menu.
  */
 osc_register_widget('core.menu', array(
+    'icon'        => 'list',
     'label'       => 'Menu',
     'description' => 'One of your menus as a list of links.',
     'fields'      => array(
@@ -562,6 +564,7 @@ osc_register_widget('core.menu', array(
  * http(s) URLs or site paths (see WidgetConfig::fromPosted); alt text is purified. Safe for any admin.
  */
 osc_register_widget('core.image', array(
+    'icon'        => 'image',
     'label'       => 'Image',
     'description' => 'An image from your media library, optionally linking somewhere.',
     'fields'      => array(
@@ -595,6 +598,7 @@ osc_register_widget('core.image', array(
  * the stored code verbatim onto the public page.
  */
 osc_register_widget('core.custom_code', array(
+    'icon'        => 'code-slash',
     // Its own group so the palette can sort the raw-markup escape hatch last.
     'group'       => 'Legacy',
     'capability'  => 'super_admin',
@@ -610,5 +614,173 @@ osc_register_widget('core.custom_code', array(
     ),
     'render'      => static function ($config) {
         echo $config['code'] ?? '';
+    },
+));
+
+/**
+ * A block's button: a link drawn as a button, or '' with no label or no usable link.
+ *
+ * @param string $label
+ * @param string $link  as stored by WidgetConfig::linkValue()
+ * @param string $style 'primary' or 'secondary'
+ *
+ * @return string
+ */
+function _osc_block_button($label, $link, $style = 'primary')
+{
+    $label = trim((string) $label);
+    $link  = WidgetConfig::linkValue((string) $link);
+    if ($label === '' || $link === '') {
+        return '';
+    }
+    $style = $style === 'secondary' ? 'secondary' : 'primary';
+
+    return '<a class="osc-button osc-button--' . $style . '" href="' . osc_esc_html(\mindstellar\utility\Utils::toAbsolute($link)) . '">'
+        . osc_esc_html($label) . '</a>';
+}
+
+/**
+ * Formatted block text, cleaned as Rich text is, or '' when there is none.
+ *
+ * @param mixed $text
+ *
+ * @return string
+ */
+function _osc_block_text($text)
+{
+    $html = osc_autop((string) osc_sanitize_html((string) $text));
+
+    return trim($html) === '' ? '' : $html;
+}
+
+/*
+ * Layout blocks for the Page builder ('builder' => true): they fit a page's block canvas and a
+ * theme section that lists them, never Appearance > Widgets. Core owns the markup; core's
+ * page-blocks.css lays them out and the theme styles the classes.
+ */
+osc_register_widget('core.media_text', array(
+    'label'       => 'Image and text',
+    'description' => 'A picture beside text, with an optional button. Stacks on phones, picture first.',
+    'builder'     => true,
+    'icon'        => 'postcard',
+    'fields'      => array(
+        array('name' => 'image', 'label' => 'Image', 'type' => 'image'),
+        array('name' => 'alt', 'label' => 'Alt text', 'type' => 'text', 'placeholder' => 'Describe the picture for people who cannot see it'),
+        array('name' => 'text', 'label' => 'Text', 'type' => 'richtext'),
+        array('name' => 'side', 'label' => 'Image side', 'type' => 'choice', 'half' => true, 'default' => 'left',
+              'options' => array('left' => 'Left', 'right' => 'Right'), 'icons' => array('left' => 'layout-sidebar', 'right' => 'layout-sidebar-reverse')),
+        array('name' => 'width', 'label' => 'Image width', 'type' => 'choice', 'half' => true, 'default' => 'half',
+              'options' => array('half' => 'Half', 'third' => 'Third')),
+        array('name' => 'button_label', 'label' => 'Button label', 'type' => 'text', 'half' => true, 'placeholder' => 'e.g. Read more',
+              'section' => 'Button', 'section_note' => '(optional)'),
+        array('name' => 'button_link', 'label' => 'Button link', 'type' => 'link', 'half' => true, 'placeholder' => 'https://… or /page'),
+    ),
+    'render'      => static function ($config) {
+        $src    = \mindstellar\utility\Utils::toAbsolute((string) ($config['image'] ?? ''));
+        $text   = _osc_block_text($config['text'] ?? '');
+        $button = _osc_block_button($config['button_label'] ?? '', $config['button_link'] ?? '', 'secondary');
+        if ($button !== '') {
+            $text .= '<div class="osc-button-row">' . $button . '</div>';
+        }
+        if ($src === '' && $text === '') {
+            return;
+        }
+        $body = $text === '' ? '' : '<div class="osc-rich-text">' . $text . '</div>';
+        if ($src === '') {
+            echo $body;
+
+            return;
+        }
+        $class = 'osc-media-text'
+            . (($config['side'] ?? '') === 'right' ? ' osc-media-text--right' : '')
+            . (($config['width'] ?? '') === 'third' ? ' osc-media-text--third' : '');
+        echo '<div class="' . $class . '"><figure><img src="' . osc_esc_html($src) . '" alt="'
+            . osc_esc_html((string) ($config['alt'] ?? '')) . '" loading="lazy" decoding="async"/></figure>' . $body . '</div>';
+    },
+));
+
+osc_register_widget('core.columns', array(
+    'label'       => 'Columns',
+    'description' => 'Two or three columns of text side by side. Stacks on phones.',
+    'builder'     => true,
+    'icon'        => 'layout-three-columns',
+    'fields'      => array(
+        array('name' => 'count', 'label' => 'Number of columns', 'type' => 'choice', 'default' => '2',
+              // Value-label pairs: numeric keys would be read as a plain list.
+              'options' => array(array('value' => '2', 'label' => '2 columns'), array('value' => '3', 'label' => '3 columns')),
+              'icons' => array('2' => 'layout-split', '3' => 'layout-three-columns')),
+        array('name' => 'text_1', 'label' => 'Column 1', 'type' => 'richtext'),
+        array('name' => 'text_2', 'label' => 'Column 2', 'type' => 'richtext'),
+        array('name' => 'text_3', 'label' => 'Column 3', 'type' => 'richtext', 'show_if' => array('count' => '3')),
+    ),
+    'render'      => static function ($config) {
+        $count = (string) ($config['count'] ?? '') === '3' ? 3 : 2;
+        $cols  = array();
+        for ($i = 1; $i <= $count; $i++) {
+            $cols[] = _osc_block_text($config['text_' . $i] ?? '');
+        }
+        if (implode('', $cols) === '') {
+            return;
+        }
+        echo '<div class="osc-columns osc-columns--' . $count . '">';
+        foreach ($cols as $col) {
+            echo '<div class="osc-rich-text">' . $col . '</div>';
+        }
+        echo '</div>';
+    },
+));
+
+osc_register_widget('core.heading', array(
+    'label'       => 'Heading',
+    'description' => 'A section title with an optional intro line.',
+    'builder'     => true,
+    'icon'        => 'type-h1',
+    'fields'      => array(
+        array('name' => 'text', 'label' => 'Text', 'type' => 'text', 'placeholder' => 'e.g. About our market'),
+        array('name' => 'level', 'label' => 'Level', 'type' => 'choice', 'half' => true, 'default' => 'h2',
+              'options' => array('h2' => 'Heading', 'h3' => 'Subheading')),
+        array('name' => 'align', 'label' => 'Align', 'type' => 'choice', 'half' => true, 'default' => 'left',
+              'options' => array('left' => 'Left', 'center' => 'Center'), 'icons' => array('left' => 'text-left', 'center' => 'text-center')),
+        array('name' => 'intro', 'label' => 'Intro line (optional)', 'type' => 'text', 'placeholder' => 'One sentence under the heading'),
+    ),
+    'render'      => static function ($config) {
+        $text = trim((string) ($config['text'] ?? ''));
+        if ($text === '') {
+            return;
+        }
+        $tag   = ($config['level'] ?? '') === 'h3' ? 'h3' : 'h2';
+        $intro = trim((string) ($config['intro'] ?? ''));
+        echo '<div class="osc-heading' . (($config['align'] ?? '') === 'center' ? ' osc-heading--center' : '') . '">'
+            . '<' . $tag . '>' . osc_esc_html($text) . '</' . $tag . '>'
+            . ($intro === '' ? '' : '<p>' . osc_esc_html($intro) . '</p>') . '</div>';
+    },
+));
+
+osc_register_widget('core.button', array(
+    'label'       => 'Button',
+    'description' => 'A link styled as a button, with an optional second button beside it.',
+    'builder'     => true,
+    'icon'        => 'capsule',
+    'fields'      => array(
+        array('name' => 'label', 'label' => 'Label', 'type' => 'text', 'half' => true, 'placeholder' => 'e.g. Post a listing'),
+        array('name' => 'link', 'label' => 'Link', 'type' => 'link', 'half' => true, 'placeholder' => 'https://… or /page',
+              'help' => 'A full web address, a mailto: address, or a path on this site such as /contact.'),
+        array('name' => 'style', 'label' => 'Style', 'type' => 'choice', 'half' => true, 'default' => 'primary',
+              'options' => array('primary' => 'Primary', 'secondary' => 'Secondary')),
+        array('name' => 'align', 'label' => 'Align', 'type' => 'choice', 'half' => true, 'default' => 'left',
+              'options' => array('left' => 'Left', 'center' => 'Center'), 'icons' => array('left' => 'text-left', 'center' => 'text-center')),
+        array('name' => 'label_2', 'label' => 'Label', 'type' => 'text', 'half' => true, 'placeholder' => 'e.g. Browse listings',
+              'section' => 'Second button', 'section_note' => '(optional, secondary style)'),
+        array('name' => 'link_2', 'label' => 'Link', 'type' => 'link', 'half' => true, 'placeholder' => 'https://… or /page'),
+    ),
+    'render'      => static function ($config) {
+        $style   = ($config['style'] ?? '') === 'secondary' ? 'secondary' : 'primary';
+        $buttons = _osc_block_button($config['label'] ?? '', $config['link'] ?? '', $style)
+            . _osc_block_button($config['label_2'] ?? '', $config['link_2'] ?? '', 'secondary');
+        if ($buttons === '') {
+            return;
+        }
+        echo '<div class="osc-button-row' . (($config['align'] ?? '') === 'center' ? ' osc-button-row--center' : '') . '">'
+            . $buttons . '</div>';
     },
 ));
