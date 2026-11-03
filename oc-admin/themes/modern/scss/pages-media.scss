@@ -466,7 +466,7 @@
   .page-block-dialog-grid {
     block-size: calc(100vh - 4rem);
     display: grid;
-    grid-template-columns: minmax(0, 42rem) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 28rem) minmax(0, 1fr);
 
     > .osc-dialog-body { overflow: auto; }
   }
