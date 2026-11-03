@@ -30,9 +30,16 @@ if (!function_exists('osc_autop')) {
         return (string) $text;
     }
 }
+if (!function_exists('osc_sanitize_html')) {
+    function osc_sanitize_html($value)
+    {
+        return (new \mindstellar\utility\Sanitize())->richHtml($value);
+    }
+}
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
 
 use mindstellar\widgets\WidgetConfig;
+use mindstellar\widgets\WidgetRegistry;
 
 osc_register_widget('test.echo', array(
     'label'  => 'Echo',
@@ -128,5 +135,18 @@ pin('an old absolute address on another host is kept', 'https://cdn.test/a.jpg',
     pin('a path resolves back', $base . 'oc-content/a.jpg', WidgetConfig::toAbsolute(parse_url($base, PHP_URL_PATH) . 'oc-content/a.jpg'));
 }
 pin('toAbsolute leaves a full URL alone', 'https://cdn.test/a.jpg', WidgetConfig::toAbsolute('https://cdn.test/a.jpg'));
+
+harness_section('Rich text keeps the formatting the editor writes');
+$rich = WidgetRegistry::getInstance()->get('core.rich_text');
+pin('its field is rich text', 'richtext', $rich['fields'][0]['type']);
+$saved = WidgetConfig::fromPosted($rich, array('text' => 'purified'), array('text' => '<h3>Hi</h3><p><strong>bold</strong></p><ul><li>one</li></ul><script>alert(1)</script><img src="x" onerror="alert(2)">'))['text'];
+check('a heading, bold text and a list survive the save', str_contains($saved, '<h3>Hi</h3>') && str_contains($saved, '<strong>bold</strong>') && str_contains($saved, '<li>one</li>'), $saved);
+check('a script and an event handler do not', !str_contains($saved, 'script') && !str_contains($saved, 'onerror'), $saved);
+ob_start();
+($rich['render'])(array('text' => '<p>Hi</p>'));
+pin('it renders inside a class a theme can style', '<div class="osc-rich-text"><p>Hi</p></div>', ob_get_clean());
+ob_start();
+($rich['render'])(array('text' => ''));
+pin('an empty block prints nothing', '', ob_get_clean());
 
 exit(harness_result());

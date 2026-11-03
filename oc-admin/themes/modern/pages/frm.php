@@ -461,7 +461,13 @@ echo json_encode($pb_builder_ids);
                 if (desc) { desc.value = ''; }
                 form.querySelectorAll('#pbfFields input, #pbfFields select, #pbfFields textarea')
                     .forEach(function (c) {
-                        if (c.type === 'checkbox') { c.checked = false; } else { c.value = ''; }
+                        if (c.type === 'checkbox') {
+                            c.checked = false;
+                        } else if (window.pageBlockFormSetValue) {
+                            window.pageBlockFormSetValue(c, '');
+                        } else {
+                            c.value = '';
+                        }
                     });
             }
             function openAdd() {
@@ -492,7 +498,8 @@ echo json_encode($pb_builder_ids);
                     if (el.type === 'checkbox') {
                         el.checked = (val && val !== '0' && val !== 0);
                     } else {
-                        el.value = (val === null || val === undefined) ? '' : val;
+                        val = (val === null || val === undefined) ? '' : String(val);
+                        if (window.pageBlockFormSetValue) { window.pageBlockFormSetValue(el, val); } else { el.value = val; }
                         if (el.classList.contains('widget-image-input') && window.oscSyncWidgetImage) {
                             window.oscSyncWidgetImage(el);
                         }

@@ -417,6 +417,14 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
             case 'textarea':
                 osc_admin_textarea(array_merge($spec, array('rows' => 5, 'width' => 'full')));
                 break;
+            case 'richtext':
+                // Mounted by editor.js where the screen loads it; a plain textarea elsewhere. Text saved
+                // before the field was rich opens as paragraphs, not as one run-on line.
+                if ($val !== '' && !preg_match('/<[a-z]/i', $val)) {
+                    $spec['value'] = osc_autop($val);
+                }
+                osc_admin_field(array_merge($spec, array('type' => 'richtext', 'rows' => 8, 'width' => 'full', 'preset' => 'full', 'height' => 300)));
+                break;
             case 'image':
                 // A media URL chosen via the picker (parts/media-picker.php), so the value
                 // itself is hidden and the buttons are the control.

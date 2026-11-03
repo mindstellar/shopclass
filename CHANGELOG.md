@@ -141,6 +141,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### Fixed
 - A Page builder page on a child theme uses the parent theme's full-width block layout, not a narrow text column.
+- The Rich text block keeps headings, bold text, lists and links from its editor; they were removed on save. The editor offers only the headings that are kept.
 - Photo processing: JPEGs open without the exif extension, small images keep their size under Imagick, GIF and upper-case formats save correctly, and GD refuses photos too large for the memory limit.
 - Portrait phone photos no longer get white bars on the sides when Imagick resizes them.
 - Mail Settings no longer takes the browser's saved admin login as an unsaved change, so the test email runs after saving.

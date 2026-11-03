@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\widgets;
 
+use mindstellar\utility\Sanitize;
 use mindstellar\utility\Utils;
 
 /**
@@ -80,6 +81,12 @@ final class WidgetConfig
                     } else {
                         $config[$name] = $hasValue && is_string($raw) ? $raw : (string) $default;
                     }
+                    break;
+                case 'richtext':
+                    // Formatted text keeps the markup the page editor allows; read unpurified, then cleaned.
+                    $hasRaw        = array_key_exists($name, $postedRaw);
+                    $rawValue      = $hasRaw && is_string($postedRaw[$name]) ? $postedRaw[$name] : (string) $default;
+                    $config[$name] = (string) (new Sanitize())->richHtml($rawValue);
                     break;
                 case 'textarea':
                 case 'text':

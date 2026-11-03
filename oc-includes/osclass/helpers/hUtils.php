@@ -1294,6 +1294,8 @@ function osc_tinymce_config($preset = 'basic', array $overrides = array())
         $config['toolbar'] = 'undo redo | blocks | bold italic underline | bullist numlist'
                              . ' | link image media table | alignleft aligncenter alignright'
                              . ' | removeformat | visualblocks code fullscreen preview';
+        // Only the blocks Sanitize::richHtml() keeps, so a heading never vanishes on save.
+        $config['block_formats'] = 'Paragraph=p; Heading=h3; Subheading=h4; Quote=blockquote';
         // Paste handling — clean what comes in from Word / Google Docs.
         $config['smart_paste']                   = true;
         $config['paste_as_text']                 = false;

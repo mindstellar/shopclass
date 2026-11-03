@@ -41,7 +41,7 @@ final class WidgetRegistry extends Registry
      *                              Required. May echo directly or return a string.
      *   'fields'      => array     Optional declarative config schema. Each entry:
      *                              ['name'=>string, 'label'=>string,
-     *                               'type'=>'text'|'number'|'select'|'checkbox'|'textarea',
+     *                               'type'=>'text'|'number'|'select'|'checkbox'|'textarea'|'richtext',
      *                               'default'=>mixed, 'options'=>array or a callable returning one (select only)].
      *   'form'        => callable  Optional callable(array $config): void that renders
      *                              a custom admin form, overriding 'fields'.

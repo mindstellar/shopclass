@@ -514,16 +514,19 @@ function _osc_menu_list(array $items): string
  */
 osc_register_widget('core.rich_text', array(
     'label'       => 'Rich text',
-    'description' => 'A block of formatted text. Blank lines become paragraphs on the page.',
+    'description' => 'A block of formatted text: headings, bold, lists and links. Blank lines become paragraphs.',
     'fields'      => array(
         array(
             'name'  => 'text',
             'label' => 'Text',
-            'type'  => 'textarea',
+            'type'  => 'richtext',
         ),
     ),
     'render'      => static function ($config) {
-        echo osc_autop($config['text'] ?? '');
+        $html = osc_autop((string) osc_sanitize_html((string) ($config['text'] ?? '')));
+        if (trim($html) !== '') {
+            echo '<div class="osc-rich-text">' . $html . '</div>';
+        }
     },
 ));
 

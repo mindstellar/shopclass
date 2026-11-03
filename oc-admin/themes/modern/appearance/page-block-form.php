@@ -144,5 +144,19 @@ echo json_encode($pbf_desc);
         // Exposed to the page editor so an Edit button can repurpose this add
         // form for a specific block, populating its type + config.
         window.pageBlockFormApplyType = applyType;
+
+        // Sets a field's value, through its editor when it has one.
+        window.pageBlockFormSetValue = function (el, value) {
+            el.value = value;
+            var editor = typeof tinymce !== 'undefined' ? tinymce.get(el.id) : null;
+            if (!editor) { return; }
+            // Text saved before the field was rich: blank lines become paragraphs, as on the page.
+            if (value !== '' && !/<[a-z]/i.test(value)) {
+                value = value.split(/\n\s*\n/).map(function (part) {
+                    return '<p>' + part.trim().replace(/\n/g, '<br>') + '</p>';
+                }).join('');
+            }
+            editor.setContent(value);
+        };
     })();
 </script>
