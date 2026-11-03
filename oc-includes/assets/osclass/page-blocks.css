@@ -9,6 +9,9 @@
 
 /* Layout for the Page builder blocks: grid, gaps and stacking. No colours or fonts; the theme styles the same classes. */
 
+/* Space between blocks in core's fallback wrapper; a theme's own canvas sets its own. */
+.page-builder > * + * { margin-top: var(--osc-block-space, 3rem); }
+
 .osc-media-text {
     display: grid;
     grid-template-columns: 1fr 1fr;
