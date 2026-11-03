@@ -13,7 +13,6 @@
 
 namespace mindstellar\utility;
 
-use PclZip;
 use ZipArchive;
 
 /**
@@ -142,12 +141,7 @@ class Zip
             return 0;
         }
 
-        if (class_exists('ZipArchive')) {
-            return $this->unzipFileZipArchive($file, $to);
-        }
-
-        // if ZipArchive class doesn't exist, we use PclZip
-        return $this->unzipFilePclZip($file, $to);
+        return $this->unzipFileZipArchive($file, $to);
     }
 
     /**
@@ -412,108 +406,7 @@ class Zip
     }
 
     /**
-     * We assume that the $to path is correct and can be written. It unzips an archive using
-     * the PclZip library.
-     *
-     * Entries are validated against listContent() metadata before extract() is called, so
-     * an oversized or path-unsafe entry is rejected before PclZip decompresses it into memory.
-     *
-     * @param string $zip_file Full path of the zip file
-     * @param string $to       Full path where it is going to be unzipped
-     *
-     * @return int see unzipFile()
-     * @throws \Exception
-     */
-    private function unzipFilePclZip($zip_file, $to)
-    {
-        $destinationRealPath = realpath($to);
-        if ($destinationRealPath === false) {
-            return -1;
-        }
-        $destinationRealPath = rtrim(str_replace('\\', '/', $destinationRealPath), '/');
-
-        $archive = new PclZip($zip_file);
-        $listing = $archive->listContent();
-
-        if ($listing === 0 || empty($listing)) {
-            return 2;
-        }
-
-        if (count($listing) > $this->maxEntries) {
-            error_log(sprintf(
-                'Zip::unzipFile rejected "%s": %d entries exceeds the %d cap.',
-                $zip_file,
-                count($listing),
-                $this->maxEntries
-            ));
-
-            return 2;
-        }
-
-        // PclZip's public API (listContent()/extract()) never surfaces the unix mode / external
-        // attributes, so a symlink entry cannot be distinguished here; extraction below only
-        // ever calls writeToFile()/mkdir(), never symlink(), so a "symlink" entry lands as a
-        // plain file holding its link-target text rather than an actual filesystem symlink.
-        $totalUncompressed = 0;
-        foreach ($listing as $entry) {
-            if (strpos($entry['filename'], '__MACOSX/') === 0) {
-                continue;
-            }
-
-            if (!self::entryWithinLimits((int) $entry['size'], (int) $entry['compressed_size'], $totalUncompressed, $this->maxEntryBytes, $this->maxTotalBytes)) {
-                error_log(sprintf(
-                    'Zip::unzipFile rejected "%s": entry "%s" exceeds the size/ratio limits.',
-                    $zip_file,
-                    $entry['filename']
-                ));
-
-                return 2;
-            }
-
-            if ($this->resolveEntryTarget($entry['filename'], $destinationRealPath) === false) {
-                error_log(sprintf(
-                    'Zip::unzipFile rejected "%s": entry "%s" escapes the destination directory.',
-                    $zip_file,
-                    $entry['filename']
-                ));
-
-                return 2;
-            }
-
-            $totalUncompressed += (int) $entry['size'];
-        }
-
-        // Extract the files from the zip
-        $files = $archive->extract(PCLZIP_OPT_EXTRACT_AS_STRING);
-        if ($files === 0 || empty($files)) {
-            return 2;
-        }
-
-        foreach ($files as $file) {
-            if (strpos($file['filename'], '__MACOSX/') === 0 || !$this->wanted($file['filename'])) {
-                continue;
-            }
-
-            $target = $this->resolveEntryTarget($file['filename'], $destinationRealPath);
-            if ($target === false) {
-                // Already validated above against the same destination; a mismatch here
-                // means the archive changed between the two reads, so reject it outright.
-                return 2;
-            }
-
-            if ($file['folder']) {
-                $this->FileSystem->mkdir($target, 0755);
-                continue;
-            }
-
-            $this->FileSystem->writeToFile($target, $file['content']);
-        }
-
-        return 1;
-    }
-
-    /**
-     * Common interface to zip a specified folder to a file using ziparchive or pclzip
+     * Zips a folder to a file
      *
      * @param string $archive_folder full path of the folder
      * @param string $archive_name   full path of the destination zip file
@@ -526,12 +419,7 @@ class Zip
             return false;
         }
 
-        if (class_exists('ZipArchive')) {
-            return $this->zipFolderZipArchive($archive_folder, $archive_name);
-        }
-
-        // if ZipArchive class doesn't exist, we use PclZip
-        return $this->zipFolderPclZip($archive_folder, $archive_name);
+        return $this->zipFolderZipArchive($archive_folder, $archive_name);
     }
 
     /**
@@ -572,31 +460,5 @@ class Zip
         }
 
         return false;
-    }
-
-    /**
-     * Zips a specified folder to a file
-     *
-     * @param string $archive_folder full path of the folder
-     * @param string $archive_name   full path of the destination zip file
-     *
-     * @return bool
-     */
-    private function zipFolderPclZip($archive_folder, $archive_name)
-    {
-        $zip = new PclZip($archive_name);
-        $dir = preg_replace('/[\/]{2,}/', '/', $archive_folder . '/');
-
-        $v_dir    = osc_base_path();
-        $v_remove = $v_dir;
-
-        // To support windows and the C: root you need to add the
-        // following 3 lines, should be ignored on linux
-        if ($v_dir[1] === ':') {
-            $v_remove = substr($v_dir, 2);
-        }
-        $v_list = $zip->create($dir, PCLZIP_OPT_REMOVE_PATH, $v_remove);
-
-        return !($v_list === 0);
     }
 }

@@ -60,8 +60,6 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: phpseclib/phpseclib
         update-types: ["version-update:semver-major"]
-      - dependency-name: pclzip/pclzip
-        update-types: ["version-update:semver-major"]
       - dependency-name: gettext/gettext
         update-types: ["version-update:semver-major"]
 

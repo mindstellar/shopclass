@@ -639,7 +639,7 @@ function osc_unzip_file($file, $to)
 }
 
 /**
- * Common interface to zip a specified folder to a file using ziparchive or pclzip
+ * Zips a folder to a file
  *
  * @param string $archive_folder full path of the folder
  * @param string $archive_name   full path of the destination zip file
