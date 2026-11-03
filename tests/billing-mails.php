@@ -181,7 +181,8 @@ harness_section('the receipt page data');
 $vars = Receipts::vars($row);
 pin('lines, address with the country name, and delivery are on the receipt', [3, ['Tom', '5550100', '1 Main St', 'Austin', 'TX 73301', 'United States'], 'Standard delivery'], [count($vars['details']['lines']) + 1, $vars['details']['address'], $vars['details']['shipping']]);
 $shownAs = static fn (int $micros): string => \mindstellar\currency\Money::display($micros, \mindstellar\currency\CurrencyService::make()->symbol($row->getCurrency()));
-pin('amounts read as on the orders page, in the currency symbol', [$shownAs($row->getAmount()), $shownAs($row->getAmount()), $shownAs((int) \mindstellar\billing\OrderLineStore::ofOrder($row->getId())[0]['amount'])], [$vars['amount'], $vars['details']['total'], $vars['details']['lines'][0]['amount']]);
+$fixedAs = static fn (int $micros): string => \mindstellar\currency\CurrencyService::make()->money($micros, $row->getCurrency(), false, true);
+pin('amounts read as on the orders page, in the currency symbol; receipt lines keep their decimals', [$shownAs($row->getAmount()), $fixedAs($row->getAmount()), $fixedAs((int) \mindstellar\billing\OrderLineStore::ofOrder($row->getId())[0]['amount'])], [$vars['amount'], $vars['details']['total'], $vars['details']['lines'][0]['amount']]);
 check('the page prints them', (static function () use ($row): bool {
     ob_start();
     Receipts::render($row, 'https://example.test/', 'Back');

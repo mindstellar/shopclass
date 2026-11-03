@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1277 helpers, 28 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -72,7 +72,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_meta_noindex()` | Emit &lt;meta name="robots" content="noindex, follow"&gt; when a controller has marked the current response as thin/empty (e.g. a valid but empty category or location browse page). Keeps the URL crawlable and 200, without indexing an empty page. |
 | `osc_meta_publish($catId = null)` | Print the custom-field inputs for the publish form. |
 | `osc_meta_search($catId = null)` | Print the custom-field inputs for the search form. |
-| `osc_run_cleanup()` | Run the enabled Tools &gt; Cleanup rules once, in this request: one batch per rule. Returns the total number removed. The daily task and the admin's "Run cleanup now" queue background jobs instead, which keep going until nothing matches. |
+| `osc_run_cleanup()` | **Deprecated since 7.1.0, removed in 8.0; use Cleanup::getInstance()-&gt;purge($rule, Cleanup::days($rule), Cleanup::batchLimit()).** Run the enabled Tools &gt; Cleanup rules once, in this request: one batch per rule. Returns the total number removed. The daily task and the admin's "Run cleanup now" queue background jobs instead, which keep going until nothing matches. |
 | `osc_search_footer_links()` | Related region or city links for the search-page footer, one row per location group. Empty when friendly URLs are off, when a city is already selected, or on a query error. |
 | `osc_search_meta_description()` | Description for a listing-index page: what is being listed, where, and how much of it there is, before any category blurb. |
 | `osc_show_maintenance()` | Print the maintenance-mode banner while maintenance mode is on. |
@@ -319,7 +319,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_category_total_items()` | Gets the total items related with the current category |
 | `osc_count_categories()` | Gets the total of categories. If categories are not loaded, this function will load them. |
 | `osc_count_subcategories()` | Gets the total of subcategories for the current category. If subcategories are not loaded, this function will load them and it will prepare the the pointer to the first element |
-| `osc_count_subcategories2()` | Gets the total of subcategories for the current category. If subcategories are not loaded, this function will load them and it will prepare the the pointer to the first element |
+| `osc_count_subcategories2()` | **Deprecated since 7.1.0, removed in 8.0; use osc_count_subcategories() instead.** Gets the total of subcategories for the current category. If subcategories are not loaded, this function will load them and it will prepare the the pointer to the first element |
 | `osc_export_categories($categories = null)` | Export a category tree to the view, loading the full tree when none is given. |
 | `osc_get_categories()` | Low level function: Gets the list of categories as a tree |
 | `osc_get_category($by, $what)` | Get th category by id or slug |
@@ -357,10 +357,10 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_db_host()` | **Deprecated since 4.0.0.** Gets database host |
-| `osc_db_name()` | **Deprecated since 4.0.0.** Gets database name |
-| `osc_db_password()` | **Deprecated since 4.0.0.** Gets database password |
-| `osc_db_user()` | **Deprecated since 4.0.0.** Gets database user |
+| `osc_db_host()` | **Deprecated since 4.0.0; use the DB_HOST constant.** Gets database host |
+| `osc_db_name()` | **Deprecated since 4.0.0; use the DB_NAME constant.** Gets database name |
+| `osc_db_password()` | **Deprecated since 4.0.0; use the DB_PASSWORD constant.** Gets database password |
+| `osc_db_user()` | **Deprecated since 4.0.0; use the DB_USER constant.** Gets database user |
 
 ### hDefines (107)
 
@@ -418,7 +418,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_is_item_contact_page()` | Get if user is on a item contact page |
 | `osc_is_list_alerts()` | Get if the user is on user's alerts page |
 | `osc_is_list_items()` | Get if the user is on user's items page |
-| `osc_is_login_form()` | **Deprecated since 3.5.7.** Get if user is on login form |
+| `osc_is_login_form()` | **Deprecated since 3.5.7; use osc_is_login_page().** Get if user is on login form |
 | `osc_is_login_page()` | Get if user is on login page |
 | `osc_is_messages_page()` | Whether the visitor is on the messages inbox or a conversation. |
 | `osc_is_moderator()` | Check is an admin is a super admin or only a moderator |
@@ -639,8 +639,8 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_list_total_pages()` | Total number of pages in the search pagination. |
 | `osc_listing_row_unpaid_actions($actions, $item, $context = '')` | Gives a held listing a Publish button to the pay step, marked 'primary', and takes away its upgrade links. |
 | `osc_listing_row_unpaid_badge($badges, $item, $context = '')` | Marks a held listing in the seller's own list, with the date it is deleted unless paid. |
-| `osc_priv_count_item_resources()` | **Deprecated since 2.4.** Gets number of item resources |
-| `osc_priv_count_items()` | **Deprecated since 2.4.** Gets number of items |
+| `osc_priv_count_item_resources()` | **Deprecated since 2.4; use osc_count_item_resources().** Gets number of item resources |
+| `osc_priv_count_items()` | **Deprecated since 2.4; use osc_count_items().** Gets number of items |
 | `osc_query_item($params = null)` | Perform a search based on custom filters and conditions export the results to a variable to be able to manage it from custom_items' helpers |
 | `osc_related_listings($itemId = null, $limit = 6, $filters = array())` | Live listings like one listing, best first: same category and shared title words by default, or what a search plugin picks. Also loads them into the custom loop, so `while (osc_has_custom_items())` walks them; that replaces any list already in the loop. |
 | `osc_reset_custom_items()` | Set the internal pointer of array customItems to its first element, and return it. |
@@ -897,7 +897,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_akismet_key()` | Gets akismet key |
 | `osc_allowed_extension()` | Gets allowed extensions of uploads |
 | `osc_auto_cron()` | Gets if autocron is enabled |
-| `osc_auto_update()` | Gets auto update settings |
+| `osc_auto_update()` | **Deprecated since 7.1.0, removed in 8.0.** Gets auto update settings |
 | `osc_billing_enabled()` | Whether the billing section is switched on. |
 | `osc_captcha_provider_pref()` | Gets the configured captcha provider preference. |
 | `osc_comment_ratings_enabled()` | Whether a comment may carry a star rating. Until an admin saves the choice, shops allow it and classifieds sites do not. |
@@ -907,7 +907,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_contact_attachment()` | Gets if contact attachment is enabled |
 | `osc_contact_email()` | Gets contact email |
 | `osc_count_bot_views()` | Whether requests from crawlers count as listing views. Defaults to off — a crawler is not a reader, and on a well-indexed site bots are the majority of traffic, so counting them both inflates the numbers and multiplies the writes. |
-| `osc_csrf_name()` | Gets csrf session name |
+| `osc_csrf_name()` | **Deprecated since 7.1.0, removed in 8.0.** Gets csrf session name |
 | `osc_currency()` | Gets default currency |
 | `osc_date_format()` | Gets date format |
 | `osc_default_order_field_at_search()` | Gets default order field at search |
@@ -957,7 +957,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_mailserver_ssl()` | Gets if use SSL on the mailserver |
 | `osc_mailserver_type()` | Gets mailserver's type |
 | `osc_mailserver_username()` | Gets mailserver's username |
-| `osc_market_external_sources()` | Gets if third party sources are allowed to install new plugins and themes |
+| `osc_market_external_sources()` | **Deprecated since 7.1.0, removed in 8.0.** Gets if third party sources are allowed to install new plugins and themes |
 | `osc_max_characters_per_description()` | Gets how many characters are allowed for the listings description |
 | `osc_max_characters_per_title()` | Gets how many characters are allowed for the listings title. Never more than the title column holds, whatever is stored. |
 | `osc_max_images_per_item()` | Gets how many images are allowed per item (o for unlimited) |
@@ -965,7 +965,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_max_latest_items_at_home()` | Return max. number of latest items displayed at home index |
 | `osc_max_results_per_page_at_search()` | Gets max results per page at search |
 | `osc_max_size_kb()` | Gets max kb of uploads |
-| `osc_mod_rewrite_loaded()` | Gets if mod rewrite is loaded or not (if apache runs on cgi mode, mod rewrite will not be detected) |
+| `osc_mod_rewrite_loaded()` | **Deprecated since 7.1.0, removed in 8.0.** Gets if mod rewrite is loaded or not (if apache runs on cgi mode, mod rewrite will not be detected) |
 | `osc_mode_text(string $classifieds, string $shop)` | Pick the wording for the site mode. Pass both strings through __() at the call site. |
 | `osc_moderate_admin_edit()` | Gets if admin needs to moderate edited items. |
 | `osc_moderate_admin_post()` | Gets if admin needs to moderate newly posted items. |
@@ -990,7 +990,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_recaptcha_private_key()` | Gets recaptcha private key |
 | `osc_recaptcha_public_key()` | Gets recaptcha public key |
 | `osc_recaptcha_reports_enabled()` | Gets if the captcha for the report-listing form is enabled or not |
-| `osc_recaptcha_version()` | Return version of recaptcha |
+| `osc_recaptcha_version()` | **Deprecated since 7.1.0, removed in 8.0.** Return version of recaptcha |
 | `osc_reg_user_can_contact()` | Gets if only users can contact to seller |
 | `osc_reg_user_can_send_friend()` | Whether sharing a listing by email requires a logged-in web user. |
 | `osc_reg_user_post()` | Gets if only registered users can publish new items or anyone could |
@@ -1471,13 +1471,13 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_get_subdomain_params()` | The search parameters the current subdomain pins, as osc_search_url() takes them. |
 | `osc_google_analytics_id()` | **Deprecated since 6.2.0.** Get the Google Analytics measurement ID a previous release stored. |
 | `osc_google_maps_api_key()` | Get Google Maps API key. |
-| `osc_google_maps_geocode_url($address)` | **Deprecated 7.0.0 core looks addresses up only through a geocode provider plugin.** Get Google Maps geocode URL. |
+| `osc_google_maps_geocode_url($address)` | **Deprecated 7.0.0 core looks addresses up only through a provider registered on the register_geocode_providers hook (mindstellar\location\GeocodeProviderRegistry).** Get Google Maps geocode URL. |
 | `osc_highlight($txt, $len = 300, $start_tag = '<strong>', $end_tag = '</strong>')` | Gets prepared text, with: - higlight search pattern and search city - maxim length of text |
 | `osc_is_bot_request()` | Whether this request came from a crawler rather than a person. |
 | `osc_keep_form(array $values, string $error, array $errors = array())` | Keep a failed form's values for the next page, plus the reason as 'contact_error', and show the reason as a flash message. Read them back with osc_gui_kept(). $errors (pointer =&gt; message, e.g. '/title') mark each wrong field: see osc_form_error(). |
 | `osc_local_referer($fallback)` | The page the request came from when it is on this site, else $fallback. The host is compared, not a prefix, so a look-alike host cannot pass. |
-| `osc_openstreet_api_key()` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin.** Get Open Street Maps API key. |
-| `osc_openstreet_geocode_url($address)` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin.** Get OpenStreetMaps geocode URL. |
+| `osc_openstreet_api_key()` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider registered on the register_geocode_providers hook (mindstellar\location\GeocodeProviderRegistry).** Get Open Street Maps API key. |
+| `osc_openstreet_geocode_url($address)` | **Deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider registered on the register_geocode_providers hook (mindstellar\location\GeocodeProviderRegistry).** Get OpenStreetMaps geocode URL. |
 | `osc_pop_admin_login_redirect()` | Admin counterpart of osc_pop_login_redirect(). Single-use. |
 | `osc_pop_login_redirect()` | Read, validate and clear the login-redirect cookie set by osc_set_login_redirect(). |
 | `osc_pop_signed_redirect($cookieName, $path = null)` | Read, validate and clear a signed-redirect cookie. Always deletes it (single-use). |
@@ -1580,7 +1580,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_check_theme_update($update_uri, $version = null)` | **Deprecated since 4.0.0 use mindstellar\market\PackageIndex::forThemes()-&gt;pendingUpdates() instead.** Whether a theme's update URI advertises a version newer than the installed one. |
 | `osc_copy($source, $dest)` | Copy a file, warning instead of throwing on failure. |
 | `osc_copyemz($file1, $file2)` | **Deprecated since 4.0.0, removed in 8.0; use copy().** Copy a file. |
-| `osc_dbdump($path, $file)` | Dump osclass database into path file |
+| `osc_dbdump($path, $file)` | **Deprecated since 7.1.0, removed in 8.0; use the Backup system (BackupJobs) instead.** Dump osclass database into path file |
 | `osc_deleteDir($path)` | Tries to delete the directory recursively. |
 | `osc_deleteResource($id, $admin, $resource = null)` | Remove resources from disk |
 | `osc_doRequest($url, $_data)` | VERY BASIC Perform a POST request, so we could launch fake-cron calls and other core-system calls without annoying the user |
@@ -1588,7 +1588,7 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_file_get_contents($url, $post_data = null, $verify_ssl = true, $timeout = 0)` | Shopclass file_get_contents implementation |
 | `osc_isExpired($dt_expiration)` | check if the item is expired |
 | `osc_is_ssl()` | Whether the current request arrived over HTTPS. |
-| `osc_is_update_compatible($section, $element, $osclass_version = OSCLASS_VERSION)` | Whether a package's published descriptor lists the running core version as compatible. |
+| `osc_is_update_compatible($section, $element, $osclass_version = OSCLASS_VERSION)` | **Deprecated since 7.1.0, removed in 8.0.** Whether a package's published descriptor lists the running core version as compatible. |
 | `osc_item_is_counted(array $item)` | Whether a listing counts toward the category, location and user totals: enabled, active, not spam, and premium or not expired. The daily recount uses the same rule. |
 | `osc_mailBeauty($text, $params)` | Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs first, then the site-wide ones. |
 | `osc_mail_admin(string $subject, array $lines)` | Send a short notice to the site's contact address, one escaped paragraph per line. Returns false when it cannot be sent; never throws once called. |
@@ -1615,6 +1615,6 @@ Core defines 1277 helpers, 19 of them deprecated. Generated from the source; do 
 | `osc_update_cat_stats_id($id)` | Recount items for a given a category id |
 | `osc_update_location_stats($force = false, $limit = 1000)` | Update locations stats. I moved this function from cron.daily.php:update_location_stats |
 | `osc_web_restore_disabled()` | Whether restoring a backup from the admin is turned off (OSC_DISABLE_WEB_RESTORE in config.php, or the environment). Making backups is not affected. |
-| `osc_zip_folder($archive_folder, $archive_name)` | Common interface to zip a specified folder to a file using ziparchive or pclzip |
+| `osc_zip_folder($archive_folder, $archive_name)` | Zips a folder to a file |
 
 <!-- /generated:helpers -->
