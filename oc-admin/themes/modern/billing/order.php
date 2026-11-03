@@ -90,6 +90,15 @@ $short      = OrderStock::short($order);
 $shipments  = $order->shipments();
 $history    = $order->history();
 $shippedQty = $order->shippedQty();
+$lineTaxes  = array();
+$codeLabel  = \mindstellar\billing\Invoices::codeLabel($order);
+foreach ($lines as $l) {
+    $lt = \mindstellar\billing\OrderLineStore::lineTax($l);
+    if ($lt !== null) {
+        $lineTaxes[(int) $l['id']] = \mindstellar\billing\LineTaxView::describe($lt, $order->getCurrency());
+    }
+}
+$buyerFields = array_map(static fn (array $f): string => $f['label'] . ': ' . $f['value'], \mindstellar\billing\event\CheckoutFields::answers($order));
 $itemLines  = array_values(array_filter($lines, static fn (array $l): bool => $l['kind'] === 'item'));
 $lineTitles = array();
 foreach ($itemLines as $l) {
@@ -345,6 +354,9 @@ foreach ($order->getMeta() as $key => $value) {
                                 <th scope="col"><?php _e('SKU'); ?></th>
                                 <th scope="col" class="col-numeric"><?php _e('Qty'); ?></th>
                                 <th scope="col" class="col-numeric"><?php _e('Unit'); ?></th>
+                                <?php if ($lineTaxes !== array()) { ?>
+                                    <th scope="col" class="col-numeric"><?php _e('Tax'); ?></th>
+                                <?php } ?>
                                 <th scope="col" class="col-numeric"><?php _e('Amount'); ?></th>
                             </tr>
                             </thead>
@@ -365,17 +377,26 @@ foreach ($order->getMeta() as $key => $value) {
                                         <?php if ($options !== array()) { ?>
                                             <br><span class="text-muted"><?php echo osc_esc_html(implode(', ', $options)); ?></span>
                                         <?php } ?>
+                                        <?php if (($lineTaxes[(int) $line['id']]['code'] ?? '') !== '') { ?>
+                                            <br><span class="text-muted"><?php echo osc_esc_html($codeLabel . ' ' . $lineTaxes[(int) $line['id']]['code']); ?></span>
+                                        <?php } ?>
                                     </td>
                                     <td><?php echo osc_esc_html((string) $line['sku']); ?></td>
                                     <td class="col-numeric"><?php echo $isItem ? (int) $line['qty'] : ''; ?></td>
                                     <td class="col-numeric"><?php echo $isItem ? osc_esc_html(osc_admin_money($line['unit'], $order->getCurrency())) : ''; ?></td>
+                                    <?php if ($lineTaxes !== array()) {
+                                        $lt = $lineTaxes[(int) $line['id']] ?? null; ?>
+                                        <td class="col-numeric"><?php if ($lt !== null) {
+                                            echo osc_esc_html($lt['rate_text'] . ' · ' . ($lt['included'] ? sprintf(__('%s incl.'), $lt['amount_text']) : $lt['amount_text']));
+                                        } ?></td>
+                                    <?php } ?>
                                     <td class="col-numeric"><?php echo osc_esc_html($line['kind'] === 'tax' && ($line['meta']['included'] ?? false) === true
                                         ? sprintf(__('%s (included)'), osc_admin_money($line['unit'], $order->getCurrency()))
                                         : osc_admin_money($line['amount'], $order->getCurrency())); ?></td>
                                 </tr>
                             <?php } ?>
                             <tr>
-                                <th scope="row" colspan="4"><?php _e('Total'); ?></th>
+                                <th scope="row" colspan="<?php echo $lineTaxes !== array() ? 5 : 4; ?>"><?php _e('Total'); ?></th>
                                 <td class="col-numeric"><strong><?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?></strong></td>
                             </tr>
                             </tbody>
@@ -396,6 +417,9 @@ foreach ($order->getMeta() as $key => $value) {
                             · <?php echo osc_esc_html((string) $buyer['phone']); ?>
                         <?php } ?>
                     </p>
+                    <?php if ($buyerFields !== array()) { ?>
+                        <p class="panel-subtitle mt-1 mb-0"><?php echo implode('<br>', array_map('osc_esc_html', $buyerFields)); ?></p>
+                    <?php } ?>
                 <?php osc_admin_panel_close(); ?>
 
                 <?php if ($shipments !== array()) { ?>
@@ -792,7 +816,9 @@ foreach ($order->getMeta() as $key => $value) {
                 'name'  => 'amount',
                 'label' => sprintf(__('Amount (%s)'), $order->getCurrency()),
                 'attrs' => array('inputmode' => 'decimal', 'autocomplete' => 'off', 'placeholder' => Money::fromMicros($refundLeft, $decimals)),
-                'help'  => __('Leave empty to refund the chosen units with their share of tax.'),
+                'help'  => $lineTaxes !== array()
+                    ? __('Leave empty to refund the chosen units with their own tax.')
+                    : __('Leave empty to refund the chosen units with their share of tax.'),
             )); ?>
             <?php foreach ($refundRows as $row) {
                 osc_admin_number(array(

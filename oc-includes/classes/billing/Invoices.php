@@ -164,8 +164,8 @@ final class Invoices
     }
 
     /**
-     * What returning these units refunds: their price plus the tax added on top in the
-     * invoice's proportion, rounded to the currency. Null when the order has no invoice.
+     * What returning these units refunds. With line tax, a taxed line's share of its base (after any
+     * discount) plus its own tax; else the price plus tax in the invoice's proportion. Null when there is no invoice.
      *
      * @param array<int,int> $lines Item line id => units
      */
@@ -174,6 +174,19 @@ final class Invoices
         $invoice = DocumentStore::invoiceOf($orderId);
         if ($invoice === null) {
             return null;
+        }
+        $invLines = array_values(array_filter((array) ($invoice->data['lines'] ?? array()), 'is_array'));
+        if (self::hasLineTax($invLines)) {
+            $value  = 0;
+            $shares = self::lineShares($orderId, $invoice, $invLines, $lines);
+            foreach ($invLines as $line) {
+                $id = (int) ($line['line_id'] ?? 0);
+                if (($line['kind'] ?? '') === OrderLineStore::KIND_ITEM && isset($lines[$id])) {
+                    $value += $shares['value'][$id] ?? (int) ($line['unit'] ?? 0) * max(0, (int) $lines[$id]);
+                }
+            }
+
+            return $value;
         }
         $base  = 0;
         $value = 0;
@@ -305,15 +318,17 @@ final class Invoices
                 'name'    => (string) $vars['name'],
                 'email'   => (string) $vars['email'],
                 'address' => array_values((array) ($details['address'] ?? array())),
+                'fields'  => Receipts::buyerFields($order),
             ),
             'currency'    => array('code' => $currency, 'decimals' => $money->decimals($currency)),
             'lines'       => self::orderLines($order, (string) ($order->isGoods() || $order->isListing() ? $order->getLabel() : $vars['credits'])),
             'totals'      => array('total' => $order->getAmount(), 'total_text' => $money->money($order->getAmount(), $currency, false, true)),
             'wording'     => array(
-                'title'   => $title !== '' && $title !== __('Receipt') ? $title : __('Invoice'),
-                'extra'   => (array) ($details['extra'] ?? array()),
-                'summary' => (array) ($details['summary'] ?? array()),
-                'footer'  => (string) ($details['footer'] ?? ''),
+                'title'      => $title !== '' && $title !== __('Receipt') ? $title : __('Invoice'),
+                'extra'      => (array) ($details['extra'] ?? array()),
+                'summary'    => (array) ($details['summary'] ?? array()),
+                'footer'     => (string) ($details['footer'] ?? ''),
+                'code_label' => __('Tax code'),
             ),
             'refund'      => null,
         );
@@ -331,7 +346,9 @@ final class Invoices
         $currency = $order->getCurrency();
         $money    = CurrencyService::make();
         $out      = array();
-        foreach (OrderLineStore::ofOrder($order->getId()) as $line) {
+        $rows     = OrderLineStore::ofOrder($order->getId());
+        $taxes    = self::checkedLineTax($rows, $currency);
+        foreach ($rows as $line) {
             $ship    = $line['kind'] === OrderLineStore::KIND_SHIPPING;
             $options = array();
             foreach ((array) ($line['options'] ?? array()) as $name => $value) {
@@ -349,7 +366,7 @@ final class Invoices
                 'unit_text'   => $money->money((int) $line['unit'], $currency, $ship, true),
                 'amount_text' => $money->money((int) $line['amount'], $currency, $ship, true),
                 'included'    => $line['kind'] === OrderLineStore::KIND_TAX && ($line['meta']['included'] ?? false) === true,
-            );
+            ) + (isset($taxes[(int) $line['id']]) ? array('tax' => $taxes[(int) $line['id']]) : array());
         }
         if ($out === array()) {
             $out[] = self::line(null, OrderLineStore::KIND_ITEM, $title, 1, $order->getAmount(), $currency);
@@ -359,7 +376,7 @@ final class Invoices
     }
 
     /**
-     * Draft a credit note: the checks, the lines with tax in proportion, and DocumentComposing.
+     * Draft a credit note: the checks, the lines with their own tax (or tax in proportion), and DocumentComposing.
      *
      * @param array<int,int>|null $lines Null is every unit not yet refunded, for the note that closes the order
      * @param array<int,int>      $restock
@@ -394,15 +411,39 @@ final class Invoices
             if ($noteLines === null) {
                 return null;
             }
-            $taxDone = self::refundedTax($orderId);
+            $lineMode = self::hasLineTax($invLines);
+            $returned = array();
+            foreach ($noteLines as $line) {
+                $returned[(int) $line['line_id']] = (int) $line['qty'];
+            }
+            $byLine  = $lineMode && $returned !== array();
+            $taxDone = self::refundedTax($orderId)['tax'];
+            if ($byLine) {
+                $shares = self::lineShares($orderId, $invoice, $invLines, $returned);
+                $worth  = (int) self::linesAmount($orderId, $returned);
+                if ($amount < $worth) {
+                    // A typed amount below what the units are worth scales their tax down with it.
+                    $shares = self::scaledShares($shares, $amount, $worth, $decimals, $currency);
+                }
+                foreach ($noteLines as $i => $line) {
+                    if (isset($shares['lines'][(int) $line['line_id']])) {
+                        $noteLines[$i]['tax'] = $shares['lines'][(int) $line['line_id']];
+                    }
+                }
+            }
             foreach ($invLines as $line) {
                 if (($line['kind'] ?? '') !== OrderLineStore::KIND_TAX) {
                     continue;
                 }
-                $id    = isset($line['line_id']) ? (int) $line['line_id'] : 0;
-                $share = $closing
-                    ? (int) $line['amount'] - ($taxDone[$id] ?? 0)
-                    : self::roundTo((int) $line['amount'] * $amount / $invoice->total, $decimals);
+                $id   = isset($line['line_id']) ? (int) $line['line_id'] : 0;
+                $left = self::taxValue($line, $lineMode) - ($taxDone[$id] ?? 0);
+                if ($closing) {
+                    $share = $left;
+                } elseif ($byLine) {
+                    $share = $shares['tax'][$id] ?? 0;
+                } else {
+                    $share = max(0, min($left, self::roundTo((int) $line['amount'] * $amount / $invoice->total, $decimals)));
+                }
                 if ($share !== 0) {
                     $noteLines[] = array('included' => !empty($line['included'])) + self::line($id ?: null, OrderLineStore::KIND_TAX, (string) $line['title'], 1, $share, $currency);
                 }
@@ -437,7 +478,7 @@ final class Invoices
                 'extra'   => (array) ($wording['extra'] ?? array()),
                 'summary' => array(),
                 'footer'  => (string) ($wording['footer'] ?? ''),
-            ),
+            ) + (isset($wording['code_label']) ? array('code_label' => (string) $wording['code_label']) : array()),
             'refund'      => array(
                 'reason'       => Receipts::plain($reason, 500, true),
                 'provider_ref' => $providerRef !== null && $providerRef !== '' ? Receipts::plain($providerRef, 200) : null,
@@ -493,25 +534,210 @@ final class Invoices
     }
 
     /**
-     * Tax already on the order's credit notes, by the invoice's tax line id.
+     * What the order's credit notes already returned: tax by the invoice's tax line id, units by
+     * item line id, and each item line's own tax by item line id and tax line id.
      *
-     * @return array<int,int>
+     * @return array{tax:array<int,int>,qty:array<int,int>,parts:array<int,array<int,int>>}
      */
     private static function refundedTax(int $orderId): array
     {
-        $done = array();
+        $done = array('tax' => array(), 'qty' => array(), 'parts' => array());
         foreach (DocumentStore::forOrder($orderId) as $doc) {
             if (!$doc->isCreditNote()) {
                 continue;
             }
             foreach ((array) ($doc->data['lines'] ?? array()) as $line) {
-                if (is_array($line) && ($line['kind'] ?? '') === OrderLineStore::KIND_TAX && !empty($line['line_id'])) {
-                    $done[(int) $line['line_id']] = ($done[(int) $line['line_id']] ?? 0) + (int) $line['amount'];
+                $id = is_array($line) ? (int) ($line['line_id'] ?? 0) : 0;
+                if ($id < 1) {
+                    continue;
+                }
+                $kind = (string) ($line['kind'] ?? '');
+                if ($kind === OrderLineStore::KIND_TAX) {
+                    $done['tax'][$id] = ($done['tax'][$id] ?? 0) + (int) $line['amount'];
+                } elseif ($kind === OrderLineStore::KIND_ITEM) {
+                    $done['qty'][$id] = ($done['qty'][$id] ?? 0) + (int) ($line['qty'] ?? 0);
+                    foreach ((array) ($line['tax']['parts'] ?? array()) as $part) {
+                        $taxId = is_array($part) ? (int) ($part['line_id'] ?? 0) : 0;
+                        if ($taxId > 0) {
+                            $done['parts'][$id][$taxId] = ($done['parts'][$id][$taxId] ?? 0) + (int) ($part['amount'] ?? 0);
+                        }
+                    }
                 }
             }
         }
 
         return $done;
+    }
+
+    /**
+     * Whether an invoice's item or shipping lines carry their own tax.
+     *
+     * @param list<array<string,mixed>> $invLines
+     */
+    private static function hasLineTax(array $invLines): bool
+    {
+        foreach ($invLines as $line) {
+            if (is_array($line['tax'] ?? null)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * An invoice tax line's tax. A tax already in the prices is its unit, but only with line tax:
+     * older invoices refund included tax as 0, as before.
+     *
+     * @param array<string,mixed> $line
+     */
+    private static function taxValue(array $line, bool $lineMode): int
+    {
+        return $lineMode && !empty($line['included']) ? (int) ($line['unit'] ?? 0) : (int) ($line['amount'] ?? 0);
+    }
+
+    /**
+     * The own tax of returned item lines: per part, the share of the units returned so far less
+     * what earlier notes took, the last unit taking the exact rest. Capped at what is left of each
+     * tax line, so no tax line is refunded past its amount.
+     *
+     * @param list<array<string,mixed>> $invLines
+     * @param array<int,int>            $lines Item line id => units
+     *
+     * @return array{lines:array<int,array<string,mixed>>,tax:array<int,int>,included:array<int,bool>,value:array<int,int>}
+     */
+    private static function lineShares(int $orderId, Document $invoice, array $invLines, array $lines): array
+    {
+        $decimals = (int) ($invoice->data['currency']['decimals'] ?? CurrencyService::make()->decimals($invoice->currency));
+        $done     = self::refundedTax($orderId);
+        $left     = array();
+        $included = array();
+        foreach ($invLines as $line) {
+            if (($line['kind'] ?? '') === OrderLineStore::KIND_TAX && !empty($line['line_id'])) {
+                $id            = (int) $line['line_id'];
+                $left[$id]     = self::taxValue($line, true) - ($done['tax'][$id] ?? 0);
+                $included[$id] = !empty($line['included']);
+            }
+        }
+
+        $out = array('lines' => array(), 'tax' => array(), 'included' => $included, 'value' => array());
+        foreach ($invLines as $line) {
+            $id  = (int) ($line['line_id'] ?? 0);
+            $tax = $line['tax'] ?? null;
+            if (($line['kind'] ?? '') !== OrderLineStore::KIND_ITEM || !isset($lines[$id]) || !is_array($tax)) {
+                continue;
+            }
+            $qty   = max(1, (int) $line['qty']);
+            $was   = min($qty, $done['qty'][$id] ?? 0);
+            $now   = min($qty, $was + max(0, (int) $lines[$id]));
+            $part  = static fn (int $whole, int $units): int => $units >= $qty ? $whole : self::roundTo($whole * $units / $qty, $decimals);
+            $parts = array();
+            foreach ((array) ($tax['parts'] ?? array()) as $p) {
+                $taxId = (int) ($p['line_id'] ?? 0);
+                if (!isset($left[$taxId])) {
+                    continue;
+                }
+                $share = max(0, $part((int) $p['amount'], $now) - ($done['parts'][$id][$taxId] ?? 0));
+                $share = min($share, max(0, $left[$taxId]));
+                $left[$taxId] -= $share;
+                $out['tax'][$taxId] = ($out['tax'][$taxId] ?? 0) + $share;
+                $parts[] = array('line_id' => $taxId, 'label' => (string) $p['label'], 'bp' => (int) $p['bp'], 'amount' => $share);
+            }
+            $base     = (int) ($tax['base'] ?? 0);
+            $baseNow  = $part($base, $now) - $part($base, $was);
+            $out['value'][$id] = $baseNow + array_sum(array_column($parts, 'amount'));
+            if ($parts !== array()) {
+                $out['lines'][$id] = self::docLineTax(!empty($tax['included']), $baseNow, isset($tax['code']) ? (string) $tax['code'] : null, $parts, $invoice->currency);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * Line shares scaled by $amount / $worth, for a note that refunds less than the returned units are worth.
+     *
+     * @param array{lines:array<int,array<string,mixed>>,tax:array<int,int>,included:array<int,bool>,value:array<int,int>} $shares
+     *
+     * @return array{lines:array<int,array<string,mixed>>,tax:array<int,int>,included:array<int,bool>,value:array<int,int>}
+     */
+    private static function scaledShares(array $shares, int $amount, int $worth, int $decimals, string $currency): array
+    {
+        $scale = static fn (int $value): int => self::roundTo($value * $amount / $worth, $decimals);
+        $shares['tax'] = array_map(static fn (int $share): int => 0, $shares['tax']);
+        foreach ($shares['lines'] as $id => $tax) {
+            $parts = array();
+            foreach ((array) $tax['parts'] as $part) {
+                $part['amount'] = $scale((int) $part['amount']);
+                $shares['tax'][(int) $part['line_id']] += $part['amount'];
+                $parts[] = $part;
+            }
+            $shares['lines'][$id] = self::docLineTax((bool) $tax['included'], $scale((int) $tax['base']), $tax['code'] ?? null, $parts, $currency);
+        }
+
+        return $shares;
+    }
+
+    /**
+     * The checked own tax of each item and shipping order line, by line id, as frozen on an
+     * invoice. Empty when any part names no tax line, or the parts do not add up to every tax line.
+     *
+     * @param array<int,array<string,mixed>> $rows The order's lines
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private static function checkedLineTax(array $rows, string $currency): array
+    {
+        $taxLines = array();
+        $lineTax  = array();
+        foreach ($rows as $row) {
+            if ($row['kind'] === OrderLineStore::KIND_TAX) {
+                $included = ($row['meta']['included'] ?? false) === true;
+                $key      = (string) ($row['meta']['id'] ?? '');
+                if ($key !== '' && isset($taxLines[$key])) {
+                    return array();
+                }
+                $taxLines[$key !== '' ? $key : '#' . $row['id']] = array('id' => (int) $row['id'], 'value' => $included ? (int) $row['unit'] : (int) $row['amount'], 'included' => $included, 'sum' => 0);
+            } elseif (($tax = OrderLineStore::lineTax($row)) !== null) {
+                $lineTax[(int) $row['id']] = $tax;
+            }
+        }
+        if ($lineTax === array()) {
+            return array();
+        }
+
+        $out = array();
+        foreach ($lineTax as $id => $tax) {
+            $parts = array();
+            foreach ($tax->parts as $part) {
+                $taxLine = $taxLines[$part['tax']] ?? null;
+                if ($taxLine === null || $taxLine['included'] !== $tax->included) {
+                    return array();
+                }
+                $taxLines[$part['tax']]['sum'] += $part['amount'];
+                $parts[] = array('line_id' => $taxLine['id'], 'label' => $part['label'], 'bp' => $part['bp'], 'amount' => $part['amount']);
+            }
+            $out[$id] = self::docLineTax($tax->included, $tax->base, $tax->code, $parts, $currency);
+        }
+        foreach ($taxLines as $taxLine) {
+            if ($taxLine['sum'] !== $taxLine['value']) {
+                return array();
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * A line's own tax as a document stores it, with its display text.
+     *
+     * @param list<array{line_id:int,label:string,bp:int,amount:int}> $parts
+     *
+     * @return array<string,mixed>
+     */
+    private static function docLineTax(bool $included, int $base, ?string $code, array $parts, string $currency): array
+    {
+        return LineTaxView::shape($included, $base, $code, $parts, $currency);
     }
 
     /**
@@ -537,6 +763,23 @@ final class Invoices
             'amount_text' => $money->money($amount, $currency, false, true),
             'included'    => false,
         );
+    }
+
+    /**
+     * What an invoice for this order calls a line's tax code, for pages that show it live.
+     */
+    public static function codeLabel(Order $order): string
+    {
+        $default = __('Tax code');
+        try {
+            $event = new DocumentComposing(array('wording' => array('code_label' => $default)), $order, Document::INVOICE);
+            CoreServices::dispatcher()->dispatch($event);
+            $label = $event->data()['wording']['code_label'] ?? '';
+        } catch (Throwable) {
+            return $default;
+        }
+
+        return is_string($label) && trim($label) !== '' ? trim($label) : $default;
     }
 
     /**
@@ -569,6 +812,10 @@ final class Invoices
         foreach ($lines as $i => $line) {
             $core      = $data['lines'][$i];
             $lines[$i] = is_array($line) ? array_intersect_key($core, array_flip(self::LINE_MONEY)) + $line + $core : $core;
+            unset($lines[$i]['tax']);
+            if (isset($core['tax'])) {
+                $lines[$i]['tax'] = $core['tax'];
+            }
         }
         $out['lines'] = $lines;
         unset($out['v'], $out['type'], $out['number'], $out['date']);

@@ -2,11 +2,13 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.beta3
+## Shopclass 7.1.0.beta4
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- Invoices and credit notes show tax per line, and a refund of units takes those units' own tax. Tax plugins report it with `CartTaxLines::setLineTax()`.
+- Checkout fields: a plugin can ask the buyer for a tax number or other details with the `checkout_fields` event; they print on the invoice and in the Invoices CSV.
 - `osc_item_saved_count()` shows how many wishlists hold a listing.
 - `AvatarUpload::store()` saves an image file on disk as a user's avatar.
 - `osc_sitemap_url()` returns the sitemap URL.

@@ -311,6 +311,17 @@ $d = $order('wholepay');
 check('with no partials it refunds as before', Billing::refundThroughGateway($fresh($d))->getOutcome() === CallbackResult::OUTCOME_REFUNDED && $whole->calls === 1);
 pin('with one note for the whole', [1, $m(44)], [count($notes($d->getId())), DocumentStore::refundedTotal($d->getId())]);
 
+harness_section('lines with their own tax refund that tax, not a share of the order\'s');
+$lt = OrderStore::create($sue, 'offline', $m(41), 'USD', 0, ['_kind' => Order::KIND_GOODS, '_label' => 'Tee × 3, Mug']);
+OrderLineStore::add($lt->getId(), [
+    ['kind' => 'item', 'item_id' => $tee, 'variant_id' => $vTee, 'title' => 'Tee', 'qty' => 3, 'unit' => $m(10), 'amount' => $m(30), 'meta' => ['tax' => ['included' => false, 'base' => $m(30), 'amount' => $m(6), 'code' => null, 'parts' => [['tax' => 'vat.20', 'label' => 'VAT 20%', 'bp' => 2000, 'amount' => $m(6)]]]]],
+    ['kind' => 'item', 'item_id' => $mug, 'variant_id' => $vMug, 'title' => 'Mug', 'qty' => 1, 'unit' => $m(5), 'amount' => $m(5)],
+    ['kind' => 'tax', 'title' => 'VAT 20%', 'qty' => 1, 'unit' => $m(6), 'amount' => $m(6), 'meta' => ['id' => 'vat.20']],
+]);
+Billing::markPaid($lt, 'ref-lt');
+Billing::refundPart($fresh($lt), 0, [$lineOf($lt, 'Tee') => 1], 'Return', false, false);
+pin('the amount is the unit and its own tax: 10.00 + 2.00, not 10.00 × 41/35', $m(12), $notes($lt->getId())[0]->total ?? null);
+
 harness_section('partials that reach the paid amount refund the order');
 $refunds = 0;
 $e       = $order();

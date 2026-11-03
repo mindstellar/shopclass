@@ -22,6 +22,7 @@ use mindstellar\billing\event\CartProblems;
 use mindstellar\billing\event\CartShipping;
 use mindstellar\billing\event\CartShippingLines;
 use mindstellar\billing\event\CartTaxLines;
+use mindstellar\billing\event\CheckoutFields;
 use mindstellar\billing\event\CheckoutStarting;
 use mindstellar\billing\event\DocumentComposing;
 use mindstellar\billing\event\DocumentIssued;
@@ -103,6 +104,7 @@ final class CoreServices
         'cart_free_over' => CartFreeOver::class,
         'cart_problems' => CartProblems::class,
         'cart_item_add_after' => CartItemAdded::class,
+        'checkout_fields' => CheckoutFields::class,
         'cart_checkout_before' => CheckoutStarting::class,
         'billing_order_placed' => OrderPlaced::class,
         'billing_order_paid' => OrderPaid::class,

@@ -240,6 +240,38 @@ osc_remove_filter('cart_tax_lines', $extras);
 osc_remove_filter('cart_free_over', $free);
 OrderStore::cancel((int) $r->body()['data']['id']);
 
+harness_section('checkout fields and line tax');
+$asks = static function (\mindstellar\billing\event\CheckoutFields $e): void {
+    $e->addField('tax_id', 'Tax number', true, 12, 'On the invoice.', true, 'off');
+};
+$vat = static function (\mindstellar\billing\event\CartTaxLines $e) use ($m): void {
+    $e->addLine(new \mindstellar\billing\event\Line('tax.vat.10', 'VAT 10%', $m(0.9), 'USD'));
+    $e->setLineTax('item', 0, new \mindstellar\billing\LineTax(false, $m(9), [['tax' => 'tax.vat.10', 'label' => 'VAT', 'bp' => 1000, 'amount' => $m(0.9)]]));
+};
+osc_add_filter('checkout_fields', $asks);
+osc_add_filter('cart_tax_lines', $vat);
+$r = $call('GET', 'cart/quote', null, null, $guest, ['lines' => $mugV . ':1']);
+$q = $r->body()['data'];
+pin('the quote lists the fields and matches the schema', [[], [['id' => 'tax_id', 'label' => 'Tax number', 'required' => true, 'max' => 12, 'help' => 'On the invoice.', 'autocomplete' => 'off']]], [api_admin_schema_errors('QuoteDocument', $r), $q['checkout_fields']]);
+pin('a quote line shows its own tax', ['10%', '0.90', false, [['label' => 'VAT', 'amount' => '0.90']]], (static fn ($t) => [$t['rate_text'], $t['amount']['amount'], $t['included'], array_map(static fn ($x) => ['label' => $x['label'], 'amount' => $x['amount']['amount']], $t['parts'])])($q['lines'][0]['tax']));
+$r = $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]]), $kimKey);
+pin('a missing required field is a 422 at /fields/tax_id', ['422', '/fields/tax_id', 'required'], [(string) $r->status(), $r->body()['errors'][0]['pointer'] ?? '', $r->body()['errors'][0]['code'] ?? '']);
+$r = $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]], ['fields' => ['tax_id' => str_repeat('9', 101)]]), $kimKey);
+pin('101 characters is a 422', 422, $r->status());
+$r = $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]], ['fields' => ['tax_id' => '<b>DE1</b>', 'junk' => 'x']]), $kimKey);
+pin('a placement with the field is 201 and matches the schema', [201, []], [$r->status(), api_admin_schema_errors('OrderPlaced', $r)]);
+$o = $r->body()['data'];
+pin('the order shows its fields, as text', [['id' => 'tax_id', 'label' => 'Tax number', 'value' => '<b>DE1</b>']], $o['fields']);
+pin('the item line shows its tax; other lines show null', ['10%', '0.90', null], [$o['lines'][0]['tax']['rate_text'], $o['lines'][0]['tax']['amount']['amount'], $o['lines'][1]['tax']]);
+$shown = $call('GET', 'account/orders/' . $o['id'], null, $kimKey)->body()['data'];
+pin('reading the order back shows the same', [$o['fields'], $o['lines'][0]['tax']], [$shown['fields'], $shown['lines'][0]['tax']]);
+OrderStore::cancel((int) $o['id']);
+osc_remove_filter('checkout_fields', $asks);
+$r = $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]], ['fields' => ['tax_id' => 'x']]), $kimKey);
+pin('with no fields asked the order has none, and old orders show an empty list', [201, []], [$r->status(), $r->body()['data']['fields']]);
+OrderStore::cancel((int) $r->body()['data']['id']);
+osc_remove_filter('cart_tax_lines', $vat);
+
 harness_section('placing an order');
 pin('anonymous cannot place', 401, $call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]]))->status());
 pin('nor can a guest page token', '403 wrong_credential', api_admin_code($call('POST', 'account/orders', $body([['variant' => $mugV, 'qty' => 1]]), null, $guest)));

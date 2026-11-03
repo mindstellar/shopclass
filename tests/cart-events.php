@@ -9,8 +9,9 @@
  */
 
 /**
- * Pins the cart events: the line rules of addLine()/addFee()/addMethod()/add(), and that an old
- * Plugins::addHook() callback on each cart name folds into its event and a typed one gets the event.
+ * Pins the cart events: the line rules of addLine()/addFee()/addMethod()/add(), the LineTax shape
+ * and setLineTax(), and that an old Plugins::addHook() callback on each cart name folds into its
+ * event and a typed one gets the event.
  *
  * DB-free.  Usage: php tests/cart-events.php
  */
@@ -36,6 +37,7 @@ use mindstellar\billing\event\CartShippingLines;
 use mindstellar\billing\event\CartTaxLines;
 use mindstellar\billing\event\CheckoutStarting;
 use mindstellar\billing\event\Line;
+use mindstellar\billing\LineTax;
 use mindstellar\container\Container;
 use mindstellar\event\Dispatcher;
 
@@ -114,6 +116,42 @@ $started = new CheckoutStarting($cart);
 $started->refuse('/coupon', 'expired', 'Gone.');
 pin('refuse() records and stops the run', [[true], [['pointer' => '/coupon', 'code' => 'expired', 'message' => 'Gone.']]], [[$started->isPropagationStopped()], $started->refusals()]);
 
+harness_section('Checkout fields');
+
+$answers = new CheckoutStarting(['fields' => ['tax_id' => 'de1']], [['id' => 'tax_id', 'max' => 12]]);
+$answers->setField('tax_id', strtoupper($answers->field('tax_id')));
+pin('CheckoutStarting reads and sets the asked fields', ['DE1', ['tax_id' => 'DE1']], [$answers->field('tax_id'), $answers->fields()]);
+
+harness_section('Line tax');
+
+$part = static fn (string $tax, int $amount = 1, int $bp = 1000, string $label = 'VAT'): array => ['tax' => $tax, 'label' => $label, 'bp' => $bp, 'amount' => $amount];
+$vat  = new LineTax(false, 100, [$part('tax.cgst.9', 4), $part('tax.sgst.9', 5)], ' 6109 ');
+pin('amount is the sum of the parts; the code is trimmed', [9, '6109'], [$vat->amount, $vat->code]);
+pin('a long part label is cut', LineTax::MAX_LABEL, mb_strlen((new LineTax(true, 0, [$part('tax.a', 0, 0, str_repeat('L', 80))]))->parts[0]['label']));
+pin('an empty code is none', null, (new LineTax(false, 1, [$part('tax.a')], ''))->code);
+check('no parts are refused', $refuses(static fn () => new LineTax(false, 1, [])));
+check('five parts are refused', $refuses(static fn () => new LineTax(false, 1, array_map(static fn (int $n): array => $part('tax.p' . $n), range(1, 5)))));
+check('a part below zero is refused', $refuses(static fn () => new LineTax(false, 1, [$part('tax.a', -1)])));
+check('a rate above 10000 bp is refused', $refuses(static fn () => new LineTax(false, 1, [$part('tax.a', 1, 10001)])));
+check('a float amount is refused', $refuses(static fn () => new LineTax(false, 1, [['tax' => 'tax.a', 'label' => 'A', 'bp' => 1, 'amount' => 1.0]])));
+check('a part with no label is refused', $refuses(static fn () => new LineTax(false, 1, [$part('tax.a', 1, 1, ' ')])));
+check('a bad tax line id is refused', $refuses(static fn () => new LineTax(false, 1, [$part('Tax A')])));
+check('the same tax line twice is refused', $refuses(static fn () => new LineTax(false, 1, [$part('tax.a'), $part('tax.a')])));
+check('a base below zero is refused', $refuses(static fn () => new LineTax(false, -1, [$part('tax.a')])));
+check('a code over 40 characters is refused', $refuses(static fn () => new LineTax(false, 1, [$part('tax.a')], str_repeat('9', 41))));
+
+$taxCart = $cart + ['shipping_lines' => [['id' => 'shipping.standard', 'label' => 'Standard', 'amount' => 1, 'currency' => 'USD', 'meta' => []]]];
+$taxCart['lines'] = [['line' => 0, 'variant' => 1], ['line' => 2, 'variant' => 5]];
+$lt = new CartTaxLines($taxCart);
+$lt->setLineTax('item', 2, $vat);
+$lt->setLineTax('shipping', 'shipping.standard', $vat);
+pin('setLineTax() keeps it by cart position and shipping id', [[2], ['shipping.standard']], [array_keys($lt->lineTax()['item']), array_keys($lt->lineTax()['shipping'])]);
+check('an item position the cart does not hold is refused', $refuses(static fn () => $lt->setLineTax('item', 1, $vat)));
+check('an item named by a string is refused', $refuses(static fn () => $lt->setLineTax('item', '2', $vat)));
+check('an unknown shipping line is refused', $refuses(static fn () => $lt->setLineTax('shipping', 'shipping.express', $vat)));
+check('another kind is refused', $refuses(static fn () => $lt->setLineTax('fee', 0, $vat)));
+pin('a new cart event starts with none', ['item' => [], 'shipping' => []], (new CartTaxLines($cart))->lineTax());
+
 harness_section('Old callbacks fold into the events');
 
 harness_reset_container();
@@ -150,6 +188,12 @@ foreach ([['cart_shipping_lines', CartShippingLines::class, 'shipping'], ['cart_
     $event = $events->dispatch(new $class($cart, [['id' => 'first', 'label' => 'First', 'amount' => 1, 'currency' => 'USD', 'meta' => []]]));
     pin($name . ' sees the lines so far and adds one', ['first', $kind . '.old', $kind . '.typed'], array_column($event->rawLines(), 'id'));
 }
+
+Plugins::addHook('cart_tax_lines', static function (CartTaxLines $e) use ($vat): void {
+    $e->setLineTax('item', 0, $vat);
+}, 2);
+$event = $events->dispatch(new CartTaxLines($taxCart));
+pin('line tax set by a typed listener stays through an old array callback', [[0], ['tax.old', 'tax.typed']], [array_keys($event->lineTax()['item']), array_column($event->rawLines(), 'id')]);
 
 Plugins::addHook('cart_totals', static function ($totals, $c) {
     $totals['fees'][] = ['id' => 'fee.old', 'label' => 'Old', 'amount' => 1];

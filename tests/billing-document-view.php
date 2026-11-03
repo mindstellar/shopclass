@@ -84,4 +84,43 @@ pin('amounts are negative', [true, true], [str_contains($html, "\u{2212}\$80.00"
 pin('it names the invoice and the reason', [true, true, true], [str_contains($html, 'For invoice INV-2026-00001'), str_contains($html, 'Damaged'), str_contains($html, 'Total credited')]);
 pin('the page is marked noindex', true, str_contains($html, 'noindex'));
 
+harness_section('line tax on the page');
+pin('no tax column when no line has tax', [false, false], [str_contains($html, 'rc-num rc-tax'), str_contains($show($invoice), 'rc-num rc-tax')]);
+$taxed = $data('invoice');
+$taxed['wording']['code_label'] = 'HSN';
+$taxed['buyer']['fields'] = [['label' => 'GSTIN', 'value' => '29ABCDE1234F1Z5<b>'], ['label' => 'Empty', 'value' => '']];
+$taxed['lines'][0]['tax'] = ['included' => false, 'base' => 80_000_000, 'amount' => 14_400_000, 'code' => '6109<i>', 'rate_text' => '9% + 9%',
+    'parts' => [['line_id' => 2, 'label' => 'CGST', 'bp' => 900, 'amount' => 7_200_000, 'amount_text' => '$7.20'], ['line_id' => 3, 'label' => 'SGST', 'bp' => 900, 'amount' => 7_200_000, 'amount_text' => '$7.20']],
+    'base_text' => '$80.00', 'amount_text' => '$14.40'];
+$taxed['lines'][] = ['line_id' => 4, 'kind' => 'shipping', 'title' => 'Post', 'options' => '', 'sku' => '', 'qty' => 1, 'unit_text' => '$5.00', 'amount_text' => '$5.00', 'included' => false,
+    'tax' => ['included' => true, 'base' => 4_000_000, 'amount' => 1_000_000, 'code' => null, 'parts' => [['line_id' => 2, 'label' => 'VAT', 'bp' => 2500, 'amount' => 1_000_000, 'amount_text' => '$1.00']], 'base_text' => '$4.00', 'amount_text' => '$1.00', 'rate_text' => '25%']];
+$withTax = DocumentStore::insert(Document::INVOICE, $order, 9_000_000, $taxed, '2026-03-02 10:00:00');
+$html = $show($withTax);
+pin('the Tax column shows rate and amount', [true, true, true], [str_contains($html, '<th scope="col" class="rc-num rc-tax">Tax</th>'), str_contains($html, '9% + 9%<small>$14.40</small>'), str_contains($html, '$14.40')]);
+pin('the code sits under the title with the document label, escaped', [true, false], [str_contains($html, 'HSN 6109&lt;i&gt;'), str_contains($html, '6109<i>')]);
+pin('Billed to lists the buyer fields, escaped, empty ones skipped', [true, false, false], [str_contains($html, 'GSTIN: 29ABCDE1234F1Z5&lt;b&gt;'), str_contains($html, '<b>'), str_contains($html, 'Empty:')]);
+pin('a shipping line shows its own tax under the title', true, str_contains($html, 'Tax 25%: $1.00'));
+$taxed['lines'][0]['tax']['included'] = true;
+$taxed['wording']['code_label'] = '';
+$incl = DocumentStore::insert(Document::INVOICE, $order, 9_000_000, $taxed, '2026-03-03 10:00:00');
+$html = $show($incl);
+pin('an included tax reads incl., and the code label defaults', [true, true], [str_contains($html, '<small>$14.40 incl.</small>'), str_contains($html, 'Tax code 6109&lt;i&gt;')]);
+$cn = $data('credit_note');
+$cn['lines'][0]['tax'] = $taxed['lines'][0]['tax'];
+$html = $show(DocumentStore::insert(Document::CREDIT_NOTE, $order, 1_000_000, $cn, '2026-03-04 10:00:00'));
+pin('a credit note tax is negative', true, str_contains($html, "\u{2212}\$14.40"));
+
+harness_section('the live receipt');
+$goods = OrderStore::create($sue, 'offline', 9_000_000, 'USD', 0, ['_kind' => Order::KIND_GOODS, '_fields' => ['tax_id' => ['label' => 'Tax ID', 'value' => 'DE123<x>', 'invoice' => true], 'note' => ['label' => 'Gate', 'value' => '9', 'invoice' => false]]]);
+mindstellar\billing\OrderLineStore::add($goods->getId(), [
+    ['kind' => 'item', 'title' => 'Tee', 'qty' => 1, 'unit' => 8_000_000, 'amount' => 8_000_000, 'meta' => ['tax' => ['included' => false, 'base' => 8_000_000, 'amount' => 1_000_000, 'code' => '6109', 'parts' => [['tax' => 'tax.vat.19', 'label' => 'VAT', 'bp' => 1250, 'amount' => 1_000_000]]]]],
+    ['kind' => 'item', 'title' => 'Mug', 'qty' => 1, 'unit' => 0, 'amount' => 0],
+]);
+$details = mindstellar\billing\Receipts::details(OrderStore::find($goods->getId()));
+pin('details carry line tax and buyer fields', ['12.5%', '6109', true, [['label' => 'Tax ID', 'value' => 'DE123<x>']]], [$details['lines'][0]['tax']['rate_text'] ?? null, $details['lines'][0]['tax']['code'] ?? null, $details['lines'][1]['tax'] === null, $details['buyer_fields']]);
+ob_start();
+mindstellar\billing\Receipts::render(OrderStore::find($goods->getId()), 'http://localhost/orders', 'Back');
+$html = (string) ob_get_clean();
+pin('the receipt shows the Tax column, code and field', [true, true, true, false], [str_contains($html, 'rc-tax'), str_contains($html, 'Tax code 6109'), str_contains($html, 'DE123&lt;x&gt;'), str_contains($html, 'Gate')]);
+
 exit(harness_result());

@@ -33,6 +33,8 @@ final class Quote
      * @param array{amount:int,remaining:int}|null $freeOver      free delivery from this subtotal
      * @param array<int,array{line:?int,code:string,pointer:?string,message:?string}> $problems
      * @param array<string,mixed>                $cart            what the cart filters were given
+     * @param array{item?:array<int,LineTax>,shipping?:array<string,LineTax>} $lineTax checked line tax
+     * @param list<array{id:string,label:string,required:bool,max:int,help:string,invoice:bool,autocomplete:string}> $checkoutFields the extra fields the checkout asks for
      */
     public function __construct(
         private string $currency,
@@ -43,7 +45,9 @@ final class Quote
         private array $totals,
         private ?array $freeOver,
         private array $problems,
-        private array $cart
+        private array $cart,
+        private array $lineTax = array(),
+        private array $checkoutFields = array()
     ) {
     }
 
@@ -100,6 +104,25 @@ final class Quote
     public function extraLines(string $kind): array
     {
         return $this->extra[$kind] ?? array();
+    }
+
+    /**
+     * The tax of one item line (by its cart position `line`) or shipping line (by its id), or null
+     * when there is none or the breakdown failed core's check.
+     */
+    public function lineTax(string $kind, int|string $ref): ?LineTax
+    {
+        return $this->lineTax[$kind][$ref] ?? null;
+    }
+
+    /**
+     * The extra fields the checkout asks the buyer for, at most CheckoutFields::MAX_FIELDS.
+     *
+     * @return list<array{id:string,label:string,required:bool,max:int,help:string,invoice:bool,autocomplete:string}>
+     */
+    public function checkoutFields(): array
+    {
+        return $this->checkoutFields;
     }
 
     /**

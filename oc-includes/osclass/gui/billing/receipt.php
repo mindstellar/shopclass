@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
  * Expects $receipt (Receipts::vars()), $backUrl and $backLabel, and $documents (the order's
  * invoice and credit notes). Every value is escaped here.
  *
+ * @var \mindstellar\billing\Order $order
  * @var array<string,mixed> $receipt
  * @var \mindstellar\billing\Document[] $documents
  * @var string              $backUrl
@@ -28,20 +29,23 @@ if (!defined('ABS_PATH')) {
 // The title carries the number, so no row repeats it under another name. A goods order
 // shows what was bought and the amount in its own table, so those rows are for credits only.
 $details = !empty($receipt['details']) ? $receipt['details'] : null;
-$rows    = array(__('Date paid') => $receipt['date']);
+$rows    = array(array(__('Date paid'), $receipt['date']));
 if ($details === null) {
-    $rows[__('What was bought')] = $receipt['credits'];
-    $rows[__('Amount paid')]     = $receipt['amount'];
+    $rows[] = array(__('What was bought'), $receipt['credits']);
+    $rows[] = array(__('Amount paid'), $receipt['amount']);
 }
-$rows[__('Payment method')] = $receipt['method'];
+$rows[] = array(__('Payment method'), $receipt['method']);
 if (($receipt['for'] ?? '') !== '') {
-    $rows[__('For')] = $receipt['for'];
+    $rows[] = array(__('For'), $receipt['for']);
 }
 if ($receipt['ref'] !== '') {
-    $rows[__('Payment reference')] = $receipt['ref'];
+    $rows[] = array(__('Payment reference'), $receipt['ref']);
 }
 if ($receipt['email'] !== '') {
-    $rows[__('Paid by')] = $receipt['email'];
+    $rows[] = array(__('Paid by'), $receipt['email']);
+}
+foreach ($details['buyer_fields'] ?? array() as $field) {
+    $rows[] = array((string) $field['label'], (string) $field['value']);
 }
 $title  = $details === null ? sprintf(__('Receipt %s'), $receipt['label']) : sprintf(__('%1$s %2$s'), $details['title'], $receipt['label']);
 $items  = array();
@@ -53,6 +57,12 @@ foreach ($details['lines'] ?? array() as $line) {
         $others[] = $line;
     }
 }
+$codeLabel = \mindstellar\billing\Invoices::codeLabel($order);
+$hasTax = false;
+foreach ($items as $line) {
+    $hasTax = $hasTax || is_array($line['tax'] ?? null);
+}
+$sign   = '';
 $accent = (string) ($receipt['accent'] ?? '#0b7269');
 ?>
 <!doctype html>
@@ -102,7 +112,7 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
         </div>
         <?php if ($details === null) { ?>
             <table class="rc-rows">
-                <?php foreach ($rows as $label => $value) { ?>
+                <?php foreach ($rows as [$label, $value]) { ?>
                     <tr>
                         <th scope="row"><?php echo osc_esc_html($label); ?></th>
                         <td><?php echo osc_esc_html((string) $value); ?></td>
@@ -111,7 +121,7 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
             </table>
         <?php } else { ?>
             <dl class="rc-meta">
-                <?php foreach ($rows as $label => $value) { ?>
+                <?php foreach ($rows as [$label, $value]) { ?>
                     <div><dt><?php echo osc_esc_html($label); ?></dt><dd><?php echo osc_esc_html((string) $value); ?></dd></div>
                 <?php } ?>
             </dl>
@@ -121,6 +131,9 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
                         <th scope="col"><?php echo osc_esc_html(__('Item')); ?></th>
                         <th scope="col" class="rc-num"><?php echo osc_esc_html(__('Qty')); ?></th>
                         <th scope="col" class="rc-num rc-price"><?php echo osc_esc_html(__('Price')); ?></th>
+                        <?php if ($hasTax) { ?>
+                            <th scope="col" class="rc-num rc-tax"><?php echo osc_esc_html(__('Tax')); ?></th>
+                        <?php } ?>
                         <th scope="col" class="rc-num"><?php echo osc_esc_html(__('Amount')); ?></th>
                     </tr>
                 </thead>
@@ -135,9 +148,16 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
                                 <?php if ($line['sku'] !== '') { ?>
                                     <small><?php echo osc_esc_html(sprintf(__('SKU %s'), $line['sku'])); ?></small>
                                 <?php } ?>
+                                <?php if (is_array($line['tax'] ?? null) && (string) ($line['tax']['code'] ?? '') !== '') { ?>
+                                    <small><?php echo osc_esc_html($codeLabel . ' ' . (string) $line['tax']['code']); ?></small>
+                                <?php } ?>
                             </td>
                             <td class="rc-num"><?php echo osc_esc_html($line['qty']); ?></td>
                             <td class="rc-num rc-price"><?php echo osc_esc_html($line['unit']); ?></td>
+                            <?php if ($hasTax) {
+                                $lineTax = $line['tax'] ?? null;
+                                require __DIR__ . '/parts/line-tax.php';
+                            } ?>
                             <td class="rc-num"><?php echo osc_esc_html($line['amount']); ?></td>
                         </tr>
                     <?php } ?>
