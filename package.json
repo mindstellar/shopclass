@@ -46,5 +46,8 @@
     "qrcode-generator": "^2.0.4",
     "sortablejs": "^1.15.7",
     "tinymce": "^8.10.1"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
   }
 }
