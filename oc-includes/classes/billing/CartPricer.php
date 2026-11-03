@@ -238,24 +238,7 @@ final class CartPricer
         foreach ($taxLines as $line) {
             $lines[$line['id']] = array((int) $line['amount'], ($line['included'] ?? false) === true);
         }
-        $sums  = array_fill_keys(array_keys($lines), 0);
-        $fault = null;
-        foreach (array_merge(array_values($lineTax['item']), array_values($lineTax['shipping'])) as $tax) {
-            foreach ($tax->parts as $part) {
-                if (!isset($lines[$part['tax']])) {
-                    $fault = sprintf('a part names "%s", which is not a tax line', $part['tax']);
-                } elseif ($lines[$part['tax']][1] !== $tax->included) {
-                    $fault = sprintf('"%s" and its parts differ on included', $part['tax']);
-                } else {
-                    $sums[$part['tax']] += $part['amount'];
-                }
-            }
-        }
-        foreach ($lines as $id => [$amount]) {
-            if ($fault === null && $sums[$id] !== $amount) {
-                $fault = sprintf('the parts of "%s" add up to %d, not %d', $id, $sums[$id], $amount);
-            }
-        }
+        $fault = LineTax::fault(array_merge(array_values($lineTax['item']), array_values($lineTax['shipping'])), $lines);
         if ($fault !== null) {
             static $warned = array();
             if (!isset($warned[$fault])) {

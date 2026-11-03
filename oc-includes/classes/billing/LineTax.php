@@ -100,4 +100,34 @@ final readonly class LineTax
     {
         return array('included' => $this->included, 'base' => $this->base, 'amount' => $this->amount, 'code' => $this->code, 'parts' => $this->parts);
     }
+
+    /**
+     * Why line taxes do not break the tax lines down exactly, or null when they do. For every tax
+     * line the parts naming it must add up to its amount, with the same `included`.
+     *
+     * @param iterable<self>                         $taxes
+     * @param array<string,array{0:int,1:bool}>      $lines amount and included, by tax line id
+     */
+    public static function fault(iterable $taxes, array $lines): ?string
+    {
+        $sums = array_fill_keys(array_keys($lines), 0);
+        foreach ($taxes as $tax) {
+            foreach ($tax->parts as $part) {
+                if (!isset($lines[$part['tax']])) {
+                    return sprintf('a part names "%s", which is not a tax line', $part['tax']);
+                }
+                if ($lines[$part['tax']][1] !== $tax->included) {
+                    return sprintf('"%s" and its parts differ on included', $part['tax']);
+                }
+                $sums[$part['tax']] += $part['amount'];
+            }
+        }
+        foreach ($lines as $id => [$amount]) {
+            if ($sums[$id] !== $amount) {
+                return sprintf('the parts of "%s" add up to %d, not %d', $id, $sums[$id], $amount);
+            }
+        }
+
+        return null;
+    }
 }

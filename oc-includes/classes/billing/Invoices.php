@@ -697,7 +697,7 @@ final class Invoices
                 if ($key !== '' && isset($taxLines[$key])) {
                     return array();
                 }
-                $taxLines[$key !== '' ? $key : '#' . $row['id']] = array('id' => (int) $row['id'], 'value' => $included ? (int) $row['unit'] : (int) $row['amount'], 'included' => $included, 'sum' => 0);
+                $taxLines[$key !== '' ? $key : '#' . $row['id']] = array('id' => (int) $row['id'], 'value' => $included ? (int) $row['unit'] : (int) $row['amount'], 'included' => $included);
             } elseif (($tax = OrderLineStore::lineTax($row)) !== null) {
                 $lineTax[(int) $row['id']] = $tax;
             }
@@ -706,23 +706,16 @@ final class Invoices
             return array();
         }
 
+        if (LineTax::fault($lineTax, array_map(static fn (array $t): array => array($t['value'], $t['included']), $taxLines)) !== null) {
+            return array();
+        }
         $out = array();
         foreach ($lineTax as $id => $tax) {
             $parts = array();
             foreach ($tax->parts as $part) {
-                $taxLine = $taxLines[$part['tax']] ?? null;
-                if ($taxLine === null || $taxLine['included'] !== $tax->included) {
-                    return array();
-                }
-                $taxLines[$part['tax']]['sum'] += $part['amount'];
-                $parts[] = array('line_id' => $taxLine['id'], 'label' => $part['label'], 'bp' => $part['bp'], 'amount' => $part['amount']);
+                $parts[] = array('line_id' => $taxLines[$part['tax']]['id'], 'label' => $part['label'], 'bp' => $part['bp'], 'amount' => $part['amount']);
             }
             $out[$id] = self::docLineTax($tax->included, $tax->base, $tax->code, $parts, $currency);
-        }
-        foreach ($taxLines as $taxLine) {
-            if ($taxLine['sum'] !== $taxLine['value']) {
-                return array();
-            }
         }
 
         return $out;
