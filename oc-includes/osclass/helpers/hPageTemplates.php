@@ -91,11 +91,16 @@ osc_register_page_template('core.page_builder', array(
     'description' => 'Compose this page from widget blocks instead of the text editor.',
     'builder'     => true,
     'render'      => static function ($page) {
-        $themeFile = osc_themes_path() . osc_theme() . '/template-widgets.php';
-        if (file_exists($themeFile)) {
-            require $themeFile;
+        // The theme on screen (a preview counts); a child inherits its parent's canvas.
+        $themes  = WebThemes::getInstance();
+        $current = (string) ($themes->getCurrentTheme() ?: osc_theme());
+        foreach (array_filter(array($current, $themes->parentOf($current))) as $theme) {
+            $themeFile = osc_themes_path() . $theme . '/template-widgets.php';
+            if (file_exists($themeFile)) {
+                require $themeFile;
 
-            return;
+                return;
+            }
         }
 
         // No theme canvas: render the blocks through the theme's own page view,

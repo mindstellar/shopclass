@@ -53,7 +53,7 @@ function osc_static_page_title()
 }
 require_once __DIR__ . '/lib/stubs.php';
 // Re-pointable, so one run can cover a theme with a canvas and one without.
-$GLOBALS['themesPath'] = sys_get_temp_dir() . '/';
+$GLOBALS['themesPath'] = sys_get_temp_dir() . '/sc-pb-' . getmypid() . '/';
 $GLOBALS['themeName']  = 'nonexistent-theme-' . getmypid();
 function osc_themes_path()
 {
@@ -122,6 +122,19 @@ $GLOBALS['themeName']  = 'withcanvas';
 check('the theme file is required instead', $GLOBALS['ownCanvas'] === true);
 pin('and no core view is rendered', array(), $GLOBALS['rendered']);
 
+harness_section('a child theme uses its parent\'s canvas');
+
+@mkdir($themeDir . '/withcanvas-child', 0777, true);
+file_put_contents($themeDir . '/withcanvas-child/index.php', "<?php\n/*\nTheme Name: Child\nParent Theme: withcanvas\n*/\n");
+$GLOBALS['rendered']  = array();
+$GLOBALS['ownCanvas'] = false;
+$GLOBALS['themeName'] = 'withcanvas-child';
+($spec['render'])(array('pk_i_id' => 42));
+check('the parent\'s template-widgets.php is required', $GLOBALS['ownCanvas'] === true);
+pin('and no core view is rendered', array(), $GLOBALS['rendered']);
+
+@unlink($themeDir . '/withcanvas-child/index.php');
+@rmdir($themeDir . '/withcanvas-child');
 @unlink($themeDir . '/withcanvas/template-widgets.php');
 @rmdir($themeDir . '/withcanvas');
 @rmdir($themeDir);

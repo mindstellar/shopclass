@@ -140,6 +140,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- A Page builder page on a child theme uses the parent theme's full-width block layout, not a narrow text column.
 - Photo processing: JPEGs open without the exif extension, small images keep their size under Imagick, GIF and upper-case formats save correctly, and GD refuses photos too large for the memory limit.
 - Portrait phone photos no longer get white bars on the sides when Imagick resizes them.
 - Mail Settings no longer takes the browser's saved admin login as an unsaved change, so the test email runs after saving.
