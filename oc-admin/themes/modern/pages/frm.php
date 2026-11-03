@@ -236,7 +236,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </p>
         <?php
         // The last change to this page's blocks, while it can still be undone.
-        $pb_undo = osc_kv_get('page_block_undo', osc_logged_admin_id() . ':' . $pageId);
+        $pb_undo = \mindstellar\widgets\PageBlockUndo::pending((int) osc_logged_admin_id(), (int) $pageId);
         if (is_array($pb_undo)) {
             $pb_undoText = array(
                 'added'   => __('Block added. It is live on the page.'),

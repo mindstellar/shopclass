@@ -28,6 +28,9 @@ Actor::user(7);                                        // a signed-in user
 Actor::admin(0);                                       // admin rights, nobody signed in (CLI, import)
 ```
 
+`Actor::fromSession(true)` gives admin rights with no admin signed in only in the admin area,
+cron, jobs and the CLI. Elsewhere it is the visitor; wrap such code in `Actor::runAsSystem(fn () => ...)`.
+
 A new table class extends `mindstellar\base\Model` and names its table in `TABLE`; `table()`
 gives a query on it through the parameterized DB API. Legacy models extend `DAO`. API
 controllers have no base class: the kernel checks the key, scope, limits and input before one

@@ -17,7 +17,7 @@ URL slug (the name as it appears in web addresses) taken from the title.
 
 To link a page from the site footer, tick **Show a link in the footer** in the
 page's settings. It is off for a new page. Deleting a page also removes its
-footer link, its widgets and its uploaded images.
+footer link, its blocks and its uploaded images.
 
 ## Two ways to build one
 
@@ -25,10 +25,10 @@ Pick the **Page template** field when creating the page:
 
 - **Default template**: the text editor. A rich-text field, right for prose.
   Terms and Privacy want exactly this.
-- **Page builder (blocks)**: composes the page from widget blocks instead.
+- **Page builder (blocks)**: composes the page from blocks instead.
   Right for a landing page or a How-it-works page with images and sections.
 
-**Add widget** offers two groups of blocks. **Layout** blocks belong to pages only:
+**Add block** shows the block types as tiles in three groups. **Layout** blocks belong to pages only:
 
 | Block | What it is |
 |---|---|
@@ -37,14 +37,16 @@ Pick the **Page template** field when creating the page:
 | **Heading** | A section title, left or centred, with an optional intro line. |
 | **Button** | One or two links drawn as buttons, left or centred. |
 
-**Content** blocks are the widget types used elsewhere too:
+**Content** blocks are the types used on the Widgets screen too:
 
 | Block | What it is |
 |---|---|
 | **Rich text** | Formatted text: headings, bold, lists and links. |
 | **Image** | An image from your media library, optionally linking somewhere. |
 | **Form** | A form from **Forms**. |
-| **Custom Code (HTML / JavaScript)** | Raw markup and script. |
+
+**Advanced** holds **Custom Code (HTML / JavaScript)**: raw markup and script, with a warning.
+Only a super admin can add it.
 
 On a phone every block stacks to one column, the picture first. Plugins can register
 further block types.
@@ -53,7 +55,10 @@ A page that opens with its own heading can tick **Hide the page title** in **Pag
 The title is then hidden on screen, but screen readers and search engines still get it.
 
 While you edit a block, the dialog shows a **Preview** of the page with your changes,
-on desktop or phone width. Nothing is saved until you press **Save changes**.
+on desktop or phone width. Nothing is saved until you save the block. A saved block is live
+at once. The block name is optional; an empty name takes the type's name.
+
+After you add, save or delete a block, the editor offers **Undo** for 15 minutes.
 
 A page builder page renders correctly on **any** theme. If the active theme
 ships its own `template-widgets.php` the theme owns the layout; otherwise core

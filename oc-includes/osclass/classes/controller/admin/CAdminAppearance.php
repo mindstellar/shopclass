@@ -27,6 +27,7 @@ use mindstellar\utility\AjaxResponse;
 use mindstellar\widgets\Customiser;
 use mindstellar\widgets\CustomiserDraft;
 use mindstellar\widgets\CustomiserScreen;
+use mindstellar\widgets\PageBlockUndo;
 use mindstellar\widgets\WidgetConfig;
 use mindstellar\widgets\WidgetStore;
 
@@ -343,60 +344,20 @@ class CAdminAppearance extends AdminSecBaseModel
         $this->redirectTo($this->widgetReturnUrl());
     }
 
-    /**
-     * After a page editor change to one of the page's blocks, keep what it takes to undo it, for
-     * this admin and page, for 15 minutes. The editor then offers Undo instead of a flash message.
-     *
-     * @param array<string,mixed>|null $before the row as it was, or null for a new block
-     *
-     * @return bool whether an undo was kept
-     */
     private function rememberPageBlockUndo(string $action, int $id, ?array $before): bool
     {
-        $pageId   = Params::getParamInt('page_builder_id');
-        $location = 'page.' . $pageId;
-        if ($pageId <= 0 || $id <= 0 || ($before !== null && (string) ($before['s_location'] ?? '') !== $location)) {
-            return false;
-        }
-        osc_kv_set('page_block_undo', osc_logged_admin_id() . ':' . $pageId, array(
-            'action' => $action,
-            'id'     => $id,
-            'before' => $before,
-        ), 900);
-
-        return true;
+        return PageBlockUndo::remember((int) osc_logged_admin_id(), Params::getParamInt('page_builder_id'), $action, $id, $before);
     }
 
-    /**
-     * Undo the last page editor change to one of this page's blocks: remove the block it added,
-     * or put back the block as it was before an edit or a delete.
-     */
     private function pageBlockUndoPost(): void
     {
         osc_csrf_check();
-        $pageId   = Params::getParamInt('page_builder_id');
-        $location = 'page.' . $pageId;
-        $key      = osc_logged_admin_id() . ':' . $pageId;
-        $undo     = $pageId > 0 ? osc_kv_get('page_block_undo', $key) : null;
-        osc_kv_delete('page_block_undo', $key);
-        if (!is_array($undo)) {
+        if (PageBlockUndo::apply((int) osc_logged_admin_id(), Params::getParamInt('page_builder_id'))) {
+            osc_purge_page_cache('widget');
+            osc_add_flash_ok_message(_m('Undone.'), 'admin');
+        } else {
             osc_add_flash_info_message(_m('There is nothing to undo.'), 'admin');
-            $this->redirectTo($this->widgetReturnUrl());
-
-            return;
         }
-        $id     = (int) ($undo['id'] ?? 0);
-        $before = is_array($undo['before'] ?? null) ? $undo['before'] : null;
-        $row    = WidgetStore::find($id);
-        if (($undo['action'] ?? '') === 'added' && $row !== null && $row['s_location'] === $location) {
-            WidgetStore::delete($id);
-        } elseif (($undo['action'] ?? '') === 'edited' && $row !== null && $before !== null && $row['s_location'] === $location) {
-            WidgetStore::update($id, array_intersect_key($before, array_flip(array('s_description', 's_content', 's_type', 's_config'))));
-        } elseif (($undo['action'] ?? '') === 'deleted' && $row === null && $before !== null && ($before['s_location'] ?? '') === $location) {
-            WidgetStore::add(array_intersect_key($before, array_flip(array('s_description', 's_location', 'e_kind', 's_content', 'i_order', 's_type', 's_config'))));
-        }
-        osc_purge_page_cache('widget');
-        osc_add_flash_ok_message(_m('Undone.'), 'admin');
         $this->redirectTo($this->widgetReturnUrl());
     }
 

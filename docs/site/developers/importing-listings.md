@@ -57,6 +57,9 @@ comes from outside.
 moderation. `->asImport()` keeps the first two off and turns the other two back on, so an
 import cannot skip the owner's listing limit or the site's approval queue.
 
+Admin mode with no admin signed in works only in the admin area, cron, jobs and the CLI. Run it
+from anywhere else inside `Actor::runAsSystem(fn () => ...)`.
+
 ## Update a listing
 
 ```php

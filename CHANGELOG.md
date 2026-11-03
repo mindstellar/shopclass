@@ -93,6 +93,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
+- Listing settings: "Users have to validate their listings" is now **Posters confirm new listings by e-mail**, and "Logged in users don't need to validate their listings" is now **Signed-in posters skip the e-mail confirmation**.
 - `billing_order_shipped` fires only when the last item ships; every parcel fires `billing_shipment_add_after`. A paid order may now be `processing`, so test `Order::isPaid()` rather than `'paid'`.
 - Money uses the currency's decimals, not the language's: `Money::format()`, `osc_format_price()` and `osc_prepare_price()` now print JPY with none and KWD with three.
 - An address no longer needs a state or postcode everywhere, and a phone may start with `+` and a country code; the fixed 8-digit phone and 6-digit PIN rules are gone. Money no longer follows the language's decimal setting.
@@ -134,6 +135,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Core escapes and strips tags only through `Escape` and `Sanitize` (new `Escape::text()`, `Escape::htmlEntities()`, `Escape::htmlKeepEntities()`, `Sanitize::stripTags()`); `osc_esc_html()` and `osc_esc_js()` call them, with the same output. A test blocks direct calls.
 
 ### Security
+- Code acting as an admin with no admin signed in gets admin rights only in the admin area, cron, jobs and the CLI. Plugin code that needs them elsewhere wraps the call in `Actor::runAsSystem()`.
 - A plugin download link from the catalogue is shown only when it is an https address.
 - An IP ban rule can be an IPv6 address or a CIDR range (`203.0.113.0/24`, `2001:db8::/32`); before, IPv6 visitors could not be banned by IP.
 

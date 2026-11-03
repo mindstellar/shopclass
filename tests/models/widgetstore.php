@@ -21,6 +21,7 @@ require_once __DIR__ . '/../lib/harness.php';
 
 use mindstellar\model\Resource;
 use mindstellar\pages\PageService;
+use mindstellar\widgets\PageBlockUndo;
 use mindstellar\widgets\WidgetStore;
 
 $admin = scratchdb_session('osc_models_widgetstore');
@@ -56,6 +57,7 @@ require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 
 $table = DB_TABLE_PREFIX . 't_widget';
 $locale = seed_locale($admin);
@@ -205,6 +207,37 @@ pin('another page keeps its resources', 1, $resourceCount("pk_i_id = $keptResour
 $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 pin('an unknown id removes nothing', 0, PageService::make()->delete(999999));
 error_reporting($prevLevel);
+
+harness_section('PageBlockUndo: undo the last change to a page block');
+
+$loc   = 'page.77';
+$block = WidgetStore::add($row(array('s_location' => $loc, 's_description' => 'kept')));
+check('a block on another page keeps no undo', !PageBlockUndo::remember(1, 78, 'edited', $block, WidgetStore::find($block)));
+check('nothing waits for another page', PageBlockUndo::pending(1, 78) === null);
+
+$added = WidgetStore::add($row(array('s_location' => $loc)));
+check('an added block keeps an undo', PageBlockUndo::remember(1, 77, 'added', $added, null));
+check('another admin has nothing to undo', !PageBlockUndo::apply(2, 77));
+check('undo removes the added block', PageBlockUndo::apply(1, 77) && WidgetStore::find($added) === null);
+check('an undo is used once', !PageBlockUndo::apply(1, 77));
+
+$before = WidgetStore::find($block);
+WidgetStore::update($block, array('s_description' => 'changed'));
+PageBlockUndo::remember(1, 77, 'edited', $block, $before);
+PageBlockUndo::apply(1, 77);
+pin('undo puts back an edited block', 'kept', WidgetStore::find($block)['s_description'] ?? '');
+
+$before = WidgetStore::find($block);
+WidgetStore::delete($block);
+PageBlockUndo::remember(1, 77, 'deleted', $block, $before);
+PageBlockUndo::apply(1, 77);
+pin('undo brings back a deleted block', 1, $count("s_location = '$loc' AND s_description = 'kept'"));
+
+$moved = WidgetStore::add($row(array('s_location' => $loc)));
+PageBlockUndo::remember(1, 77, 'added', $moved, null);
+WidgetStore::moveTo($moved, 'sidebar');
+PageBlockUndo::apply(1, 77);
+check('undo leaves a block that left the page', WidgetStore::find($moved) !== null);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
