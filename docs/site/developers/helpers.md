@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1277 helpers, 28 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1278 helpers, 28 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -1532,7 +1532,7 @@ Core defines 1277 helpers, 28 of them deprecated. Generated from the source; do 
 | `osc_render_item_view_beacon()` | Emit the beacon &lt;script&gt; at the end of the listing detail page. CWebItem sets $GLOBALS['osc_view_beacon_item_id'] only while rendering a public listing detail with the beacon enabled, so this fires there and nowhere else. It is baked into the cached HTML, so it runs for every visitor of the cached page and reports one view per real browser load. sendBeacon is fire-and-forget and survives page unload; fetch(keepalive) is the fallback. |
 | `osc_view_beacon_suppress_render_count($countsAsView, $item = null)` | Suppress the render-time view increment when the beacon owns counting, so a cached page and the beacon never both count (and a no-JS bot is not counted at render while a human is counted by the beacon). Filters `count_view_on_render`, whose value is otherwise osc_request_counts_as_view(). |
 
-### hWidgets (14)
+### hWidgets (15)
 
 `oc-includes/osclass/helpers/hWidgets.php`
 
@@ -1548,6 +1548,7 @@ Core defines 1277 helpers, 28 of them deprecated. Generated from the source; do 
 | `osc_customiser_spec()` | What the active theme lets the owner customise, checked; null when it declares nothing usable. |
 | `osc_menu(string $id)` | A menu as links in the visitor's language: `[['label' => …, 'url' => …, 'children' => […]], …]`. `main` and `footer` list the top categories and the linked pages until the owner builds them in Appearance &gt; Menus. Labels are plain text: escape them when printing. |
 | `osc_menu_choices()` | The menus a theme or widget can show, id =&gt; name. |
+| `osc_page_block_preview_rows(string $location, array $rows)` | The rows of a page's block canvas with the signed-in admin's unsaved block from the page editor in place: it replaces the block it edits, or is added at the end. Rows are returned unchanged outside an admin preview. |
 | `osc_register_widget($id, $spec)` | Register a widget type so it can be placed from the admin appearance screen and rendered on the front end. Thin wrapper over WidgetRegistry::register(). |
 | `osc_render_widget($widgetRow)` | Render a single widget row. |
 | `osc_widget_locations()` | The widget sections the active theme offers, in the order it offers them: slug =&gt; array('label' =&gt; string, 'description' =&gt; string). |

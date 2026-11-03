@@ -48,6 +48,7 @@ class CAdminAppearance extends AdminSecBaseModel
         'widget_move_post'     => 'moveWidgetPost',
         'reorder_widgets_post' => 'reorderWidgetsPost',
         'widget_toggle_post'   => 'toggleWidgetPost',
+        'page_block_preview_post' => 'pageBlockPreviewPost',
         'customise'              => 'customiseScreen',
         'customise_draft_post'   => 'customiseDraftPost',
         'customise_publish_post' => 'customisePublishPost',
@@ -328,6 +329,43 @@ class CAdminAppearance extends AdminSecBaseModel
         osc_purge_page_cache('widget');
         osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
         $this->redirectTo($this->widgetReturnUrl());
+    }
+
+    /**
+     * Keep the block the page editor's dialog is editing as this admin's preview draft, cleaned
+     * as a save is, and answer with the page address that shows it. Nothing is saved to the page.
+     */
+    private function pageBlockPreviewPost(): void
+    {
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+        $location = (string) Params::getParam('location');
+        $typeId   = (string) Params::getParam('s_type');
+        $type     = \mindstellar\widgets\WidgetRegistry::getInstance()->get($typeId);
+        if (!preg_match('/^page\.([1-9][0-9]*)$/', $location, $match) || $type === null
+            || ($type['capability'] === 'super_admin' && osc_is_moderator()) || !$this->typeFits($type, $location)
+        ) {
+            AjaxResponse::json(array('error' => 1), 400);
+
+            return;
+        }
+        $id = Params::getParamInt('id');
+        if ($id > 0 && !in_array($id, array_map('intval', WidgetStore::idsAt($location)), true)) {
+            $id = 0;
+        }
+        osc_kv_set('page_block_preview', osc_logged_admin_id() . ':' . $match[1], array(
+            'location' => $location,
+            'id'       => $id,
+            'type'     => $typeId,
+            'config'   => $this->buildWidgetConfig($type),
+        ), 3600);
+
+        AjaxResponse::json(array(
+            'error' => 0,
+            'url'   => osc_base_url(true) . '?page=page&id=' . $match[1] . '&osc_preview=1',
+        ));
     }
 
     /**

@@ -141,10 +141,25 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
             var img     = preview ? preview.querySelector('img') : null;
             var clear   = field.querySelector('.widget-image-clear');
             var url     = input ? input.value : '';
+            var meta    = field.querySelector('.widget-image-meta');
             if (img) { img.src = url; }
             if (preview) { preview.hidden = !url; }
             if (clear) { clear.hidden = !url; }
+            if (meta) {
+                // The file's name, and its size once the browser has it: "stalls.jpg · 1600 × 1067".
+                var name = url ? decodeURIComponent(url.split('?')[0].split('/').pop() || '') : '';
+                meta.textContent = name;
+                meta.hidden = !name;
+                if (img && name) {
+                    var show = function () {
+                        if (img.naturalWidth) { meta.textContent = name + ' · ' + img.naturalWidth + ' × ' + img.naturalHeight; }
+                    };
+                    if (img.complete) { show(); } else { img.addEventListener('load', show, { once: true }); }
+                }
+            }
         }
+        // Fields drawn with a value already chosen show its name and size too.
+        document.querySelectorAll('.widget-image-field').forEach(sync);
 
         // Called by the block dialog's edit-populate after it sets a hidden value.
         window.oscSyncWidgetImage = function (input) {

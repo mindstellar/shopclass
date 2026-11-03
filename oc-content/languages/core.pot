@@ -5098,6 +5098,7 @@ msgid "Descriptions can be 1 to %d characters."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
+#: oc-admin/themes/modern/pages/frm.php
 msgid "Desktop"
 msgstr ""
 
@@ -11028,6 +11029,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Phone"
 msgstr ""
@@ -11296,6 +11298,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/media/index.php
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/settings/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Preview"
@@ -11303,6 +11306,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
 msgid "Preview Watermark"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Preview of this page"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
@@ -11316,6 +11323,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Preview the update of %s"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Preview width"
 msgstr ""
 
 #: oc-includes/osclass/classes/Pagination.php
@@ -15010,6 +15021,10 @@ msgstr ""
 msgid "The plugin folder is not writable on your server so you cannot upload "
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+msgid "The preview could not load."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "The product is hidden from the shop until it is unblocked."
 msgstr ""
@@ -16486,6 +16501,7 @@ msgstr ""
 msgid "Updating your database"
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/data.php

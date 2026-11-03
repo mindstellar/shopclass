@@ -129,6 +129,7 @@ $controllers = array(
         'menu_delete_post'     => 'menuDeletePost',
         'menu_save_post'       => 'menuSavePost',
         'menus'                => 'menusScreen',
+        'page_block_preview_post' => 'pageBlockPreviewPost',
         'render'               => 'render',
         'reorder_widgets_post' => 'reorderWidgetsPost',
         'widget_create_post'   => 'createWidgetPost',

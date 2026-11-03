@@ -160,9 +160,16 @@ function osc_render_widget($widgetRow)
             return;
         }
 
+        // The block a page editor preview is editing carries a mark, so the editor can scroll to it.
+        if (!empty($widgetRow['_preview'])) {
+            ob_start();
+        }
         $out = ($type['render'])($config, $widgetRow);
         if (is_string($out)) {
             echo $out;
+        }
+        if (!empty($widgetRow['_preview'])) {
+            echo preg_replace('/^(\s*<[a-z][a-z0-9]*)/i', '$1 data-osc-block-preview', (string) ob_get_clean(), 1);
         }
 
         return;
@@ -398,6 +405,43 @@ function osc_customiser_preview_rows(string $location): ?array
             's_config'      => (string) json_encode(is_array($row['config'] ?? null) ? $row['config'] : array()),
         );
     }
+
+    return $rows;
+}
+
+/**
+ * The rows of a page's block canvas with the signed-in admin's unsaved block from the page editor
+ * in place: it replaces the block it edits, or is added at the end. Rows are returned unchanged
+ * outside an admin preview.
+ *
+ * @param string                           $location
+ * @param array<int,array<string,mixed>>   $rows
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function osc_page_block_preview_rows(string $location, array $rows): array
+{
+    if (!str_starts_with($location, 'page.') || !osc_customiser_preview()) {
+        return $rows;
+    }
+    $draft = osc_kv_get('page_block_preview', osc_logged_admin_id() . ':' . substr($location, 5));
+    if (!is_array($draft) || ($draft['location'] ?? '') !== $location || !is_array($draft['config'] ?? null)) {
+        return $rows;
+    }
+    $row = array(
+        'pk_i_id'  => (string) (int) ($draft['id'] ?? 0),
+        's_type'   => (string) ($draft['type'] ?? ''),
+        's_config' => (string) json_encode($draft['config']),
+        '_preview' => true,
+    );
+    foreach ($rows as $i => $existing) {
+        if ((int) ($existing['pk_i_id'] ?? 0) === (int) $row['pk_i_id'] && (int) $row['pk_i_id'] > 0) {
+            $rows[$i] = array_merge($existing, $row);
+
+            return $rows;
+        }
+    }
+    $rows[] = $row;
 
     return $rows;
 }
@@ -674,6 +718,7 @@ osc_register_widget('core.media_text', array(
         array('name' => 'button_label', 'label' => 'Button label', 'type' => 'text', 'half' => true, 'placeholder' => 'e.g. Read more',
               'section' => 'Button', 'section_note' => '(optional)'),
         array('name' => 'button_link', 'label' => 'Button link', 'type' => 'link', 'half' => true, 'placeholder' => 'https://… or /page'),
+        array('name' => 'button_note', 'type' => 'note', 'help' => 'Leave the label empty for no button.'),
     ),
     'render'      => static function ($config) {
         $src    = \mindstellar\utility\Utils::toAbsolute((string) ($config['image'] ?? ''));

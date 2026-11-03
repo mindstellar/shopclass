@@ -433,12 +433,106 @@ echo json_encode($pb_builder_ids);
     $pbf_location        = $pb_location;
     $pbf_page_builder_id = $pb_page_id;
     ?>
-    <dialog id="pageBlockDialog" class="osc-dialog osc-dialog-wide">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add widget'); ?></p>
-            <?php require __DIR__ . '/../appearance/page-block-form.php'; ?>
+    <dialog id="pageBlockDialog" class="osc-dialog osc-dialog-wide page-block-dialog">
+        <div class="page-block-dialog-grid">
+            <div class="osc-dialog-body">
+                <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add widget'); ?></p>
+                <?php require __DIR__ . '/../appearance/page-block-form.php'; ?>
+            </div>
+            <aside class="page-block-preview" aria-labelledby="pageBlockPreviewTitle">
+                <div class="page-block-preview-bar">
+                    <span class="page-block-preview-title" id="pageBlockPreviewTitle"><?php _e('Preview'); ?></span>
+                    <fieldset class="osc-segmented" aria-label="<?php echo osc_esc_html(__('Preview width')); ?>">
+                        <input type="radio" id="pbPreviewDesktop" name="pb_preview_width" value="desktop" checked/>
+                        <label for="pbPreviewDesktop"><i class="bi bi-display" aria-hidden="true"></i><?php _e('Desktop'); ?></label>
+                        <input type="radio" id="pbPreviewPhone" name="pb_preview_width" value="phone"/>
+                        <label for="pbPreviewPhone"><i class="bi bi-phone" aria-hidden="true"></i><?php _e('Phone'); ?></label>
+                    </fieldset>
+                    <span class="page-block-preview-state" aria-live="polite"></span>
+                </div>
+                <div class="page-block-preview-stage">
+                    <iframe title="<?php echo osc_esc_html(__('Preview of this page')); ?>"></iframe>
+                </div>
+            </aside>
         </div>
     </dialog>
+    <script>
+        // Live preview: the dialog's values go to the server as this admin's draft (cleaned as a
+        // save is), and the frame shows the page with that block in place, scrolled to it.
+        (function () {
+            'use strict';
+            var dialog = document.getElementById('pageBlockDialog');
+            var form   = document.getElementById('pageBlockForm');
+            var frame  = dialog ? dialog.querySelector('.page-block-preview iframe') : null;
+            if (!form || !frame) { return; }
+            var stage  = frame.parentElement;
+            var state  = dialog.querySelector('.page-block-preview-state');
+            var words  = <?php echo json_encode(array('updating' => __('Updating…'), 'failed' => __('The preview could not load.'))); ?>;
+            var timer  = null;
+            var seq    = 0;
+            var width  = 'desktop';
+
+            function fit() {
+                var w     = width === 'phone' ? 390 : 1280;
+                var scale = Math.min(1, stage.clientWidth / w);
+                frame.style.width     = w + 'px';
+                frame.style.height    = Math.ceil(stage.clientHeight / scale) + 'px';
+                frame.style.transform = 'scale(' + scale + ')';
+                frame.style.marginInlineStart = Math.max(0, (stage.clientWidth - w * scale) / 2) + 'px';
+            }
+            function send() {
+                if (!dialog.open) { return; }
+                if (window.tinymce) { window.tinymce.triggerSave(); }
+                var body = new FormData(form);
+                body.set('action', 'page_block_preview_post');
+                var mine = ++seq;
+                state.textContent = words.updating;
+                fetch(form.getAttribute('action'), {method: 'POST', body: body, credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}})
+                    .then(function (res) { return res.json(); })
+                    .then(function (json) {
+                        if (mine !== seq) { return; }
+                        if (!json || json.error || !json.url) { state.textContent = words.failed; return; }
+                        frame.src = json.url + '&t=' + Date.now();
+                    })
+                    .catch(function () { if (mine === seq) { state.textContent = words.failed; } });
+            }
+            function schedule() {
+                clearTimeout(timer);
+                timer = setTimeout(send, 500);
+            }
+            function hookEditors() {
+                if (!window.tinymce) { return; }
+                window.tinymce.get().forEach(function (editor) {
+                    if (editor.oscPreviewHooked || !form.contains(editor.getElement())) { return; }
+                    editor.oscPreviewHooked = true;
+                    editor.on('input change undo redo', schedule);
+                });
+            }
+            frame.addEventListener('load', function () {
+                state.textContent = '';
+                try {
+                    var block = frame.contentDocument.querySelector('[data-osc-block-preview]');
+                    if (block) {
+                        block.style.outline       = '2px dashed #b5832f';
+                        block.style.outlineOffset = '6px';
+                        block.scrollIntoView({block: 'center'});
+                    }
+                } catch (e) { /* a frame from another origin keeps its own scroll */ }
+            });
+            form.addEventListener('input', schedule);
+            form.addEventListener('change', schedule);
+            dialog.querySelectorAll('input[name="pb_preview_width"]').forEach(function (radio) {
+                radio.addEventListener('change', function () { width = radio.value; fit(); });
+            });
+            window.addEventListener('resize', fit);
+            // Called each time the dialog opens, after its fields hold the block's values.
+            window.pageBlockPreviewStart = function () {
+                hookEditors();
+                fit();
+                send();
+            };
+        })();
+    </script>
     <script>
         // Add / Edit block: the dialog holds one add-mode form; Edit repurposes it
         // for a specific block, populating type + config from the row's data-* .
@@ -482,6 +576,7 @@ echo json_encode($pb_builder_ids);
                 if (type && window.pageBlockFormApplyType) { window.pageBlockFormApplyType(type.value); }
                 if (window.pageBlockFormRefresh) { window.pageBlockFormRefresh(); }
                 dialog.showModal();
+                if (window.pageBlockPreviewStart) { window.pageBlockPreviewStart(); }
             }
             function openEdit(row) {
                 resetForm();
@@ -522,6 +617,7 @@ echo json_encode($pb_builder_ids);
                 });
                 if (window.pageBlockFormRefresh) { window.pageBlockFormRefresh(); }
                 dialog.showModal();
+                if (window.pageBlockPreviewStart) { window.pageBlockPreviewStart(); }
             }
 
             var addBtn = document.querySelector('.js-page-block-add');

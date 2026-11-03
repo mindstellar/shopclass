@@ -366,6 +366,14 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
 
     $label     = isset($field['label']) && is_string($field['label']) ? $field['label'] : $name;
     $fieldType = isset($field['type']) && is_string($field['type']) ? $field['type'] : 'text';
+    // A note is a line of help between fields; it has no input and stores nothing.
+    if ($fieldType === 'note') {
+        if (isset($field['help']) && is_string($field['help']) && $field['help'] !== '') { ?>
+            <p class="form-text widget-field widget-field-note"><?php echo osc_esc_html($field['help']); ?></p>
+        <?php }
+
+        return;
+    }
     $id        = widgetConfigFieldId($typeId, $name);
     $inputName = 'config[' . $name . ']';
     $val       = (string)$value;
@@ -469,12 +477,15 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                     <div class="widget-image-preview"<?php echo $val !== '' ? '' : ' hidden'; ?>>
                         <img src="<?php echo osc_esc_html($val); ?>" alt=""/>
                     </div>
-                    <div class="widget-image-actions">
-                        <button type="button" class="btn btn-secondary btn-sm widget-image-choose">
-                            <?php _e('Choose image'); ?>
-                        </button>
-                        <button type="button" class="btn btn-link btn-sm widget-image-clear"
-                            <?php echo $val !== '' ? '' : 'hidden'; ?>><?php _e('Remove'); ?></button>
+                    <div class="widget-image-side">
+                        <div class="widget-image-actions">
+                            <button type="button" class="btn btn-secondary btn-sm widget-image-choose">
+                                <?php _e('Choose image'); ?>
+                            </button>
+                            <button type="button" class="btn btn-link btn-sm widget-image-clear"
+                                <?php echo $val !== '' ? '' : 'hidden'; ?>><?php _e('Remove'); ?></button>
+                        </div>
+                        <p class="widget-image-meta" hidden></p>
                     </div>
                 </div>
                 <?php

@@ -55,6 +55,9 @@ final class WidgetConfig
             $raw       = $hasValue ? $posted[$name] : null;
 
             switch ($fieldType) {
+                case 'note':
+                    // Help text in the form only; nothing to store.
+                    break;
                 case 'number':
                     $config[$name] = $hasValue ? (int) $raw : (int) $default;
                     break;

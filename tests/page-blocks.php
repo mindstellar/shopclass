@@ -34,6 +34,19 @@ if (!function_exists('osc_sanitize_html')) {
         return (new \mindstellar\utility\Sanitize())->richHtml($value);
     }
 }
+$GLOBALS['kv'] = array();
+if (!function_exists('osc_kv_get')) {
+    function osc_kv_get(string $group, string $key, $default = null)
+    {
+        return $GLOBALS['kv'][$group . '/' . $key] ?? $default;
+    }
+}
+if (!function_exists('osc_logged_admin_id')) {
+    function osc_logged_admin_id()
+    {
+        return 4;
+    }
+}
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
 
 use mindstellar\widgets\WidgetConfig;
@@ -87,6 +100,7 @@ pin('a button with no label prints nothing', '', $render('core.button', array('l
 harness_section('saving');
 $saved = WidgetConfig::fromPosted($registry->get('core.media_text'), array('side' => 'diagonal', 'width' => 'third'), array('button_link' => 'javascript:alert(1)'));
 pin('a choice outside its options falls back to the default', 'left', $saved['side']);
+check('a note field stores nothing', !array_key_exists('button_note', $saved));
 pin('a choice inside its options is kept', 'third', $saved['width']);
 pin('an unsafe link is dropped', '', $saved['button_link']);
 pin('the column count keeps its value, not its label', '3', WidgetConfig::fromPosted($registry->get('core.columns'), array('count' => '3'), array())['count']);
@@ -96,5 +110,23 @@ foreach (array('mailto:hi@shop.test', '/contact', 'https://shop.test/a?b=1') as 
 foreach (array('javascript:alert(1)', 'mailto:', 'data:text/html,x', '//evil.test') as $bad) {
     pin('a link is refused: ' . $bad, '', WidgetConfig::linkValue($bad));
 }
+
+harness_section('live preview');
+$rows = array(array('pk_i_id' => '11', 's_type' => 'core.heading', 's_config' => '{"text":"Saved"}'), array('pk_i_id' => '12', 's_type' => 'core.button', 's_config' => '{}'));
+$GLOBALS['osc_customiser_preview'] = null;
+pin('outside a preview the rows stay as saved', $rows, osc_page_block_preview_rows('page.7', $rows));
+$GLOBALS['osc_customiser_preview'] = array('locations' => array());
+pin('a preview with no draft keeps the rows', $rows, osc_page_block_preview_rows('page.7', $rows));
+$GLOBALS['kv']['page_block_preview/4:7'] = array('location' => 'page.7', 'id' => 11, 'type' => 'core.heading', 'config' => array('text' => 'Draft'));
+$preview = osc_page_block_preview_rows('page.7', $rows);
+pin('the draft replaces the block it edits, in place', array('11', '{"text":"Draft"}', true, '12'), array($preview[0]['pk_i_id'], $preview[0]['s_config'], $preview[0]['_preview'], $preview[1]['pk_i_id']));
+pin('another page keeps its rows', $rows, osc_page_block_preview_rows('page.8', $rows));
+$GLOBALS['kv']['page_block_preview/4:7']['id'] = 0;
+$preview = osc_page_block_preview_rows('page.7', $rows);
+pin('a new block is added at the end', array(3, '0'), array(count($preview), $preview[2]['pk_i_id']));
+ob_start();
+osc_render_widget($preview[2]);
+check('the previewed block is marked for the editor to find', str_starts_with((string) ob_get_clean(), '<div data-osc-block-preview class="osc-heading">'));
+$GLOBALS['osc_customiser_preview'] = null;
 
 exit(harness_result());

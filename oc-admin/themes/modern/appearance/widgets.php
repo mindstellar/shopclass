@@ -39,6 +39,10 @@ foreach (osc_widget_types() as $typeId => $typeSpec) {
     if (osc_is_moderator() && isset($typeSpec['capability']) && $typeSpec['capability'] === 'super_admin') {
         continue;
     }
+    // Layout blocks belong to the Page builder, never to a widget section.
+    if (!empty($typeSpec['builder'])) {
+        continue;
+    }
     $paletteTypes[$typeSpec['group']][$typeId] = $typeSpec;
 }
 uksort($paletteTypes, static function ($a, $b) {

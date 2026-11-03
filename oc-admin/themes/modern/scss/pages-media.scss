@@ -153,21 +153,40 @@
 
 // Widget "image" config field — preview + choose/remove, chosen via the picker.
 .widget-image-field {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+
   .widget-image-preview {
     border: 1px solid var(--osc-rule);
     border-radius: 6px;
     display: inline-block;
-    margin-block-end: .5rem;
-    max-width: 220px;
+    max-width: 120px;
     overflow: hidden;
+
+    &[hidden] { display: none; }
 
     img { display: block; height: auto; max-width: 100%; }
   }
 
-  .widget-image-actions {
-    align-items: center;
+  .widget-image-side {
     display: flex;
-    gap: .5rem;
+    flex-direction: column;
+    gap: .4rem;
+  }
+
+  .widget-image-actions {
+    align-items: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: .25rem;
+  }
+
+  .widget-image-meta {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
+    margin: 0;
   }
 }
 
@@ -319,4 +338,77 @@
   text-transform: uppercase;
 
   span { font-weight: 400; letter-spacing: 0; text-transform: none; }
+}
+
+.widget-field-note { margin: -.6rem 0 1rem; }
+
+// The type's one-line description under the block dialog's type picker.
+#pbfTypeDescription {
+  color: var(--osc-ink-muted);
+  font-size: .86rem;
+  margin: .3rem 0 0;
+}
+
+// Page block dialog with its live preview: beside the form on a wide screen, below it otherwise.
+.page-block-preview {
+  background-color: var(--osc-bench-warm);
+  border-block-start: 1px solid var(--osc-rule);
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
+
+.page-block-preview-bar {
+  align-items: center;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem .75rem;
+  padding: .75rem 1rem;
+}
+
+.page-block-preview-title { font-weight: 600; }
+
+.page-block-preview-state {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin-inline-start: auto;
+}
+
+.page-block-preview-stage {
+  block-size: 70vh;
+  overflow: hidden;
+  position: relative;
+
+  iframe {
+    background-color: #fff;
+    border: 0;
+    display: block;
+    transform-origin: 0 0;
+  }
+}
+
+@media (min-width: 1200px) {
+  .page-block-dialog {
+    inline-size: min(96rem, calc(100vw - 3rem));
+    overflow: hidden;
+  }
+
+  .page-block-dialog-grid {
+    block-size: calc(100vh - 4rem);
+    display: grid;
+    grid-template-columns: minmax(0, 42rem) minmax(0, 1fr);
+
+    > .osc-dialog-body { overflow: auto; }
+  }
+
+  .page-block-preview {
+    border-block-start: 0;
+    border-inline-start: 1px solid var(--osc-rule);
+  }
+
+  .page-block-preview-stage {
+    block-size: auto;
+    flex: 1 1 auto;
+  }
 }
