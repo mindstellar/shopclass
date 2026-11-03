@@ -13,6 +13,7 @@
  *   php tests/search-snippet.php
  */
 
+require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once dirname(__DIR__) . '/oc-includes/classes/search/SearchSnippet.php';
 require_once dirname(__DIR__) . '/oc-includes/classes/search/SearchExtras.php';

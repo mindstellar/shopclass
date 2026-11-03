@@ -273,10 +273,10 @@ class Params
 
             if ($html_encode === true) {
                 if ($quotes_encode === true) {
-                    return htmlspecialchars($value, ENT_QUOTES);
+                    return \mindstellar\utility\Escape::text($value, ENT_QUOTES);
                 }
 
-                return htmlspecialchars($value, ENT_NOQUOTES);
+                return \mindstellar\utility\Escape::text($value, ENT_NOQUOTES);
             }
         }
 

@@ -147,7 +147,7 @@ osc_current_admin_theme_path('parts/header.php');
                             $label = $field !== null ? $field['s_name'] : (__('Field') . ' #' . (int)$fieldId);
                             // submission_value_display() already escapes; strip_tags only
                             // removes the <br> it adds, so the text stays escaped.
-                            $plain = trim(preg_replace('/\s+/', ' ', strip_tags(submission_value_display($field, $value))));
+                            $plain = trim(preg_replace('/\s+/', ' ', \mindstellar\utility\Sanitize::stripTags(submission_value_display($field, $value))));
                             if ($plain !== '') {
                                 $preview[] = osc_esc_html($label) . ': ' . $plain;
                             }

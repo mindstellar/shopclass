@@ -104,10 +104,10 @@ final class CommentService
                 throw new NotFoundException(_m('No such user.'));
             }
         }
-        $authorName  = trim(strip_tags((string) ($user['s_name'] ?? $input['author_name'] ?? '')));
-        $authorEmail = trim(strip_tags((string) ($user['s_email'] ?? $input['author_email'] ?? '')));
-        $title       = trim(strip_tags((string) ($input['title'] ?? '')));
-        $body        = trim(strip_tags((string) ($input['body'] ?? '')));
+        $authorName  = trim(\mindstellar\utility\Sanitize::stripTags((string) ($user['s_name'] ?? $input['author_name'] ?? '')));
+        $authorEmail = trim(\mindstellar\utility\Sanitize::stripTags((string) ($user['s_email'] ?? $input['author_email'] ?? '')));
+        $title       = trim(\mindstellar\utility\Sanitize::stripTags((string) ($input['title'] ?? '')));
+        $body        = trim(\mindstellar\utility\Sanitize::stripTags((string) ($input['body'] ?? '')));
         $rating      = self::rating($input['rating'] ?? null);
 
         match (CommentPolicy::mayPost($actor, $authorEmail)) {

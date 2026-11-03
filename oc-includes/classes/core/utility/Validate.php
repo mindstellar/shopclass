@@ -227,7 +227,7 @@ class Validate
     public function text($value = '', $count = 1, $required = true)
     {
         if ($required || $value) {
-            if (!preg_match("/([\p{L}\p{N}]){" . $count . '}/iu', strip_tags($value))) {
+            if (!preg_match("/([\p{L}\p{N}]){" . $count . '}/iu', \mindstellar\utility\Sanitize::stripTags($value))) {
                 return false;
             }
         }
@@ -289,7 +289,7 @@ class Validate
     public function phone($value = null, $count = 10, $required = false)
     {
         if ($required || $value != '') {
-            if (!preg_match("/([\p{Nd}][^\p{Nd}]*){" . $count . '}/i', strip_tags($value))) {
+            if (!preg_match("/([\p{Nd}][^\p{Nd}]*){" . $count . '}/i', \mindstellar\utility\Sanitize::stripTags($value))) {
                 return false;
             }
         }

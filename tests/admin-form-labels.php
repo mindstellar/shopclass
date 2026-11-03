@@ -19,6 +19,7 @@ if (!defined('ABS_PATH')) {
     define('ABS_PATH', dirname(__DIR__) . DIRECTORY_SEPARATOR);
 }
 
+require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
 $theme = 'oc-admin/themes/modern/';

@@ -92,7 +92,7 @@ final class Markdown
 
         $title = str_replace("\x03", ' ', preg_replace('/\x01\d+\x02/', '', $escapedTitle));
 
-        return ($isImage ? 'src' : 'href') . '="' . htmlspecialchars($url, ENT_QUOTES) . '"'
+        return ($isImage ? 'src' : 'href') . '="' . \mindstellar\utility\Escape::text($url, ENT_QUOTES) . '"'
             . ($title !== '' ? ' title="' . $title . '"' : '');
     }
 
@@ -192,7 +192,7 @@ final class Markdown
 
     private static function escapeMd(string $s): string
     {
-        return htmlspecialchars($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return \mindstellar\utility\Escape::text($s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
     }
 
     /**

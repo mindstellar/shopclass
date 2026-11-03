@@ -1028,7 +1028,7 @@ class AdminMenu
                            . ' aria-expanded="' . ($isOpen ? 'true' : 'false') . '"'
                            . ' aria-controls="' . $menuId . '-submenu"'
                            . ' aria-label="'
-                           . osc_esc_html(sprintf(__('Toggle the %s submenu'), strip_tags($value[0]))) . '">'
+                           . osc_esc_html(sprintf(__('Toggle the %s submenu'), \mindstellar\utility\Sanitize::stripTags($value[0]))) . '">'
                            . '<i class="bi bi-chevron-down" aria-hidden="true"></i></button>';
                 $str .= '</div>';
                 $str .= $this->renderSubMenu($menuId, $value['sub'], $is_moderator, $activeMenu, $activeSubmenu);

@@ -25,6 +25,20 @@ class Sanitize
     private static ?\HTMLPurifier $purifier = null;
 
     /**
+     * Removes HTML and PHP tags. The same as PHP's strip_tags(), with the same arguments, so core
+     * strips tags in one place.
+     *
+     * @param string                    $str
+     * @param string|array<string>|null $allowedTags
+     *
+     * @return string
+     */
+    public static function stripTags($str, $allowedTags = null)
+    {
+        return strip_tags($str, $allowedTags);
+    }
+
+    /**
      * Sanitised String
      *
      * @param mixed $value

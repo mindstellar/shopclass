@@ -179,7 +179,7 @@ class LogDatabase
                 }
                 if ($isErr) {
                     echo '<div class="osc-qdbg__errline">#' . (int) $msg['errno'] . ' '
-                        . htmlspecialchars((string) $msg['error'], ENT_QUOTES) . '</div>';
+                        . \mindstellar\utility\Escape::text((string) $msg['error'], ENT_QUOTES) . '</div>';
                 }
                 echo '<code>' . $this->highlightSql((string) $msg['query']) . '</code>';
                 if (isset($explains[$key]) && is_array($explains[$key]) && $explains[$key] !== array()) {
@@ -237,7 +237,7 @@ class LogDatabase
 
         return preg_replace_callback($re, static function ($m) use ($kw) {
             if ($m[1] !== '') {
-                return '<span class="osc-qdbg__str">' . htmlspecialchars($m[1], ENT_QUOTES) . '</span>';
+                return '<span class="osc-qdbg__str">' . \mindstellar\utility\Escape::text($m[1], ENT_QUOTES) . '</span>';
             }
             if (($m[2] ?? '') !== '') {
                 return '<span class="osc-qdbg__num">' . $m[2] . '</span>';
@@ -247,10 +247,10 @@ class LogDatabase
                     return '<span class="osc-qdbg__kw">' . $m[3] . '</span>';
                 }
 
-                return htmlspecialchars($m[3], ENT_QUOTES);
+                return \mindstellar\utility\Escape::text($m[3], ENT_QUOTES);
             }
 
-            return htmlspecialchars($m[4] ?? '', ENT_QUOTES);
+            return \mindstellar\utility\Escape::text($m[4] ?? '', ENT_QUOTES);
         }, trim($sql));
     }
 
@@ -270,7 +270,7 @@ class LogDatabase
         $out  = '<details class="osc-qdbg__explain"><summary>EXPLAIN</summary>';
         $out .= '<table><thead><tr>';
         foreach ($cols as $col) {
-            $out .= '<th>' . htmlspecialchars((string) $col, ENT_QUOTES) . '</th>';
+            $out .= '<th>' . \mindstellar\utility\Escape::text((string) $col, ENT_QUOTES) . '</th>';
         }
         $out .= '</tr></thead><tbody>';
 
@@ -287,7 +287,7 @@ class LogDatabase
                 } elseif ($col === 'Extra' && preg_match('/Using (filesort|temporary)/i', $text)) {
                     $flag = ' class="osc-qdbg--warn"';
                 }
-                $out .= '<td' . $flag . '>' . htmlspecialchars($text, ENT_QUOTES) . '</td>';
+                $out .= '<td' . $flag . '>' . \mindstellar\utility\Escape::text($text, ENT_QUOTES) . '</td>';
             }
             $out .= '</tr>';
         }

@@ -113,10 +113,10 @@ class RSSFeed
         $channel = $dom->createElement('channel');
         $rss->appendChild($channel);
 
-        $channel->appendChild($dom->createElement('title', htmlspecialchars((string)$this->title, ENT_XML1, 'UTF-8')));
-        $channel->appendChild($dom->createElement('link', htmlspecialchars((string)$this->link, ENT_XML1, 'UTF-8')));
+        $channel->appendChild($dom->createElement('title', \mindstellar\utility\Escape::text((string)$this->title, ENT_XML1, 'UTF-8')));
+        $channel->appendChild($dom->createElement('link', \mindstellar\utility\Escape::text((string)$this->link, ENT_XML1, 'UTF-8')));
         $channel->appendChild(
-            $dom->createElement('description', htmlspecialchars((string)$this->description, ENT_XML1, 'UTF-8'))
+            $dom->createElement('description', \mindstellar\utility\Escape::text((string)$this->description, ENT_XML1, 'UTF-8'))
         );
 
         foreach ($this->items as $item) {
@@ -126,10 +126,10 @@ class RSSFeed
             $this->appendCData($dom, $node, 'title', $item['title'] ?? '');
 
             $link = (string)($item['link'] ?? '');
-            $node->appendChild($dom->createElement('link', htmlspecialchars($link, ENT_XML1, 'UTF-8')));
+            $node->appendChild($dom->createElement('link', \mindstellar\utility\Escape::text($link, ENT_XML1, 'UTF-8')));
 
             // Stable, canonical permalink GUID (was a bare <link> duplicate before).
-            $guid = $dom->createElement('guid', htmlspecialchars($link, ENT_XML1, 'UTF-8'));
+            $guid = $dom->createElement('guid', \mindstellar\utility\Escape::text($link, ENT_XML1, 'UTF-8'));
             $guid->setAttribute('isPermaLink', 'true');
             $node->appendChild($guid);
 
@@ -146,9 +146,9 @@ class RSSFeed
             // Description CDATA: keep the legacy thumbnail anchor+img blob, then body.
             $descHtml = '';
             if (!empty($item['image']) && !empty($item['image']['url'])) {
-                $imgLink  = htmlspecialchars((string)($item['image']['link'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $imgTitle = htmlspecialchars((string)($item['image']['title'] ?? ''), ENT_QUOTES, 'UTF-8');
-                $imgUrl   = htmlspecialchars((string)$item['image']['url'], ENT_QUOTES, 'UTF-8');
+                $imgLink  = \mindstellar\utility\Escape::text((string)($item['image']['link'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $imgTitle = \mindstellar\utility\Escape::text((string)($item['image']['title'] ?? ''), ENT_QUOTES, 'UTF-8');
+                $imgUrl   = \mindstellar\utility\Escape::text((string)$item['image']['url'], ENT_QUOTES, 'UTF-8');
                 $descHtml .= '<a href="' . $imgLink . '" title="' . $imgTitle . '" rel="nofollow">';
                 $descHtml .= '<img style="float:left;border:0px;" src="' . $imgUrl . '" alt="' . $imgTitle . '"/> </a>';
             }

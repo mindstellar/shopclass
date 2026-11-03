@@ -363,7 +363,7 @@ class ItemForm extends Form
             $value = '-1';  // default no change expiration date
         }
         echo '<input class="form-control form-control-sm" id="dt_expiration" type="text" name="dt_expiration" value="'
-            . osc_esc_html(htmlentities($value, ENT_COMPAT, 'UTF-8'))
+            . osc_esc_html(\mindstellar\utility\Escape::htmlEntities($value, ENT_COMPAT, 'UTF-8'))
             . '" placeholder="yyyy-mm-dd HH:mm:ss" />';
 
         return true;

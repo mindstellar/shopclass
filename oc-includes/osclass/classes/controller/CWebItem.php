@@ -1116,10 +1116,10 @@ class CWebItem extends BaseModel
      */
     private function keepCommentForm(array $input): void
     {
-        Session::getInstance()->_setForm('commentAuthorName', trim(strip_tags($input['author_name'])));
-        Session::getInstance()->_setForm('commentAuthorEmail', trim(strip_tags($input['author_email'])));
-        Session::getInstance()->_setForm('commentTitle', trim(strip_tags($input['title'])));
-        Session::getInstance()->_setForm('commentBody', trim(strip_tags($input['body'])));
+        Session::getInstance()->_setForm('commentAuthorName', trim(\mindstellar\utility\Sanitize::stripTags($input['author_name'])));
+        Session::getInstance()->_setForm('commentAuthorEmail', trim(\mindstellar\utility\Sanitize::stripTags($input['author_email'])));
+        Session::getInstance()->_setForm('commentTitle', trim(\mindstellar\utility\Sanitize::stripTags($input['title'])));
+        Session::getInstance()->_setForm('commentBody', trim(\mindstellar\utility\Sanitize::stripTags($input['body'])));
         Session::getInstance()->_setForm('commentRating', (string) (int) $input['rating']);
     }
 

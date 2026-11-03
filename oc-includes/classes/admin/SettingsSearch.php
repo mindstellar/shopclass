@@ -276,7 +276,7 @@ final class SettingsSearch
 
     private static function shorten(string $text): string
     {
-        $text = trim((string)preg_replace('/\s+/', ' ', strip_tags($text)));
+        $text = trim((string)preg_replace('/\s+/', ' ', \mindstellar\utility\Sanitize::stripTags($text)));
 
         return mb_strlen($text) > self::HELP_MAX ? mb_substr($text, 0, self::HELP_MAX - 1) . '…' : $text;
     }

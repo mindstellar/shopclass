@@ -44,7 +44,7 @@ final class SearchExtras
                 $counts[(int) $id] = (int) $count;
             }
         }
-        $suggestion = is_string($answer['suggestion'] ?? null) ? trim(strip_tags($answer['suggestion'])) : '';
+        $suggestion = is_string($answer['suggestion'] ?? null) ? trim(\mindstellar\utility\Sanitize::stripTags($answer['suggestion'])) : '';
 
         return new self($counts, $suggestion, ($answer['relaxed'] ?? false) === true);
     }

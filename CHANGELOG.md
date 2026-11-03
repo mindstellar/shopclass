@@ -127,6 +127,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Unused admin actions are gone: ajax `bulk_actions`, `reinstall_osclass`, `location`, `location_impact`, `fields_order`; Appearance `add_widget`; Tools `import_post`, `backup_post`, `backup-sql*`, `backup-zip*`, `system_info`.
 - 21 unused helpers, methods and classes are deprecated and go in 8.0, each naming its replacement where one exists, among them `osc_auto_update()`, `osc_csrf_name()`, `osc_mod_rewrite_loaded()`, `osc_dbdump()`, `SystemInfo` and `FormBuilder` (use `osc_register_settings_page()`).
 - The PclZip fallback and the `pclzip/pclzip` package are removed; zip files use PHP's zip extension, which was already required.
+- Core escapes and strips tags only through `Escape` and `Sanitize` (new `Escape::text()`, `Escape::htmlEntities()`, `Escape::htmlKeepEntities()`, `Sanitize::stripTags()`); `osc_esc_html()` and `osc_esc_js()` call them, with the same output. A test blocks direct calls.
 
 ### Security
 - A plugin download link from the catalogue is shown only when it is an https address.

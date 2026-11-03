@@ -383,7 +383,7 @@ class Cli
         // {error[, field]} array on failure.
         $result = oc_install();
         if (is_array($result)) {
-            $message = isset($result['error']) ? strip_tags((string) $result['error']) : 'installation failed';
+            $message = isset($result['error']) ? \mindstellar\utility\Sanitize::stripTags((string) $result['error']) : 'installation failed';
             $this->err('Install failed: ' . $message . "\n");
 
             return 1;

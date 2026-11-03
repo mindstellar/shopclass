@@ -118,7 +118,7 @@ final class ExposedSettings
                 $post   = self::post(osc_settings_values($page), $changes, SettingsPageRegistry::getInstance()->fields($page));
                 $result = \Params::withRequest($post, static fn () => osc_settings_save($page));
                 foreach ((array) ($result['errors'] ?? []) as $error) {
-                    $errors[] = ['pointer' => '', 'code' => 'rejected', 'message' => trim(strip_tags((string) $error))];
+                    $errors[] = ['pointer' => '', 'code' => 'rejected', 'message' => trim(\mindstellar\utility\Sanitize::stripTags((string) $error))];
                 }
             }
             if ($errors !== []) {

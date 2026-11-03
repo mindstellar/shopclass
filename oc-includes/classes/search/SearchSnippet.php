@@ -29,12 +29,12 @@ final class SearchSnippet
         if (mb_strlen($text, 'UTF-8') > $length) {
             $text = rtrim(mb_substr($text, 0, $length, 'UTF-8')) . '…';
         }
-        $html  = htmlspecialchars($text, ENT_QUOTES, 'UTF-8');
+        $html  = \mindstellar\utility\Escape::text($text, ENT_QUOTES, 'UTF-8');
         $words = array_filter(preg_split('/[\s"()+\-~<>*]+/u', $pattern) ?: [], static fn ($w) => mb_strlen($w, 'UTF-8') > 1);
         if ($words === []) {
             return $html;
         }
-        $alternatives = implode('|', array_map(static fn ($w) => preg_quote(htmlspecialchars($w, ENT_QUOTES, 'UTF-8'), '/'), $words));
+        $alternatives = implode('|', array_map(static fn ($w) => preg_quote(\mindstellar\utility\Escape::text($w, ENT_QUOTES, 'UTF-8'), '/'), $words));
 
         // Whole words only, and never inside an entity such as &amp;.
         return (string) preg_replace('/(?<![\pL\pN&#])(' . $alternatives . ')(?![\pL\pN;])/iu', '<mark>$1</mark>', $html);
@@ -57,7 +57,7 @@ final class SearchSnippet
                 }
                 continue;
             }
-            $out .= htmlspecialchars(self::plain($part, false), ENT_QUOTES, 'UTF-8');
+            $out .= \mindstellar\utility\Escape::text(self::plain($part, false), ENT_QUOTES, 'UTF-8');
         }
 
         return $open ? $out . '</mark>' : $out;
@@ -68,7 +68,7 @@ final class SearchSnippet
      */
     private static function plain(string $html, bool $trim = true): string
     {
-        $text = html_entity_decode(strip_tags((string) preg_replace('/<[^>]*>/', ' ', $html)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+        $text = html_entity_decode(\mindstellar\utility\Sanitize::stripTags((string) preg_replace('/<[^>]*>/', ' ', $html)), ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = (string) preg_replace('/\s+/u', ' ', $text);
 
         return $trim ? trim($text) : $text;

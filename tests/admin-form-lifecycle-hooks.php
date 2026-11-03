@@ -41,6 +41,7 @@ if (!defined('OC_ADMIN')) {
     define('OC_ADMIN', true);
 }
 
+require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once ABS_PATH . 'oc-includes/classes/core/utility/Sanitize.php';

@@ -199,7 +199,7 @@ final class Problem
      */
     public static function text(string $html): string
     {
-        return trim(html_entity_decode(strip_tags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+        return trim(html_entity_decode(\mindstellar\utility\Sanitize::stripTags($html), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
     }
 
     /**
@@ -248,7 +248,7 @@ final class Problem
     {
         $errors = [];
         foreach (preg_split('/\R/', $messages) ?: [] as $line) {
-            $line = trim(html_entity_decode(strip_tags($line), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+            $line = trim(html_entity_decode(\mindstellar\utility\Sanitize::stripTags($line), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
             if ($line !== '') {
                 $errors[] = ['pointer' => $pointer, 'code' => 'rejected', 'message' => $line, 'in' => 'body'];
             }

@@ -140,10 +140,10 @@ final class CommentModeration
     public function edit(int $id, array $fields): void
     {
         $row = [
-            's_title'        => trim(strip_tags($fields['title'])),
-            's_body'         => trim(strip_tags($fields['body'])),
-            's_author_name'  => trim(strip_tags($fields['author_name'])),
-            's_author_email' => trim(strip_tags($fields['author_email'])),
+            's_title'        => trim(\mindstellar\utility\Sanitize::stripTags($fields['title'])),
+            's_body'         => trim(\mindstellar\utility\Sanitize::stripTags($fields['body'])),
+            's_author_name'  => trim(\mindstellar\utility\Sanitize::stripTags($fields['author_name'])),
+            's_author_email' => trim(\mindstellar\utility\Sanitize::stripTags($fields['author_email'])),
         ];
         $errors = [];
         if (!osc_validate_email($row['s_author_email'], true)) {

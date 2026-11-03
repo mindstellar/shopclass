@@ -70,6 +70,75 @@ class Escape
     }
 
     /**
+     * Escapes text for HTML or XML. The same as PHP's htmlspecialchars(), with the same arguments
+     * and defaults, so core escapes in one place.
+     *
+     * @param string      $str
+     * @param int         $flags
+     * @param string|null $encoding
+     * @param bool        $doubleEncode
+     *
+     * @return string
+     */
+    public static function text($str, $flags = ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, $encoding = null, $doubleEncode = true)
+    {
+        return htmlspecialchars($str, $flags, $encoding, $doubleEncode);
+    }
+
+    /**
+     * Converts every character that has an HTML entity. The same as PHP's htmlentities(), with
+     * the same arguments and defaults.
+     *
+     * @param string      $str
+     * @param int         $flags
+     * @param string|null $encoding
+     * @param bool        $doubleEncode
+     *
+     * @return string
+     */
+    public static function htmlEntities($str, $flags = ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401, $encoding = null, $doubleEncode = true)
+    {
+        return htmlentities($str, $flags, $encoding, $doubleEncode);
+    }
+
+    /**
+     * Escapes text for HTML and keeps entities that are already there, such as &amp; or &#39;.
+     * Quotes always become &#39; and &quot;. osc_esc_html() uses it.
+     *
+     * @param string $str
+     *
+     * @return string
+     */
+    public static function htmlKeepEntities($str = '')
+    {
+        if ($str === '') {
+            return '';
+        }
+        // With no "&" there is no entity to keep, so the four passes below would change nothing.
+        if (is_string($str) && strpos($str, '&') === false) {
+            return str_replace(array("'", '"'), array('&#39;', '&quot;'), self::text($str));
+        }
+
+        $temp = '__TEMP_AMPERSANDS__';
+
+        // Replace entities to temporary markers so that
+        // htmlspecialchars won't mess them up
+        $str = preg_replace("/&#(\d+);/", "$temp\\1;", $str);
+        $str = preg_replace("/&(\w+);/", "$temp\\1;", $str);
+
+        $str = self::text($str);
+
+        // In case htmlspecialchars misses these.
+        $str = str_replace(array("'", '"'), array('&#39;', '&quot;'), $str);
+
+        // Decode the temp markers back to entities
+        $str = preg_replace("/$temp(\d+);/", "&#\\1;", $str);
+        $str = preg_replace("/$temp(\w+);/", "&\\1;", $str);
+
+        return $str;
+    }
+
+    /**
      * Escape html keep encoded entities
      *
      * @param string $str

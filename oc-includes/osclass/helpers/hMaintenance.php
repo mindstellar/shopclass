@@ -77,7 +77,7 @@ function osc_sanitize_maintenance_message($raw)
     if (!is_string($raw) && !is_int($raw) && !is_float($raw)) {
         return '';
     }
-    $s = trim(strip_tags((string)$raw));
+    $s = trim(\mindstellar\utility\Sanitize::stripTags((string)$raw));
     if ($s === '') {
         return '';
     }

@@ -50,7 +50,7 @@ class Formatting
      */
     public function formatSlug($string)
     {
-        $string = strip_tags($string);
+        $string = \mindstellar\utility\Sanitize::stripTags($string);
         $string = preg_replace('/%([a-fA-F0-9][a-fA-F0-9])/', '--$1--', $string);
         $string = str_replace('%', '', $string);
         $string = preg_replace('/--([a-fA-F0-9][a-fA-F0-9])--/', '%$1', $string);

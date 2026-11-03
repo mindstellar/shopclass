@@ -1423,7 +1423,7 @@ final class ListingService
 
     private static function place(mixed $value): string
     {
-        return osc_sanitize_name(strip_tags(trim((string) $value)));
+        return osc_sanitize_name(\mindstellar\utility\Sanitize::stripTags(trim((string) $value)));
     }
 
     /**

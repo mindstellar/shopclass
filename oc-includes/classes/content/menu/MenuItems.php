@@ -81,7 +81,7 @@ final class MenuItems
         if (!is_string($value)) {
             return '';
         }
-        $text = strip_tags($value);
+        $text = \mindstellar\utility\Sanitize::stripTags($value);
         $text = trim((string) preg_replace('/\s+/u', ' ', Utils::oneLine($text)));
 
         return mb_substr($text, 0, self::MAX_LABEL);

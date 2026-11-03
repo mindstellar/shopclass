@@ -132,6 +132,7 @@ function osc_item_city()
 {
     return $GLOBALS['ctx']['item_city'];
 }
+require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/stubs.php';
 function _n($single, $plural, $count, $domain = 'core')
 {

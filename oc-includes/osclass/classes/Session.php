@@ -510,7 +510,7 @@ class Session
         // Even the first message alone is too long: cut it, as plain text, until it fits.
         [$bucket, $message] = $queue[0];
         $html = is_array($message) ? (string)($message['msg'] ?? '') : '';
-        $text = html_entity_decode(strip_tags(str_replace('<br />', ' ', $html)), ENT_QUOTES, 'UTF-8');
+        $text = html_entity_decode(\mindstellar\utility\Sanitize::stripTags(str_replace('<br />', ' ', $html)), ENT_QUOTES, 'UTF-8');
         $low  = 0;
         $high = mb_strlen($text);
         $best = array();
@@ -558,7 +558,7 @@ class Session
     /** Plain $text cut to $width characters plus "…", escaped for HTML. */
     private static function cutText(string $text, int $width): string
     {
-        return htmlspecialchars(mb_substr($text, 0, $width), ENT_QUOTES, 'UTF-8') . '…';
+        return \mindstellar\utility\Escape::text(mb_substr($text, 0, $width), ENT_QUOTES, 'UTF-8') . '…';
     }
 
     /**

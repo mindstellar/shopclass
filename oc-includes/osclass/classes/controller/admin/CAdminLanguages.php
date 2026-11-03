@@ -247,20 +247,20 @@ class CAdminLanguages extends AdminSecBaseModel
         }
         $enabledWebstie    = ($enabledWebstie != '');
         $enabledBackoffice = ($enabledBackoffice != '');
-        $languageName      = strip_tags($languageName);
+        $languageName      = \mindstellar\utility\Sanitize::stripTags($languageName);
         $languageName      = trim($languageName);
 
-        $languageShortName = strip_tags($languageShortName);
+        $languageShortName = \mindstellar\utility\Sanitize::stripTags($languageShortName);
         $languageShortName = trim($languageShortName);
 
-        $languageDescription = strip_tags($languageDescription);
+        $languageDescription = \mindstellar\utility\Sanitize::stripTags($languageDescription);
         $languageDescription = trim($languageDescription);
 
-        $languageCurrencyFormat = strip_tags($languageCurrencyFormat);
+        $languageCurrencyFormat = \mindstellar\utility\Sanitize::stripTags($languageCurrencyFormat);
         $languageCurrencyFormat = trim($languageCurrencyFormat);
-        $languageDateFormat     = strip_tags($languageDateFormat);
+        $languageDateFormat     = \mindstellar\utility\Sanitize::stripTags($languageDateFormat);
         $languageDateFormat     = trim($languageDateFormat);
-        $languageStopWords      = strip_tags($languageStopWords);
+        $languageStopWords      = \mindstellar\utility\Sanitize::stripTags($languageStopWords);
         $languageStopWords      = trim($languageStopWords);
 
         $msg = '';

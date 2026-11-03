@@ -126,7 +126,7 @@ final class SearchSuggestions
     {
         $out = [];
         foreach ($given as $search) {
-            $term = is_array($search) && is_string($search['term'] ?? null) ? trim(strip_tags($search['term'])) : '';
+            $term = is_array($search) && is_string($search['term'] ?? null) ? trim(\mindstellar\utility\Sanitize::stripTags($search['term'])) : '';
             if ($term !== '') {
                 $count = max(0, (int) ($search['count'] ?? 0));
                 $out[] = ['term' => $term, 'count' => $count, 'count_label' => str_replace('%s', (string) $count, _n('%s listing', '%s listings', $count))];

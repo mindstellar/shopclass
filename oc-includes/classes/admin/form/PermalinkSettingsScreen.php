@@ -255,14 +255,14 @@ final class PermalinkSettingsScreen extends SettingsScreen
                 $msg = _m("File <b>.htaccess</b> couldn't be filled out with the right content.");
                 $msg .= ' ';
                 $msg .= _m("Here's the content you have to add to the <b>.htaccess</b> file. If you can't create the file, please deactivate the <em>Friendly URLs</em> option.");
-                $msg .= '</p><pre>' . htmlentities($rules, ENT_COMPAT, 'UTF-8') . '</pre><p>';
+                $msg .= '</p><pre>' . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8') . '</pre><p>';
                 osc_add_flash_error_message($msg, 'admin');
                 break;
             case 4:
                 $msg = _m("File <b>.htaccess</b> couldn't be filled out with the right content.");
                 $msg .= ' ';
                 $msg .= _m("Here's the content you have to add to the <b>.htaccess</b> file. If you can't create the file or experience some problems with the URLs, please deactivate the <em>Friendly URLs</em> option.");
-                $msg .= '</p><pre>' . htmlentities($rules, ENT_COMPAT, 'UTF-8') . '</pre><p>';
+                $msg .= '</p><pre>' . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8') . '</pre><p>';
                 osc_add_flash_error_message($msg, 'admin');
                 break;
             // 6 is 5 with mod_rewrite unverified, which is what a server that does not
@@ -273,7 +273,7 @@ final class PermalinkSettingsScreen extends SettingsScreen
                     $msg = _m('File <b>.htaccess</b> already exists and was not modified.');
                     $msg .= ' ';
                     $msg .= _m("Here's the content you have to add to the <b>.htaccess</b> file. If you can't modify the file or experience some problems with the URLs, please deactivate the <em>Friendly URLs</em> option.");
-                    $msg .= '</p><pre>' . htmlentities($rules, ENT_COMPAT, 'UTF-8') . '</pre><p>';
+                    $msg .= '</p><pre>' . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8') . '</pre><p>';
                     osc_add_flash_warning_message($msg, 'admin');
                     break;
                 }
@@ -355,7 +355,7 @@ final class PermalinkSettingsScreen extends SettingsScreen
                                    . 'block below to your site\'s nginx server configuration, then reload '
                                    . 'nginx.'))
                  . '</p><div class="server-config-grid"><div class="server-config-block"><pre>'
-                 . htmlentities($rules, ENT_COMPAT, 'UTF-8')
+                 . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8')
                  . '</pre></div></div></div>';
 
             return;
@@ -368,11 +368,11 @@ final class PermalinkSettingsScreen extends SettingsScreen
         if ($exists) {
             echo '<div class="server-config-block">';
             osc_admin_section_heading(__('Your current .htaccess file'), 'subsection', '');
-            echo '<pre>' . htmlentities((string)file_get_contents($file), ENT_COMPAT, 'UTF-8') . '</pre></div>';
+            echo '<pre>' . \mindstellar\utility\Escape::htmlEntities((string)file_get_contents($file), ENT_COMPAT, 'UTF-8') . '</pre></div>';
         }
         echo '<div class="server-config-block">';
         osc_admin_section_heading($exists ? __('What it should look like') : __('What your .htaccess file should look like'), 'subsection', '');
-        echo '<pre>' . htmlentities($rules, ENT_COMPAT, 'UTF-8') . '</pre></div></div></div>';
+        echo '<pre>' . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8') . '</pre></div></div></div>';
     }
 
     /**

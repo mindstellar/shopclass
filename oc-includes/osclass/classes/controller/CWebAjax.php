@@ -397,7 +397,7 @@ class CWebAjax extends BaseModel
         if (!osc_is_web_user_logged_in() && !osc_is_admin_user_logged_in()) {
             \mindstellar\security\ActionThrottle::record('ajax_upload');
         }
-        echo htmlspecialchars(json_encode($result), ENT_NOQUOTES);
+        echo \mindstellar\utility\Escape::text(json_encode($result), ENT_NOQUOTES);
     }
 
     /**

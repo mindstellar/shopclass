@@ -100,7 +100,7 @@ final class CategoryAjax extends AjaxHandler
 
     public function enable(): void
     {
-        $id       = (int) strip_tags(Params::getParamString('id'));
+        $id       = (int) \mindstellar\utility\Sanitize::stripTags(Params::getParamString('id'));
         $enabled  = (Params::getParam('enabled') != '') ? Params::getParam('enabled') : 0;
 
         $aCategory = Category::getInstance()->findByPrimaryKey($id);

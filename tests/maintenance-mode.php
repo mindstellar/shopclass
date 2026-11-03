@@ -17,6 +17,7 @@
  * DB-free. Usage:  php tests/maintenance-mode.php
  */
 
+require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hMaintenance.php';
 require_once __DIR__ . '/lib/harness.php';
 

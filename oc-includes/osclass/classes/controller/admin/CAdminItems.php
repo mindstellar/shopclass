@@ -935,7 +935,7 @@ class CAdminItems extends AdminSecBaseModel
         $titles = array();
         foreach (osc_get_locales() as $locale) {
             $code = $locale['pk_c_code'];
-            if (trim(strip_tags((string)($data['title'][$code] ?? ''))) !== '') {
+            if (trim(\mindstellar\utility\Sanitize::stripTags((string)($data['title'][$code] ?? ''))) !== '') {
                 $titles = array();
                 break;
             }

@@ -427,7 +427,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 || ($bPluginsToUpdate && $pUpdateUri != '' && in_array($pUpdateUri, $aPluginsToUpdate, true))
             ) {
                 $sUpdate = '<a class="market_update market-popup" href="#'
-                    . htmlentities($pUpdateUri) . '">'
+                    . \mindstellar\utility\Escape::htmlEntities($pUpdateUri) . '">'
                     . __("There's a new update available") . '</a>';
             }
             // prepare row 4

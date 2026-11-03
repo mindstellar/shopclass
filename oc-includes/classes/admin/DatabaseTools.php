@@ -168,7 +168,7 @@ final class DatabaseTools
 
         return array(
             'error'   => (int) ($result['error'] ?? 1),
-            'message' => trim((string) preg_replace('/\s+/', ' ', strip_tags((string) ($result['message'] ?? '')))),
+            'message' => trim((string) preg_replace('/\s+/', ' ', \mindstellar\utility\Sanitize::stripTags((string) ($result['message'] ?? '')))),
             'applied' => array_values(array_map('strval', (array) ($result['applied'] ?? array()))),
         );
     }

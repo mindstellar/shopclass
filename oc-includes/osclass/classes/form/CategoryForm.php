@@ -246,7 +246,7 @@ class CategoryForm extends Form
                 . '" class="category-details-form">';
             $contentTemp .= '<div class="form-controls"><label>' . __('Name') . '</label><input id="'
                 . $name . '" type="text" name="' . $name . '" value="'
-                . osc_esc_html(htmlentities($value, ENT_COMPAT, 'UTF-8', false)) . '"/></div>';
+                . osc_esc_html(\mindstellar\utility\Escape::htmlEntities($value, ENT_COMPAT, 'UTF-8', false)) . '"/></div>';
 
             // A new category gets its slug from the name it is saved with.
             if (isset($category['pk_i_id']) && $category['pk_i_id'] !== '') {

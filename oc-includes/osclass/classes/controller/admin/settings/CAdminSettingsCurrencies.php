@@ -80,7 +80,7 @@ class CAdminSettingsCurrencies extends AdminSecBaseModel
             case ('edit'):
                 // calling edit currency view
                 $currencyCode = Params::getParam('code');
-                $currencyCode = trim(strip_tags($currencyCode));
+                $currencyCode = trim(\mindstellar\utility\Sanitize::stripTags($currencyCode));
 
                 if ($currencyCode == '') {
                     osc_add_flash_warning_message(

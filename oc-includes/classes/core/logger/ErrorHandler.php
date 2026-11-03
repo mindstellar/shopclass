@@ -214,7 +214,7 @@ class ErrorHandler
         // logged. In debug, append a short note so it isn't lost entirely.
         if (headers_sent()) {
             if ($this->debugEnabled) {
-                echo "\n" . htmlspecialchars(
+                echo "\n" . \mindstellar\utility\Escape::text(
                     (isset($detail['type']) ? $detail['type'] : 'Error') . ': '
                     . (isset($detail['message']) ? $detail['message'] : ''),
                     ENT_QUOTES,
@@ -306,9 +306,9 @@ class ErrorHandler
             return;
         }
 
-        echo '<!doctype html><meta charset="utf-8"><title>' . htmlspecialchars($fbHeading, ENT_QUOTES, 'UTF-8')
-            . '</title><h1>' . htmlspecialchars($fbHeading, ENT_QUOTES, 'UTF-8') . '</h1><p>'
-            . htmlspecialchars($fbBody, ENT_QUOTES, 'UTF-8') . '</p>';
+        echo '<!doctype html><meta charset="utf-8"><title>' . \mindstellar\utility\Escape::text($fbHeading, ENT_QUOTES, 'UTF-8')
+            . '</title><h1>' . \mindstellar\utility\Escape::text($fbHeading, ENT_QUOTES, 'UTF-8') . '</h1><p>'
+            . \mindstellar\utility\Escape::text($fbBody, ENT_QUOTES, 'UTF-8') . '</p>';
     }
 
     /**

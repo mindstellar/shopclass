@@ -354,7 +354,7 @@ final class ListingInput
      */
     private static function optionText(mixed $value): string
     {
-        $value = is_scalar($value) ? strip_tags(mb_scrub((string) $value, 'UTF-8')) : '';
+        $value = is_scalar($value) ? \mindstellar\utility\Sanitize::stripTags(mb_scrub((string) $value, 'UTF-8')) : '';
 
         return trim((string) preg_replace('/\s+/u', ' ', $value));
     }

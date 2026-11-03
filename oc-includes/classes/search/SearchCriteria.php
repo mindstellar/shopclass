@@ -305,7 +305,7 @@ class SearchCriteria
      */
     public static function cleanPattern($value): string
     {
-        return trim(str_replace(array('{', '}'), '', strip_tags((string) self::scalar($value))));
+        return trim(str_replace(array('{', '}'), '', \mindstellar\utility\Sanitize::stripTags((string) self::scalar($value))));
     }
 
     /**

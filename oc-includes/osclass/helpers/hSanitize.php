@@ -144,31 +144,7 @@ function osc_sanitize_html($value)
  */
 function osc_esc_html($str = '')
 {
-    if ($str === '') {
-        return '';
-    }
-    // With no "&" there is no entity to keep, so the four passes below would change nothing.
-    if (is_string($str) && strpos($str, '&') === false) {
-        return str_replace(array("'", '"'), array('&#39;', '&quot;'), htmlspecialchars($str));
-    }
-
-    $temp = '__TEMP_AMPERSANDS__';
-
-    // Replace entities to temporary markers so that
-    // htmlspecialchars won't mess them up
-    $str = preg_replace("/&#(\d+);/", "$temp\\1;", $str);
-    $str = preg_replace("/&(\w+);/", "$temp\\1;", $str);
-
-    $str = htmlspecialchars($str);
-
-    // In case htmlspecialchars misses these.
-    $str = str_replace(array("'", '"'), array('&#39;', '&quot;'), $str);
-
-    // Decode the temp markers back to entities
-    $str = preg_replace("/$temp(\d+);/", "&#\\1;", $str);
-    $str = preg_replace("/$temp(\w+);/", "&\\1;", $str);
-
-    return $str;
+    return \mindstellar\utility\Escape::htmlKeepEntities($str);
 }
 
 /**
@@ -181,13 +157,5 @@ function osc_esc_html($str = '')
  */
 function osc_esc_js($str)
 {
-    static $sNewLines = '<br><br/><br />';
-    static $aNewLines = array('<br>', '<br/>', '<br />');
-    $str = strip_tags($str, $sNewLines);
-    $str = str_replace("\r", '', $str);
-    $str = addslashes($str);
-    $str = str_replace("\n", '\n', $str);
-    $str = str_replace($aNewLines, '\n', $str);
-
-    return $str;
+    return \mindstellar\utility\Escape::js($str);
 }

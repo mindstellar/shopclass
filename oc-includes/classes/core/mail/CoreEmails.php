@@ -1009,7 +1009,7 @@ final class CoreEmails
         $title = $values;
         $body  = $values;
         foreach ($visitor as $key) {
-            $title[$key] = strip_tags((string) $values[$key]);
+            $title[$key] = \mindstellar\utility\Sanitize::stripTags((string) $values[$key]);
             $body[$key]  = nl2br(osc_esc_html((string) $values[$key]));
         }
 
@@ -1118,11 +1118,11 @@ final class CoreEmails
      */
     public static function newCommentAdmin($aItem)
     {
-        $authorName  = trim(strip_tags((string) $aItem['authorName']));
-        $authorEmail = trim(strip_tags((string) $aItem['authorEmail']));
+        $authorName  = trim(\mindstellar\utility\Sanitize::stripTags((string) $aItem['authorName']));
+        $authorEmail = trim(\mindstellar\utility\Sanitize::stripTags((string) $aItem['authorEmail']));
         $body        = trim((string) $aItem['body']);
         // only \n -> <br/>
-        $body   = nl2br(strip_tags($body));
+        $body   = nl2br(\mindstellar\utility\Sanitize::stripTags($body));
         $title  = $aItem['title'];
         $itemId = $aItem['id'];
 
@@ -1692,9 +1692,9 @@ final class CoreEmails
      */
     public static function newCommentUser($aItem)
     {
-        $authorName  = trim(strip_tags((string) $aItem['authorName']));
-        $authorEmail = trim(strip_tags((string) $aItem['authorEmail']));
-        $body        = trim(strip_tags((string) $aItem['body']));
+        $authorName  = trim(\mindstellar\utility\Sanitize::stripTags((string) $aItem['authorName']));
+        $authorEmail = trim(\mindstellar\utility\Sanitize::stripTags((string) $aItem['authorEmail']));
+        $body        = trim(\mindstellar\utility\Sanitize::stripTags((string) $aItem['body']));
         $body        = nl2br($body);
         $title       = $aItem['title'];
         $itemId      = $aItem['id'];
@@ -1779,8 +1779,8 @@ final class CoreEmails
     public static function newAdmin($data)
     {
 
-        $name     = trim(strip_tags((string) $data['s_name']));
-        $username = trim(strip_tags((string) $data['s_username']));
+        $name     = trim(\mindstellar\utility\Sanitize::stripTags((string) $data['s_name']));
+        $username = trim(\mindstellar\utility\Sanitize::stripTags((string) $data['s_username']));
 
         $content = self::template('email_new_admin');
 

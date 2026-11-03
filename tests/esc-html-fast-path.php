@@ -16,6 +16,7 @@
  */
 
 define('ABS_PATH', dirname(__DIR__) . '/');
+require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/harness.php';
 

@@ -1871,8 +1871,8 @@ function osc_item_meta_value()
                 && $value['to'] != ''
                 && is_numeric($value['to'])
             ) {
-                $return = __('From') . ' ' . htmlentities(date(osc_date_format(), $value['from']), ENT_COMPAT, 'UTF-8');
-                $return .= ' ' . __('to') . ' ' . htmlentities(
+                $return = __('From') . ' ' . \mindstellar\utility\Escape::htmlEntities(date(osc_date_format(), $value['from']), ENT_COMPAT, 'UTF-8');
+                $return .= ' ' . __('to') . ' ' . \mindstellar\utility\Escape::htmlEntities(
                     date(osc_date_format(), $value['to']),
                     ENT_COMPAT,
                     'UTF-8'
@@ -1884,7 +1884,7 @@ function osc_item_meta_value()
             return '';
         } else {
             if ($value != '' && is_numeric($value)) {
-                return htmlentities(date(osc_date_format(), $value), ENT_COMPAT, 'UTF-8');
+                return \mindstellar\utility\Escape::htmlEntities(date(osc_date_format(), $value), ENT_COMPAT, 'UTF-8');
             }
 
             return '';
@@ -1919,14 +1919,14 @@ function osc_item_meta_value()
             return '';
         }
     } elseif ($meta['e_type'] == 'TEXTAREA') {
-        $value = nl2br(htmlentities($value));
+        $value = nl2br(\mindstellar\utility\Escape::htmlEntities($value));
         $value = osc_apply_filter('osc_item_meta_textarea_value_filter', $value, $meta);
 
         return $value;
     } elseif ($meta['e_type'] == 'DROPDOWN' || $meta['e_type'] == 'RADIO') {
         return osc_esc_html(html_entity_decode((string) $value, ENT_QUOTES, 'UTF-8'));
     } else {
-        $value = nl2br(htmlentities($value));
+        $value = nl2br(\mindstellar\utility\Escape::htmlEntities($value));
         $value = osc_apply_filter('osc_item_meta_value_filter', $value, $meta);
 
         return $value;

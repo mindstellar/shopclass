@@ -367,7 +367,7 @@ final class MediaSettingsScreen extends SettingsScreen
             ->set('attrs', array('pattern' => '[1-9][0-9]*[xX][1-9][0-9]*'))
             ->set('pattern', self::DIMENSION)
             ->sanitize(static function ($value) {
-                return strtolower(trim(strip_tags((string)$value)));
+                return strtolower(trim(\mindstellar\utility\Sanitize::stripTags((string)$value)));
             });
     }
 

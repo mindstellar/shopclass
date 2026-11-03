@@ -149,11 +149,11 @@ final class StaticPageForm
         foreach (\mindstellar\admin\ui\Field::siteLocales() as $locale) {
             $titles[(string)$locale['pk_c_code']] = Params::getParamString($locale['pk_c_code'] . '#s_title');
         }
-        $title = trim(strip_tags($titles[osc_language()] ?? ''));
+        $title = trim(\mindstellar\utility\Sanitize::stripTags($titles[osc_language()] ?? ''));
         if ($title === '') {
             foreach ($titles as $candidate) {
-                if (trim(strip_tags($candidate)) !== '') {
-                    $title = trim(strip_tags($candidate));
+                if (trim(\mindstellar\utility\Sanitize::stripTags($candidate)) !== '') {
+                    $title = trim(\mindstellar\utility\Sanitize::stripTags($candidate));
                     break;
                 }
             }

@@ -448,7 +448,7 @@ final class Mailer
                 . '((?:(?!<a\b).)*?)</a\b[^>]*>#is',
                 static function ($m) {
                     $url   = trim($m[2]);
-                    $label = trim(strip_tags($m[3]));
+                    $label = trim(\mindstellar\utility\Sanitize::stripTags($m[3]));
                     if ($url === '' || $url[0] === '#' || stripos($url, 'javascript:') === 0) {
                         return $label;
                     }
@@ -483,7 +483,7 @@ final class Mailer
             $text = $html;
         }
 
-        $text = strip_tags($text);
+        $text = \mindstellar\utility\Sanitize::stripTags($text);
         $text = html_entity_decode($text, ENT_QUOTES | ENT_HTML5, 'UTF-8');
         $text = str_replace("\xC2\xA0", ' ', $text);
 
@@ -511,7 +511,7 @@ final class Mailer
     {
         $body = (string)($params['body'] ?? '');
         $alt  = (string)($params['alt_body'] ?? '');
-        if ($alt !== '' && $alt !== $body && strip_tags($alt) === $alt) {
+        if ($alt !== '' && $alt !== $body && \mindstellar\utility\Sanitize::stripTags($alt) === $alt) {
             return $alt;
         }
 
