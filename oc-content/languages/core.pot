@@ -14353,10 +14353,8 @@ msgstr ""
 msgid "Tax %1$s: %2$s"
 msgstr ""
 
-#: oc-admin/themes/modern/billing/order.php
 #: oc-includes/classes/billing/Invoices.php
 #: oc-includes/osclass/gui/billing/document.php
-#: oc-includes/osclass/gui/billing/receipt.php
 msgid "Tax code"
 msgstr ""
 
