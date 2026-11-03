@@ -103,7 +103,7 @@ class Escape
 
     /**
      * Escapes text for HTML and keeps entities that are already there, such as &amp; or &#39;.
-     * Quotes always become &#39; and &quot;. osc_esc_html() uses it.
+     * Quotes always become &#39; and &quot;. osc_esc_html() uses it; prefer it over html().
      *
      * @param string $str
      *
@@ -139,7 +139,8 @@ class Escape
     }
 
     /**
-     * Escape html keep encoded entities
+     * Escapes HTML after decoding numeric entities such as &#39; to characters, unlike
+     * htmlKeepEntities(), which leaves entities as they are.
      *
      * @param string $str
      *

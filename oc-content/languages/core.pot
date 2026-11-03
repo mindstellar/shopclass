@@ -17873,6 +17873,14 @@ msgstr ""
 msgid "Zip code"
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "Zip extension for PHP"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "Zip extension is required. How to "
+msgstr ""
+
 #: oc-includes/classes/core/upgrade/AutoSecurityUpdate.php
 msgid "[%1$s] Security update %2$s could not be installed"
 msgstr ""

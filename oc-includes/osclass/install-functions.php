@@ -133,6 +133,12 @@ function get_requirements()
             'solution'    => __('cURL extension is required. How to '
                 . '<a target="_blank" href="https://www.php.net/manual/en/curl.setup.php">install/configure</a>.')
         ),
+        'Zip extension for PHP' => array(
+            'requirement' => __('Zip extension for PHP'),
+            'fn'          => extension_loaded('zip'),
+            'solution'    => __('Zip extension is required. How to '
+                . '<a target="_blank" href="https://www.php.net/manual/en/zip.installation.php">install/configure</a>.')
+        ),
         'Folder <code>oc-content/uploads</code> exists' => array(
             'requirement' => __('Folder <code>oc-content/uploads</code> exists'),
             'fn'          => file_exists(ABS_PATH . 'oc-content/uploads/'),
