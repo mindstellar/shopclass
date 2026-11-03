@@ -520,7 +520,7 @@ class Utils
      * @param string $data
      *
      * @return string
-     * @deprecated since 7.1.0, removed in 8.0
+     * @deprecated since 7.1.0, removed in 8.0; use PHP's hash_hmac() instead
      */
     public static function hmacSha1B64($key, $data)
     {

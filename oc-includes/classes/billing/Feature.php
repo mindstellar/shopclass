@@ -84,7 +84,6 @@ final class Feature
      * Longer explanation, or an empty string when the spec omits one.
      *
      * @return string
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function getDescription(): string
     {

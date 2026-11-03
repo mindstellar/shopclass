@@ -16,7 +16,7 @@ use Preference;
 /**
  * Get useful system info about osclass installation
  *
- * @deprecated since 7.1.0, removed in 8.0
+ * @deprecated since 7.1.0, removed in 8.0; use the System info screen instead
  */
 class SystemInfo
 {

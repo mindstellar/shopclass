@@ -148,7 +148,6 @@ final class Statement
      * @param string $sql
      *
      * @return void
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function whereAsIs(string $sql): void
     {
@@ -159,7 +158,6 @@ final class Statement
      * Whether any WHERE condition is set.
      *
      * @return bool
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function hasWhere(): bool
     {
@@ -234,7 +232,6 @@ final class Statement
      * @param string $sql
      *
      * @return void
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function havingAsIs(string $sql): void
     {

@@ -996,7 +996,7 @@ if (osc_tinymce_frontend()) {
  * queue background jobs instead, which keep going until nothing matches.
  *
  * @return int
- * @deprecated since 7.1.0, removed in 8.0
+ * @deprecated since 7.1.0, removed in 8.0; use the Cleanup class instead
  */
 function osc_run_cleanup()
 {

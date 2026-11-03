@@ -176,7 +176,6 @@ class Cookie
      * How many values the bag currently holds.
      *
      * @return int
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function num_vals()
     {

@@ -152,7 +152,6 @@ final class LocationNameStore
      * Ids of the places with a name that starts with $prefix in any language.
      *
      * @return string[]
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function idsStartingWith(string $type, string $prefix, int $limit = 100): array
     {

@@ -385,7 +385,7 @@ function osc_change_permissions($dir = ABS_PATH)
  * @param string $file Filename to write
  *
  * @return int 1 on success; -1 empty path, -2 no dump handle, -3 no tables, -4 path not writable
- * @deprecated since 7.1.0, removed in 8.0
+ * @deprecated since 7.1.0, removed in 8.0; use the Backup system (BackupJobs) instead
  */
 function osc_dbdump($path, $file)
 {

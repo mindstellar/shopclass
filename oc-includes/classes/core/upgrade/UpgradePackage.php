@@ -180,7 +180,6 @@ abstract class UpgradePackage
      * Package short name( directory name identifier)
      *
      * @return string
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function getShortName(): string
     {
@@ -302,7 +301,6 @@ abstract class UpgradePackage
      * Minimum required Shopclass version, '' when not declared.
      *
      * @return string
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function getRequires(): string
     {
@@ -313,7 +311,6 @@ abstract class UpgradePackage
      * Highest Shopclass version this package was verified against, '' when not declared.
      *
      * @return string
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function getTestedUpTo(): string
     {
@@ -324,7 +321,6 @@ abstract class UpgradePackage
      * Minimum required PHP version, '' when not declared.
      *
      * @return string
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public function getRequiresPhp(): string
     {

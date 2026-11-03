@@ -565,7 +565,7 @@ class ErrorHandler
      * @param $exception
      *
      * @return bool
-     * @deprecated since 7.1.0, removed in 8.0
+     * @deprecated since 7.1.0, removed in 8.0; use ErrorHandler::log() instead
      */
     public function logException($exception): bool
     {

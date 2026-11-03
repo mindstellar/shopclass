@@ -159,7 +159,6 @@ final class VariantStore extends Model
      *
      * @return array<string,mixed>|null
      * @throws \mindstellar\database\DbException
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function defaultRow(int $itemId): ?array
     {
@@ -170,7 +169,6 @@ final class VariantStore extends Model
      * Whether the listing has at least one variant.
      *
      * @throws \mindstellar\database\DbException
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function isBuyable(int $itemId): bool
     {
@@ -346,7 +344,6 @@ final class VariantStore extends Model
      *
      * @return int rows deleted
      * @throws \mindstellar\database\DbException
-     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function removeDefault(int $itemId): int
     {
