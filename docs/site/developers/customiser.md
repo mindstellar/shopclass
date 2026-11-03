@@ -62,8 +62,9 @@ there itself.
 
 Block fields take the types `text`, `textarea`, `richtext`, `select`, `choice` (a segmented switch),
 `checkbox`, `number`, `image`, `link` (a web, `mailto:` or site address) and `note` (help text only).
-A field may add `half` to share a row, `section` to open a group, `help`, `placeholder` and
-`show_if` (`array('count' => '3')`).
+A field may add `half` to share a row, `section` (with an optional `section_note`) to open a group,
+`help`, `placeholder`, `icons` (option value => Bootstrap Icons name, for a `choice`) and `show_if`
+(`array('count' => '3')`: shown only while that field holds that value).
 
 ```php
 osc_register_widget('aisle.hero', array(

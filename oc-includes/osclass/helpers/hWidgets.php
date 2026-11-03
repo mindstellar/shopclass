@@ -568,8 +568,8 @@ osc_register_widget('core.rich_text', array(
         ),
     ),
     'render'      => static function ($config) {
-        $html = osc_autop((string) osc_sanitize_html((string) ($config['text'] ?? '')));
-        if (trim($html) !== '') {
+        $html = _osc_block_text($config['text'] ?? '');
+        if ($html !== '') {
             echo '<div class="osc-rich-text">' . $html . '</div>';
         }
     },
