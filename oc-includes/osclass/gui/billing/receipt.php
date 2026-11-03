@@ -140,18 +140,7 @@ $accent = (string) ($receipt['accent'] ?? '#0b7269');
                 <tbody>
                     <?php foreach ($items as $line) { ?>
                         <tr>
-                            <td>
-                                <span class="rc-name"><?php echo osc_esc_html($line['title']); ?></span>
-                                <?php if ($line['options'] !== '') { ?>
-                                    <small><?php echo osc_esc_html($line['options']); ?></small>
-                                <?php } ?>
-                                <?php if ($line['sku'] !== '') { ?>
-                                    <small><?php echo osc_esc_html(sprintf(__('SKU %s'), $line['sku'])); ?></small>
-                                <?php } ?>
-                                <?php if (is_array($line['tax'] ?? null) && (string) ($line['tax']['code'] ?? '') !== '') { ?>
-                                    <small><?php echo osc_esc_html($codeLabel . ' ' . (string) $line['tax']['code']); ?></small>
-                                <?php } ?>
-                            </td>
+                            <?php require __DIR__ . '/parts/line-name.php'; ?>
                             <td class="rc-num"><?php echo osc_esc_html($line['qty']); ?></td>
                             <td class="rc-num rc-price"><?php echo osc_esc_html($line['unit']); ?></td>
                             <?php if ($hasTax) {

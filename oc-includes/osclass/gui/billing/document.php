@@ -136,18 +136,7 @@ if (($page['refund']['reason'] ?? '') !== '') {
             <tbody>
                 <?php foreach ($items as $line) { ?>
                     <tr>
-                        <td>
-                            <span class="rc-name"><?php echo osc_esc_html((string) ($line['title'] ?? '')); ?></span>
-                            <?php if (($line['options'] ?? '') !== '') { ?>
-                                <small><?php echo osc_esc_html((string) $line['options']); ?></small>
-                            <?php } ?>
-                            <?php if (($line['sku'] ?? '') !== '') { ?>
-                                <small><?php echo osc_esc_html(sprintf(__('SKU %s'), (string) $line['sku'])); ?></small>
-                            <?php } ?>
-                            <?php if (is_array($line['tax'] ?? null) && (string) ($line['tax']['code'] ?? '') !== '') { ?>
-                                <small><?php echo osc_esc_html($codeLabel . ' ' . (string) $line['tax']['code']); ?></small>
-                            <?php } ?>
-                        </td>
+                        <?php require __DIR__ . '/parts/line-name.php'; ?>
                         <td class="rc-num"><?php echo osc_esc_html((string) ($line['qty'] ?? '')); ?></td>
                         <td class="rc-num rc-price"><?php echo osc_esc_html((string) ($line['unit_text'] ?? '')); ?></td>
                         <?php if ($hasTax) {
