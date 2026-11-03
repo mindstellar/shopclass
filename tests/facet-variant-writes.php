@@ -46,7 +46,7 @@ Params::init();
 
 $facets = static function (int $item) use ($admin, $p): array {
     $out = [];
-    foreach ($admin->query('SELECT s_key, s_value, fk_i_variant_id FROM ' . facet_rows_sql() . " x WHERE fk_i_item_id = $item ORDER BY fk_i_variant_id, s_key") as $r) {
+    foreach ($admin->query('SELECT s_key, s_value, fk_i_variant_id FROM ' . facet_rows_sql() . " x WHERE fk_i_item_id = $item ORDER BY fk_i_variant_id, s_key, s_value") as $r) {
         $out[] = [$r['s_key'], $r['s_value'], (int) $r['fk_i_variant_id']];
     }
 
