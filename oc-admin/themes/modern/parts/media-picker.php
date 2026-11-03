@@ -147,7 +147,8 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
             if (clear) { clear.hidden = !url; }
             if (meta) {
                 // The file's name, and its size once the browser has it: "stalls.jpg · 1600 × 1067".
-                var name = url ? decodeURIComponent(url.split('?')[0].split('/').pop() || '') : '';
+                var name = url ? (url.split('?')[0].split('/').pop() || '') : '';
+                try { name = decodeURIComponent(name); } catch (err) { /* keep the name as written */ }
                 meta.textContent = name;
                 meta.hidden = !name;
                 if (img && name) {
