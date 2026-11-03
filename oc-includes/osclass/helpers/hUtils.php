@@ -1117,7 +1117,7 @@ function osc_google_maps_api_key()
  * Get Open Street Maps API key.
  *
  * @return string
- * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin
+ * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider registered on the register_geocode_providers hook (mindstellar\location\GeocodeProviderRegistry)
  */
 function osc_openstreet_api_key()
 {
@@ -1132,7 +1132,7 @@ function osc_openstreet_api_key()
  * @param string $address
  *
  * @return string
- * @deprecated 7.0.0 core looks addresses up only through a geocode provider plugin
+ * @deprecated 7.0.0 core looks addresses up only through a provider registered on the register_geocode_providers hook (mindstellar\location\GeocodeProviderRegistry)
  */
 function osc_google_maps_geocode_url($address)
 {
@@ -1148,7 +1148,7 @@ function osc_google_maps_geocode_url($address)
  * @param string $address
  *
  * @return string
- * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider plugin
+ * @deprecated 7.0.0 core no longer looks addresses up with MapQuest; use a geocode provider registered on the register_geocode_providers hook (mindstellar\location\GeocodeProviderRegistry)
  */
 function osc_openstreet_geocode_url($address)
 {

@@ -451,7 +451,7 @@ function osc_dbdump($path, $file)
  * @return boolean true if the string is a hex, otherwise false
  * @since 3.0
  *
- * @deprecated since 7.1.0, removed in 8.0
+ * @deprecated since 7.1.0, removed in 8.0; use ctype_xdigit()
  */
 function is_hex($hex)
 {
@@ -991,8 +991,7 @@ if (!function_exists('hex2b64')) {
      * @param string $str Hex string to re-encode
      *
      * @return string
-     * @deprecated since 4.0.0
-     * @see Utils::hex2b64()
+     * @deprecated since 4.0.0; use Utils::hex2b64()
      */
     function hex2b64($str)
     {
@@ -1011,8 +1010,7 @@ if (!function_exists('hmacsha1')) {
      * @param string $data
      *
      * @return string
-     * @deprecated since 4.0.0
-     * @see Utils::hmacsha1()
+     * @deprecated since 4.0.0; use Utils::hmacsha1()
      */
     function hmacsha1($key, $data)
     {

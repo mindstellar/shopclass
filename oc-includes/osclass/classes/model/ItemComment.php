@@ -139,7 +139,7 @@ class ItemComment extends DAO
      * @return int|string|false The count as a string, int 0 when there are none,
      *                          false on a null id or a query failure
      * @see        ItemComment::totalComments
-     * @deprecated since 2.3
+     * @deprecated since 2.3; use totalComments()
      */
     public function total_comments($id)
     {

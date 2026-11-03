@@ -92,7 +92,7 @@ class ImageProcessing
      * @param int $fileBytes The file's size, as GD reads the whole file into memory first
      *
      * @return int
-     * @deprecated 7.1.0 Use mindstellar\image\Processor::maxPixels()
+     * @deprecated 7.1.0 Use mindstellar\image\Processor::site()->maxPixels()
      */
     public static function maxPixels(int $fileBytes = 0)
     {
@@ -121,7 +121,7 @@ class ImageProcessing
      * @param string $imagePath
      *
      * @return int 0 when the file is not an image
-     * @deprecated 7.1.0 Use mindstellar\image\Processor::pixels()
+     * @deprecated 7.1.0 Use mindstellar\image\Processor::site()->pixels()
      */
     public static function pixelCount($imagePath)
     {
@@ -164,7 +164,7 @@ class ImageProcessing
      * @param bool $imagick
      *
      * @return bool
-     * @deprecated 7.1.0 Use mindstellar\image\Processor::site()->engine()->canWrite('webp')
+     * @deprecated 7.1.0 Use mindstellar\image\ImagickEngine or GdEngine: (new ImagickEngine())->canWrite('webp')
      */
     public static function canWriteWebp($imagick)
     {

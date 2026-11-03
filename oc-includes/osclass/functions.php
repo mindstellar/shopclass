@@ -996,7 +996,7 @@ if (osc_tinymce_frontend()) {
  * queue background jobs instead, which keep going until nothing matches.
  *
  * @return int
- * @deprecated since 7.1.0, removed in 8.0; use the Cleanup class instead
+ * @deprecated since 7.1.0, removed in 8.0; use Cleanup::getInstance()->purge($rule, Cleanup::days($rule), Cleanup::batchLimit())
  */
 function osc_run_cleanup()
 {

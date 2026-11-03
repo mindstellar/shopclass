@@ -34,7 +34,7 @@ class DBConnectionClass extends \mindstellar\database\ConnectionManager
     /**
      * Return the raw mysqli handle, or false when no connection is established.
      *
-     * @deprecated 5.3 Use mindstellar\database\ConnectionManager::getHandle() for the
+     * @deprecated 6.0.0 Use mindstellar\database\ConnectionManager::getHandle() for the
      *             raw handle, or the mindstellar\database\Connection / Db wrappers for
      *             queries and transactions. Retained for existing plugins and themes.
      * @see \mindstellar\database\ConnectionManager::getHandle()

@@ -174,7 +174,7 @@ class Escape
      *
      * @return string
      * @since 5.1
-     * @deprecated since 7.1.0, removed in 8.0; use osc_esc_js() instead
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function jsHtml($str)
     {

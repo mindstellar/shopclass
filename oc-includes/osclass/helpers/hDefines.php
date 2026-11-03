@@ -1274,8 +1274,7 @@ function osc_is_item_contact_page()
  * Get if user is on login form
  *
  * @return boolean
- * @deprecated since 3.5.7
- * @see osc_is_login_page()
+ * @deprecated since 3.5.7; use osc_is_login_page()
  */
 function osc_is_login_form()
 {

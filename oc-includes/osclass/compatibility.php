@@ -12,7 +12,7 @@
  */
 
 /**
- * DEPRECATED: Plugins and themes should stop using "ImageResizer" and start using "ImageProcessing"
+ * DEPRECATED: Plugins and themes should stop using "ImageResizer" and start using mindstellar\image\Processor
  */
 
 class_alias('ImageProcessing', 'ImageResizer');

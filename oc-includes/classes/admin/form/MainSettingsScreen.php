@@ -406,7 +406,7 @@ final class MainSettingsScreen extends SettingsScreen
     private static function declaredModes(): array
     {
         $declared = array();
-        $theme    = \WebThemes::newInstance()->loadThemeInfo((string) osc_theme());
+        $theme    = \WebThemes::getInstance()->loadThemeInfo((string) osc_theme());
         if (is_array($theme)) {
             $declared[(string) ($theme['name'] ?? osc_theme())] = array(
                 'modes' => (array) ($theme['modes'] ?? array()),

@@ -35,9 +35,8 @@ final class Money
     }
 
     /**
-     * The currency's decimals in the site's locale, then the currency code: "1,234.50 EUR".
-     *
-     * @deprecated since 7.1.0 use CurrencyService::money() instead, which shows amounts as orders and receipts do
+     * The currency's decimals in the site's locale, then the currency code: "1,234.50 EUR". Admin
+     * screens use it; shop pages use CurrencyService::make()->money() for the symbol format.
      */
     public static function format(int $micros, string $currency, ?int $decimals = null): string
     {

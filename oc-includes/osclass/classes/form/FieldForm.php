@@ -33,11 +33,11 @@ class FieldForm extends Form
 
     /**
      * Retained for backward compatibility. Custom-field dates now use a native
-     * <input type="date"> (see initDatePicker), so no jQuery-UI datepicker
+     * <input type="date"> so no jQuery-UI datepicker
      * locale bootstrap is needed and this is a no-op.
      *
      * @return void
-     * @deprecated since 5.3.0 native date input needs no locale bootstrap
+     * @deprecated since 6.4.3; a no-op, the native date input needs no locale bootstrap
      */
     public static function i18n_datePicker()
     {

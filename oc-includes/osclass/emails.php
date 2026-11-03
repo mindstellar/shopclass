@@ -64,6 +64,7 @@ function _alert_email_deliver($user, $title, $body)
 /**
  * Email one subscriber the hourly digest of new listings matching their saved search.
  *
+ * @deprecated since 7.1.0, removed in 8.0
  * @see \mindstellar\mail\CoreEmails::alertHourly()
  */
 function fn_alert_email_hourly($user, $ads, $s_search, $items, $totalItems)

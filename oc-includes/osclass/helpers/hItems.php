@@ -1774,7 +1774,7 @@ function osc_format_price($price, $symbol = null, $currency = null)
  * Gets number of items
  *
  * @return int
- * @deprecated since 2.4
+ * @deprecated since 2.4; use osc_count_items()
  */
 function osc_priv_count_items()
 {
@@ -1785,7 +1785,7 @@ function osc_priv_count_items()
  * Gets number of item resources
  *
  * @return int
- * @deprecated since 2.4
+ * @deprecated since 2.4; use osc_count_item_resources()
  */
 function osc_priv_count_item_resources()
 {

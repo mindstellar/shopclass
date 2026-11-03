@@ -444,7 +444,7 @@ final class DatabaseTools
     public static function listingCount(): int
     {
         try {
-            $row = Connection::getInstance()->selectOne('SELECT COUNT(*) AS n FROM ' . \Item::newInstance()->getTableName());
+            $row = Connection::getInstance()->selectOne('SELECT COUNT(*) AS n FROM ' . \Item::getInstance()->getTableName());
         } catch (Throwable $e) {
             return 0;
         }

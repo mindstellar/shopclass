@@ -52,7 +52,7 @@ class Region extends DAO
      *
      * @return array<int,array<string,string|null>>
      * @see        Region::findByCountry
-     * @deprecated since 2.3
+     * @deprecated since 2.3; use findByCountry()
      */
     public function getByCountry($countryId)
     {

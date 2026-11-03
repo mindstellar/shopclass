@@ -25,7 +25,8 @@
  * @subpackage Database
  * @since      2.3
  * @deprecated 7.0.0 Removed in 8.0. Core does not use it; a model builds it only when a
- *             plugin reads $model->dao. Use the osc_db_* helpers.
+ *             plugin reads $model->dao. Use the osc_db_* helpers. Search clauses go through
+ *             Search::addConditions(), addJoinTable(), addHaving(), addGroupBy() and addField().
  */
 class DBCommandClass
 {
@@ -280,7 +281,7 @@ class DBCommandClass
      *
      * @return self
      * @since  2.3
-     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
+     * @deprecated 7.0.0 Removed in 8.0. Use osc_db_table()->join() or leftJoin().
      * @see \mindstellar\database\QueryBuilder::join()
      */
     public function join($table, $cond, $type = '')
@@ -658,7 +659,7 @@ class DBCommandClass
      * @param string                     $value Ignored when $key is an array
      *
      * @return void
-     * @deprecated 7.0.0 Removed in 8.0. Use the osc_db_* helpers.
+     * @deprecated 7.0.0 Removed in 8.0. Use osc_db_table()->having().
      * @see \mindstellar\database\QueryBuilder::having()
      */
     public function having($key, $value = '')

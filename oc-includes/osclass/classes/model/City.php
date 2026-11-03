@@ -101,7 +101,7 @@ class City extends DAO
      *
      * @return array<int,array<string,string|null>> If there's an error or 0 results, it returns an empty array
      * @see        City::findByRegion
-     * @deprecated since 2.3
+     * @deprecated since 2.3; use findByRegion()
      */
     public function getByRegion($regionId)
     {

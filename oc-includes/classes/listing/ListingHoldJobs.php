@@ -76,7 +76,7 @@ final class ListingHoldJobs
      */
     public static function holds(int $itemId, array $row): bool
     {
-        return ListingStatus::isHeld($row) && JobQueue::instance()->hasKey(self::EXPIRE, (string) $itemId);
+        return ListingStatus::isHeld($row) && JobQueue::getInstance()->hasKey(self::EXPIRE, (string) $itemId);
     }
 
     /**
