@@ -165,6 +165,17 @@ function osc_static_page_meta($field = null)
 }
 
 /**
+ * Whether the current page's owner hid its title on screen (Page settings → Hide the page title).
+ * A theme still prints the title for screen readers and search engines, visually hidden.
+ *
+ * @return bool
+ */
+function osc_static_page_title_hidden(): bool
+{
+    return (string) osc_static_page_meta('hide_title') === '1';
+}
+
+/**
  * Gets current page url
  *
  * @param string $locale

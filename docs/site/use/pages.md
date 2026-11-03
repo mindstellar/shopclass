@@ -49,6 +49,9 @@ Pick the **Page template** field when creating the page:
 On a phone every block stacks to one column, the picture first. Plugins can register
 further block types.
 
+A page that opens with its own heading can tick **Hide the page title** in **Page settings**.
+The title is then hidden on screen, but screen readers and search engines still get it.
+
 While you edit a block, the dialog shows a **Preview** of the page with your changes,
 on desktop or phone width. Nothing is saved until you press **Save changes**.
 

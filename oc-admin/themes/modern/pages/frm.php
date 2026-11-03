@@ -370,6 +370,16 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'label'   => __('Show a link in the footer'),
         )); ?>
     </div>
+    <div class="page-footer-toggle">
+        <?php osc_admin_checkbox(array(
+            'name'    => 'meta[hide_title]',
+            'id'      => 'meta_hide_title',
+            'value'   => '1',
+            'checked' => !empty($meta['hide_title']),
+            'label'   => __('Hide the page title'),
+            'help'    => __('For a page that opens with its own heading. Screen readers and search engines still get the title.'),
+        )); ?>
+    </div>
 
     <?php
     // Open on a rejected save, so the message is not behind a closed summary.

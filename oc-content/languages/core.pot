@@ -6289,6 +6289,12 @@ msgid ""
 "the receiver can switch over."
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+msgid ""
+"For a page that opens with its own heading. Screen readers and search "
+"engines still get the title."
+msgstr ""
+
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "For calendars in plugins and themes."
 msgstr ""
@@ -6715,6 +6721,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Hide password"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Hide the page title"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php

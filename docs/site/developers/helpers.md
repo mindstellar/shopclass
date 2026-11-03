@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1278 helpers, 28 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1279 helpers, 28 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -800,7 +800,7 @@ Core defines 1278 helpers, 28 of them deprecated. Generated from the source; do 
 | `osc_get_flash_message($section = 'pubMessages', $dropMessages = true)` | The pending flash messages of a section, dropping them from the session by default. |
 | `osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage', $id = 'flashmessage')` | Shows all the pending flash messages in session and cleans up the array. |
 
-### hPage (15)
+### hPage (16)
 
 `oc-includes/osclass/helpers/hPage.php`
 
@@ -820,6 +820,7 @@ Core defines 1278 helpers, 28 of them deprecated. Generated from the source; do 
 | `osc_static_page_slug()` | Gets current page slug or internal name |
 | `osc_static_page_text($locale = '')` | Gets current page text |
 | `osc_static_page_title($locale = '')` | Gets current page title |
+| `osc_static_page_title_hidden()` | Whether the current page's owner hid its title on screen (Page settings → Hide the page title). A theme still prints the title for screen readers and search engines, visually hidden. |
 | `osc_static_page_url($locale = '')` | Gets current page url |
 
 ### hPageTemplates (5)

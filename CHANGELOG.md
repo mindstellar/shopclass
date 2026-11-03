@@ -48,6 +48,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - **Appearance → Menus** builds the main, footer and extra menus from categories, pages and links. Themes read them with `osc_menu()` and name their menu places with `osc_add_theme_support('menus', …)`.
 - The **Page builder** has layout blocks: **Image and text**, **Columns**, **Heading** and **Button**. They stack on phones and appear only on pages, not in Appearance → Widgets.
 - The page block dialog shows a live **Preview** of the page, on desktop or phone width, before you save.
+- **Page settings → Hide the page title** hides a page's title on screen; screen readers and search engines still get it. Themes read it with `osc_static_page_title_hidden()`.
 - **Appearance → Customise** edits a theme's sections and look beside a live preview, saved as a draft until Publish.
 - The Widgets screen can hide a widget without deleting it.
 - Activating a theme that needs plugins installs and activates them from one screen.
