@@ -385,6 +385,7 @@ function osc_change_permissions($dir = ABS_PATH)
  * @param string $file Filename to write
  *
  * @return int 1 on success; -1 empty path, -2 no dump handle, -3 no tables, -4 path not writable
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_dbdump($path, $file)
 {
@@ -450,6 +451,7 @@ function osc_dbdump($path, $file)
  * @return boolean true if the string is a hex, otherwise false
  * @since 3.0
  *
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function is_hex($hex)
 {
@@ -949,6 +951,7 @@ function osc_prune_array(&$input)
  * @param string $osclass_version Core version to test against
  *
  * @return bool
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_is_update_compatible($section, $element, $osclass_version = OSCLASS_VERSION)
 {

@@ -884,6 +884,7 @@ class Item extends DAO
      *
      * @return array<int,array<string,mixed>>
      * @since  3.2
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function findByDayExpiration($days = 1)
     {

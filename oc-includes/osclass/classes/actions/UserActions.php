@@ -199,6 +199,7 @@ class UserActions
      * @param int $user_id
      *
      * @return int
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function bootstrap_login($user_id)
     {

@@ -510,6 +510,7 @@ class Formatting
      * @param string $value value to sanitize
      *
      * @return string formatted
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function name($value)
     {
@@ -522,6 +523,7 @@ class Formatting
      * @param mixed $value value to format
      *
      * @return string formatted
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function username($value)
     {

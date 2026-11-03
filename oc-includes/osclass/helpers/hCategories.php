@@ -411,6 +411,7 @@ function osc_category_move_to_parent()
  * them and it will prepare the the pointer to the first element
  *
  * @return int -1 when there is no current category
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_count_subcategories2()
 {

@@ -520,6 +520,7 @@ class Utils
      * @param string $data
      *
      * @return string
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function hmacSha1B64($key, $data)
     {

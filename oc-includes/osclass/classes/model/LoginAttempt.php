@@ -100,6 +100,7 @@ class LoginAttempt extends DAO
      *
      * @return int
      * @throws \mindstellar\database\DbException on a query failure
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function countByIpContext($context, $ip, $since)
     {

@@ -59,7 +59,6 @@ class EmailVariables
             'email_new_admin'                         => __('New admin account'),
             'email_warn_expiration'                   => __('Listing about to expire'),
             'email_listing_unpaid_reminder'           => __('Unpaid listing reminder'),
-            'alert_email_instant'                     => __('Search alert, instant'),
             'alert_email_hourly'                      => __('Search alert, hourly'),
             'alert_email_daily'                       => __('Search alert, daily'),
             'alert_email_weekly'                      => __('Search alert, weekly'),

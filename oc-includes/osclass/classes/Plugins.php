@@ -161,6 +161,7 @@ class Plugins
      * @param array<string,string> $b
      *
      * @return int
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function strnatcmpCustom($a, $b)
     {
@@ -173,6 +174,7 @@ class Plugins
      * @param string $uri
      *
      * @return string|false false when no plugin declares it
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function findByUpdateURI($uri)
     {

@@ -18,6 +18,7 @@ use mindstellar\security\Csrf;
  * Still in development for internal use only
  *
  * @package mindstellar\form
+ * @deprecated since 7.1.0, removed in 8.0
  */
 class FormBuilder
 {

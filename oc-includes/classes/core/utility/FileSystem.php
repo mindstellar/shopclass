@@ -886,6 +886,7 @@ class FileSystem
      * @param bool        $follow_symlinks
      *
      * @return array<int,string> absolute paths; directories carry a trailing slash
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function rSearch(string $root_dir, ?string $pattern = null, bool $follow_symlinks = false)
     {

@@ -640,6 +640,7 @@ class Rewrite
      * The request URI after the rule table has rewritten it.
      *
      * @return string
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function get_request_uri()
     {

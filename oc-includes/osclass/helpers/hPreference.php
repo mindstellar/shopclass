@@ -91,6 +91,7 @@ function osc_comments_per_page()
  * Gets auto update settings
  *
  * @return string
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_auto_update()
 {
@@ -121,6 +122,7 @@ function osc_timezone()
  * Gets csrf session name
  *
  * @return string
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_csrf_name()
 {
@@ -282,6 +284,7 @@ function osc_rewrite_enabled()
  * Gets if mod rewrite is loaded or not (if apache runs on cgi mode, mod rewrite will not be detected)
  *
  * @return boolean
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_mod_rewrite_loaded()
 {
@@ -913,6 +916,7 @@ function osc_recaptcha_private_key()
  * Gets if third party sources are allowed to install new plugins and themes
  *
  * @return bool
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_market_external_sources()
 {
@@ -1640,6 +1644,7 @@ function osc_subdomain_host()
  * Return version of recaptcha
  *
  * @return string
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function osc_recaptcha_version()
 {

@@ -107,15 +107,6 @@ $schedules = array(
             error_log('Sitemap cron warming failed: ' . $e->getMessage());
         }
 
-        // WARN EXPIRATION EACH DAY (UNCOMMENT TO ENABLE)
-        // NOTE: IF THIS IS ENABLE, SAME CODE SHOULD BE DISABLE ON CRON HOURLY
-        /*if(is_numeric(osc_warn_expiration()) && osc_warn_expiration()>0) {
-            $items = Item::getInstance()->findByDayExpiration(osc_warn_expiration());
-            foreach($items as $item) {
-                osc_run_hook('hook_email_warn_expiration', $item);
-            }
-        }*/
-
         osc_run_hook('cron_daily');
     }),
     'WEEKLY' => array(7 * 24 * 3600, 'week', static function (array $cron): void {

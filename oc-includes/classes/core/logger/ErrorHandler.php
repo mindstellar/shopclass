@@ -565,6 +565,7 @@ class ErrorHandler
      * @param $exception
      *
      * @return bool
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function logException($exception): bool
     {

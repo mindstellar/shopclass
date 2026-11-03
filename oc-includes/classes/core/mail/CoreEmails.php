@@ -2425,6 +2425,7 @@ final class CoreEmails
      * @param array<string,mixed> $result Upgrade outcome: error code, message and version
      *
      * @return void
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function autoUpgrade($result)
     {

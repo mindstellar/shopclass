@@ -94,6 +94,7 @@ final class Receipts
      * The business details as HTML: escaped, line breaks kept.
      *
      * @return string
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public static function businessHtml(): string
     {

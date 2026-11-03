@@ -324,6 +324,7 @@ osc_add_hook('billing_document_issued', array(\mindstellar\billing\Receipts::cla
  * Report the outcome of an automatic core upgrade to every administrator.
  *
  * @see \mindstellar\mail\CoreEmails::autoUpgrade()
+ * @deprecated since 7.1.0, removed in 8.0
  */
 function fn_email_auto_upgrade($result)
 {

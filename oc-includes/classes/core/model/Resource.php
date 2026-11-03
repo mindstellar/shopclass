@@ -183,6 +183,7 @@ class Resource extends Model
      *
      * @return int 0 when the owner type is rejected
      * @throws \mindstellar\database\DbException on a query failure
+     * @deprecated since 7.1.0, removed in 8.0
      */
     public function countByOwner(string $ownerType, ?int $ownerId = null): int
     {
