@@ -51,6 +51,19 @@ spec. Without it the type fits every section.
 | Key | Value |
 |---|---|
 | `locations` | A non-empty list of section slugs, each `[a-z0-9_-]{1,40}`. Anything else throws. |
+| `builder` | `true` for a layout block. It fits a Page builder page, and a customiser section whose `types` lists it, never Appearance → Widgets. |
+| `icon` | A Bootstrap Icons name shown beside the block in the page editor. |
+
+Core's layout blocks (`core.media_text`, `core.columns`, `core.heading`, `core.button`) print
+`osc-media-text`, `osc-columns`, `osc-heading`, `osc-button-row` and `osc-button` markup. Core's
+`page-blocks.css` (style id `osc-page-blocks`) lays them out on Page builder pages; a theme styles
+the look on the same classes. A theme that shows one in a home section enqueues `osc-page-blocks`
+there itself.
+
+Block fields take the types `text`, `textarea`, `richtext`, `select`, `choice` (a segmented switch),
+`checkbox`, `number`, `image`, `link` (a web, `mailto:` or site address) and `note` (help text only).
+A field may add `half` to share a row, `section` to open a group, `help`, `placeholder` and
+`show_if` (`array('count' => '3')`).
 
 ```php
 osc_register_widget('aisle.hero', array(

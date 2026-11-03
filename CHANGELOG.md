@@ -46,6 +46,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Option and custom-field filters read a filter index (`t_item_facet`), built in the background after the update. `search:reindex` or System info → Database rebuilds it.
 - **Listings → Settings → Search count limit** stops search counts at a number and shows "1,000+" past it. Themes use `osc_search_total_text()` and `osc_search_total_capped()`.
 - **Appearance → Menus** builds the main, footer and extra menus from categories, pages and links. Themes read them with `osc_menu()` and name their menu places with `osc_add_theme_support('menus', …)`.
+- The **Page builder** has layout blocks: **Image and text**, **Columns**, **Heading** and **Button**. They stack on phones and appear only on pages, not in Appearance → Widgets.
+- The page block dialog shows a live **Preview** of the page, on desktop or phone width, before you save.
 - **Appearance → Customise** edits a theme's sections and look beside a live preview, saved as a draft until Publish.
 - The Widgets screen can hide a widget without deleting it.
 - Activating a theme that needs plugins installs and activates them from one screen.

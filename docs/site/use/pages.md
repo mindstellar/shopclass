@@ -28,15 +28,29 @@ Pick the **Page template** field when creating the page:
 - **Page builder (blocks)**: composes the page from widget blocks instead.
   Right for a landing page or a How-it-works page with images and sections.
 
-The available blocks are the same widget types used elsewhere:
+**Add widget** offers two groups of blocks. **Layout** blocks belong to pages only:
 
 | Block | What it is |
 |---|---|
-| **Rich text** | Formatted text. Blank lines become paragraphs. |
+| **Image and text** | A picture beside text, left or right, half or a third wide, with an optional button. |
+| **Columns** | Two or three columns of text side by side. |
+| **Heading** | A section title, left or centred, with an optional intro line. |
+| **Button** | One or two links drawn as buttons, left or centred. |
+
+**Content** blocks are the widget types used elsewhere too:
+
+| Block | What it is |
+|---|---|
+| **Rich text** | Formatted text: headings, bold, lists and links. |
 | **Image** | An image from your media library, optionally linking somewhere. |
+| **Form** | A form from **Forms**. |
 | **Custom Code (HTML / JavaScript)** | Raw markup and script. |
 
-Plugins can register further block types.
+On a phone every block stacks to one column, the picture first. Plugins can register
+further block types.
+
+While you edit a block, the dialog shows a **Preview** of the page with your changes,
+on desktop or phone width. Nothing is saved until you press **Save changes**.
 
 A page builder page renders correctly on **any** theme. If the active theme
 ships its own `template-widgets.php` the theme owns the layout; otherwise core
