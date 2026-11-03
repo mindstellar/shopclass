@@ -38,11 +38,11 @@ $limit = static function (string $memory): int {
 harness_section('memoryPixels()');
 
 $mb = 1024 * 1024;
-pin('128M with nothing in use allows 13.4 million pixels', 13421772, ImageProcessing::memoryPixels(128 * $mb, 0));
-pin('memory in use is taken off first', 10066329, ImageProcessing::memoryPixels(128 * $mb, 32 * $mb));
-pin('a nearly full limit still allows 1 million', 1000000, ImageProcessing::memoryPixels(128 * $mb, 127 * $mb));
-pin('-1 is no limit', PHP_INT_MAX, ImageProcessing::memoryPixels(-1, 32 * $mb));
-pin('0 is no limit', PHP_INT_MAX, ImageProcessing::memoryPixels(0, 32 * $mb));
+pin('128M with nothing in use allows 13.4 million pixels', 13421772, \mindstellar\image\GdEngine::memoryPixels(128 * $mb, 0));
+pin('memory in use is taken off first', 10066329, \mindstellar\image\GdEngine::memoryPixels(128 * $mb, 32 * $mb));
+pin('a nearly full limit still allows 1 million', 1000000, \mindstellar\image\GdEngine::memoryPixels(128 * $mb, 127 * $mb));
+pin('-1 is no limit', PHP_INT_MAX, \mindstellar\image\GdEngine::memoryPixels(-1, 32 * $mb));
+pin('0 is no limit', PHP_INT_MAX, \mindstellar\image\GdEngine::memoryPixels(0, 32 * $mb));
 
 harness_section('GD');
 

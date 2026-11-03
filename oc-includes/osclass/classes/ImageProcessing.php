@@ -102,20 +102,6 @@ class ImageProcessing
     }
 
     /**
-     * How many pixels GD can decode in a memory_limit of $limit bytes with $used already taken.
-     *
-     * @internal
-     * @return int PHP_INT_MAX when there is no limit (-1 or 0)
-     * @deprecated 7.1.0 Use mindstellar\image\GdEngine::memoryPixels()
-     */
-    public static function memoryPixels(int $limit, int $used): int
-    {
-        Deprecate::deprecatedFunction(__METHOD__, '7.1.0', 'mindstellar\image\GdEngine::memoryPixels()');
-
-        return GdEngine::memoryPixels($limit, $used);
-    }
-
-    /**
      * How many pixels opening the image would decode.
      *
      * @param string $imagePath

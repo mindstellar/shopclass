@@ -67,7 +67,6 @@ pin('working on an open photo reports nothing more', array(), $fired);
 $statics = array(
     'parseSize'                    => array('640x480'),
     'maxPixels'                    => array(),
-    'memoryPixels'                 => array(1024, 0),
     'pixelCount'                   => array($file),
     'imageInfo'                    => array($file),
     'usesImagick'                  => array(),
