@@ -54,34 +54,59 @@ $pbf_firstType = (string) array_key_first($pbf_types);
 
     <?php if (count($pbf_types) === 0) { ?>
         <p class="page-blocks-empty">
-            <?php _e('No widget types are available to you. Ask an administrator, or install a widget plugin.'); ?>
+            <?php _e('No block types are available to you. Ask an administrator, or install a plugin that adds blocks.'); ?>
         </p>
     <?php } else { ?>
-        <div class="mb-3">
-            <label class="form-sublabel" for="pbfDescription"><?php _e('Label (for your reference)'); ?></label>
-            <?php osc_admin_text(array(
-                'row'      => false,
-                'id'       => 'pbfDescription',
-                'name'     => 'description',
-                'required' => true,
-            )); ?>
-        </div>
-        <div class="mb-3">
-            <label class="form-sublabel" for="pbfType"><?php _e('Widget type'); ?></label>
+        <?php
+        // Layout blocks, then content blocks, then the raw-code escape hatch on its own.
+        $pbf_group = static fn (array $spec): string => ($spec['capability'] ?? 'admin') === 'super_admin'
+            ? 'advanced' : (!empty($spec['builder']) ? 'layout' : 'content');
+        $pbf_groups = array('layout' => __('Layout'), 'content' => __('Content'), 'advanced' => __('Advanced'));
+        $pbf_options = array();
+        foreach ($pbf_types as $pbf_id => $pbf_spec) {
+            $pbf_options[$pbf_groups[$pbf_group($pbf_spec)]][$pbf_id] = $pbf_spec['label'];
+        }
+        ?>
+        <fieldset class="pbf-type-picker" aria-describedby="pbfTypeDescription">
+            <legend class="form-sublabel"><?php _e('Block type'); ?></legend>
+            <?php foreach ($pbf_groups as $pbf_key => $pbf_groupLabel) {
+                $pbf_inGroup = array_filter($pbf_types, static fn (array $spec): bool => $pbf_group($spec) === $pbf_key);
+                if ($pbf_inGroup === array()) {
+                    continue;
+                } ?>
+                <p class="pbf-type-group-title"><?php echo osc_esc_html($pbf_groupLabel); ?></p>
+                <div class="pbf-type-cards<?php echo $pbf_key === 'advanced' ? ' is-advanced' : ''; ?>">
+                    <?php foreach ($pbf_inGroup as $pbf_id => $pbf_spec) {
+                        $pbf_cardId = 'pbfPick-' . preg_replace('/[^a-z0-9_-]/i', '-', (string) $pbf_id); ?>
+                        <input type="radio" class="pbf-type-radio" name="pbf_pick" id="<?php echo osc_esc_html($pbf_cardId); ?>"
+                               value="<?php echo osc_esc_html((string) $pbf_id); ?>"<?php echo $pbf_id === $pbf_firstType ? ' checked' : ''; ?>/>
+                        <label class="pbf-type-card" for="<?php echo osc_esc_html($pbf_cardId); ?>">
+                            <i class="bi bi-<?php echo osc_esc_html((string) ($pbf_spec['icon'] ?? '') ?: 'square'); ?>" aria-hidden="true"></i>
+                            <span class="pbf-type-card-name"><?php echo osc_esc_html($pbf_spec['label']); ?></span>
+                        </label>
+                    <?php } ?>
+                </div>
+            <?php } ?>
             <?php
-            // Each type under its group heading; the types are sorted, so Layout comes first.
-            $pbf_options = array();
-            foreach ($pbf_types as $pbf_id => $pbf_spec) {
-                $pbf_options[!empty($pbf_spec['builder']) ? __('Layout') : __('Content')][$pbf_id] = $pbf_spec['label'];
-            }
+            // The submitted value; the cards above set it, and the editor's scripts read it.
             osc_admin_select(array(
                 'row'     => false,
                 'id'      => 'pbfType',
                 'name'    => 's_type',
                 'options' => $pbf_options,
-                'width'   => 'text',
+                'class'   => 'visually-hidden',
+                'attrs'   => array('tabindex' => '-1', 'aria-hidden' => 'true'),
             )); ?>
-            <p class="page-field-hint" id="pbfTypeDescription"></p>
+            <p class="page-field-hint" id="pbfTypeDescription" role="note"></p>
+        </fieldset>
+        <div class="mb-3">
+            <label class="form-sublabel" for="pbfDescription"><?php _e('Name in this list (optional)'); ?></label>
+            <?php osc_admin_text(array(
+                'row'         => false,
+                'id'          => 'pbfDescription',
+                'name'        => 'description',
+                'placeholder' => __('Only you see this name'),
+            )); ?>
         </div>
         <div id="pbfFields">
             <?php foreach ($pbf_types as $pbf_id => $pbf_spec) {
@@ -101,7 +126,7 @@ $pbf_firstType = (string) array_key_first($pbf_types);
         </div>
         <div class="osc-dialog-actions">
             <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button type="submit" class="btn btn-submit btn-sm" id="pbfSubmit"><?php _e('Add widget'); ?></button>
+            <button type="submit" class="btn btn-submit btn-sm" id="pbfSubmit"><?php _e('Add block'); ?></button>
         </div>
     <?php } ?>
 </form>
@@ -121,6 +146,7 @@ foreach ($pbf_types as $pbf_id => $pbf_spec) {
 }
 echo json_encode($pbf_desc);
 ?>;
+        var advanced = <?php echo json_encode(array_keys(array_filter($pbf_types, static fn (array $spec): bool => ($spec['capability'] ?? 'admin') === 'super_admin'))); ?>;
 
         function setGroupEnabled(group, on) {
             group.querySelectorAll('input, select, textarea').forEach(function (c) { c.disabled = !on; });
@@ -133,12 +159,24 @@ echo json_encode($pbf_desc);
                     setGroupEnabled(g, active);
                 });
             }
-            if (descBox) { descBox.textContent = descriptions[typeId] || ''; }
+            if (descBox) {
+                descBox.textContent = descriptions[typeId] || '';
+                descBox.classList.toggle('is-warning', advanced.indexOf(typeId) !== -1);
+            }
+            // The type cards show the same choice as the submitted select.
+            form.querySelectorAll('.pbf-type-radio').forEach(function (r) { r.checked = r.value === typeId; });
         }
         if (typeSelect) {
             typeSelect.addEventListener('change', function () { applyType(typeSelect.value); });
             applyType(typeSelect.value);
         }
+        form.querySelectorAll('.pbf-type-radio').forEach(function (radio) {
+            radio.addEventListener('change', function () {
+                if (!radio.checked || !typeSelect) { return; }
+                typeSelect.value = radio.value;
+                typeSelect.dispatchEvent(new Event('change', {bubbles: true}));
+            });
+        });
 
         // Exposed to the page editor so an Edit button can repurpose this add
         // form for a specific block, populating its type + config.

@@ -49,6 +49,7 @@ class CAdminAppearance extends AdminSecBaseModel
         'reorder_widgets_post' => 'reorderWidgetsPost',
         'widget_toggle_post'   => 'toggleWidgetPost',
         'page_block_preview_post' => 'pageBlockPreviewPost',
+        'page_block_undo_post'    => 'pageBlockUndoPost',
         'customise'              => 'customiseScreen',
         'customise_draft_post'   => 'customiseDraftPost',
         'customise_publish_post' => 'customisePublishPost',
@@ -221,6 +222,7 @@ class CAdminAppearance extends AdminSecBaseModel
     {
         osc_csrf_check();
         $widgetId = Params::getParamInt('id');
+        $before   = WidgetStore::find($widgetId);
         osc_run_hook('before_delete_widget', $widgetId);
         try {
             WidgetStore::delete($widgetId);
@@ -228,7 +230,9 @@ class CAdminAppearance extends AdminSecBaseModel
             // A failed delete still flashes success, as the legacy model did.
         }
         osc_run_hook('after_delete_widget', $widgetId);
-        osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
+        if (!$this->rememberPageBlockUndo('deleted', $widgetId, $before)) {
+            osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
+        }
         $this->redirectTo($this->widgetReturnUrl());
     }
 
@@ -238,12 +242,14 @@ class CAdminAppearance extends AdminSecBaseModel
     private function editWidgetPost(): void
     {
         osc_csrf_check();
+        $this->nameFromType();
         if (!osc_validate_text(Params::getParam('description'))) {
             osc_add_flash_error_message(_m('Description field is required'), 'admin');
             $this->redirectTo($this->widgetReturnUrl());
         }
 
-        $type = $this->resolveWidgetType(Params::getParam('s_type'));
+        $before = WidgetStore::find(Params::getParamInt('id'));
+        $type   = $this->resolveWidgetType(Params::getParam('s_type'));
         if ($type !== null) {
             try {
                 $stored = WidgetStore::find(Params::getParamInt('id'));
@@ -282,7 +288,9 @@ class CAdminAppearance extends AdminSecBaseModel
         }
         if ($res) {
             osc_purge_page_cache('widget');
-            osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
+            if (!$this->rememberPageBlockUndo('edited', Params::getParamInt('id'), $before)) {
+                osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
+            }
         } else {
             osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
         }
@@ -295,6 +303,7 @@ class CAdminAppearance extends AdminSecBaseModel
     private function addWidgetPost(): void
     {
         osc_csrf_check();
+        $this->nameFromType();
         if (!osc_validate_text(Params::getParam('description'))) {
             osc_add_flash_error_message(_m('Description field is required'), 'admin');
             $this->redirectTo($this->widgetReturnUrl());
@@ -320,15 +329,86 @@ class CAdminAppearance extends AdminSecBaseModel
             $row['s_type']    = $type['id'];
             $row['s_config']  = json_encode($this->buildWidgetConfig($type));
         }
+        $newId = 0;
         try {
             $row['i_order'] = WidgetStore::nextOrder((string)$location);
-            WidgetStore::add($row);
+            $newId          = WidgetStore::add($row);
         } catch (Throwable $e) {
             // A failed insert still flashes success, as the legacy model did.
         }
         osc_purge_page_cache('widget');
-        osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
+        if (!$this->rememberPageBlockUndo('added', $newId, null)) {
+            osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
+        }
         $this->redirectTo($this->widgetReturnUrl());
+    }
+
+    /**
+     * After a page editor change to one of the page's blocks, keep what it takes to undo it, for
+     * this admin and page, for 15 minutes. The editor then offers Undo instead of a flash message.
+     *
+     * @param array<string,mixed>|null $before the row as it was, or null for a new block
+     *
+     * @return bool whether an undo was kept
+     */
+    private function rememberPageBlockUndo(string $action, int $id, ?array $before): bool
+    {
+        $pageId   = Params::getParamInt('page_builder_id');
+        $location = 'page.' . $pageId;
+        if ($pageId <= 0 || $id <= 0 || ($before !== null && (string) ($before['s_location'] ?? '') !== $location)) {
+            return false;
+        }
+        osc_kv_set('page_block_undo', osc_logged_admin_id() . ':' . $pageId, array(
+            'action' => $action,
+            'id'     => $id,
+            'before' => $before,
+        ), 900);
+
+        return true;
+    }
+
+    /**
+     * Undo the last page editor change to one of this page's blocks: remove the block it added,
+     * or put back the block as it was before an edit or a delete.
+     */
+    private function pageBlockUndoPost(): void
+    {
+        osc_csrf_check();
+        $pageId   = Params::getParamInt('page_builder_id');
+        $location = 'page.' . $pageId;
+        $key      = osc_logged_admin_id() . ':' . $pageId;
+        $undo     = $pageId > 0 ? osc_kv_get('page_block_undo', $key) : null;
+        osc_kv_delete('page_block_undo', $key);
+        if (!is_array($undo)) {
+            osc_add_flash_info_message(_m('There is nothing to undo.'), 'admin');
+            $this->redirectTo($this->widgetReturnUrl());
+
+            return;
+        }
+        $id     = (int) ($undo['id'] ?? 0);
+        $before = is_array($undo['before'] ?? null) ? $undo['before'] : null;
+        $row    = WidgetStore::find($id);
+        if (($undo['action'] ?? '') === 'added' && $row !== null && $row['s_location'] === $location) {
+            WidgetStore::delete($id);
+        } elseif (($undo['action'] ?? '') === 'edited' && $row !== null && $before !== null && $row['s_location'] === $location) {
+            WidgetStore::update($id, array_intersect_key($before, array_flip(array('s_description', 's_content', 's_type', 's_config'))));
+        } elseif (($undo['action'] ?? '') === 'deleted' && $row === null && $before !== null && ($before['s_location'] ?? '') === $location) {
+            WidgetStore::add(array_intersect_key($before, array_flip(array('s_description', 's_location', 'e_kind', 's_content', 'i_order', 's_type', 's_config'))));
+        }
+        osc_purge_page_cache('widget');
+        osc_add_flash_ok_message(_m('Undone.'), 'admin');
+        $this->redirectTo($this->widgetReturnUrl());
+    }
+
+    /**
+     * A typed block posted without a name is named after its type, so the name stays optional.
+     */
+    private function nameFromType(): void
+    {
+        $type = \mindstellar\widgets\WidgetRegistry::getInstance()->get((string) Params::getParam('s_type'));
+        if ($type !== null && trim((string) Params::getParam('description')) === '') {
+            Params::setParam('description', $type['label']);
+        }
     }
 
     /**

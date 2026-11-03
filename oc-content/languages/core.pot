@@ -1560,6 +1560,11 @@ msgstr ""
 msgid "Add ban rule"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/page-block-form.php
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Add block"
+msgstr ""
+
 #: oc-admin/themes/modern/categories/iframe.php
 #: oc-admin/themes/modern/categories/index.php
 msgid "Add category"
@@ -1695,8 +1700,6 @@ msgid "Add users who can manage your page. You can add admins or moderators: "
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add_widget.php
-#: oc-admin/themes/modern/appearance/page-block-form.php
-#: oc-admin/themes/modern/pages/frm.php
 msgid "Add widget"
 msgstr ""
 
@@ -1887,6 +1890,7 @@ msgid "Adopt existing Better S3 images"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
+#: oc-admin/themes/modern/appearance/page-block-form.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -2867,12 +2871,24 @@ msgstr ""
 msgid "Block"
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Block added. It is live on the page."
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Block deleted."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Block listing"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Block product"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Block saved. It is live on the page."
 msgstr ""
 
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
@@ -2893,6 +2909,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "Block this user?"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/page-block-form.php
+msgid "Block type"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -2924,6 +2944,7 @@ msgstr ""
 msgid "Blocked until"
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
 msgid "Blocks"
 msgstr ""
@@ -4977,10 +4998,6 @@ msgstr ""
 msgid "Delete this webhook endpoint?"
 msgstr ""
 
-#: oc-admin/themes/modern/pages/frm.php
-msgid "Delete this widget?"
-msgstr ""
-
 #: oc-includes/classes/listing/ListingHoldJobs.php
 msgid "Delete unpaid listing"
 msgstr ""
@@ -5471,6 +5488,10 @@ msgstr ""
 msgid "Edit admin"
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Edit block"
+msgstr ""
+
 #: oc-admin/themes/modern/categories/iframe.php
 #: oc-admin/themes/modern/categories/index.php
 msgid "Edit category"
@@ -5556,7 +5577,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/add_widget.php
 #: oc-admin/themes/modern/appearance/widgets.php
-#: oc-admin/themes/modern/pages/frm.php
 msgid "Edit widget"
 msgstr ""
 
@@ -7653,10 +7673,6 @@ msgstr ""
 msgid "Label"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/page-block-form.php
-msgid "Label (for your reference)"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/menus.php
 msgid "Label · %s"
 msgstr ""
@@ -9216,6 +9232,10 @@ msgstr ""
 msgid "Name from"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/page-block-form.php
+msgid "Name in this list (optional)"
+msgstr ""
+
 #: oc-includes/classes/admin/form/ItemSettingsScreen.php
 msgid "Name is required when publishing a new listing"
 msgstr ""
@@ -9585,8 +9605,20 @@ msgstr ""
 msgid "No ban rules yet"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/page-block-form.php
+msgid ""
+"No block types are available to you. Ask an administrator, or install a "
+"plugin that adds blocks."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/keywordBlock.php
 msgid "No blocked keywords yet"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid ""
+"No blocks yet. Add a block to start this page, such as a Heading, then Image "
+"and text."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -9886,16 +9918,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 msgid "No webhook endpoints yet."
-msgstr ""
-
-#: oc-admin/themes/modern/appearance/page-block-form.php
-msgid ""
-"No widget types are available to you. Ask an administrator, or install a "
-"widget plugin."
-msgstr ""
-
-#: oc-admin/themes/modern/pages/frm.php
-msgid "No widgets yet. Add your first widget to build this page."
 msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
@@ -10433,6 +10455,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Only the first %s are shown. Type more of the name to narrow it."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/page-block-form.php
+msgid "Only you see this name"
 msgstr ""
 
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
@@ -12116,12 +12142,12 @@ msgstr ""
 msgid "Reorder %s with the arrow keys"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/index.php
-msgid "Reorder field: use the arrow keys"
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Reorder block %s. Drag, or focus and press the up"
 msgstr ""
 
-#: oc-admin/themes/modern/pages/frm.php
-msgid "Reorder widget %s. Drag, or focus and press the up"
+#: oc-admin/themes/modern/fields/index.php
+msgid "Reorder field: use the arrow keys"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -12570,12 +12596,15 @@ msgstr ""
 msgid "Save bank transfer settings"
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Save block"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/add_widget.php
 #: oc-admin/themes/modern/categories/iframe.php
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/fields/group_iframe.php
 #: oc-admin/themes/modern/fields/iframe.php
-#: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/mailserver.php
 #: oc-includes/classes/admin/form/SitemapSettingsScreen.php
@@ -12606,6 +12635,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/package.php
 msgid "Save package"
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Save page"
 msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
@@ -14673,6 +14706,12 @@ msgstr ""
 msgid "The backup was kept on the server instead."
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+msgid ""
+"The blocks below make up this page, top to bottom. A block goes live on the "
+"page as soon as you save it."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
 "The bucket could not be read, so backups saved there are not listed. Check "
@@ -15293,10 +15332,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 msgid "The username is available"
-msgstr ""
-
-#: oc-admin/themes/modern/pages/frm.php
-msgid "The widgets below make up this page. Widgets can also appear in your"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
@@ -16342,6 +16377,10 @@ msgstr ""
 msgid ""
 "Unchecked, visitors keep using the site and see the message below as a "
 "banner. The choice is kept when maintenance mode is turned off."
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "Undo"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -17450,12 +17489,10 @@ msgid "Widget %d"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add_widget.php
-#: oc-admin/themes/modern/appearance/page-block-form.php
 msgid "Widget type"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
-#: oc-admin/themes/modern/pages/frm.php
 msgid "Widgets"
 msgstr ""
 

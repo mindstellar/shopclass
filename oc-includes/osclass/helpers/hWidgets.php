@@ -648,7 +648,7 @@ osc_register_widget('core.custom_code', array(
     'capability'  => 'super_admin',
     'label'       => 'Custom Code (HTML / JavaScript)',
     'description' => 'Runs unfiltered HTML and JavaScript on your public pages. '
-        . 'Anyone who can edit this widget can take over the site.',
+        . 'Anyone who can edit it can take over the site.',
     'fields'      => array(
         array(
             'name'  => 'code',

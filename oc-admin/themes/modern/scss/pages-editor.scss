@@ -53,8 +53,24 @@
 
   .page-field-hint {
     color: var(--osc-ink-muted);
-    font-size: $font-size-label;
+    font-size: .9375rem;
     margin-block: .35rem 0;
+  }
+
+  // After a block is added, saved or deleted: what happened, and the way back.
+  .page-block-undo {
+    align-items: center;
+    background: var(--osc-success-tint);
+    border-radius: 4px;
+    color: var(--osc-ink);
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem .75rem;
+    margin-block: .75rem 0;
+    padding: .5rem .75rem;
+
+    > i { color: var(--osc-success); }
+    > span { flex: 1 1 auto; }
   }
 
   // Page-builder canvas: the list of blocks that compose a widgetized page.

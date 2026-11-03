@@ -130,6 +130,7 @@ $controllers = array(
         'menu_save_post'       => 'menuSavePost',
         'menus'                => 'menusScreen',
         'page_block_preview_post' => 'pageBlockPreviewPost',
+        'page_block_undo_post'    => 'pageBlockUndoPost',
         'render'               => 'render',
         'reorder_widgets_post' => 'reorderWidgetsPost',
         'widget_create_post'   => 'createWidgetPost',

@@ -58,7 +58,8 @@ function pageFrmText($return = 'title')
         $text['edit']       = true;
         $text['title']      = __('Edit page');
         $text['action_frm'] = 'edit_post';
-        $text['btn_text']   = __('Save changes');
+        // Blocks save on their own; this button saves the page's title, text and settings.
+        $text['btn_text']   = __('Save page');
     } else {
         $text['edit']       = false;
         $text['title']      = __('Add page');
@@ -222,18 +223,35 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $blocks        = Widget::getInstance()->findByLocation($blockLocation);
         $widgetTypes   = osc_widget_types();
 
-        osc_admin_panel_open(__('Widgets'), array(
+        osc_admin_panel_open(__('Blocks'), array(
             'class'   => 'page-blocks-card js-page-widgets',
             'actions' => array(array(
-                'label' => __('Add widget'),
+                'label' => __('Add block'),
                 'icon'  => 'bi-plus-lg',
                 'class' => 'js-page-block-add',
             )),
         )); ?>
         <p class="page-field-hint">
-            <?php _e('The widgets below make up this page. Widgets can also appear in your'
-                . ' theme areas — manage those under Appearance.'); ?>
+            <?php _e('The blocks below make up this page, top to bottom. A block goes live on the page as soon as you save it.'); ?>
         </p>
+        <?php
+        // The last change to this page's blocks, while it can still be undone.
+        $pb_undo = osc_kv_get('page_block_undo', osc_logged_admin_id() . ':' . $pageId);
+        if (is_array($pb_undo)) {
+            $pb_undoText = array(
+                'added'   => __('Block added. It is live on the page.'),
+                'edited'  => __('Block saved. It is live on the page.'),
+                'deleted' => __('Block deleted.'),
+            )[$pb_undo['action'] ?? ''] ?? '';
+            if ($pb_undoText !== '') { ?>
+                <div class="page-block-undo" role="status">
+                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                    <span><?php echo osc_esc_html($pb_undoText); ?></span>
+                    <?php // The form sits outside the page form, beside the block dialog.?>
+                    <button type="submit" form="pageBlockUndoForm" class="btn btn-secondary btn-sm"><?php _e('Undo'); ?></button>
+                </div>
+            <?php }
+        } ?>
         <div class="page-blocks-reorder-error alert alert-danger py-1 px-2 small d-none" role="alert"></div>
         <?php if (count($blocks) > 0) { ?>
             <ul class="page-blocks-list js-page-blocks"
@@ -266,7 +284,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <span class="page-block-handle" draggable="true" tabindex="0"
                               role="button"
                               aria-label="<?php echo osc_esc_html(sprintf(
-                                  __('Reorder widget %s. Drag, or focus and press the up'
+                                  __('Reorder block %s. Drag, or focus and press the up'
                                             . ' or down arrow keys.'),
                                   $b['s_description']
                               )); ?>">
@@ -293,27 +311,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                 </a>
                             <?php } ?>
                             <a href="<?php echo osc_esc_html($deleteUrl); ?>"
-                               class="page-block-delete"
-                               data-confirm="<?php echo osc_esc_html(
-                                   __('Delete this widget?')
-                               ); ?>"><?php _e('Delete'); ?></a>
+                               class="page-block-delete"><?php _e('Delete'); ?></a>
                         </span>
                     </li>
                 <?php } ?>
             </ul>
         <?php } else { ?>
             <p class="page-blocks-empty">
-                <?php _e('No widgets yet. Add your first widget to build this page.'); ?>
+                <?php _e('No blocks yet. Add a block to start this page, such as a Heading, then Image and text.'); ?>
             </p>
         <?php }
         osc_admin_panel_close();
     } else {
         // Placeholder shown when the template select is switched to a builder template but
         // the page is not yet saved as one.
-        osc_admin_panel_open(__('Widgets'), array('class' => 'page-blocks-card js-page-widgets-hint')); ?>
+        osc_admin_panel_open(__('Blocks'), array('class' => 'page-blocks-card js-page-widgets-hint')); ?>
         <p class="page-field-hint">
             <?php _e('Save this page with the Page builder template to compose it from'
-                . ' widgets instead of the text editor.'); ?>
+                . ' blocks instead of the text editor.'); ?>
         </p>
         <?php
         osc_admin_panel_close();
@@ -443,10 +458,15 @@ echo json_encode($pb_builder_ids);
     $pbf_location        = $pb_location;
     $pbf_page_builder_id = $pb_page_id;
     ?>
+    <form id="pageBlockUndoForm" method="post" action="<?php echo osc_admin_base_url(true); ?>" hidden>
+        <input type="hidden" name="page" value="appearance"/>
+        <input type="hidden" name="action" value="page_block_undo_post"/>
+        <input type="hidden" name="page_builder_id" value="<?php echo (int) $pbf_page_builder_id; ?>"/>
+    </form>
     <dialog id="pageBlockDialog" class="osc-dialog osc-dialog-wide page-block-dialog">
         <div class="page-block-dialog-grid">
             <div class="osc-dialog-body">
-                <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add widget'); ?></p>
+                <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add block'); ?></p>
                 <?php require __DIR__ . '/../appearance/page-block-form.php'; ?>
             </div>
             <aside class="page-block-preview" aria-labelledby="pageBlockPreviewTitle">
@@ -461,7 +481,7 @@ echo json_encode($pb_builder_ids);
                     <span class="page-block-preview-state" aria-live="polite"></span>
                 </div>
                 <div class="page-block-preview-stage">
-                    <iframe title="<?php echo osc_esc_html(__('Preview of this page')); ?>"></iframe>
+                    <iframe title="<?php echo osc_esc_html(__('Preview of this page')); ?>" tabindex="-1"></iframe>
                 </div>
             </aside>
         </div>
@@ -480,7 +500,8 @@ echo json_encode($pb_builder_ids);
             var words  = <?php echo json_encode(array('updating' => __('Updating…'), 'failed' => __('The preview could not load.'))); ?>;
             var timer  = null;
             var seq    = 0;
-            var width  = 'desktop';
+            var small  = window.matchMedia('(max-width: 767.98px)');
+            var width  = small.matches ? 'phone' : 'desktop';
 
             function fit() {
                 var w     = width === 'phone' ? 390 : 1280;
@@ -521,9 +542,14 @@ echo json_encode($pb_builder_ids);
             frame.addEventListener('load', function () {
                 state.textContent = '';
                 try {
+                    // A picture of the page, not a second page to use: nothing in it takes focus or clicks.
+                    frame.contentDocument.documentElement.inert = true;
                     var block = frame.contentDocument.querySelector('[data-osc-block-preview]');
                     if (block) {
-                        block.style.outline       = '2px dashed #b5832f';
+                        // A dark page gets a light mark and a light page a dark one, so it shows on both.
+                        var bg   = frame.contentWindow.getComputedStyle(frame.contentDocument.body).backgroundColor.match(/\d+/g) || [255, 255, 255];
+                        var dark = (0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]) < 128;
+                        block.style.outline       = '2px dashed ' + (dark ? '#f2c14e' : '#8a5a12');
                         block.style.outlineOffset = '6px';
                         block.scrollIntoView({block: 'center'});
                     }
@@ -537,6 +563,10 @@ echo json_encode($pb_builder_ids);
             window.addEventListener('resize', fit);
             // Called each time the dialog opens, after its fields hold the block's values.
             window.pageBlockPreviewStart = function () {
+                width = small.matches ? 'phone' : 'desktop';
+                dialog.querySelectorAll('input[name="pb_preview_width"]').forEach(function (radio) {
+                    radio.checked = radio.value === width;
+                });
                 hookEditors();
                 fit();
                 send();
@@ -581,8 +611,10 @@ echo json_encode($pb_builder_ids);
             }
             function openAdd() {
                 resetForm();
-                if (title) { title.textContent = <?php echo json_encode(__('Add widget')); ?>; }
-                if (submit) { submit.textContent = <?php echo json_encode(__('Add widget')); ?>; }
+                if (title) { title.textContent = <?php echo json_encode(__('Add block')); ?>; }
+                if (submit) { submit.textContent = <?php echo json_encode(__('Add block')); ?>; }
+                // A new block starts clean: the first type, not the last block's.
+                if (type && type.options.length) { type.value = type.options[0].value; }
                 if (type && window.pageBlockFormApplyType) { window.pageBlockFormApplyType(type.value); }
                 if (window.pageBlockFormRefresh) { window.pageBlockFormRefresh(); }
                 dialog.showModal();
@@ -590,8 +622,8 @@ echo json_encode($pb_builder_ids);
             }
             function openEdit(row) {
                 resetForm();
-                if (title) { title.textContent = <?php echo json_encode(__('Edit widget')); ?>; }
-                if (submit) { submit.textContent = <?php echo json_encode(__('Save changes')); ?>; }
+                if (title) { title.textContent = <?php echo json_encode(__('Edit block')); ?>; }
+                if (submit) { submit.textContent = <?php echo json_encode(__('Save block')); ?>; }
                 if (action) { action.value = 'edit_widget_post'; }
                 if (widId) { widId.value = row.getAttribute('data-widget-id') || ''; }
                 if (desc) { desc.value = row.getAttribute('data-description') || ''; }
@@ -642,19 +674,11 @@ echo json_encode($pb_builder_ids);
     </script>
 <?php } ?>
 <script>
-    // Page-builder blocks: confirm deletes and persist drag/keyboard reordering to
+    // Page-builder blocks: persist drag/keyboard reordering to
     // the shared reorder endpoint (scoped by the list's data-location). Mirrors the
     // appearance widgets screen; no-op when the canvas is absent.
     (function () {
         'use strict';
-
-        document.querySelectorAll('.page-block-delete').forEach(function (link) {
-            link.addEventListener('click', function (e) {
-                if (!window.confirm(link.getAttribute('data-confirm') || 'Delete this block?')) {
-                    e.preventDefault();
-                }
-            });
-        });
 
         var list = document.querySelector('.js-page-blocks');
         if (!list) {

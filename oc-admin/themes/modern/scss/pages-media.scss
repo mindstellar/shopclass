@@ -185,7 +185,7 @@
 
   .widget-image-meta {
     color: var(--osc-ink-muted);
-    font-size: .8125rem;
+    font-size: .9375rem;
     margin: 0;
   }
 }
@@ -330,7 +330,7 @@
   border-top: 1px solid var(--osc-rule);
   color: var(--osc-ink-muted);
   flex: 1 1 100%;
-  font-size: .8125rem;
+  font-size: .875rem;
   font-weight: 600;
   letter-spacing: .06em;
   margin: .2rem 0 .6rem;
@@ -340,14 +340,83 @@
   span { font-weight: 400; letter-spacing: 0; text-transform: none; }
 }
 
-.widget-field-note { margin: -.6rem 0 1rem; }
+.widget-field-note { font-size: .9375rem; margin: -.6rem 0 1rem; }
 
 // The type's one-line description under the block dialog's type picker.
 #pbfTypeDescription {
   color: var(--osc-ink-muted);
-  font-size: .86rem;
-  margin: .3rem 0 0;
+  font-size: .9375rem;
+  margin: .5rem 0 0;
+
+  // Custom Code can run anything on the site, so its description reads as a warning.
+  &.is-warning {
+    background: var(--osc-danger-tint);
+    border-radius: 4px;
+    color: var(--osc-danger-deep);
+    padding: .45rem .65rem;
+  }
 }
+
+// Block type picker: the types as small labelled tiles, grouped Layout, Content, Advanced.
+.pbf-type-picker {
+  border: 0;
+  margin: 0 0 1rem;
+  min-inline-size: 0;
+  padding: 0;
+
+  legend { float: none; margin-block-end: .25rem; }
+}
+
+.pbf-type-group-title {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  font-weight: 600;
+  margin: .6rem 0 .35rem;
+}
+
+.pbf-type-cards {
+  display: grid;
+  gap: .5rem;
+  grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+}
+
+.pbf-type-radio {
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+}
+
+.pbf-type-card {
+  align-items: center;
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  color: var(--osc-ink);
+  cursor: pointer;
+  display: flex;
+  gap: .55rem;
+  min-block-size: 44px;
+  padding: .45rem .7rem;
+
+  > i { color: var(--osc-ink-muted); font-size: 1.1rem; }
+
+  &:hover { background-color: var(--osc-chrome-hover); }
+}
+
+.pbf-type-radio:checked + .pbf-type-card {
+  background-color: var(--osc-bronze-tint);
+  border-color: var(--osc-bronze);
+  color: var(--osc-bronze);
+  font-weight: 600;
+
+  > i { color: var(--osc-bronze); }
+}
+
+.pbf-type-radio:focus-visible + .pbf-type-card {
+  outline: 2px solid var(--osc-bronze);
+  outline-offset: 2px;
+}
+
+.pbf-type-cards.is-advanced .pbf-type-card > i { color: var(--osc-danger); }
 
 // Page block dialog with its live preview: beside the form on a wide screen, below it otherwise.
 .page-block-preview {
@@ -410,5 +479,41 @@
   .page-block-preview-stage {
     block-size: auto;
     flex: 1 1 auto;
+  }
+}
+
+// The dialog's buttons stay in view at its foot, so the preview is seen before saving.
+.page-block-dialog .osc-dialog-actions {
+  background-color: var(--osc-bench);
+  border-block-start: 1px solid var(--osc-rule);
+  inset-block-end: 0;
+  margin-inline: -1.35rem;
+  position: sticky;
+  z-index: 1;
+}
+
+// Phones: 44px targets for every control in the block dialog and the block list.
+@media (max-width: 767.98px) {
+  // The preview comes first, so the result is seen before the Save button.
+  .page-block-preview { order: -1; }
+  .page-block-dialog-grid { display: flex; flex-direction: column; }
+  .page-block-preview-stage { block-size: 45vh; }
+
+  .page-block-dialog {
+    .form-control,
+    .form-select,
+    .btn,
+    .osc-segmented label,
+    .pbf-type-card {
+      min-block-size: 44px;
+    }
+  }
+
+  .page-blocks-card {
+    .page-block-handle,
+    .page-block-actions > * {
+      min-block-size: 44px;
+      min-inline-size: 44px;
+    }
   }
 }
