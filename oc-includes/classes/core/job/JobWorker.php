@@ -236,7 +236,7 @@ final class JobWorker
         $job = new Job($row, $payload);
 
         try {
-            $handler($job);
+            \mindstellar\auth\Actor::runAsSystem(static fn () => $handler($job));
         } catch (Throwable $e) {
             Db::unwind('the end of job ' . $type);
             $retry = $e instanceof JobRetry ? $e : null;

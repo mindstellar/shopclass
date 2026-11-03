@@ -47,12 +47,58 @@ final class Actor
 
     /**
      * The signed-in admin, or the signed-in user, from this request's address.
+     *
+     * Admin rights with no admin signed in (admin 0) are kept for the command line, the admin
+     * area, and scheduled jobs and cron (see runAsSystem()). Anywhere else, such as a plugin
+     * calling new ItemActions(true) from a public page, the caller is the visitor, so the usual
+     * sign-in, ban and moderation checks apply.
      */
     public static function fromSession(bool $admin): self
     {
         $ip = (string) \Params::getServerParam('REMOTE_ADDR');
+        if (!$admin) {
+            return new self((int) osc_logged_user_id(), null, $ip);
+        }
+        $adminId = (int) osc_logged_admin_id();
+        if ($adminId > 0 || self::systemContext()) {
+            return self::admin($adminId, $ip);
+        }
 
-        return $admin ? self::admin((int) osc_logged_admin_id(), $ip) : new self((int) osc_logged_user_id(), null, $ip);
+        return new self(osc_logged_user_id() > 0 ? (int) osc_logged_user_id() : null, null, $ip);
+    }
+
+    /** How many runAsSystem() calls are running now. */
+    private static int $system = 0;
+
+    /** The server API this request runs under; a property so a test can stand in for a web request. */
+    private static string $sapi = PHP_SAPI;
+
+    /**
+     * Run $work as the site itself: a scheduled job or cron task may act with admin rights
+     * although no admin is signed in.
+     *
+     * @template T
+     *
+     * @param callable():T $work
+     *
+     * @return T
+     */
+    public static function runAsSystem(callable $work): mixed
+    {
+        self::$system++;
+        try {
+            return $work();
+        } finally {
+            self::$system--;
+        }
+    }
+
+    /**
+     * Whether admin rights without a signed-in admin are expected here.
+     */
+    private static function systemContext(): bool
+    {
+        return self::$system > 0 || self::$sapi === 'cli' || (defined('OC_ADMIN') && OC_ADMIN === true);
     }
 
     /**

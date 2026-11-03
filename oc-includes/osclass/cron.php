@@ -132,8 +132,8 @@ foreach ($schedules as $type => [$period, $purgeKey, $jobs]) {
         if (osc_purge_latest_searches() === $purgeKey) {
             LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - $period));
         }
-        $jobs($cron);
+        \mindstellar\auth\Actor::runAsSystem(static fn () => $jobs($cron));
     }
 }
 
-osc_run_hook('cron');
+\mindstellar\auth\Actor::runAsSystem(static fn () => osc_run_hook('cron'));

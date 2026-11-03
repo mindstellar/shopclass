@@ -87,4 +87,20 @@ pin('user: user id', 12, $asUser->userId());
 pin('user: no admin', null, $asUser->adminId());
 pin('user: address', '203.0.113.7', $asUser->ip());
 
+harness_section('admin rights with no admin signed in');
+$sapi = new ReflectionProperty(Actor::class, 'sapi');
+$GLOBALS['session'] = array('user' => 0, 'admin' => 0);
+check('on the command line, admin 0 keeps admin rights', Actor::fromSession(true)->isAdmin());
+$sapi->setValue(null, 'fpm-fcgi');
+$web = Actor::fromSession(true);
+check('on a public page, a guest asking for admin rights stays a guest', $web->isGuest() && !$web->isAdmin());
+$GLOBALS['session'] = array('user' => 12, 'admin' => 0);
+pin('and a signed-in user stays that user', array(12, null), array(Actor::fromSession(true)->userId(), Actor::fromSession(true)->adminId()));
+$GLOBALS['session'] = array('user' => 0, 'admin' => 0);
+check('a scheduled job or cron task keeps admin rights', Actor::runAsSystem(static fn (): bool => Actor::fromSession(true)->isAdmin()));
+check('and gives them back when it ends', !Actor::fromSession(true)->isAdmin());
+$GLOBALS['session'] = array('user' => 0, 'admin' => 3);
+pin('a signed-in admin is that admin on any page', 3, Actor::fromSession(true)->adminId());
+$sapi->setValue(null, PHP_SAPI);
+
 exit(harness_result());
