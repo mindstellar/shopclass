@@ -16,7 +16,6 @@ use mindstellar\billing\Order;
 use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\Receipts;
-use mindstellar\currency\Money;
 
 osc_admin_page(array(
     'section' => __('Billing'),
@@ -409,13 +408,18 @@ foreach ($order->getMeta() as $key => $value) {
                         <?php echo implode('<br>', array_map('osc_esc_html', Receipts::addressLines($address))); ?>
                     </p>
                     <p class="panel-subtitle mt-3 mb-0">
-                        <?php echo osc_esc_html(trim((string) ($buyer['name'] ?? ''))); ?>
-                        <?php if (($buyer['email'] ?? '') !== '') { ?>
-                            · <a href="mailto:<?php echo osc_esc_html(rawurlencode((string) $buyer['email'])); ?>"><?php echo osc_esc_html((string) $buyer['email']); ?></a>
-                        <?php } ?>
-                        <?php if (($buyer['phone'] ?? '') !== '') { ?>
-                            · <?php echo osc_esc_html((string) $buyer['phone']); ?>
-                        <?php } ?>
+                        <?php $buyerName = trim((string) ($buyer['name'] ?? ''));
+                        $buyerParts = array();
+                        if ($buyerName !== '' && $buyerName !== trim((string) ($address['name'] ?? ''))) {
+                            $buyerParts[] = osc_esc_html($buyerName);
+                        }
+                        if (($buyer['email'] ?? '') !== '') {
+                            $buyerParts[] = '<a href="mailto:' . osc_esc_html(rawurlencode((string) $buyer['email'])) . '">' . osc_esc_html((string) $buyer['email']) . '</a>';
+                        }
+                        if (($buyer['phone'] ?? '') !== '') {
+                            $buyerParts[] = osc_esc_html((string) $buyer['phone']);
+                        }
+                        echo implode(' · ', $buyerParts); ?>
                     </p>
                     <?php if ($buyerFields !== array()) { ?>
                         <p class="panel-subtitle mt-1 mb-0"><?php echo implode('<br>', array_map('osc_esc_html', $buyerFields)); ?></p>
@@ -485,8 +489,33 @@ foreach ($order->getMeta() as $key => $value) {
                 <?php } ?>
 
                 <?php osc_admin_panel_open(__('History')); ?>
-                    <?php if ($history === array()) { ?>
-                        <p class="panel-subtitle mb-0"><?php _e('No history kept before 7.1'); ?></p>
+                    <?php
+                    // Credit notes are the refunds; a part refund moves no status, so it is only here.
+                    $events = array();
+                    foreach (array_reverse($history) as $entry) {
+                        $events[] = array(
+                            'at'   => (string) ($entry['at'] ?? ''),
+                            'what' => sprintf(
+                                __('%1$s to %2$s'),
+                                $statusWords[$entry['from'] ?? ''] ?? (string) ($entry['from'] ?? ''),
+                                $statusWords[$entry['to'] ?? ''] ?? (string) ($entry['to'] ?? '')
+                            ),
+                            'by'   => $actorWord($entry),
+                        );
+                    }
+                    foreach ($documents as $doc) {
+                        if ($doc->isCreditNote()) {
+                            $events[] = array(
+                                'at'   => $doc->date,
+                                'what' => sprintf(__('Refunded %1$s (%2$s)'), osc_admin_money($doc->total, $doc->currency), $doc->number),
+                                'by'   => '',
+                            );
+                        }
+                    }
+                    usort($events, static fn (array $a, array $b): int => strcmp($b['at'], $a['at']));
+                    ?>
+                    <?php if ($events === array()) { ?>
+                        <p class="panel-subtitle mb-0"><?php echo osc_esc_html($order->isPending() ? __('Nothing has changed yet.') : __('No history kept before 7.1')); ?></p>
                     <?php } else { ?>
                         <div class="table-responsive">
                             <table class="table">
@@ -498,15 +527,11 @@ foreach ($order->getMeta() as $key => $value) {
                                 </tr>
                                 </thead>
                                 <tbody>
-                                <?php foreach (array_reverse($history) as $entry) { ?>
+                                <?php foreach ($events as $event) { ?>
                                     <tr>
-                                        <td><?php echo osc_admin_date((string) ($entry['at'] ?? ''), true); ?></td>
-                                        <td><?php echo osc_esc_html(sprintf(
-                                            __('%1$s to %2$s'),
-                                            $statusWords[$entry['from'] ?? ''] ?? (string) ($entry['from'] ?? ''),
-                                            $statusWords[$entry['to'] ?? ''] ?? (string) ($entry['to'] ?? '')
-                                        )); ?></td>
-                                        <td><?php echo osc_esc_html($actorWord($entry)); ?></td>
+                                        <td><?php echo osc_admin_date($event['at'], true); ?></td>
+                                        <td><?php echo osc_esc_html($event['what']); ?></td>
+                                        <td><?php echo osc_esc_html($event['by']); ?></td>
                                     </tr>
                                 <?php } ?>
                                 </tbody>
@@ -808,14 +833,13 @@ foreach ($order->getMeta() as $key => $value) {
         ));
     }
     if ($canRefundPart) {
-        $decimals = Money::decimals($order->getCurrency());
         ob_start(); ?>
         <div class="order-refund-part-fields">
             <?php osc_admin_text(array(
                 'id'    => 'refund-part-amount',
                 'name'  => 'amount',
                 'label' => sprintf(__('Amount (%s)'), $order->getCurrency()),
-                'attrs' => array('inputmode' => 'decimal', 'autocomplete' => 'off', 'placeholder' => Money::fromMicros($refundLeft, $decimals)),
+                'attrs' => array('inputmode' => 'decimal', 'autocomplete' => 'off', 'placeholder' => __('Empty: the chosen units')),
                 'help'  => $lineTaxes !== array()
                     ? __('Leave empty to refund the chosen units with their own tax.')
                     : __('Leave empty to refund the chosen units with their share of tax.'),

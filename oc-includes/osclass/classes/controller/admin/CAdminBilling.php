@@ -172,6 +172,7 @@ class CAdminBilling extends AdminSecBaseModel
             'status'  => $this->allowedStatus(Params::getParamString('status')),
             'gateway' => Params::getParamString('gateway'),
             'user_id' => Params::getParamInt('userId'),
+            'q'       => mb_substr(trim(Params::getParamString('q')), 0, 100),
             'goods'   => false,
         );
         // "To ship": paid goods orders and unpaid cash on delivery ones, newest first.
@@ -188,6 +189,7 @@ class CAdminBilling extends AdminSecBaseModel
 
         $this->_exportVariableToView('orders', $orders);
         $this->_exportVariableToView('users', $this->usersFor($orders));
+        $this->_exportVariableToView('partlyRefunded', $this->partlyRefundedIn($orders));
         $this->_exportVariableToView('summary', OrderStore::summary($filters, $total));
         $this->_exportVariableToView('gateways', OrderStore::knownGateways());
         $this->_exportVariableToView('filters', $filters);
@@ -1115,6 +1117,25 @@ class CAdminBilling extends AdminSecBaseModel
     private function ledgerForOrder($orderId)
     {
         return \mindstellar\billing\OrderStore::ledgerRows((int) $orderId);
+    }
+
+    /**
+     * Micros refunded so far by order id, for the page's paid shop orders that have a credit note.
+     *
+     * @param Order[] $orders
+     *
+     * @return array<int,int>
+     */
+    private function partlyRefundedIn(array $orders): array
+    {
+        $paid = array();
+        foreach ($orders as $order) {
+            if ($order->isGoods() && $order->isPaid() && $order->getStatus() !== Order::STATUS_REFUNDED) {
+                $paid[] = $order->getId();
+            }
+        }
+
+        return array_filter(DocumentStore::refundedTotals($paid));
     }
 
     /**

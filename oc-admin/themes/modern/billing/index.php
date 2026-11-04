@@ -29,6 +29,7 @@ $total    = (int)__get('total');
 $pageNum  = (int)__get('pageNum');
 $perPage  = (int)__get('perPage');
 $toShip   = (bool)__get('toShip');
+$partly   = is_array(__get('partlyRefunded')) ? __get('partlyRefunded') : array();
 
 $base = osc_admin_base_url(true) . '?page=billing';
 
@@ -47,7 +48,8 @@ $statusWords = array(
 $isFiltered = $toShip
               || ($filters['status'] ?? '') !== ''
               || ($filters['gateway'] ?? '') !== ''
-              || (int)($filters['user_id'] ?? 0) > 0;
+              || (int)($filters['user_id'] ?? 0) > 0
+              || ($filters['q'] ?? '') !== '';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_page_head(__('Orders'), osc_is_shop_mode() ? array(array(
@@ -71,6 +73,14 @@ $isFiltered = $toShip
             'reset'  => $base,
             'submit' => __('Filter'),
             'fields' => array_values(array_filter(array(
+                array(
+                    'type'        => 'search',
+                    'name'        => 'q',
+                    'id'          => 'fSearch',
+                    'label'       => __('Search'),
+                    'placeholder' => __('Order number, name or e-mail'),
+                    'value'       => (string) ($filters['q'] ?? ''),
+                ),
                 array(
                     'type'        => 'select',
                     'name'        => 'status',
@@ -114,7 +124,7 @@ $isFiltered = $toShip
             'icon'  => 'bi-receipt',
             'title' => $isFiltered ? __('No orders match this filter') : __('No orders yet'),
             'text'  => $isFiltered
-                ? __('Try a different status or payment method.')
+                ? __('Try a different search, status or payment method.')
                 : __('Orders appear here as soon as a payment plugin takes its first payment.'),
             'action' => $isFiltered
                 ? array('label' => __('Clear filter'), 'url' => $base)
@@ -150,6 +160,9 @@ $isFiltered = $toShip
                                 $order->getStatus(),
                                 $statusWords[$order->getStatus()] ?? $order->getStatus()
                             ); ?>
+                            <?php if (isset($partly[$order->getId()])) { ?>
+                                <br><span class="text-muted"><?php _e('Partly refunded'); ?></span>
+                            <?php } ?>
                         </td>
                         <td data-col-name="<?php echo osc_esc_html(_x('Order', 'purchase order')); ?>">
                             <a class="billing-order-link" href="<?php echo osc_esc_html($orderUrl); ?>">
@@ -197,6 +210,7 @@ $isFiltered = $toShip
             'status'  => $filters['status'] ?? '',
             'gateway' => $filters['gateway'] ?? '',
             'userId'  => $filters['user_id'] ?? 0,
+            'q'       => $filters['q'] ?? '',
             'toShip'  => $toShip ? 1 : 0,
         )),
     )); ?>

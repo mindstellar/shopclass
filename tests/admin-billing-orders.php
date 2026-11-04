@@ -404,6 +404,31 @@ harness_section('the order list');
 $list = drive('', [], [])['drawn'];
 check('the payment method filter names each gateway', (bool) preg_match('#<option value="offline"\s*>\s*Bank transfer\s*</option>#', $list));
 
+harness_section('search, partly refunded, history');
+$ann = seed_user($admin, 'annabel', 'annabel@example.test');
+$annOrder = OrderStore::create($ann, 'offline', $m(7), 'USD', 0, ['_kind' => Order::KIND_GOODS, '_label' => 'Mug']);
+$ids = static fn (string $q): array => array_map(static fn (Order $o): int => $o->getId(), OrderStore::search(['q' => $q], 50));
+pin('search finds an order by number, with or without #', [[$annOrder->getId()], [$annOrder->getId()]], [$ids((string) $annOrder->getId()), $ids('#' . $annOrder->getId())]);
+pin('search finds a buyer by e-mail start and by username', [[$annOrder->getId()], [$annOrder->getId()]], [$ids('annabel@ex'), $ids('annab')]);
+pin('search with no match finds nothing, and a % is not a wildcard', [[], []], [$ids('zzzz'), $ids('%')]);
+check('the list page searches and keeps the box filled', str_contains(drive('', [], ['q' => 'annabel@'])['drawn'], 'value="annabel@"'));
+$bogus = drive('', [], ['status' => 'nonsense'])['drawn'];
+check('a bogus status shows every order and the status filter reads Any', str_contains($bogus, '#' . $annOrder->getId()) && !preg_match('#<option value="nonsense"#', $bogus));
+
+Billing::markPaid($annOrder, null);
+check('a fully paid order is not marked partly refunded', !str_contains(drive('', [], [])['drawn'], 'Partly refunded'));
+\mindstellar\billing\DocumentStore::insert(\mindstellar\billing\Document::CREDIT_NOTE, OrderStore::find($annOrder->getId()), $m(2), []);
+check('a part refund shows on the list', str_contains(drive('', [], [])['drawn'], 'Partly refunded'));
+$detail = drive('order', [], ['id' => $annOrder->getId()])['drawn'];
+check('and as a row in the order history', str_contains($detail, 'Refunded 2.00 USD'));
+$fresh = OrderStore::create($ann, 'offline', $m(7), 'USD', 0, ['_kind' => Order::KIND_GOODS, '_label' => 'Mug']);
+$freshPage = drive('order', [], ['id' => $fresh->getId()])['drawn'];
+check('a new order does not claim history was not kept', !str_contains($freshPage, 'No history kept before 7.1') && str_contains($freshPage, 'Nothing has changed yet.'));
+check('the part refund amount box starts empty', !preg_match('#id="refund-part-amount"[^>]*value="[^"]+"#', $detail));
+pin('the refused-amount message uses the admin money format', 'At most 5.00 USD is left to refund', (function () use ($annOrder, $m) {
+    return Billing::refundPart(OrderStore::find($annOrder->getId()), $m(500), [], '', false, false)->getMessage();
+})());
+
 harness_section('the buyer\'s display name');
 pin('the full name first', 'Asha Rao', \mindstellar\user\UserStore::displayName(array('s_name' => 'Asha Rao', 's_username' => '10')));
 pin('the username when the name is blank', 'asha', \mindstellar\user\UserStore::displayName(array('s_name' => '  ', 's_username' => 'asha')));

@@ -210,6 +210,29 @@ final class DocumentStore extends Model
     }
 
     /**
+     * What credit notes have refunded, for several orders in one query. An order with none has no entry.
+     *
+     * @param int[] $orderIds
+     *
+     * @return array<int,int> order id => micros
+     */
+    public static function refundedTotals(array $orderIds): array
+    {
+        $orderIds = array_values(array_unique(array_map('intval', $orderIds)));
+        if ($orderIds === array()) {
+            return array();
+        }
+        $rows = self::table()->select('fk_i_order_id')->selectRaw('SUM(i_total) AS refunded')
+            ->where('s_type', Document::CREDIT_NOTE)->whereIn('fk_i_order_id', $orderIds)->groupBy('fk_i_order_id')->get();
+        $out  = array();
+        foreach ($rows as $row) {
+            $out[(int) $row['fk_i_order_id']] = (int) $row['refunded'];
+        }
+
+        return $out;
+    }
+
+    /**
      * Quantity refunded so far per order line, from the lines of the order's credit notes.
      *
      * @return array<int,int> line id => quantity

@@ -661,7 +661,7 @@ final class Billing
             return CallbackResult::ignored(__('Enter an amount or choose what to refund'));
         }
         if ($amount > $left) {
-            return CallbackResult::ignored(sprintf(__('At most %s is left to refund'), \mindstellar\currency\CurrencyService::make()->money($left, $order->getCurrency())));
+            return CallbackResult::ignored(sprintf(__('At most %s is left to refund'), \mindstellar\currency\Money::format($left, $order->getCurrency())));
         }
 
         $gateway = null;
