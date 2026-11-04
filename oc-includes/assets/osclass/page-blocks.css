@@ -34,6 +34,15 @@
 }
 .osc-columns--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 
+/* A text block holds the images floated inside it; a centred one sits in the middle. */
+.osc-rich-text { display: flow-root; }
+.osc-rich-text--center { margin-inline: auto; }
+.osc-rich-text--wide { max-width: none; }
+.osc-rich-text img { max-width: 100%; height: auto; }
+.osc-rich-text .osc-img-left { float: left; margin: 0 1.5em 1em 0; max-width: 50%; }
+.osc-rich-text .osc-img-right { float: right; margin: 0 0 1em 1.5em; max-width: 50%; }
+.osc-rich-text .osc-img-center { display: block; margin: 0 auto 1em; }
+
 .osc-heading--center { text-align: center; }
 .osc-heading--center > p { margin-inline: auto; }
 
@@ -53,4 +62,7 @@
     .osc-columns,
     .osc-columns--3 { grid-template-columns: minmax(0, 1fr); }
     .osc-media-text--right > figure { order: 0; }
+    /* No room to wrap text on a phone: a floated image takes the line. */
+    .osc-rich-text :is(.osc-img-left, .osc-img-right),
+    .osc-rich-text img[style*="float"] { float: none !important; display: block; margin: 0 auto 1rem !important; max-width: 100% !important; }
 }

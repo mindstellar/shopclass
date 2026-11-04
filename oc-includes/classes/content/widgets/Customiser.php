@@ -14,6 +14,9 @@ namespace mindstellar\widgets;
 
 use mindstellar\admin\form\store\StoreFactory;
 use mindstellar\boot\CoreServices;
+use mindstellar\database\Db;
+use mindstellar\pages\PageQuery;
+use mindstellar\pages\PageService;
 use mindstellar\settings\SettingsImage;
 use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\widgets\event\CustomiserPublished;
@@ -24,10 +27,14 @@ use mindstellar\widgets\event\CustomiserPublished;
  *
  * Section configs go through WidgetConfig, the widgets screen's sanitiser; look values go
  * through the settings API's sanitise and validate for their declared field. Nothing is
- * stored unless the whole change passes. On a page, a locked row (see locked()) can only move.
+ * stored unless the whole change passes. On a page, a locked row (see locked()) can only move,
+ * and the page's own text can be drafted per locale (page_text), stored as the page form stores it.
  */
 final class Customiser
 {
+    /** What a t_pages_description.s_text (TEXT) holds, in bytes. */
+    public const PAGE_TEXT_MAX_BYTES = 65535;
+
     /** @var array<string,mixed> */
     private array $spec;
 
@@ -104,12 +111,13 @@ final class Customiser
      * @param array<mixed> $locations    slug => rows, as Params purified them
      * @param array<mixed> $locationsRaw the same, unpurified
      * @param array<mixed> $settings     look field name => raw posted value
+     * @param array<mixed> $pageText     locale code => raw posted page text, page mode only
      *
      * @return array{status:int,errors:string[],saved_at:int}
      */
-    public function saveDraft(array $locations, array $locationsRaw, array $settings): array
+    public function saveDraft(array $locations, array $locationsRaw, array $settings, array $pageText = array()): array
     {
-        $current = $this->draft->read() ?? array('locations' => array(), 'settings' => array(), 'base' => array());
+        $current = $this->draft->read() ?? array('locations' => array(), 'settings' => array(), 'base' => array(), 'page_text' => array());
         $errors  = array();
 
         $drafted = $current['locations'];
@@ -125,20 +133,28 @@ final class Customiser
             $raw = is_array($locationsRaw[$slug] ?? null) ? $locationsRaw[$slug] : array();
             $out = $this->rows($slug, is_array($rows) ? $rows : array(), $raw, $errors);
             if ($out !== null) {
-                if (!isset($drafted[$slug])) {
+                // On a page the base covers the blocks and the page text, so it is taken once.
+                if ($this->pageMode ? !isset($base[$slug]) : !isset($drafted[$slug])) {
                     $base[$slug] = $this->liveHash($slug);
                 }
                 $drafted[$slug] = $out;
             }
         }
 
-        $look = $this->lookValues($settings, $current['settings'], $errors);
+        $look  = $this->lookValues($settings, $current['settings'], $errors);
+        $texts = $this->pageTexts($pageText, $current['page_text'] ?? array(), $errors);
+        if ($pageText !== array() && $errors === array()) {
+            $slug = $this->draft->theme();
+            if (!isset($base[$slug])) {
+                $base[$slug] = $this->liveHash($slug);
+            }
+        }
 
         if ($errors !== array()) {
             return array('status' => 422, 'errors' => $errors, 'saved_at' => 0);
         }
 
-        $next = array('locations' => $drafted, 'settings' => $look['values'], 'base' => $base);
+        $next = array('locations' => $drafted, 'settings' => $look['values'], 'base' => $base, 'page_text' => $texts);
         if (CustomiserDraft::bytes($next + array('theme' => $this->draft->theme(), 'updated_at' => time())) > CustomiserDraft::MAX_BYTES) {
             return array('status' => 422, 'errors' => array(__('The draft is too large to save.')), 'saved_at' => 0);
         }
@@ -180,9 +196,10 @@ final class Customiser
     /**
      * Make the draft live: each drafted location is replaced, each drafted look value is
      * stored, and the draft is forgotten. When a drafted location changed since the draft took
-     * it (the Widgets screen, another admin), nothing is written unless $force is true.
+     * it (the Widgets screen, another admin), nothing is written unless $force is true. On a
+     * page the drafted page texts are written in the same transaction as the blocks.
      *
-     * @return array{status:int,errors:string[],stale?:bool}
+     * @return array{status:int,errors:string[],stale?:bool,page_text?:string[]} page_text: the locales written
      */
     public function publish(bool $force = false): array
     {
@@ -213,9 +230,14 @@ final class Customiser
             if ($errors !== array()) {
                 return array('status' => 422, 'errors' => $errors);
             }
-            foreach ($plan as $slug => $keep) {
-                WidgetStore::replaceLocation($slug, $keep);
-            }
+            $texts = $this->pageMode ? $this->knownTexts($draft['page_text']) : array();
+            // The blocks and the page text go live together or not at all.
+            Db::transaction(function () use ($plan, $texts): void {
+                foreach ($plan as $slug => $keep) {
+                    WidgetStore::replaceLocation($slug, $keep);
+                }
+                PageService::make()->writeTexts($this->pageId(), $texts);
+            });
         } catch (\Throwable $e) {
             return array('status' => 500, 'errors' => array($failed));
         }
@@ -254,11 +276,18 @@ final class Customiser
             CoreServices::dispatcher()->dispatch(new CustomiserPublished($this->draft->theme()));
         }
 
-        return array('status' => 200, 'errors' => array());
+        if ($texts !== array()) {
+            // What the page form's save does once a page's text changed.
+            osc_run_hook('edit_page', $this->pageId());
+            osc_purge_page_cache('page');
+        }
+
+        return array('status' => 200, 'errors' => array(), 'page_text' => array_keys($texts));
     }
 
     /**
-     * Drafted locations whose live rows differ from when the draft took them.
+     * Drafted locations whose live rows differ from when the draft took them. On a page the
+     * page text counts too.
      *
      * @param array<string,mixed> $draft
      *
@@ -268,7 +297,8 @@ final class Customiser
     {
         $stale = array();
         foreach ((array) ($draft['base'] ?? array()) as $slug => $hash) {
-            if (isset($draft['locations'][$slug]) && $this->liveHash((string) $slug) !== (string) $hash) {
+            $drafted = isset($draft['locations'][$slug]) || ($this->pageMode && !empty($draft['page_text']));
+            if ($drafted && $this->liveHash((string) $slug) !== (string) $hash) {
                 $stale[] = (string) $slug;
             }
         }
@@ -279,10 +309,90 @@ final class Customiser
     private function liveHash(string $slug): string
     {
         try {
-            return WidgetStore::locationHash($slug);
+            if (!$this->pageMode) {
+                return WidgetStore::locationHash($slug);
+            }
+            $id    = $this->pageId();
+            $texts = array_map(static fn (array $row): string => (string) ($row['s_text'] ?? ''), (new PageQuery())->texts(array($id))[$id] ?? array());
+            ksort($texts);
+
+            return md5(WidgetStore::locationHash($slug) . '|' . json_encode($texts));
         } catch (\Throwable $e) {
             return '';
         }
+    }
+
+    /**
+     * The page being edited, from the draft scope 'page.N'; 0 in theme mode.
+     */
+    private function pageId(): int
+    {
+        return $this->pageMode ? (int) substr($this->draft->theme(), 5) : 0;
+    }
+
+    /**
+     * Posted page texts checked and merged over the drafted ones. Stored as the page form stores
+     * them: admin markup, not purified. Only a page takes them, in a language the site offers.
+     *
+     * @param array<mixed>         $posted  locale code => raw text
+     * @param array<string,string> $drafted
+     * @param string[]             $errors
+     *
+     * @return array<string,string>
+     */
+    private function pageTexts(array $posted, array $drafted, array &$errors): array
+    {
+        if ($posted === array()) {
+            return $drafted;
+        }
+        if (!$this->pageMode) {
+            $errors[] = __('Page text can only be edited on a page.');
+
+            return $drafted;
+        }
+        $known = $this->localeCodes();
+        foreach ($posted as $locale => $text) {
+            $locale = (string) $locale;
+            if (!isset($known[$locale])) {
+                $errors[] = sprintf(_m('%s is not a language of this site'), $locale);
+            } elseif (!is_string($text)) {
+                $errors[] = sprintf(__('The page text for %s is not valid.'), $locale);
+            } elseif (strlen($text) > self::PAGE_TEXT_MAX_BYTES) {
+                $errors[] = sprintf(__('The page text for %s is too long.'), $locale);
+            } else {
+                $drafted[$locale] = $text;
+            }
+        }
+
+        return $drafted;
+    }
+
+    /**
+     * Drafted page texts still in a language the site offers.
+     *
+     * @param array<string,string> $texts
+     *
+     * @return array<string,string>
+     */
+    private function knownTexts(array $texts): array
+    {
+        return array_filter(array_intersect_key($texts, $this->localeCodes()), 'is_string');
+    }
+
+    /**
+     * The site's language codes, as the page form offers them.
+     *
+     * @return array<string,true>
+     */
+    private function localeCodes(): array
+    {
+        $codes = array();
+        foreach ((array) osc_get_locales() as $locale) {
+            $codes[(string) ($locale['pk_c_code'] ?? '')] = true;
+        }
+        unset($codes['']);
+
+        return $codes;
     }
 
     /**

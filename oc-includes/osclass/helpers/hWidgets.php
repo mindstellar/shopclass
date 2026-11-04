@@ -8,6 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\utility\Sanitize;
 use mindstellar\widgets\WidgetConfig;
 use mindstellar\widgets\WidgetRegistry;
 
@@ -432,6 +433,26 @@ function _osc_customiser_page_draft_rows(string $location): ?array
 }
 
 /**
+ * The signed-in admin's drafted text of one page in one locale, or null outside a preview or
+ * when that text is not drafted. Visitors never get a preview, so they never get a draft.
+ *
+ * @param int    $pageId
+ * @param string $locale
+ *
+ * @return string|null
+ */
+function _osc_customiser_page_draft_text(int $pageId, string $locale): ?string
+{
+    if ($pageId <= 0 || $locale === '' || !osc_customiser_preview()) {
+        return null;
+    }
+    $draft = (new \mindstellar\widgets\CustomiserDraft('page.' . $pageId, osc_logged_admin_id()))->read();
+    $text  = $draft['page_text'][$locale] ?? null;
+
+    return is_string($text) ? $text : null;
+}
+
+/**
  * Whether $location is a page's own block location, page.N.
  */
 function _osc_customiser_is_page_location(string $location): bool
@@ -688,11 +709,12 @@ osc_register_widget('core.rich_text', array(
             'label' => 'Text',
             'type'  => 'richtext',
         ),
+        ..._osc_block_text_layout_fields(),
     ),
     'render'      => static function ($config) {
         $html = _osc_block_text($config['text'] ?? '');
         if ($html !== '') {
-            echo '<div class="osc-rich-text">' . $html . '</div>';
+            echo '<div class="' . _osc_block_text_class((array) $config) . '">' . $html . '</div>';
         }
     },
 ));
@@ -806,6 +828,39 @@ function _osc_block_button($label, $link, $style = 'primary')
 }
 
 /**
+ * The width and position fields a text block offers: reading width or the full page, and a
+ * reading-width column on the left or centred.
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function _osc_block_text_layout_fields()
+{
+    return array(
+        array('name' => 'width', 'label' => 'Width', 'type' => 'choice', 'half' => true, 'default' => 'reading',
+              'options' => array('reading' => 'Reading width', 'full' => 'Full width'),
+              'icons' => array('reading' => 'distribute-horizontal', 'full' => 'arrows-expand-vertical')),
+        array('name' => 'place', 'label' => 'Position', 'type' => 'choice', 'half' => true, 'default' => 'left',
+              'options' => array('left' => 'Left', 'center' => 'Centre'),
+              'icons' => array('left' => 'align-start', 'center' => 'align-center'),
+              'show_if' => array('width' => 'reading')),
+    );
+}
+
+/**
+ * The classes of a text block's wrapper for its width and position fields.
+ *
+ * @param array<string,mixed> $config
+ */
+function _osc_block_text_class(array $config): string
+{
+    if (($config['width'] ?? '') === 'full') {
+        return 'osc-rich-text osc-rich-text--wide';
+    }
+
+    return 'osc-rich-text' . (($config['place'] ?? '') === 'center' ? ' osc-rich-text--center' : '');
+}
+
+/**
  * Formatted block text, cleaned as Rich text is, or '' when there is none.
  *
  * @param mixed $text
@@ -818,6 +873,30 @@ function _osc_block_text($text)
 
     return trim($html) === '' ? '' : $html;
 }
+
+/*
+ * Core "Page text" block: the page's own text, edited in this block's panel, in the visitor's
+ * language, placed among the other blocks. Added for you when a page with text switches to the Page builder.
+ */
+osc_register_widget('core.page_text', array(
+    'label'       => 'Page text',
+    'description' => 'The page\'s own text, in the visitor\'s language.',
+    'builder'     => true,
+    'icon'        => 'file-earmark-text',
+    'fields'      => array(
+        array('name' => 'where', 'type' => 'note', 'help' => 'This text has one version per language. Picking a language also shows it in the preview.'),
+        ..._osc_block_text_layout_fields(),
+    ),
+    'render'      => static function ($config) {
+        if ((int) osc_static_page_id() <= 0) {
+            return;
+        }
+        $html = osc_static_page_text();
+        if (trim(Sanitize::stripTags($html, '<img><iframe><video>')) !== '') {
+            echo '<div class="' . _osc_block_text_class((array) $config) . ' osc-page-text">' . $html . '</div>';
+        }
+    },
+));
 
 /*
  * Layout blocks for the Page builder ('builder' => true): they fit a page's block canvas and a

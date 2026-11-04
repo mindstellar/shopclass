@@ -111,6 +111,7 @@ $czState = array(
         'removeShort' => __('Remove?'),
         'removeText'  => $czPageMode ? __('Remove block') : __('Remove'),
         'noFields'    => $czPageMode ? __('This block has no settings.') : __('This section has no settings.'),
+        'expand'      => __('Expand'),
         'noRows'      => $czPageMode ? __('This page has no blocks yet.') : __('No sections yet. Add one below.'),
         'pickRow'     => $czPageMode ? __('Pick a block to edit it.') : __('Pick a section to edit it.'),
         'hidden'      => __('Hidden'),
@@ -139,7 +140,10 @@ $currentWidgetConfig = array();
         <div class="cz-view" id="cz-list-view">
             <div class="cz-top">
                 <?php if ($czPageMode) { ?>
-                    <a class="cz-back" id="cz-page-back" href="<?php echo osc_esc_html($czTarget['edit_url']); ?>"><i class="bi bi-chevron-left" aria-hidden="true"></i><?php _e('Back to page'); ?></a>
+                    <div class="cz-top-links">
+                        <a class="cz-back" id="cz-page-back" href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=pages'); ?>"><i class="bi bi-chevron-left" aria-hidden="true"></i><?php _e('Back to pages'); ?></a>
+                        <a class="cz-settings-link" id="cz-page-settings" href="<?php echo osc_esc_html($czTarget['edit_url']); ?>"><i class="bi bi-gear" aria-hidden="true"></i><?php _e('Page settings'); ?></a>
+                    </div>
                     <h1 class="cz-title"><?php echo osc_esc_html(sprintf(__('Edit blocks: %s'), $czTarget['title'])); ?></h1>
                 <?php } else { ?>
                     <h1 class="cz-title"><?php echo osc_esc_html(sprintf(__('Customise %s'), $czThemeName)); ?></h1>
@@ -214,6 +218,25 @@ $currentWidgetConfig = array();
                         <label class="form-sublabel" for="cz-name"><?php _e('Name in this list (optional)'); ?></label>
                         <input type="text" class="form-control form-control-sm" id="cz-name" maxlength="40" autocomplete="off" />
                     </div>
+                    <?php if ($czPageMode && is_array($customiser['page_text'] ?? null)) { ?>
+                        <div class="cz-page-text" id="cz-page-text" hidden>
+                            <?php osc_admin_field(array(
+                                'type'           => 'richtext',
+                                'id'             => 'cz-page-text-field',
+                                'name'           => 'page_text',
+                                'translate_name' => 'page_text[%s]',
+                                'label'          => __('Page text'),
+                                'layout'         => 'stacked',
+                                'translate'      => true,
+                                'locales'        => $customiser['page_text']['locales'],
+                                'value'          => $customiser['page_text']['values'],
+                                'preset'         => 'full',
+                                'height'         => 300,
+                                'media'          => true,
+                                'upload_url'     => adminLibraryUploadUrl(),
+                            )); ?>
+                        </div>
+                    <?php } ?>
                     <div class="cz-fields" id="cz-section-fields"></div>
                     <div class="cz-foot">
                         <button type="button" class="cz-remove" id="cz-remove"><i class="bi bi-trash" aria-hidden="true"></i><span><?php echo osc_esc_html($czState['i18n']['removeText']); ?></span></button>
@@ -324,6 +347,16 @@ $currentWidgetConfig = array();
     <div class="osc-dialog-actions">
         <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Keep editing'); ?></button>
         <button type="button" class="btn btn-red btn-sm" id="cz-stale-confirm"><?php _e('Publish anyway'); ?></button>
+    </div>
+</dialog>
+
+<dialog id="cz-expand" class="osc-dialog osc-dialog-wide cz-expand" aria-labelledby="cz-expand-title">
+    <div class="osc-dialog-body">
+        <p class="osc-dialog-title" id="cz-expand-title"></p>
+        <div id="cz-expand-editor"></div>
+    </div>
+    <div class="osc-dialog-actions">
+        <button type="button" class="btn btn-primary btn-sm" data-osc-dialog-close><?php _e('Done'); ?></button>
     </div>
 </dialog>
 

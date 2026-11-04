@@ -566,6 +566,16 @@ pin('...and no page customiser', null, Customiser::forPage(999999));
 pin('a classic page is a plain page', true, PageBlocks::isPlainPage($plain));
 pin('a builder page is not a plain page', false, PageBlocks::isPlainPage($p7));
 pin('a missing page is not a plain page', false, PageBlocks::isPlainPage(999999));
+
+$p9 = seed_page($admin, 'nine', 'Nine');
+$builder($p9);
+pin('a plain page gets no Page text block', false, PageBlocks::seedPageText($plain));
+pin('a builder page with text and no blocks gets a Page text block', true, PageBlocks::seedPageText($p9));
+pin('...as its only block', array('core.page_text'), array_values(array_column(WidgetStore::rowsAt('page.' . $p9), 's_type')));
+pin('...and only once', false, PageBlocks::seedPageText($p9));
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_pages_description SET s_text = '<p> </p>' WHERE fk_i_pages_id = $p8");
+pin('a builder page with no text gets none', false, PageBlocks::seedPageText($p8));
+$admin->query("DELETE FROM $table WHERE s_location = 'page.$p9'");
 customiser_kit_declare();
 
 harness_section('page mode: drafts are per page');

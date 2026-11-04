@@ -53,6 +53,18 @@ if (!function_exists('osc_current_web_theme')) {
         return 'aisle';
     }
 }
+if (!function_exists('osc_static_page_id')) {
+    function osc_static_page_id()
+    {
+        return $GLOBALS['pageId'] ?? 0;
+    }
+}
+if (!function_exists('osc_static_page_text')) {
+    function osc_static_page_text()
+    {
+        return $GLOBALS['pageText'] ?? '';
+    }
+}
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
 
 use mindstellar\widgets\WidgetConfig;
@@ -174,5 +186,25 @@ if ($node !== '') {
         fwrite(STDERR, implode("\n", $nodeOut) . "\n");
     }
 }
+
+harness_section('page text');
+
+$GLOBALS['pageId'] = 0;
+pin('outside a page the Page text block prints nothing', '', $render('core.page_text', array()));
+$GLOBALS['pageId']   = 7;
+$GLOBALS['pageText'] = '<p>Our story</p>';
+pin('on a page it prints the page text', '<div class="osc-rich-text osc-page-text"><p>Our story</p></div>', $render('core.page_text', array()));
+$GLOBALS['pageText'] = '<p> </p>';
+pin('an empty page text prints nothing', '', $render('core.page_text', array()));
+pin('it is a builder-only block', true, !empty($registry->get('core.page_text')['builder']));
+
+harness_section('text block width and position');
+
+pin('a rich text block is reading width by default', '<div class="osc-rich-text"><p>Hi</p></div>', $render('core.rich_text', array('text' => '<p>Hi</p>')));
+pin('...centred when asked', '<div class="osc-rich-text osc-rich-text--center"><p>Hi</p></div>', $render('core.rich_text', array('text' => '<p>Hi</p>', 'place' => 'center')));
+pin('...and full width ignores the position', '<div class="osc-rich-text osc-rich-text--wide"><p>Hi</p></div>', $render('core.rich_text', array('text' => '<p>Hi</p>', 'width' => 'full', 'place' => 'center')));
+$GLOBALS['pageId']   = 7;
+$GLOBALS['pageText'] = '<p>Our story</p>';
+pin('the Page text block takes the same choices', '<div class="osc-rich-text osc-rich-text--wide osc-page-text"><p>Our story</p></div>', $render('core.page_text', array('width' => 'full')));
 
 exit(harness_result());

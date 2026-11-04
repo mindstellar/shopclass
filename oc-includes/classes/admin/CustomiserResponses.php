@@ -33,7 +33,9 @@ trait CustomiserResponses
             $result = $customiser->saveDraft(
                 \Params::getParamArray('locations'),
                 \Params::getParamArray('locations', false, false, false),
-                \Params::getParamArray('settings', false, false, false)
+                \Params::getParamArray('settings', false, false, false),
+                // Page text is admin markup, stored unpurified as the page form stores it.
+                \Params::getParamArray('page_text', false, false, false)
             );
         } catch (\Throwable $e) {
             AjaxResponse::json(array('error' => 1, 'errors' => array(_m('The draft could not be saved.'))), 500);

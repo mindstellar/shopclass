@@ -266,9 +266,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
     echo '<p class="media-summary">' . osc_esc_html(implode(' · ', $parts)) . ($stores !== array() ? '<br>' . osc_esc_html(implode(' · ', $stores)) : '') . '</p>';
     ?>
     <input type="file" accept="image/*" hidden id="media-upload-input"
-           data-url="<?php echo osc_esc_html(osc_admin_base_url(true)
-               . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&'
-               . osc_csrf_token_url()); ?>"/>
+           data-url="<?php echo osc_esc_html(adminLibraryUploadUrl()); ?>"/>
     <?php
 
     // The filters are page tabs, as on the other list screens.

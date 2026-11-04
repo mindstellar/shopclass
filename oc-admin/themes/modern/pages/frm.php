@@ -126,8 +126,7 @@ foreach (\mindstellar\admin\ui\Field::siteLocales() as $pageLocale) {
 
 // Editor images go to the media library (unattached, reusable), so the flow works on
 // unsaved pages and the same images are pickable elsewhere.
-$pageUploadUrl = osc_admin_base_url(true)
-    . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
+$pageUploadUrl = adminLibraryUploadUrl();
 
 $pageBackUrl = osc_admin_base_url(true) . '?page=pages';
 $pageViewUrl = pageFrmText('edit')
@@ -191,28 +190,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'placeholder'    => __('Enter title here'),
     ));
 
-    // The wrapper is what the builder mode hides: a page composed from widgets has no
-    // body to write.
-    echo '<div class="multilang-description">';
-    osc_admin_field(array(
-        'type'           => 'richtext',
-        'name'           => 's_text',
-        'translate_name' => '%s#s_text',
-        'label'          => __('Body'),
-        'layout'         => 'stacked',
-        'translate'      => true,
-        // The title's strip above switches this field too; a second strip could disagree with it.
-        'tabs'           => false,
-        'locales'        => $pageLocales,
-        'value'          => $pageBodies,
-        'error'          => $pageErrors['s_text'] ?? '',
-        'preset'         => 'full',
-        'height'         => 460,
-        'media'          => true,
-        'upload_url'     => $pageUploadUrl,
-    ));
-    echo '</div>';
-
     // A page saved with a builder template shows its blocks as a summary; they are edited
     // beside a live preview on their own screen.
     $pageBlocks = __get('pageBlocks');
@@ -271,6 +248,35 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php
         osc_admin_panel_close();
     }
+    // In builder mode the text is edited in the block editor; the hidden editor still posts it.
+    echo '<div class="multilang-description">';
+    echo '<p class="form-text js-page-text-hint">';
+    if ($pb_is_builder && is_array($pageBlocks)) {
+        echo osc_esc_html(__('The page text is edited in the block editor, in a Page text block.'))
+            . ' <a href="' . osc_esc_html($pageBlocks['edit_url']) . '">' . osc_esc_html(__('Edit blocks')) . '</a>';
+    } else {
+        echo osc_esc_html(__('With the Page builder, the page text is edited in the block editor after you save.'));
+    }
+    echo '</p>';
+    echo '<div class="js-page-text-editor">';
+    osc_admin_field(array(
+        'type'           => 'richtext',
+        'name'           => 's_text',
+        'translate_name' => '%s#s_text',
+        'label'          => __('Body'),
+        'layout'         => 'stacked',
+        'translate'      => true,
+        // The title's strip above switches this field too; a second strip could disagree with it.
+        'tabs'           => false,
+        'locales'        => $pageLocales,
+        'value'          => $pageBodies,
+        'error'          => $pageErrors['s_text'] ?? '',
+        'preset'         => 'full',
+        'height'         => 460,
+        'media'          => true,
+        'upload_url'     => $pageUploadUrl,
+    ));
+    echo '</div></div>';
 
     // Plugin fields render full-width here, as they did before the rail existed.
     osc_run_hook('page_meta');

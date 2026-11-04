@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\pages;
 
+use mindstellar\database\Db;
 use mindstellar\model\Resource;
 use mindstellar\storage\ResourceUploader;
 use mindstellar\widgets\PageBlocks;
@@ -59,5 +60,32 @@ final class PageService
         (new ResourceUploader())->deleteByOwner(Resource::OWNER_PAGE, $id);
 
         return $deleted;
+    }
+
+    /**
+     * Store page texts by locale code. A locale with no row gets one, titled as the site's
+     * language (else any language) is. Runs in one transaction.
+     *
+     * @param array<string,string> $texts locale code => html, stored as written
+     *
+     * @throws \mindstellar\database\DbException
+     * @throws \RuntimeException when a row is not written
+     */
+    public function writeTexts(int $id, array $texts): void
+    {
+        if ($id <= 0 || $texts === array()) {
+            return;
+        }
+        Db::transaction(function () use ($id, $texts): void {
+            $rows  = (new PageQuery())->texts(array($id))[$id] ?? array();
+            $first = $rows === array() ? array() : reset($rows);
+            $title = (string) ($rows[osc_language()]['s_title'] ?? ($first['s_title'] ?? ''));
+            foreach ($texts as $locale => $text) {
+                $locale = (string) $locale;
+                if ($this->pages->updateDescription($id, $locale, (string) ($rows[$locale]['s_title'] ?? $title), $text) === false) {
+                    throw new \RuntimeException('Page ' . $id . ' text for ' . $locale . ' was not written.');
+                }
+            }
+        });
     }
 }

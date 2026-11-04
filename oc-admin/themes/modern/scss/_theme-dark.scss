@@ -127,4 +127,9 @@
   .form-control::placeholder { color: var(--osc-ink-muted); }
   .form-control:disabled,
   .form-select:disabled { background-color: var(--osc-bench-sunk); }
+  .form-control[aria-invalid="true"],
+  .form-select[aria-invalid="true"] {
+    background-color: var(--osc-danger-tint);
+    border-color: var(--osc-danger);
+  }
 }

@@ -354,6 +354,132 @@ pin('...gone with the page', null, osc_kv_get('customiser', 'page.' . $pd . ':' 
 pin('...another page\'s draft is kept', true, $kv($l7) !== null);
 blocks('blocks_discard_post', $p7);
 
+harness_section('the page text in the block editor');
+
+if ((int) $admin->query('SELECT COUNT(*) FROM ' . DB_TABLE_PREFIX . "t_locale WHERE pk_c_code = 'en_US'")->fetch_row()[0] === 0) {
+    seed_locale($admin);
+}
+seed_locale($admin, 'es_ES', 'Spanish');
+View::getInstance()->_erase('locales');
+scratchdb_forget_cache();
+$descT  = DB_TABLE_PREFIX . 't_pages_description';
+$liveTx = static function (int $id) use ($admin, $descT): array {
+    $out = array();
+    $res = $admin->query("SELECT fk_c_locale_code, s_title, s_text FROM $descT WHERE fk_i_pages_id = $id ORDER BY fk_c_locale_code");
+    while ($r = $res->fetch_assoc()) {
+        $out[$r['fk_c_locale_code']] = array($r['s_title'], $r['s_text']);
+    }
+
+    return $out;
+};
+$text = static fn (array $texts): array => array('page_text' => $texts);
+
+$r = blocks('blocks_draft_post', $p7, $text(array('xx_XX' => '<p>x</p>')));
+pin('a page text in a language the site does not offer is 422', array(422, array('xx_XX is not a language of this site')), array($r['status'], $r['json']['errors'] ?? null));
+$r = blocks('blocks_draft_post', $p7, $text(array('en_US' => array('<p>x</p>'))));
+pin('a page text that is not a string is 422', 422, $r['status']);
+$r = blocks('blocks_draft_post', $p7, $text(array('en_US' => str_repeat('a', 65536))));
+pin('a page text longer than its column holds is 422', 422, $r['status']);
+pin('...and none of them stored a draft', null, $kv($l7));
+$r = customise('customise_draft_post', $text(array('en_US' => '<p>x</p>')));
+pin('the theme Customise screen refuses a page text', array(422, array('Page text can only be edited on a page.')), array($r['status'], $r['json']['errors'] ?? null));
+
+$drafted = '<p>Drafted <strong>text</strong></p><script>admin()</script>';
+$r       = blocks('blocks_draft_post', $p7, $text(array('en_US' => $drafted)));
+pin('a page text is drafted', 200, $r['status']);
+pin('...stored as written, as the page form stores it', array('en_US' => $drafted), $kv($l7)['page_text'] ?? null);
+blocks('blocks_draft_post', $p7, $text(array('es_ES' => '<p>Texto</p>')));
+pin('...a second language joins the first', array('en_US' => $drafted, 'es_ES' => '<p>Texto</p>'), $kv($l7)['page_text'] ?? null);
+pin('...nothing is live yet', array('en_US' => array('Seven', '<p>Seven</p>')), $liveTx($p7));
+$screen = (array) blocks('blocks', $p7)['screen'];
+pin('the screen offers every site language with the drafted text', array('en_US' => $drafted, 'es_ES' => '<p>Texto</p>'), $screen['page_text']['values'] ?? null);
+pin('...not stale while the live text is unchanged', false, $screen['stale'] ?? null);
+
+/** One public request in its own process, as tests/widgets-customiser.php makes them. */
+function previewText(array $get, int $adminId, int $pageId, string $locale, array $extra = array()): ?string
+{
+    $cmd = escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__DIR__ . '/lib/customiser-preview-child.php') . ' ' . escapeshellarg(SCRATCH) . ' '
+        . escapeshellarg((string) json_encode(array('get' => $get, 'adminId' => $adminId, 'pageText' => array('id' => $pageId, 'locale' => $locale)) + $extra));
+    $out = (string) shell_exec($cmd . ' 2>&1');
+    $res = json_decode($out, true);
+    if (!is_array($res)) {
+        fwrite(STDERR, $out . "\n");
+
+        return 'child failed';
+    }
+
+    return $res['page_text'];
+}
+pin('the admin preview shows the drafted text', osc_autop($drafted), previewText(array('osc_preview' => '1'), $adminA, $p7, 'en_US'));
+pin('...in the language asked for', '<p>Texto</p>', previewText(array('osc_preview' => '1'), $adminA, $p7, 'es_ES'));
+pin('a visitor gets the live text', '<p>Seven</p>', previewText(array('osc_preview' => '1'), 0, $p7, 'en_US'));
+pin('...so does the admin without osc_preview', '<p>Seven</p>', previewText(array(), $adminA, $p7, 'en_US'));
+pin('...and inside the admin', '<p>Seven</p>', previewText(array('osc_preview' => '1'), $adminA, $p7, 'en_US', array('ocAdmin' => true)));
+pin('another page shows its own live text', '<p>Eight</p>', previewText(array('osc_preview' => '1'), $adminA, $p8, 'en_US'));
+
+$admin->query("UPDATE $descT SET s_text = '<p>Changed on the form</p>' WHERE fk_i_pages_id = $p7");
+pin('a live text change after the draft began marks it stale', true, blocks('blocks', $p7)['screen']['stale'] ?? null);
+$r = blocks('blocks_publish_post', $p7);
+pin('...and publish refuses it', array(409, true), array($r['status'], $r['json']['stale'] ?? null));
+
+$edited = array();
+$onEdit = static function ($id) use (&$edited): void {
+    $edited[] = (int) $id;
+};
+osc_add_hook('edit_page', $onEdit);
+$r = blocks('blocks_publish_post', $p7, array('force' => '1'));
+osc_remove_hook('edit_page', $onEdit);
+pin('publishing the page text is 200, answered as before', array(200, array('error' => 0, 'errors' => array(), 'stale' => false)), array($r['status'], $r['json']));
+pin('...the texts are live, a missing language row added with the page title', array('en_US' => array('Seven', $drafted), 'es_ES' => array('Seven', '<p>Texto</p>')), $liveTx($p7));
+pin('...the page model reads the new text', $drafted, Page::getInstance()->findByPrimaryKey($p7)['locale']['en_US']['s_text'] ?? null);
+pin('...edit_page ran for the page', array($p7), $edited);
+pin('...the page cache purge covers the page and widgets', array('page', 'widget'), $r['purges']);
+pin('...the draft is gone', null, $kv($l7));
+
+$edited = array();
+osc_add_hook('edit_page', $onEdit);
+blocks('blocks_draft_post', $p7, array('locations' => array($l7 => array())));
+$r = blocks('blocks_publish_post', $p7);
+osc_remove_hook('edit_page', $onEdit);
+pin('publishing only blocks does not run edit_page', array(200, array()), array($r['status'], $edited));
+
+blocks('blocks_draft_post', $p7, $text(array('en_US' => '<p>Thrown away</p>')));
+$r = blocks('blocks_discard_post', $p7);
+pin('discard drops the drafted page text', array(200, null), array($r['status'], $kv($l7)));
+pin('...and the live text stays', $drafted, $liveTx($p7)['en_US'][1] ?? null);
+
+harness_section('the Pages list Edit link');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPage.php';
+if (!function_exists('osc_lib_path')) {
+    function osc_lib_path()
+    {
+        return LIB_PATH;
+    }
+}
+if (!function_exists('osc_current_admin_theme_url')) {
+    function osc_current_admin_theme_url($file = '')
+    {
+        return 'https://admin.shop.test/theme/' . $file;
+    }
+}
+if (!function_exists('osc_csrf_token_url')) {
+    function osc_csrf_token_url()
+    {
+        return 'octoken=t';
+    }
+}
+drive('CAdminPages', array('page' => 'pages'));
+$cells = array();
+foreach ((array) ($GLOBALS['exported']['aData']['aRows'] ?? array()) as $i => $row) {
+    $cells[(int) ($GLOBALS['exported']['aRawRows'][$i]['pk_i_id'] ?? 0)] = (string) ($row['internal_name'] ?? '');
+}
+$adminUrl = 'https://admin.shop.test/oc-admin/index.php?page=pages&amp;action=';
+check('a builder page\'s Edit opens its block editor', str_contains($cells[$p7] ?? '', '<a href="' . $adminUrl . 'blocks&amp;id=' . $p7 . '">Edit</a>'));
+check('...and Page settings opens its form', str_contains($cells[$p7] ?? '', '<a href="' . $adminUrl . 'edit&amp;id=' . $p7 . '">Page settings</a>'));
+check('a plain page\'s Edit opens its form', str_contains($cells[$plain] ?? '', '<a href="' . $adminUrl . 'edit&amp;id=' . $plain . '">Edit</a>'));
+check('...with no block editor link', !str_contains($cells[$plain] ?? 'action=blocks', 'action=blocks'));
+
 harness_section('the theme Customise actions answer as before');
 
 $r = customise('customise_draft_post', array('settings' => array('brand' => 'ocean')));

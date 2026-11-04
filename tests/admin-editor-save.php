@@ -494,6 +494,7 @@ harness_section('the page save is guarded and reports success');
 
 pin('the token is checked before anything is written', array('edit_post'), $result['csrf']);
 pin('the admin is told it saved', array(array('ok', 'The page has been updated')), $result['flashes']);
+pin('...and stays on the page', array(osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $pageId), $result['redirects']);
 
 harness_section('the page save writes the columns its fields feed');
 
@@ -634,6 +635,18 @@ check(
     strpos($pagesCtrl, 'StaticPageForm::register(') !== false
         && strpos($pagesCtrl, 'osc_settings_save(') !== false
 );
+
+harness_section('a page that switches to the Page builder');
+
+\mindstellar\pages\PageTemplateRegistry::getInstance()->register('core.page_builder', array('label' => 'Page builder', 'builder' => true, 'render' => static function () {}));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_widget WHERE s_location = 'page.$pageId'");
+$toBuilder         = $pagePost;
+$toBuilder['meta'] = array('template' => 'core.page_builder');
+$result            = drive('CAdminPages', $toBuilder, array('page' => 'pages', 'action' => 'edit_post'));
+pin('opens its blocks', array(osc_admin_base_url(true) . '?page=pages&action=blocks&id=' . $pageId), $result['redirects']);
+$seeded = $admin->query('SELECT s_type FROM ' . DB_TABLE_PREFIX . "t_widget WHERE s_location = 'page.$pageId'")->fetch_all();
+pin('...and keeps its text as a Page text block', array(array('core.page_text')), $seeded);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_widget WHERE s_location = 'page.$pageId'");
 
 exit(harness_result());
 

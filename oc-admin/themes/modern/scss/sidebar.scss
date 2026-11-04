@@ -893,9 +893,29 @@ $sidebar-gutter: 2.35rem;
         flex: 0 0 auto;
         font-size: 0;
         gap:initial;
+        position: relative;
 
         .bi {
           font-size: 1.05rem;
+        }
+
+        // A count becomes a dot on the icon's corner; its number stays for screen readers.
+        .osc-count {
+          background-color: var(--osc-bronze);
+          border: 2px solid var(--osc-sidebar-surface);
+          border-radius: 50%;
+          block-size: .625rem;
+          font-size: 0;
+          inline-size: .625rem;
+          inset-block-start: -.2rem;
+          inset-inline-end: -.35rem;
+          min-inline-size: 0;
+          padding: 0;
+          position: absolute;
+
+          &.is-zero {
+            display: none;
+          }
         }
       }
     }

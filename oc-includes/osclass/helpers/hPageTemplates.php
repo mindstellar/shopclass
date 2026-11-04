@@ -114,11 +114,21 @@ osc_register_page_template('core.page_builder', array(
         // shopclass's carries site chrome only, with the document head living in
         // each view — so this pair emitted a page fragment with no <head>, and
         // therefore no title, description, canonical or robots meta.
-        osc_add_filter('static_page_text', static function () {
+        osc_add_filter('static_page_text', static function ($text = '') {
+            // A Page text block asks for the page's own text from inside this filter.
+            static $busy = false;
+            if ($busy) {
+                return $text;
+            }
+            $busy = true;
             ob_start();
-            echo '<div class="page-builder">';
-            osc_show_page_widgets();
-            echo '</div>';
+            try {
+                echo '<div class="page-builder">';
+                osc_show_page_widgets();
+                echo '</div>';
+            } finally {
+                $busy = false;
+            }
 
             return ob_get_clean();
         });

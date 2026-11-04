@@ -14,6 +14,7 @@ namespace mindstellar\widgets;
 
 use mindstellar\pages\PageQuery;
 use mindstellar\pages\PageTemplateRegistry;
+use mindstellar\utility\Sanitize;
 
 /**
  * Page mode of the customiser: the spec for one Page builder page, the block summary the
@@ -80,7 +81,7 @@ final class PageBlocks
             'count'    => count($blocks),
             'blocks'   => $blocks,
             'draft'    => (new CustomiserDraft('page.' . $pageId, $adminId))->read() !== null,
-            'edit_url' => osc_admin_base_url(true) . '?page=pages&action=blocks&id=' . $pageId,
+            'edit_url' => self::editUrl($pageId),
         );
     }
 
@@ -92,6 +93,36 @@ final class PageBlocks
     public static function isPlainPage(int $pageId): bool
     {
         return $pageId > 0 && self::builderPage($pageId) === null && (new PageQuery())->find((string) $pageId) !== null;
+    }
+
+    /**
+     * Give a builder page with no blocks a Page text block, so text written before the switch
+     * keeps showing. Does nothing when the page already has blocks or has no text.
+     *
+     * @return bool whether a block was added
+     * @throws \mindstellar\database\DbException
+     */
+    public static function seedPageText(int $pageId): bool
+    {
+        if (self::builderPage($pageId) === null || WidgetStore::rowsAt('page.' . $pageId) !== array()) {
+            return false;
+        }
+        $texts = (new PageQuery())->texts(array($pageId))[$pageId] ?? array();
+        $any   = array_filter($texts, static fn (array $row): bool => trim(Sanitize::stripTags((string) ($row['s_text'] ?? ''), '<img>')) !== '');
+        if ($any === array()) {
+            return false;
+        }
+        WidgetStore::add(array(
+            's_location'    => 'page.' . $pageId,
+            'e_kind'        => 'html',
+            's_description' => '',
+            's_content'     => '',
+            's_type'        => 'core.page_text',
+            's_config'      => '{}',
+            'i_order'       => 0,
+        ));
+
+        return true;
     }
 
     /**
@@ -120,11 +151,28 @@ final class PageBlocks
         if ($page === null) {
             return null;
         }
-        $meta     = json_decode((string) ($page['s_meta'] ?? ''), true);
+
+        return self::isBuilderMeta((string) ($page['s_meta'] ?? '')) ? $page : null;
+    }
+
+    /**
+     * Whether a page's s_meta names a builder template. Reads no database, so a list can ask per row.
+     */
+    public static function isBuilderMeta(string $meta): bool
+    {
+        $meta     = json_decode($meta, true);
         $template = is_array($meta) && is_string($meta['template'] ?? null) ? $meta['template'] : '';
         $layout   = $template === '' ? null : PageTemplateRegistry::getInstance()->get($template);
 
-        return $layout === null || empty($layout['builder']) ? null : $page;
+        return $layout !== null && !empty($layout['builder']);
+    }
+
+    /**
+     * The block editor of one page.
+     */
+    public static function editUrl(int $pageId): string
+    {
+        return osc_admin_base_url(true) . '?page=pages&action=blocks&id=' . $pageId;
     }
 
     /**

@@ -177,4 +177,19 @@ $basic = json_decode(osc_tinymce_config('basic'), true);
 check('the basic preset loads no code plugin', strpos($basic['plugins'], 'code') === false, $basic['plugins']);
 check('...and shows no code button', strpos($basic['toolbar'], 'code') === false, $basic['toolbar']);
 
+harness_section('alignment from the editor');
+
+pin('a paragraph keeps its text alignment, and nothing that moves it',
+    '<p style="text-align:center;">Hi</p>', osc_sanitize_html('<p style="text-align:center;position:absolute;margin-top:-900px">Hi</p>'));
+foreach (array('osc-img-right', 'osc-img-center') as $cls) {
+    pin('a picture keeps the ' . $cls . ' class', '<p><img class="' . $cls . '" src="https://cdn.example.com/a.jpg" alt="A" /></p>',
+        osc_sanitize_html('<p><img class="' . $cls . '" src="https://cdn.example.com/a.jpg" alt="A"></p>'));
+}
+pin('a picture keeps an align class, and loses any other class and its inline style',
+    '<p><img class="osc-img-left" src="https://cdn.example.com/a.jpg" alt="A" /></p>',
+    osc_sanitize_html('<p><img class="osc-img-left evil" style="float:left;margin:-900px" src="https://cdn.example.com/a.jpg" alt="A"></p>'));
+$full = json_decode(osc_tinymce_config('full'), true);
+pin('the align buttons give a picture its class', array('osc-img-left', 'osc-img-right', 'osc-img-center'),
+    array($full['formats']['alignleft'][0]['classes'] ?? null, $full['formats']['alignright'][0]['classes'] ?? null, $full['formats']['aligncenter'][0]['classes'] ?? null));
+
 exit(harness_result());

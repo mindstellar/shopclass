@@ -12,191 +12,61 @@
 
 /*
  * Reusable media picker. Include once on an admin page, then call
- * window.oscMediaPicker.open(function (url) { ... }) to let the user browse the
- * unified media library or upload a new image; the callback receives the chosen
- * image URL. Uploads made here are unattached ("library") resources.
+ * window.oscMediaPicker.open(function (url) { ... }); js/media-picker.js drives it.
+ * Uploads made here are unattached ("library") resources.
  */
 // Site images only: library, page and settings uploads, never a listing or user photo.
 $mpListUrl   = osc_admin_base_url(true) . '?page=ajax&action=media_list&type=:site';
-$mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&'
-    . osc_csrf_token_url();
+$mpUploadUrl = adminLibraryUploadUrl();
 ?>
-<dialog id="oscMediaPicker" class="osc-dialog osc-dialog-wide media-picker">
+<dialog id="oscMediaPicker" class="osc-dialog osc-dialog-wide media-picker" aria-labelledby="oscMediaPickerTitle"
+        data-list-url="<?php echo osc_esc_html($mpListUrl); ?>"
+        data-upload-url="<?php echo osc_esc_html($mpUploadUrl); ?>"
+        data-msg-upload="<?php echo osc_esc_html(__('The upload failed. Try again.')); ?>"
+        data-msg-not-image="<?php echo osc_esc_html(__('The file is not a valid image')); ?>">
     <div class="osc-dialog-body">
-        <div class="media-picker-head">
-            <p class="osc-dialog-title"><?php _e('Media library'); ?></p>
-            <label class="btn btn-secondary btn-sm media-picker-upload">
-                <i class="bi bi-upload" aria-hidden="true"></i> <?php _e('Upload'); ?>
-                <input type="file" accept="image/*" hidden/>
-            </label>
+        <p class="osc-dialog-title media-picker-title" id="oscMediaPickerTitle">
+            <i class="bi bi-image" aria-hidden="true"></i><?php _e('Add an image'); ?>
+            <button type="button" class="media-picker-close" data-osc-dialog-close aria-label="<?php echo osc_esc_html(__('Close')); ?>">
+                <i class="bi bi-x-lg" aria-hidden="true"></i>
+            </button>
+        </p>
+        <div class="media-picker-sources">
+            <div class="media-picker-drop">
+                <span class="media-picker-drop-icon" aria-hidden="true"><i class="bi bi-cloud-arrow-up"></i></span>
+                <p class="media-picker-drop-text">
+                    <strong class="media-picker-drop-idle"><?php _e('Drop an image here'); ?></strong>
+                    <strong class="media-picker-drop-busy" role="status"><?php _e('Uploading…'); ?></strong>
+                    <span><?php _e('JPG, PNG, GIF or WebP'); ?></span>
+                </p>
+                <button type="button" class="btn btn-secondary btn-sm media-picker-upload" autofocus>
+                    <i class="bi bi-upload" aria-hidden="true"></i> <?php _e('Choose a file'); ?>
+                </button>
+                <input type="file" class="media-picker-file" accept="image/*" hidden/>
+            </div>
+            <div class="media-picker-link">
+                <label for="oscMediaPickerLink" class="media-picker-label"><?php _e('Or link to an image'); ?></label>
+                <div class="media-picker-link-row">
+                    <input type="url" id="oscMediaPickerLink" class="form-control media-picker-link-input"
+                           inputmode="url" autocomplete="off" spellcheck="false"
+                           placeholder="<?php echo osc_esc_html(__('https://… or /path')); ?>"
+                           aria-describedby="oscMediaPickerLinkHelp oscMediaPickerLinkError"/>
+                    <button type="button" class="btn btn-secondary media-picker-link-add"><?php _e('Add'); ?></button>
+                </div>
+                <p class="media-picker-hint" id="oscMediaPickerLinkHelp"><?php _e('An image on another site, or a path on this one.'); ?></p>
+                <p class="field-error media-picker-link-error" id="oscMediaPickerLinkError" hidden>
+                    <?php _e('A link needs an address that starts with http://, https:// or /.'); ?>
+                </p>
+            </div>
         </div>
+        <p class="field-error media-picker-error" role="alert" hidden></p>
+        <p class="media-picker-label" id="oscMediaPickerLibrary"><?php _e('Or pick from your library'); ?></p>
         <div class="media-picker-status media-picker-loading" hidden><?php _e('Loading…'); ?></div>
         <div class="media-picker-status media-picker-empty" hidden>
-            <?php _e('No media here yet. Upload an image to get started.'); ?>
+            <i class="bi bi-images" aria-hidden="true"></i>
+            <?php _e('No images yet. Upload one or add a link above.'); ?>
         </div>
-        <div class="media-picker-grid" role="listbox" aria-label="<?php echo osc_esc_html(__('Media')); ?>"></div>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+        <div class="media-picker-grid" role="group" aria-labelledby="oscMediaPickerLibrary"></div>
     </div>
 </dialog>
-<script>
-    window.oscMediaPicker = (function () {
-        'use strict';
-        var listUrl   = <?php echo json_encode($mpListUrl); ?>;
-        var uploadUrl = <?php echo json_encode($mpUploadUrl); ?>;
-        var dialog, grid, emptyBox, loadingBox, fileInput, callback = null;
-
-        function init() {
-            dialog = document.getElementById('oscMediaPicker');
-            if (!dialog) { return false; }
-            grid       = dialog.querySelector('.media-picker-grid');
-            emptyBox   = dialog.querySelector('.media-picker-empty');
-            loadingBox = dialog.querySelector('.media-picker-loading');
-            fileInput  = dialog.querySelector('.media-picker-upload input[type=file]');
-            fileInput.addEventListener('change', onUpload);
-            grid.addEventListener('click', onPick);
-            return true;
-        }
-
-        function setBusy(on) { if (loadingBox) { loadingBox.hidden = !on; } }
-
-        function render(items) {
-            grid.innerHTML = '';
-            if (!items || !items.length) { emptyBox.hidden = false; return; }
-            emptyBox.hidden = true;
-            items.forEach(function (it) {
-                var btn = document.createElement('button');
-                btn.type = 'button';
-                btn.className = 'media-picker-item';
-                btn.setAttribute('data-url', it.url);
-                btn.title = it.name || '';
-                var img = document.createElement('img');
-                img.src = it.thumb;
-                img.loading = 'lazy';
-                img.alt = it.name || '';
-                btn.appendChild(img);
-                grid.appendChild(btn);
-            });
-        }
-
-        function load() {
-            grid.innerHTML = '';
-            emptyBox.hidden = true;
-            setBusy(true);
-            fetch(listUrl, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                .then(function (r) { return r.json(); })
-                .then(function (j) { setBusy(false); render(j && j.items); })
-                .catch(function () { setBusy(false); });
-        }
-
-        function onPick(e) {
-            var item = e.target.closest ? e.target.closest('.media-picker-item') : null;
-            if (!item) { return; }
-            select(item.getAttribute('data-url'));
-        }
-
-        function onUpload() {
-            var file = fileInput.files && fileInput.files[0];
-            if (!file) { return; }
-            var data = new FormData();
-            data.append('file', file);
-            setBusy(true);
-            fetch(uploadUrl, { method: 'POST', credentials: 'same-origin', body: data })
-                .then(function (r) { return r.json(); })
-                .then(function (j) {
-                    fileInput.value = '';
-                    setBusy(false);
-                    // Upload then insert: a just-uploaded image is what you wanted.
-                    if (j && j.location) { select(j.location); }
-                })
-                .catch(function () { setBusy(false); });
-        }
-
-        function select(url) {
-            if (url && typeof callback === 'function') { callback(url); }
-            close();
-        }
-
-        function open(cb) {
-            if (!dialog && !init()) { return; }
-            callback = (typeof cb === 'function') ? cb : null;
-            load();
-            dialog.showModal();
-        }
-
-        function close() { if (dialog && typeof dialog.close === 'function') { dialog.close(); } }
-
-        return { open: open };
-    })();
-
-    // Widget "image" config fields: a hidden input + preview, chosen via the media
-    // picker. Delegated so it works for fields shown later (e.g. a block opened in Customise).
-    (function () {
-        'use strict';
-        function sync(field) {
-            if (!field) { return; }
-            var input   = field.querySelector('.widget-image-input');
-            var preview = field.querySelector('.widget-image-preview');
-            var img     = preview ? preview.querySelector('img') : null;
-            var clear   = field.querySelector('.widget-image-clear');
-            var url     = input ? input.value : '';
-            var meta    = field.querySelector('.widget-image-meta');
-            if (img) { img.src = url; }
-            if (preview) { preview.hidden = !url; }
-            if (clear) { clear.hidden = !url; }
-            if (meta) {
-                // The file's name, and its size once the browser has it: "stalls.jpg · 1600 × 1067".
-                var name = url ? (url.split('?')[0].split('/').pop() || '') : '';
-                try { name = decodeURIComponent(name); } catch (err) { /* keep the name as written */ }
-                meta.textContent = name;
-                meta.hidden = !name;
-                if (img && name) {
-                    var show = function () {
-                        if (img.naturalWidth) { meta.textContent = name + ' · ' + img.naturalWidth + ' × ' + img.naturalHeight; }
-                    };
-                    if (img.complete) { show(); } else { img.addEventListener('load', show, { once: true }); }
-                }
-            }
-        }
-        // Fields drawn with a value already chosen show its name and size too.
-        document.querySelectorAll('.widget-image-field').forEach(sync);
-
-        // Called after a script sets a hidden value, such as the Customise field helper.
-        window.oscSyncWidgetImage = function (input) {
-            sync(input && input.closest ? input.closest('.widget-image-field') : null);
-        };
-
-        document.addEventListener('click', function (e) {
-            var choose = e.target.closest ? e.target.closest('.widget-image-choose') : null;
-            if (choose) {
-                e.preventDefault();
-                var field = choose.closest('.widget-image-field');
-                var input = field && field.querySelector('.widget-image-input');
-                if (input && window.oscMediaPicker) {
-                    window.oscMediaPicker.open(function (url) {
-                        try {
-                            var u = new URL(url, window.location.href);
-                            if (u.origin === window.location.origin && u.pathname.indexOf('//') === -1) { url = u.pathname + u.search; }
-                        } catch (err) { /* keep the full address */ }
-                        input.value = url;
-                        sync(field);
-                        input.dispatchEvent(new Event('change', { bubbles: true }));
-                    });
-                }
-                return;
-            }
-            var clear = e.target.closest ? e.target.closest('.widget-image-clear') : null;
-            if (clear) {
-                e.preventDefault();
-                var f = clear.closest('.widget-image-field');
-                var inp = f && f.querySelector('.widget-image-input');
-                if (inp) {
-                    inp.value = '';
-                    sync(f);
-                    inp.dispatchEvent(new Event('change', { bubbles: true }));
-                }
-            }
-        });
-    })();
-</script>
+<script src="<?php echo osc_esc_html(osc_asset_url_versioned(osc_current_admin_theme_js_url('media-picker.js'))); ?>"></script>

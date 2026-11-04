@@ -1142,6 +1142,7 @@ msgid "A link needs a label and an address."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
+#: oc-admin/themes/modern/parts/media-picker.php
 msgid "A link needs an address that starts with http://, https:// or /."
 msgstr ""
 
@@ -1511,6 +1512,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/fields/index.php
+#: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/currency_form.php
 #: oc-admin/themes/modern/users/index.php
@@ -1555,6 +1557,10 @@ msgstr ""
 #: oc-admin/themes/modern/admins/index.php
 #: oc-includes/classes/admin/form/AdminAccountForm.php
 msgid "Add admin"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "Add an image"
 msgstr ""
 
 #: oc-admin/themes/modern/users/ban.php
@@ -2175,6 +2181,10 @@ msgstr ""
 msgid "An error occurred while updating"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "An image on another site, or a path on this one."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/documents.php
 msgid "An invoice is made when an order is paid."
 msgstr ""
@@ -2632,9 +2642,6 @@ msgid "Back to orders"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
-msgid "Back to page"
-msgstr ""
-
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Back to pages"
 msgstr ""
@@ -3193,7 +3200,6 @@ msgstr ""
 #: oc-admin/themes/modern/fields/submissions.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/index.php
-#: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/currency_form.php
@@ -3386,6 +3392,10 @@ msgstr ""
 msgid "Centre"
 msgstr ""
 
+#: oc-includes/classes/admin/ui/Field.php
+msgid "Centre the picture, no wrap"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Ceramic mug"
 msgstr ""
@@ -3559,6 +3569,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/ui/Picker.php
 msgid "Choose a category"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "Choose a file"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
@@ -3761,6 +3775,7 @@ msgstr ""
 #: oc-admin/themes/modern/messages/thread.php
 #: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/parts/market.php
+#: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/preview.php
 #: oc-includes/osclass/classes/form/ItemForm.php
@@ -5246,6 +5261,7 @@ msgstr ""
 msgid "Dogs"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/tools/system-info/database.php
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Done"
@@ -5363,6 +5379,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "Drop a widget type here"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "Drop an image here"
 msgstr ""
 
 #: oc-includes/classes/admin/ui/PhotoGrid.php
@@ -5957,6 +5977,10 @@ msgstr ""
 
 #: oc-includes/classes/core/install/SampleData.php
 msgid "Example seller"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Expand"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -6994,6 +7018,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
+#: oc-includes/classes/admin/ui/Field.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Image"
 msgstr ""
@@ -7184,10 +7209,6 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-shop.php
 msgid "Ingredients and allergens"
-msgstr ""
-
-#: oc-includes/classes/admin/ui/Field.php
-msgid "Insert from media library"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
@@ -7489,6 +7510,10 @@ msgstr ""
 
 #: oc-includes/classes/search/AlertStore.php
 msgid "Its saved search could not be read."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "JPG, PNG, GIF or WebP"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -8832,7 +8857,6 @@ msgid "May contain nuts and milk"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
-#: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/settings/media.php
 #: oc-includes/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -8845,7 +8869,6 @@ msgid "Media Settings"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
-#: oc-admin/themes/modern/parts/media-picker.php
 msgid "Media library"
 msgstr ""
 
@@ -9590,6 +9613,10 @@ msgstr ""
 msgid "No alerts yet"
 msgstr ""
 
+#: oc-includes/classes/admin/ui/Field.php
+msgid "No alignment"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 msgid "No background work has run yet."
 msgstr ""
@@ -9724,6 +9751,10 @@ msgstr ""
 msgid "No history kept before 7.1"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "No images yet. Upload one or add a link above."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid ""
 "No internet connection. You can continue and add your location later from "
@@ -9764,10 +9795,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid "No match"
-msgstr ""
-
-#: oc-admin/themes/modern/parts/media-picker.php
-msgid "No media here yet. Upload an image to get started."
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
@@ -10573,6 +10600,14 @@ msgstr ""
 msgid "Options are required."
 msgstr ""
 
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "Or link to an image"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "Or pick from your library"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Orange"
 msgstr ""
@@ -10812,12 +10847,22 @@ msgstr ""
 msgid "Page sections"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/pages/frm.php
+#: oc-includes/osclass/classes/datatables/PagesDataTable.php
 msgid "Page settings"
 msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Page template"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Page text"
+msgstr ""
+
+#: oc-includes/classes/content/widgets/Customiser.php
+msgid "Page text can only be edited on a page."
 msgstr ""
 
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
@@ -14932,6 +14977,7 @@ msgid ""
 "and post_max_size, or restore from the command line."
 msgstr ""
 
+#: oc-admin/themes/modern/parts/media-picker.php
 #: oc-includes/classes/admin/ajax/MediaAjax.php
 msgid "The file is not a valid image"
 msgstr ""
@@ -15077,6 +15123,18 @@ msgstr ""
 
 #: oc-includes/classes/market/Installer.php
 msgid "The package's top-level directory must be named \"%s\"."
+msgstr ""
+
+#: oc-includes/classes/content/widgets/Customiser.php
+msgid "The page text for %s is not valid."
+msgstr ""
+
+#: oc-includes/classes/content/widgets/Customiser.php
+msgid "The page text for %s is too long."
+msgstr ""
+
+#: oc-admin/themes/modern/pages/frm.php
+msgid "The page text is edited in the block editor, in a Page text block."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -15334,6 +15392,7 @@ msgstr ""
 msgid "The upload could not be started."
 msgstr ""
 
+#: oc-admin/themes/modern/parts/media-picker.php
 #: oc-includes/classes/backup/RestoreUpload.php
 msgid "The upload failed. Try again."
 msgstr ""
@@ -16624,7 +16683,6 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/add.php
 #: oc-admin/themes/modern/languages/add.php
 #: oc-admin/themes/modern/media/index.php
-#: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/plugins/add.php
 msgid "Upload"
 msgstr ""
@@ -16655,6 +16713,10 @@ msgstr ""
 
 #: oc-includes/classes/backup/BackupService.php
 msgid "Uploading to the bucket: %1$s of %2$s"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/media-picker.php
+msgid "Uploading…"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -17543,6 +17605,12 @@ msgid ""
 "stored, "
 msgstr ""
 
+#: oc-admin/themes/modern/pages/frm.php
+msgid ""
+"With the Page builder, the page text is edited in the block editor after you "
+"save."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "Within %s"
 msgstr ""
@@ -17585,6 +17653,14 @@ msgstr ""
 
 #: oc-includes/classes/market/Compatibility.php
 msgid "Works with %s"
+msgstr ""
+
+#: oc-includes/classes/admin/ui/Field.php
+msgid "Wrap text, picture on the left"
+msgstr ""
+
+#: oc-includes/classes/admin/ui/Field.php
+msgid "Wrap text, picture on the right"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -18177,6 +18253,7 @@ msgid "hidden"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
+#: oc-admin/themes/modern/parts/media-picker.php
 msgid "https://… or /path"
 msgstr ""
 

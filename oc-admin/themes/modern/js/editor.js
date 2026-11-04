@@ -16,10 +16,64 @@
 (function () {
     'use strict';
 
+    // Insert the picked image, or give a selected one the new address.
+    function pickImage(editor) {
+        var node = editor.selection.getNode();
+        var current = node && node.nodeName === 'IMG' ? node : null;
+        window.oscMediaPicker.open(function (url, info) {
+            if (current && editor.getBody().contains(current)) {
+                editor.undoManager.transact(function () {
+                    editor.dom.setAttribs(current, { src: url, 'data-mce-src': url });
+                });
+                editor.nodeChanged();
+                return;
+            }
+            var img = editor.dom.create('img', { src: url, alt: (info && info.alt) || '' });
+            editor.insertContent(img.outerHTML);
+        });
+    }
+
     // Mount one editor per <textarea data-osc-richtext>. The configuration is the
     // server's, so no screen writes an editor setup of its own and none of them has to
     // find its editors by a name pattern.
     // A scope limits it to the fields inside; onEditor is called with each new editor.
+    // How a picture sits in the text: the server's map of class and style per side, from
+    // Sanitize::IMAGE_WRAP, set straight on the picture so its paragraph cannot interfere.
+    var WRAP_ICONS = { left: 'align-left', right: 'align-right', center: 'align-center', none: 'align-none' };
+    var WRAP = { none: { cls: '', styles: {} } };
+
+    function wrapOf(img) {
+        var found = 'none';
+        Object.keys(WRAP).forEach(function (mode) {
+            if (WRAP[mode].cls && img.classList.contains(WRAP[mode].cls)) {
+                found = mode;
+            }
+        });
+        return found;
+    }
+
+    function wrapImage(editor, mode) {
+        var img = editor.selection.getNode();
+        if (!img || img.nodeName !== 'IMG') {
+            return;
+        }
+        var dom = editor.dom;
+        editor.undoManager.transact(function () {
+            Object.keys(WRAP).forEach(function (side) {
+                if (WRAP[side].cls) {
+                    dom.removeClass(img, WRAP[side].cls);
+                    Object.keys(WRAP[side].styles).forEach(function (name) { dom.setStyle(img, name, ''); });
+                }
+            });
+            if (WRAP[mode].cls) {
+                dom.addClass(img, WRAP[mode].cls);
+                dom.setStyles(img, WRAP[mode].styles);
+            }
+        });
+        editor.selection.select(img);
+        editor.nodeChanged();
+    }
+
     function mountRichtext(scope, onEditor) {
         var fields = (scope || document).querySelectorAll('textarea[data-osc-richtext]');
         if (!fields.length || typeof tinymce === 'undefined') {
@@ -41,10 +95,16 @@
             // function, so the server sends the signed endpoint and the intent.
             var media = cfg.osc_media === true;
             var uploadUrl = cfg.osc_upload_url || '';
-            var libraryLabel = cfg.osc_library_label || '';
+            var imageLabel = cfg.osc_image_label || '';
+            var wrapLabels = cfg.osc_wrap_labels || {};
+            Object.keys(cfg.osc_wrap || {}).forEach(function (side) {
+                WRAP[side] = { cls: cfg.osc_wrap[side]['class'], styles: cfg.osc_wrap[side].styles };
+            });
             delete cfg.osc_media;
             delete cfg.osc_upload_url;
-            delete cfg.osc_library_label;
+            delete cfg.osc_image_label;
+            delete cfg.osc_wrap_labels;
+            delete cfg.osc_wrap;
 
             cfg.target = field;
             delete cfg.selector;
@@ -64,21 +124,36 @@
                 };
             }
 
-            // A toolbar button of its own, next to Image, so the library is one click away
-            // rather than behind the image dialog's browse icon.
-            if (media && window.oscMediaPicker && typeof cfg.toolbar === 'string' && / image( |$)/.test(cfg.toolbar)) {
-                cfg.toolbar = cfg.toolbar.replace(/ image( |$)/, ' image osclibrary$1');
+            // The one image button the server's toolbar names: it opens the media picker,
+            // and on a selected image it swaps the picture and keeps the rest.
+            if (media && window.oscMediaPicker) {
                 var setup = cfg.setup;
                 cfg.setup = function (editor) {
-                    editor.ui.registry.addButton('osclibrary', {
-                        icon: 'gallery',
-                        tooltip: libraryLabel,
-                        onAction: function () {
-                            window.oscMediaPicker.open(function (url) {
-                                var img = editor.dom.create('img', { src: url, alt: '' });
-                                editor.insertContent(img.outerHTML);
-                            });
-                        }
+                    editor.ui.registry.addButton('oscimage', {
+                        icon: 'image',
+                        tooltip: imageLabel,
+                        onAction: function () { pickImage(editor); }
+                    });
+                    Object.keys(WRAP).forEach(function (mode) {
+                        editor.ui.registry.addToggleButton('oscwrap' + mode, {
+                            icon: WRAP_ICONS[mode],
+                            tooltip: wrapLabels[mode] || mode,
+                            onAction: function () { wrapImage(editor, mode); },
+                            onSetup: function (api) {
+                                var sync = function () {
+                                    var img = editor.selection.getNode();
+                                    api.setActive(img.nodeName === 'IMG' && wrapOf(img) === mode);
+                                };
+                                editor.on('NodeChange', sync);
+                                return function () { editor.off('NodeChange', sync); };
+                            }
+                        });
+                    });
+                    editor.ui.registry.addContextToolbar('oscimage', {
+                        predicate: function (node) { return node.nodeName === 'IMG'; },
+                        items: 'oscwrapleft oscwrapright oscwrapcenter oscwrapnone | oscimage image',
+                        position: 'node',
+                        scope: 'node'
                     });
                     if (typeof setup === 'function') { setup(editor); }
                 };

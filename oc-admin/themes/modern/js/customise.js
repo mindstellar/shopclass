@@ -53,12 +53,15 @@
     var pageSelect = document.getElementById('cz-page');
     var template = document.getElementById('cz-type-fields');
     var publishBtn = document.getElementById('cz-publish');
+    var pageTextBox = document.getElementById('cz-page-text');
 
     var rows = {};
     var location_ = '';
     var selected = null;
     var dirtyLocations = {};
     var dirtySettings = {};
+    var dirtyText = {};
+    var previewLang = '';
     var pendingFiles = {};
     var reloadAfter = false;
     var timer = null;
@@ -154,7 +157,7 @@
     }
 
     function reloadFrame() {
-        frame.src = here().preview_url;
+        frame.src = here().preview_url + (previewLang ? '&lang=' + encodeURIComponent(previewLang) : '');
     }
 
     window.addEventListener('message', function (e) {
@@ -353,6 +356,7 @@
         disarm();
         unmountFields();
         sectionFields.textContent = '';
+        showPageText(false);
         var i = find(selected);
         if (i === -1) {
             return;
@@ -369,6 +373,7 @@
         nameInput.disabled = !!row.locked;
         removeBtn.hidden = !canRemove(row);
         removeBtn.setAttribute('aria-label', fmt(t.remove, labelOf(row)));
+        showPageText(row.type === 'core.page_text' && !row.locked);
 
         var fieldset = row.legacy ? null : fieldsetFor(row.type);
         if (!fieldset) {
@@ -381,16 +386,20 @@
         sectionFields.appendChild(fieldset);
         var fields = window.oscWidgetFields;
         fields.write(fieldset, row.config);
+        // The template prints every type's fields disabled; only a locked row keeps them so.
+        fieldset.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+            el.disabled = !!row.locked;
+        });
         if (row.locked) {
-            fieldset.querySelectorAll('input, select, textarea, button').forEach(function (el) {
-                el.disabled = true;
-            });
             fieldset.querySelectorAll('[data-osc-richtext]').forEach(function (el) {
                 el.removeAttribute('data-osc-richtext');
             });
         }
         mounted = fieldset;
         fields.mount(fieldset);
+        if (!row.locked) {
+            addExpand(fieldset);
+        }
         fields.onChange(fieldset, function (name, value, typing) {
             if (row.locked) {
                 return;
@@ -407,6 +416,179 @@
             } else {
                 changed(true, location_);
             }
+        });
+    }
+
+    /* The Page text block edits the page's own text: one editor per language, mounted when first shown */
+
+    var textShown = {};
+
+    function localeOf(field) {
+        var m = /^page_text\[(.+)\]$/.exec(field.getAttribute('name') || '');
+        return m ? m[1] : '';
+    }
+
+    function watchText(editor, field) {
+        var code = localeOf(field);
+        if (editor.oscTextWatched) {
+            return;
+        }
+        editor.oscTextWatched = true;
+        if (editor.initialized) {
+            textShown[code] = editor.getContent();
+        }
+        editor.on('init', function () {
+            textShown[code] = editor.getContent();
+        });
+        editor.on('input change undo redo', function () {
+            var value = editor.getContent();
+            if (!code || value === textShown[code]) {
+                return;
+            }
+            textShown[code] = value;
+            dirtyText[code] = value;
+            changed(true);
+        });
+    }
+
+    // The open language's panel, or the whole box when the site has one language.
+    function openTextPanel() {
+        var panels = pageTextBox.querySelectorAll('.field-translate-panel');
+        for (var i = 0; i < panels.length; i++) {
+            if (!panels[i].hidden) {
+                return panels[i];
+            }
+        }
+        return pageTextBox;
+    }
+
+    function showPageText(on) {
+        if (!pageTextBox) {
+            return;
+        }
+        pageTextBox.hidden = !on;
+        if (on && window.oscRichtext) {
+            window.oscRichtext.mount(openTextPanel(), watchText);
+            // The admin script may have started these editors when the page loaded.
+            pageTextBox.querySelectorAll('textarea[data-osc-richtext]').forEach(function (field) {
+                var editor = typeof tinymce !== 'undefined' && field.id ? tinymce.get(field.id) : null;
+                if (editor) {
+                    watchText(editor, field);
+                }
+            });
+        }
+    }
+
+    if (pageTextBox) {
+        // Picking a language mounts its editor and shows the preview in that language.
+        new MutationObserver(function (records) {
+            var opened = records.some(function (r) {
+                return r.target.classList.contains('field-translate-panel') && !r.target.hidden;
+            });
+            if (pageTextBox.hidden || !opened) {
+                return;
+            }
+            var field = openTextPanel().querySelector('textarea[data-osc-richtext]');
+            var code = field ? localeOf(field) : '';
+            showPageText(true);
+            if (code && code !== previewLang) {
+                previewLang = code;
+                reloadFrame();
+            }
+        }).observe(pageTextBox, {subtree: true, attributes: true, attributeFilter: ['hidden']});
+    }
+
+    /* A rich text field opens in a large dialog with the full toolbar; closing it writes the text back. */
+
+    var expandDialog = document.getElementById('cz-expand');
+    var expandSource = null;
+
+    function addExpand(fieldset) {
+        if (!expandDialog || !window.oscRichtext) {
+            return;
+        }
+        fieldset.querySelectorAll('textarea[data-osc-richtext]').forEach(function (ta) {
+            var label = ta.id ? fieldset.querySelector('label[for="' + CSS.escape(ta.id) + '"]') : null;
+            var head = document.createElement('div');
+            head.className = 'cz-rich-head';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'cz-expand-btn';
+            btn.innerHTML = '<i class="bi bi-arrows-angle-expand" aria-hidden="true"></i>';
+            btn.appendChild(document.createTextNode(t.expand));
+            btn.addEventListener('click', function () {
+                openExpand(ta, label ? label.textContent.trim() : '');
+            });
+            if (label) {
+                label.parentNode.insertBefore(head, label);
+                head.appendChild(label);
+            } else {
+                ta.parentNode.insertBefore(head, ta);
+            }
+            head.appendChild(btn);
+        });
+    }
+
+    function openExpand(ta, title) {
+        var small = typeof tinymce !== 'undefined' && ta.id ? tinymce.get(ta.id) : null;
+        var cfg;
+        try {
+            cfg = JSON.parse(ta.getAttribute('data-osc-richtext') || '{}');
+        } catch {
+            return;
+        }
+        if (!small) {
+            return;
+        }
+        cfg.height = Math.max(320, Math.round(window.innerHeight * 0.62));
+        var holder = document.getElementById('cz-expand-editor');
+        var big = document.createElement('textarea');
+        big.id = 'cz-expand-text';
+        big.setAttribute('data-osc-richtext', JSON.stringify(cfg));
+        big.value = small.getContent();
+        holder.innerHTML = '';
+        holder.appendChild(big);
+        document.getElementById('cz-expand-title').textContent = title;
+        expandSource = small;
+        // Not a modal: the editor's menus and dialogs live at the end of the page, and a modal
+        // would sit above them. Everything else on the page is made inert instead.
+        expandInert = Array.prototype.filter.call(document.body.children, function (el) {
+            return el !== expandDialog && !el.classList.contains('tox-tinymce-aux') && el.tagName !== 'DIALOG'
+                && el.tagName !== 'SCRIPT' && !el.inert;
+        });
+        expandInert.forEach(function (el) { el.inert = true; });
+        document.body.classList.add('cz-expanding');
+        expandDialog.show();
+        window.oscRichtext.mount(holder);
+    }
+
+    var expandInert = [];
+
+    if (expandDialog) {
+        // A direct child of the body, so the inert page and the backdrop sit below it.
+        document.body.appendChild(expandDialog);
+        // Esc closes an open editor menu first, and the dialog only when none is open.
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && expandDialog.open && !document.querySelector('.tox-menu, .tox-dialog, .tox-pop')
+                && !(document.getElementById('oscMediaPicker') || {}).open) {
+                expandDialog.close();
+            }
+        });
+        expandDialog.addEventListener('close', function () {
+            var big = typeof tinymce !== 'undefined' ? tinymce.get('cz-expand-text') : null;
+            if (big && expandSource && expandSource.getContent() !== big.getContent()) {
+                expandSource.setContent(big.getContent());
+                expandSource.save();
+                expandSource.fire('change');
+            }
+            window.oscRichtext.remove(document.getElementById('cz-expand-editor'));
+            expandInert.forEach(function (el) { el.inert = false; });
+            expandInert = [];
+            document.body.classList.remove('cz-expanding');
+            if (expandSource) {
+                expandSource.focus();
+            }
+            expandSource = null;
         });
     }
 
@@ -726,14 +908,19 @@
         var fd = new FormData();
         var sentLocations = dirtyLocations;
         var sentSettings = dirtySettings;
+        var sentText = dirtyText;
         var sentFiles = {};
         dirtyLocations = {};
         dirtySettings = {};
+        dirtyText = {};
         Object.keys(sentLocations).forEach(function (slug) {
             appendRows(fd, slug);
         });
         Object.keys(sentSettings).forEach(function (name) {
             fd.append('settings[' + name + ']', sentSettings[name]);
+        });
+        Object.keys(sentText).forEach(function (code) {
+            fd.append('page_text[' + code + ']', sentText[code]);
         });
         Object.keys(pendingFiles).forEach(function (name) {
             sentFiles[name] = pendingFiles[name];
@@ -751,6 +938,11 @@
             Object.keys(sentSettings).forEach(function (name) {
                 if (!Object.prototype.hasOwnProperty.call(dirtySettings, name)) {
                     dirtySettings[name] = sentSettings[name];
+                }
+            });
+            Object.keys(sentText).forEach(function (code) {
+                if (!Object.prototype.hasOwnProperty.call(dirtyText, code)) {
+                    dirtyText[code] = sentText[code];
                 }
             });
         }
@@ -966,6 +1158,9 @@
     });
 
     load(state);
+    if (pageTextBox) {
+        addExpand(pageTextBox);
+    }
     location_ = (pageSelect && pageSelect.value) || location_;
     renderList();
     // The frame may have loaded before this script ran, so its ready message was missed.

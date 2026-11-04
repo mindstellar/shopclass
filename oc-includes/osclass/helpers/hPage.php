@@ -88,7 +88,9 @@ function osc_static_page_text($locale = '')
     // Plugins/themes may pre-process the raw stored text; osc_autop then turns
     // its line breaks into paragraphs so multi-line content does not collapse
     // onto a single line on the published page. Mirrors WordPress's the_content.
-    $text = osc_apply_filter('static_page_text', osc_static_page_field('s_text', $locale), $locale);
+    // An admin previewing a page draft sees the drafted text.
+    $draft = function_exists('_osc_customiser_page_draft_text') ? _osc_customiser_page_draft_text((int) osc_static_page_id(), (string) $locale) : null;
+    $text  = osc_apply_filter('static_page_text', $draft ?? osc_static_page_field('s_text', $locale), $locale);
 
     return osc_autop($text);
 }

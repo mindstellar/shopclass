@@ -80,7 +80,12 @@ class CWebPage extends BaseModel
         $lang = '';
         if (Params::getParamString('lang') && (new Validate())->localeCode(Params::getParamString('lang'))) {
             $lang = Params::getParamString('lang');
-            osc_set_current_user_locale($lang);
+            if (function_exists('osc_customiser_preview') && osc_customiser_preview()) {
+                // The block editor's preview shows one language without changing the admin's own.
+                $_COOKIE['oc_userLocale'] = $lang;
+            } else {
+                osc_set_current_user_locale($lang);
+            }
         }
 
         // A static page is reachable by id and by slug, and per-locale under a

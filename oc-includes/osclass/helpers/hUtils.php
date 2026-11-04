@@ -1291,12 +1291,31 @@ function osc_tinymce_config($preset = 'basic', array $overrides = array())
     );
 
     if ($preset === 'full') {
+        // An editor wired to the media picker gets one image button that opens it; the
+        // image plugin stays for the alt text and size of a selected image.
+        $image = empty($overrides['osc_media']) ? 'image' : 'oscimage';
+        if ($image === 'oscimage') {
+            $config['image_uploadtab'] = false;
+        }
         $config['plugins'] = 'advlist anchor autolink charmap code fullscreen image'
                              . ' insertdatetime link lists media preview searchreplace'
                              . ' table visualblocks';
         $config['toolbar'] = 'undo redo | blocks | bold italic underline | bullist numlist'
-                             . ' | link image media table | alignleft aligncenter alignright'
+                             . ' | link ' . $image . ' media table | alignleft aligncenter alignright'
                              . ' | removeformat | visualblocks code fullscreen preview';
+        // The align buttons float a picture at up to half the width, with room around it, so text
+        // wraps beside it. The picture's rule comes first so a selected picture is aligned, not its
+        // paragraph; the editor's own wrap buttons read the same map from osc_wrap.
+        $text = 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table';
+        $wrap = \mindstellar\utility\Sanitize::IMAGE_WRAP;
+        $config['osc_wrap']   = $wrap;
+        $config['formats']    = array();
+        foreach ($wrap as $side => $how) {
+            $config['formats']['align' . $side] = array(
+                array('selector' => 'img', 'collapsed' => false, 'classes' => $how['class'], 'styles' => $how['styles']),
+                array('selector' => $text, 'styles' => array('textAlign' => $side)),
+            );
+        }
         // Only the blocks Sanitize::richHtml() keeps, so a heading never vanishes on save.
         $config['block_formats'] = 'Paragraph=p; Heading=h3; Subheading=h4; Quote=blockquote';
         // Paste handling — clean what comes in from Word / Google Docs.

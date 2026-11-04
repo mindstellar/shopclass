@@ -30,6 +30,7 @@ function osc_apply_filter($hook, $content, ...$args)
     return isset($GLOBALS['__filter']) ? ($GLOBALS['__filter'])($content, ...$args) : $content;
 }
 
+require_once __DIR__ . '/../oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/../oc-includes/osclass/helpers/hUtils.php';
 require_once __DIR__ . '/lib/harness.php';
 
@@ -85,6 +86,14 @@ pin('full never inlines pasted images', false, $full['paste_data_images'] ?? nul
 check('full styles the editing surface', isset($full['content_style']));
 
 pin('an unknown preset falls back to basic, never to nothing', $basic, cfg('nonsense'));
+
+// An editor wired to the media picker shows one image button, and that button is ours.
+check('full without the picker keeps the plain image button', preg_match('/(^| )image( |$)/', $full['toolbar']) === 1);
+$picker = cfg('full', array('osc_media' => true));
+check('full with the picker shows only its own image button', preg_match('/(^| )oscimage( |$)/', $picker['toolbar']) === 1
+    && preg_match('/(^| )image( |$)/', $picker['toolbar']) === 0, $picker['toolbar']);
+check('...keeps the image plugin for a selected image', strpos($picker['plugins'], 'image') !== false);
+pin('...and drops that dialog\'s second upload path', false, $picker['image_uploadtab'] ?? null);
 
 /* ----------------------------------------------------------------------------
  * Overrides and the plugin seam.
@@ -159,5 +168,15 @@ foreach ($roots as $root) {
 
 check('the scan found the editors it is meant to police', $editors >= 4);
 pin('no editor hand-rolls its own config', '', implode(', ', $offend));
+
+harness_section('media picker script');
+$node = trim((string) shell_exec('command -v node 2>/dev/null'));
+if ($node !== '') {
+    exec(escapeshellarg($node) . ' ' . escapeshellarg(__DIR__ . '/media-picker-js.test.mjs') . ' 2>&1', $nodeOut, $nodeCode);
+    pin('media-picker.js passes its stub-DOM tests', 0, $nodeCode);
+    if ($nodeCode !== 0) {
+        fwrite(STDERR, implode("\n", $nodeOut) . "\n");
+    }
+}
 
 exit(harness_result());

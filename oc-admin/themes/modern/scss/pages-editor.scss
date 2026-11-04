@@ -22,12 +22,10 @@
   #left-side {
     // The page template select drives which of these is shown; the mode class is
     // set on load (no flash) and flipped live by the template select. In builder
-    // mode the text editor is hidden and the widget canvas takes its place.
-    &.page-mode-builder .multilang-description {
-      display: none;
-    }
-
+    // mode the text is edited in the block editor, so only a line pointing there shows.
+    &.page-mode-builder .js-page-text-editor,
     &.page-mode-classic .js-page-widgets,
+    &.page-mode-classic .js-page-text-hint,
     &.page-mode-classic .js-page-widgets-hint {
       display: none;
     }

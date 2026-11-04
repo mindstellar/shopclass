@@ -322,6 +322,14 @@ function widgetConfigSelectOptions($options)
 }
 
 /**
+ * Where admin screens upload an image to the media library (unattached, reusable).
+ */
+function adminLibraryUploadUrl(): string
+{
+    return osc_admin_base_url(true) . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
+}
+
+/**
  * DOM id for a widget config control, namespaced by type so ids stay unique
  * across the (hidden) per-type field groups. Shared by the appearance widget form
  * and the Customise screen.
@@ -464,7 +472,8 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 if ($val !== '' && !preg_match('/<[a-z]/i', $val)) {
                     $spec['value'] = osc_autop($val);
                 }
-                osc_admin_field(array_merge($spec, array('type' => 'richtext', 'rows' => 8, 'width' => 'full', 'preset' => 'full', 'height' => 300)));
+                osc_admin_field(array_merge($spec, array('type' => 'richtext', 'rows' => 8, 'width' => 'full', 'preset' => 'full', 'height' => 300,
+                    'media' => true, 'upload_url' => adminLibraryUploadUrl())));
                 break;
             case 'image':
                 // A media URL chosen via the picker (parts/media-picker.php), so the value

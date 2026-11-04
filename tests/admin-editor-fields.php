@@ -360,6 +360,12 @@ if (!function_exists('osc_csrf_token_url')) {
         return 'CSRFName=t&CSRFToken=t';
     }
 }
+if (!function_exists('adminLibraryUploadUrl')) {
+    function adminLibraryUploadUrl(): string
+    {
+        return osc_admin_base_url(true) . '?page=ajax&action=resource_upload&owner_type=library&owner_id=0&' . osc_csrf_token_url();
+    }
+}
 if (!function_exists('osc_page_template')) {
     function osc_page_template($id)
     {

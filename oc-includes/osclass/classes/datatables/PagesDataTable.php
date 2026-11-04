@@ -21,6 +21,7 @@
  * @author     Shopclass
  */
 use mindstellar\admin\ListPaging;
+use mindstellar\widgets\PageBlocks;
 
 class PagesDataTable extends DataTable
 {
@@ -93,9 +94,14 @@ class PagesDataTable extends DataTable
                 $options = array();
                 View::getInstance()->_exportVariableToView('page', $aRow);
                 $options[] = '<a href="' . osc_static_page_url() . '" target="_blank">' . __('View page') . '</a>';
-                $options[] =
-                    '<a href="' . osc_admin_base_url(true) . '?page=pages&amp;action=edit&amp;id=' . $aRow['pk_i_id']
-                    . '">' . __('Edit') . '</a>';
+                // A Page builder page opens its block editor; its form stays one link away.
+                $formUrl = osc_admin_base_url(true) . '?page=pages&action=edit&id=' . (int) $aRow['pk_i_id'];
+                if (PageBlocks::isBuilderMeta((string) ($aRow['s_meta'] ?? ''))) {
+                    $options[] = '<a href="' . osc_esc_html(PageBlocks::editUrl((int) $aRow['pk_i_id'])) . '">' . __('Edit') . '</a>';
+                    $options[] = '<a href="' . osc_esc_html($formUrl) . '">' . __('Page settings') . '</a>';
+                } else {
+                    $options[] = '<a href="' . osc_esc_html($formUrl) . '">' . __('Edit') . '</a>';
+                }
                 if (!$aRow['b_indelible']) {
                     $options[] = '<a onclick="return delete_dialog(\'' . $aRow['pk_i_id'] . '\');" href="'
                         . osc_admin_base_url(true) . '?page=pages&amp;action=delete&amp;id=' . $aRow['pk_i_id']

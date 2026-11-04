@@ -626,7 +626,13 @@ class Field
             // both are callbacks; what it cannot invent is the signed endpoint.
             $overrides['osc_media']         = true;
             $overrides['osc_upload_url']    = (string)($spec['upload_url'] ?? '');
-            $overrides['osc_library_label'] = __('Insert from media library');
+            $overrides['osc_image_label']   = __('Image');
+            $overrides['osc_wrap_labels']   = array(
+                'left'   => __('Wrap text, picture on the left'),
+                'right'  => __('Wrap text, picture on the right'),
+                'center' => __('Centre the picture, no wrap'),
+                'none'   => __('No alignment'),
+            );
         }
 
         if (!function_exists('osc_tinymce_config')) {

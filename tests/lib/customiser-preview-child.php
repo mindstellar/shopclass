@@ -12,7 +12,7 @@
  * One public request for tests/widgets-customiser.php, in its own process because OC_ADMIN
  * is a constant. Prints what the page rendered and the preview helpers answered, as JSON.
  *
- * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api, ocAdmin, theme, loggedIn, location>'
+ * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api, ocAdmin, theme, loggedIn, location, pageText>'
  */
 
 ob_start();
@@ -61,6 +61,14 @@ ob_start();
 osc_head();
 $head = (string) ob_get_clean();
 
+// The page's own text, as a Page text block or the theme's page view prints it.
+$pageText = null;
+if (isset($args['pageText'])) {
+    require_once ABS_PATH . 'oc-includes/osclass/helpers/hPage.php';
+    View::getInstance()->_exportVariableToView('page', Page::getInstance()->findByPrimaryKey((int) $args['pageText']['id']));
+    $pageText = osc_static_page_text((string) $args['pageText']['locale']);
+}
+
 // The admin session alone makes a response private; this is the preview's own answer.
 $GLOBALS['adminId'] = 0;
 $cacheable = osc_response_is_cacheable();
@@ -75,4 +83,5 @@ echo json_encode(array(
     'headers'   => osc_customiser_preview_headers(),
     'cacheable' => $cacheable,
     'assets'    => $assets,
+    'page_text' => $pageText,
 ));

@@ -88,69 +88,222 @@
 }
 
 
-// Media picker (parts/media-picker.php) — a dialog to browse/upload and choose an
-// image. Reused by the page editor's WYSIWYG image dialog.
+// Media picker (parts/media-picker.php): upload or drop, add a link, or pick from the
+// library, in one dialog. Used by the page editor and by block image fields.
 .media-picker {
-  &.osc-dialog-wide { max-width: 720px; width: 92vw; }
+  &.osc-dialog-wide { inline-size: min(46rem, calc(100vw - 2rem)); }
 
-  .media-picker-head {
+  .media-picker-title {
+    padding-inline-end: .75rem;
+
+    > .bi { color: var(--osc-bronze); }
+  }
+
+  .media-picker-close {
     align-items: center;
-    display: flex;
-    gap: 1rem;
-    justify-content: space-between;
-    margin-block-end: 1rem;
+    background: none;
+    border: 0;
+    border-radius: 6px;
+    color: var(--osc-ink-muted);
+    display: inline-flex;
+    font-size: 1rem;
+    justify-content: center;
+    margin-inline-start: auto;
+    min-block-size: 2.25rem;
+    min-inline-size: 2.25rem;
 
-    .osc-dialog-title { margin: 0; }
+    &:hover,
+    &:focus-visible {
+      background: var(--osc-bench-sunk);
+      color: var(--osc-ink);
+      outline: none;
+    }
+
+    &:focus-visible { box-shadow: 0 0 0 2px var(--osc-bronze); }
+  }
+
+  .media-picker-sources {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    margin-block-end: 1.5rem;
+  }
+
+  // The whole zone opens the file chooser; the button is its keyboard way in.
+  .media-picker-drop {
+    align-items: center;
+    background: var(--osc-bench-sunk);
+    border: 1.5px dashed var(--osc-rule-strong);
+    border-radius: 10px;
+    color: var(--osc-ink-muted);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+    justify-content: center;
+    padding: 1.25rem 1rem;
+    text-align: center;
+    transition: border-color 150ms ease-out, background-color 150ms ease-out;
+
+    &:hover { border-color: var(--osc-bronze); }
+  }
+
+  .media-picker-drop-icon {
+    align-items: center;
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: 50%;
+    color: var(--osc-bronze);
+    display: inline-flex;
+    font-size: 1.35rem;
+    justify-content: center;
+    block-size: 2.75rem;
+    inline-size: 2.75rem;
+  }
+
+  .media-picker-drop-text {
+    display: grid;
+    font-size: .8125rem;
+    gap: .15rem;
+    margin: 0;
+
+    strong { color: var(--osc-ink); font-size: .9375rem; font-weight: 600; }
+  }
+
+  .media-picker-drop-busy { display: none; }
+
+  &.is-uploading {
+    .media-picker-drop { cursor: progress; }
+    .media-picker-drop-idle { display: none; }
+    .media-picker-drop-busy { display: block; }
+    .media-picker-drop-icon .bi { animation: media-picker-pulse 1.2s ease-in-out infinite; }
+  }
+
+  &.is-dragging .media-picker-drop {
+    background: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+    border-style: solid;
+    color: var(--osc-ink);
   }
 
   .media-picker-upload {
     align-items: center;
-    cursor: pointer;
     display: inline-flex;
-    gap: .35rem;
+    gap: .4rem;
+  }
+
+  .media-picker-link {
+    align-self: center;
+    display: grid;
+    gap: .4rem;
+    min-inline-size: 0;
+  }
+
+  // Input and button share one height and read as one control.
+  .media-picker-link-row {
+    display: flex;
+
+    .form-control {
+      border-end-end-radius: 0;
+      border-start-end-radius: 0;
+      flex: 1 1 auto;
+      min-inline-size: 0;
+    }
+
+    .btn {
+      border-end-start-radius: 0;
+      border-start-start-radius: 0;
+      flex: none;
+      margin-inline-start: -1px;
+    }
+  }
+
+  .media-picker-hint {
+    color: var(--osc-ink-muted);
+    font-size: .8125rem;
     margin: 0;
+  }
+
+  .media-picker-link-error { margin: 0; }
+
+  .media-picker-error { margin: -.75rem 0 1rem; }
+
+  .media-picker-label {
+    color: var(--osc-ink);
+    display: block;
+    font-size: .875rem;
+    font-weight: 600;
+    margin: 0 0 .6rem;
   }
 
   .media-picker-status {
     color: var(--osc-ink-muted);
-    padding: 2rem 1rem;
+    font-size: .875rem;
+    padding: 1.75rem 1rem;
     text-align: center;
+
+    .bi { display: block; font-size: 1.5rem; margin-block-end: .35rem; }
   }
 
   .media-picker-grid {
     display: grid;
     gap: .6rem;
-    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-    max-height: 55vh;
-    overflow-y: auto;
+    grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+    padding: 2px 2px 1.35rem;
   }
 
   .media-picker-item {
     aspect-ratio: 1 / 1;
     background: var(--osc-bench-sunk);
     border: 1px solid var(--osc-rule);
-    border-radius: 6px;
+    border-radius: 8px;
     cursor: pointer;
     overflow: hidden;
     padding: 0;
-    transition: border-color 150ms ease-out, box-shadow 150ms ease-out;
+    transition: border-color 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
 
-    img { height: 100%; object-fit: cover; width: 100%; }
+    img { block-size: 100%; display: block; inline-size: 100%; object-fit: cover; }
 
     &:hover,
     &:focus-visible {
       border-color: var(--osc-bronze);
       box-shadow: 0 0 0 2px var(--osc-bronze);
       outline: none;
+      transform: translateY(-1px);
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .media-picker-drop,
     .media-picker-item { transition: none; }
+    .media-picker-item:hover,
+    .media-picker-item:focus-visible { transform: none; }
+    &.is-uploading .media-picker-drop-icon .bi { animation: none; }
+  }
+
+  @media (max-width: 991.98px) {
+    .media-picker-upload,
+    .media-picker-close,
+    .media-picker-link-row .btn,
+    .media-picker-link-row .form-control {
+      min-block-size: 44px;
+    }
+
+    .media-picker-close { min-inline-size: 44px; }
+  }
+
+  @media (max-width: 576px) {
+    .media-picker-sources { grid-template-columns: minmax(0, 1fr); }
+    .media-picker-drop { flex-direction: row; flex-wrap: wrap; justify-content: flex-start; text-align: start; }
+    .media-picker-drop-text { flex: 1 1 8rem; }
+    .media-picker-upload { inline-size: 100%; justify-content: center; }
+    .media-picker-grid { grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); }
   }
 }
 
-
+@keyframes media-picker-pulse {
+  50% { opacity: .35; }
+}
 // Widget "image" config field — preview + choose/remove, chosen via the picker.
 .widget-image-field {
   align-items: flex-start;

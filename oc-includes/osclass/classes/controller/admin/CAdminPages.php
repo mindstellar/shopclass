@@ -362,8 +362,10 @@ class CAdminPages extends AdminSecBaseModel
         if ($id === null) {
             StaticPageForm::nameNewPageFromTitle();
         }
-        $formId = StaticPageForm::register($id);
-        $result = osc_settings_save($formId, $id);
+        // A plain page that switches to the Page builder keeps its text as a Page text block.
+        $wasPlain = $id === null || PageBlocks::isPlainPage((int) $id);
+        $formId   = StaticPageForm::register($id);
+        $result   = osc_settings_save($formId, $id);
         // The form store writes the page tables directly, not through the Page model.
         \mindstellar\cache\CacheGroup::invalidate('page');
 
@@ -407,6 +409,10 @@ class CAdminPages extends AdminSecBaseModel
         }
 
         Session::getInstance()->_setForm('s_internal_name', $name);
+        $pageId = (int) ($result['id'] ?? $id);
+        if ($wasPlain) {
+            PageBlocks::seedPageText($pageId);
+        }
         if ($id !== null) {
             osc_run_hook('edit_page', $id);
         } else {
@@ -417,7 +423,14 @@ class CAdminPages extends AdminSecBaseModel
             $id === null ? _m('The page has been added') : _m('The page has been updated'),
             'admin'
         );
-        $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
+        // Saving keeps the page open; a page that has just become a builder page opens its blocks.
+        if ($pageId <= 0) {
+            $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
+        } elseif ($wasPlain && !PageBlocks::isPlainPage($pageId)) {
+            $this->redirectTo(osc_admin_base_url(true) . '?page=pages&action=blocks&id=' . $pageId);
+        } else {
+            $this->redirectTo($this->pageFormUrl($pageId));
+        }
     }
 
     /**

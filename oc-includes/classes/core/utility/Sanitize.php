@@ -21,6 +21,16 @@ namespace mindstellar\utility;
  */
 class Sanitize
 {
+    /**
+     * How a picture can sit in rich text: its class, the only one the cleaner keeps, and the
+     * style the editor writes beside it. The editor's buttons and formats are built from this.
+     */
+    public const IMAGE_WRAP = [
+        'left'   => ['class' => 'osc-img-left', 'styles' => ['float' => 'left', 'margin' => '0px 1.5em 1em 0px', 'max-width' => '50%']],
+        'right'  => ['class' => 'osc-img-right', 'styles' => ['float' => 'right', 'margin' => '0px 0px 1em 1.5em', 'max-width' => '50%']],
+        'center' => ['class' => 'osc-img-center', 'styles' => ['display' => 'block', 'margin' => '0px auto 1em']],
+    ];
+
     /** Built on first use by richHtml(). */
     private static ?\HTMLPurifier $purifier = null;
 
@@ -557,16 +567,18 @@ class Sanitize
         }
         $config = \HTMLPurifier_Config::createDefault();
         $config->set('HTML.Allowed', osc_apply_filter('sanitize_html_allowed', implode(',', [
-            'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li',
-            'a[href|title|rel]', 'h3', 'h4', 'blockquote', 'hr',
+            'p[style]', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li',
+            'a[href|title|rel]', 'h3[style]', 'h4[style]', 'blockquote', 'hr',
             'table', 'thead', 'tbody', 'tr', 'th', 'td',
-            'span[style]', 'img[src|alt|width|height]',
+            'span[style]', 'img[src|alt|width|height|class]',
         ])));
         // Only what the colour and alignment buttons write; other CSS can build overlays.
         $config->set('CSS.AllowedProperties', [
             'color', 'background-color', 'text-align',
             'font-weight', 'font-style', 'text-decoration',
         ]);
+        // A picture floated left or right, or centred, by the editor's align buttons.
+        $config->set('Attr.AllowedClasses', array_column(self::IMAGE_WRAP, 'class'));
         $config->set('URI.AllowedSchemes', ['http' => true, 'https' => true, 'mailto' => true]);
         // Outbound links get nofollow so descriptions are not worth spamming; URI.Host tells
         // the purifier which links point back into this site.

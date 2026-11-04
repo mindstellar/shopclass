@@ -18,7 +18,8 @@ namespace mindstellar\widgets;
  * theme dir name, or 'page.N' for a Page builder page's blocks (a theme name never holds a dot).
  *
  * Shape: {theme, locations: {slug: [{id, key, type, description, config}]}, settings: {name:
- * value}, updated_at}. What goes in has already been sanitised by Customiser.
+ * value}, base, page_text: {locale: html} (a page only), updated_at}. What goes in has already
+ * been sanitised by Customiser.
  */
 final class CustomiserDraft
 {
@@ -51,7 +52,7 @@ final class CustomiserDraft
      * A database error is thrown, never read as "no draft".
      *
      * @throws \mindstellar\database\DbException
-     * @return array{theme:string,locations:array<string,array<int,array<string,mixed>>>,settings:array<string,mixed>,base:array<string,string>,updated_at:int}|null
+     * @return array{theme:string,locations:array<string,array<int,array<string,mixed>>>,settings:array<string,mixed>,base:array<string,string>,page_text:array<string,string>,updated_at:int}|null
      */
     public function read(): ?array
     {
@@ -72,6 +73,7 @@ final class CustomiserDraft
             'locations'  => is_array($draft['locations'] ?? null) ? $draft['locations'] : array(),
             'settings'   => is_array($draft['settings'] ?? null) ? $draft['settings'] : array(),
             'base'       => is_array($draft['base'] ?? null) ? $draft['base'] : array(),
+            'page_text'  => is_array($draft['page_text'] ?? null) ? array_filter($draft['page_text'], 'is_string') : array(),
             'updated_at' => (int) ($draft['updated_at'] ?? 0),
         );
     }
@@ -93,6 +95,7 @@ final class CustomiserDraft
             'locations'  => (array) ($draft['locations'] ?? array()),
             'settings'   => (array) ($draft['settings'] ?? array()),
             'base'       => (array) ($draft['base'] ?? array()),
+            'page_text'  => (array) ($draft['page_text'] ?? array()),
             'updated_at' => $now,
         );
         if (self::bytes($value) > self::MAX_BYTES) {

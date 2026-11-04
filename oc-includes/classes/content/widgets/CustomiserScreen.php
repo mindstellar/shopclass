@@ -32,7 +32,7 @@ final class CustomiserScreen
      * @param bool                     $moderator whether the admin is a moderator
      * @param int|null                 $pageId    the Page builder page being edited, or null for theme mode
      *
-     * @return array{mode:string,target:array{id:int,title:string,edit_url:string}|null,moderator:bool,locations:array<string,array<string,mixed>>,types:array<string,array<string,mixed>>,look:array<string,array<string,mixed>>,swatches:array<string,array<string,string>>,live:array<string,string>,page:string,updated_at:int}
+     * @return array{mode:string,target:array{id:int,title:string,edit_url:string}|null,moderator:bool,locations:array<string,array<string,mixed>>,types:array<string,array<string,mixed>>,look:array<string,array<string,mixed>>,swatches:array<string,array<string,string>>,live:array<string,string>,page:string,page_text:array{locales:array<string,string>,values:array<string,string>}|null,updated_at:int}
      */
     public static function build(array $spec, ?array $draft, bool $moderator = false, ?int $pageId = null): array
     {
@@ -96,8 +96,33 @@ final class CustomiserScreen
             'swatches'   => $spec['swatches'],
             'live'       => $spec['live'],
             'page'       => (string) $spec['settings']['page'],
+            'page_text'  => $pageMode ? self::pageText((int) $pageId, $draft) : null,
             'updated_at' => (int) ($draft['updated_at'] ?? 0),
         );
+    }
+
+    /**
+     * The page's text per site language for the Page text panel: the drafted text, else the
+     * live one.
+     *
+     * @param array<string,mixed>|null $draft
+     *
+     * @return array{locales:array<string,string>,values:array<string,string>}
+     * @throws \mindstellar\database\DbException
+     */
+    private static function pageText(int $pageId, ?array $draft): array
+    {
+        $live    = (new \mindstellar\pages\PageQuery())->texts(array($pageId))[$pageId] ?? array();
+        $drafted = is_array($draft['page_text'] ?? null) ? $draft['page_text'] : array();
+        $locales = array();
+        $values  = array();
+        foreach ((array) osc_get_locales() as $locale) {
+            $code           = (string) $locale['pk_c_code'];
+            $locales[$code] = (string) $locale['s_name'];
+            $values[$code]  = is_string($drafted[$code] ?? null) ? $drafted[$code] : (string) ($live[$code]['s_text'] ?? '');
+        }
+
+        return array('locales' => $locales, 'values' => $values);
     }
 
     /**

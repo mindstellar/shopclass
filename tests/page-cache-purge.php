@@ -336,6 +336,7 @@ $direct = array(
     'classes/admin/CustomiserResponses.php'                                     => array('widget', 1),
     'classes/listing/category/CategoryService.php'                             => array('category', 1),
     'osclass/classes/controller/admin/CAdminPages.php'                        => array('page', 1),
+    'classes/content/widgets/Customiser.php'                                  => array('page', 1),
     'classes/core/upgrade/Upgrade.php'                                     => array('upgrade', 1),
     'classes/backup/BackupJobs.php'                                   => array('restore', 1),
     'classes/backup/BackupService.php'                                => array('restore', 1),
