@@ -241,8 +241,10 @@ A theme that draws its own nav reads the same list from `osc_account_nav_items()
 filtered entries, log out last, each with a `current` flag for the page being shown.
 
 In shop mode core drops the seller entries from a shopper's menu: `opt_items`,
-`opt_publicprofile`, `opt_alerts`, `opt_billing_wallet`, `opt_billing_buy` and
-`opt_api_access`, and adds `opt_billing_orders` (Your orders) when billing is on. It does
+`opt_publicprofile`, `opt_billing_wallet`, `opt_billing_buy`, `opt_api_access` and
+`opt_messages`, and adds `opt_billing_orders` (Your orders) when billing is on. A shopper
+keeps `opt_alerts`: the alerts page lists only the products they follow, each with its
+product. It does
 this in one `user_menu_filter` callback at priority 20, so plugin entries stay. In every
 mode an entry whose `class` is already in the list is dropped, so two sources of one entry
 show once. `osc_is_shopper()` is true for a signed-in user with no admin session in shop

@@ -12,7 +12,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 /**
- * Saved searches that email the user when something new matches -- markup only.
+ * Saved searches that email the user when something new matches, and product alerts -- markup only.
  *
  * Reads the `alerts` view variable. osc_has_alerts() re-exports each alert's own
  * matching listings into `items`, so the inner loop is the ordinary item loop.
@@ -24,24 +24,29 @@ if (!defined('ABS_PATH')) {
         <?php osc_run_hook('account_page_before', 'user-alerts'); ?>
 
         <p class="oe-muted"><?php echo osc_esc_html(
-            osc_is_shop_mode()
-                ? _m('Emails when a saved search has a new product, or a product you follow is back in stock or drops in price.')
-                : _m('A saved search that emails you when a new listing matches it.')
+            osc_is_shopper()
+                ? _m('Emails when a product you follow is back in stock or drops in price.')
+                : (osc_is_shop_mode()
+                    ? _m('Emails when a saved search has a new product, or a product you follow is back in stock or drops in price.')
+                    : _m('A saved search that emails you when a new listing matches it.'))
         ); ?></p>
 
         <?php if (osc_count_alerts() === 0) {
             osc_gui_empty(_m('You have no alerts yet.'));
-            osc_gui_actions(array(array('label' => _m('Browse listings'), 'href' => osc_search_url())));
+            osc_gui_actions(array(array('label' => osc_is_shop_mode() ? _m('Browse products') : _m('Browse listings'), 'href' => osc_search_url())));
         } else {
             while (osc_has_alerts()) {
                 $alertParts   = osc_alert_criteria();
+                $isProduct    = isset($alertParts['product']);
                 $alertActions = array();
                 if (osc_alert_is_active()) {
                     $alertActions['unsubscribe'] = array(
                         'label'   => _m('Stop this alert'),
                         'url'     => osc_user_unsubscribe_alert_url('', (string) osc_alert_field('s_email')),
                         'class'   => 'oe-danger-link',
-                        'confirm' => _m('Stop this alert? You will get no more emails for this search.'),
+                        'confirm' => $isProduct
+                            ? _m('Stop this alert? You will get no more emails about this product.')
+                            : _m('Stop this alert? You will get no more emails for this search.'),
                     );
                 }
                 $rowActions = (array) osc_apply_filter('alert_row_actions', $alertActions, osc_alert());
@@ -63,7 +68,7 @@ if (!defined('ABS_PATH')) {
                     <?php require __DIR__ . '/parts/row-actions.php'; ?>
 
                     <?php if (osc_count_items() === 0) {
-                        osc_gui_empty(_m('Nothing matches it yet.'));
+                        osc_gui_empty($isProduct ? _m('This product is no longer listed.') : _m('Nothing matches it yet.'));
                     } else {
                         osc_gui_listing_list('alert', false);
                     } ?>

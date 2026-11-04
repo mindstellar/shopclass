@@ -630,6 +630,10 @@ msgstr ""
 msgid "Browse listings"
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Browse products"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Bump"
 msgstr ""
@@ -1209,6 +1213,10 @@ msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
 msgid "Email too long."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Emails when a product you follow is back in stock or drops in price."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
@@ -3133,6 +3141,10 @@ msgid "Stop this alert"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "Stop this alert? You will get no more emails about this product."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
 msgid "Stop this alert? You will get no more emails for this search."
 msgstr ""
 
@@ -4284,6 +4296,10 @@ msgstr ""
 
 #: oc-includes/classes/billing/GoodsCheckout.php
 msgid "This payment method is not available."
+msgstr ""
+
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid "This product is no longer listed."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebContact.php

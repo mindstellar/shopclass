@@ -18,6 +18,7 @@ use mindstellar\billing\OrderStore;
 use mindstellar\exception\BlockedException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
+use mindstellar\search\AlertEnvelope;
 use mindstellar\search\UserAlerts;
 use mindstellar\user\AccountInput;
 use mindstellar\user\AccountService;
@@ -184,14 +185,25 @@ class CWebUser extends WebSecBaseModel
     }
 
     /**
-     * The saved searches, each with its newest listings.
+     * The saved searches, each with its newest listings, and the product alerts, each with its
+     * product. A shopper sees only product alerts.
      */
     private function alerts(): void
     {
         $aAlerts = (new UserAlerts())->live((int) Session::getInstance()->_get('userId'));
         $user    =
             User::getInstance()->findByPrimaryKey(Session::getInstance()->_get('userId'));
+        if (osc_is_shopper()) {
+            $aAlerts = array_values(array_filter($aAlerts, static fn ($a) => AlertEnvelope::productOf((string) $a['s_search']) !== null));
+        }
         foreach ($aAlerts as $k => $a) {
+            $product = AlertEnvelope::productOf((string) $a['s_search']);
+            if ($product !== null) {
+                $item = Item::getInstance()->findByPrimaryKey($product['listing']);
+                $live = is_array($item) && !empty($item['b_enabled']) && !empty($item['b_active']) && empty($item['b_spam']);
+                $aAlerts[$k]['items'] = $live ? array($item) : array();
+                continue;
+            }
             $search = \mindstellar\search\AlertReplay::search($a);
             if ($search === null) {
                 $aAlerts[$k]['items'] = array();

@@ -111,11 +111,11 @@ $twice    = array_merge($menu, [['name' => 'Orders (core)', 'url' => 'co', 'clas
 harness_section('Shop mode, signed-in user');
 $out = $run([], $menu);
 pin(
-    'the six seller entries are gone, the rest kept in order',
-    ['opt_dashboard', 'opt_account', 'opt_signin', 'opt_logout', 'opt_wishlist', 'opt_billing_orders', ''],
+    'the five seller entries are gone; Alerts, for followed products, and the rest are kept in order',
+    ['opt_dashboard', 'opt_alerts', 'opt_account', 'opt_signin', 'opt_logout', 'opt_wishlist', 'opt_billing_orders', ''],
     $classes($out)
 );
-pin('Aisle\'s own Your orders is kept', 'Orders (Aisle)', $out[5]['name']);
+pin('Aisle\'s own Your orders is kept', 'Orders (Aisle)', $out[6]['name']);
 $out = $run([], $noOrders);
 pin('core adds Your orders when nobody did', 'opt_billing_orders', end($out)['class']);
 pin('...with its url', 'http://x.test/orders', end($out)['url']);

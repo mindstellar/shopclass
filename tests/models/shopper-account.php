@@ -192,7 +192,6 @@ $drive = static function (string $class, string $page, string $action, array $ge
 $dashboard = osc_core_url('user_dashboard');
 $hidden    = [
     'items'           => ['TestShopperUser', 'user', 'items', [], false],
-    'alerts'          => ['TestShopperUser', 'user', 'alerts', [], false],
     'api_access'      => ['TestShopperUser', 'user', 'api_access', [], false],
     'api_access_post' => ['TestShopperUser', 'user', 'api_access_post', [], true],
     'wallet'          => ['TestShopperBilling', 'billing', '', [], false],
@@ -206,7 +205,6 @@ $hidden    = [
 ];
 $views = [
     'items'       => 'user-items',
-    'alerts'      => 'user-alerts',
     'api_access'  => 'user-api_access',
     'wallet'      => 'user-billing-wallet.php',
     'buy'         => 'user-billing-buy.php',
@@ -230,6 +228,16 @@ check('a receipt renders', $receipt['redirect'] === null && str_contains($receip
 $invoice = \mindstellar\billing\Invoices::issue(OrderStore::find($orderIds[0]));
 $doc     = $drive('TestShopperBilling', 'billing', 'document', ['id' => (string) $invoice?->id]);
 check('her invoice renders', $invoice !== null && $doc['redirect'] === null && str_contains($doc['drawn'], $invoice->number));
+
+$product = \mindstellar\search\AlertEnvelope::product($held, null, 'stock');
+$admin->query("INSERT INTO {$p}t_alerts (s_email, fk_i_user_id, s_search, s_secret, b_active, e_type, dt_date) VALUES
+    ('amy@example.test', {$amy}, '" . $admin->real_escape_string($product) . "', 'a1', 1, 'INSTANT', NOW()),
+    ('amy@example.test', {$amy}, '{\"v\":2,\"params\":{}}', 'a2', 1, 'DAILY', NOW())");
+$alerts = $drive('TestShopperUser', 'user', 'alerts');
+pin('her alerts page renders', [null, 'user-alerts'], [$alerts['redirect'], $alerts['view']]);
+$exported = View::getInstance()->_get('alerts');
+pin('with only the product she follows, and no product card while it is not live', [[$product], [[]]], [array_column((array) $exported, 's_search'), array_column((array) $exported, 'items')]);
+$admin->query("DELETE FROM {$p}t_alerts WHERE fk_i_user_id = {$amy}");
 
 $dash = $drive('TestShopperUser', 'user', 'dashboard');
 pin('the dashboard renders', [null, 'user-dashboard'], [$dash['redirect'], $dash['view']]);
@@ -274,6 +282,8 @@ foreach ($views as $name => $view) {
     $r = $drive($class, $page, $action, $get, $post);
     pin("$name renders", [null, $view], [$r['redirect'], $r['view']]);
 }
+$r = $drive('TestShopperUser', 'user', 'alerts');
+pin('alerts renders', [null, 'user-alerts'], [$r['redirect'], $r['view']]);
 $dash = $drive('TestShopperUser', 'user', 'dashboard');
 pin('the dashboard renders', [null, 'user-dashboard'], [$dash['redirect'], $dash['view']]);
 pin('it exports her listings, no orders', [1, false], [count((array) View::getInstance()->_get('items')), View::getInstance()->_exists('orders')]);

@@ -95,6 +95,7 @@ $shopOrder = OrderStore::create($sam, 'offline', 2_000_000, 'USD', 10, array());
 $r = cancel_post($sam, $shopOrder->getId());
 pin('in shop mode the cancel runs instead of a 404', array(true, osc_billing_orders_url(), Order::STATUS_CANCELLED), array(osc_is_shop_mode(), $r['redirect'], $status($shopOrder->getId())));
 pin('a shopper keeps the billing cancel page', array(true, false), array(in_array('cancel', OSC_SHOPPER_PAGES['billing']['keep'], true), osc_shopper_page_hidden('billing', 'cancel')));
+pin('a shopper keeps the alerts page, for followed products, but not the listings page', array(false, true), array(osc_shopper_page_hidden('user', 'alerts'), osc_shopper_page_hidden('user', 'items')));
 
 harness_section('no CSRF token');
 $open = OrderStore::create($sam, 'offline', 2_000_000, 'USD', 10, array());

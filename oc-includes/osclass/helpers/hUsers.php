@@ -553,7 +553,7 @@ function osc_admin_is_browsing(): bool
  * True for a shopper: a signed-in user, with no admin session, on a site in shop mode.
  *
  * A shopper buys and never sells, so the account hides the seller pages: listings, public
- * profile, alerts, credits and API access. Admins see everything; classifieds mode is untouched.
+ * profile, credits and API access. Alerts show only the products the shopper follows. Admins see everything; classifieds mode is untouched.
  *
  * @return bool
  */
@@ -1265,7 +1265,7 @@ function osc_reset_users()
  * actions kept. A new seller page goes here and in OSC_SHOPPER_HIDDEN_MENU below.
  */
 const OSC_SHOPPER_PAGES = array(
-    'user'    => array('hide' => array('items', 'alerts', 'api_access', 'api_access_post', 'pub_profile')),
+    'user'    => array('hide' => array('items', 'api_access', 'api_access_post', 'pub_profile')),
     'billing' => array('keep' => array('orders', 'receipt', 'document', 'cancel')),
     'messages' => array('keep' => array()),
 );
@@ -1295,7 +1295,6 @@ function osc_shopper_page_hidden(string $page, string $action): bool
 const OSC_SHOPPER_HIDDEN_MENU = array(
     'opt_items',
     'opt_publicprofile',
-    'opt_alerts',
     'opt_billing_wallet',
     'opt_billing_buy',
     'opt_api_access',
