@@ -222,7 +222,7 @@ Core defines 1282 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_billing_order_number(int $orderId, ?string $prefix = null)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
 | `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
 | `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |
-| `osc_billing_order_url(int $orderId)` | The buyer's page for one order, as order e-mails link it. The order on the orders list by default; a theme with its own order page returns that page through the filter. |
+| `osc_billing_order_url(int $orderId)` | The buyer's page for one order, as order e-mails link it. The `order_url` in the active theme's shopclass.json when it has one, else the order on the orders list; a theme can still return its own page through the filter. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
 | `osc_billing_packages()` | The packages a buyer can choose from at checkout. |
 | `osc_billing_pay_at_post()` | Whether a listing over the free limit is held until its slot is paid, instead of refused. Needs credits (billing on, not a shop) and slot sales on; the billing_pay_at_post preference defaults to on. Set on the admin Billing &gt; Pricing screen. |

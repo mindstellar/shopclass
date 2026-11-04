@@ -846,8 +846,9 @@ function osc_billing_order_return_url(int $orderId): string
 }
 
 /**
- * The buyer's page for one order, as order e-mails link it. The order on the orders list by
- * default; a theme with its own order page returns that page through the filter.
+ * The buyer's page for one order, as order e-mails link it. The `order_url` in the active
+ * theme's shopclass.json when it has one, else the order on the orders list; a theme can
+ * still return its own page through the filter.
  *
  * @param int $orderId
  *
@@ -855,7 +856,17 @@ function osc_billing_order_return_url(int $orderId): string
  */
 function osc_billing_order_url(int $orderId): string
 {
-    $event = new \mindstellar\billing\event\OrderUrlResolving($orderId, osc_billing_orders_url() . '#order-' . $orderId);
+    static $pattern = null;
+    $pattern ??= \mindstellar\market\PackageManifest::orderUrl(
+        defined('THEMES_PATH') ? \mindstellar\market\PackageManifest::json(THEMES_PATH . osc_theme()) : array()
+    );
+    if ($pattern === '') {
+        $url = osc_billing_orders_url() . '#order-' . $orderId;
+    } else {
+        $url = str_replace('{id}', (string) $orderId, $pattern);
+        $url = preg_match('#^https?://#i', $url) === 1 ? $url : osc_base_url() . ltrim($url, '/');
+    }
+    $event = new \mindstellar\billing\event\OrderUrlResolving($orderId, $url);
     \mindstellar\boot\CoreServices::dispatcher()->dispatch($event);
 
     return $event->url();

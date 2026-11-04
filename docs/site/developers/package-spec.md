@@ -104,6 +104,16 @@ A theme's required plugins are installed and activated from one screen before th
 live. Recommended ones can be skipped. A bad slug is ignored, and bad JSON reads as if the
 file had no `modes` or `plugins`.
 
+A shop theme with its own order page names it in `order_url`, with `{id}` where the order
+number goes. Order e-mails then link to it. It is a path on the site, or a full `https://`
+address for a front end on another site:
+
+```json
+{
+  "order_url": "orders/{id}"
+}
+```
+
 ## Versioning
 
 Use `MAJOR.MINOR.PATCH`. Core compares versions to decide whether an update is

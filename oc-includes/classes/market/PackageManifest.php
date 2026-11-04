@@ -15,7 +15,7 @@ namespace mindstellar\market;
 
 /**
  * Reads the `modes` and `plugins` a theme or plugin declares, from its `shopclass.json`
- * or, failing that, the `Modes:` and `Requires Plugins:` header lines.
+ * or, failing that, the `Modes:` and `Requires Plugins:` header lines, and a theme's `order_url`.
  *
  * Bad input reads as absent and never throws.
  *
@@ -74,6 +74,25 @@ final class PackageManifest
         $data = json_decode((string) file_get_contents($file), true);
 
         return is_array($data) ? $data : [];
+    }
+
+    /**
+     * The `order_url` a theme declares for its buyer order page, with `{id}` where the order id
+     * goes: a path on this site or an http(s) address. Empty when it is missing or not one.
+     *
+     * @param array<string,mixed> $json
+     */
+    public static function orderUrl(array $json): string
+    {
+        $url = $json['order_url'] ?? '';
+        if (!is_string($url) || !str_contains($url, '{id}')) {
+            return '';
+        }
+        if (preg_match('#^https?://[a-z0-9.\-]+(:\d+)?(/[\w\-./?=&{}%\#]*)?$#i', $url) === 1) {
+            return $url;
+        }
+
+        return preg_match('#^[\w\-./?=&{}%\#]+$#', $url) === 1 && !str_starts_with($url, '//') ? $url : '';
     }
 
     private static function headerLine(string $header, string $key): string
