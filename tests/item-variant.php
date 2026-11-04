@@ -349,7 +349,9 @@ pin('a bad row field names its row', ['/product/variants/1/sku', '/product/varia
 pin('a photo that is not the listing\'s', ['/product/variants/0/photo_id'], $codes($v->product($tee([$row(['Size' => 'S'], ['fk_i_resource_id' => 77])]), [5, 6])));
 pin('a photo that is passes', [], $v->product($tee([$row(['Size' => 'S'], ['fk_i_resource_id' => 6])]), [5, 6]));
 pin('a photo id that is not a number', ['/product/variants/0/photo_id'], $codes($v->product($tee([$row(['Size' => 'S'], ['fk_i_resource_id' => 'six'])]), [5, 6])));
-pin('a row message says which row', 'Variant 2: SKU too long.', $v->product($tee([$row(['Size' => 'S']), $row(['Size' => 'M'], ['s_sku' => str_repeat('x', 65)])]))[0]['message'] ?? null);
+pin('a row message names the row by its options', 'Size M: SKU too long.', $v->product($tee([$row(['Size' => 'S']), $row(['Size' => 'M'], ['s_sku' => str_repeat('x', 65)])]))[0]['message'] ?? null);
+pin('two rows with one SKU are refused, whatever the case', [['/product/variants/1/sku', 'taken']], array_map(static fn (array $e): array => [$e['pointer'], $e['code']], $v->product($tee([$row(['Size' => 'S'], ['s_sku' => 'AUD-SR']), $row(['Size' => 'M'], ['s_sku' => ' aud-sr '])]))));
+pin('rows with no SKU do not clash', [], $v->product($tee([$row(['Size' => 'S']), $row(['Size' => 'M'])])));
 
 harness_section('option rows: saveSet');
 harness_reset_container();

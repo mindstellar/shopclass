@@ -120,6 +120,7 @@ final class CartPricer
                 'options'        => is_array($options) && $options !== array() ? $options : null,
                 'sku'            => isset($variant['s_sku']) && $variant['s_sku'] !== '' ? (string) $variant['s_sku'] : null,
                 'unit'           => $unit,
+                'compare_at'     => is_numeric($variant['i_compare_price'] ?? null) && (int) $variant['i_compare_price'] > $unit ? (int) $variant['i_compare_price'] : null,
                 'amount'         => $unit * $qty,
                 'available'      => $available,
                 'stock_left'     => $stock !== null && ($stock < $qty || $stock <= self::LOW_STOCK) ? $stock : null,

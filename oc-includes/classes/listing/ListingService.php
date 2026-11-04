@@ -886,7 +886,7 @@ final class ListingService
             $errors[] = ListingValidator::entry('/contact_name', 'too_long', _m('Name too long.'));
         }
         if (!osc_validate_email($aItem['contactEmail'])) {
-            $errors[] = ListingValidator::entry('/contact_email', 'invalid', _m('Email invalid.'));
+            $errors[] = ListingValidator::entry('/contact_email', 'invalid', $aItem['contactEmail'] === '' ? _m('Add a contact e-mail.') : _m('Email invalid.'));
         }
         // The name already has its tighter cap above.
         $errors = array_merge(

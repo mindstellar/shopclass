@@ -87,6 +87,7 @@ final class OrderSerializer
                 ),
                 'options'    => $line['options'],
                 'unit'       => $money((int) $line['unit']),
+                'compare_at' => isset($line['compare_at']) ? $money((int) $line['compare_at'] * (int) $line['qty']) : null,
                 'amount'     => $money((int) $line['amount']),
                 'available'  => (bool) $line['available'],
                 'stock_left' => $line['stock_left'],

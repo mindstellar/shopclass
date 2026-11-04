@@ -1245,18 +1245,17 @@ $shop = array(
     'billing_shipping_flat' => '49.50',
     'billing_free_over'     => '999',
     'billing_cod_enabled'   => '1',
-    'billing_cod_fee'       => '-5',
+    'billing_cod_fee'       => '5',
     'billing_hold_days'     => '0',
     'billing_card_hold_minutes' => '1',
     'billing_open_hold_orders' => '-2',
-    'billing_order_prefix'  => 'KC 1!',
+    'billing_order_prefix'  => 'KC1',
 );
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', $shop);
 pin('the shop form checks the CSRF token', array('billing_shop_post'), $run['csrf']);
 pin('and reports itself', array('ok:Shop settings have been updated'), flashed($run));
 check('and returns to its tab', str_ends_with((string) end($run['redirects']), '&tab=shop'), (string) end($run['redirects']));
 pin('amounts are stored as micros', array(array('49500000', 'STRING'), array('999000000', 'STRING')), array(pref($admin, 'billing_shipping_flat'), pref($admin, 'billing_free_over')));
-pin('a negative fee is floored', array('0', 'STRING'), pref($admin, 'billing_cod_fee'));
 pin('the hold is at least a day', array('1', 'INTEGER'), pref($admin, 'billing_hold_days'));
 pin('the open order limit is never negative', array('0', 'INTEGER'), pref($admin, 'billing_open_hold_orders'));
 pin('the card hold is at least 5 minutes', array('5', 'INTEGER'), pref($admin, 'billing_card_hold_minutes'));
@@ -1282,7 +1281,10 @@ check('a prefix over 12 characters is refused', str_starts_with((string) (flashe
 drive('CAdminSettingsBilling', 'billing_receipts_post', array('billing_invoice_prefix' => 'INV-', 'billing_credit_prefix' => 'CN-'));
 pin('an unticked box turns invoices off', array('0', 'BOOLEAN'), pref($admin, 'billing_invoice_on'));
 $run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shipping_flat' => 'lots') + $shop);
-pin('an amount that is not a number is refused', array('warning:Enter an amount, e.g. 49 or 49.50.'), flashed($run));
+pin('an amount that is not a number is refused', array('warning:Delivery charge: enter an amount of 0 or more, e.g. 49 or 49.50.'), flashed($run));
+$run = drive('CAdminSettingsBilling', 'billing_shop_post', array('billing_shipping_flat' => 'abc', 'billing_free_over' => 'abc', 'billing_cod_fee' => '-5', 'billing_order_prefix' => 'a b<>!') + $shop);
+pin('every bad field gets its own message', array('warning:Delivery charge: enter an amount of 0 or more, e.g. 49 or 49.50.', 'warning:Free delivery from: enter an amount of 0 or more, e.g. 49 or 49.50.', 'warning:Cash on delivery fee: enter an amount of 0 or more, e.g. 49 or 49.50.', 'warning:The order number prefix can only use letters, digits and dashes.'), flashed($run));
+check('and the form shows what was posted', str_contains($run['drawn'], 'value="abc"') && str_contains($run['drawn'], 'value="-5"'));
 pin('and nothing is written', array('49500000', 'STRING'), pref($admin, 'billing_shipping_flat'));
 pin('a refused shop save redraws its own tab', 'shop', __get('billing_tab'));
 pin('the shop tab heads each of its sections', array(1, 1, 1, 1), array_map(static fn ($t) => preg_match('#<h3[^>]*>' . preg_quote($t, '#') . '</h3>#', $run['drawn']), array('Delivery', 'Cash on delivery', 'Store address', 'Orders')));

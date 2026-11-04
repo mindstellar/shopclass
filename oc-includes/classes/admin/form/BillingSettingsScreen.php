@@ -481,7 +481,10 @@ final class BillingSettingsScreen
             ->text('billing_order_prefix', __('Order number prefix'), __('Optional. Letters, digits and dashes, e.g. KC- gives #KC-1042.'))
                 ->width('num')
                 ->attrs(array('maxlength' => '10'))
-                ->sanitize(static fn ($value) => (string) preg_replace('/[^A-Za-z0-9-]/', '', (string) $value))
+                ->sanitize(static fn ($value): string => trim(html_entity_decode((string) $value, ENT_QUOTES)))
+                ->validate(static fn ($value): ?string => preg_match('/^[A-Za-z0-9-]*$/', (string) $value)
+                    ? null
+                    : _m('The order number prefix can only use letters, digits and dashes.'))
             ->register();
 
         return self::PAGE_SHOP;
@@ -557,9 +560,13 @@ final class BillingSettingsScreen
             'width'      => 'num',
             'default'    => Money::fromMicros($stored, self::decimals()),
             'write_only' => true,
-            'validate'   => static fn ($value): ?string => trim((string) $value) === '' || Money::parse((string) $value) !== null
-                ? null
-                : _m('Enter an amount, e.g. 49 or 49.50.'),
+            'validate'   => static function ($value, array $field): ?string {
+                $parsed = trim((string) $value) === '' ? 0 : Money::parse((string) $value);
+
+                return $parsed !== null && $parsed >= 0
+                    ? null
+                    : sprintf(_m('%s: enter an amount of 0 or more, e.g. 49 or 49.50.'), $field['label'] ?? $field['name']);
+            },
             'persist'    => static fn ($value): string => (string) max(0, Money::parse((string) $value, self::decimals()) ?? 0),
         );
     }

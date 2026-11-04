@@ -192,6 +192,7 @@ final class OrderSchema
                 ], ['id', 'title', 'url', 'photo']),
                 'options'    => Schema::nullable('object', 'Option name => value.'),
                 'unit'       => $amount,
+                'compare_at' => Schema::nullable('object', 'The old price of the whole line as an amount (old unit price times qty), set when the variant is on sale.'),
                 'amount'     => $amount,
                 'available'  => ['type' => 'boolean', 'description' => 'False when there is not enough in stock; the line then stays out of the totals.'],
                 'stock_left' => Schema::nullable('integer', 'Set when stock is tracked and 5 or fewer are left, or fewer than asked for.'),

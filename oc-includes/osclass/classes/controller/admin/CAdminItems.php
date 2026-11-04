@@ -506,7 +506,7 @@ class CAdminItems extends AdminSecBaseModel
             }
             Session::getInstance()->_clearVariables();
             ListingInput::dropKept($meta);
-            osc_add_flash_ok_message(_m('A new listing has been added'), 'admin');
+            osc_add_flash_ok_message(osc_is_shop_mode() ? _m('A new product has been added') : _m('A new listing has been added'), 'admin');
 
             $this->redirectTo($url);
         } else {

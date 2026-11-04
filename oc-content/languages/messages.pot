@@ -235,6 +235,10 @@ msgstr ""
 msgid "%s: a page needs a title in at least one language"
 msgstr ""
 
+#: oc-includes/classes/admin/form/BillingSettingsScreen.php
+msgid "%s: enter an amount of 0 or more, e.g. 49 or 49.50."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "%s: this listing needs a title"
 msgstr ""
@@ -284,6 +288,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
 msgid "A new password has been sent to your e-mail"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "A new product has been added"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
@@ -362,6 +370,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Activity log settings saved"
+msgstr ""
+
+#: oc-includes/classes/listing/ListingService.php
+msgid "Add a contact e-mail."
 msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
@@ -1247,10 +1259,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebSearch.php
 msgid "Enter a valid email address."
-msgstr ""
-
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Enter an amount, e.g. 49 or 49.50."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -3728,6 +3736,10 @@ msgstr ""
 msgid "The order is marked packed"
 msgstr ""
 
+#: oc-includes/classes/admin/form/BillingSettingsScreen.php
+msgid "The order number prefix can only use letters, digits and dashes."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "The other person blocked this conversation."
 msgstr ""
@@ -4519,7 +4531,7 @@ msgid "Validation email re-sent"
 msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
-msgid "Variant %d:"
+msgid "Variant %d"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
@@ -5218,6 +5230,10 @@ msgstr ""
 #: oc-includes/classes/admin/form/SitemapSettingsScreen.php
 msgid ""
 "robots.txt is not writable. Fix the file or folder permissions and try again"
+msgstr ""
+
+#: oc-includes/classes/listing/ListingValidator.php
+msgid "the SKU %s is already used by another variant."
 msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
