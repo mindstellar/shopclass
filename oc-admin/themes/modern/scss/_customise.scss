@@ -1,5 +1,10 @@
 // Appearance > Customise: a 300px side panel beside the framed live preview.
 .osc-customise-page {
+  // The editor sits right under the top bar.
+  #content-render {
+    gap: 0;
+  }
+
   #content-page {
     min-height: 0;
   }

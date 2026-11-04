@@ -325,7 +325,8 @@ function osc_admin_configure_plugin_url($file = '')
  * browser title, the help behind the "?" and the icon actions beside the heading. Call it
  * when the plugin loads; the screen's file runs after the header is drawn.
  *
- * Keys: 'title' (browser title), 'help' (string or callable printing the help box),
+ * Keys: 'title' (browser title, and the page title in the header row), 'heading' (a header
+ * title other than 'title'), 'help' (string or callable printing the help box),
  * 'actions' (icon, url, title each; see osc_admin_page_header()).
  *
  * @param string              $route the admin route the screen is drawn on

@@ -22,6 +22,7 @@ osc_admin_page(array_filter(array(
         AdminMenu::getInstance()->currentIds()[0] === 'settings' ? __('Settings') : __('Plugins')
     ),
     'title'   => $declared['title'] ?? __('Plugins'),
+    'heading' => $declared['heading'] ?? $declared['title'] ?? null,
     'help'    => $declared['help'] ?? null,
     'actions' => $declared['actions'] ?? array(),
 ), static fn ($value) => $value !== null && $value !== array()));

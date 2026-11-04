@@ -133,10 +133,8 @@ if ($oscSidebar !== 'collapsed') {
                 <div class="col">
                     <?php osc_run_hook('admin_page_header'); ?>
                 </div>
-            </div>
-            <div id="help-wrapper" class="row">
-                <div class="col">
-                    <div id="help-box" class="pt-2 collapse">
+                <div id="help-box" class="collapse">
+                    <div id="help-wrapper">
                         <div class="help-callout" role="note">
                             <i class="bi bi-info-circle help-callout-icon" aria-hidden="true"></i>
                             <div class="help-callout-body">

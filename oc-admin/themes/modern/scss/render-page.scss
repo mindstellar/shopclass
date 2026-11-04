@@ -36,10 +36,6 @@
 
 
 #content-head {
-  // Inline inset + gutter reset come from the shared rule below; only the block
-  // padding is specific to the title row.
-  padding-block: var(--osc-page-inset-x) var(--osc-shell-gap);
-
   h1, h2, h3 {
     align-items: center;
     color: var(--osc-ink);
@@ -83,8 +79,19 @@
   }
 }
 
-#content-head .page-head ~ .osc-tabnav-scroll {
-  margin-block: var(--osc-shell-gap) 0;
+// The title row and the group tabs under it are spaced by the gap.
+#content-head > .col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-shell-gap);
+
+  > * {
+    margin-block: 0;
+  }
+
+  .nav-tabs {
+    margin-block-end: 0;
+  }
 }
 
 // The icon actions on the title row look as they do inside the section <h1>.
@@ -98,15 +105,44 @@
   }
 }
 
+// The shell rows (top bar, title row, messages, page, footer) are spaced by one gap.
+// The message row takes no gap while it shows no message.
 #content-render {
   background-color: var(--osc-bench-sunk);
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-shell-gap);
+}
+
+#message-wrapper:not(:has(.flashmessage:not(.hide))) {
+  display: none;
+}
+
+#message-wrapper > .col {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+
+  > .flashmessage {
+    margin-block: 0;
+  }
+}
+
+// The help panel opens on its own line below the title row. Its space is inside the panel,
+// so the height animation starts and ends at 0 with no jump.
+#help-wrapper {
+  padding-block-start: var(--osc-shell-gap);
+
+  > .help-callout {
+    margin-block-end: 0;
+  }
 }
 
 // When the page prints its own title, the header's section name steps down to a small label,
 // so each screen has one large title. A page with no title of its own keeps the large name.
-// Then the head is only that label, so it sits right above the page's own title.
-#content-render:has(#content-page .osc-page-title) #content-head {
-  padding-block-end: var(--osc-shell-tight);
+// The top bar already names the section, so a label with no actions is not shown.
+#content-render:has(#content-page .osc-page-title) #content-head:not(:has(h1 a, .osc-tabnav-scroll, #help-box.show)) {
+  display: none;
 }
 
 #content-render:has(#content-page .osc-page-title) #content-head h1 {
@@ -236,8 +272,3 @@ h2.osc-page-title:first-of-type {
   width: 34px !important;
 }
 
-
-// With the head row merged into the page title's row, the page keeps the head's top inset.
-#content-render:not(:has(#content-head)) #content-page {
-  padding-block-start: var(--osc-page-inset-x);
-}

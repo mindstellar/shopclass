@@ -158,8 +158,11 @@ osc_add_hook('init_admin', function () {
 });
 ```
 
-`title` is the browser title. `help` puts the **?** beside the heading, as core screens
-have; it may be a callable that prints the help. `actions` are the icon buttons beside it.
+`title` is the browser title and the page title in the header row. Set `heading` for a
+header title other than `title`. If your screen's file prints the same title with
+`osc_admin_page_head()`, that call prints nothing. `help` puts the **?** beside the heading,
+as core screens have; it may be a callable that prints the help. `actions` are the buttons
+beside it.
 
 Group a plugin's entries under Plugins with a divider, as core groups its own:
 
