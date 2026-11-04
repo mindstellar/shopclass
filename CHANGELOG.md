@@ -2,7 +2,7 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.beta4
+## Shopclass 7.1.0.beta5
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
@@ -85,6 +85,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - **Partial refunds**: **Refund part** on a shop order refunds an amount or some units, with a reason and an option to return them to stock. The order shows **Partly refunded** until the credit notes add up to what was paid, then becomes refunded. Only orders with an invoice can be refunded in part.
 - Stripe, PayPal and Razorpay refund part of an order through the provider. A gateway adds this with `PartialRefundableGateway::refundPart()`; other gateways record the refund only.
 - Hooks `billing_document_compose` and `billing_document_issued`; the buyer gets a mail when a partial refund is made (`email_order_part_refunded`).
+- Shoppers see the products they follow on the Alerts page, each with its product and a Stop button.
+- A theme names its buyer order page as `order_url` in `shopclass.json`, and order e-mails link to it.
+- A plugin installs or turns on only once the plugins it requires are on; a theme's "Install and activate all" gives a plugin a second try when its own requirement came later in the list.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
@@ -140,6 +143,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - 21 unused helpers, methods and classes are deprecated and go in 8.0, each naming its replacement where one exists, among them `osc_auto_update()`, `osc_csrf_name()`, `osc_mod_rewrite_loaded()`, `osc_dbdump()`, `SystemInfo` and `FormBuilder` (use `osc_register_settings_page()`).
 - The PclZip fallback and the `pclzip/pclzip` package are removed; zip files use PHP's zip extension, which was already required.
 - Core escapes and strips tags only through `Escape` and `Sanitize` (new `Escape::text()`, `Escape::htmlEntities()`, `Escape::htmlKeepEntities()`, `Sanitize::stripTags()`); `osc_esc_html()` and `osc_esc_js()` call them, with the same output. A test blocks direct calls.
+- Under the header's title, section headings are h2 and sub-sections h3, so the outline skips no level; they look the same.
+- A plugin screen's title from `osc_admin_plugin_page()` is its header title row; `heading` sets a different one.
+- Admin notices and the owner's new-order mail go to the first administrator when the site has no contact e-mail.
 
 ### Security
 - Code acting as an admin with no admin signed in gets admin rights only in the admin area, cron, jobs and the CLI. Plugin code that needs them elsewhere wraps the call in `Actor::runAsSystem()`.
@@ -187,3 +193,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Options passed to `Sanitize` string, float, email and encoded methods now reach the filter.
 - Saving General Settings with an address lookup set up queues map positions for older listings.
 - S3 storage errors and skipped mail attachments are written to the error log.
+- Checkout no longer pulls focus back to a postcode that does not fit the country, so the next field gets what you type.
+- Custom fields show in one order on the listing page, the post form and search, also with several categories.
+- A theme's plugin screen calls a newer plugin version newer, not too old, and offers no older version.
+- Admin dialogs placed in a page are centred again, menu rows fit a phone, and `search:reindex` prints why it stopped.
