@@ -171,6 +171,15 @@ no look fields.
   seven days.
 - **Publish** writes only `page.N` and clears the `widget` page cache. It does not run
   `customiser_published`, which stays theme-scoped.
+- The draft can hold `page_text`, locale => HTML, posted as `page_text[<locale>]`. Only a site
+  language is taken, as a string of at most 65,535 bytes, stored unpurified as the page form
+  stores it. **Publish** writes those texts to `t_pages_description` (adding a missing locale row)
+  in the same transaction as the blocks, then runs `edit_page` and purges the `page` cache. A
+  live text change after the draft began makes the draft stale. In a page preview,
+  `osc_static_page_text()` returns the drafted text.
+- Pictures in rich text keep only the classes in `Sanitize::IMAGE_WRAP` (`osc-img-left`,
+  `osc-img-right`, `osc-img-center`); the editor's wrap buttons write the class and its inline
+  style. A theme that turns off core styles styles these classes itself.
 - The preview is the page with `?osc_preview=1&osc_blocks=1`. `osc_customiser_preview_rows( 'page.N' )` returns
   the page draft, whatever the active theme.
 - Rows of a `super_admin` type are locked for a moderator: they can be moved but not edited or

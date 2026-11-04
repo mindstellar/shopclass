@@ -701,7 +701,7 @@ Core fires 646 names. Generated from the source; do not edit by hand.
 | `datatable_listing_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/items/index.php` |
 | `delete_locale` | action | `$locale` | `oc-includes/osclass/classes/model/OSCLocale.php` |
 | `delete_resource` | action | `$resourceRow` | `oc-includes/classes/core/storage/ResourceUploader.php` |
-| `edit_page` | action | `$id` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
+| `edit_page` | action | `$this->pageId()` | `oc-includes/classes/content/widgets/Customiser.php` |
 | `feed` | action | `$feed` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `flash_message_text` | filter | `$message['msg']` | `oc-includes/osclass/helpers/hMessages.php` |
 | `form_fields` | filter | `$fields, $form, $contextType, $contextId` | `oc-includes/osclass/helpers/hForms.php` |
@@ -803,7 +803,7 @@ Core fires 646 names. Generated from the source; do not edit by hand.
 | `response_cache_control` | filter | `$header` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `response_is_cacheable` | filter | `true` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `rules_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
-| `sanitize_html_allowed` | filter | `implode(',', [ 'p', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a[href\|title\|rel]', 'h3', 'h4', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span[style]', 'img[src\|alt\|width\|height]', ])` | `oc-includes/classes/core/utility/Sanitize.php` |
+| `sanitize_html_allowed` | filter | `implode(',', [ 'p[style]', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a[href\|title\|rel]', 'h3[style]', 'h4[style]', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span[style]', 'img[src\|alt\|width\|height\|class]', ])` | `oc-includes/classes/core/utility/Sanitize.php` |
 | `scripts_defer` | filter | `defined('OC_ADMIN') && OC_ADMIN` | `oc-includes/osclass/classes/Scripts.php` |
 | `scripts_loaded` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/classes/admin/ui/SettingsForm.php` |

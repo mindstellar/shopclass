@@ -92,6 +92,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
+- A Page builder page's **Edit** opens its block editor, where the **Page text** block edits the page text per language; **Page settings** opens the page form.
+- One image picker: upload or drop a file, pick from the library, or add a link. The page editor has one image button.
+- Pictures in text have buttons to wrap text left or right, centre them or clear it. Text blocks choose reading or full width and a left or centred position, and **Expand** opens a text field's editor large. Saving a page keeps it open.
 - Listing settings: "Users have to validate their listings" is now **Posters confirm new listings by e-mail**, and "Logged in users don't need to validate their listings" is now **Signed-in posters skip the e-mail confirmation**.
 - `billing_order_shipped` fires only when the last item ships; every parcel fires `billing_shipment_add_after`. A paid order may now be `processing`, so test `Order::isPaid()` rather than `'paid'`.
 - Money uses the currency's decimals, not the language's: `Money::format()`, `osc_format_price()` and `osc_prepare_price()` now print JPY with none and KWD with three.
@@ -145,6 +148,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- Block fields in the Customise screen can be changed again; only rich text worked. In dark mode a field with an error shows its red border, and the collapsed admin menu shows counts as a dot.
 - Custom date fields no longer save or show the day before when the visitor's time zone differs from the site's. The REST API now reads a custom-field date sent as a day, `2026-11-01`, on the site's clock, and a range ends at the end of its last day.
 - A Page builder page on a child theme uses the parent theme's full-width block layout, not a narrow text column.
 - The Rich text block keeps headings, bold text, lists and links from its editor; they were removed on save. The editor offers only the headings that are kept.

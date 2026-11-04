@@ -48,14 +48,27 @@ Pick the **Page template** field when creating the page:
 **Advanced** holds **Custom Code (HTML / JavaScript)**: raw markup and script, with a warning.
 Only a super admin can add it.
 
+Images come from one picker, in both the text editor and image blocks: upload a file or drop it
+on the window, pick one from the library, or add a link to an image elsewhere.
+
+Click a picture in the text editor for its toolbar: **Wrap text, picture on the left** or **on the
+right** floats it at up to half the width with the text beside it, **Centre** puts it on its own
+line, and **No alignment** clears it. On a phone a wrapped picture takes its own line.
+
+**Rich text** and **Page text** blocks choose a **Width** (reading width or full width) and, at
+reading width, a **Position** (left or centred).
+
 On a phone every block stacks to one column, the picture first. Plugins can register
 further block types.
 
 A page that opens with its own heading can tick **Hide the page title** in **Page settings**.
 The title is then hidden on screen, but screen readers and search engines still get it.
 
-The page form shows a summary of the blocks, a note when you have unpublished changes, and an
-**Edit blocks** button. A new page is saved first; blocks are edited after that.
+**Edit** in the Pages list opens a Page builder page's block editor; **Page settings** (in the list
+and in the block editor) opens the page form for the title, template and footer link. The page
+form shows a summary of the blocks, a note when you have unpublished changes, and an
+**Edit blocks** button. Saving a page keeps it open. A new page is saved first; saving a page with
+the Page builder template for the first time opens its blocks.
 
 ### Edit blocks
 
@@ -66,9 +79,15 @@ empty name takes the type's name.
 - The left panel lists the blocks. Drag one, or use the arrow keys, to move it. Pick a block in the
   list, or click it in the preview, to open its fields. **All blocks** goes back to the list.
 - **Add block** shows the block types as tiles. **Remove** is inside the block's fields.
+- **Expand** beside a text field opens the editor large, with its full toolbar. **Done** puts the
+  text back in the block.
 - Changes are saved as your own draft for seven days and shown in the preview. Nothing is live
   until you press **Publish**. **Discard** drops the draft.
-- If the blocks were changed elsewhere after your draft began, Publish asks before it replaces them.
+- The **Page text** block edits the page's own text, with one tab per site language. Picking a
+  language also shows the preview in it. The text is part of your draft and goes live with the
+  blocks on **Publish**. On a Page builder page the page form no longer shows the text editor.
+- If the blocks or the page text were changed elsewhere after your draft began, Publish asks before
+  it replaces them.
 - Old blocks with no type are read-only for every admin. A moderator who may open Pages also sees
   Custom Code blocks read-only: they can move them but not edit or remove them, and cannot add Custom Code.
 
