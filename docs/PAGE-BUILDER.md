@@ -139,15 +139,13 @@ migration. Start with the string; it costs nothing and proves the model.
 
 ## 6. Editor UX
 
-- The settings-rail template select gains builder entries from the registry. Picking
-  a `builder` template swaps the main column:
-  - **Classic** (`default`): the TinyMCE title + body as it is now.
-  - **Builder**: title stays; the body area becomes the widget canvas — an "Add
-    block" picker (registry types filtered by the current user's capability) and a
-    drag-drop ordered list, reusing the appearance screen's components scoped to
-    `page.{id}`.
-- In block mode the classic WYSIWYG body editor is **hidden** (title-only render via
-  `printMultiLangTitleDesc(..., $with_description = false)`); the stored body is kept
+- The settings-rail template select gains builder entries from the registry.
+- A saved builder page shows a block summary and an **Edit blocks** button in place of
+  the body editor. The button opens the Customise screen in page mode
+  (`?page=pages&action=blocks&id=N`): add, edit, reorder and delete blocks in a draft,
+  with a live preview, then Publish or Discard. The block types offered are filtered by
+  the current user's capability.
+- In block mode the classic WYSIWYG body editor is **hidden**; the stored body is kept
   in a hidden field so it round-trips and returns if the page is switched back.
 - Switching classic → builder should offer to seed the canvas with a single
   `core.rich_text` widget carrying the existing body, so no content is stranded.
@@ -188,10 +186,9 @@ work on it unchanged. The latest features are the remit of a **new default theme
 2. **Page-builder MVP** — ✅ **done**. Core `core.page_builder` template
    (`hPageTemplates.php`) with a theme-`template-widgets.php`-or-core-fallback
    renderer; helpers `osc_page_builder_location()` / `osc_show_page_widgets()`. The
-   page editor renders a blocks canvas (list + drag/keyboard reorder) for a saved
-   builder page; Page delete cascades to `page.{id}` blocks.
-   **Update:** the page form now shows a block summary and an **Edit blocks** button
-   that opens the Customise screen in page mode (`?page=pages&action=blocks&id=N`).
+   page form shows a block summary and an **Edit blocks** button that opens the
+   Customise screen in page mode (`?page=pages&action=blocks&id=N`); Page delete
+   cascades to `page.{id}` blocks and drops their drafts.
 3. **`core.rich_text` widget** — ✅ **done**. A textarea field, HTML-purified on
    save, rendered through `osc_autop`; registered before `core.custom_code` so it
    is the picker's default. Gives the builder a safe default block with no plugin,
