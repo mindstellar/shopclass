@@ -1133,6 +1133,9 @@ final class OrderStore extends Model
         if (!empty($filters['goods'])) {
             $q = $q->where('i_credits', 0);
         }
+        if (trim((string) ($filters['q'] ?? '')) !== '') {
+            $q = self::matchingBuyerOrId($q, trim((string) $filters['q']));
+        }
         if (!empty($filters['to_ship']) && ($filters['status'] ?? null) === Order::STATUS_PENDING) {
             $q = $q->where('s_gateway', gateway\CashOnDeliveryGateway::ID);
         } elseif (!empty($filters['to_ship']) && !in_array($filters['status'] ?? null, array(Order::STATUS_PAID, Order::STATUS_PROCESSING), true)) {
@@ -1140,6 +1143,33 @@ final class OrderStore extends Model
         }
 
         return $q;
+    }
+
+    /**
+     * Orders whose number is $term, or whose account has a name, username or e-mail starting with it.
+     * Each user column is matched on its index, and the orders by idx_user_status.
+     */
+    private static function matchingBuyerOrId(QueryBuilder $q, string $term): QueryBuilder
+    {
+        $term = ltrim($term, '#');
+        $id   = ctype_digit($term) && strlen($term) < 10 ? (int) $term : 0;
+        $ids  = $term === '' ? array() : array_map(
+            static fn (array $row): int => (int) $row['pk_i_id'],
+            Db::table(DB_TABLE_PREFIX . 't_user')->select('pk_i_id')->whereGroup(
+                static fn (QueryBuilder $u): QueryBuilder => $u->like('s_email', $term, 'after')
+                    ->orWhereGroup(static fn (QueryBuilder $g): QueryBuilder => $g->like('s_username', $term, 'after'))
+                    ->orWhereGroup(static fn (QueryBuilder $g): QueryBuilder => $g->like('s_name', $term, 'after'))
+            )->limit(200)->get()
+        );
+
+        return $q->whereGroup(static function (QueryBuilder $g) use ($id, $ids): QueryBuilder {
+            $g = $g->whereRaw('1 = 0');
+            if ($id > 0) {
+                $g = $g->orWhere('pk_i_id', $id);
+            }
+
+            return $ids === array() ? $g : $g->orWhereRaw('fk_i_user_id IN (' . implode(', ', array_fill(0, count($ids), '?')) . ')', $ids);
+        });
     }
 
     /**

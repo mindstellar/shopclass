@@ -31,7 +31,6 @@ use mindstellar\billing\PartialRefundableGateway;
 use mindstellar\billing\PaymentGatewayRegistry;
 use mindstellar\billing\Receipts;
 use mindstellar\billing\RefundableGateway;
-use mindstellar\currency\CurrencyService;
 use mindstellar\listing\VariantStore;
 
 $admin = api_admin_boot('osc_billing_partial_refund');
@@ -229,7 +228,7 @@ pin('no refunded hook yet', 0, $refunds);
 harness_section('refusals change nothing');
 $before = count($notes($a->getId()));
 $r = Billing::refundPart($fresh($a), $m(34), [], 'x', false, false);
-pin('more than is left, and how much is', [CallbackResult::OUTCOME_IGNORED, sprintf('At most %s is left to refund', CurrencyService::make()->money($m(33), 'USD'))], [$r->getOutcome(), $r->getMessage()]);
+pin('more than is left, and how much is', [CallbackResult::OUTCOME_IGNORED, sprintf('At most %s is left to refund', \mindstellar\currency\Money::format($m(33), 'USD'))], [$r->getOutcome(), $r->getMessage()]);
 pin('more units than are left', CallbackResult::OUTCOME_IGNORED, Billing::refundPart($fresh($a), 0, [$teeA => 3], 'x', true, false)->getOutcome());
 pin('no amount and no lines', CallbackResult::OUTCOME_IGNORED, Billing::refundPart($fresh($a), 0, [], 'x', true, false)->getOutcome());
 pin('a line of another order', CallbackResult::OUTCOME_IGNORED, Billing::refundPart($fresh($a), $m(1), [999999 => 1], 'x', true, false)->getOutcome());

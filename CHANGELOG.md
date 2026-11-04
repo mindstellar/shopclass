@@ -28,6 +28,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Orders have a **Processing** status, set by hand or by the first partial shipment.
 - An order can ship in parcels: pick the quantities, add tracking per parcel, and the buyer gets a mail for each. Mark an order packed as an admin note.
 - Each order keeps a history of its status changes, shown on the admin order page.
+- **Billing → Orders** can be searched by order number, name or e-mail, marks partly refunded orders, and lists refunds in the order history.
 - **Settings → Billing → Shop** sets the delivery charge, free delivery, cash on delivery and where it is offered, the stock hold time, open unpaid orders per buyer and the order number prefix.
 - Shoppers keep up to 10 delivery addresses and pick one at checkout.
 - Buyers get an e-mail when an order is placed, paid, shipped, delivered, cancelled or refunded; the owner gets one for each new order.

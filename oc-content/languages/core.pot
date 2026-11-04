@@ -5693,6 +5693,10 @@ msgstr ""
 msgid "Empty: cash on delivery everywhere you deliver."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Empty: the chosen units"
+msgstr ""
+
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
@@ -10103,6 +10107,10 @@ msgstr ""
 msgid "Nothing has been uploaded under this filter yet."
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Nothing has changed yet."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Nothing has moved yet"
 msgstr ""
@@ -10649,6 +10657,10 @@ msgstr ""
 msgid "Order number prefix"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
+msgid "Order number, name or e-mail"
+msgstr ""
+
 #: oc-includes/classes/admin/ajax/AjaxHandler.php
 msgid "Order saved"
 msgstr ""
@@ -10945,6 +10957,7 @@ msgstr ""
 msgid "Part-time"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 msgid "Partly refunded"
 msgstr ""
@@ -11966,6 +11979,10 @@ msgstr ""
 msgid "Refunded"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/order.php
+msgid "Refunded %1$s (%2$s)"
+msgstr ""
+
 #: oc-includes/classes/billing/Billing.php
 msgid ""
 "Refunded at the provider but not recorded here. Record it with Record a "
@@ -12821,6 +12838,7 @@ msgstr ""
 msgid "Screenshots"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -16218,7 +16236,7 @@ msgid "Trim the wick"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
-msgid "Try a different status or payment method."
+msgid "Try a different search, status or payment method."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/documents.php
