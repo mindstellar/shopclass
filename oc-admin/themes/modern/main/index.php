@@ -201,7 +201,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <ul class="dash-system">
                             <?php foreach ($toShip['orders'] as ['order' => $order, 'buyer' => $buyer]) { ?>
                                 <li class="dash-system-row dash-ship-row">
-                                    <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()); ?>"><?php echo osc_esc_html(\mindstellar\billing\Receipts::number($order)); ?></a>
+                                    <a href="<?php echo osc_esc_html(osc_admin_billing_order_url($order->getId())); ?>"><?php echo osc_esc_html(\mindstellar\billing\Receipts::number($order)); ?></a>
                                     <span class="dash-system-label"><?php echo osc_esc_html($buyer); ?></span>
                                     <span class="dash-system-value"><?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?></span>
                                     <span class="dash-ship-age"><?php echo osc_esc_html(osc_admin_duration(time() - (int) strtotime($order->getDate()))); ?></span>

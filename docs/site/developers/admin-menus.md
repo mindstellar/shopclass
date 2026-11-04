@@ -164,6 +164,10 @@ header title other than `title`. If your screen's file prints the same title wit
 as core screens have; it may be a callable that prints the help. `actions` are the buttons
 beside it.
 
+The top bar shows the path to the screen: the section your entry sits under, linked to its
+main screen, then the header title. `osc_admin_breadcrumb()` draws it; a theme that replaces
+the top bar calls it in the same place.
+
 Group a plugin's entries under Plugins with a divider, as core groups its own:
 
 ```php

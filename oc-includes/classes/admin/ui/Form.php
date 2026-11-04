@@ -111,7 +111,7 @@ class Form
     public static function heading($text, $level = 'section', $id = null, $spaced = false)
     {
         // Under a page title the header drew as the h1, a section is an h2; under an in-page h2 title, an h3.
-        $top   = function_exists('osc_admin_header_title') && osc_admin_header_title() !== null ? 2 : 3;
+        $top   = PageState::headerTitle() !== null ? 2 : 3;
         $tag   = 'h' . ($level === 'subsection' ? $top + 1 : $top);
         $id    = $id ?? self::anchor($text);
         $class = 'render-title ' . ($level === 'subsection' ? 'osc-subsection-title' : 'osc-section-title') . ($spaced ? ' separate-top' : '');

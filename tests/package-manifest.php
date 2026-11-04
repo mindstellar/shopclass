@@ -61,13 +61,9 @@ pin('bad slugs dropped, bad constraint becomes any', ['ok-one' => ''], $r['plugi
 harness_section('order_url');
 pin('a path with {id}', 'orders/{id}', PackageManifest::orderUrl(['order_url' => 'orders/{id}']));
 pin('a full address', 'https://shop.example.com/orders/{id}?tab=1', PackageManifest::orderUrl(['order_url' => 'https://shop.example.com/orders/{id}?tab=1']));
-pin('no {id}, a script, another scheme, a protocol-relative host or markup are refused', ['', '', '', '', ''], [
-    PackageManifest::orderUrl(['order_url' => 'orders/']),
-    PackageManifest::orderUrl(['order_url' => 'javascript:alert({id})']),
-    PackageManifest::orderUrl(['order_url' => 'ftp://x.test/{id}']),
-    PackageManifest::orderUrl(['order_url' => '//evil.test/{id}']),
-    PackageManifest::orderUrl(['order_url' => 'orders/{id}"><b>']),
-]);
+foreach (['no {id}' => 'orders/', 'a script' => 'javascript:alert({id})', 'another scheme' => 'ftp://x.test/{id}', 'a protocol-relative host' => '//evil.test/{id}', 'markup' => 'orders/{id}"><b>'] as $what => $url) {
+    pin("$what is refused", '', PackageManifest::orderUrl(['order_url' => $url]));
+}
 pin('missing or not text', ['', ''], [PackageManifest::orderUrl([]), PackageManifest::orderUrl(['order_url' => ['x']])]);
 
 @unlink($dir . '/shopclass.json');

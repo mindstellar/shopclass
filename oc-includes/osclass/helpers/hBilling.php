@@ -872,6 +872,19 @@ function osc_billing_order_url(int $orderId): string
 }
 
 /**
+ * The admin page of one order.
+ *
+ * @param int $orderId
+ *
+ * @return string
+ * @since 7.1.0
+ */
+function osc_admin_billing_order_url(int $orderId): string
+{
+    return osc_admin_base_url(true) . '?page=billing&action=order&id=' . $orderId;
+}
+
+/**
  * Whether the user has a paid, processing, shipped or delivered order with this listing on it.
  *
  * @param int $userId

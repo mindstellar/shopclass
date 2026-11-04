@@ -2387,7 +2387,7 @@ final class CoreEmails
 
         $details  = Receipts::details($order);
         $url      = $toAdmin
-            ? osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()
+            ? osc_admin_billing_order_url($order->getId())
             : osc_billing_order_url($order->getId());
         $tracking = '';
         if ($details['carrier'] !== '' || $details['tracking'] !== '' || $details['tracking_url'] !== '') {

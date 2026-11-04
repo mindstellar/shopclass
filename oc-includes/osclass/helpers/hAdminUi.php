@@ -708,21 +708,13 @@ if (!function_exists('osc_admin_disclosure_close')) {
 if (!function_exists('osc_admin_header_title')) {
     /**
      * The page title the admin header drew in its title row, or null when it drew none.
-     * Passing a title records it; osc_admin_page_head() does that at level 1.
-     *
-     * @param string|null $title
      *
      * @return string|null
      * @since 7.1.0
      */
-    function osc_admin_header_title($title = null)
+    function osc_admin_header_title()
     {
-        static $drawn = null;
-        if ($title !== null) {
-            $drawn = (string)$title;
-        }
-
-        return $drawn;
+        return \mindstellar\admin\ui\PageState::headerTitle();
     }
 }
 
@@ -733,9 +725,14 @@ if (!function_exists('osc_admin_page_head')) {
      * With no actions this emits exactly the `<h2 class="render-title">` every screen
      * already uses, so adopting it changes no pixels.
      *
-     * Level 1 is the title row the admin header draws from osc_admin_page()'s 'heading'.
-     * Once that is drawn, a level-2 call does not draw a second title: with the same text
-     * it prints nothing, with other text it draws a level-3 section heading.
+     * The tag each level draws:
+     *
+     *   level 1  the header's title row, from osc_admin_page()'s 'heading'   h1
+     *   level 2  no header title: the page title                            h2
+     *            header title, other text: a section                        h2
+     *            header title, same text: nothing, only the actions
+     *   level 3  no header title: a section                                 h3
+     *            header title: a section                                    h2
      *
      * @param string                         $title
      * @param array<int,array<string,mixed>> $actions Action specs; see osc_admin_action_button()
@@ -753,10 +750,11 @@ if (!function_exists('osc_admin_page_head')) {
         $hasActions = $actions !== array() || !empty($opts['actions_html']);
         // The header already drew this title: only its actions, if any, are still to draw.
         $drawn = false;
+        $header = \mindstellar\admin\ui\PageState::headerTitle();
         if ($level === 1) {
-            osc_admin_header_title((string)$title);
-        } elseif ($level === 2 && osc_admin_header_title() !== null) {
-            if ((string)$title === osc_admin_header_title()) {
+            \mindstellar\admin\ui\PageState::setHeaderTitle((string)$title);
+        } elseif ($level === 2 && $header !== null) {
+            if ((string)$title === $header) {
                 if (!$hasActions) {
                     return;
                 }
@@ -764,12 +762,12 @@ if (!function_exists('osc_admin_page_head')) {
             }
             $level = 3;
         }
-        if (function_exists('osc_admin_page_titled')) {
-            osc_admin_page_titled($level <= 2 || $drawn);
+        if ($level <= 2 || $drawn) {
+            \mindstellar\admin\ui\PageState::markTitled();
         }
         $class = 'render-title' . ($level <= 2 ? ' osc-page-title' : ' osc-section-title') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
         // A section under the header's h1 title is an h2, so the outline does not skip a level.
-        if ($level === 3 && osc_admin_header_title() !== null) {
+        if ($level === 3 && $header !== null) {
             $level = 2;
         }
 

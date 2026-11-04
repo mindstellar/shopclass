@@ -280,7 +280,8 @@ final class Mailer
     }
 
     /**
-     * Send a short notice to the site's contact address, one escaped paragraph per line.
+     * Send a short notice to the site's contact address, or the first administrator's when it
+     * has none, one escaped paragraph per line.
      * Never throws once called: a failure is logged and returns false.
      *
      * @param array<int,mixed> $lines plain text; anything that is not a string or number is left out
@@ -288,7 +289,7 @@ final class Mailer
     public static function admin(string $subject, array $lines): bool
     {
         try {
-            $to = (string) osc_contact_email();
+            $to = CoreEmails::adminAddress();
             if ($to === '') {
                 return false;
             }

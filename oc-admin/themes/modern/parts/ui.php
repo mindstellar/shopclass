@@ -283,10 +283,11 @@ if (!function_exists('osc_admin_page_titled')) {
      */
     function osc_admin_page_titled($drawn = false)
     {
-        static $titled = false;
-        $titled = $titled || $drawn;
+        if ($drawn) {
+            \mindstellar\admin\ui\PageState::markTitled();
+        }
 
-        return $titled;
+        return \mindstellar\admin\ui\PageState::titled();
     }
 }
 

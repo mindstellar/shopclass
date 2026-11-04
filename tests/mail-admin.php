@@ -25,6 +25,21 @@ use mindstellar\mail\Mailer;
 use mindstellar\utility\DeferredMail;
 
 $GLOBALS['contact'] = 'admin@example.com';
+$GLOBALS['admins']  = [];
+// The admin list core falls back to when the site has no contact address.
+final class Admin
+{
+    public static function getInstance(): self
+    {
+        return new self();
+    }
+
+    /** @return array<int,array<string,string>> */
+    public function listAll(): array
+    {
+        return $GLOBALS['admins'];
+    }
+}
 function osc_contact_email()
 {
     if ($GLOBALS['contact'] instanceof Throwable) {
@@ -54,7 +69,10 @@ pin('each line escaped in its own paragraph, arrays left out', '<p>Order #5 &lt;
 
 $sent               = [];
 $GLOBALS['contact'] = '';
-pin('no contact address: false and nothing sent', [false, []], [DeferredMail::during(static fn () => Mailer::admin('x', ['y']), $send), $sent]);
+pin('no contact address and no admin e-mail: false and nothing sent', [false, []], [DeferredMail::during(static fn () => Mailer::admin('x', ['y']), $send), $sent]);
+$GLOBALS['admins'] = [['s_email' => ''], ['s_email' => 'owner@example.com']];
+pin('no contact address: it goes to the first admin with an e-mail', [true, 'owner@example.com'], [DeferredMail::during(static fn () => Mailer::admin('x', ['y']), $send), $sent[0]['to'] ?? null]);
+$sent = [];
 
 $GLOBALS['contact'] = new RuntimeException('preferences unavailable');
 $logged             = ini_set('error_log', '/dev/null');

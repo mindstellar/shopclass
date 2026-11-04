@@ -16255,7 +16255,11 @@ msgid "Trim the wick"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
-msgid "Try a different search, status or payment method."
+msgid "Try a different search."
+msgstr ""
+
+#: oc-admin/themes/modern/billing/index.php
+msgid "Try a different status or payment method."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/documents.php

@@ -124,7 +124,7 @@ osc_admin_page(array(
             'icon'  => 'bi-receipt',
             'title' => $isFiltered ? __('No orders match this filter') : __('No orders yet'),
             'text'  => $isFiltered
-                ? __('Try a different search, status or payment method.')
+                ? (($filters['q'] ?? '') !== '' ? __('Try a different search.') : __('Try a different status or payment method.'))
                 : __('Orders appear here as soon as a payment plugin takes its first payment.'),
             'action' => $isFiltered
                 ? array('label' => __('Clear filter'), 'url' => $base)

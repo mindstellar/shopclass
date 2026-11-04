@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1282 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1283 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -139,7 +139,7 @@ Core defines 1282 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_form_row_close()` | Close the row osc_admin_form_row_open() opened. |
 | `osc_admin_form_row_open($label = '', array $opts = array())` | One labelled row of a form. |
 | `osc_admin_form_section($title, array $opts = array())` | A titled group of fields within a screen, with an optional explanatory paragraph. |
-| `osc_admin_header_title($title = null)` | The page title the admin header drew in its title row, or null when it drew none. Passing a title records it; osc_admin_page_head() does that at level 1. |
+| `osc_admin_header_title()` | The page title the admin header drew in its title row, or null when it drew none. |
 | `osc_admin_location_picker(array $opts = array())` | Where a record is: the country select, the region and city inputs with their hidden ids, and the rest of the address behind a disclosure. |
 | `osc_admin_number(array $opts)` | A number, at number width. Keys: the shared set, plus 'min', 'max', 'step', 'prefix', 'suffix'. |
 | `osc_admin_page_head($title, array $actions = array(), array $opts = array())` | The page title, and the actions that belong to the page as a whole. |
@@ -179,7 +179,7 @@ Core defines 1282 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (91)
+### hBilling (92)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -187,6 +187,7 @@ Core defines 1282 helpers, 29 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_account_upgrade_offers(?int $userId = null)` | Upgrades a seller can buy for their account with credits: each is ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`. With $userId, extra photos and runtime that seller already holds are left out: they raise a limit to a level, so buying them again would only stack it. |
 | `osc_account_upgrade_url(string $feature)` | The POST target for buying the account upgrade $feature. |
+| `osc_admin_billing_order_url(int $orderId)` | The admin page of one order. |
 | `osc_admin_payment_test_notice(array $query, string $hidden = '')` | One notice naming every payment method still in test mode, for the dashboard, the billing screens and those methods' own settings pages. Empty anywhere else, when none is in test mode, or when the admin hid it for this set of methods. Plugins add themselves through the PaymentTestModes event or the `admin_payment_test_modes` filter. |
 | `osc_billing_bump_cooldown_hours()` | Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. |
 | `osc_billing_bump_credits()` | Credit price of a bump. 0 with billing_bump_enabled on means free, not off. |

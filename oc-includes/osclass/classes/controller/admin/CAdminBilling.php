@@ -253,7 +253,7 @@ class CAdminBilling extends AdminSecBaseModel
 
         Receipts::render(
             $order,
-            osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId(),
+            osc_admin_billing_order_url($order->getId()),
             _m('Back to the order')
         );
     }
@@ -300,7 +300,7 @@ class CAdminBilling extends AdminSecBaseModel
             osc_add_flash_warning_message(_m('That order had already been settled'), 'admin');
         }
 
-        $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId());
+        $this->redirectTo(osc_admin_billing_order_url($order->getId()));
     }
 
     /**
@@ -596,7 +596,7 @@ class CAdminBilling extends AdminSecBaseModel
 
     private function orderUrl(Order $order): string
     {
-        return osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId();
+        return osc_admin_billing_order_url($order->getId());
     }
 
     /**
@@ -628,7 +628,7 @@ class CAdminBilling extends AdminSecBaseModel
             osc_add_flash_warning_message(_m('Only a paid order can be refunded'), 'admin');
         }
 
-        $this->redirectTo(osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId());
+        $this->redirectTo(osc_admin_billing_order_url($order->getId()));
     }
 
     /**
@@ -641,7 +641,7 @@ class CAdminBilling extends AdminSecBaseModel
     private function orderRefundGatewayPost()
     {
         $id   = Params::getParamInt('id');
-        $back = osc_admin_base_url(true) . '?page=billing&action=order&id=' . $id;
+        $back = osc_admin_billing_order_url($id);
 
         if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
             $this->redirectTo($back);
@@ -723,7 +723,7 @@ class CAdminBilling extends AdminSecBaseModel
     private function orderRefundPartPost()
     {
         $id   = Params::getParamInt('id');
-        $back = osc_admin_base_url(true) . '?page=billing&action=order&id=' . $id;
+        $back = osc_admin_billing_order_url($id);
 
         if (Params::getServerParam('REQUEST_METHOD') !== 'POST') {
             $this->redirectTo($back);
@@ -838,7 +838,7 @@ class CAdminBilling extends AdminSecBaseModel
             return;
         }
 
-        DocumentPage::render($document, osc_admin_base_url(true) . '?page=billing&action=order&id=' . $document->orderId, _m('Back to the order'));
+        DocumentPage::render($document, osc_admin_billing_order_url($document->orderId), _m('Back to the order'));
     }
 
     /**

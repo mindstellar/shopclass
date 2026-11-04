@@ -73,10 +73,10 @@ final class SettingsForm
 
         foreach ($page['groups'] as $index => $group) {
             if ($group['title'] !== '' && ($opts['titles'] ?? true)) {
-                if ($index === 0 && $group['title'] === osc_admin_header_title()) {
+                if ($index === 0 && $group['title'] === PageState::headerTitle()) {
                     // The header's title row already shows it.
                     echo '<span id="' . Form::anchor($group['title']) . '"></span>';
-                } elseif (osc_admin_page_titled()) {
+                } elseif (PageState::titled()) {
                     osc_admin_section_heading($group['title']);
                 } else {
                     echo '<span id="' . Form::anchor($group['title']) . '"></span>';

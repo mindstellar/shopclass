@@ -338,7 +338,7 @@ one.
 | `osc_admin_form_section($title)` | A titled group of fields (a section heading). |
 | `osc_admin_section_heading($text, $level)` | A section (`'section'`) or sub-section (`'subsection'`) heading. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
-| `osc_admin_page_head($title, $actions)` | The screen title with its action buttons, for a screen that does not declare a `heading`. |
+| `osc_admin_page_head($title, $actions, $opts)` | The screen title with its action buttons, for a screen that does not declare a `heading`. `'level' => 3` draws a section with buttons; the header draws its own title row with `'level' => 1`. |
 | `osc_admin_action_section()` | An intro, a status block, and buttons, no form. |
 
 ### Headings
