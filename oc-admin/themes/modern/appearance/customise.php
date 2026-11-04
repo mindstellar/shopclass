@@ -19,7 +19,10 @@ osc_add_filter('admin_body_class', static function ($classes) {
     return array_merge(is_array($classes) ? $classes : array(), array('osc-customise-page'));
 });
 if (is_array($customiser)) {
-    osc_register_script('admin-customise', osc_asset_url_versioned(osc_current_admin_theme_js_url('customise.js')), array('admin-osc'));
+    osc_register_script('admin-widget-fields', osc_asset_url_versioned(osc_current_admin_theme_js_url('widget-fields.js')), array('admin-osc'));
+    osc_register_script('admin-customise', osc_asset_url_versioned(osc_current_admin_theme_js_url('customise.js')), array('admin-osc', 'admin-widget-fields'));
+    osc_enqueue_script('tiny_mce');
+    osc_enqueue_script('admin-editor');
     osc_enqueue_script('admin-customise');
 }
 
@@ -31,25 +34,64 @@ if (!is_array($customiser)) {
     return;
 }
 
+$czPageMode = ($customiser['mode'] ?? 'theme') === 'page';
+$czTarget   = $czPageMode ? (array) $customiser['target'] : array();
+$czPageId   = (int) ($czTarget['id'] ?? 0);
 $czAdmin    = osc_admin_base_url(true) . '?page=appearance&action=';
 $czCsrf     = '&' . osc_csrf_token_url();
 $czLocation = (string) array_key_first($customiser['locations']);
 // A theme with settings only has no sections to list.
 $czSections = $customiser['locations'] !== array();
 $czThemeName = (string) ($customiser['theme_name'] ?? osc_theme());
-
-$czState = array(
-    'locations'  => (object) $customiser['locations'],
-    'preview_url' => osc_customiser_preview_url(),
-    'types'      => $customiser['types'],
-    'live'       => $customiser['live'],
-    'updated_at' => $customiser['updated_at'],
-    'urls'       => array(
+$czRows      = $czSections ? $customiser['locations'][$czLocation]['rows'] : array();
+$czPreview   = $czSections ? $customiser['locations'][$czLocation]['preview_url'] : osc_customiser_preview_url();
+if ($czPageMode) {
+    $czPageUrl = osc_admin_base_url(true) . '?page=pages&action=blocks_%s_post&id=' . $czPageId . $czCsrf;
+    $czUrls    = array(
+        'draft'   => sprintf($czPageUrl, 'draft'),
+        'publish' => sprintf($czPageUrl, 'publish'),
+        'discard' => sprintf($czPageUrl, 'discard'),
+    );
+} else {
+    $czUrls = array(
         'draft'   => $czAdmin . 'customise_draft_post' . $czCsrf,
         'publish' => $czAdmin . 'customise_publish_post' . $czCsrf,
         'discard' => $czAdmin . 'customise_discard_post' . $czCsrf,
-    ),
-    'i18n'       => array(
+    );
+}
+
+// A type without its own icon gets a plain section one, so no row or tile has an empty icon slot.
+foreach ($customiser['types'] as $czTypeId => $czType) {
+    if ((string) ($czType['icon'] ?? '') === '') {
+        $customiser['types'][$czTypeId]['icon'] = 'layout-text-window';
+    }
+}
+
+// The tiles, by group; a type this admin may not author gets none.
+$czGroups = array(
+    'layout'   => __('Layout'),
+    'content'  => __('Content'),
+    'advanced' => __('Advanced'),
+);
+$czTiles = array_fill_keys(array_keys($czGroups), array());
+foreach ($customiser['types'] as $czTypeId => $czType) {
+    if (empty($czType['locked'])) {
+        $czTiles[$czType['group'] ?? 'content'][$czTypeId] = $czType;
+    }
+}
+$czTiles = array_filter($czTiles);
+
+$czState = array(
+    'mode'        => $czPageMode ? 'page' : 'theme',
+    'target'      => $czPageMode ? $czTarget : null,
+    'moderator'   => !empty($customiser['moderator']),
+    'locations'   => (object) $customiser['locations'],
+    'preview_url' => $czPreview,
+    'types'       => $customiser['types'],
+    'live'        => $customiser['live'],
+    'updated_at'  => $customiser['updated_at'],
+    'urls'        => $czUrls,
+    'i18n'        => array(
         'saving'      => __('Saving…'),
         'saved'       => __('Draft saved just now'),
         'kept'        => __('You have unpublished changes'),
@@ -67,11 +109,15 @@ $czState = array(
         'remove'      => __('Remove %s'),
         'removeConfirm' => __('Press again to remove %s'),
         'removeShort' => __('Remove?'),
-        'removeText'  => __('Remove'),
-        'noFields'    => __('This section has no settings.'),
-        'noRows'      => __('No sections yet. Add one below.'),
-        'pickRow'     => __('Pick a section to edit it.'),
+        'removeText'  => $czPageMode ? __('Remove block') : __('Remove'),
+        'noFields'    => $czPageMode ? __('This block has no settings.') : __('This section has no settings.'),
+        'noRows'      => $czPageMode ? __('This page has no blocks yet.') : __('No sections yet. Add one below.'),
+        'pickRow'     => $czPageMode ? __('Pick a block to edit it.') : __('Pick a section to edit it.'),
         'hidden'      => __('Hidden'),
+        'back'        => $czPageMode ? __('All blocks') : __('All sections'),
+        'legacyName'  => __('Custom HTML'),
+        'lockSuper'   => __('Only a super admin can change this block. You can see it and move it, but not edit it.'),
+        'lockLegacy'  => __('This is older custom HTML. It cannot be edited here.'),
     ),
 );
 $czJson = json_encode($czState, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -87,53 +133,95 @@ foreach ($customiser['types'] as $czTypeId => $czType) {
 $currentTypeId       = '';
 $currentWidgetConfig = array();
 ?>
-<div class="cz" id="cz">
-    <aside class="cz-side" aria-label="<?php echo osc_esc_html(__('Customiser')); ?>">
-        <div class="cz-top">
-            <h1 class="cz-title"><?php echo osc_esc_html(sprintf(__('Customise %s'), $czThemeName)); ?></h1>
-            <label class="visually-hidden" for="cz-page"><?php _e('Page'); ?></label>
-            <select id="cz-page" class="form-select form-select-sm"<?php echo count($customiser['locations']) < 2 ? ' disabled' : ''; ?><?php echo $czSections ? '' : ' hidden'; ?>>
-                <?php foreach ($customiser['locations'] as $czSlug => $czLoc) { ?>
-                    <option value="<?php echo osc_esc_html($czSlug); ?>"><?php echo osc_esc_html($czLoc['label']); ?></option>
+<div class="cz<?php echo $czPageMode ? ' cz-page' : ''; ?>" id="cz">
+    <aside class="cz-side" aria-label="<?php echo osc_esc_html($czPageMode ? __('Block editor') : __('Customiser')); ?>">
+      <div class="cz-views">
+        <div class="cz-view" id="cz-list-view">
+            <div class="cz-top">
+                <?php if ($czPageMode) { ?>
+                    <a class="cz-back" id="cz-page-back" href="<?php echo osc_esc_html($czTarget['edit_url']); ?>"><i class="bi bi-chevron-left" aria-hidden="true"></i><?php _e('Back to page'); ?></a>
+                    <h1 class="cz-title"><?php echo osc_esc_html(sprintf(__('Edit blocks: %s'), $czTarget['title'])); ?></h1>
+                <?php } else { ?>
+                    <h1 class="cz-title"><?php echo osc_esc_html(sprintf(__('Customise %s'), $czThemeName)); ?></h1>
+                    <label class="visually-hidden" for="cz-page"><?php _e('Page'); ?></label>
+                    <select id="cz-page" class="form-select form-select-sm"<?php echo count($customiser['locations']) < 2 ? ' disabled' : ''; ?><?php echo $czSections ? '' : ' hidden'; ?>>
+                        <?php foreach ($customiser['locations'] as $czSlug => $czLoc) { ?>
+                            <option value="<?php echo osc_esc_html($czSlug); ?>"><?php echo osc_esc_html($czLoc['label']); ?></option>
+                        <?php } ?>
+                    </select>
                 <?php } ?>
-            </select>
-        </div>
+            </div>
 
-        <div class="cz-list"<?php echo $czSections ? '' : ' hidden'; ?>>
-            <h2 class="cz-h" id="cz-rows-title"><?php _e('Page sections'); ?></h2>
-            <p class="visually-hidden" id="cz-grip-help"><?php _e('Press the up or down arrow key to move this section.'); ?></p>
             <?php if (!empty($customiser['stale'])) { ?>
-                <p class="cz-note" id="cz-stale"><?php _e('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes; Discard starts again from what is live.'); ?></p>
+                <p class="cz-note cz-stale" id="cz-stale"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i><span><?php echo osc_esc_html($czPageMode
+                    ? __('The blocks on this page were changed elsewhere after your draft began. Publishing replaces those changes; Discard starts again from what is live.')
+                    : __('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes; Discard starts again from what is live.')); ?></span></p>
             <?php } ?>
-            <ol class="cz-rows" id="cz-rows" aria-labelledby="cz-rows-title"></ol>
-            <p class="cz-note" id="cz-other" hidden
-               data-text-one="<?php echo osc_esc_html(__('1 widget here is not a section this page offers. Publishing removes it.')); ?>"
-               data-text-many="<?php echo osc_esc_html(__('%d widgets here are not sections this page offers. Publishing removes them.')); ?>"></p>
-            <button type="button" class="cz-add" id="cz-add" aria-expanded="false" aria-controls="cz-types">
-                <i class="bi bi-plus-lg" aria-hidden="true"></i><?php _e('Add section'); ?>
-            </button>
-            <ul class="cz-types" id="cz-types" hidden>
-                <?php foreach ($customiser['types'] as $czTypeId => $czType) { ?>
-                    <li data-type="<?php echo osc_esc_html($czTypeId); ?>">
-                        <button type="button" class="cz-type" data-add="<?php echo osc_esc_html($czTypeId); ?>">
-                            <span class="cz-type-name"><?php echo osc_esc_html($czType['label']); ?></span>
-                            <?php if ($czType['description'] !== '') { ?>
-                                <span class="cz-type-desc"><?php echo osc_esc_html($czType['description']); ?></span>
+
+            <div class="cz-list">
+              <div class="cz-sections"<?php echo $czSections ? '' : ' hidden'; ?>>
+                <h2 class="cz-h" id="cz-rows-title"><?php echo osc_esc_html($czPageMode ? __('Page blocks') : __('Page sections')); ?></h2>
+                <p class="visually-hidden" id="cz-grip-help"><?php echo osc_esc_html($czPageMode ? __('Press the up or down arrow key to move this block.') : __('Press the up or down arrow key to move this section.')); ?></p>
+                <ol class="cz-rows" id="cz-rows" aria-labelledby="cz-rows-title"></ol>
+                <p class="cz-empty" id="cz-empty"<?php echo $czRows === array() ? '' : ' hidden'; ?>><?php echo osc_esc_html($czState['i18n']['noRows']); ?></p>
+                <p class="cz-note" id="cz-other" hidden
+                   data-text-one="<?php echo osc_esc_html($czPageMode ? __('1 block here is not one this page offers. Publishing removes it.') : __('1 widget here is not a section this page offers. Publishing removes it.')); ?>"
+                   data-text-many="<?php echo osc_esc_html($czPageMode ? __('%d blocks here are not ones this page offers. Publishing removes them.') : __('%d widgets here are not sections this page offers. Publishing removes them.')); ?>"></p>
+                <button type="button" class="cz-add" id="cz-add" aria-expanded="false" aria-controls="cz-tiles">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i><?php echo osc_esc_html($czPageMode ? __('Add block') : __('Add section')); ?>
+                </button>
+                <div class="cz-pick" id="cz-tiles" hidden>
+                    <?php foreach ($czTiles as $czGroup => $czGroupTypes) { ?>
+                        <div class="cz-tile-group" data-group="<?php echo osc_esc_html($czGroup); ?>">
+                            <?php if (count($czTiles) > 1) { ?>
+                                <h3 class="cz-pick-h"><?php echo osc_esc_html($czGroups[$czGroup]); ?></h3>
                             <?php } ?>
-                        </button>
-                    </li>
-                <?php } ?>
-            </ul>
+                            <div class="cz-tiles">
+                                <?php foreach ($czGroupTypes as $czTypeId => $czType) { ?>
+                                    <button type="button" class="cz-tile<?php echo $czGroup === 'advanced' ? ' is-wide' : ''; ?>" data-add="<?php echo osc_esc_html($czTypeId); ?>"<?php echo $czType['description'] !== '' ? ' title="' . osc_esc_html($czType['description']) . '"' : ''; ?>>
+                                        <?php if ($czType['icon'] !== '') { ?><i class="bi bi-<?php echo osc_esc_html($czType['icon']); ?>" aria-hidden="true"></i><?php } ?>
+                                        <span><?php echo osc_esc_html($czType['label']); ?></span>
+                                    </button>
+                                <?php } ?>
+                            </div>
+                            <?php if ($czGroup === 'advanced') { ?>
+                                <p class="cz-warn" id="cz-code-warn"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i><span><?php _e('Custom Code runs as written on your site. Only super admins see it.'); ?></span></p>
+                            <?php } ?>
+                        </div>
+                    <?php } ?>
+                    <div class="cz-pick-x"><button type="button" class="btn btn-dim btn-sm" id="cz-tiles-close"><?php _e('Cancel'); ?></button></div>
+                </div>
+              </div>
+              <?php if ($customiser['look'] !== array()) { ?>
+                <button type="button" class="cz-look-open" id="cz-look-open">
+                    <span><?php _e('Look'); ?></span>
+                    <i class="bi bi-chevron-right chev" aria-hidden="true"></i>
+                </button>
+              <?php } ?>
+            </div>
         </div>
 
-        <div class="cz-panel">
-            <section class="cz-section" id="cz-section" aria-labelledby="cz-section-title">
+        <div class="cz-view is-out-fwd" id="cz-field-view" inert>
+            <div class="cz-head">
+                <button type="button" class="cz-back" id="cz-back"><i class="bi bi-chevron-left" aria-hidden="true"></i><span id="cz-back-text"><?php echo osc_esc_html($czState['i18n']['back']); ?></span></button>
                 <h2 class="cz-panel-title" id="cz-section-title"></h2>
-                <div class="cz-fields" id="cz-section-fields"></div>
-            </section>
-
-            <?php if ($customiser['look'] !== array()) { ?>
-                <section class="cz-look" id="cz-look" aria-labelledby="cz-look-title">
+                <span class="cz-type-line" id="cz-section-type"></span>
+            </div>
+            <div class="cz-body">
+                <section class="cz-section" id="cz-section" aria-labelledby="cz-section-title">
+                    <p class="cz-desc" id="cz-section-desc"></p>
+                    <p class="cz-lock" id="cz-lock-note" hidden><i class="bi bi-lock" aria-hidden="true"></i><span></span></p>
+                    <div class="cz-field">
+                        <label class="form-sublabel" for="cz-name"><?php _e('Name in this list (optional)'); ?></label>
+                        <input type="text" class="form-control form-control-sm" id="cz-name" maxlength="40" autocomplete="off" />
+                    </div>
+                    <div class="cz-fields" id="cz-section-fields"></div>
+                    <div class="cz-foot">
+                        <button type="button" class="cz-remove" id="cz-remove"><i class="bi bi-trash" aria-hidden="true"></i><span><?php echo osc_esc_html($czState['i18n']['removeText']); ?></span></button>
+                    </div>
+                </section>
+                <?php if ($customiser['look'] !== array()) { ?>
+                <section class="cz-look" id="cz-look" aria-labelledby="cz-look-title" hidden>
                     <h2 class="cz-panel-title" id="cz-look-title"><?php _e('Look'); ?></h2>
                     <?php foreach ($customiser['look'] as $czName => $czLook) {
                         $czField = $czLook['field'];
@@ -185,7 +273,9 @@ $currentWidgetConfig = array();
                     <?php } ?>
                 </section>
             <?php } ?>
+            </div>
         </div>
+      </div>
     </aside>
 
     <div class="cz-main">
@@ -203,7 +293,7 @@ $currentWidgetConfig = array();
         <div class="cz-canvas">
             <div class="cz-frame" id="cz-frame">
                 <iframe id="cz-preview" title="<?php echo osc_esc_html(__('Preview of your site')); ?>"
-                        src="<?php echo osc_esc_html($czSections ? $customiser['locations'][$czLocation]['preview_url'] : osc_customiser_preview_url()); ?>"
+                        src="<?php echo osc_esc_html($czPreview); ?>"
                         referrerpolicy="same-origin"></iframe>
             </div>
         </div>
@@ -228,7 +318,9 @@ $currentWidgetConfig = array();
 <dialog id="cz-stale-dialog" class="osc-dialog osc-dialog-danger" aria-labelledby="cz-stale-title">
     <div class="osc-dialog-body">
         <p class="osc-dialog-title" id="cz-stale-title"><?php _e('Replace changes made elsewhere?'); ?></p>
-        <p><?php _e('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes with your draft.'); ?></p>
+        <p><?php echo osc_esc_html($czPageMode
+            ? __('The blocks on this page were changed elsewhere after your draft began. Publishing replaces those changes with your draft.')
+            : __('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes with your draft.')); ?></p>
     </div>
     <div class="osc-dialog-actions">
         <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Keep editing'); ?></button>

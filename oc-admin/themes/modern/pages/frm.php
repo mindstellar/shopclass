@@ -213,122 +213,60 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ));
     echo '</div>';
 
-    // Functional widget canvas — rendered only for a page already saved with a builder
-    // template, so its page.{id} widgets are real and an Add widget lands on a builder
-    // page. Add/edit happen inline in the dialog below; delete goes through the
-    // appearance action, threaded with page_builder_id so it returns here.
-    if ($pb_is_builder) {
-        $blockLocation = $pb_location;
-        $pageId        = $pb_page_id;
-        $blocks        = Widget::getInstance()->findByLocation($blockLocation);
-        $widgetTypes   = osc_widget_types();
-
+    // A page saved with a builder template shows its blocks as a summary; they are edited
+    // beside a live preview on their own screen.
+    $pageBlocks = __get('pageBlocks');
+    if ($pb_is_builder && is_array($pageBlocks)) {
+        $blockCount = (int) $pageBlocks['count'];
         osc_admin_panel_open(__('Blocks'), array(
             'class'   => 'page-blocks-card js-page-widgets',
             'actions' => array(array(
-                'label' => __('Add block'),
-                'icon'  => 'bi-plus-lg',
-                'class' => 'js-page-block-add',
+                'label'   => __('Edit blocks'),
+                'icon'    => 'bi-pencil',
+                'variant' => 'primary',
+                'url'     => $pageBlocks['edit_url'],
+                'attrs'   => array('id' => 'page-blocks-edit'),
             )),
-        )); ?>
-        <p class="page-field-hint">
-            <?php _e('The blocks below make up this page, top to bottom. A block goes live on the page as soon as you save it.'); ?>
-        </p>
-        <?php
-        // The last change to this page's blocks, while it can still be undone.
-        $pb_undo = \mindstellar\widgets\PageBlockUndo::pending((int) osc_logged_admin_id(), (int) $pageId);
-        if (is_array($pb_undo)) {
-            $pb_undoText = array(
-                'added'   => __('Block added. It is live on the page.'),
-                'edited'  => __('Block saved. It is live on the page.'),
-                'deleted' => __('Block deleted.'),
-            )[$pb_undo['action'] ?? ''] ?? '';
-            if ($pb_undoText !== '') { ?>
-                <div class="page-block-undo" role="status">
-                    <i class="bi bi-check2-circle" aria-hidden="true"></i>
-                    <span><?php echo osc_esc_html($pb_undoText); ?></span>
-                    <?php // The form sits outside the page form, beside the block dialog.?>
-                    <button type="submit" form="pageBlockUndoForm" class="btn btn-secondary btn-sm"><?php _e('Undo'); ?></button>
-                </div>
-            <?php }
-        } ?>
-        <div class="page-blocks-reorder-error alert alert-danger py-1 px-2 small d-none" role="alert"></div>
-        <?php if (count($blocks) > 0) { ?>
-            <ul class="page-blocks-list js-page-blocks"
-                data-location="<?php echo osc_esc_html($blockLocation); ?>">
-                <?php foreach ($blocks as $b) {
-                    $wid       = (int)$b['pk_i_id'];
-                    $isTyped   = !empty($b['s_type']) && isset($widgetTypes[$b['s_type']]);
-                    $typeLabel = $isTyped
-                        ? $widgetTypes[$b['s_type']]['label']
-                        : __('Custom HTML');
-                    // The inline dialog can edit a block only if the user may author its
-                    // type (registered, and not a super_admin type for a moderator).
-                    // Everything else falls back to the appearance widget editor, which
-                    // enforces the same gate server-side.
-                    $inlineEdit = $isTyped
-                        && !(($widgetTypes[$b['s_type']]['capability'] ?? 'admin') === 'super_admin'
-                            && osc_is_moderator());
-                    $editUrl   = osc_admin_base_url(true) . '?page=appearance'
-                        . '&action=edit_widget&id=' . $wid
-                        . '&location=' . rawurlencode($blockLocation)
-                        . '&page_builder_id=' . $pageId;
-                    $deleteUrl = osc_admin_base_url(true) . '?page=appearance'
-                        . '&action=delete_widget&id=' . $wid
-                        . '&page_builder_id=' . $pageId . '&' . osc_csrf_token_url();
-                    ?>
-                    <li class="page-block-row" data-widget-id="<?php echo $wid; ?>"
-                        data-type="<?php echo osc_esc_html((string)($b['s_type'] ?? '')); ?>"
-                        data-description="<?php echo osc_esc_html($b['s_description']); ?>"
-                        data-config="<?php echo osc_esc_html((string)($b['s_config'] ?? '')); ?>">
-                        <span class="page-block-handle" draggable="true" tabindex="0"
-                              role="button"
-                              aria-label="<?php echo osc_esc_html(sprintf(
-                                  __('Reorder block %s. Drag, or focus and press the up'
-                                            . ' or down arrow keys.'),
-                                  $b['s_description']
-                              )); ?>">
-                            <i class="bi bi-grip-vertical" aria-hidden="true"></i>
-                        </span>
-                        <span class="page-block-icon" aria-hidden="true">
-                            <i class="bi bi-<?php echo osc_esc_html((string) ($widgetTypes[$b['s_type'] ?? '']['icon'] ?? '') ?: 'filetype-html'); ?>"></i>
-                        </span>
-                        <span class="page-block-main">
-                            <span class="page-block-desc">
-                                <?php echo osc_esc_html($b['s_description']); ?>
-                            </span>
-                            <span class="page-block-type">
-                                <?php echo osc_esc_html($typeLabel); ?>
-                            </span>
-                        </span>
-                        <span class="page-block-actions">
-                            <?php if ($inlineEdit) { ?>
-                                <button type="button" class="btn btn-link btn-sm p-0
-                                        js-page-block-edit"><?php _e('Edit'); ?></button>
-                            <?php } else { ?>
-                                <a href="<?php echo osc_esc_html($editUrl); ?>">
-                                    <?php _e('Edit'); ?>
-                                </a>
-                            <?php } ?>
-                            <a href="<?php echo osc_esc_html($deleteUrl); ?>"
-                               class="page-block-delete"><?php _e('Delete'); ?></a>
-                        </span>
-                    </li>
-                <?php } ?>
-            </ul>
-        <?php } else { ?>
-            <p class="page-blocks-empty">
-                <?php _e('No blocks yet. Add a block to start this page, such as a Heading, then Image and text.'); ?>
+        ));
+        if (!empty($pageBlocks['draft'])) { ?>
+            <p class="page-blocks-draft" id="page-blocks-draft" role="status">
+                <?php _e('You have unpublished block changes. Open Edit blocks to publish or discard them.'); ?>
             </p>
         <?php }
+        if ($blockCount > 0) { ?>
+            <div class="page-blocks-summary">
+                <p class="page-blocks-line">
+                    <strong><?php echo osc_esc_html(sprintf(_n('%d block', '%d blocks', $blockCount), $blockCount)); ?>:</strong>
+                    <?php echo osc_esc_html(implode(', ', array_map(static function ($b) {
+                        return (string) $b['type'];
+                    }, $pageBlocks['blocks']))); ?>
+                </p>
+                <ul class="page-blocks-chips">
+                    <?php foreach ($pageBlocks['blocks'] as $b) { ?>
+                        <li>
+                            <i class="bi bi-<?php echo osc_esc_html((string) $b['icon'] !== '' ? (string) $b['icon'] : 'filetype-html'); ?>" aria-hidden="true"></i>
+                            <span><?php echo osc_esc_html((string) $b['name']); ?></span>
+                            <?php if (!empty($b['hidden'])) { ?>
+                                <em>(<?php _e('hidden'); ?>)</em>
+                            <?php } ?>
+                        </li>
+                    <?php } ?>
+                </ul>
+            </div>
+        <?php } else { ?>
+            <p class="page-blocks-line page-blocks-none"><?php _e('No blocks yet.'); ?></p>
+        <?php } ?>
+        <p class="page-field-hint">
+            <?php _e('Blocks are edited with a live preview. Changes go live when you publish.'); ?>
+        </p>
+        <?php
         osc_admin_panel_close();
     } else {
-        // Placeholder shown when the template select is switched to a builder template but
-        // the page is not yet saved as one.
+        // Shown when the template select is switched to a builder template but the page is
+        // not yet saved as one.
         osc_admin_panel_open(__('Blocks'), array('class' => 'page-blocks-card js-page-widgets-hint')); ?>
         <p class="page-field-hint">
-            <?php _e('Save this page with the Page builder template to compose it from'
-                . ' blocks instead of the text editor.'); ?>
+            <?php _e('Blocks are edited after you save the page with the Page builder template.'); ?>
         </p>
         <?php
         osc_admin_panel_close();
@@ -451,326 +389,6 @@ echo json_encode($pb_builder_ids);
         }
         select.addEventListener('change', sync);
         sync();
-    })();
-</script>
-<?php if ($pb_is_builder) {
-    // The block dialog lives outside the page form (it carries its own form).
-    $pbf_location        = $pb_location;
-    $pbf_page_builder_id = $pb_page_id;
-    ?>
-    <form id="pageBlockUndoForm" method="post" action="<?php echo osc_admin_base_url(true); ?>" hidden>
-        <input type="hidden" name="page" value="appearance"/>
-        <input type="hidden" name="action" value="page_block_undo_post"/>
-        <input type="hidden" name="page_builder_id" value="<?php echo (int) $pbf_page_builder_id; ?>"/>
-    </form>
-    <dialog id="pageBlockDialog" class="osc-dialog osc-dialog-wide page-block-dialog">
-        <div class="page-block-dialog-grid">
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title" id="pageBlockDialogTitle"><?php _e('Add block'); ?></p>
-                <?php require __DIR__ . '/../appearance/page-block-form.php'; ?>
-            </div>
-            <aside class="page-block-preview" aria-labelledby="pageBlockPreviewTitle">
-                <div class="page-block-preview-bar">
-                    <span class="page-block-preview-title" id="pageBlockPreviewTitle"><?php _e('Preview'); ?></span>
-                    <fieldset class="osc-segmented" aria-label="<?php echo osc_esc_html(__('Preview width')); ?>">
-                        <input type="radio" id="pbPreviewDesktop" name="pb_preview_width" value="desktop" checked/>
-                        <label for="pbPreviewDesktop"><i class="bi bi-display" aria-hidden="true"></i><?php _e('Desktop'); ?></label>
-                        <input type="radio" id="pbPreviewPhone" name="pb_preview_width" value="phone"/>
-                        <label for="pbPreviewPhone"><i class="bi bi-phone" aria-hidden="true"></i><?php _e('Phone'); ?></label>
-                    </fieldset>
-                    <span class="page-block-preview-state" aria-live="polite"></span>
-                </div>
-                <div class="page-block-preview-stage">
-                    <iframe title="<?php echo osc_esc_html(__('Preview of this page')); ?>" tabindex="-1"></iframe>
-                </div>
-            </aside>
-        </div>
-    </dialog>
-    <script>
-        // Live preview: the dialog's values go to the server as this admin's draft (cleaned as a
-        // save is), and the frame shows the page with that block in place, scrolled to it.
-        (function () {
-            'use strict';
-            var dialog = document.getElementById('pageBlockDialog');
-            var form   = document.getElementById('pageBlockForm');
-            var frame  = dialog ? dialog.querySelector('.page-block-preview iframe') : null;
-            if (!form || !frame) { return; }
-            var stage  = frame.parentElement;
-            var state  = dialog.querySelector('.page-block-preview-state');
-            var words  = <?php echo json_encode(array('updating' => __('Updating…'), 'failed' => __('The preview could not load.'))); ?>;
-            var timer  = null;
-            var seq    = 0;
-            var small  = window.matchMedia('(max-width: 767.98px)');
-            var width  = small.matches ? 'phone' : 'desktop';
-
-            function fit() {
-                var w     = width === 'phone' ? 390 : 1280;
-                var scale = Math.min(1, stage.clientWidth / w);
-                frame.style.width     = w + 'px';
-                frame.style.height    = Math.ceil(stage.clientHeight / scale) + 'px';
-                frame.style.transform = 'scale(' + scale + ')';
-                frame.style.marginInlineStart = Math.max(0, (stage.clientWidth - w * scale) / 2) + 'px';
-            }
-            function send() {
-                if (!dialog.open) { return; }
-                if (window.tinymce) { window.tinymce.triggerSave(); }
-                var body = new FormData(form);
-                body.set('action', 'page_block_preview_post');
-                var mine = ++seq;
-                state.textContent = words.updating;
-                fetch(form.getAttribute('action'), {method: 'POST', body: body, credentials: 'same-origin', headers: {'X-Requested-With': 'XMLHttpRequest'}})
-                    .then(function (res) { return res.json(); })
-                    .then(function (json) {
-                        if (mine !== seq) { return; }
-                        if (!json || json.error || !json.url) { state.textContent = words.failed; return; }
-                        frame.src = json.url + '&t=' + Date.now();
-                    })
-                    .catch(function () { if (mine === seq) { state.textContent = words.failed; } });
-            }
-            function schedule() {
-                clearTimeout(timer);
-                timer = setTimeout(send, 500);
-            }
-            function hookEditors() {
-                if (!window.tinymce) { return; }
-                window.tinymce.get().forEach(function (editor) {
-                    if (editor.oscPreviewHooked || !form.contains(editor.getElement())) { return; }
-                    editor.oscPreviewHooked = true;
-                    editor.on('input change undo redo', schedule);
-                });
-            }
-            frame.addEventListener('load', function () {
-                state.textContent = '';
-                try {
-                    // A picture of the page, not a second page to use: nothing in it takes focus or clicks.
-                    frame.contentDocument.documentElement.inert = true;
-                    var block = frame.contentDocument.querySelector('[data-osc-block-preview]');
-                    if (block) {
-                        // A dark page gets a light mark and a light page a dark one, so it shows on both.
-                        var bg   = frame.contentWindow.getComputedStyle(frame.contentDocument.body).backgroundColor.match(/\d+/g) || [255, 255, 255];
-                        var dark = (0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2]) < 128;
-                        block.style.outline       = '2px dashed ' + (dark ? '#f2c14e' : '#8a5a12');
-                        block.style.outlineOffset = '6px';
-                        block.scrollIntoView({block: 'center'});
-                    }
-                } catch (e) { /* a frame from another origin keeps its own scroll */ }
-            });
-            form.addEventListener('input', schedule);
-            form.addEventListener('change', schedule);
-            dialog.querySelectorAll('input[name="pb_preview_width"]').forEach(function (radio) {
-                radio.addEventListener('change', function () { width = radio.value; fit(); });
-            });
-            window.addEventListener('resize', fit);
-            // Called each time the dialog opens, after its fields hold the block's values.
-            window.pageBlockPreviewStart = function () {
-                width = small.matches ? 'phone' : 'desktop';
-                dialog.querySelectorAll('input[name="pb_preview_width"]').forEach(function (radio) {
-                    radio.checked = radio.value === width;
-                });
-                hookEditors();
-                fit();
-                send();
-            };
-        })();
-    </script>
-    <script>
-        // Add / Edit block: the dialog holds one add-mode form; Edit repurposes it
-        // for a specific block, populating type + config from the row's data-* .
-        (function () {
-            'use strict';
-            var dialog = document.getElementById('pageBlockDialog');
-            var form   = document.getElementById('pageBlockForm');
-            if (!dialog || !form) { return; }
-            var title  = document.getElementById('pageBlockDialogTitle');
-            var action = document.getElementById('pbfAction');
-            var widId  = document.getElementById('pbfWidgetId');
-            var desc   = document.getElementById('pbfDescription');
-            var type   = document.getElementById('pbfType');
-            var submit = document.getElementById('pbfSubmit');
-
-            function fieldId(typeId, name) {
-                // Matches widgetConfigFieldId() (the shared field renderer).
-                return 'widget-cfg-' + (typeId + '-' + name).replace(/[^a-zA-Z0-9_-]/g, '-');
-            }
-            function resetForm() {
-                if (action) { action.value = 'add_widget_post'; }
-                if (widId) { widId.value = ''; }
-                if (desc) { desc.value = ''; }
-                form.querySelectorAll('#pbfFields input, #pbfFields select, #pbfFields textarea')
-                    .forEach(function (c) {
-                        if (c.type === 'checkbox') {
-                            c.checked = false;
-                        } else if (c.type === 'radio') {
-                            c.checked = c.hasAttribute('data-default');
-                        } else if (window.pageBlockFormSetValue) {
-                            window.pageBlockFormSetValue(c, '');
-                        } else {
-                            c.value = '';
-                        }
-                    });
-            }
-            function openAdd() {
-                resetForm();
-                if (title) { title.textContent = <?php echo json_encode(__('Add block')); ?>; }
-                if (submit) { submit.textContent = <?php echo json_encode(__('Add block')); ?>; }
-                // A new block starts clean: the first type, not the last block's.
-                if (type && type.options.length) { type.value = type.options[0].value; }
-                if (type && window.pageBlockFormApplyType) { window.pageBlockFormApplyType(type.value); }
-                if (window.pageBlockFormRefresh) { window.pageBlockFormRefresh(); }
-                dialog.showModal();
-                if (window.pageBlockPreviewStart) { window.pageBlockPreviewStart(); }
-            }
-            function openEdit(row) {
-                resetForm();
-                if (title) { title.textContent = <?php echo json_encode(__('Edit block')); ?>; }
-                if (submit) { submit.textContent = <?php echo json_encode(__('Save block')); ?>; }
-                if (action) { action.value = 'edit_widget_post'; }
-                if (widId) { widId.value = row.getAttribute('data-widget-id') || ''; }
-                if (desc) { desc.value = row.getAttribute('data-description') || ''; }
-                var typeId = row.getAttribute('data-type') || '';
-                if (type) {
-                    type.value = typeId;
-                    if (window.pageBlockFormApplyType) { window.pageBlockFormApplyType(typeId); }
-                }
-                var config = {};
-                try { config = JSON.parse(row.getAttribute('data-config') || '{}') || {}; } catch (e) {}
-                Object.keys(config).forEach(function (key) {
-                    var el = document.getElementById(fieldId(typeId, key));
-                    if (!el) {
-                        // A choice field is a set of radios sharing the field's name.
-                        var group = form.querySelector('[data-type-id="' + typeId + '"]');
-                        if (group) {
-                            group.querySelectorAll('input[type=radio][name="config[' + key + ']"]').forEach(function (r) {
-                                r.checked = r.value === String(config[key]);
-                            });
-                        }
-                        return;
-                    }
-                    var val = config[key];
-                    if (el.type === 'checkbox') {
-                        el.checked = (val && val !== '0' && val !== 0);
-                    } else {
-                        val = (val === null || val === undefined) ? '' : String(val);
-                        if (window.pageBlockFormSetValue) { window.pageBlockFormSetValue(el, val); } else { el.value = val; }
-                        if (el.classList.contains('widget-image-input') && window.oscSyncWidgetImage) {
-                            window.oscSyncWidgetImage(el);
-                        }
-                    }
-                });
-                if (window.pageBlockFormRefresh) { window.pageBlockFormRefresh(); }
-                dialog.showModal();
-                if (window.pageBlockPreviewStart) { window.pageBlockPreviewStart(); }
-            }
-
-            var addBtn = document.querySelector('.js-page-block-add');
-            if (addBtn) { addBtn.addEventListener('click', openAdd); }
-            document.querySelectorAll('.js-page-block-edit').forEach(function (btn) {
-                btn.addEventListener('click', function () {
-                    var row = btn.closest('.page-block-row');
-                    if (row) { openEdit(row); }
-                });
-            });
-        })();
-    </script>
-<?php } ?>
-<script>
-    // Page-builder blocks: persist drag/keyboard reordering to
-    // the shared reorder endpoint (scoped by the list's data-location). Mirrors the
-    // appearance widgets screen; no-op when the canvas is absent.
-    (function () {
-        'use strict';
-
-        var list = document.querySelector('.js-page-blocks');
-        if (!list) {
-            return;
-        }
-
-        var reorderUrl = <?php echo json_encode(
-            osc_admin_base_url(true) . '?page=appearance&action=reorder_widgets_post&' . osc_csrf_token_url()
-        ); ?>;
-        var errorBox = document.querySelector('.page-blocks-reorder-error');
-
-        function blockIds() {
-            return Array.prototype.map.call(
-                list.querySelectorAll('li[data-widget-id]'),
-                function (li) { return li.getAttribute('data-widget-id'); }
-            );
-        }
-
-        function commitOrder() {
-            var body = new URLSearchParams();
-            body.set('location', list.getAttribute('data-location') || '');
-            blockIds().forEach(function (id) { body.append('ids[]', id); });
-            fetch(reorderUrl, {
-                method: 'POST',
-                credentials: 'same-origin',
-                headers: { 'X-Requested-With': 'XMLHttpRequest' },
-                body: body
-            }).then(function (r) { return r.json(); }).then(function (json) {
-                if (json && !json.error) {
-                    if (errorBox) { errorBox.classList.add('d-none'); }
-                } else {
-                    showError();
-                }
-            }).catch(showError);
-        }
-
-        function showError() {
-            if (errorBox) {
-                errorBox.textContent = <?php echo json_encode(
-                    __('Could not save the new widget order. Reloading the page.')
-                ); ?>;
-                errorBox.classList.remove('d-none');
-            }
-            window.setTimeout(function () { window.location.reload(); }, 1500);
-        }
-
-        function move(row, dir) {
-            var sibling = dir < 0 ? row.previousElementSibling : row.nextElementSibling;
-            if (!sibling) { return; }
-            if (dir < 0) { list.insertBefore(row, sibling); } else { list.insertBefore(sibling, row); }
-            var handle = row.querySelector('.page-block-handle');
-            if (handle) { handle.focus(); }
-            commitOrder();
-        }
-
-        var dragged = null, orderAtStart = null;
-        list.querySelectorAll('.page-block-handle').forEach(function (handle) {
-            handle.addEventListener('dragstart', function (e) {
-                dragged = handle.closest('li');
-                if (!dragged) { return; }
-                orderAtStart = blockIds().join(',');
-                e.dataTransfer.effectAllowed = 'move';
-                try { e.dataTransfer.setData('text/plain', dragged.getAttribute('data-widget-id') || ''); } catch (err) {}
-                dragged.classList.add('page-block-dragging');
-            });
-            handle.addEventListener('dragend', function () {
-                if (dragged) {
-                    dragged.classList.remove('page-block-dragging');
-                    if (orderAtStart !== null && blockIds().join(',') !== orderAtStart) { commitOrder(); }
-                }
-                dragged = null;
-                orderAtStart = null;
-            });
-            handle.addEventListener('keydown', function (e) {
-                var row = handle.closest('li');
-                if (!row) { return; }
-                if (e.key === 'ArrowUp') { e.preventDefault(); move(row, -1); }
-                else if (e.key === 'ArrowDown') { e.preventDefault(); move(row, 1); }
-            });
-        });
-
-        list.querySelectorAll('li[data-widget-id]').forEach(function (row) {
-            row.addEventListener('dragover', function (e) {
-                if (!dragged || dragged === row) { return; }
-                e.preventDefault();
-                e.dataTransfer.dropEffect = 'move';
-                var rect = row.getBoundingClientRect();
-                var before = (e.clientY - rect.top) < rect.height / 2;
-                list.insertBefore(dragged, before ? row : row.nextElementSibling);
-            });
-            row.addEventListener('drop', function (e) { e.preventDefault(); });
-        });
     })();
 </script>
 <?php osc_current_admin_theme_path('parts/media-picker.php'); ?>

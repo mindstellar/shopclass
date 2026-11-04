@@ -363,7 +363,7 @@ if (!function_exists('osc_csrf_token_url')) {
 if (!function_exists('osc_page_template')) {
     function osc_page_template($id)
     {
-        return null;
+        return $id === 'builder' ? array('builder' => true, 'label' => 'Page builder') : null;
     }
 }
 if (!function_exists('osc_page_templates')) {
@@ -398,6 +398,31 @@ require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 /* ----------------------------------------------------------------------------
  * The child half: render one screen and print it.
  * ------------------------------------------------------------------------- */
+
+/**
+ * The summary PageBlocks::summary() hands the page form, for one builder screen.
+ *
+ * @param string $screen One of page-builder, page-builder-draft, page-builder-empty
+ *
+ * @return array
+ */
+function builder_summary(string $screen): array
+{
+    $url = 'https://example.test/oc-admin/index.php?page=pages&action=blocks&id=9';
+    if ($screen === 'page-builder-empty') {
+        return array('count' => 0, 'blocks' => array(), 'draft' => false, 'edit_url' => $url);
+    }
+
+    return array(
+        'count'    => 2,
+        'blocks'   => array(
+            array('name' => 'Intro <b>one</b>', 'type' => 'Heading', 'icon' => 'type-h1', 'hidden' => false),
+            array('name' => 'Quiet', 'type' => 'Rich text', 'icon' => 'text-left', 'hidden' => true),
+        ),
+        'draft'    => $screen === 'page-builder-draft',
+        'edit_url' => $url,
+    );
+}
 
 /**
  * Draw one of the four screens, the way its controller draws it.
@@ -466,9 +491,17 @@ function render_screen(string $screen): string
         echo '<input type="text" name="plugin_meta_probe" value="from-a-plugin"/>';
     });
 
+    $page = $screen === 'page-edit' ? $GLOBALS['fixturePage'] : array();
+    if (str_starts_with($screen, 'page-builder')) {
+        $isNew = ($screen === 'page-builder-new');
+        $page  = $isNew ? array() : array('s_meta' => '{"template":"builder"}') + $GLOBALS['fixturePage'];
+        $view->_exportVariableToView('pageBlocks', $isNew ? null : builder_summary($screen));
+    }
+
     $view->_exportVariableToView('templates', array('landing'));
-    $view->_exportVariableToView('registeredTemplates', array());
-    $view->_exportVariableToView('page', $screen === 'page-edit' ? $GLOBALS['fixturePage'] : array());
+    $view->_exportVariableToView('registeredTemplates', str_starts_with($screen, 'page-builder')
+        ? array('builder' => array('builder' => true, 'label' => 'Page builder')) : array());
+    $view->_exportVariableToView('page', $page);
 
     ob_start();
     include ABS_PATH . 'oc-admin/themes/modern/pages/frm.php';
@@ -991,6 +1024,37 @@ check('item-add-shop-variants: the rows have a Shipping class column',
     dom('item-add-shop-variants')->query('//table[contains(@class,"osc-variant-table")]//th[.="Shipping class"]')->length === 1);
 check('a row added in the browser gets the same box',
     preg_match("/var FIELDS = \\[[^\\]]*'shippingClass'/", (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/js/variants.js')) === 1);
+
+harness_section('page form: the Blocks card is a summary');
+
+$editUrl = 'https://example.test/oc-admin/index.php?page=pages&action=blocks&id=9';
+$q       = dom('page-builder');
+check('page-builder: Edit blocks links to the blocks screen',
+    $q->query('//a[@id="page-blocks-edit"][@href="' . $editUrl . '"]')->length === 1);
+check('page-builder: the count line says how many blocks',
+    str_contains((string) $q->query('//*[contains(@class,"page-blocks-line")]')->item(0)?->textContent, '2 blocks'));
+check('page-builder: one chip per block', $q->query('//ul[contains(@class,"page-blocks-chips")]/li')->length === 2);
+check('page-builder: a block name is escaped',
+    str_contains(screen('page-builder'), 'Intro &lt;b&gt;one&lt;/b&gt;') && !str_contains(screen('page-builder'), 'Intro <b>one'));
+check('page-builder: a hidden block says so',
+    str_contains((string) $q->query('//ul[contains(@class,"page-blocks-chips")]/li')->item(1)?->textContent, '(hidden)')
+    && !str_contains((string) $q->query('//ul[contains(@class,"page-blocks-chips")]/li')->item(0)?->textContent, '(hidden)'));
+check('page-builder: no draft note without a draft', $q->query('//*[@id="page-blocks-draft"]')->length === 0);
+check('page-builder-draft: the draft note shows',
+    dom('page-builder-draft')->query('//*[@id="page-blocks-draft"][@role="status"]')->length === 1);
+check('page-builder-empty: a quiet line, still an Edit blocks button',
+    str_contains(screen('page-builder-empty'), 'No blocks yet.')
+    && dom('page-builder-empty')->query('//a[@id="page-blocks-edit"]')->length === 1
+    && dom('page-builder-empty')->query('//ul[contains(@class,"page-blocks-chips")]/li')->length === 0);
+check('page-builder-new: blocks are edited after the first save, with no Edit blocks',
+    str_contains(screen('page-builder-new'), 'Blocks are edited after you save the page with the Page builder template.')
+    && dom('page-builder-new')->query('//*[@id="page-blocks-edit"]')->length === 0);
+
+foreach (array('page-builder', 'page-builder-draft', 'page-builder-empty', 'page-builder-new') as $screen) {
+    foreach (array('pageBlockDialog', 'pageBlockForm', 'page_block_', 'page_builder_id', 'js-page-block') as $gone) {
+        check("$screen: no $gone", !str_contains(screen($screen), $gone));
+    }
+}
 
 exit(harness_result());
 

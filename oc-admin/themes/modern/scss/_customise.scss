@@ -38,11 +38,229 @@
   }
 }
 
+// Two levels share one grid cell: the list, and the field view that slides in over it.
+.cz-views {
+  display: grid;
+  min-block-size: 100%;
+  position: relative;
+}
+
+.cz-view {
+  background-color: var(--osc-bench);
+  display: flex;
+  flex-direction: column;
+  grid-area: 1 / 1;
+  min-inline-size: 0;
+  transition: translate var(--osc-duration-slow, 280ms) var(--osc-ease), opacity var(--osc-duration-fast) var(--osc-ease), visibility 0s linear 0s;
+
+  &.is-out-back,
+  &.is-out-fwd {
+    inset-block-start: 0;
+    inset-inline: 0;
+    max-block-size: 100%;
+    overflow: hidden;
+    position: absolute;
+    transition-delay: 0s, 0s, 280ms;
+    visibility: hidden;
+  }
+
+  &.is-out-back {
+    opacity: 0;
+    translate: calc(-24% * var(--cz-dir, 1)) 0;
+  }
+
+  &.is-out-fwd {
+    translate: calc(100% * var(--cz-dir, 1)) 0;
+  }
+}
+
+[dir="rtl"] .cz {
+  --cz-dir: -1;
+}
+
 .cz-top {
   border-block-end: 1px solid var(--osc-rule);
   display: grid;
-  gap: .625rem;
+  gap: .5rem;
+  padding: .875rem 1rem 1rem;
+}
+
+.cz-back {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-bronze);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: .875rem;
+  font-weight: 600;
+  gap: .25rem;
+  justify-self: start;
+  padding: .125rem 0;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+[dir="rtl"] .cz-back .bi,
+[dir="rtl"] .cz-look-open .chev {
+  transform: scaleX(-1);
+}
+
+// The field view: a sticky head with the block's name and type, the fields, then Remove.
+.cz-head {
+  background-color: var(--osc-bench);
+  border-block-end: 1px solid var(--osc-rule);
+  display: grid;
+  gap: .25rem;
+  inset-block-start: 0;
+  padding: .875rem 1rem 1rem;
+  position: sticky;
+  z-index: 1;
+
+  .cz-panel-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+}
+
+.cz-type-line {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  font-size: .8125rem;
+  gap: .375rem;
+}
+
+.cz-body {
+  align-content: start;
+  display: grid;
+  flex: 1;
+  gap: 1.25rem;
+  grid-template-columns: minmax(0, 1fr);
   padding: 1rem;
+}
+
+.cz-desc {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: 0;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.cz-lock {
+  align-items: flex-start;
+  background-color: var(--osc-bench-sunk);
+  border-radius: var(--bs-border-radius-sm);
+  display: flex;
+  font-size: .875rem;
+  gap: .5rem;
+  margin: 0;
+  padding: .5rem .625rem;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.cz-foot {
+  border-block-start: 1px solid var(--osc-rule);
+  margin-block-start: .5rem;
+  padding-block-start: .875rem;
+}
+
+.cz-remove {
+  align-items: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-danger);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 600;
+  gap: .375rem;
+  margin-inline-start: -.5rem;
+  padding: .25rem .5rem;
+
+  &:hover {
+    background-color: var(--osc-danger-tint);
+  }
+
+  &.is-armed {
+    background-color: var(--osc-danger-tint);
+    border-color: var(--osc-danger);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.cz-look-open {
+  align-items: center;
+  background: none;
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-ink);
+  cursor: pointer;
+  display: flex;
+  font-weight: 600;
+  gap: .5rem;
+  inline-size: 100%;
+  margin-block-start: .5rem;
+  padding: .5rem .625rem;
+  text-align: start;
+
+  .chev {
+    color: var(--osc-ink-muted);
+    margin-inline-start: auto;
+  }
+
+  &:hover {
+    border-color: var(--osc-bronze);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+// Publishing over changes made elsewhere is the one way this screen can lose work, so the note is a warning, not a hint.
+.cz-note.cz-stale {
+  align-items: flex-start;
+  background: var(--osc-warning-tint);
+  border: 1px solid color-mix(in srgb, var(--osc-warning) 55%, transparent);
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-ink);
+  display: flex;
+  gap: .5rem;
+  margin: .625rem .625rem 0;
+  padding: .5rem .75rem;
+
+  .bi {
+    color: var(--osc-warning-deep);
+    flex: none;
+    margin-block-start: .125rem;
+  }
 }
 
 .cz-title {
@@ -81,7 +299,7 @@
   display: grid;
   font-size: .875rem;
   gap: .25rem;
-  grid-template-columns: 1.75rem minmax(0, 1fr) repeat(3, 1.75rem) auto;
+  grid-template-columns: 1.75rem 1.25rem minmax(0, 1fr) auto;
   padding: .25rem;
   transition: background-color var(--osc-duration-fast) var(--osc-ease), border-color var(--osc-duration-fast) var(--osc-ease);
 
@@ -95,8 +313,66 @@
   }
 
   &.is-off .cz-name {
-    opacity: .45;
-    text-decoration: line-through;
+    color: var(--osc-ink-muted);
+  }
+
+  &.is-drag {
+    opacity: .4;
+  }
+
+  &.is-over {
+    box-shadow: 0 -2px 0 var(--osc-bronze);
+  }
+}
+
+.cz-acts {
+  align-items: center;
+  display: inline-flex;
+  gap: .25rem;
+}
+
+.cz-ticon {
+  color: var(--osc-ink-muted);
+  display: grid;
+  font-size: 1rem;
+  place-items: center;
+}
+
+.cz-hide {
+  align-items: center;
+  background: none;
+  border: 1px solid transparent;
+  border-radius: var(--bs-border-radius-sm);
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: .8125rem;
+  gap: .25rem;
+  justify-content: center;
+  min-block-size: 1.75rem;
+  min-inline-size: 1.75rem;
+  padding-inline: .25rem;
+
+  &:hover:not(:disabled) {
+    background-color: var(--osc-bench);
+    color: var(--osc-ink);
+  }
+
+  &[aria-pressed="true"] {
+    border-color: var(--osc-rule-strong);
+    color: var(--osc-ink-emphasis);
+    font-weight: 600;
+    padding-inline: .375rem;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: .4;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
   }
 }
 
@@ -105,11 +381,17 @@
   border: 0;
   color: var(--osc-ink);
   font-weight: 500;
+  -webkit-box-orient: vertical;
+  border-radius: var(--bs-border-radius-sm);
+  cursor: pointer;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  line-height: 1.3;
   overflow: hidden;
+  overflow-wrap: anywhere;
   padding: .25rem 0;
   text-align: start;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .cz-grip,
@@ -179,7 +461,6 @@
 .cz-mini:focus-visible,
 .cz-name:focus-visible,
 .cz-add:focus-visible,
-.cz-type:focus-visible,
 .cz-swatch:focus-visible,
 .cz-seg button:focus-visible {
   outline: 2px solid var(--osc-bronze);
@@ -214,52 +495,93 @@
   }
 }
 
-.cz-types {
+// Type tiles, grouped Layout, Content, Advanced.
+.cz-pick {
+  background-color: var(--osc-bench-warm);
   border: 1px solid var(--osc-rule);
-  border-radius: var(--bs-border-radius-sm);
-  display: grid;
-  list-style: none;
-  margin: 0 .5rem;
-  padding: .25rem;
+  border-radius: var(--bs-border-radius);
+  margin: 0 .5rem .25rem;
+  padding: .5rem .625rem .75rem;
 
-  li[hidden] {
+  &[hidden] {
     display: none;
   }
 }
 
-.cz-type {
-  background: none;
-  border: 0;
+.cz-pick-h {
+  color: var(--osc-ink-emphasis);
+  font-size: .8125rem;
+  font-weight: 600;
+  margin: .5rem 0 .375rem;
+}
+
+.cz-tile-group:first-child .cz-pick-h {
+  margin-block-start: .125rem;
+}
+
+.cz-tiles {
+  display: grid;
+  gap: .375rem;
+  grid-template-columns: 1fr 1fr;
+}
+
+.cz-tile {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
   border-radius: var(--bs-border-radius-sm);
   color: var(--osc-ink);
-  display: grid;
-  gap: .125rem;
-  inline-size: 100%;
-  padding: .5rem;
+  cursor: pointer;
+  display: flex;
+  font-size: .875rem;
+  gap: .5rem;
+  line-height: 1.25;
+  min-block-size: 2.5rem;
+  padding: .5rem .5625rem;
   text-align: start;
 
+  .bi {
+    color: var(--osc-ink-muted);
+    font-size: 1rem;
+  }
+
   &:hover {
-    background-color: var(--osc-chrome-hover);
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+    color: var(--osc-bronze);
+
+    .bi {
+      color: inherit;
+    }
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+
+  &.is-wide {
+    grid-column: 1 / -1;
   }
 }
 
-.cz-type-name {
-  font-size: .875rem;
-  font-weight: 600;
-}
-
-.cz-type-desc {
+.cz-warn {
   color: var(--osc-ink-muted);
+  display: flex;
   font-size: .8125rem;
+  gap: .375rem;
+  margin: .375rem 0 0;
+
+  .bi {
+    color: var(--osc-warning-deep);
+    margin-block-start: .125rem;
+  }
 }
 
-.cz-panel {
-  border-block-start: 1px solid var(--osc-rule);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: 1.25rem;
-  margin-block-start: auto;
-  padding: 1rem;
+.cz-pick-x {
+  display: flex;
+  justify-content: flex-end;
+  margin-block-start: .5rem;
 }
 
 .cz-section,
@@ -267,6 +589,10 @@
   display: grid;
   gap: .875rem;
   grid-template-columns: minmax(0, 1fr);
+
+  &[hidden] {
+    display: none;
+  }
 }
 
 .cz-panel-title {
@@ -375,6 +701,10 @@
 
   &.is-error {
     color: var(--osc-danger);
+
+    .bi {
+      margin-inline-end: .375rem;
+    }
   }
 
   &.is-draft {
@@ -433,7 +763,8 @@
 @media (prefers-reduced-motion: reduce) {
   .cz-frame,
   .cz-row,
-  .cz-swatch {
+  .cz-swatch,
+  .cz-view {
     transition: none;
   }
 }
@@ -453,11 +784,36 @@
   .cz-side {
     border-block-end: 1px solid var(--osc-rule);
     border-inline-end: 0;
-    overflow: visible;
+    // Clip the parked field view sideways, or it widens the page on phones.
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .cz-canvas {
     padding: .75rem;
+  }
+
+  // Phone tap targets are 44px.
+  .cz-seg button,
+  .cz-actions .btn,
+  .cz-tile,
+  .cz-back,
+  .cz-add,
+  .cz-remove,
+  .cz-look-open,
+  .cz-hide,
+  .cz-grip,
+  .cz-name {
+    min-block-size: 44px;
+  }
+
+  .cz-hide,
+  .cz-grip {
+    min-inline-size: 44px;
+  }
+
+  .cz-row {
+    grid-template-columns: 44px 1.25rem minmax(0, 1fr) auto;
   }
 
   .cz-frame {

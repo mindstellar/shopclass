@@ -131,7 +131,7 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
     })();
 
     // Widget "image" config fields: a hidden input + preview, chosen via the media
-    // picker. Delegated so it works for fields shown later (e.g. the block dialog).
+    // picker. Delegated so it works for fields shown later (e.g. a block opened in Customise).
     (function () {
         'use strict';
         function sync(field) {
@@ -162,7 +162,7 @@ $mpUploadUrl = osc_admin_base_url(true) . '?page=ajax&action=resource_upload&own
         // Fields drawn with a value already chosen show its name and size too.
         document.querySelectorAll('.widget-image-field').forEach(sync);
 
-        // Called by the block dialog's edit-populate after it sets a hidden value.
+        // Called after a script sets a hidden value, such as the Customise field helper.
         window.oscSyncWidgetImage = function (input) {
             sync(input && input.closest ? input.closest('.widget-image-field') : null);
         };

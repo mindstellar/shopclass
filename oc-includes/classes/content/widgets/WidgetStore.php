@@ -52,6 +52,23 @@ final class WidgetStore extends Model
     }
 
     /**
+     * The rows of one location keyed by id, read uncached.
+     *
+     * @return array<int,array<string,string|null>>
+     * @throws \mindstellar\database\DbException
+     */
+    public static function rowsAt(string $location): array
+    {
+        $out = array();
+        foreach (self::table()->where('s_location', $location)->get() as $row) {
+            $row                         = Db::stringifyRow($row);
+            $out[(int) $row['pk_i_id']] = $row;
+        }
+
+        return $out;
+    }
+
+    /**
      * @param array<string,mixed> $row
      *
      * @return int the new widget id
@@ -164,9 +181,10 @@ final class WidgetStore extends Model
     /**
      * Make one location hold exactly $rows, in that order, in one transaction. A row whose id
      * already lives there is updated in place; any other row is inserted; rows left out are
-     * deleted. Other locations are never touched.
+     * deleted. Other locations are never touched. A row with 'keep' set only moves: its i_order
+     * changes and nothing else, and it is skipped when its id does not live there.
      *
-     * @param array<int,array{id?:int|null,type:string,config:array<string,mixed>,description:string}> $rows
+     * @param array<int,array{id?:int|null,keep?:bool,type?:string,config?:array<string,mixed>,description?:string}> $rows
      *
      * @throws \Throwable when the write fails; nothing is changed
      */
@@ -177,6 +195,14 @@ final class WidgetStore extends Model
                 $existing = array_flip(self::idsAt($location));
                 $kept     = array();
                 foreach (array_values($rows) as $position => $row) {
+                    $id = (int) ($row['id'] ?? 0);
+                    if (!empty($row['keep'])) {
+                        if ($id > 0 && isset($existing[$id]) && !isset($kept[$id])) {
+                            self::table()->where('pk_i_id', $id)->update(array('i_order' => $position));
+                            $kept[$id] = true;
+                        }
+                        continue;
+                    }
                     $values = array(
                         's_description' => (string) $row['description'],
                         's_content'     => '',
@@ -184,7 +210,6 @@ final class WidgetStore extends Model
                         's_config'      => json_encode($row['config'], JSON_THROW_ON_ERROR),
                         'i_order'       => $position,
                     );
-                    $id = (int) ($row['id'] ?? 0);
                     if ($id > 0 && isset($existing[$id]) && !isset($kept[$id])) {
                         self::table()->where('pk_i_id', $id)->update($values);
                         $kept[$id] = true;

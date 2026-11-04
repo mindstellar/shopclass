@@ -47,6 +47,12 @@ if (!function_exists('osc_logged_admin_id')) {
         return 4;
     }
 }
+if (!function_exists('osc_current_web_theme')) {
+    function osc_current_web_theme()
+    {
+        return 'aisle';
+    }
+}
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
 
 use mindstellar\widgets\WidgetConfig;
@@ -111,22 +117,62 @@ foreach (array('javascript:alert(1)', 'mailto:', 'data:text/html,x', '//evil.tes
     pin('a link is refused: ' . $bad, '', WidgetConfig::linkValue($bad));
 }
 
-harness_section('live preview');
-$rows = array(array('pk_i_id' => '11', 's_type' => 'core.heading', 's_config' => '{"text":"Saved"}'), array('pk_i_id' => '12', 's_type' => 'core.button', 's_config' => '{}'));
-$GLOBALS['osc_customiser_preview'] = null;
-pin('outside a preview the rows stay as saved', $rows, osc_page_block_preview_rows('page.7', $rows));
-$GLOBALS['osc_customiser_preview'] = array('locations' => array());
-pin('a preview with no draft keeps the rows', $rows, osc_page_block_preview_rows('page.7', $rows));
-$GLOBALS['kv']['page_block_preview/4:7'] = array('location' => 'page.7', 'id' => 11, 'type' => 'core.heading', 'config' => array('text' => 'Draft'));
-$preview = osc_page_block_preview_rows('page.7', $rows);
-pin('the draft replaces the block it edits, in place', array('11', '{"text":"Draft"}', true, '12'), array($preview[0]['pk_i_id'], $preview[0]['s_config'], $preview[0]['_preview'], $preview[1]['pk_i_id']));
-pin('another page keeps its rows', $rows, osc_page_block_preview_rows('page.8', $rows));
-$GLOBALS['kv']['page_block_preview/4:7']['id'] = 0;
-$preview = osc_page_block_preview_rows('page.7', $rows);
-pin('a new block is added at the end', array(3, '0'), array(count($preview), $preview[2]['pk_i_id']));
+harness_section('one preview path');
+check('the old unsaved-block preview helper is gone', !function_exists('osc_page_block_preview_rows'));
 ob_start();
-osc_render_widget($preview[2]);
-check('the previewed block is marked for the editor to find', str_starts_with((string) ob_get_clean(), '<div data-osc-block-preview class="osc-heading">'));
+osc_render_widget(array('pk_i_id' => '11', 's_type' => 'core.heading', 's_config' => '{"text":"Saved"}', '_preview' => true));
+check('a row flagged _preview renders with no attribute', str_starts_with((string) ob_get_clean(), '<div class="osc-heading">'));
+
+harness_section('page draft preview');
+$pageDraft = static fn (array $rows, string $key = 'customiser/page.7:4'): array => array($key => array(
+    'theme' => 'page.7', 'locations' => array('page.7' => $rows), 'settings' => array(), 'base' => array(), 'updated_at' => 1,
+));
+$GLOBALS['kv'] = $pageDraft(array(
+    array('id' => 11, 'key' => '', 'type' => 'core.heading', 'description' => 'Intro', 'config' => array('text' => 'Draft title')),
+    array('id' => 0, 'key' => 'n1', 'type' => 'core.button', 'description' => '', 'config' => array('label' => 'Go', 'link' => '/go')),
+    array('id' => 0, 'key' => 'n2', 'type' => 'no.such.type', 'description' => 'Gone', 'config' => array()),
+));
 $GLOBALS['osc_customiser_preview'] = null;
+pin('outside a preview there are no draft rows', null, osc_customiser_preview_rows('page.7'));
+$_GET['osc_blocks'] = '1';
+Params::init();
+$GLOBALS['osc_customiser_preview'] = array('locations' => array());
+$draftRows = osc_customiser_preview_rows('page.7');
+pin('in a preview the page draft rows come back, an unknown type left out', array('11', '0'), array_map(static fn ($r) => $r['pk_i_id'], $draftRows ?? array()));
+pin('they carry the draft config and order', array('{"text":"Draft title"}', 'core.button', '1'), array($draftRows[0]['s_config'], $draftRows[1]['s_type'], $draftRows[1]['i_order']));
+check('draft rows come back unmarked; marking is decided in one place', !isset($draftRows[0]['_block_ref']));
+$draftRows = _osc_customiser_mark_page_blocks('page.7', $draftRows ?? array());
+pin('a row is marked by its id, or its draft key when unsaved', array('11', 'n1'), array($draftRows[0]['_block_ref'], $draftRows[1]['_block_ref']));
+check('a theme location is never marked', !isset(_osc_customiser_mark_page_blocks('home', array(array('pk_i_id' => '3')))[0]['_block_ref']));
+ob_start();
+osc_render_widget($draftRows[0]);
+check('a drafted block carries the marker and its name', str_starts_with((string) ob_get_clean(), '<div data-osc-block="11" data-osc-block-name="Intro" class="osc-heading">'));
+ob_start();
+osc_render_widget($draftRows[1]);
+check('an unnamed block is named after its type', str_contains(substr((string) ob_get_clean(), 0, 90), 'data-osc-block-name="Button"'));
+ob_start();
+osc_render_widget(array('pk_i_id' => '11', 's_type' => 'core.heading', 's_config' => '{"text":"Live"}'));
+check('a block rendered outside the editor has no marker', !str_contains((string) ob_get_clean(), 'data-osc-block'));
+pin('the draft of another page is ignored', null, osc_customiser_preview_rows('page.8'));
+$GLOBALS['kv'] = $pageDraft(array(array('id' => 11, 'key' => '', 'type' => 'core.heading', 'description' => '', 'config' => array())), 'customiser/page.7:5');
+pin('another admin\'s draft is ignored', null, osc_customiser_preview_rows('page.7'));
+pin('a theme location is not answered from a page draft', null, osc_customiser_preview_rows('home'));
+$live = _osc_customiser_mark_blocks(array(array('pk_i_id' => '12', 's_description' => 'About', 's_type' => 'core.heading', 's_config' => '{"text":"Live"}')));
+pin('live rows are marked for the picker too', array('12', 'About'), array($live[0]['_block_ref'], $live[0]['_block_name']));
+ob_start();
+osc_render_widget(array('pk_i_id' => '12', 's_type' => 'core.heading', 's_config' => '{"text":"x"}', '_block_ref' => 'a"b', '_block_name' => '<i>'));
+check('the marker is escaped', str_starts_with((string) ob_get_clean(), '<div data-osc-block="a&quot;b" data-osc-block-name="&lt;i&gt;"'));
+$GLOBALS['kv'] = array();
+$GLOBALS['osc_customiser_preview'] = null;
+
+harness_section('frame script');
+$node = trim((string) shell_exec('command -v node 2>/dev/null'));
+if ($node !== '') {
+    exec(escapeshellarg($node) . ' ' . escapeshellarg(__DIR__ . '/customiser-preview-js.test.mjs') . ' 2>&1', $nodeOut, $nodeCode);
+    pin('customiser-preview.js passes its stub-DOM tests', 0, $nodeCode);
+    if ($nodeCode !== 0) {
+        fwrite(STDERR, implode("\n", $nodeOut) . "\n");
+    }
+}
 
 exit(harness_result());

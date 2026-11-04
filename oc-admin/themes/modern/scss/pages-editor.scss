@@ -57,115 +57,68 @@
     margin-block: .35rem 0;
   }
 
-  // After a block is added, saved or deleted: what happened, and the way back.
-  .page-block-undo {
-    align-items: center;
-    background: var(--osc-success-tint);
+  // The Blocks card: a draft note, then the count and one chip per block.
+  .page-blocks-draft {
+    background: var(--osc-warning-tint);
+    border: 1px solid color-mix(in srgb, var(--osc-warning) 55%, transparent);
     border-radius: 4px;
     color: var(--osc-ink);
-    display: flex;
-    flex-wrap: wrap;
-    gap: .5rem .75rem;
-    margin-block: .75rem 0;
-    padding: .5rem .75rem;
-
-    > i { color: var(--osc-success); }
-    > span { flex: 1 1 auto; }
+    margin-block: 0 .75rem;
+    padding: .55rem .75rem;
   }
 
-  // Page-builder canvas: the list of blocks that compose a widgetized page.
-  .page-blocks-head {
-    align-items: center;
-    display: flex;
-    gap: .5rem;
-    justify-content: space-between;
+  .page-blocks-summary {
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: 4px;
+    padding: .75rem;
+  }
 
-    .label {
+  .page-blocks-line {
+    margin-block: 0 .6rem;
+    overflow-wrap: anywhere;
+
+    &.page-blocks-none {
+      color: var(--osc-ink-muted);
       margin-block-end: 0;
     }
   }
 
-  .page-blocks-list {
+  .page-blocks-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem;
     list-style: none;
-    margin: .75rem 0 0;
+    margin: 0;
     padding: 0;
-  }
 
-  .page-block-row {
-    align-items: center;
-    background: var(--osc-bench);
-    border: 1px solid var(--osc-rule);
-    border-radius: 4px;
-    display: flex;
-    gap: .5rem;
-    margin-block-end: .5rem;
-    padding: .5rem .75rem;
-
-    &.page-block-dragging {
-      opacity: .5;
-    }
-  }
-
-  .page-block-handle {
-    align-items: center;
-    color: var(--osc-ink-muted);
-    cursor: grab;
-    display: inline-flex;
-    padding: .15rem;
-
-    &:focus-visible {
+    li {
+      align-items: center;
+      background: var(--osc-bench-warm);
+      border: 1px solid var(--osc-rule);
       border-radius: 4px;
-      outline: 2px solid var(--osc-bronze);
-      outline-offset: 1px;
-    }
-  }
-
-  // The block type's icon, so a long list reads at a glance.
-  .page-block-icon {
-    align-items: center;
-    background: var(--osc-bench-warm);
-    border: 1px solid var(--osc-rule);
-    border-radius: 4px;
-    color: var(--osc-ink-muted);
-    display: inline-flex;
-    flex: none;
-    height: 30px;
-    justify-content: center;
-    width: 30px;
-  }
-
-  .page-block-main {
-    display: flex;
-    flex: 1 1 auto;
-    flex-direction: column;
-    min-width: 0;
-
-    .page-block-desc {
       color: var(--osc-ink);
-      font-weight: 500;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .page-block-type {
-      color: var(--osc-ink-muted);
+      display: inline-flex;
       font-size: $font-size-label;
+      gap: .35rem;
+      max-inline-size: 100%;
+      padding: .15rem .5rem;
+
+      i { color: var(--osc-ink-muted); flex: none; }
+      span { min-inline-size: 0; overflow-wrap: anywhere; }
+      em { color: var(--osc-ink-muted); font-style: normal; }
     }
   }
 
-  .page-block-actions {
-    display: inline-flex;
-    flex: 0 0 auto;
-    gap: .75rem;
-
-    a { text-decoration: none; }
-    .page-block-delete { color: var(--osc-danger); }
-  }
-
-  .page-blocks-empty {
-    color: var(--osc-ink-muted);
-    margin-block: .75rem 0;
+  // Below the rail's breakpoint the Edit blocks button is being tapped.
+  @media (max-width: 991.98px) {
+    .page-blocks-card .osc-panel-actions .btn {
+      align-items: center;
+      display: inline-flex;
+      gap: .35rem;
+      justify-content: center;
+      min-block-size: 44px;
+    }
   }
 
   .page-footer-toggle {
@@ -186,19 +139,4 @@
     }
   }
 
-  // Below the rail's breakpoint the block row is being tapped, so its handle and its two
-  // links grow to the 24px floor.
-  @media (max-width: 991.98px) {
-    .page-block-handle {
-      justify-content: center;
-      min-block-size: 1.75rem;
-      min-inline-size: 1.75rem;
-    }
-
-    .page-block-actions > * {
-      align-items: center;
-      display: inline-flex;
-      min-block-size: 1.75rem;
-    }
-  }
 }

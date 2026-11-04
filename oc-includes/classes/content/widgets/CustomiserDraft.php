@@ -13,8 +13,9 @@ declare(strict_types=1);
 namespace mindstellar\widgets;
 
 /**
- * One admin's unpublished customiser changes for one theme: a single t_key_value row in the
- * group 'customiser', keyed '<theme>:<adminId>', that expires after seven days.
+ * One admin's unpublished customiser changes for one scope: a single t_key_value row in the
+ * group 'customiser', keyed '<scope>:<adminId>', that expires after seven days. The scope is a
+ * theme dir name, or 'page.N' for a Page builder page's blocks (a theme name never holds a dot).
  *
  * Shape: {theme, locations: {slug: [{id, key, type, description, config}]}, settings: {name:
  * value}, updated_at}. What goes in has already been sanitised by Customiser.
@@ -110,6 +111,34 @@ final class CustomiserDraft
     public function discard(): void
     {
         osc_kv_delete(self::GROUP, $this->key());
+    }
+
+    /**
+     * Remove every admin's draft for one scope. Walks the whole group, which holds only
+     * unexpired drafts, so key order and collation do not matter.
+     *
+     * @return int rows removed
+     * @throws \mindstellar\database\DbException
+     */
+    public static function forgetScope(string $scope): int
+    {
+        if ($scope === '') {
+            return 0;
+        }
+        $prefix  = $scope . ':';
+        $after   = null;
+        $removed = 0;
+        $kv      = new \mindstellar\model\KeyValue();
+        while (($rows = $kv->page(self::GROUP, 500, null, $after)) !== array()) {
+            foreach ($rows as $row) {
+                if (str_starts_with($row['key'], $prefix)) {
+                    $removed += $kv->delete(self::GROUP, $row['key']);
+                }
+                $after = $row['key'];
+            }
+        }
+
+        return $removed;
     }
 
     /**

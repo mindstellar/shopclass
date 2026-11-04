@@ -19,13 +19,17 @@
     // Mount one editor per <textarea data-osc-richtext>. The configuration is the
     // server's, so no screen writes an editor setup of its own and none of them has to
     // find its editors by a name pattern.
-    function mountRichtext() {
-        var fields = document.querySelectorAll('textarea[data-osc-richtext]');
+    // A scope limits it to the fields inside; onEditor is called with each new editor.
+    function mountRichtext(scope, onEditor) {
+        var fields = (scope || document).querySelectorAll('textarea[data-osc-richtext]');
         if (!fields.length || typeof tinymce === 'undefined') {
             return;
         }
 
         fields.forEach(function (field) {
+            if (field.id && tinymce.get(field.id)) {
+                return;
+            }
             var cfg;
             try {
                 cfg = JSON.parse(field.getAttribute('data-osc-richtext') || '{}');
@@ -80,9 +84,32 @@
                 };
             }
 
+            if (onEditor) {
+                var base = cfg.setup;
+                cfg.setup = function (editor) {
+                    if (typeof base === 'function') { base(editor); }
+                    onEditor(editor, field);
+                };
+            }
+
             tinymce.init(cfg);
         });
     }
+
+    function removeRichtext(scope) {
+        if (typeof tinymce === 'undefined') {
+            return;
+        }
+        (scope || document).querySelectorAll('textarea[data-osc-richtext]').forEach(function (field) {
+            var editor = field.id ? tinymce.get(field.id) : null;
+            if (editor) {
+                editor.save();
+                editor.remove();
+            }
+        });
+    }
+
+    window.oscRichtext = { mount: mountRichtext, remove: removeRichtext };
 
     // Every translated field in one form shows the same locale. Each is its own widget, and
     // a field drawn without a strip of its own has no other way to be switched — so a click
@@ -910,7 +937,7 @@
     });
 
     document.addEventListener('DOMContentLoaded', function () {
-        mountRichtext();
+        mountRichtext(document);
         revealErrors();
         initCategoryPickers();
         initUserPickers();

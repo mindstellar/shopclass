@@ -29,8 +29,10 @@ define('OC_ADMIN', true);
 require_once __DIR__ . '/lib/customiser-kit.php';
 customiser_kit_declare();
 
+use mindstellar\widgets\Customiser;
 use mindstellar\widgets\CustomiserDraft;
 use mindstellar\widgets\CustomiserScreen;
+use mindstellar\widgets\PageBlocks;
 use mindstellar\widgets\WidgetStore;
 
 $GLOBALS['themesDir'] = sys_get_temp_dir() . '/osc_customise_themes_' . getmypid() . '/';
@@ -137,6 +139,7 @@ pin('the allowed types and no other', array('aisle.hero', 'aisle.promise'), arra
 pin('the look fields and no other', array('brand', 'footer_note', 'logo'), array_keys($built['look']));
 pin('a look field shows the published value', 'ocean', $built['look']['brand']['value']);
 pin('swatches only for a checked hex', array('brand' => array('raspberry' => '#c81f5e')), $built['swatches']);
+pin('theme-mode previewUrl is unchanged', 'https://x.test/?a=1&osc_preview=1', CustomiserScreen::previewUrl('https://x.test/?a=1'));
 pin('the preview frame opens on osc_preview=1', WEB_PATH . '?osc_preview=1', $built['locations']['home']['preview_url']);
 
 (new CustomiserDraft('aisle', $adminId))->save(array(
@@ -192,6 +195,117 @@ customiser_kit_declare(array('locations' => array(), 'settings' => array()));
 $page = screen();
 pin('a theme with no customiser goes back to the themes screen', array('https://admin.shop.test/oc-admin/index.php?page=appearance'), $page['redirects']);
 customiser_kit_declare();
+
+harness_section('theme mode data keeps its shape');
+
+pin('theme mode is the default', 'theme', $built['mode']);
+check('...with no page target and no moderator', $built['target'] === null && $built['moderator'] === false);
+pin('a row carries locked and legacy flags, both false in theme mode', array(false, false), array($built['locations']['home']['rows'][0]['locked'], $built['locations']['home']['rows'][0]['legacy']));
+pin('a theme row\'s preview_url is what osc_customiser_preview_url gives', osc_customiser_preview_url('home'), $built['locations']['home']['preview_url']);
+pin('a type carries icon, group and locked', array('', 'content', false), array($built['types']['aisle.hero']['icon'], $built['types']['aisle.hero']['group'], $built['types']['aisle.hero']['locked']));
+pin('an untyped row in a theme location is still not listed', 2, $built['locations']['home']['other']);
+
+harness_section('page mode data');
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPageTemplates.php';
+if (!function_exists('osc_core_url')) {
+    function osc_core_url($name, $args = array())
+    {
+        return \mindstellar\routing\CoreRoutes::url($name, $args);
+    }
+}
+$pagesT = DB_TABLE_PREFIX . 't_pages';
+$pg     = seed_page($admin, 'seven', 'Seven');
+$admin->query("UPDATE $pagesT SET s_meta = '{\"template\":\"core.page_builder\"}' WHERE pk_i_id = $pg");
+$slug = 'page.' . $pg;
+$wT   = DB_TABLE_PREFIX . 't_widget';
+$admin->query("DELETE FROM $wT WHERE s_location = '$slug'");
+$cc   = WidgetStore::add(array('s_location' => $slug, 'e_kind' => 'html', 's_description' => 'Tracker', 's_content' => '', 's_type' => 'core.custom_code', 's_config' => '{"code":"x"}', 'i_order' => 0));
+$head = WidgetStore::add(array('s_location' => $slug, 'e_kind' => 'html', 's_description' => 'Intro', 's_content' => '', 's_type' => 'core.heading', 's_config' => '{"text":"Hi"}', 'i_order' => 1));
+$old  = WidgetStore::add(array('s_location' => $slug, 'e_kind' => 'html', 's_description' => 'Old HTML', 's_content' => '<p>raw</p>', 'i_order' => 2));
+
+$pspec = PageBlocks::spec($pg);
+$pageScreen = static fn (bool $moderator, ?array $draft = null): array => CustomiserScreen::build($pspec, $draft, $moderator, $pg);
+
+$admScreen = $pageScreen(false);
+pin('page mode names itself', 'page', $admScreen['mode']);
+pin('...with the page as target', array('id' => $pg, 'title' => 'Seven'), array_intersect_key((array) $admScreen['target'], array('id' => 1, 'title' => 1)));
+check('...and an edit link back to the page form', str_contains((string) $admScreen['target']['edit_url'], 'page=pages&action=edit&id=' . $pg));
+pin('...one location', array($slug), array_keys($admScreen['locations']));
+pin('...rows in order, with the untyped one listed', array((string) $cc, (string) $head, (string) $old), array_column($admScreen['locations'][$slug]['rows'], 'ref'));
+pin('...an admin may edit Custom Code', array(false, false, true), array_column($admScreen['locations'][$slug]['rows'], 'locked'));
+pin('...the untyped row is legacy', array(false, false, true), array_column($admScreen['locations'][$slug]['rows'], 'legacy'));
+pin('...and none counted as removed on publish', 0, $admScreen['locations'][$slug]['other']);
+pin('...the preview is the page with osc_preview=1&osc_blocks=1', $pspec['locations'][$slug]['preview'] . (str_contains($pspec['locations'][$slug]['preview'], '?') ? '&' : '?') . 'osc_preview=1&osc_blocks=1', $admScreen['locations'][$slug]['preview_url']);
+pin('...no look fields', array(), $admScreen['look']);
+pin('...an admin has no moderator flag', false, $admScreen['moderator']);
+pin('...Custom Code is advanced', 'advanced', $admScreen['types']['core.custom_code']['group']);
+pin('...a layout block is layout', 'layout', $admScreen['types']['core.heading']['group']);
+pin('...and has an icon', 'type-h1', $admScreen['types']['core.heading']['icon']);
+check('...every type is offered to an admin', $admScreen['types']['core.custom_code']['locked'] === false);
+
+$modScreen = $pageScreen(true);
+pin('a moderator sees Custom Code locked', array(true, false, true), array_column($modScreen['locations'][$slug]['rows'], 'locked'));
+pin('...with the moderator flag', true, $modScreen['moderator']);
+check('...and its type marked locked, so no tile', $modScreen['types']['core.custom_code']['locked'] === true);
+
+$stored = array(
+    array('id' => $head, 'key' => '', 'type' => 'core.heading', 'description' => 'Drafted', 'config' => array('text' => 'D')),
+    array('id' => null, 'key' => 'n1', 'type' => 'core.heading', 'description' => 'New', 'config' => array('text' => 'N', '_enabled' => false)),
+    array('id' => $old, 'key' => '', 'type' => '', 'description' => 'Old HTML', 'config' => array()),
+);
+$dr = $pageScreen(false, array('locations' => array($slug => $stored), 'settings' => array(), 'updated_at' => 5));
+pin('a page draft wins over the live blocks', array((string) $head, 'n1', (string) $old), array_column($dr['locations'][$slug]['rows'], 'ref'));
+pin('...a drafted hidden block reads as not enabled', array(true, false, true), array_column($dr['locations'][$slug]['rows'], 'enabled'));
+pin('...an untyped drafted row stays legacy and locked', array(true, true), array($dr['locations'][$slug]['rows'][2]['legacy'], $dr['locations'][$slug]['rows'][2]['locked']));
+
+$admin->query("UPDATE $wT SET s_type = 'gone.type', s_content = '' WHERE pk_i_id = $old");
+$gone = $pageScreen(false);
+pin('a block of a type no longer registered is listed as legacy and locked', array(true, true), array($gone['locations'][$slug]['rows'][2]['legacy'], $gone['locations'][$slug]['rows'][2]['locked']));
+
+harness_section('page mode markup');
+
+/** The customise view with the given screen data, as the controller would hand it over. */
+function render_screen(array $screen): string
+{
+    View::getInstance()->_exportVariableToView('customiser', $screen);
+    ob_start();
+    require ABS_PATH . 'oc-admin/themes/modern/appearance/customise.php';
+
+    return (string) ob_get_clean();
+}
+$GLOBALS['moderator'] = false;
+$pageHtml = render_screen($admScreen + array('stale' => false, 'theme_name' => 'Aisle'));
+$ids = array('cz-list-view', 'cz-tiles', 'cz-field-view', 'cz-back', 'cz-section-title', 'cz-section-type', 'cz-section-desc', 'cz-lock-note', 'cz-name', 'cz-section-fields', 'cz-remove', 'cz-rows', 'cz-add', 'cz-status', 'cz-publish', 'cz-discard', 'cz-preview', 'cz-type-fields');
+foreach ($ids as $id) {
+    check("page mode has #$id", str_contains($pageHtml, 'id="' . $id . '"'));
+}
+check('the heading names the page', str_contains($pageHtml, 'Edit blocks: Seven</h1>'));
+check('...with a link back to the page', str_contains($pageHtml, 'Back to page') && str_contains($pageHtml, 'action=edit&amp;id=' . $pg));
+check('...no page select', !str_contains($pageHtml, 'id="cz-page"'));
+check('...and no Look', !str_contains($pageHtml, 'id="cz-look-open"') && !str_contains($pageHtml, 'id="cz-look"'));
+check('tiles are grouped Layout, Content and Advanced', (bool) preg_match('#data-group="layout".*data-group="content".*data-group="advanced"#s', $pageHtml));
+check('...an admin gets the Custom Code tile and its warning', str_contains($pageHtml, 'data-add="core.custom_code"') && str_contains($pageHtml, 'id="cz-code-warn"'));
+check('the iframe opens the page preview', str_contains($pageHtml, 'src="' . osc_esc_html($admScreen['locations'][$slug]['preview_url']) . '"'));
+$pst = preg_match('#<script type="application/json" id="cz-state">(.*?)</script>#s', $pageHtml, $pm) ? json_decode($pm[1], true) : null;
+check('the state is valid JSON', is_array($pst));
+pin('...says it is page mode', 'page', $pst['mode'] ?? null);
+check('...with page endpoints', str_contains($pst['urls']['draft'] ?? '', 'page=pages&action=blocks_draft_post&id=' . $pg) && str_contains($pst['urls']['publish'] ?? '', 'blocks_publish_post') && str_contains($pst['urls']['discard'] ?? '', 'blocks_discard_post'));
+check('...with no raw markup that could close the script', !str_contains($pm[1] ?? '', '<'));
+
+$modHtml = render_screen($modScreen + array('stale' => false, 'theme_name' => 'Aisle'));
+check('a moderator gets no Custom Code tile, no warning', !str_contains($modHtml, 'data-add="core.custom_code"') && !str_contains($modHtml, 'id="cz-code-warn"'));
+check('...but still the Layout tiles', str_contains($modHtml, 'data-add="core.heading"'));
+
+$staleHtml = render_screen($admScreen + array('stale' => true, 'theme_name' => 'Aisle'));
+check('a stale page draft has its own wording', str_contains($staleHtml, 'id="cz-stale"') && !str_contains($staleHtml, 'Widgets screen, after your draft began. Publishing replaces those changes; Discard'));
+
+$themeScreen = array_replace(CustomiserScreen::build((array) osc_customiser_spec(), null), array('stale' => true, 'theme_name' => 'Aisle'));
+$themeHtml   = render_screen($themeScreen);
+check('theme mode still has the page select and Look', str_contains($themeHtml, 'id="cz-page"') && str_contains($themeHtml, 'id="cz-look-open"'));
+check('...the stale note is the old text, byte for byte', str_contains($themeHtml, 'These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes; Discard starts again from what is live.'));
+check('...and no Custom Code warning', !str_contains($themeHtml, 'id="cz-code-warn"'));
+check('...theme heading unchanged', str_contains($themeHtml, 'Customise Aisle</h1>'));
 
 harness_section('the widget editor still draws the same fields');
 

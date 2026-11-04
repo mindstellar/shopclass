@@ -93,6 +93,9 @@ osc_register_page_template('core.page_builder', array(
     'render'      => static function ($page) {
         // Block layout only (grid, gaps, stacking), so blocks work on every theme; the theme styles the look.
         osc_enqueue_style('osc-page-blocks');
+        if (function_exists('osc_customiser_preview_frame_assets')) {
+            osc_customiser_preview_frame_assets();
+        }
         // The theme on screen (a preview counts); a child inherits its parent's canvas.
         $themes  = WebThemes::getInstance();
         $current = (string) ($themes->getCurrentTheme() ?: osc_theme());

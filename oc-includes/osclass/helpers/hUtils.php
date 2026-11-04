@@ -96,9 +96,8 @@ function osc_show_widgets($location)
     if ($widgets === null) {
         $widgets = Widget::getInstance()->findByLocation($location);
     }
-    // A page editor preview shows the block being edited, unsaved, in its place.
-    if (function_exists('osc_page_block_preview_rows')) {
-        $widgets = osc_page_block_preview_rows((string) $location, $widgets);
+    if (function_exists('_osc_customiser_mark_page_blocks')) {
+        $widgets = _osc_customiser_mark_page_blocks((string) $location, $widgets);
     }
     foreach ($widgets as $w) {
         osc_render_widget($w);

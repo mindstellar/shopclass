@@ -27,13 +27,13 @@ use mindstellar\utility\AjaxResponse;
 use mindstellar\widgets\Customiser;
 use mindstellar\widgets\CustomiserDraft;
 use mindstellar\widgets\CustomiserScreen;
-use mindstellar\widgets\PageBlockUndo;
 use mindstellar\widgets\WidgetConfig;
 use mindstellar\widgets\WidgetStore;
 
 class CAdminAppearance extends AdminSecBaseModel
 {
     use \mindstellar\base\ActionMap;
+    use \mindstellar\admin\CustomiserResponses;
 
     /** Each action and the method that answers it; any other action goes to themes(). */
     private const ACTIONS = array(
@@ -49,8 +49,6 @@ class CAdminAppearance extends AdminSecBaseModel
         'widget_move_post'     => 'moveWidgetPost',
         'reorder_widgets_post' => 'reorderWidgetsPost',
         'widget_toggle_post'   => 'toggleWidgetPost',
-        'page_block_preview_post' => 'pageBlockPreviewPost',
-        'page_block_undo_post'    => 'pageBlockUndoPost',
         'customise'              => 'customiseScreen',
         'customise_draft_post'   => 'customiseDraftPost',
         'customise_publish_post' => 'customisePublishPost',
@@ -223,7 +221,6 @@ class CAdminAppearance extends AdminSecBaseModel
     {
         osc_csrf_check();
         $widgetId = Params::getParamInt('id');
-        $before   = WidgetStore::find($widgetId);
         osc_run_hook('before_delete_widget', $widgetId);
         try {
             WidgetStore::delete($widgetId);
@@ -231,9 +228,7 @@ class CAdminAppearance extends AdminSecBaseModel
             // A failed delete still flashes success, as the legacy model did.
         }
         osc_run_hook('after_delete_widget', $widgetId);
-        if (!$this->rememberPageBlockUndo('deleted', $widgetId, $before)) {
-            osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
-        }
+        osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
         $this->redirectTo($this->widgetReturnUrl());
     }
 
@@ -249,8 +244,7 @@ class CAdminAppearance extends AdminSecBaseModel
             $this->redirectTo($this->widgetReturnUrl());
         }
 
-        $before = WidgetStore::find(Params::getParamInt('id'));
-        $type   = $this->resolveWidgetType(Params::getParam('s_type'));
+        $type = $this->resolveWidgetType(Params::getParam('s_type'));
         if ($type !== null) {
             try {
                 $stored = WidgetStore::find(Params::getParamInt('id'));
@@ -289,9 +283,7 @@ class CAdminAppearance extends AdminSecBaseModel
         }
         if ($res) {
             osc_purge_page_cache('widget');
-            if (!$this->rememberPageBlockUndo('edited', Params::getParamInt('id'), $before)) {
-                osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
-            }
+            osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
         } else {
             osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
         }
@@ -330,34 +322,14 @@ class CAdminAppearance extends AdminSecBaseModel
             $row['s_type']    = $type['id'];
             $row['s_config']  = json_encode($this->buildWidgetConfig($type));
         }
-        $newId = 0;
         try {
             $row['i_order'] = WidgetStore::nextOrder((string)$location);
-            $newId          = WidgetStore::add($row);
+            WidgetStore::add($row);
         } catch (Throwable $e) {
             // A failed insert still flashes success, as the legacy model did.
         }
         osc_purge_page_cache('widget');
-        if (!$this->rememberPageBlockUndo('added', $newId, null)) {
-            osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
-        }
-        $this->redirectTo($this->widgetReturnUrl());
-    }
-
-    private function rememberPageBlockUndo(string $action, int $id, ?array $before): bool
-    {
-        return PageBlockUndo::remember((int) osc_logged_admin_id(), Params::getParamInt('page_builder_id'), $action, $id, $before);
-    }
-
-    private function pageBlockUndoPost(): void
-    {
-        osc_csrf_check();
-        if (PageBlockUndo::apply((int) osc_logged_admin_id(), Params::getParamInt('page_builder_id'))) {
-            osc_purge_page_cache('widget');
-            osc_add_flash_ok_message(_m('Undone.'), 'admin');
-        } else {
-            osc_add_flash_info_message(_m('There is nothing to undo.'), 'admin');
-        }
+        osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
         $this->redirectTo($this->widgetReturnUrl());
     }
 
@@ -370,43 +342,6 @@ class CAdminAppearance extends AdminSecBaseModel
         if ($type !== null && trim((string) Params::getParam('description')) === '') {
             Params::setParam('description', $type['label']);
         }
-    }
-
-    /**
-     * Keep the block the page editor's dialog is editing as this admin's preview draft, cleaned
-     * as a save is, and answer with the page address that shows it. Nothing is saved to the page.
-     */
-    private function pageBlockPreviewPost(): void
-    {
-        if (!defined('IS_AJAX')) {
-            define('IS_AJAX', true);
-        }
-        osc_csrf_check();
-        $location = (string) Params::getParam('location');
-        $typeId   = (string) Params::getParam('s_type');
-        $type     = \mindstellar\widgets\WidgetRegistry::getInstance()->get($typeId);
-        if (!preg_match('/^page\.([1-9][0-9]*)$/', $location, $match) || $type === null
-            || ($type['capability'] === 'super_admin' && osc_is_moderator()) || !$this->typeFits($type, $location)
-        ) {
-            AjaxResponse::json(array('error' => 1), 400);
-
-            return;
-        }
-        $id = Params::getParamInt('id');
-        if ($id > 0 && !in_array($id, array_map('intval', WidgetStore::idsAt($location)), true)) {
-            $id = 0;
-        }
-        osc_kv_set('page_block_preview', osc_logged_admin_id() . ':' . $match[1], array(
-            'location' => $location,
-            'id'       => $id,
-            'type'     => $typeId,
-            'config'   => $this->buildWidgetConfig($type),
-        ), 3600);
-
-        AjaxResponse::json(array(
-            'error' => 0,
-            'url'   => osc_base_url(true) . '?page=page&id=' . $match[1] . '&osc_preview=1',
-        ));
     }
 
     /**
@@ -593,6 +528,7 @@ class CAdminAppearance extends AdminSecBaseModel
         $store  = new CustomiserDraft(osc_theme(), osc_logged_admin_id());
         $draft  = $store->read();
         $screen = CustomiserScreen::build($spec, $draft);
+
         $screen['stale'] = $draft !== null && (new Customiser($spec, $store))->staleLocations($draft) !== array();
         $info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
         $screen['theme_name'] = is_array($info) && $info['name'] !== '' ? ucfirst((string) $info['name']) : osc_theme();
@@ -606,31 +542,9 @@ class CAdminAppearance extends AdminSecBaseModel
     private function customiseDraftPost(): void
     {
         $customiser = $this->customiser();
-        if ($customiser === null) {
-            return;
+        if ($customiser !== null) {
+            $this->answerCustomiserDraft($customiser, osc_customiser_preview_url());
         }
-        try {
-            $result = $customiser->saveDraft(
-                Params::getParamArray('locations'),
-                Params::getParamArray('locations', false, false, false),
-                Params::getParamArray('settings', false, false, false)
-            );
-        } catch (Throwable $e) {
-            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('The draft could not be saved.'))), 500);
-
-            return;
-        }
-        if ($result['status'] !== 200) {
-            AjaxResponse::json(array('error' => 1, 'errors' => $result['errors']), $result['status']);
-
-            return;
-        }
-
-        AjaxResponse::json(array(
-            'error'       => 0,
-            'saved_at'    => $result['saved_at'],
-            'preview_url' => osc_customiser_preview_url(),
-        ));
     }
 
     /**
@@ -639,21 +553,9 @@ class CAdminAppearance extends AdminSecBaseModel
     private function customisePublishPost(): void
     {
         $customiser = $this->customiser();
-        if ($customiser === null) {
-            return;
+        if ($customiser !== null) {
+            $this->answerCustomiserPublish($customiser, _m('The sections could not be published.'));
         }
-        try {
-            $result = $customiser->publish(Params::getParamString('force') === '1');
-        } catch (Throwable $e) {
-            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('The sections could not be published.')), 'stale' => false), 500);
-
-            return;
-        }
-        if ($result['status'] === 200) {
-            osc_purge_page_cache('widget');
-        }
-
-        AjaxResponse::json(array('error' => $result['status'] === 200 ? 0 : 1, 'errors' => $result['errors'], 'stale' => !empty($result['stale'])), $result['status']);
     }
 
     /**
@@ -662,17 +564,9 @@ class CAdminAppearance extends AdminSecBaseModel
     private function customiseDiscardPost(): void
     {
         $customiser = $this->customiser();
-        if ($customiser === null) {
-            return;
+        if ($customiser !== null) {
+            $this->answerCustomiserDiscard($customiser);
         }
-        try {
-            $customiser->discard();
-            $ok = true;
-        } catch (Throwable $e) {
-            $ok = false;
-        }
-
-        AjaxResponse::json(array('error' => $ok ? 0 : 1), $ok ? 200 : 500);
     }
 
     /**
@@ -1019,21 +913,10 @@ class CAdminAppearance extends AdminSecBaseModel
     }
 
     /**
-     * Where a widget add/edit/delete returns to. A widget managed from a static
-     * page's block canvas carries page_builder_id, so the action returns to that
-     * page editor instead of the appearance widgets screen. The id is rebuilt
-     * server-side into a fixed internal URL (never a caller-supplied redirect),
-     * so it cannot be turned into an open redirect.
-     *
-     * @return string
+     * Where a widget add/edit/delete returns to: the Widgets screen.
      */
-    private function widgetReturnUrl()
+    private function widgetReturnUrl(): string
     {
-        $pageBuilderId = Params::getParamInt('page_builder_id');
-        if ($pageBuilderId > 0) {
-            return osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $pageBuilderId;
-        }
-
         return osc_admin_base_url(true) . '?page=appearance&action=widgets';
     }
 

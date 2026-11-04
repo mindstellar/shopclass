@@ -42,6 +42,11 @@ namespace mindstellar\storage {
             $model->deleteResourcesIds(array((int) $row['pk_i_id']));
             \Closure::bind(fn () => $this->flushOwnerCache('setting', 0), $model, $model)();
         }
+
+        public function deleteByOwner(string $ownerType, int $ownerId): void
+        {
+            (new \mindstellar\model\Resource())->deleteByOwner($ownerType, $ownerId);
+        }
     }
 }
 
