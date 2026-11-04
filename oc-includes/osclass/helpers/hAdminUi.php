@@ -761,7 +761,11 @@ if (!function_exists('osc_admin_page_head')) {
         if (function_exists('osc_admin_page_titled')) {
             osc_admin_page_titled($level <= 2);
         }
-        $class = 'render-title' . ($level <= 2 ? ' osc-page-title' : '') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        $class = 'render-title' . ($level <= 2 ? ' osc-page-title' : ' osc-section-title') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        // A section under the header's h1 title is an h2, so the outline does not skip a level.
+        if ($level === 3 && osc_admin_header_title() !== null) {
+            $level = 2;
+        }
 
         if ($actions === array() && empty($opts['actions_html'])) {
             echo '<h' . $level . ' class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h' . $level . '>';

@@ -147,7 +147,9 @@ check('...and the page is plain text marked current', str_contains($crumb, '<li 
 harness_section('no second title');
 check('a level-2 call with the same title prints nothing', render(static fn () => osc_admin_page_head('Manage pages')) === '');
 $other = render(static fn () => osc_admin_page_head('Other themes'));
-check('one with other text is a section heading', $other === '<h3 class="render-title">Other themes</h3>', $other);
-check('level 3 is unchanged', render(static fn () => osc_admin_page_head('Rates', array(), array('level' => 3))) === '<h3 class="render-title">Rates</h3>');
+check('one with other text is a section heading, an h2 under the header\'s h1', $other === '<h2 class="render-title osc-section-title">Other themes</h2>', $other);
+check('a level-3 section is an h2 under the header\'s h1', render(static fn () => osc_admin_page_head('Rates', array(), array('level' => 3))) === '<h2 class="render-title osc-section-title">Rates</h2>');
+$form = render(static fn () => \mindstellar\admin\ui\Form::heading('Notes', 'section', 'n') . \mindstellar\admin\ui\Form::heading('More', 'subsection', 'm'));
+check('form sections follow it: h2, sub-sections h3', $form === '<h2 id="n" class="render-title osc-section-title">Notes</h2><h3 id="m" class="render-title osc-subsection-title">More</h3>', $form);
 
 exit(harness_result());

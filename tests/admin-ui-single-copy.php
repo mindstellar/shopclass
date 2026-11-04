@@ -100,7 +100,7 @@ $first = render(static fn () => osc_admin_page_head('General'));
 check('the page title is a level-2 heading', str_contains($first, '<h2 class="render-title osc-page-title">General</h2>'), $first);
 check('a Settings page draws its group tabs under the title', str_contains($first, 'osc-tabnav-group'), $first);
 $second = render(static fn () => osc_admin_page_head('Section', array(), array('level' => 3)));
-check('a section asks for level 3 and is not the page title', str_contains($second, '<h3 class="render-title">Section</h3>'), $second);
+check('a section asks for level 3 and is not the page title', str_contains($second, '<h3 class="render-title osc-section-title">Section</h3>'), $second);
 check('the group tabs are drawn once per page', !str_contains($second, 'osc-tabnav-group'), $second);
 
 exit(harness_result());
