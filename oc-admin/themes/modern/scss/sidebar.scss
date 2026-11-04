@@ -1158,7 +1158,8 @@ $sidebar-gutter: 2.35rem;
   }
 }
 
-// The open panel leaves room at its top for the close button that sits over it.
+// The open panel leaves room at its top for the close button that sits over it: the topbar's
+// inset, the button, then a clear gap before the logo.
 #sidebar-wrapper.offcanvas:is(.show, .showing) .sidebar-brand {
-  padding-inline-start: calc(max(2.75rem, 44px) + .75rem);
+  padding-inline-start: calc(.75rem + max(2.75rem, 44px) + .875rem);
 }
