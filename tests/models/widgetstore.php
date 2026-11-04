@@ -21,7 +21,6 @@ require_once __DIR__ . '/../lib/harness.php';
 
 use mindstellar\model\Resource;
 use mindstellar\pages\PageService;
-use mindstellar\widgets\PageBlockUndo;
 use mindstellar\widgets\WidgetStore;
 
 $admin = scratchdb_session('osc_models_widgetstore');
@@ -146,6 +145,25 @@ pin('the first use keeps the id', (string) $r1, $swapRows[0]['pk_i_id'] ?? null)
 check('the second use is a new row', ($swapRows[1]['pk_i_id'] ?? (string) $r1) !== (string) $r1);
 WidgetStore::deleteByLocation('swap');
 
+harness_section('WidgetStore: replaceLocation keeps a locked row');
+
+$k1 = WidgetStore::add($row(array('s_location' => 'keep', 's_description' => 'Raw', 's_content' => '<p>raw</p>', 'i_order' => 0)));
+$k2 = WidgetStore::add($row(array('s_location' => 'keep', 's_type' => 'core.html', 's_config' => '{"title":"T"}', 'i_order' => 1)));
+$elsewhere = WidgetStore::add($row(array('s_location' => 'other', 'i_order' => 0)));
+$cols      = static fn (int $id): array => array_intersect_key((array) WidgetStore::find($id), array_flip(array('s_description', 's_content', 's_type', 's_config', 's_location')));
+$before    = $cols($k1);
+pin('rowsAt reads a location keyed by id', array($k1, $k2), array_keys(WidgetStore::rowsAt('keep')));
+WidgetStore::replaceLocation('keep', array(
+    $section($k2, 'second'),
+    array('id' => $k1, 'keep' => true, 'type' => 'ignored', 'config' => array('x' => 1), 'description' => 'ignored'),
+    array('id' => $elsewhere, 'keep' => true),
+));
+pin('a keep row changes only its order', $before, $cols($k1));
+pin('...to its place in the list', '1', WidgetStore::find($k1)['i_order'] ?? null);
+pin('a keep row from another location is neither moved nor inserted', array(2, 'other'), array($count("s_location = 'keep'"), WidgetStore::find($elsewhere)['s_location'] ?? null));
+WidgetStore::deleteByLocation('keep');
+WidgetStore::deleteByLocation('other');
+
 harness_section('WidgetStore: toggleEnabled, keepEnabled');
 
 $t1 = WidgetStore::add($row(array('s_location' => 'toggle', 's_type' => 'core.html', 's_config' => '{"title":"T"}')));
@@ -182,6 +200,9 @@ $pages->insert(
 );
 $pageId = (int) $pages->findByInternalName('gone')['pk_i_id'];
 WidgetStore::add($row(array('s_location' => 'page.' . $pageId)));
+foreach (array('page.' . $pageId . ':1', 'page.' . $pageId . ':2', 'page.' . ($pageId + 1000) . ':1') as $draftKey) {
+    osc_kv_set('customiser', $draftKey, array('theme' => 'x'), 600);
+}
 $resources = new Resource();
 $resources->insertResource(Resource::OWNER_PAGE, $pageId, array('s_name' => 'img'));
 $keptResource = $resources->insertResource(Resource::OWNER_PAGE, $pageId + 1000, array('s_name' => 'other'));
@@ -200,6 +221,8 @@ pin('the hooks fire around it', array('before:' . $pageId, 'after:' . $pageId), 
 pin('the page row is gone', 0, (int) $admin->query('SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . "t_pages WHERE pk_i_id = $pageId")->fetch_assoc()['c']);
 pin('its locale rows are gone', 0, (int) $admin->query('SELECT COUNT(*) c FROM ' . DB_TABLE_PREFIX . "t_pages_description WHERE fk_i_pages_id = $pageId")->fetch_assoc()['c']);
 pin('its widgets are gone', 0, $count("s_location = 'page.$pageId'"));
+pin('its block drafts are gone', array(null, null), array(osc_kv_get('customiser', 'page.' . $pageId . ':1'), osc_kv_get('customiser', 'page.' . $pageId . ':2')));
+check('another page keeps its draft', osc_kv_get('customiser', 'page.' . ($pageId + 1000) . ':1') !== null);
 pin('other widgets stay', 2, $count("s_location = 'sidebar'"));
 pin('its resources are gone', 0, $resourceCount("s_owner_type = 'page' AND i_owner_id = $pageId"));
 pin('another page keeps its resources', 1, $resourceCount("pk_i_id = $keptResource"));
@@ -207,37 +230,6 @@ pin('another page keeps its resources', 1, $resourceCount("pk_i_id = $keptResour
 $prevLevel = error_reporting(E_ALL & ~E_WARNING);
 pin('an unknown id removes nothing', 0, PageService::make()->delete(999999));
 error_reporting($prevLevel);
-
-harness_section('PageBlockUndo: undo the last change to a page block');
-
-$loc   = 'page.77';
-$block = WidgetStore::add($row(array('s_location' => $loc, 's_description' => 'kept')));
-check('a block on another page keeps no undo', !PageBlockUndo::remember(1, 78, 'edited', $block, WidgetStore::find($block)));
-check('nothing waits for another page', PageBlockUndo::pending(1, 78) === null);
-
-$added = WidgetStore::add($row(array('s_location' => $loc)));
-check('an added block keeps an undo', PageBlockUndo::remember(1, 77, 'added', $added, null));
-check('another admin has nothing to undo', !PageBlockUndo::apply(2, 77));
-check('undo removes the added block', PageBlockUndo::apply(1, 77) && WidgetStore::find($added) === null);
-check('an undo is used once', !PageBlockUndo::apply(1, 77));
-
-$before = WidgetStore::find($block);
-WidgetStore::update($block, array('s_description' => 'changed'));
-PageBlockUndo::remember(1, 77, 'edited', $block, $before);
-PageBlockUndo::apply(1, 77);
-pin('undo puts back an edited block', 'kept', WidgetStore::find($block)['s_description'] ?? '');
-
-$before = WidgetStore::find($block);
-WidgetStore::delete($block);
-PageBlockUndo::remember(1, 77, 'deleted', $block, $before);
-PageBlockUndo::apply(1, 77);
-pin('undo brings back a deleted block', 1, $count("s_location = '$loc' AND s_description = 'kept'"));
-
-$moved = WidgetStore::add($row(array('s_location' => $loc)));
-PageBlockUndo::remember(1, 77, 'added', $moved, null);
-WidgetStore::moveTo($moved, 'sidebar');
-PageBlockUndo::apply(1, 77);
-check('undo leaves a block that left the page', WidgetStore::find($moved) !== null);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

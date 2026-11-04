@@ -160,16 +160,21 @@ function osc_render_widget($widgetRow)
             return;
         }
 
-        // The block a page editor preview is editing carries a mark, so the editor can scroll to it.
-        if (!empty($widgetRow['_preview'])) {
+        // In the Customise screen's page preview each block carries its reference, so a click or a scroll finds it.
+        $marked = isset($widgetRow['_block_ref']);
+        if ($marked) {
             ob_start();
         }
         $out = ($type['render'])($config, $widgetRow);
         if (is_string($out)) {
             echo $out;
         }
-        if (!empty($widgetRow['_preview'])) {
-            echo preg_replace('/^(\s*<[a-z][a-z0-9]*)/i', '$1 data-osc-block-preview', (string) ob_get_clean(), 1);
+        if ($marked) {
+            $name  = (string) ($widgetRow['_block_name'] ?? '');
+            $name  = $name !== '' ? $name : (string) $type['label'];
+            $attrs = ' data-osc-block="' . osc_esc_html((string) $widgetRow['_block_ref']) . '"'
+                . ' data-osc-block-name="' . osc_esc_html($name) . '"';
+            echo preg_replace_callback('/^(\s*<[a-z][a-z0-9]*)/i', static fn (array $m): string => $m[1] . $attrs, (string) ob_get_clean(), 1);
         }
 
         return;
@@ -363,13 +368,14 @@ function osc_customiser_preview_url(string $location = 'home'): string
         return '';
     }
 
-    return $url . (strpos($url, '?') === false ? '?' : '&') . 'osc_preview=1';
+    return \mindstellar\widgets\CustomiserScreen::previewUrl($url);
 }
 
 /**
  * The drafted rows of one location as t_widget rows, or null when it is not drafted or this
  * is not a preview. An unsaved row has pk_i_id 0; s_key is the id, or the draft key of an
- * unsaved row, for the theme's data-sec attribute.
+ * unsaved row, for the theme's data-sec attribute. A page location (page.N) reads that page's own
+ * draft.
  *
  * @param string $location
  *
@@ -377,6 +383,9 @@ function osc_customiser_preview_url(string $location = 'home'): string
  */
 function osc_customiser_preview_rows(string $location): ?array
 {
+    if (_osc_customiser_is_page_location($location)) {
+        return _osc_customiser_page_draft_rows($location);
+    }
     $draft = osc_customiser_preview_draft();
     if ($draft === null || !is_array($draft['locations'][$location] ?? null)) {
         return null;
@@ -387,12 +396,97 @@ function osc_customiser_preview_rows(string $location): ?array
         return null;
     }
 
-    $rows = array();
-    foreach (array_values($draft['locations'][$location]) as $i => $row) {
-        if (!is_array($row) || !in_array($row['type'] ?? null, $types, true)) {
+    return _osc_customiser_draft_widget_rows(
+        $location,
+        $draft['locations'][$location],
+        static fn (string $type): bool => in_array($type, $types, true)
+    );
+}
+
+/**
+ * The signed-in admin's drafted blocks of one page as t_widget rows, or null outside a preview
+ * or when that page has no draft. Any registered type that fits the page
+ * is shown, whatever theme is active; a legacy row kept in the draft shows as its live row.
+ *
+ * @param string $location 'page.N'
+ *
+ * @return array<int,array<string,mixed>>|null
+ */
+function _osc_customiser_page_draft_rows(string $location): ?array
+{
+    if (!osc_customiser_preview()) {
+        return null;
+    }
+    $draft = (new \mindstellar\widgets\CustomiserDraft($location, osc_logged_admin_id()))->read();
+    if ($draft === null || !is_array($draft['locations'][$location] ?? null)) {
+        return null;
+    }
+    $registry = WidgetRegistry::getInstance();
+
+    return _osc_customiser_draft_widget_rows(
+        $location,
+        $draft['locations'][$location],
+        static fn (string $type): bool => $registry->fits($type, $location),
+        static fn (): array => \mindstellar\widgets\WidgetStore::rowsAt($location)
+    );
+}
+
+/**
+ * Whether $location is a page's own block location, page.N.
+ */
+function _osc_customiser_is_page_location(string $location): bool
+{
+    return preg_match('/^page\.[1-9][0-9]*$/', $location) === 1;
+}
+
+/**
+ * The rows of $location marked with data-osc-block for the Customise screen, drafted or live.
+ * Only a page location in a page-mode preview is marked; anything else comes back as it is.
+ *
+ * @param array<int,array<string,mixed>> $rows
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function _osc_customiser_mark_page_blocks(string $location, array $rows): array
+{
+    if (!_osc_customiser_is_page_location($location) || !_osc_customiser_previewing_blocks()) {
+        return $rows;
+    }
+
+    return _osc_customiser_mark_blocks($rows);
+}
+
+/**
+ * Drafted rows as t_widget rows, in draft order. A row whose type $allowed refuses is left out,
+ * unless $live gives a live row with its id: a legacy page row kept in the draft renders as it is live.
+ *
+ * @param array<mixed>                                   $drafted
+ * @param callable(string):bool                          $allowed
+ * @param (callable():array<int,array<string,mixed>>)|null $live    the location's live rows by id, read once when needed
+ *
+ * @return array<int,array<string,mixed>>
+ */
+function _osc_customiser_draft_widget_rows(string $location, array $drafted, callable $allowed, ?callable $live = null): array
+{
+    $liveRows = null;
+    $rows     = array();
+    foreach (array_values($drafted) as $i => $row) {
+        if (!is_array($row)) {
             continue;
         }
-        $id     = (int) ($row['id'] ?? 0);
+        $type = is_string($row['type'] ?? null) ? $row['type'] : '';
+        $id   = (int) ($row['id'] ?? 0);
+        if ($type === '' || !$allowed($type)) {
+            if ($live === null || $id <= 0) {
+                continue;
+            }
+            $liveRows ??= $live();
+            if (!isset($liveRows[$id])) {
+                continue;
+            }
+            $rows[] = array('i_order' => (string) $i) + $liveRows[$id];
+            continue;
+        }
         $rows[] = array(
             'pk_i_id'       => (string) $id,
             's_key'         => $id > 0 ? (string) $id : (string) ($row['key'] ?? ''),
@@ -401,7 +495,7 @@ function osc_customiser_preview_rows(string $location): ?array
             'e_kind'        => 'html',
             's_content'     => '',
             'i_order'       => (string) $i,
-            's_type'        => (string) $row['type'],
+            's_type'        => $type,
             's_config'      => (string) json_encode(is_array($row['config'] ?? null) ? $row['config'] : array()),
         );
     }
@@ -410,40 +504,53 @@ function osc_customiser_preview_rows(string $location): ?array
 }
 
 /**
- * The rows of a page's block canvas with the signed-in admin's unsaved block from the page editor
- * in place: it replaces the block it edits, or is added at the end. Rows are returned unchanged
- * outside an admin preview.
+ * Give each row the reference and name the page editor's preview marks its block with: the row
+ * id, or the draft key of an unsaved row.
  *
- * @param string                           $location
- * @param array<int,array<string,mixed>>   $rows
+ * @param array<int,array<string,mixed>> $rows
  *
  * @return array<int,array<string,mixed>>
  */
-function osc_page_block_preview_rows(string $location, array $rows): array
+function _osc_customiser_mark_blocks(array $rows): array
 {
-    if (!str_starts_with($location, 'page.') || !osc_customiser_preview()) {
-        return $rows;
-    }
-    $draft = osc_kv_get('page_block_preview', osc_logged_admin_id() . ':' . substr($location, 5));
-    if (!is_array($draft) || ($draft['location'] ?? '') !== $location || !is_array($draft['config'] ?? null)) {
-        return $rows;
-    }
-    $row = array(
-        'pk_i_id'  => (string) (int) ($draft['id'] ?? 0),
-        's_type'   => (string) ($draft['type'] ?? ''),
-        's_config' => (string) json_encode($draft['config']),
-        '_preview' => true,
-    );
-    foreach ($rows as $i => $existing) {
-        if ((int) ($existing['pk_i_id'] ?? 0) === (int) $row['pk_i_id'] && (int) $row['pk_i_id'] > 0) {
-            $rows[$i] = array_merge($existing, $row);
-
-            return $rows;
+    foreach ($rows as $i => $row) {
+        $ref = (int) ($row['pk_i_id'] ?? 0) > 0 ? (string) (int) $row['pk_i_id'] : (string) ($row['s_key'] ?? '');
+        if ($ref === '') {
+            continue;
         }
+        $rows[$i]['_block_ref']  = $ref;
+        $rows[$i]['_block_name'] = (string) ($row['s_description'] ?? '');
     }
-    $rows[] = $row;
 
     return $rows;
+}
+
+/**
+ * Whether this request is the Customise screen's page-mode preview: a preview that also carries
+ * osc_blocks=1. A theme-mode preview is not, so it never gets the page block frame script.
+ *
+ * @return bool
+ */
+function _osc_customiser_previewing_blocks(): bool
+{
+    return osc_customiser_preview() && Params::getParamString('osc_blocks') === '1';
+}
+
+/**
+ * Load the frame script and style that let the Customise screen pick and outline blocks. Does
+ * nothing outside a page-mode preview.
+ *
+ * @return void
+ */
+function osc_customiser_preview_frame_assets(): void
+{
+    if (!_osc_customiser_previewing_blocks()) {
+        return;
+    }
+    osc_register_style('osc-customiser-preview', osc_asset_url_versioned(osc_assets_url('osclass/customiser-preview.css')));
+    osc_enqueue_style('osc-customiser-preview');
+    osc_register_script('osc-customiser-preview', osc_asset_url_versioned(osc_assets_url('osclass/customiser-preview.js')));
+    osc_enqueue_script('osc-customiser-preview');
 }
 
 /**

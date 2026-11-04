@@ -22,19 +22,29 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\StaticPageForm;
 use mindstellar\admin\ListPaging;
+use mindstellar\pages\PageQuery;
 use mindstellar\pages\PageService;
+use mindstellar\utility\AjaxResponse;
+use mindstellar\widgets\Customiser;
+use mindstellar\widgets\CustomiserScreen;
+use mindstellar\widgets\PageBlocks;
 
 class CAdminPages extends AdminSecBaseModel
 {
     use \mindstellar\base\ActionMap;
+    use \mindstellar\admin\CustomiserResponses;
 
     /** Each action and the method that answers it; any other action goes to pages(). */
     private const ACTIONS = array(
-        'edit'      => 'editForm',
-        'edit_post' => 'editPost',
-        'add'       => 'addForm',
-        'add_post'  => 'addPost',
-        'delete'    => 'deletePages',
+        'edit'                => 'editForm',
+        'edit_post'           => 'editPost',
+        'add'                 => 'addForm',
+        'add_post'            => 'addPost',
+        'delete'              => 'deletePages',
+        'blocks'              => 'blocksScreen',
+        'blocks_draft_post'   => 'blocksDraftPost',
+        'blocks_publish_post' => 'blocksPublishPost',
+        'blocks_discard_post' => 'blocksDiscardPost',
     );
 
     //specific for this class
@@ -88,6 +98,7 @@ class CAdminPages extends AdminSecBaseModel
         $this->_exportVariableToView('templates', $templates);
         $this->_exportVariableToView('registeredTemplates', osc_page_templates());
         $this->_exportVariableToView('page', $this->pageManager->findByPrimaryKey(Params::getParam('id')));
+        $this->_exportVariableToView('pageBlocks', PageBlocks::summary(Params::getParamInt('id'), (int) osc_logged_admin_id()));
         $this->doView('pages/frm.php');
     }
 
@@ -115,6 +126,7 @@ class CAdminPages extends AdminSecBaseModel
         $this->_exportVariableToView('templates', $templates);
         $this->_exportVariableToView('registeredTemplates', osc_page_templates());
         $this->_exportVariableToView('page', array());
+        $this->_exportVariableToView('pageBlocks', null);
         $this->doView('pages/frm.php');
     }
 
@@ -189,6 +201,98 @@ class CAdminPages extends AdminSecBaseModel
             }
         }
         $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
+    }
+
+    /**
+     * Edit blocks: one Page builder page's blocks in the Customise screen, beside its preview.
+     */
+    private function blocksScreen(): void
+    {
+        $id         = Params::getParamInt('id');
+        $customiser = Customiser::forPage($id);
+        if ($customiser === null) {
+            if ($id > 0 && (new PageQuery())->find((string) $id) !== null) {
+                osc_add_flash_info_message(_m('This page does not use a block template, so it has no blocks to edit.'), 'admin');
+                $this->redirectTo($this->pageFormUrl($id));
+            } else {
+                $this->redirectTo(osc_admin_base_url(true) . '?page=pages');
+            }
+
+            return;
+        }
+        $draft  = $customiser->draft()->read();
+        $screen = CustomiserScreen::build($customiser->spec(), $draft, osc_is_moderator(), $id);
+
+        $screen['stale'] = $draft !== null && $customiser->staleLocations($draft) !== array();
+        $this->_exportVariableToView('customiser', $screen);
+        $this->doView('appearance/customise.php');
+    }
+
+    /**
+     * Save the page's blocks draft, answered in JSON.
+     */
+    private function blocksDraftPost(): void
+    {
+        $page = $this->pageCustomiser();
+        if ($page !== null) {
+            $this->answerCustomiserDraft($page['customiser'], $page['preview_url']);
+        }
+    }
+
+    /**
+     * Publish the page's blocks draft, answered in JSON.
+     */
+    private function blocksPublishPost(): void
+    {
+        $page = $this->pageCustomiser();
+        if ($page !== null) {
+            $this->answerCustomiserPublish($page['customiser'], _m('The blocks could not be published.'));
+        }
+    }
+
+    /**
+     * Throw the page's blocks draft away, answered in JSON.
+     */
+    private function blocksDiscardPost(): void
+    {
+        $page = $this->pageCustomiser();
+        if ($page !== null) {
+            $this->answerCustomiserDiscard($page['customiser']);
+        }
+    }
+
+    /**
+     * The customiser for the posted page and this admin, after a valid CSRF token; null once
+     * answered 404 because the page is missing or not a builder page.
+     *
+     * @return array{customiser:Customiser,preview_url:string}|null
+     */
+    private function pageCustomiser(): ?array
+    {
+        if (!defined('IS_AJAX')) {
+            define('IS_AJAX', true);
+        }
+        osc_csrf_check();
+        $id         = Params::getParamInt('id');
+        $customiser = Customiser::forPage($id);
+        if ($customiser === null) {
+            AjaxResponse::json(array('error' => 1, 'errors' => array(_m('This page has no blocks to edit.'))), 404);
+
+            return null;
+        }
+
+        return array(
+            'customiser'  => $customiser,
+            'preview_url' => CustomiserScreen::previewUrl((string) $customiser->spec()['locations']['page.' . $id]['preview'], true),
+        );
+    }
+
+    /**
+     * The page form for one page.
+     */
+    private function pageFormUrl(int $id): string
+    {
+        return osc_admin_base_url(true) . '?page=pages&action=edit&id=' . $id;
     }
 
     /**
@@ -342,6 +446,7 @@ class CAdminPages extends AdminSecBaseModel
         $this->_exportVariableToView('templates', $templates);
         $this->_exportVariableToView('registeredTemplates', osc_page_templates());
         $this->_exportVariableToView('page', $page);
+        $this->_exportVariableToView('pageBlocks', $id === null ? null : PageBlocks::summary((int) $id, (int) osc_logged_admin_id()));
         $this->_exportVariableToView('editorErrors', $errors);
         $this->doView('pages/frm.php');
     }

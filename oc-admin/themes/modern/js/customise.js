@@ -28,8 +28,22 @@
     var list = document.getElementById('cz-rows');
     var other = document.getElementById('cz-other');
     var addBtn = document.getElementById('cz-add');
-    var typesBox = document.getElementById('cz-types');
+    var typesBox = document.getElementById('cz-tiles');
+    var tilesClose = document.getElementById('cz-tiles-close');
+    var listView = document.getElementById('cz-list-view');
+    var fieldView = document.getElementById('cz-field-view');
+    var backBtn = document.getElementById('cz-back');
+    var sectionEl = document.getElementById('cz-section');
+    var lookSection = document.getElementById('cz-look');
+    var lookOpen = document.getElementById('cz-look-open');
+    var emptyEl = document.getElementById('cz-empty');
     var sectionTitle = document.getElementById('cz-section-title');
+    var sectionType = document.getElementById('cz-section-type');
+    var sectionDesc = document.getElementById('cz-section-desc');
+    var lockNote = document.getElementById('cz-lock-note');
+    var nameInput = document.getElementById('cz-name');
+    var removeBtn = document.getElementById('cz-remove');
+    var removeText = removeBtn.querySelector('span');
     var sectionFields = document.getElementById('cz-section-fields');
     var look = document.getElementById('cz-look');
     var statusEl = document.getElementById('cz-status');
@@ -38,6 +52,7 @@
     var frame = document.getElementById('cz-preview');
     var pageSelect = document.getElementById('cz-page');
     var template = document.getElementById('cz-type-fields');
+    var publishBtn = document.getElementById('cz-publish');
 
     var rows = {};
     var location_ = '';
@@ -50,6 +65,8 @@
     var inflight = null;
     var saving = null;
     var retry = null;
+    var unsaved = false;
+    var publishing = false;
 
     function fmt(text, value) {
         return String(text).replace('%s', value);
@@ -71,13 +88,21 @@
         }
         var current = rows[location_] || [];
         if (!current.some(function (r) { return r.ref === selected; })) {
-            selected = current.length ? current[0].ref : null;
+            selected = null;
         }
+    }
+
+    // Publish waits for the draft to be saved, so what goes live is what the preview shows.
+    function syncPublish() {
+        publishBtn.disabled = publishing || unsaved;
     }
 
     // A draft waiting to be published gets a marked status; with nothing unpublished, Discard has nothing to do.
     function setStatus(text, isError) {
         statusEl.textContent = text;
+        if (isError) {
+            statusEl.insertAdjacentHTML('afterbegin', '<i class="bi bi-exclamation-circle" aria-hidden="true"></i>');
+        }
         statusEl.classList.toggle('is-error', !!isError);
         statusEl.classList.toggle('is-draft', !isError && (text === t.saved || text === t.kept || text === t.saving));
         if (text === t.clean || text === t.published) {
@@ -103,7 +128,12 @@
 
     function labelOf(row) {
         var type = state.types[row.type];
-        return row.description || (type ? type.label : row.type);
+        return row.description || (type ? type.label : (t.legacyName || row.type));
+    }
+
+    function selectedName() {
+        var i = find(selected);
+        return i === -1 ? '' : labelOf(current()[i]);
     }
 
     function newKey() {
@@ -136,7 +166,7 @@
             return;
         }
         if (data.ready) {
-            post({select: selected});
+            post({select: selected, name: selectedName()});
         }
         // The page has no node for that text, so it is drawn by a reload once the draft is saved.
         if (data.missed) {
@@ -145,7 +175,7 @@
         if (data.picked !== undefined && data.picked !== null) {
             var ref = String(data.picked);
             if (find(ref) !== -1) {
-                select(ref, false);
+                openRow(ref, false);
                 var item = list.querySelector('[data-ref="' + CSS.escape(ref) + '"]');
                 if (item) {
                     item.scrollIntoView({block: 'nearest'});
@@ -154,7 +184,7 @@
         }
     });
 
-    /* Section list */
+    /* Block list */
 
     function icon(name) {
         return '<i class="bi bi-' + name + '" aria-hidden="true"></i>';
@@ -177,13 +207,19 @@
     function renderList(focus) {
         var all = current();
         list.textContent = '';
-        all.forEach(function (row, i) {
+        all.forEach(function (row) {
             var name = labelOf(row);
             var li = document.createElement('li');
-            li.className = 'cz-row' + (row.ref === selected ? ' is-selected' : '') + (row.enabled ? '' : ' is-off');
+            li.className = 'cz-row' + (row.ref === selected ? ' is-selected' : '') + (row.enabled ? '' : ' is-off') + (row.locked ? ' is-locked' : '');
             li.setAttribute('data-ref', row.ref);
 
             li.appendChild(button('cz-grip', 'grip', fmt(t.move, name), 'grip-vertical', {'aria-describedby': 'cz-grip-help'}));
+
+            var type = state.types[row.type];
+            var ticon = document.createElement('span');
+            ticon.className = 'cz-ticon';
+            ticon.innerHTML = row.locked ? icon('lock') : (type && type.icon ? icon(type.icon) : '');
+            li.appendChild(ticon);
 
             var nm = document.createElement('button');
             nm.type = 'button';
@@ -199,26 +235,16 @@
             }
             li.appendChild(nm);
 
-            var up = button('cz-mini', 'up', fmt(t.moveUp, name), 'chevron-up');
-            up.disabled = i === 0;
-            var down = button('cz-mini', 'down', fmt(t.moveDown, name), 'chevron-down');
-            down.disabled = i === all.length - 1;
-            var eye = button('cz-mini', 'eye', fmt(row.enabled ? t.hide : t.show, name), row.enabled ? 'eye' : 'eye-slash',
+            var acts = document.createElement('span');
+            acts.className = 'cz-acts';
+            var eye = button('cz-hide', 'eye', fmt(row.enabled ? t.hide : t.show, name), row.enabled ? 'eye' : 'eye-slash',
                 {'aria-pressed': row.enabled ? 'false' : 'true'});
-            var rm = button('cz-mini', 'remove', fmt(t.remove, name), 'x-lg');
-            rm.textContent = t.removeText || t.remove;
-            li.appendChild(up);
-            li.appendChild(down);
-            li.appendChild(eye);
-            li.appendChild(rm);
+            eye.disabled = !!row.locked;
+            acts.appendChild(eye);
+            li.appendChild(acts);
             list.appendChild(li);
         });
-        if (!all.length) {
-            var empty = document.createElement('li');
-            empty.className = 'cz-empty';
-            empty.textContent = t.noRows;
-            list.appendChild(empty);
-        }
+        emptyEl.hidden = all.length !== 0;
 
         var count = here().other || 0;
         other.hidden = count === 0;
@@ -231,19 +257,6 @@
             }
             if (target) {
                 target.focus();
-            }
-        }
-    }
-
-    function select(ref, focusPanel) {
-        selected = ref;
-        renderList();
-        renderPanel();
-        post({select: ref});
-        if (focusPanel) {
-            var first = sectionFields.querySelector('input:not([type="hidden"]), select, textarea, button');
-            if (first) {
-                first.focus();
             }
         }
     }
@@ -261,26 +274,6 @@
         structural();
     }
 
-    var armTimer = null;
-    function disarm(btn) {
-        if (!btn.classList.contains('is-armed')) {
-            return;
-        }
-        var li = btn.closest('[data-ref]');
-        var i = li ? find(li.getAttribute('data-ref')) : -1;
-        btn.classList.remove('is-armed');
-        btn.textContent = t.removeText || t.remove;
-        if (i !== -1) {
-            btn.setAttribute('aria-label', fmt(t.remove, labelOf(current()[i])));
-            btn.title = btn.getAttribute('aria-label');
-        }
-    }
-    list.addEventListener('focusout', function (e) {
-        if (e.target.classList && e.target.classList.contains('is-armed')) {
-            disarm(e.target);
-        }
-    });
-
     list.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-act]');
         var li = btn ? btn.closest('[data-ref]') : null;
@@ -294,34 +287,10 @@
             return;
         }
         if (act === 'pick') {
-            select(ref, false);
-        } else if (act === 'up' || act === 'down') {
-            move(ref, act === 'up' ? -1 : 1, act);
-        } else if (act === 'eye') {
+            openRow(ref, true);
+        } else if (act === 'eye' && !current()[i].locked) {
             current()[i].enabled = !current()[i].enabled;
             renderList({ref: ref, act: 'eye'});
-            structural();
-        } else if (act === 'remove' && !btn.classList.contains('is-armed')) {
-            list.querySelectorAll('.is-armed').forEach(disarm);
-            btn.classList.add('is-armed');
-            btn.setAttribute('aria-label', fmt(t.removeConfirm || t.remove, labelOf(current()[i])));
-            btn.title = btn.getAttribute('aria-label');
-            btn.textContent = t.removeShort || t.remove;
-            armTimer = setTimeout(function () {
-                disarm(btn);
-            }, 4000);
-        } else if (act === 'remove') {
-            clearTimeout(armTimer);
-            var all = current();
-            all.splice(i, 1);
-            if (selected === ref) {
-                selected = all.length ? all[Math.min(i, all.length - 1)].ref : null;
-                renderPanel();
-            }
-            renderList(selected ? {ref: selected, act: 'remove'} : null);
-            if (!selected) {
-                addBtn.focus();
-            }
             structural();
         }
     });
@@ -335,7 +304,210 @@
         move(grip.closest('[data-ref]').getAttribute('data-ref'), e.key === 'ArrowUp' ? -1 : 1, 'grip');
     });
 
-    /* Adding a section */
+    /* Sliding between the list and the field view */
+
+    var view = 'list';
+    var mounted = null;
+    var armTimer = null;
+
+    function slide(to) {
+        view = to;
+        var inField = to !== 'list';
+        listView.classList.toggle('is-out-back', inField);
+        listView.inert = inField;
+        fieldView.classList.toggle('is-out-fwd', !inField);
+        fieldView.inert = !inField;
+    }
+
+    function unmountFields() {
+        if (mounted) {
+            window.oscWidgetFields.unmount(mounted);
+            mounted = null;
+        }
+    }
+
+    function disarm() {
+        clearTimeout(armTimer);
+        if (removeBtn.classList.contains('is-armed')) {
+            removeBtn.classList.remove('is-armed');
+            removeText.textContent = t.removeText || t.remove;
+            var i = find(selected);
+            if (i !== -1) {
+                removeBtn.setAttribute('aria-label', fmt(t.remove, labelOf(current()[i])));
+            }
+        }
+    }
+
+    function canRemove(row) {
+        return !row.locked || (!!row.legacy && !state.moderator);
+    }
+
+    function addNote(text) {
+        var p = document.createElement('p');
+        p.className = 'cz-hint';
+        p.textContent = text;
+        sectionFields.appendChild(p);
+    }
+
+    function renderPanel() {
+        disarm();
+        unmountFields();
+        sectionFields.textContent = '';
+        var i = find(selected);
+        if (i === -1) {
+            return;
+        }
+        var row = current()[i];
+        var type = state.types[row.type];
+        sectionTitle.textContent = labelOf(row);
+        sectionType.textContent = type ? type.label : '';
+        sectionDesc.textContent = type ? type.description : '';
+        lockNote.hidden = !row.locked;
+        lockNote.querySelector('span').textContent = row.locked ? (row.legacy ? t.lockLegacy : t.lockSuper) : '';
+        nameInput.value = type && row.description === type.label ? '' : (row.description || '');
+        nameInput.placeholder = type ? type.label : (t.legacyName || '');
+        nameInput.disabled = !!row.locked;
+        removeBtn.hidden = !canRemove(row);
+        removeBtn.setAttribute('aria-label', fmt(t.remove, labelOf(row)));
+
+        var fieldset = row.legacy ? null : fieldsetFor(row.type);
+        if (!fieldset) {
+            if (!row.legacy) {
+                addNote(t.noFields);
+            }
+            return;
+        }
+        fieldset.hidden = false;
+        sectionFields.appendChild(fieldset);
+        var fields = window.oscWidgetFields;
+        fields.write(fieldset, row.config);
+        if (row.locked) {
+            fieldset.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+                el.disabled = true;
+            });
+            fieldset.querySelectorAll('[data-osc-richtext]').forEach(function (el) {
+                el.removeAttribute('data-osc-richtext');
+            });
+        }
+        mounted = fieldset;
+        fields.mount(fieldset);
+        fields.onChange(fieldset, function (name, value, typing) {
+            if (row.locked) {
+                return;
+            }
+            if (String(row.config[name]) === String(value) && !typing) {
+                return;
+            }
+            row.config[name] = value;
+            var control = fieldset.querySelector('[name="config[' + CSS.escape(name) + ']"]');
+            var rich = control && control.getAttribute('data-osc-richtext') !== null;
+            if (typing && !rich) {
+                post({text: {section: row.ref, field: name, value: value}});
+                changed(false, location_);
+            } else {
+                changed(true, location_);
+            }
+        });
+    }
+
+    function openRow(ref, focusPanel) {
+        if (find(ref) === -1) {
+            return;
+        }
+        closeTypes();
+        selected = ref;
+        if (lookSection) {
+            lookSection.hidden = true;
+        }
+        sectionEl.hidden = false;
+        sectionTitle.hidden = false;
+        sectionType.hidden = false;
+        renderList();
+        renderPanel();
+        slide('field');
+        post({select: ref, name: selectedName()});
+        if (focusPanel) {
+            var first = sectionFields.querySelector('input:not([type="hidden"]):not(:disabled), select:not(:disabled), textarea:not(:disabled)');
+            (first || backBtn).focus();
+        }
+    }
+
+    function openLook() {
+        closeTypes();
+        sectionEl.hidden = true;
+        sectionTitle.hidden = true;
+        sectionType.hidden = true;
+        lookSection.hidden = false;
+        slide('look');
+        backBtn.focus();
+    }
+
+    function closeField(focusRow) {
+        var ref = selected;
+        unmountFields();
+        slide('list');
+        if (focusRow) {
+            var target = ref ? list.querySelector('[data-ref="' + CSS.escape(ref) + '"] [data-act="pick"]') : null;
+            (target || (lookOpen && view === 'list' && !ref ? lookOpen : addBtn)).focus();
+        }
+    }
+
+    backBtn.addEventListener('click', function () {
+        closeField(true);
+    });
+    if (lookOpen) {
+        lookOpen.addEventListener('click', openLook);
+    }
+    fieldView.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && !e.defaultPrevented && view !== 'list' && !e.target.closest('dialog, .tox-tinymce-aux')) {
+            e.preventDefault();
+            closeField(true);
+        }
+    });
+
+    nameInput.addEventListener('input', function () {
+        var i = find(selected);
+        if (i === -1 || current()[i].locked) {
+            return;
+        }
+        var row = current()[i];
+        var type = state.types[row.type];
+        row.description = nameInput.value.trim() || (type ? type.label : row.description);
+        sectionTitle.textContent = labelOf(row);
+        var item = list.querySelector('[data-ref="' + CSS.escape(row.ref) + '"] .cz-name');
+        if (item) {
+            item.firstChild.textContent = labelOf(row);
+        }
+        post({rename: {ref: row.ref, name: labelOf(row)}});
+        changed(false, location_);
+    });
+
+    removeBtn.addEventListener('focusout', disarm);
+    removeBtn.addEventListener('click', function () {
+        var i = find(selected);
+        if (i === -1 || !canRemove(current()[i])) {
+            return;
+        }
+        if (!removeBtn.classList.contains('is-armed')) {
+            removeBtn.classList.add('is-armed');
+            removeBtn.setAttribute('aria-label', fmt(t.removeConfirm || t.remove, labelOf(current()[i])));
+            removeText.textContent = t.removeShort || t.remove;
+            armTimer = setTimeout(disarm, 4000);
+            return;
+        }
+        clearTimeout(armTimer);
+        var all = current();
+        all.splice(i, 1);
+        selected = null;
+        unmountFields();
+        slide('list');
+        renderList();
+        post({select: null});
+        (all.length ? list.querySelector('[data-act="pick"]') : addBtn).focus();
+        structural();
+    });
+
+    /* Adding a block */
 
     function closeTypes() {
         typesBox.hidden = true;
@@ -348,15 +520,25 @@
         addBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
         if (open) {
             var allowed = here().types;
-            typesBox.querySelectorAll('[data-type]').forEach(function (li) {
-                li.hidden = allowed.indexOf(li.getAttribute('data-type')) === -1;
+            typesBox.querySelectorAll('[data-add]').forEach(function (b) {
+                b.hidden = allowed.indexOf(b.getAttribute('data-add')) === -1;
             });
-            var first = typesBox.querySelector('li:not([hidden]) button');
+            typesBox.querySelectorAll('[data-group]').forEach(function (g) {
+                g.hidden = !g.querySelector('[data-add]:not([hidden])');
+            });
+            var first = typesBox.querySelector('[data-add]:not([hidden])');
             if (first) {
                 first.focus();
             }
         }
     });
+
+    if (tilesClose) {
+        tilesClose.addEventListener('click', function () {
+            closeTypes();
+            addBtn.focus();
+        });
+    }
 
     typesBox.addEventListener('click', function (e) {
         var btn = e.target.closest('[data-add]');
@@ -373,123 +555,26 @@
             type: type,
             description: state.types[type] ? state.types[type].label : type,
             enabled: true,
-            config: fieldset ? readConfig(fieldset) : {}
+            locked: false,
+            legacy: false,
+            config: fieldset ? window.oscWidgetFields.read(fieldset) : {}
         });
-        closeTypes();
-        select(key, true);
+        openRow(key, true);
         structural();
     });
 
     typesBox.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') {
+            e.stopPropagation();
             closeTypes();
             addBtn.focus();
         }
     });
 
-    /* The selected section's fields */
-
     function fieldsetFor(type) {
         var fs = template.content.querySelector('[data-type-id="' + CSS.escape(type) + '"]');
         return fs ? fs.cloneNode(true) : null;
     }
-
-    function configName(el) {
-        var m = /^config\[(.+)\]$/.exec(el.name || '');
-        return m ? m[1] : null;
-    }
-
-    function isText(el) {
-        return el.tagName === 'TEXTAREA' || (el.tagName === 'INPUT' && el.type === 'text');
-    }
-
-    function readConfig(scope) {
-        var config = {};
-        scope.querySelectorAll('[name^="config["]').forEach(function (el) {
-            var name = configName(el);
-            if (name !== null) {
-                config[name] = el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.value;
-            }
-        });
-        return config;
-    }
-
-    function renderPanel() {
-        sectionFields.textContent = '';
-        var i = find(selected);
-        if (i === -1) {
-            sectionTitle.textContent = '';
-            var hint = document.createElement('p');
-            hint.className = 'cz-hint';
-            hint.textContent = current().length ? t.pickRow : t.noRows;
-            sectionFields.appendChild(hint);
-            return;
-        }
-        var row = current()[i];
-        sectionTitle.textContent = labelOf(row);
-        var fieldset = fieldsetFor(row.type);
-        if (!fieldset) {
-            var none = document.createElement('p');
-            none.className = 'cz-hint';
-            none.textContent = t.noFields;
-            sectionFields.appendChild(none);
-            return;
-        }
-        fieldset.hidden = false;
-        fieldset.querySelectorAll('[name^="config["]').forEach(function (el) {
-            var name = configName(el);
-            el.disabled = false;
-            if (name === null || !Object.prototype.hasOwnProperty.call(row.config, name)) {
-                return;
-            }
-            var value = row.config[name];
-            if (el.type === 'checkbox') {
-                el.checked = !!value && value !== '0';
-            } else {
-                el.value = value === null ? '' : String(value);
-            }
-        });
-        sectionFields.appendChild(fieldset);
-        fieldset.querySelectorAll('.widget-image-input').forEach(function (input) {
-            if (window.oscSyncWidgetImage) {
-                window.oscSyncWidgetImage(input);
-            }
-        });
-    }
-
-    function onSectionField(e, typing) {
-        var el = e.target;
-        var name = configName(el);
-        var i = find(selected);
-        if (name === null || i === -1) {
-            return;
-        }
-        // Only text fields act on each keystroke; the rest wait for "change", which marks the row for saving.
-        if (typing && !isText(el)) {
-            return;
-        }
-        var row = current()[i];
-        var value = el.type === 'checkbox' ? (el.checked ? 1 : 0) : el.value;
-        if (String(row.config[name]) === String(value)) {
-            return;
-        }
-        row.config[name] = value;
-        if (isText(el)) {
-            if (typing) {
-                post({text: {section: row.ref, field: name, value: el.value}});
-            }
-            changed(false, location_);
-        } else if (!typing) {
-            changed(true, location_);
-        }
-    }
-
-    sectionFields.addEventListener('input', function (e) {
-        onSectionField(e, true);
-    });
-    sectionFields.addEventListener('change', function (e) {
-        onSectionField(e, false);
-    });
 
     /* Look fields */
 
@@ -608,6 +693,8 @@
             inflight.abort();
         }
         clearTimeout(timer);
+        unsaved = true;
+        syncPublish();
         setStatus(t.saving);
         timer = setTimeout(save, 600);
     }
@@ -691,6 +778,10 @@
                         }
                     });
                     state.updated_at = r.json.saved_at;
+                    if (!timer && !retry) {
+                        unsaved = false;
+                        syncPublish();
+                    }
                     setStatus(t.saved);
                     if (reloadAfter && !timer) {
                         reloadAfter = false;
@@ -771,20 +862,23 @@
             if (el) {
                 load(JSON.parse(el.textContent));
                 renderList();
-                renderPanel();
+                if (selected) {
+                    renderPanel();
+                } else if (view === 'field') {
+                    closeField(false);
+                }
             }
         });
     }
 
-    var publishBtn = document.getElementById('cz-publish');
     var staleDialog = document.getElementById('cz-stale-dialog');
     var staleConfirm = document.getElementById('cz-stale-confirm');
 
     function publish(force) {
-        publishBtn.disabled = true;
+        publishing = true;
+        syncPublish();
         flush().then(function (ok) {
             if (ok === false) {
-                publishBtn.disabled = false;
                 return null;
             }
             setStatus(t.publishing);
@@ -812,7 +906,8 @@
             setStatus(t.failed, true);
             message('error', t.failed);
         }).then(function () {
-            publishBtn.disabled = false;
+            publishing = false;
+            syncPublish();
         });
     }
 
@@ -849,14 +944,16 @@
 
     /* Page and device */
 
-    pageSelect.addEventListener('change', function () {
-        location_ = pageSelect.value;
-        selected = current().length ? current()[0].ref : null;
-        closeTypes();
-        renderList();
-        renderPanel();
-        reloadFrame();
-    });
+    if (pageSelect) {
+        pageSelect.addEventListener('change', function () {
+            location_ = pageSelect.value;
+            selected = null;
+            closeTypes();
+            closeField(false);
+            renderList();
+            reloadFrame();
+        });
+    }
 
     root.querySelectorAll('[data-device]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -869,13 +966,12 @@
     });
 
     load(state);
-    location_ = pageSelect.value || location_;
+    location_ = (pageSelect && pageSelect.value) || location_;
     renderList();
-    renderPanel();
     // The frame may have loaded before this script ran, so its ready message was missed.
     frame.addEventListener('load', function () {
-        post({select: selected});
+        post({select: selected, name: selectedName()});
     });
-    post({select: selected});
+    post({select: selected, name: selectedName()});
     setStatus(state.updated_at > 0 ? t.kept : t.clean);
 })();

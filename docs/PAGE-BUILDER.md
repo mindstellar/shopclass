@@ -1,7 +1,7 @@
 # Page Builder — unifying page templates with the widget system
 
 Status: **Phases 1–3 shipped** (template registry + page-builder canvas + rich-text
-block, with the block form inlined in the editor); Phase 4 designed, not built.
+block, edited from the page form's Edit blocks button); Phase 4 designed, not built.
 Scope: static pages (`t_pages`), the page editor, and the front-end page router.
 This doc proposes folding page templates and the widget registry into one
 composition model instead of maintaining two parallel systems.
@@ -189,17 +189,9 @@ work on it unchanged. The latest features are the remit of a **new default theme
    (`hPageTemplates.php`) with a theme-`template-widgets.php`-or-core-fallback
    renderer; helpers `osc_page_builder_location()` / `osc_show_page_widgets()`. The
    page editor renders a blocks canvas (list + drag/keyboard reorder) for a saved
-   builder page; add/edit/delete reuse the appearance widget form/CRUD, threaded
-   with a server-rebuilt `page_builder_id` return param (no config-builder
-   duplication, capability gate inherited). Page delete cascades to `page.{id}`
-   blocks. Verified end-to-end (render, canvas, add round-trip, cascade delete).
-   **Update:** the block form is now **inlined** — a native dialog in the page
-   editor holds a typed-only block form; Edit repurposes it from the row's data.
-   Posts still go to `add_widget_post`/`edit_widget_post` with `page_builder_id`
-   (shared config builder + capability gate unchanged), so the appearance
-   round-trip is gone. Typed-only closes a moderator raw-HTML hole; the inline Edit
-   button only shows for types the user may author. `widgetConfigSelectOptions`
-   moved to admin `functions.php` (`appearance/page-block-form.php` is the partial).
+   builder page; Page delete cascades to `page.{id}` blocks.
+   **Update:** the page form now shows a block summary and an **Edit blocks** button
+   that opens the Customise screen in page mode (`?page=pages&action=blocks&id=N`).
 3. **`core.rich_text` widget** — ✅ **done**. A textarea field, HTML-purified on
    save, rendered through `osc_autop`; registered before `core.custom_code` so it
    is the picker's default. Gives the builder a safe default block with no plugin,

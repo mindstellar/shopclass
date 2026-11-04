@@ -1,0 +1,41 @@
+/* Outline and name tag for the block hovered or picked in the Customise screen. The outline clears the content by a small gap; the tag sits above the block, or inside the outline when there is no room above. Themes may set the colour variables. */
+:where([data-osc-block]) {
+  position: relative;
+  --osc-block-gap: 0.625rem;
+  scroll-margin-block: calc(var(--osc-preview-top, 0px) + 2.5rem) 1rem;
+}
+
+[data-osc-block].osc-block-flush {
+  --osc-block-gap: 0px;
+}
+
+[data-osc-block]:hover,
+.osc-block-selected {
+  outline: 0.125rem solid var(--osc-preview-outline, var(--bs-primary, #0d6e6e));
+  outline-offset: calc(var(--osc-block-gap) - 0.125rem);
+  cursor: pointer;
+}
+
+[data-osc-block]:hover::before,
+.osc-block-selected::before {
+  content: attr(data-osc-block-name);
+  position: absolute;
+  inset-block-end: calc(100% + var(--osc-block-gap));
+  inset-inline-start: calc(-1 * var(--osc-block-gap));
+  z-index: 10;
+  max-inline-size: calc(100% + 2 * var(--osc-block-gap));
+  padding: 0.125rem 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 0.75rem/1.4 system-ui, sans-serif;
+  color: var(--osc-preview-outline-text, #fff);
+  background: var(--osc-preview-outline, var(--bs-primary, #0d6e6e));
+  pointer-events: none;
+}
+
+[data-osc-block].osc-block-tag-in::before {
+  inset-block-start: var(--osc-block-tag-top, calc(0.125rem - var(--osc-block-gap)));
+  inset-block-end: auto;
+  inset-inline-start: calc(0.125rem - var(--osc-block-gap));
+}

@@ -54,11 +54,23 @@ further block types.
 A page that opens with its own heading can tick **Hide the page title** in **Page settings**.
 The title is then hidden on screen, but screen readers and search engines still get it.
 
-While you edit a block, the dialog shows a **Preview** of the page with your changes,
-on desktop or phone width. Nothing is saved until you save the block. A saved block is live
-at once. The block name is optional; an empty name takes the type's name.
+The page form shows a summary of the blocks, a note when you have unpublished changes, and an
+**Edit blocks** button. A new page is saved first; blocks are edited after that.
 
-After you add, save or delete a block, the editor offers **Undo** for 15 minutes.
+### Edit blocks
+
+**Edit blocks** opens the **Customise** screen, beside a live preview of the page, on any theme.
+It is at `?page=pages&action=blocks&id=<page id>` in the admin. The block name is optional; an
+empty name takes the type's name.
+
+- The left panel lists the blocks. Drag one, or use the arrow keys, to move it. Pick a block in the
+  list, or click it in the preview, to open its fields. **All blocks** goes back to the list.
+- **Add block** shows the block types as tiles. **Remove** is inside the block's fields.
+- Changes are saved as your own draft for seven days and shown in the preview. Nothing is live
+  until you press **Publish**. **Discard** drops the draft.
+- If the blocks were changed elsewhere after your draft began, Publish asks before it replaces them.
+- Old blocks with no type are read-only for every admin. A moderator who may open Pages also sees
+  Custom Code blocks read-only: they can move them but not edit or remove them, and cannot add Custom Code.
 
 A page builder page renders correctly on **any** theme. If the active theme
 ships its own `template-widgets.php` the theme owns the layout; otherwise core

@@ -3400,6 +3400,10 @@ msgstr ""
 msgid "The backup is deleted."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+msgid "The blocks could not be published."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "The cache could not be cleared"
 msgstr ""
@@ -3488,7 +3492,7 @@ msgstr ""
 msgid "The description is too long. Use %d characters or fewer."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+#: oc-includes/classes/admin/CustomiserResponses.php
 msgid "The draft could not be saved."
 msgstr ""
 
@@ -4030,10 +4034,6 @@ msgstr ""
 msgid "There is no user with that ID."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "There is nothing to undo."
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "There was a problem adding the language"
 msgstr ""
@@ -4247,6 +4247,14 @@ msgstr ""
 msgid "This message was already sent, or its link has expired."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+msgid "This page does not use a block template, so it has no blocks to edit."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+msgid "This page has no blocks to edit."
+msgstr ""
+
 #: oc-includes/classes/billing/GoodsCheckout.php
 msgid "This payment method is not available right now. Try another."
 msgstr ""
@@ -4377,10 +4385,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
 msgid "Unblock"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Undone."
 msgstr ""
 
 #: oc-includes/classes/webhook/WebhookService.php

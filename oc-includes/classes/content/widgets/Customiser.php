@@ -19,11 +19,12 @@ use mindstellar\settings\SettingsPageRegistry;
 use mindstellar\widgets\event\CustomiserPublished;
 
 /**
- * The customiser's draft, publish and discard rules over a theme's osc_customiser_spec().
+ * The customiser's draft, publish and discard rules over a theme's osc_customiser_spec(), or
+ * over one Page builder page's blocks (PageBlocks::spec(), draft scope 'page.N').
  *
  * Section configs go through WidgetConfig, the widgets screen's sanitiser; look values go
  * through the settings API's sanitise and validate for their declared field. Nothing is
- * stored unless the whole change passes.
+ * stored unless the whole change passes. On a page, a locked row (see locked()) can only move.
  */
 final class Customiser
 {
@@ -32,13 +33,20 @@ final class Customiser
 
     private CustomiserDraft $draft;
 
+    private bool $moderator;
+
+    private bool $pageMode;
+
     /**
-     * @param array<string,mixed> $spec what osc_customiser_spec() returned
+     * @param array<string,mixed> $spec      what osc_customiser_spec() or PageBlocks::spec() returned
+     * @param bool                $moderator whether the admin editing is a moderator
      */
-    public function __construct(array $spec, CustomiserDraft $draft)
+    public function __construct(array $spec, CustomiserDraft $draft, bool $moderator = false)
     {
-        $this->spec  = $spec;
-        $this->draft = $draft;
+        $this->spec      = $spec;
+        $this->draft     = $draft;
+        $this->moderator = $moderator;
+        $this->pageMode  = str_starts_with($draft->theme(), 'page.');
     }
 
     /**
@@ -50,6 +58,38 @@ final class Customiser
         $spec = osc_customiser_spec();
 
         return $spec === null ? null : new self($spec, new CustomiserDraft(osc_theme(), osc_logged_admin_id()));
+    }
+
+    /**
+     * The customiser for the signed-in admin and one Page builder page, or null when the page
+     * does not exist or is not a builder page.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function forPage(int $pageId): ?self
+    {
+        $spec = PageBlocks::spec($pageId);
+
+        return $spec === null ? null : new self($spec, new CustomiserDraft('page.' . $pageId, osc_logged_admin_id()), osc_is_moderator());
+    }
+
+    /**
+     * Whether a row can only be moved, not edited or removed: an untyped legacy row (null type)
+     * is locked for everyone, a 'super_admin' type is locked for a moderator.
+     *
+     * @param array<string,mixed>|null $type the registered type, or null for an untyped row
+     */
+    public static function locked(?array $type, bool $moderator): bool
+    {
+        return $type === null || ($moderator && ($type['capability'] ?? 'admin') === 'super_admin');
+    }
+
+    /**
+     * @return array<string,mixed>
+     */
+    public function spec(): array
+    {
+        return $this->spec;
     }
 
     public function draft(): CustomiserDraft
@@ -77,7 +117,9 @@ final class Customiser
         foreach ($locations as $slug => $rows) {
             $slug = (string) $slug;
             if (!isset($this->spec['locations'][$slug])) {
-                $errors[] = sprintf(__('%s is not a place this theme lets you customise.'), $slug);
+                $errors[] = $this->pageMode
+                    ? sprintf(__('%s is not part of this page.'), $slug)
+                    : sprintf(__('%s is not a place this theme lets you customise.'), $slug);
                 continue;
             }
             $raw = is_array($locationsRaw[$slug] ?? null) ? $locationsRaw[$slug] : array();
@@ -152,31 +194,30 @@ final class Customiser
             return array(
                 'status' => 409,
                 'stale'  => true,
-                'errors' => array(__('The sections were changed elsewhere, such as on the Widgets screen, after this draft began. Publishing replaces those changes.')),
+                'errors' => array($this->pageMode
+                    ? __('The blocks were changed elsewhere after this draft began. Publishing replaces those changes.')
+                    : __('The sections were changed elsewhere, such as on the Widgets screen, after this draft began. Publishing replaces those changes.')),
             );
         }
 
+        $failed = $this->pageMode ? __('The blocks could not be published.') : __('The sections could not be published.');
         try {
+            $plan   = array();
+            $errors = array();
             foreach ($draft['locations'] as $slug => $rows) {
                 if (!isset($this->spec['locations'][$slug]) || !is_array($rows)) {
                     continue;
                 }
-                $types = $this->spec['locations'][$slug]['types'];
-                $keep  = array();
-                foreach ($rows as $row) {
-                    if (is_array($row) && in_array($row['type'] ?? '', $types, true)) {
-                        $keep[] = array(
-                            'id'          => isset($row['id']) ? (int) $row['id'] : null,
-                            'type'        => (string) $row['type'],
-                            'config'      => is_array($row['config'] ?? null) ? $row['config'] : array(),
-                            'description' => (string) ($row['description'] ?? ''),
-                        );
-                    }
-                }
-                WidgetStore::replaceLocation((string) $slug, $keep);
+                $plan[(string) $slug] = $this->publishRows((string) $slug, $rows, $errors);
+            }
+            if ($errors !== array()) {
+                return array('status' => 422, 'errors' => $errors);
+            }
+            foreach ($plan as $slug => $keep) {
+                WidgetStore::replaceLocation($slug, $keep);
             }
         } catch (\Throwable $e) {
-            return array('status' => 500, 'errors' => array(__('The sections could not be published.')));
+            return array('status' => 500, 'errors' => array($failed));
         }
 
         $page = $this->settingsPage();
@@ -208,8 +249,10 @@ final class Customiser
         } catch (\Throwable $e) {
             // Published already; a draft left behind is overwritten by the next change.
         }
-        $theme = $this->draft->theme();
-        CoreServices::dispatcher()->dispatch(new CustomiserPublished($theme));
+        // customiser_published is about a theme; the caller purges the page cache for a page.
+        if (!$this->pageMode) {
+            CoreServices::dispatcher()->dispatch(new CustomiserPublished($this->draft->theme()));
+        }
 
         return array('status' => 200, 'errors' => array());
     }
@@ -266,14 +309,33 @@ final class Customiser
     private function rows(string $slug, array $rows, array $raw, array &$errors): ?array
     {
         $types    = $this->spec['locations'][$slug]['types'];
-        $existing = null;
+        $live     = $this->pageMode ? WidgetStore::rowsAt($slug) : null;
+        $existing = $live;
         $out      = array();
+        $locked   = array();
         $failed   = false;
         foreach (array_values($rows) as $i => $row) {
             $rawRow = array_values($raw)[$i] ?? array();
             if (!is_array($row)) {
                 continue;
             }
+            $id = isset($row['id']) && is_scalar($row['id']) ? (int) $row['id'] : 0;
+
+            // A locked row is copied from the live one, whatever was posted for it.
+            if ($live !== null && isset($live[$id]) && $this->lockedRow($live[$id])) {
+                if (!isset($locked[$id])) {
+                    $locked[$id] = true;
+                    $out[]       = array(
+                        'id'          => $id,
+                        'key'         => '',
+                        'type'        => (string) $live[$id]['s_type'],
+                        'description' => (string) $live[$id]['s_description'],
+                        'config'      => $this->liveConfig($live[$id]),
+                    );
+                }
+                continue;
+            }
+
             $typeId = is_string($row['type'] ?? null) ? $row['type'] : '';
             $type   = in_array($typeId, $types, true) && WidgetRegistry::getInstance()->fits($typeId, $slug, true)
                 ? WidgetRegistry::getInstance()->get($typeId)
@@ -283,9 +345,13 @@ final class Customiser
                 $failed   = true;
                 continue;
             }
+            if (self::locked($type, $this->moderator)) {
+                $errors[] = sprintf(__('Only an administrator can add %s.'), (string) $type['label']);
+                $failed   = true;
+                continue;
+            }
 
             // Only an id already in this location is kept; any other row is a new one.
-            $id = isset($row['id']) && is_scalar($row['id']) ? (int) $row['id'] : 0;
             if ($id > 0) {
                 if ($existing === null) {
                     $existing = array_flip(WidgetStore::idsAt($slug));
@@ -316,7 +382,108 @@ final class Customiser
             );
         }
 
+        if ($live !== null && $this->moderator) {
+            foreach ($this->droppedLocked($live, $locked) as $name) {
+                $errors[] = sprintf(__('Only an administrator can remove %s.'), $name);
+                $failed   = true;
+            }
+        }
+
         return $failed ? null : $out;
+    }
+
+    /**
+     * One drafted location as WidgetStore::replaceLocation() rows. On a page a locked row only
+     * moves, and a moderator's draft that leaves out a live locked row is refused.
+     *
+     * @param array<mixed> $rows
+     * @param string[]     $errors
+     *
+     * @return array<int,array<string,mixed>>
+     * @throws \mindstellar\database\DbException
+     */
+    private function publishRows(string $slug, array $rows, array &$errors): array
+    {
+        $types  = $this->spec['locations'][$slug]['types'];
+        $live   = $this->pageMode ? WidgetStore::rowsAt($slug) : array();
+        $locked = array();
+        $keep   = array();
+        foreach ($rows as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $id = isset($row['id']) ? (int) $row['id'] : 0;
+            if (isset($live[$id]) && $this->lockedRow($live[$id])) {
+                $locked[$id] = true;
+                $keep[]      = array('id' => $id, 'keep' => true);
+                continue;
+            }
+            $typeId = (string) ($row['type'] ?? '');
+            if (!in_array($typeId, $types, true) || ($this->pageMode && self::locked(WidgetRegistry::getInstance()->get($typeId), $this->moderator))) {
+                continue;
+            }
+            $keep[] = array(
+                'id'          => $id > 0 ? $id : null,
+                'type'        => $typeId,
+                'config'      => is_array($row['config'] ?? null) ? $row['config'] : array(),
+                'description' => (string) ($row['description'] ?? ''),
+            );
+        }
+        if ($this->moderator) {
+            foreach ($this->droppedLocked($live, $locked) as $name) {
+                $errors[] = sprintf(__('Only an administrator can remove %s.'), $name);
+            }
+        }
+
+        return $keep;
+    }
+
+    /**
+     * Whether a live row on a page can only be moved by this admin. A type no longer
+     * registered counts as untyped, so its row is kept as it is.
+     *
+     * @param array<string,string|null> $row
+     */
+    private function lockedRow(array $row): bool
+    {
+        if (!$this->pageMode) {
+            return false;
+        }
+        $typeId = (string) ($row['s_type'] ?? '');
+
+        return self::locked($typeId === '' ? null : WidgetRegistry::getInstance()->get($typeId), $this->moderator);
+    }
+
+    /**
+     * Names of the live locked rows missing from $kept.
+     *
+     * @param array<int,array<string,string|null>> $live
+     * @param array<int,true>                      $kept
+     *
+     * @return string[]
+     */
+    private function droppedLocked(array $live, array $kept): array
+    {
+        $names = array();
+        foreach ($live as $id => $row) {
+            if (!isset($kept[$id]) && $this->lockedRow($row)) {
+                $names[] = (string) $row['s_description'] !== '' ? (string) $row['s_description'] : (string) $row['s_type'];
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * @param array<string,string|null> $row
+     *
+     * @return array<string,mixed>
+     */
+    private function liveConfig(array $row): array
+    {
+        $config = json_decode((string) ($row['s_config'] ?? ''), true);
+
+        return is_array($config) ? $config : array();
     }
 
     /**

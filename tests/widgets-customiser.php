@@ -14,7 +14,8 @@
  * what the spec does not allow, publish and discard keep settings images right, the
  * widgets screen keeps a hidden row hidden, moderators are refused, and ?osc_preview=1
  * renders the draft only for the admin who saved it (the published rows for an admin with
- * none), uncached and noindex.
+ * none), uncached and noindex. Page mode: a page spec on any theme, a draft per page, and
+ * locked rows that only move.
  *
  * DB-backed.  Usage:  php tests/widgets-customiser.php
  */
@@ -34,6 +35,7 @@ require_once __DIR__ . '/lib/customiser-kit.php';
 customiser_kit_declare();
 
 use mindstellar\widgets\CustomiserDraft;
+use mindstellar\widgets\PageBlocks;
 use mindstellar\widgets\WidgetStore;
 
 /** The base controller, stubbed: redirects are recorded and nothing is drawn. */
@@ -251,6 +253,7 @@ pin('without an admin session ?osc_preview=1 renders the published rows', '<hero
 check('...is no preview', ($plain['preview'] ?? true) === false && array_key_exists('brand', $plain) && $plain['brand'] === null);
 check('...sends no preview headers and stays cacheable', ($plain['headers'] ?? null) === array() && ($plain['cacheable'] ?? false) === true);
 pin('...and prints no customiser meta', '', $plain['head'] ?? null);
+check('...and loads no frame script or style', !str_contains((string) ($plain['assets'] ?? 'x'), 'customiser-preview'));
 
 $live = preview(array('osc_preview' => '1'), $adminA);
 pin('with the admin session and a draft it renders the draft rows', '<hero ' . $hero . '>Draft title</hero><promise>Free returns</promise>', $live['page'] ?? null);
@@ -259,8 +262,12 @@ check('...and null for another settings page', array_key_exists('other', $live) 
 pin('the response is noindex', array('X-Robots-Tag: noindex'), $live['headers'] ?? null);
 pin('...and uncacheable', false, $live['cacheable'] ?? true);
 pin('osc_head prints the admin origin', '<meta name="osc-customiser" content="https://admin.shop.test">', $live['head'] ?? null);
+pin('...and a theme-mode preview loads no core frame script', 0, substr_count((string) ($live['assets'] ?? ''), 'osclass/customiser-preview.'));
+pin('...while a page-mode one (osc_blocks=1) loads script and style', 2, substr_count((string) (preview(array('osc_preview' => '1', 'osc_blocks' => '1'), $adminA)['assets'] ?? ''), 'osclass/customiser-preview.'));
 
-pin('without osc_preview the admin sees the published page', '<hero ' . $hero . '>Live</hero>', preview(array(), $adminA)['page'] ?? null);
+$noFlag = preview(array(), $adminA);
+pin('without osc_preview the admin sees the published page', '<hero ' . $hero . '>Live</hero>', $noFlag['page'] ?? null);
+check('...with no frame script or style', !str_contains((string) ($noFlag['assets'] ?? 'x'), 'customiser-preview'));
 pin('an API request ignores it', '<hero ' . $hero . '>Live</hero>', preview(array('osc_preview' => '1'), $adminA, true)['page'] ?? null);
 $adminB = seed_exec($admin, 'INSERT INTO ' . DB_TABLE_PREFIX . "t_admin (s_name, s_username, s_password, s_email, b_moderator) VALUES ('B', 'b', 'x', 'b@x.test', 0)", '', array());
 $noDraft = preview(array('osc_preview' => '1'), $adminB);
@@ -490,6 +497,20 @@ check('...and flashes an error', in_array('error:Home only cannot be placed in t
 $r = drive('edit_widget_post', array('id' => $heroAt, 's_type' => 'only.footer', 'description' => 'Hero'));
 pin('edit: a type that fits is saved', 'only.footer', $admin->query("SELECT s_type FROM $table WHERE pk_i_id = $heroAt")->fetch_row()[0]);
 
+harness_section('Widget actions return to the Widgets screen, even with page_builder_id');
+$widgetsUrl = osc_admin_base_url(true) . '?page=appearance&action=widgets';
+$returns    = static function (string $action, array $post, string $flash) use ($widgetsUrl): void {
+    $GLOBALS['flashes'] = array();
+    $r = drive($action, $post + array('page_builder_id' => '7'));
+    pin("$action returns to the Widgets screen", array($widgetsUrl), $r['redirects']);
+    pin("...and flashes \"$flash\"", array('ok:' . $flash), $GLOBALS['flashes']);
+};
+$returns('add_widget_post', array('location' => 'home', 'description' => 'Plain', 'content' => '<p>a</p>'), 'Widget added correctly');
+$plain = (int) $admin->query("SELECT MAX(pk_i_id) FROM $table")->fetch_row()[0];
+$returns('edit_widget_post', array('id' => (string) $plain, 'description' => 'Plain', 'content' => '<p>b</p>'), 'Widget updated correctly');
+$returns('delete_widget', array('id' => (string) $plain), 'Widget removed correctly');
+check('the old page block undo is gone', !class_exists('mindstellar\widgets\PageBlockUndo'));
+
 $admin->query("DELETE FROM $table");
 customiser_kit_declare(array('locations' => array(
     'home'   => array('label' => 'Home page', 'types' => array('only.home', 'only.footer'), 'preview' => WEB_PATH),
@@ -504,6 +525,227 @@ $offered = \mindstellar\widgets\CustomiserScreen::build(osc_customiser_spec(), n
 pin('the screen offers only the types that fit each section', array('home' => array('only.home'), 'footer' => array('only.footer')), array_map(static fn ($l) => $l['types'], $offered['locations']));
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'customiser'");
 customiser_kit_declare();
+
+harness_section('page mode: the page spec');
+
+use mindstellar\widgets\Customiser;
+
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hPageTemplates.php';
+if (!function_exists('osc_core_url')) {
+    function osc_core_url($name, $args = array())
+    {
+        return \mindstellar\routing\CoreRoutes::url($name, $args);
+    }
+}
+$pagesT  = DB_TABLE_PREFIX . 't_pages';
+$builder = static function (int $id) use ($admin, $pagesT): void {
+    $admin->query("UPDATE $pagesT SET s_meta = '{\"template\":\"core.page_builder\"}' WHERE pk_i_id = $id");
+};
+$p7    = seed_page($admin, 'seven', 'Seven');
+$p8    = seed_page($admin, 'eight', 'Eight');
+$plain = seed_page($admin, 'plain', 'Plain');
+$builder($p7);
+$builder($p8);
+$l7 = 'page.' . $p7;
+$l8 = 'page.' . $p8;
+$admin->query("DELETE FROM $table");
+
+osc_remove_theme_support('customiser');
+$ps     = PageBlocks::spec($p7);
+$pTypes = $ps['locations'][$l7]['types'] ?? array();
+pin('a theme with no customiser still gets a page spec with one location', array($l7), array_keys($ps['locations'] ?? array()));
+pin('...labelled with the page title', 'Seven', $ps['locations'][$l7]['label'] ?? null);
+pin('...listing builder and content types', 4, count(array_intersect(array('core.columns', 'core.heading', 'core.rich_text', 'core.custom_code'), $pTypes)));
+check('...and no type limited to other sections', !in_array('only.home', $pTypes, true));
+pin('...and no look fields', array('page' => '', 'fields' => array()), $ps['settings'] ?? null);
+pin('...swatches and live are empty', array(array(), array()), array($ps['swatches'] ?? null, $ps['live'] ?? null));
+check('...the preview is the page on this site', str_starts_with((string) ($ps['locations'][$l7]['preview'] ?? ''), WEB_PATH) && str_contains((string) $ps['locations'][$l7]['preview'], (string) $p7));
+pin('a page that is not a builder page has no page spec', null, PageBlocks::spec($plain));
+pin('a missing page has no page spec', null, PageBlocks::spec(999999));
+pin('...and no page customiser', null, Customiser::forPage(999999));
+customiser_kit_declare();
+
+harness_section('page mode: drafts are per page');
+
+$GLOBALS['moderator'] = false;
+drive('customise_draft_post', array('settings' => array('brand' => 'ocean')));
+$themeDraft = $draftKv();
+$c7 = Customiser::forPage($p7);
+$r  = $c7->saveDraft(array($l7 => array(array('type' => 'core.heading', 'config' => array('text' => 'Hello')))), array(), array());
+pin('a page draft is 200', 200, $r['status']);
+$kv7 = osc_kv_get('customiser', $l7 . ':' . $adminA);
+pin('...stored under page.N:<admin>', array('core.heading'), array_column($kv7['locations'][$l7] ?? array(), 'type'));
+pin('...the theme draft is untouched', $themeDraft, $draftKv());
+pin('...page 8 has no draft', null, Customiser::forPage($p8)->draft()->read());
+pin('a page customiser refuses another page\'s location', 422, $c7->saveDraft(array($l8 => array(array('type' => 'core.heading'))), array(), array())['status']);
+pin('...and look values', 422, $c7->saveDraft(array(), array(), array('brand' => 'ocean'))['status']);
+
+harness_section('page mode: publish');
+
+$h8   = WidgetStore::add(array('s_location' => $l8, 'e_kind' => 'html', 's_description' => 'P8', 's_content' => '', 's_type' => 'core.heading', 's_config' => '{"text":"Eight"}', 'i_order' => 0));
+WidgetStore::add(array('s_location' => 'home', 'e_kind' => 'html', 's_description' => 'Hero', 's_content' => '', 's_type' => 'aisle.hero', 's_config' => '{}', 'i_order' => 0));
+$was8 = $rowsAt($l8);
+$wasH = $rowsAt('home');
+$publishedThemes = array();
+$r = $c7->publish();
+pin('a page publish is 200', 200, $r['status']);
+pin('...writes the drafted rows to page.N', array('core.heading'), array_column($rowsAt($l7), 's_type'));
+pin('...leaves page 8 alone', $was8, $rowsAt($l8));
+pin('...and the theme location', $wasH, $rowsAt('home'));
+pin('...runs no customiser_published', array(), $publishedThemes);
+pin('...forgets the page draft', null, $c7->draft()->read());
+pin('...and keeps the theme draft', $themeDraft, $draftKv());
+drive('customise_discard_post');
+
+harness_section('page mode: stale is per page');
+
+$live7 = $rowsAt($l7);
+$c7->saveDraft(array($l7 => array(array('id' => $live7[0]['pk_i_id'], 'type' => 'core.heading', 'config' => array('text' => 'Seven again')))), array(), array());
+$c8 = Customiser::forPage($p8);
+$c8->saveDraft(array($l8 => array(array('id' => (string) $h8, 'type' => 'core.heading', 'config' => array('text' => 'Eight again')))), array(), array());
+WidgetStore::update($h8, array('s_description' => 'Changed elsewhere'));
+$r = $c8->publish();
+pin('a page whose live blocks changed is stale', array(409, true), array($r['status'], $r['stale'] ?? null));
+pin('...another page is not', 200, $c7->publish()['status']);
+$c8->discard();
+
+harness_section('page mode: locked rows');
+
+pin('locked: an untyped row', true, Customiser::locked(null, false));
+pin('locked: a super_admin type for a moderator', true, Customiser::locked(array('capability' => 'super_admin'), true));
+pin('not locked: a super_admin type for an admin', false, Customiser::locked(array('capability' => 'super_admin'), false));
+pin('not locked: an admin type for a moderator', false, Customiser::locked(array('capability' => 'admin'), true));
+
+$admin->query("DELETE FROM $table");
+$cc   = WidgetStore::add(array('s_location' => $l7, 'e_kind' => 'html', 's_description' => 'Tracker', 's_content' => '', 's_type' => 'core.custom_code', 's_config' => '{"code":"<script>ok()</script>"}', 'i_order' => 0));
+$raw  = WidgetStore::add(array('s_location' => $l7, 'e_kind' => 'html', 's_description' => 'Old HTML', 's_content' => '<p>raw</p>', 'i_order' => 1));
+$head = WidgetStore::add(array('s_location' => $l7, 'e_kind' => 'html', 's_description' => 'Heading', 's_content' => '', 's_type' => 'core.heading', 's_config' => '{"text":"Hi"}', 'i_order' => 2));
+$lockedCols = static fn (): array => $admin->query("SELECT s_description, s_content, s_type, s_config FROM $table WHERE pk_i_id IN ($cc, $raw) ORDER BY pk_i_id")->fetch_all(MYSQLI_ASSOC);
+$liveBefore = $lockedCols();
+
+$GLOBALS['moderator'] = true;
+$m7  = Customiser::forPage($p7);
+$all = static fn (array $over = array()): array => array_values(array_filter(array_replace(array(
+    'head' => array('id' => (string) $head, 'type' => 'core.heading', 'config' => array('text' => 'Moved')),
+    'code' => array('id' => (string) $cc, 'type' => 'core.custom_code', 'description' => 'Renamed', 'enabled' => '0', 'config' => array('code' => '<script>evil()</script>')),
+    'raw'  => array('id' => (string) $raw, 'type' => '', 'config' => array('x' => 'y')),
+), $over)));
+$r = $m7->saveDraft(array($l7 => $all()), array($l7 => $all()), array());
+pin('moderator: moving a Custom Code and an untyped row is 200', 200, $r['status']);
+$drafted = $m7->draft()->read()['locations'][$l7] ?? array();
+pin('...in the posted order', array($head, $cc, $raw), array_map('intval', array_column($drafted, 'id')));
+pin('...the Custom Code row keeps its live config', array('code' => '<script>ok()</script>'), $drafted[1]['config'] ?? null);
+pin('...and its live name', 'Tracker', $drafted[1]['description'] ?? null);
+pin('...the untyped row stays untyped with no config', array('', array()), array($drafted[2]['type'] ?? null, $drafted[2]['config'] ?? null));
+pin('moderator: dropping a Custom Code row is 422', 422, $m7->saveDraft(array($l7 => $all(array('code' => null))), array(), array())['status']);
+pin('moderator: dropping an untyped row is 422', 422, $m7->saveDraft(array($l7 => $all(array('raw' => null))), array(), array())['status']);
+$added   = $all();
+$added[] = array('type' => 'core.custom_code', 'config' => array('code' => '<script>new()</script>'));
+pin('moderator: adding a Custom Code row is 422', 422, $m7->saveDraft(array($l7 => $added), array($l7 => $added), array())['status']);
+pin('...and the draft is as it was', $drafted, $m7->draft()->read()['locations'][$l7] ?? null);
+
+$r = $m7->publish();
+pin('moderator: publish is 200', 200, $r['status']);
+pin('...the rows are in the drafted order', array((string) $head, (string) $cc, (string) $raw), array_column($rowsAt($l7), 'pk_i_id'));
+pin('...the locked rows keep every live column', $liveBefore, $lockedCols());
+
+$m7->saveDraft(array($l7 => $all()), array($l7 => $all()), array());
+$draft = $m7->draft()->read();
+$draft['locations'][$l7] = array_values(array_filter($draft['locations'][$l7], static fn ($r) => (int) $r['id'] !== $cc));
+$m7->draft()->save($draft);
+pin('moderator: a forced publish of a draft without a live Custom Code row is 422', 422, $m7->publish(true)['status']);
+check('...and the row is still there', WidgetStore::find($cc) !== null);
+$m7->discard();
+$GLOBALS['moderator'] = false;
+
+$a7 = Customiser::forPage($p7);
+$r  = $a7->saveDraft(array($l7 => array(
+    array('id' => (string) $raw, 'type' => '', 'config' => array('x' => 'y')),
+    array('id' => (string) $cc, 'type' => 'core.custom_code', 'config' => array('code' => '<b>admin</b>')),
+)), array($l7 => array(array(), array('config' => array('code' => '<b>admin</b>')))), array());
+pin('admin: dropping a row and editing Custom Code is 200', 200, $r['status']);
+pin('admin: an untyped row is still not editable', array(), $a7->draft()->read()['locations'][$l7][0]['config'] ?? null);
+$a7->publish();
+pin('admin: the untyped row\'s s_content survives publish', '<p>raw</p>', WidgetStore::find($raw)['s_content'] ?? null);
+pin('...it moved first', '0', WidgetStore::find($raw)['i_order'] ?? null);
+pin('admin: Custom Code was saved', '{"code":"<b>admin<\/b>"}', WidgetStore::find($cc)['s_config'] ?? null);
+$a7->saveDraft(array($l7 => array(
+    array('key' => 'n1', 'type' => 'core.heading', 'config' => array('text' => 'Drafted')),
+    array('id' => (string) $raw, 'type' => '', 'config' => array()),
+)), array(), array());
+drive('customise_draft_post', array('locations' => array('home' => array(array('type' => 'aisle.promise', 'config' => array('text' => 'Theme draft'))))));
+$pagePreview = (string) (preview(array('osc_preview' => '1', 'osc_blocks' => '1'), $adminA, false, array('location' => $l7))['page'] ?? '');
+check('the page preview shows the drafted block', str_contains($pagePreview, 'Drafted'));
+check('...read from the page draft, not the theme draft', !str_contains($pagePreview, 'Theme draft'));
+check('...marked for the picker', str_contains($pagePreview, 'data-osc-block="n1"'));
+$themeMode = preview(array('osc_preview' => '1'), $adminA, false, array('location' => $l7));
+check('a theme-mode preview of a page marks no blocks', !str_contains((string) $themeMode['page'], 'data-osc-block'));
+check('...and loads no frame script', !str_contains((string) $themeMode['assets'], 'osclass/customiser-preview.'));
+check('...but still shows the page draft', str_contains((string) $themeMode['page'], 'Drafted'));
+check('a page-mode preview loads the frame script and style', str_contains((string) preview(array('osc_preview' => '1', 'osc_blocks' => '1'), $adminA, false, array('location' => $l7))['assets'], 'osclass/customiser-preview.'));
+foreach (array('a visitor' => array(array('osc_preview' => '1', 'osc_blocks' => '1'), 0), 'the admin without osc_preview' => array(array(), $adminA)) as $who => $as) {
+    $seen = (string) (preview($as[0], $as[1], false, array('location' => $l7))['page'] ?? 'x');
+    check("$who sees the live page, not the draft", str_contains($seen, '<b>admin</b>') && !str_contains($seen, 'Drafted'));
+    check('...with no block markers', !str_contains($seen, 'data-osc-block'));
+}
+drive('customise_discard_post');
+check('...and the legacy row kept in the draft, after it', str_contains($pagePreview, '<p>raw</p>') && strpos($pagePreview, 'Drafted') < strpos($pagePreview, '<p>raw</p>'));
+check('...but not the row the draft left out', !str_contains($pagePreview, '<b>admin</b>'));
+$a7->discard();
+$a7->saveDraft(array($l7 => array(array('id' => (string) $cc, 'type' => 'core.custom_code', 'config' => array()))), array(), array());
+$a7->publish();
+pin('admin: an untyped row may be removed', null, WidgetStore::find($raw));
+pin('admin: a new untyped row is refused', 422, $a7->saveDraft(array($l7 => array(array('type' => ''))), array(), array())['status']);
+$a7->discard();
+$admin->query("DELETE FROM $table");
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'customiser'");
+
+harness_section('PageBlocks: summary and drafts');
+
+$row = static fn (string $loc, string $type, string $desc, array $cfg = array(), int $order = 0): int => WidgetStore::add(array('s_location' => $loc, 'e_kind' => 'html', 's_description' => $desc, 's_content' => '', 's_type' => $type, 's_config' => json_encode($cfg), 'i_order' => $order));
+$row($l7, 'core.heading', 'Intro', array(), 0);
+$row($l7, '', '', array(), 1);
+$row($l7, 'gone.type', '', array(), 2);
+$row($l7, 'core.rich_text', '', array('_enabled' => false), 3);
+$sum = PageBlocks::summary($p7, $adminA);
+pin('summary counts the live rows', 4, $sum['count'] ?? null);
+pin('...in order, named by description, a legacy row as Custom HTML like the block list', array('Intro', 'Custom HTML', 'Custom HTML'), array_slice(array_column($sum['blocks'] ?? array(), 'name'), 0, 3));
+pin('...an untyped row is Custom HTML', 'Custom HTML', $sum['blocks'][1]['name'] ?? null);
+pin('...a row with no description takes its type label', WidgetRegistry::getInstance()->get('core.rich_text')['label'], $sum['blocks'][3]['name'] ?? null);
+pin('...an unregistered type is hidden', true, $sum['blocks'][2]['hidden'] ?? null);
+pin('...a disabled row is hidden', true, $sum['blocks'][3]['hidden'] ?? null);
+pin('...a plain row is not', false, $sum['blocks'][0]['hidden'] ?? null);
+pin('...the icon is the type icon', WidgetRegistry::getInstance()->get('core.heading')['icon'], $sum['blocks'][0]['icon'] ?? null);
+pin('...the edit link', osc_admin_base_url(true) . '?page=pages&action=blocks&id=' . $p7, $sum['edit_url'] ?? null);
+pin('no draft yet', false, $sum['draft'] ?? null);
+pin('a classic page has no summary', null, PageBlocks::summary($plain, $adminA));
+pin('a missing page has no summary', null, PageBlocks::summary(999999, $adminA));
+
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_key_value WHERE s_group = 'customiser'");
+$mkDraft = static function (string $slug, int $who, string $theme = '') {
+    osc_kv_set('customiser', $slug . ':' . $who, array('theme' => $theme === '' ? $slug : $theme, 'locations' => array(), 'settings' => array(), 'base' => array(), 'updated_at' => time()), 600);
+};
+$mkDraft($l8, $adminA);
+$mkDraft('storefront', $adminA);
+pin('page 8\'s draft and the theme draft are not page 7\'s', false, PageBlocks::summary($p7, $adminA)['draft']);
+$mkDraft($l7, $adminA + 1);
+pin('another admin\'s draft is not this admin\'s', false, PageBlocks::summary($p7, $adminA)['draft']);
+$mkDraft($l7, $adminA);
+pin('this admin\'s page draft is reported', true, PageBlocks::summary($p7, $adminA)['draft']);
+
+$mkDraft('page.' . $p7 . '0', $adminA);
+$mkDraft($l7, $adminA + 1);
+$mkDraft($l7, $adminA + 2);
+$left = static fn (): array => array_column(osc_kv_list('customiser', 100), 'key');
+pin('forgetDrafts removes every draft of the page', 3, PageBlocks::forgetDrafts($p7));
+$kept = array_values(array_filter($left(), static fn ($k) => !str_starts_with($k, 'page.' . $p7 . ':')));
+sort($kept);
+$want = array($l8 . ':' . $adminA, 'page.' . $p7 . '0:' . $adminA, 'storefront:' . $adminA);
+sort($want);
+pin('...and keeps the other pages and the theme', $want, $kept);
+pin('...a page whose id starts with the same digits keeps its draft', true, osc_kv_get('customiser', 'page.' . $p7 . '0:' . $adminA) !== null);
+pin('...none of page 7 is left', 0, count(array_filter($left(), static fn ($k) => str_starts_with($k, 'page.' . $p7 . ':'))));
+pin('forgetDrafts on a page with none', 0, PageBlocks::forgetDrafts($p7));
 
 $code = harness_result();
 ob_end_flush();

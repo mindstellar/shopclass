@@ -14,6 +14,7 @@ namespace mindstellar\pages;
 
 use mindstellar\model\Resource;
 use mindstellar\storage\ResourceUploader;
+use mindstellar\widgets\PageBlocks;
 use mindstellar\widgets\WidgetStore;
 use Page;
 
@@ -32,7 +33,7 @@ final class PageService
     }
 
     /**
-     * Delete a page with its locale rows, its page-builder widgets and its uploaded images.
+     * Delete a page with its locale rows, its page-builder widgets, their drafts and its uploaded images.
      * Fires before_delete_page and after_delete_page.
      *
      * @return int|false rows removed (0 for an unknown id), or false when the delete failed
@@ -48,6 +49,11 @@ final class PageService
             WidgetStore::deleteByLocation('page.' . $id);
         } catch (\mindstellar\database\DbException $e) {
             // The page is gone; stray widgets only stay hidden, as before.
+        }
+        try {
+            PageBlocks::forgetDrafts($id);
+        } catch (\mindstellar\database\DbException $e) {
+            error_log('Page ' . $id . ' block drafts were not removed: ' . $e->getMessage());
         }
         // Remove the files now rather than waiting for the daily orphan sweep.
         (new ResourceUploader())->deleteByOwner(Resource::OWNER_PAGE, $id);

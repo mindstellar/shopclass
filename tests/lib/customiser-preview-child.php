@@ -12,7 +12,7 @@
  * One public request for tests/widgets-customiser.php, in its own process because OC_ADMIN
  * is a constant. Prints what the page rendered and the preview helpers answered, as JSON.
  *
- * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api, ocAdmin, theme, loggedIn>'
+ * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api, ocAdmin, theme, loggedIn, location>'
  */
 
 ob_start();
@@ -25,6 +25,18 @@ $admin->select_db((string) $argv[1]);
 
 require_once __DIR__ . '/customiser-kit.php';
 customiser_kit_declare();
+if (!function_exists('osc_assets_url')) {
+    function osc_assets_url($file = '')
+    {
+        return 'https://shop.test/oc-includes/assets/' . $file;
+    }
+}
+if (!function_exists('osc_asset_url_versioned')) {
+    function osc_asset_url_versioned($url)
+    {
+        return $url;
+    }
+}
 
 $GLOBALS['adminId'] = (int) ($args['adminId'] ?? 0);
 $GLOBALS['api']     = !empty($args['api']);
@@ -39,8 +51,10 @@ osc_mark_response_cacheable();
 osc_customiser_preview_start();
 
 ob_start();
-osc_show_widgets('home');
+osc_show_widgets((string) ($args['location'] ?? 'home'));
 $page = (string) ob_get_clean();
+osc_customiser_preview_frame_assets();
+$assets = implode(' ', array_merge(Scripts::getInstance()->getScripts(), Styles::getInstance()->getStyles()));
 
 osc_add_theme_support('head', array_fill_keys(array('charset', 'viewport', 'title', 'description', 'keywords', 'canonical', 'pagination', 'feed', 'api'), false));
 ob_start();
@@ -60,4 +74,5 @@ echo json_encode(array(
     'other'     => osc_customiser_draft_value('other', 'brand'),
     'headers'   => osc_customiser_preview_headers(),
     'cacheable' => $cacheable,
+    'assets'    => $assets,
 ));

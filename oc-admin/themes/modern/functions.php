@@ -324,7 +324,7 @@ function widgetConfigSelectOptions($options)
 /**
  * DOM id for a widget config control, namespaced by type so ids stay unique
  * across the (hidden) per-type field groups. Shared by the appearance widget form
- * and the page-builder block dialog.
+ * and the Customise screen.
  *
  * @param string $typeId
  * @param string $fieldName
@@ -339,7 +339,7 @@ function widgetConfigFieldId($typeId, $fieldName)
 /**
  * Render one widget config field as a control named config[<name>].
  *
- * The single source both the appearance widget editor and the page-builder block dialog
+ * The single source both the appearance widget editor and the Customise screen
  * use, so a field looks and behaves the same in both. $disabled is true for a field whose
  * type is not the currently selected one, so it does not post until the type is switched
  * client-side. Supported types: text, number, textarea, select, checkbox, code, image.
