@@ -1211,6 +1211,12 @@ msgstr ""
 msgid "Email too long."
 msgstr ""
 
+#: oc-includes/osclass/gui/account/user-alerts-content.php
+msgid ""
+"Emails when a saved search has a new product, or a product you follow is "
+"back in stock or drops in price."
+msgstr ""
+
 #: oc-includes/classes/user/AddressFormat.php
 msgid "Emirate"
 msgstr ""
@@ -3355,6 +3361,10 @@ msgstr ""
 
 #: oc-includes/classes/webhook/WebhookService.php
 msgid "That webhook endpoint is not in the list any more."
+msgstr ""
+
+#: oc-includes/classes/core/routing/PageDispatcher.php
+msgid "The active theme has no cart page. Choose a shop theme to use the cart."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php

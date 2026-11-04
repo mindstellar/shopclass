@@ -254,6 +254,8 @@ check('user contact_post is throttled', isset($contactCase[0]) && strpos($contac
 $alertsSrc = (string) file_get_contents($accountIn . 'user-alerts-content.php');
 check('alerts apply alert_row_actions', strpos($alertsSrc, "osc_apply_filter('alert_row_actions'") !== false);
 check('alerts draw actions through the shared row-actions part', strpos($alertsSrc, "parts/row-actions.php") !== false);
+check('alerts intro differs in shop mode', strpos($alertsSrc, 'osc_is_shop_mode()') !== false);
+check('alerts do not repeat the product part the title already shows', strpos($alertsSrc, "unset(\$alertParts['product'])") !== false);
 
 $profileForm = (string) file_get_contents($accountIn . 'user-profile-content.php');
 // Without these fields, profile_post saved b_company = 0 and an empty city area.

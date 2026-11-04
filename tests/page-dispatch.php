@@ -163,6 +163,10 @@ pin('a core page cannot be replaced', 'CWebItem', $plugged->resolve('item', '', 
 pin('nor the API', 'CWebApi', $plugged->resolve('api', '', $guest));
 pin('a filter returning junk adds nothing', PageRoutes::web(), PageDispatcher::merge(PageRoutes::web(), 'junk'));
 
+harness_section('a shop with no cart page says so');
+$dispatcherSrc = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/routing/PageDispatcher.php');
+check('an unrouted cart page in shop mode flashes an error', str_contains($dispatcherSrc, "\$page === 'cart' && \$target === \$this->fallback && osc_is_shop_mode()"));
+
 harness_section('entry points use the table');
 $index = (string) file_get_contents(ABS_PATH . 'index.php');
 $adm   = (string) file_get_contents(ABS_PATH . 'oc-admin/index.php');
