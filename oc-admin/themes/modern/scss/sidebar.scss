@@ -702,8 +702,9 @@ $sidebar-gutter: 2.35rem;
   border: 0;
   box-shadow: none;
   display: none;
-  min-height: 2.75rem;
-  min-width: 2.75rem;
+  // 44px is the smallest comfortable tap target, whatever the root size.
+  min-height: max(2.75rem, 44px);
+  min-width: max(2.75rem, 44px);
   position: relative;
 
   > i {
@@ -722,9 +723,11 @@ $sidebar-gutter: 2.35rem;
     inline-size: fit-content;
   }
 
+  // Open, it stays above the panel and its backdrop, so the close is where the menu was opened.
   &[aria-expanded="true"] {
     background-color: var(--osc-chrome-hover);
     color: var(--osc-bronze);
+    z-index: 1060;
 
     .admin-topbar-menu-open {
       opacity: 0;
@@ -1153,4 +1156,9 @@ $sidebar-gutter: 2.35rem;
   .dashboard-sidebar .sidebar-submenu a {
     min-height: 2.5rem;
   }
+}
+
+// The open panel leaves room at its top for the close button that sits over it.
+#sidebar-wrapper.offcanvas:is(.show, .showing) .sidebar-brand {
+  padding-inline-start: calc(max(2.75rem, 44px) + .75rem);
 }
