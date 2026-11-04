@@ -285,11 +285,12 @@ final class ListingValidator
         }
 
         $seen   = array();
+        $skus   = array();
         $values = array();
         foreach ($rows as $n => $row) {
             $base    = '/product/variants/' . $n;
-            $label   = sprintf(_m('Variant %d:'), $n + 1) . ' ';
             $options = $row['options'];
+            $label   = self::variantLabel($options, $n);
             if (array_diff_key($names, $options) !== array() || array_diff_key($options, $names) !== array()) {
                 $errors[] = self::entry($base . '/options', 'mismatch', $label . sprintf(_m('give a value for each option: %s.'), implode(', ', array_keys($names))));
                 continue;
@@ -321,6 +322,13 @@ final class ListingValidator
             }
             $fields = is_array($row['fields'] ?? null) ? $row['fields'] : array();
             $errors = array_merge($errors, $this->variantFields($fields, $base, $label));
+            $sku    = is_scalar($fields['s_sku'] ?? null) ? mb_strtolower(trim((string) $fields['s_sku'])) : '';
+            if ($sku !== '') {
+                if (isset($skus[$sku])) {
+                    $errors[] = self::entry($base . '/sku', 'taken', $label . sprintf(_m('the SKU %s is already used by another variant.'), trim((string) $fields['s_sku'])));
+                }
+                $skus[$sku] = $n;
+            }
             $photo  = $fields['fk_i_resource_id'] ?? null;
             if ($photo !== null && (!is_int($photo) || !in_array($photo, $photoIds, true))) {
                 $errors[] = self::entry($base . '/photo_id', 'invalid', $label . _m('the photo must be one of this listing\'s photos.'));
@@ -333,6 +341,23 @@ final class ListingValidator
         }
 
         return $errors;
+    }
+
+    /**
+     * Names a variant by its options, such as "Size S, Colour Red:", or by its number when it has none.
+     *
+     * @param array<string,mixed> $options
+     */
+    private static function variantLabel(array $options, int $n): string
+    {
+        $parts = array();
+        foreach ($options as $name => $value) {
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                $parts[] = $name . ' ' . trim((string) $value);
+            }
+        }
+
+        return ($parts === array() ? sprintf(_m('Variant %d'), $n + 1) : implode(', ', $parts)) . ': ';
     }
 
     /**

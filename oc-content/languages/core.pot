@@ -9912,6 +9912,12 @@ msgstr ""
 msgid "No shipping. Products in a digital category are delivered as downloads."
 msgstr ""
 
+#: oc-admin/themes/modern/items/frm.php
+msgid ""
+"No shop e-mail is set, so yours is filled in. Set the shop e-mail in General "
+"settings."
+msgstr ""
+
 #: oc-admin/themes/modern/functions.php
 msgid "No subcategory"
 msgstr ""

@@ -14,7 +14,7 @@ namespace mindstellar\billing;
 
 /**
  * A priced cart, as CartPricer built it from the database. Every amount is micros in one
- * currency. Item lines carry {line, variant, qty, item_id, title, options, sku, unit, amount,
+ * currency. Item lines carry {line, variant, qty, item_id, title, options, sku, unit, compare_at, amount,
  * available, stock_left, weight, shipping_class, listing: {id, title, item, photo}}; `item` is
  * the listing row a link is built from and `photo` its photo row or null. Shipping, tax,
  * discount and fee lines are {id, label, amount, currency, meta}; a discount's amount is

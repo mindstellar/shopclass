@@ -61093,6 +61093,13 @@
                     "unit": {
                         "$ref": "#/components/schemas/Amount"
                     },
+                    "compare_at": {
+                        "type": [
+                            "object",
+                            "null"
+                        ],
+                        "description": "The old price of the whole line as an amount (old unit price times qty), set when the variant is on sale."
+                    },
                     "amount": {
                         "$ref": "#/components/schemas/Amount"
                     },

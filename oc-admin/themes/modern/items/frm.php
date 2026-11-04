@@ -694,7 +694,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     // and address, so in shop mode it folds to one line naming who it is.
     $shopOwned    = $new_item && $itemShop;
     $contactName  = $itemTyped('contactName', $shopOwned ? osc_page_title() : ($itemRecord['s_contact_name'] ?? ''));
-    $contactEmail = $itemTyped('contactEmail', $shopOwned ? osc_contact_email() : ($itemRecord['s_contact_email'] ?? ''));
+    $contactEmail = $itemTyped('contactEmail', $shopOwned ? (osc_contact_email() ?: osc_logged_admin_email()) : ($itemRecord['s_contact_email'] ?? ''));
     $itemSection(
         'sec-seller',
         __('Seller and contact'),
@@ -735,7 +735,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         'name'   => 'contactEmail',
         'label'  => __('E-mail'),
         'layout' => 'stacked',
-        'help'   => $shopOwned ? __('Filled with your shop e-mail. You can change it.') : '',
+        'help'   => $shopOwned ? (osc_contact_email() !== '' ? __('Filled with your shop e-mail. You can change it.') : __('No shop e-mail is set, so yours is filled in. Set the shop e-mail in General settings.')) : '',
         'value'  => $contactEmail,
         'error'  => $itemErrors['contactEmail'] ?? '',
     ));
