@@ -12,6 +12,7 @@ namespace mindstellar\search;
 
 use mindstellar\fields\FieldQuery;
 use mindstellar\location\LocationQuery;
+use mindstellar\utility\DateInput;
 
 /**
  * Applies a SearchCriteria to a core Search model.
@@ -238,6 +239,7 @@ class SearchBuilder
                     break;
                 case 'DATE':
                     // A whole number only: '1e20' passes is_numeric() and date() then throws.
+                    $aux = is_string($aux) ? (DateInput::siteDay($aux) ?? $aux) : $aux;
                     if (is_scalar($aux) && filter_var($aux, FILTER_VALIDATE_INT) !== false) {
                         $y     = (int)date('Y', (int)$aux);
                         $m     = (int)date('n', (int)$aux);
@@ -252,6 +254,13 @@ class SearchBuilder
                     }
                     break;
                 case 'DATEINTERVAL':
+                    if (is_array($aux)) {
+                        foreach (array('from', 'to') as $end) {
+                            if (is_string($aux[$end] ?? null)) {
+                                $aux[$end] = DateInput::siteDay($aux[$end], $end === 'to') ?? $aux[$end];
+                            }
+                        }
+                    }
                     if (is_array($aux) && (!empty($aux['from']) && !empty($aux['to']))
                         && is_numeric($aux['from']) && is_numeric($aux['to'])
                     ) {
