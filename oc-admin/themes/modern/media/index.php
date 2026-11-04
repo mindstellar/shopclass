@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Media'),
+    'heading' => __('Media library'),
     'title'   => __('Media'),
     'help'    => __('Every image uploaded across your site — listing photos, user avatars and page images — in one '
                     . 'place. Filter by type, and delete a file without removing the listing, user or page it belongs to.'),
@@ -251,8 +252,6 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="media-library" class="col-12">
     <?php
-    osc_admin_page_head(__('Media library'));
-
     // One line on what the library holds and where it is stored.
     $ownerWords = array('item' => __('listing photos'), 'user' => __('user photos'), 'page' => __('page images'), 'library' => __('library uploads'), 'setting' => __('settings images'));
     $parts      = array(sprintf(_n('%s file', '%s files', (int) ($mediaSummary['total'] ?? 0)), number_format((int) ($mediaSummary['total'] ?? 0))));

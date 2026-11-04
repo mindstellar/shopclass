@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Email templates'),
     'title'   => __('Email templates'),
     'help'    => __("Modify the emails your site's users receive when they join your site,"
                     . " when someone shows interest in their ad, to recover their password... "
@@ -24,7 +25,6 @@ osc_admin_page(array(
 $aData = __get('aEmails');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Email templates')); ?>
     <div id="email-templates" class="table-contains-actions">
         <table class="table" cellpadding="0" cellspacing="0">
             <thead>

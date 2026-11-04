@@ -45,6 +45,7 @@ foreach ($fields as $f) {
 
 osc_admin_page(array(
     'section' => __('Forms'),
+    'heading' => __('Manage forms'),
     'title'   => __('Manage forms'),
     'help'    => __('Build reusable forms by dragging fields from the palette on the right into a form on the left. '
                     . 'A field can be placed in any number of forms. Each form is attached to categories and renders '
@@ -750,7 +751,6 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <?php osc_admin_page_head(__('Manage forms')); ?>
 
     <?php
     // A one-click bridge for installs upgraded from before the forms builder: their

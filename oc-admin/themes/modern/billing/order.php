@@ -17,11 +17,6 @@ use mindstellar\billing\OrderStock;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\Receipts;
 
-osc_admin_page(array(
-    'section' => __('Billing'),
-    'title'   => __('Billing'),
-));
-
 /** @var \mindstellar\billing\Order $order */
 $order   = __get('order');
 $entries = __get('entries');
@@ -269,12 +264,15 @@ foreach ($order->getMeta() as $key => $value) {
         $rows[] = array('label' => (string)$key, 'value' => (string)$value);
     }
 }
+
+osc_admin_page(array(
+    'section' => __('Billing'),
+    'title'   => __('Billing'),
+    'heading' => sprintf(__('Order #%d'), $order->getId()),
+    'buttons' => array(array('label' => __('Back to orders'), 'url' => $base, 'icon' => 'bi-arrow-left')),
+));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(
-        sprintf(__('Order #%d'), $order->getId()),
-        array(array('label' => __('Back to orders'), 'url' => $base, 'icon' => 'bi-arrow-left'))
-    ); ?>
 
     <div class="billing-detail-grid">
         <div>

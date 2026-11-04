@@ -28,6 +28,7 @@ $add_button = array(
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
+    'heading' => __('Categories'),
     'title'   => __('Categories'),
     'actions' => array(
         $add_button,
@@ -138,7 +139,6 @@ function drawCategory($category)
 } //End drawCategory
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Categories')); ?>
 
     <div class="categories-app"
          data-edit-url="<?php echo osc_esc_html(osc_admin_base_url(true)

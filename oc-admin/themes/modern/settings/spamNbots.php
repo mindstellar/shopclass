@@ -23,6 +23,7 @@ $forms = __get('spam_forms');
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Spam and bots'),
     'title'   => __('Spam and bots'),
     'help'    => __('Keep spammers from publishing on your site by configuring reCAPTCHA and Akismet. '
                     . 'Be careful: in order to use these services, you must register on their sites first and follow their instructions.'),
@@ -42,7 +43,7 @@ $tab = (string) __get('spam_tab');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="spam-setting">
-    <?php osc_admin_page_head(__('Spam and bots'));
+    <?php
     osc_admin_tab_nav(array_map(static fn ($key, $spec) => array(
         'label'  => $spec[0],
         'url'    => osc_admin_base_url(true) . '?page=settings&action=spamNbots&tab=' . $key,

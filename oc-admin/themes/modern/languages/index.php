@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Manage Languages'),
     'title'   => __('Languages'),
     'help'    => __("Add, edit or delete the language in which your Shopclass is displayed, "
                     . "both the part that's viewable by users and the admin panel."),
@@ -51,7 +52,6 @@ $aData          = __get('aLanguages');
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-<?php osc_admin_page_head(__('Manage Languages')); ?>
 <div class="relative">
     <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="languages" />

@@ -12,6 +12,7 @@
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
+    'heading' => __('Messages'),
     'title'   => __('Messages'),
     'help'    => __('Messages held by the spam checks wait here for you to release or remove them. Conversations that a user reported can be closed or cleared.'),
 ));
@@ -42,7 +43,6 @@ $banUrl = static function (string $email): string {
 };
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(__('Messages')); ?>
 <?php osc_admin_tab_nav(array(
     array('label' => __('Held'), 'url' => $base, 'active' => $tab === 'held', 'count' => (int) ($counts['held'] ?? 0)),
     array('label' => __('Reported'), 'url' => $base . '&action=reported', 'active' => $tab === 'reported', 'count' => (int) ($counts['reported'] ?? 0)),

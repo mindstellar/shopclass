@@ -98,12 +98,12 @@ $tabs   = SystemChecks::labels();
 
 osc_admin_page(array(
     'section' => __('Tools'),
+    'heading' => __('System info'),
     'title'   => __('System info'),
     'help'    => __('A checked view of your site: what needs doing, background jobs, security, the cache, the database, and the server it runs on.'),
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('System info')); ?>
     <div id="system-info" class="sysinfo">
         <?php osc_admin_tab_nav(array_map(static fn ($key, $label) => array(
             'label'  => $label,

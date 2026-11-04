@@ -70,10 +70,6 @@ function pageFrmText($return = 'title')
     return $text[$return];
 }
 
-osc_admin_page(array(
-    'section' => __('Pages'),
-));
-
 /**
  * Filter callback for `admin_title`: prefix the browser title with the form's title.
  *
@@ -133,21 +129,26 @@ $pageViewUrl = pageFrmText('edit')
     ? osc_base_url(true) . '?page=page&id=' . $page['pk_i_id']
     : '';
 
+$headActions = array();
+if ($pageViewUrl !== '') {
+    $headActions[] = array(
+        'label' => __('View page'),
+        'url'   => $pageViewUrl,
+        'icon'  => 'bi-box-arrow-up-right',
+        'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
+    );
+}
+$headActions[] = array('label' => __('Back to pages'), 'url' => $pageBackUrl, 'variant' => 'dim');
+
+osc_admin_page(array(
+    'section' => __('Pages'),
+    'heading' => (string) pageFrmText('title'),
+    'buttons' => $headActions,
+));
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="adminPageForm">
     <?php
-    $headActions = array();
-    if ($pageViewUrl !== '') {
-        $headActions[] = array(
-            'label' => __('View page'),
-            'url'   => $pageViewUrl,
-            'icon'  => 'bi-box-arrow-up-right',
-            'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
-        );
-    }
-    $headActions[] = array('label' => __('Back to pages'), 'url' => $pageBackUrl, 'variant' => 'dim');
-    osc_admin_page_head((string) pageFrmText('title'), $headActions);
-
     // The mode class sets the initial view; the template select toggles it live (see the
     // mode script + .page-mode-* CSS). The title always shows; the text editor and the
     // widget canvas swap.

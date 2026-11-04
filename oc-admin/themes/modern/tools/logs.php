@@ -12,6 +12,7 @@
 
 osc_admin_page(array(
     'section' => __('Tools'),
+    'heading' => __('Activity log'),
     'title'   => __('Activity log'),
     'help'    => __('A record of admin and listing activity — who did what, and when. '
                     . 'Use the settings below to keep it pruned automatically or turn it off entirely.'),
@@ -29,7 +30,6 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Activity log')); ?>
 
     <div id="log-settings">
         <?php osc_admin_form_section(__('Logging')); ?>

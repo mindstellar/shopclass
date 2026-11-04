@@ -36,6 +36,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Advanced Settings'),
     'title'   => __('Advanced Settings'),
     'help'    => __("Change advanced configuration of your Shopclass. "
                     . "<strong>Be careful</strong> when modifying default values if you're not sure what you're doing!"),
@@ -46,7 +47,6 @@ osc_current_admin_theme_path('parts/header.php');
 <div id="general-setting">
     <!-- settings form -->
     <div id="general-settings">
-        <?php osc_admin_page_head(__('Advanced Settings')); ?>
         <ul id="error_list"></ul>
         <?php osc_admin_settings_form($form['id'], $form); ?>
     </div>

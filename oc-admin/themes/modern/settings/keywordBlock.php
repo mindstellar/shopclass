@@ -12,6 +12,7 @@
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Keyword blocklist'),
     'title'   => __('Keyword blocklist'),
     'help'    => __('Listings containing a blocked keyword are quarantined (flagged spam and hidden) as soon as they '
                     . 'are posted or edited, and the matched keyword is recorded so you can see why. Enable the filter '
@@ -67,7 +68,6 @@ $scopeOptions = array(
 
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Keyword blocklist')); ?>
 
     <div id="keyword-block-settings">
         <?php osc_admin_form_section(__('Moderation')); ?>

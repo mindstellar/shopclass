@@ -17,6 +17,7 @@ $menuEditor = __get('menuEditor');
 
 osc_admin_page(array(
     'section' => __('Appearance'),
+    'heading' => __('Menus'),
     'title'   => __('Menus'),
     'help'    => __('Build the links your theme shows in its header and footer, or in a Menu widget.'),
 ));
@@ -106,7 +107,6 @@ $meDepth = static function (array $cat) use ($meCats): int {
 };
 ?>
 <div class="menus-page" id="menus-page">
-    <?php osc_admin_page_head(__('Menus')); ?>
 
     <div class="widgets-builder-grid">
         <div class="widgets-col">

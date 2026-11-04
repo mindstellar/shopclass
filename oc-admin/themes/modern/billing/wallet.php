@@ -10,11 +10,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_admin_page(array(
-    'section' => __('Billing'),
-    'title'   => __('Billing'),
-));
-
 $user    = __get('user');
 $balance = (int)__get('balance');
 $entries = __get('entries');
@@ -34,19 +29,22 @@ $reasonWords = array(
     'grant'    => __('Added by admin'),
     'revoke'   => __('Removed by admin'),
 );
+
+osc_admin_page(array(
+    'section' => __('Billing'),
+    'title'   => __('Billing'),
+    'heading' => sprintf(__('Credits — %s'), $name),
+    'buttons' => array(
+        array('label' => __('All credits'), 'url' => $base . '&action=credits', 'icon' => 'bi-arrow-left'),
+        array(
+            'label' => __('Edit user'),
+            'url'   => osc_admin_base_url(true) . '?page=users&action=edit&id=' . $userId,
+            'icon'  => 'bi-person',
+        ),
+    ),
+));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(
-        sprintf(__('Credits — %s'), $name),
-        array(
-            array('label' => __('All credits'), 'url' => $base . '&action=credits', 'icon' => 'bi-arrow-left'),
-            array(
-                'label' => __('Edit user'),
-                'url'   => osc_admin_base_url(true) . '?page=users&action=edit&id=' . $userId,
-                'icon'  => 'bi-person',
-            ),
-        )
-    ); ?>
 
     <div class="billing-detail-grid">
         <div>

@@ -19,6 +19,7 @@ $info   = WebThemes::getInstance()->loadThemeInfo(osc_theme());
 
 osc_admin_page(array(
     'section' => __('Appearance'),
+    'heading' => __('Current theme'),
     'title'   => __('Appearance'),
     'help'    => __("Change your site's look and feel by activating a theme among those available. "
                     . '<strong>Be careful</strong>: if your theme has been customized, '
@@ -162,7 +163,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'short_description' => (string) ($i['description'] ?? ''),
         );
         ?>
-        <?php osc_admin_page_head(__('Current theme')); ?>
         <?php
         $themeNeeds     = \mindstellar\market\PluginDependencies::themeRequirements(osc_theme());
         $missingPlugins = empty($themeNeeds['required']) ? array()
@@ -235,7 +235,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         )); ?>
         <?php osc_package_list_close(); ?>
 
-        <?php osc_admin_page_head(__('Other themes'), array(), array('class' => 'separate-top')); ?>
+        <?php osc_admin_page_head(__('Other themes'), array(), array('level' => 3, 'class' => 'separate-top')); ?>
         <?php
         $otherThemes = array_filter($themes, static function ($theme) {
             return $theme !== osc_theme();

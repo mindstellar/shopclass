@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
+    'heading' => __('Comments'),
     'title'   => __('Comments'),
     'help'    => __('Manage the comments that users publish on the listings on your site.'
                     . ' You can also edit, delete, activate or block comments.'),
@@ -36,7 +37,6 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(__('Comments')); ?>
 <div class="relative">
     <?php // "Hidden comments" was a lone button floating beside the table. It is a filter,
           // so it belongs in the filter bar with the search, not off on its own.?>

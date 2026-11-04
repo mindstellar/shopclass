@@ -54,6 +54,7 @@ osc_add_hook('admin_footer', $media_js, 10);
 
 osc_admin_page(array(
     'section' => __('Media'),
+    'heading' => __('Media Settings'),
     'title'   => __('Media Settings'),
     'help'    => __('Manage the options for the images users can upload along with their listings. You can limit their size, '
                     . 'the number of images per ad, include a watermark, etc.'),
@@ -61,7 +62,6 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="general-settings">
-        <?php osc_admin_page_head(__('Media Settings')); ?>
         <?php osc_admin_settings_form($form['id'], $form); ?>
 
         <?php osc_admin_action_section(array(

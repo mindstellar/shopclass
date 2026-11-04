@@ -10,11 +10,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_admin_page(array(
-    'section' => osc_mode_text(__('Listings'), __('Products')),
-    'title'   => __('Messages'),
-));
-
 $thread       = (array) __get('thread');
 $conversation = (array) $thread['conversation'];
 $messages     = (array) $thread['messages'];
@@ -29,14 +24,16 @@ $states       = array(
     'removed' => __('Removed'),
 );
 
-osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(
-    __('Conversation'),
-    $reported ? array(
+osc_admin_page(array(
+    'section' => osc_mode_text(__('Listings'), __('Products')),
+    'title'   => __('Messages'),
+    'heading' => __('Conversation'),
+    'buttons' => $reported ? array(
         array('label' => __('Clear report'), 'type' => 'button', 'variant' => 'primary', 'attrs' => array('data-msg-dialog' => 'clearModal')),
         array('label' => __('Close'), 'type' => 'button', 'variant' => 'secondary', 'attrs' => array('data-msg-dialog' => 'closeModal')),
-    ) : array()
-); ?>
+    ) : array(),
+));
+osc_current_admin_theme_path('parts/header.php'); ?>
 <p>
     <a href="<?php echo osc_esc_html($base . ($reported ? '&action=reported' : '')); ?>">&larr; <?php _e('Back to messages'); ?></a>
 </p>

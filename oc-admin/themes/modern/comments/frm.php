@@ -30,6 +30,7 @@ if (isset($comment['pk_i_id'])) {
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listing'), __('Product')),
+    'heading' => $title,
     'title'   => __('Edit comment'),
 ));
 
@@ -49,7 +50,6 @@ osc_add_hook('admin_header', 'customHead', 10);
 $comment = __get('comment');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head($title); ?>
     <div id="language-form">
         <ul id="error_list"></ul>
         <form name="language_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">

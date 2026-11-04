@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'heading' => __('Manage admins'),
     'title'   => __('Admins'),
     'help'    => __('Add users who can manage your page. You can add admins or moderators: '
                     . 'admins have access to the whole admin panel while moderators can only modify listings and see stats.'),
@@ -31,7 +32,7 @@ $iDisplayLength = __get('iDisplayLength');
 $aData          = __get('aAdmins');
 
 osc_current_admin_theme_path('parts/header.php');
-osc_admin_page_head(__('Manage admins')); ?>
+?>
 <div class="relative">
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
         <input type="hidden" name="page" value="admins" />

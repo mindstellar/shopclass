@@ -10,11 +10,6 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_admin_page(array(
-    'section' => __('Billing'),
-    'title'   => __('Billing'),
-));
-
 /** @var array|null $package */
 $package = __get('package');
 $isEdit  = is_array($package);
@@ -31,12 +26,15 @@ $currency = $typed['currency'] ?? ($isEdit ? $package['s_currency'] : osc_billin
 $credits  = $typed['credits'] ?? ($isEdit ? (int) $package['i_credits'] : '');
 $position = $typed['position'] ?? ($isEdit ? (int) $package['i_position'] : 0);
 $enabled  = $typed['enabled'] ?? ($isEdit ? (bool) $package['b_enabled'] : true);
+
+osc_admin_page(array(
+    'section' => __('Billing'),
+    'title'   => __('Billing'),
+    'heading' => $isEdit ? sprintf(__('Edit %s'), $name) : __('Add package'),
+    'buttons' => array(array('label' => __('All packages'), 'url' => $base . '&action=packages', 'icon' => 'bi-arrow-left')),
+));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(
-        $isEdit ? sprintf(__('Edit %s'), $name) : __('Add package'),
-        array(array('label' => __('All packages'), 'url' => $base . '&action=packages', 'icon' => 'bi-arrow-left'))
-    ); ?>
 
     <?php osc_admin_panel_open(); ?>
         <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">

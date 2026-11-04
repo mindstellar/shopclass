@@ -107,13 +107,13 @@ $reauthFields = static function (string $prefix) use ($twoStep): string {
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('API'),
     'title'   => __('API'),
     'help'    => __('The REST API lets apps, scripts and other sites read and change your site\'s data. Keys say who is calling and what they may do.'),
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="api-settings">
-    <?php osc_admin_page_head(__('API')); ?>
     <p><?php printf(__('The API is served at %s.'), '<code>' . osc_esc_html(osc_api_url()) . '</code>'); ?></p>
 
     <?php if (is_array($issued) && !empty($issued['token'])) { ?>

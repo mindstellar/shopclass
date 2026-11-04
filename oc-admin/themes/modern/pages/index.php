@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Pages'),
+    'heading' => __('Manage pages'),
     'title'   => __('Pages'),
     'help'    => __('With Shopclass you can create static pages on which information can be stored, '
                     . 'such as "About Us" or "Info" pages. From here you can create, edit or delete your site\'s static pages.'),
@@ -67,7 +68,6 @@ $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-    <?php osc_admin_page_head(__('Manage pages')); ?>
     <div class="relative">
         <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="pages"/>

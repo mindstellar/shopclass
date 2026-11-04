@@ -20,6 +20,7 @@ $locationData = __get('locationData');
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
+    'heading' => __('Locations'),
     'title'   => __('Locations'),
     'help'    => __("Add, edit or delete the countries, regions and cities installed on your Shopclass. "
                     . '<strong>Be careful</strong>: modifying locations can cause your statistics to be incorrect '
@@ -36,7 +37,6 @@ osc_admin_page(array(
 
 osc_enqueue_script('admin-location');
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Locations')); ?>
     <?php $inDrawer = is_array($locationForm) && in_array($locationForm['kind'], array('add', 'edit'), true)
         && ($locationForm['kind'] === 'add' || $locationForm['record'] !== null); ?>
     <div class="locations-app"

@@ -125,12 +125,12 @@ osc_add_hook('admin_footer', static function () use ($live, $confirm) { ?>
 
 osc_admin_page(array(
     'section' => __('Tools'),
+    'heading' => __('Backup and restore'),
     'title'   => __('Backup and restore'),
     'help'    => __('Save a copy of your database and your files, and put one back. Backups you save on the server are kept in a folder closed to the web.'),
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Backup and restore')); ?>
 
     <?php
     $issues = array();

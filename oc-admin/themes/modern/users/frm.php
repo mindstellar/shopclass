@@ -51,6 +51,7 @@ function customFrmText()
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'heading' => static fn () => customFrmText()['title'],
 ));
 
 /**
@@ -148,8 +149,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     });
 </script>
 <?php
-osc_admin_page_head($aux['title']);
-
 // Editing has two tabs, like a settings page: the profile form, and the user's alerts.
 $tab = $aux['edit'] && Params::getParamString('tab') === 'alerts' ? 'alerts' : 'profile';
 if ($aux['edit']) {

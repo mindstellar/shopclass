@@ -19,6 +19,7 @@
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Billing settings'),
     'title'   => __('Billing settings'),
     'help'    => __('Switch on the billing section, and see which payment plugins are installed. '
                     . 'Shopclass keeps the record of what was bought; a payment plugin handles the money.'),
@@ -49,7 +50,7 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-settings">
-    <?php osc_admin_page_head(__('Billing settings'));
+    <?php
     osc_admin_tab_nav(array_map(static fn ($key, $label) => array(
         'label'  => $label,
         'url'    => osc_admin_base_url(true) . '?page=settings&action=billing&tab=' . $key,

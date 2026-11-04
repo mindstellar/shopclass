@@ -64,6 +64,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => static fn () => customText('title'),
     'actions' => array(
         array(
             'icon'  => 'bi-plus-circle-fill',
@@ -113,7 +114,6 @@ $aCurrency = View::getInstance()->_get('aCurrency');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="add-currency-settings">
-        <?php osc_admin_page_head(customText('title')); ?>
         <ul id="error_list"></ul>
         <?php
         $currencyFields = array('type' => $typeForm);

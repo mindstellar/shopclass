@@ -37,12 +37,6 @@ function render_offset()
     return 'row-offset';
 }
 
-osc_admin_page(array(
-    'section' => __('Statistics'),
-    'title'   => __('Report Statistics'),
-    'help'    => osc_mode_text(__('See how many listings from your site have been reported as spam, expired, duplicate, etc.'), __('See how many products from your shop have been reported as spam, expired, duplicate, etc.')),
-));
-
 /**
  * Emit the report-statistics charts and the Google Visualization loader they need.
  *
@@ -99,17 +93,20 @@ function customHead()
     }
 
 osc_add_hook('admin_header', 'customHead', 10);
-?>
-<?php osc_current_admin_theme_path('parts/header.php'); ?>
-<?php
+
 $stats_ranges = array(
     'month' => __('Last 10 months'),
     'week'  => __('Last 10 weeks'),
     'day'   => __('Last 10 days'),
 );
 $active_range = $type ?: 'day';
-osc_admin_page_head(__('Report Statistics'), array(), array(
-    'actions_html' => static function () use ($stats_ranges, $active_range) {
+
+osc_admin_page(array(
+    'section' => __('Statistics'),
+    'title'   => __('Report Statistics'),
+    'help'    => osc_mode_text(__('See how many listings from your site have been reported as spam, expired, duplicate, etc.'), __('See how many products from your shop have been reported as spam, expired, duplicate, etc.')),
+    'heading' => __('Report Statistics'),
+    'buttons_html' => static function () use ($stats_ranges, $active_range) {
         $links = array();
         foreach ($stats_ranges as $key => $label) {
             $links[] = array(
@@ -120,7 +117,9 @@ osc_admin_page_head(__('Report Statistics'), array(), array(
         }
         osc_admin_link_group($links);
     },
-)); ?>
+));
+?>
+<?php osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="row g-3" id="stats-page">
         <div class="col-12">
             <div class="widget-box">

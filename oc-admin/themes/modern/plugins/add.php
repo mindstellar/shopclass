@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Plugins'),
+    'heading' => __('Add plugin'),
     'title'   => __('Add plugin'),
     'help'    => __('Manually upload Shopclass plugins in .zip format. If you prefer, '
                     . 'you can manually upload the decompressed plugin to <em>oc-content/plugins</em>.'),
@@ -22,7 +23,6 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div class="appearance">
-    <?php osc_admin_page_head(__('Add plugin')); ?>
     <div id="upload-plugins">
         <div class="form-horizontal">
             <?php if (is_writable(osc_plugins_path())) { ?>

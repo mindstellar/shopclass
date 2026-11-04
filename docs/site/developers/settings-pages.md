@@ -338,7 +338,7 @@ one.
 | `osc_admin_form_section($title)` | A titled group of fields (an h3). |
 | `osc_admin_section_heading($text, $level)` | A section (`'section'`, h3) or sub-section (`'subsection'`, h4) heading. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
-| `osc_admin_page_head($title, $actions)` | The screen title with its action buttons. |
+| `osc_admin_page_head($title, $actions)` | The screen title with its action buttons, for a screen that does not declare a `heading`. |
 | `osc_admin_action_section()` | An intro, a status block, and buttons, no form. |
 
 ### Headings
@@ -349,11 +349,27 @@ screen that does.
 
 | Level | Tag | Size | Use |
 |---|---|---|---|
-| Screen title | h2 | 1.3125rem (18.4px) | `osc_admin_page_head($title)`, once per screen. The name above it is the h1. |
+| Screen title | h1 | 1.3125rem (18.4px) | `osc_admin_page()`'s `heading`, drawn in the header row. A screen without one calls `osc_admin_page_head($title)` (h2) once. |
 | Section | h3 | 1.125rem (15.75px) | `osc_admin_section_heading($text)` or `osc_admin_form_section($text)` |
 | Sub-section | h4 | 0.9375rem (13.1px) | `osc_admin_section_heading($text, 'subsection')`, only under a section |
 
 Do not skip a level. A declared page gets this for free: its group titles are sections.
+
+A theme screen declares its title with the rest of its header:
+
+```php
+osc_admin_page(array(
+    'section' => __('Pages'),
+    'heading' => __('Manage pages'),
+    'buttons' => array(array('label' => __('Export'), 'url' => $exportUrl)),
+));
+```
+
+The header draws one row: the title as the h1, then `buttons` (`osc_admin_action_button()`
+specs), then `buttons_html` (a callable for a control that is not a button), then the icon
+`actions`, help last. The top bar shows "Section › Title". After that, a level-2
+`osc_admin_page_head()` with the same title prints nothing, and one with other text is
+drawn as a section.
 
 `osc_admin_field()` takes `type`, `name`, `label`, `value`, `help`,
 `options`, `prefix`, `suffix`, `width`, `required`, `disabled`, `id` and

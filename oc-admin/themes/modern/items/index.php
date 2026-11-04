@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
+    'heading' => osc_mode_text(__('Manage listings'), __('Manage products')),
     'title'   => osc_mode_text(__('Manage listings'), __('Manage products')),
     'help'    => osc_mode_text(
         __('Manage all the listings on your site: edit, delete or block the latest listings published. You can also filter by several parameters: user, region, city, etc.'),
@@ -91,7 +92,6 @@ $direction = in_array($direction, array('asc', 'desc'), true) ? $direction : '';
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(osc_mode_text(__('Manage listings'), __('Manage products'))); ?>
 <?php $sampleCount = (int) __get('sampleCount'); ?>
 <?php if (__get('samplePresent')) { ?>
     <form method="post" action="<?php echo osc_admin_base_url(true); ?>" class="text-muted small mb-2">

@@ -109,6 +109,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Mail Settings'),
     'title'   => __('Mail Settings'),
     'help'    => __("Modify the settings of the mail server from which your site's emails are sent. <strong>Be careful</strong>"
                     . ": these settings can vary depending on your hosting or server. If you run into any issues"
@@ -119,7 +120,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="mail-setting">
     <!-- settings form -->
     <div id="mail-settings">
-        <?php osc_admin_page_head(__('Mail Settings')); ?>
         <ul id="error_list"></ul>
         <?php
         $form['actions'] = array(

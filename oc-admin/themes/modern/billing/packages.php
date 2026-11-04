@@ -10,21 +10,22 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+$packages = __get('packages');
+$base     = osc_admin_base_url(true) . '?page=billing';
+
 osc_admin_page(array(
     'section' => __('Billing'),
     'title'   => __('Billing'),
     'help'    => __('What a buyer can choose at checkout — a price, a currency and how many '
                     . 'credits it mints. Checkout reads all three from here; nothing about the '
                     . 'price ever comes from the browser.'),
+    'heading' => __('Packages'),
+    'buttons' => array(
+        array('label' => __('Add package'), 'url' => $base . '&action=package', 'icon' => 'bi-plus-lg', 'variant' => 'primary'),
+    ),
 ));
-
-$packages = __get('packages');
-$base     = osc_admin_base_url(true) . '?page=billing';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Packages'), array(
-        array('label' => __('Add package'), 'url' => $base . '&action=package', 'icon' => 'bi-plus-lg', 'variant' => 'primary'),
-    )); ?>
 
     <?php if (empty($packages)) {
         osc_admin_empty(array(

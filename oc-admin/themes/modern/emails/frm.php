@@ -16,11 +16,6 @@
 osc_enqueue_script('tiny_mce');
 osc_enqueue_script('admin-editor');
 
-osc_admin_page(array(
-    'section' => __('Settings'),
-    'title'   => __('Edit email template'),
-));
-
 $email      = __get('email');
 $aEmailVars   = EmailVariables::getInstance()->getVariables($email);
 $aCommonVars  = EmailVariables::getInstance()->getCommonVariables();
@@ -42,13 +37,17 @@ foreach (\mindstellar\admin\ui\Field::siteLocales() as $emailLocale) {
 
 $emailBackUrl = osc_admin_base_url(true) . '?page=emails';
 
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'title'   => __('Edit email template'),
+    'heading' => __('Edit email template'),
+    'buttons' => array(
+        array('label' => __('Back to email templates'), 'url' => $emailBackUrl, 'variant' => 'dim'),
+    ),
+));
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="adminEmailForm">
     <?php
-    osc_admin_page_head(__('Edit email template'), array(
-        array('label' => __('Back to email templates'), 'url' => $emailBackUrl, 'variant' => 'dim'),
-    ));
-
     osc_admin_editor_open(array(
         'id'           => 'email-form',
         'class'        => 'email-editor',
