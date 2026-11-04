@@ -2380,7 +2380,7 @@ final class CoreEmails
         $buyer = is_array($buyer) ? $buyer : array();
         $email = (string) ($buyer['email'] ?? (is_array($user) ? ($user['s_email'] ?? '') : ''));
         $uname = (string) ($buyer['name'] ?? (is_array($user) ? ($user['s_name'] ?? '') : ''));
-        $to    = $toAdmin ? (string) osc_contact_email() : $email;
+        $to    = $toAdmin ? self::adminAddress() : $email;
         if ($to === '') {
             return null;
         }
@@ -2388,7 +2388,7 @@ final class CoreEmails
         $details  = Receipts::details($order);
         $url      = $toAdmin
             ? osc_admin_base_url(true) . '?page=billing&action=order&id=' . $order->getId()
-            : osc_billing_orders_url();
+            : osc_billing_order_url($order->getId());
         $tracking = '';
         if ($details['carrier'] !== '' || $details['tracking'] !== '' || $details['tracking_url'] !== '') {
             $tracking = '<p>'
@@ -2485,6 +2485,27 @@ final class CoreEmails
                 osc_sendMail($emailParams);
             }
         }
+    }
+
+    /**
+     * Where mail for the site owner goes: the contact address, or the first administrator's when
+     * that is empty, so an owner notice is never dropped for want of an address.
+     *
+     * @return string
+     */
+    public static function adminAddress(): string
+    {
+        $to = (string) osc_contact_email();
+        if ($to !== '') {
+            return $to;
+        }
+        foreach ((array) Admin::getInstance()->listAll() as $admin) {
+            if (is_array($admin) && !empty($admin['s_email'])) {
+                return (string) $admin['s_email'];
+            }
+        }
+
+        return '';
     }
 
     /**

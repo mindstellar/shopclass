@@ -846,6 +846,22 @@ function osc_billing_order_return_url(int $orderId): string
 }
 
 /**
+ * The buyer's page for one order, as order e-mails link it. The order on the orders list by
+ * default; a theme with its own order page returns that page through the filter.
+ *
+ * @param int $orderId
+ *
+ * @return string
+ */
+function osc_billing_order_url(int $orderId): string
+{
+    $event = new \mindstellar\billing\event\OrderUrlResolving($orderId, osc_billing_orders_url() . '#order-' . $orderId);
+    \mindstellar\boot\CoreServices::dispatcher()->dispatch($event);
+
+    return $event->url();
+}
+
+/**
  * Whether the user has a paid, processing, shipped or delivered order with this listing on it.
  *
  * @param int $userId

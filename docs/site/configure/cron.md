@@ -91,7 +91,8 @@ timer:
 **Admin → Settings → General** → tick **Automatic cron process**.
 
 When someone opens a page, ShopClass runs the jobs that are due, at most once
-every five minutes. Visitors do not wait for them. On PHP-FPM (the usual way a
+every five minutes. Background jobs, such as order e-mails, run at most once a
+minute. Visitors do not wait for them. On PHP-FPM (the usual way a
 server runs PHP), the page is sent first and the jobs run after it.
 
 On other setups, ShopClass asks for its own `?page=cron` address instead.

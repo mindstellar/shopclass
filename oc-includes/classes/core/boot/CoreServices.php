@@ -34,6 +34,7 @@ use mindstellar\billing\event\OrderPlaced;
 use mindstellar\billing\event\OrderProcessing;
 use mindstellar\billing\event\OrderReturnUrlResolving;
 use mindstellar\billing\event\OrderShipped;
+use mindstellar\billing\event\OrderUrlResolving;
 use mindstellar\billing\event\PaymentTestModes;
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\billing\event\ShipmentAdded;
@@ -119,6 +120,7 @@ final class CoreServices
         'admin_payment_test_modes' => PaymentTestModes::class,
         'billing_receipt_details' => ReceiptComposing::class,
         'billing_order_return_url' => OrderReturnUrlResolving::class,
+        'billing_order_url' => OrderUrlResolving::class,
         'billing_document_compose' => DocumentComposing::class,
         'billing_document_issued' => DocumentIssued::class,
         'email_order_placed_title' => MailComposing::class,

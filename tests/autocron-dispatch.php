@@ -93,4 +93,18 @@ $worker = (string) file_get_contents(__DIR__ . '/../oc-includes/classes/core/job
 preg_match('/SCHEDULE_EVERY = (\d+);/', $worker, $every);
 check('the page-side window is the worker\'s SCHEDULE_EVERY', isset($every[1]) && str_contains($block, '$window = ' . $every[1] . ';'));
 
+/* Between full runs, due jobs drain once a minute, in-process only. */
+check(
+    'a one-minute jobs throttle sits behind the full one',
+    preg_match("/_osc_auto_cron_due\\('tick', \\\$window\\)/", $block) === 1 && str_contains($block, "_osc_auto_cron_due('jobs', 60)")
+);
+check(
+    '...it runs only the job worker, not cron.php',
+    preg_match('/if \(\$jobsOnly\) \{[^}]*JobWorker::run\(\)[^}]*return;/s', $block) === 1
+);
+check(
+    '...and never sends the self request',
+    preg_match('/if \(\$finish === null && \$jobsOnly\)\s*\{\s*return;/', $block) === 1
+);
+
 exit(harness_result());

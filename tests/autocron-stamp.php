@@ -29,6 +29,23 @@ mkdir($uploads);
 
 harness_section('auto-cron stamp');
 pin('a writable uploads folder holds it', $uploads . '.autocron_tick', _osc_auto_cron_stamp($uploads));
+pin('the jobs throttle has its own stamp', $uploads . '.autocron_jobs', _osc_auto_cron_stamp($uploads, 'jobs'));
+
+harness_section('auto-cron throttles');
+function osc_uploads_path()
+{
+    return $GLOBALS['uploads'];
+}
+check('the default cache is the per-request one, so the stamps throttle', \mindstellar\cache\CacheManager::getInstance() instanceof \mindstellar\cache\MemoryCache);
+pin('the full run and the jobs run each take their first slot', array(true, true), array(_osc_auto_cron_due('tick', 300), _osc_auto_cron_due('jobs', 60)));
+pin('...and not again inside their window', array(false, false), array(_osc_auto_cron_due('tick', 300), _osc_auto_cron_due('jobs', 60)));
+touch($uploads . '.autocron_jobs', time() - 61);
+clearstatcache();
+pin('a minute on, jobs may run while the full run still waits', array(false, true), array(_osc_auto_cron_due('tick', 300), _osc_auto_cron_due('jobs', 60)));
+unlink($uploads . '.autocron_tick');
+unlink($uploads . '.autocron_jobs');
+
+harness_section('auto-cron stamp, read-only');
 
 touch($uploads . '.autocron_tick');
 chmod($uploads, 0555);

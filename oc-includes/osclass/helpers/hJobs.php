@@ -310,19 +310,48 @@ osc_add_hook('cron', static function () {
  *
  * @internal
  */
-function _osc_auto_cron_stamp(string $uploads): string
+function _osc_auto_cron_stamp(string $uploads, string $name = 'tick'): string
 {
-    $stamp = $uploads . '.autocron_tick';
+    $stamp = $uploads . '.autocron_' . $name;
     if (is_writable(file_exists($stamp) ? $stamp : $uploads)) {
         return $stamp;
     }
 
-    return rtrim(sys_get_temp_dir(), '/\\') . '/osc-autocron-' . md5($uploads);
+    return rtrim(sys_get_temp_dir(), '/\\') . '/osc-autocron-' . ($name === 'tick' ? '' : $name . '-') . md5($uploads);
 }
 
 /**
- * Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes.
- * Web pages queue the work to run at shutdown; an API response is already sent, so it runs now.
+ * Whether the auto-cron throttle named $name lets a run through now, and takes the slot when it does.
+ * With a real cache backend the lock is shared by every web node; otherwise a stamp file's mtime. Fails open.
+ *
+ * @internal
+ */
+function _osc_auto_cron_due(string $name, int $window): bool
+{
+    $cache = \mindstellar\cache\CacheManager::getInstance();
+    if (!($cache instanceof \mindstellar\cache\MemoryCache)) {
+        $key   = 'osclass_autocron_' . $name;
+        $found = false;
+        if ($cache->get($key, $found) !== false) {
+            return false;
+        }
+        $cache->set($key, 1, $window);
+
+        return true;
+    }
+
+    $stamp = _osc_auto_cron_stamp(osc_uploads_path(), $name);
+    if (@file_exists($stamp) && (time() - (int)@filemtime($stamp)) < $window) {
+        return false;
+    }
+    @touch($stamp);
+
+    return true;
+}
+
+/**
+ * Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes, and
+ * due background jobs at most once a minute. Web pages queue the work to run at shutdown; an API response is already sent, so it runs now.
  *
  * @param bool $responseSent true when the caller has already written the whole response
  */
@@ -332,37 +361,17 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
         return;
     }
 
-    // Auto-cron sends a fire-and-forget self request to run scheduled tasks. Left ungated it
-    // fires on EVERY page view, so a busy site hammers itself with one internal POST per hit
-    // (each spawns an FPM worker). Throttle it to at most one dispatch per 5 minutes.
-    //
-    // Prefer the object cache as the lock: with a real backend (memcached/apcu) the window is
-    // shared across every web node and every locale (CacheManager directly, not the
-    // locale-suffixed osc_cache_* helpers). The default driver is a per-request array that never
-    // survives between requests and so cannot throttle anything, so there fall back to the
-    // modification time of a stamp file under uploads/, no cache backend required. Either path
-    // fails open (write fails or file unwritable => cron still runs), never closed.
-    // JobWorker::SCHEDULE_EVERY, written out so a page does not load the worker class.
+    // Throttled, or a busy site would run cron on every page view. The full run comes at most
+    // once per five minutes; between them, a page may drain due background jobs once a minute,
+    // so a queued e-mail does not wait five minutes. JobWorker::SCHEDULE_EVERY, written out so
+    // a page does not load the worker class.
     $window = 300;
-    $fire   = false;
-    $cache  = \mindstellar\cache\CacheManager::getInstance();
-
-    if (!($cache instanceof \mindstellar\cache\MemoryCache)) {
-        $found = false;
-        if ($cache->get('osclass_autocron_tick', $found) === false) {
-            $cache->set('osclass_autocron_tick', 1, $window);
-            $fire = true;
+    $jobsOnly = false;
+    if (!_osc_auto_cron_due('tick', $window)) {
+        if (!_osc_auto_cron_due('jobs', 60)) {
+            return;
         }
-    } else {
-        $stamp = _osc_auto_cron_stamp(osc_uploads_path());
-        if (!@file_exists($stamp) || (time() - (int)@filemtime($stamp)) >= $window) {
-            @touch($stamp);
-            $fire = true;
-        }
-    }
-
-    if (!$fire) {
-        return;
+        $jobsOnly = true;
     }
 
     $finish = null;
@@ -372,6 +381,10 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
         $finish = 'litespeed_finish_request';
     }
 
+    // The self request runs the whole cron, so it keeps the five-minute pace.
+    if ($finish === null && $jobsOnly) {
+        return;
+    }
     if ($finish === null) {
         // No way to detach on this SAPI, so the self request stays -- unchanged, including
         // its inability to reach a proxied origin. Shared hosting is where it is still the
@@ -385,7 +398,7 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
     // call itself over HTTP. That self request is only a way to detach, and it cannot survive an
     // origin behind a proxy, which resolves its own public host to the edge and never hairpins
     // back. Running it here needs no network and puts failures in the site's own error log.
-    $run = static function () use ($finish, $window) {
+    $run = static function () use ($finish, $window, $jobsOnly) {
         $finish();
         // The visitor already has their response, so nothing is waiting on this.
         ignore_user_abort(true);
@@ -394,6 +407,11 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
         @set_time_limit($window);
         if (!defined('__FROM_CRON__')) {
             define('__FROM_CRON__', true);
+        }
+        if ($jobsOnly) {
+            \mindstellar\auth\Actor::runAsSystem(static fn () => JobWorker::run());
+
+            return;
         }
         require_once LIB_PATH . 'osclass/cron.php';
     };

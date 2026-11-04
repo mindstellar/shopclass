@@ -519,7 +519,7 @@ final class Receipts
             'to'        => $vars['email'],
             'to_name'   => $vars['name'],
             'subject'   => $order->isGoods()
-                ? sprintf(__('Your order %1$s from %2$s'), self::number($order), $vars['site'])
+                ? sprintf(__('Your order %s is paid'), self::number($order))
                 : sprintf(__('Your receipt from %1$s, order #%2$d'), $vars['site'], $order->getId()),
             'body'      => self::emailBody($vars),
         );
@@ -627,9 +627,10 @@ final class Receipts
      */
     public static function vars(Order $order): array
     {
-        $user = User::getInstance()->findByPrimaryKey($order->getUserId());
-        $user = is_array($user) ? $user : array();
-        $paid = $order->getPaidDate() ?? $order->getDate();
+        $user  = User::getInstance()->findByPrimaryKey($order->getUserId());
+        $user  = is_array($user) ? $user : array();
+        $paid  = $order->getPaidDate() ?? $order->getDate();
+        $buyer = $order->meta('_buyer');
 
         return array(
             'site'     => osc_page_title(),
@@ -643,6 +644,7 @@ final class Receipts
             'ref'      => (string) $order->getExternalRef(),
             'email'    => (string) ($user['s_email'] ?? ''),
             'name'     => (string) ($user['s_name'] ?? ''),
+            'greet'    => (string) ((is_array($buyer) ? ($buyer['name'] ?? '') : '') ?: ($user['s_name'] ?? '')),
             'url'      => self::url($order->getId()),
             'wallet'   => osc_billing_credits_enabled() ? osc_billing_wallet_url() : '',
             'business' => self::businessDetails(),
@@ -902,7 +904,8 @@ final class Receipts
         }
         $rows[__('Paid by')] = $vars['email'];
 
-        $html = '<p>' . osc_esc_html(sprintf(__('Thank you for your payment to %s.'), $vars['site'])) . '</p>'
+        $html = self::greeting($vars)
+                . '<p>' . osc_esc_html(sprintf(__('Thank you for your payment to %s.'), $vars['site'])) . '</p>'
                 . '<table cellpadding="6" cellspacing="0" border="0">';
         foreach ($rows as $label => $value) {
             $html .= '<tr><td style="color:#666">' . osc_esc_html($label) . '</td>'
@@ -927,6 +930,20 @@ final class Receipts
     }
 
     /**
+     * "Hi <name>," as the other order mails open, with the e-mail address when there is no name.
+     *
+     * @param array<string,mixed> $vars From vars()
+     *
+     * @return string
+     */
+    private static function greeting(array $vars): string
+    {
+        $name = (string) (($vars['greet'] ?? '') ?: ($vars['email'] ?? ''));
+
+        return $name === '' ? '' : '<p>' . osc_esc_html(sprintf(__('Hi %s,'), $name)) . '</p>';
+    }
+
+    /**
      * The order confirmation a buyer gets when a goods order is paid. Every value is escaped here.
      *
      * @param array<string,mixed> $vars From vars()
@@ -936,7 +953,8 @@ final class Receipts
     private static function goodsEmailBody(array $vars): string
     {
         $details = $vars['details'];
-        $html    = '<p>' . osc_esc_html(sprintf(__('Thank you for your order from %s.'), $vars['site'])) . '</p>'
+        $html    = self::greeting($vars)
+                   . '<p>' . osc_esc_html(sprintf(__('Thank you for your order from %s.'), $vars['site'])) . '</p>'
                    . '<p>' . osc_esc_html(sprintf(__('Order %1$s, paid on %2$s by %3$s.'), $vars['label'], $vars['date'], $vars['method'])) . '</p>'
                    . self::linesHtml($details)
                    . self::addressHtml($details);
