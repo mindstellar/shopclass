@@ -96,6 +96,8 @@ $cases = [
     'number keeps 12.5' => [[$weight => ['from' => '12', 'to' => '13']], ['A']],
     'number drops 9'    => [[$weight => ['from' => '10', 'to' => '11']], []],
     'date on a day'     => [[$made => (string) $t0], ['A']],
+    'date posted as a day' => [[$made => date('Y-m-d', $t0)], ['A']],
+    'interval posted as days' => [[$season => ['from' => date('Y-m-d', $t0), 'to' => date('Y-m-d', $t0)]], ['A']],
     'interval covers'   => [[$season => ['from' => $t0, 'to' => $t0 + $day]], ['A']],
     'interval around the ask' => [[$season => ['from' => $t0 + 3 * $day, 'to' => $t0 + 3 * $day + 3600]], ['A', 'B']],
     'interval inside the ask' => [[$season => ['from' => $t0 + 3 * $day, 'to' => $t0 + 8 * $day]], ['A']],

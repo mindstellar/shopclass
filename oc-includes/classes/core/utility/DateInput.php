@@ -57,6 +57,21 @@ final class DateInput
     }
 
     /**
+     * A day, `2027-03-01`, as the Unix time of its first (or last) second in the site's time
+     * zone, the clock every stored custom-field date is shown with. Null for anything else.
+     */
+    public static function siteDay(string $value, bool $endOfDay = false): ?int
+    {
+        $value = trim($value);
+        $day   = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+        if ($day === false || $day->format('Y-m-d') !== $value || (int) $day->format('Y') < 1000) {
+            return null;
+        }
+
+        return $endOfDay ? $day->setTime(23, 59, 59)->getTimestamp() : $day->getTimestamp();
+    }
+
+    /**
      * Whether $value is a day only, with no time.
      */
     public static function isDay(string $value): bool

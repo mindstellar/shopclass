@@ -145,6 +145,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- Custom date fields no longer save or show the day before when the visitor's time zone differs from the site's. The REST API now reads a custom-field date sent as a day, `2026-11-01`, on the site's clock, and a range ends at the end of its last day.
 - A Page builder page on a child theme uses the parent theme's full-width block layout, not a narrow text column.
 - The Rich text block keeps headings, bold text, lists and links from its editor; they were removed on save. The editor offers only the headings that are kept.
 - Photo processing: JPEGs open without the exif extension, small images keep their size under Imagick, GIF and upper-case formats save correctly, and GD refuses photos too large for the memory limit.

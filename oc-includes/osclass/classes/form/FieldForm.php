@@ -12,6 +12,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\utility\DateInput;
 use mindstellar\utility\Escape;
 use mindstellar\utility\Sanitize;
 
@@ -489,7 +490,7 @@ class FieldForm extends Form
                     } else {
                         $options['label'] = $label;
                     }
-                    // The hidden input posts the unix timestamp; the visible one is a native date input.
+                    // The hidden input holds the stored timestamp and posts the picked day; the visible one is a native date input.
                     $attributes['class'] = trim($fieldInputClass . ' cf_date ' . $id);
                     echo self::getInstance()->hidden($name, $value, ['id' => $id]);
                     echo self::getInstance()->text(
@@ -581,7 +582,7 @@ class FieldForm extends Form
     }
 
     /**
-     * A stored unix timestamp as the yyyy-mm-dd a native date input shows.
+     * A stored unix timestamp, or a posted day, as the yyyy-mm-dd a native date input shows.
      *
      * @param mixed $value
      *
@@ -589,6 +590,9 @@ class FieldForm extends Form
      */
     private static function isoDate($value): string
     {
+        if (is_string($value) && DateInput::siteDay($value) !== null) {
+            return $value;
+        }
         if (!is_numeric($value) || (int) $value <= 0) {
             return '';
         }
@@ -618,8 +622,8 @@ class FieldForm extends Form
     }
 
     /**
-     * Echo, once per request, the script that keeps each date input and its hidden timestamp in step.
-     * The date is read and written in the browser's time zone; it is safe to run again after new fields load.
+     * Echo, once per request, the script that copies each date input's day into its hidden input.
+     * The server turns the day into Unix time on the site's clock; it is safe to run again after new fields load.
      *
      * @return void
      */
@@ -637,21 +641,13 @@ class FieldForm extends Form
                     window.oscDateFields.init(document);
                     return;
                 }
-                const pad = (n) => String(n).padStart(2, '0');
                 const hiddenFor = (input) => document.getElementById(input.dataset.oscDate);
 
                 const init = (root) => {
                     root.querySelectorAll('input[data-osc-date]').forEach((input) => {
                         const hidden = hiddenFor(input);
-                        if (!hidden) {
-                            return;
-                        }
-                        const ts = parseInt(hidden.value, 10);
-                        if (ts > 0) {
-                            const d = new Date(ts * 1000);
-                            input.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-                        } else {
-                            input.value = '';
+                        if (hidden && input.value === '' && /^\d{4}-\d{2}-\d{2}$/.test(hidden.value)) {
+                            input.value = hidden.value;
                         }
                     });
                 };
@@ -665,16 +661,7 @@ class FieldForm extends Form
                     if (!hidden) {
                         return;
                     }
-                    const p = input.value.split('-').map(Number);
-                    if (p.length !== 3 || p.some(Number.isNaN)) {
-                        hidden.value = '';
-                    } else {
-                        const d = new Date(p[0], p[1] - 1, p[2]);
-                        if (input.dataset.oscDateEnd === 'day') {
-                            d.setHours(23, 59, 59, 0);
-                        }
-                        hidden.value = String(Math.floor(d.getTime() / 1000));
-                    }
+                    hidden.value = /^\d{4}-\d{2}-\d{2}$/.test(input.value) ? input.value : '';
                     hidden.dispatchEvent(new Event('change', {bubbles: true}));
                 });
                 document.addEventListener('osc:item-fields-loaded', (e) => init(e.target));
@@ -691,15 +678,14 @@ class FieldForm extends Form
 
     /**
      * Wire a custom-field date input. The visible control is a native
-     * <input type="date"> (ISO yyyy-mm-dd); the hidden field submitted to the
-     * backend carries a unix timestamp (seconds) — the stored contract is
-     * unchanged. Vanilla JS, no jQuery/jQuery-UI.
+     * <input type="date"> (ISO yyyy-mm-dd); the hidden field posts that day, and the
+     * server stores it as a unix timestamp on the site's clock. Vanilla JS, no jQuery/jQuery-UI.
      *
      * @param string          $id_field   Id of the hidden timestamp input
      * @param string|null     $dateFormat kept for signature compatibility; unused now
      *                                    (the native input renders in the browser locale)
      * @param int|string|null $value      stored unix timestamp, or 0
-     * @param string          $type       'from' | 'to' | 'none'
+     * @param string          $type       unused; the server sets the end of a range to the end of the day
      *
      * @return void
      * @deprecated since 6.4.3 meta() renders data-osc-date inputs handled by dateFieldScript()
@@ -712,8 +698,7 @@ class FieldForm extends Form
         <script type="text/javascript">
             (function () {
                 var id = <?php echo json_encode($id_field); ?>;
-                var stored = <?php echo (int)$value; ?>;
-                var type = <?php echo json_encode($type); ?>;
+                var day = <?php echo json_encode(self::isoDate($value)); ?>;
 
                 var hidden = document.getElementById(id);
                 var visible = document.querySelector('.' + id);
@@ -721,29 +706,12 @@ class FieldForm extends Form
                     return;
                 }
 
-                function pad(n) { return (n < 10 ? '0' : '') + n; }
-
-                // Prefill the native date input from the stored timestamp.
-                if (stored > 0) {
-                    var d = new Date(stored * 1000);
-                    visible.value = d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+                // The server turns the posted day into a unix timestamp on the site's clock.
+                if (day) {
+                    visible.value = day;
                 }
-
-                // On change, convert the ISO date back to a unix timestamp, keeping
-                // the from/to day-boundary behaviour of the old picker.
                 visible.addEventListener('change', function () {
-                    if (!visible.value) {
-                        hidden.value = '';
-                        return;
-                    }
-                    var p = visible.value.split('-');
-                    var dt = new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
-                    if (type === 'to') {
-                        dt.setHours(23, 59, 59, 0);
-                    } else {
-                        dt.setHours(0, 0, 0, 0);
-                    }
-                    hidden.value = Math.floor(dt.getTime() / 1000);
+                    hidden.value = /^\d{4}-\d{2}-\d{2}$/.test(visible.value) ? visible.value : '';
                 });
             })();
         </script>

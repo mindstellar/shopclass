@@ -121,7 +121,7 @@ pin('only the category\'s fields; another category\'s is dropped; text purified 
     '1' => '<script>alert(1)</script>red', '2' => 'other category', '3' => ['from' => 1, 'to' => '9', 'x' => 'y'], '4' => true,
 ]));
 pin('an id the site has no field for is 422 unknown at its pointer', ['/custom_fields/9 unknown', '/custom_fields/x unknown'], $refused(['1' => 'red', '9' => 'no field', 'x' => 'no id']));
-pin('a date arrives as a day or an RFC 3339 time and is kept as Unix time', [3 => ['from' => '1767225600', 'to' => '1769904000']], $fields->clean(5, ['3' => ['from' => '2026-01-01', 'to' => '2026-02-01T00:00:00Z']]));
+pin('a date arrives as a day or an RFC 3339 time and is kept as Unix time', [3 => ['from' => '1767225600', 'to' => '1769904000']], $fields->clean(5, ['3' => ['from' => '2026-01-01T00:00:00Z', 'to' => '2026-02-01T00:00:00Z']]));
 $bad = null;
 try {
     $fields->clean(5, ['3' => ['from' => '2026-13-45', 'to' => '']]);
@@ -129,6 +129,11 @@ try {
     $bad = [$e->response()->status(), $e->response()->body()['errors'][0]['pointer'] ?? null];
 }
 pin('a date that cannot be read is 422 at its pointer, never saved as a wrong number', [422, '/custom_fields/3/from'], $bad);
+$zone = date_default_timezone_get();
+date_default_timezone_set('America/Vancouver');
+$day = $fields->clean(5, ['5' => '2026-11-01', '3' => ['from' => '2026-11-01', 'to' => '2026-11-02']]);
+pin('a day is read on the site clock, a range ending at the end of its last day', ['2026-11-01 00:00:00', '2026-11-01 00:00:00', '2026-11-02 23:59:59'], [date('Y-m-d H:i:s', (int) $day[5]), date('Y-m-d H:i:s', (int) $day[3]['from']), date('Y-m-d H:i:s', (int) $day[3]['to'])]);
+date_default_timezone_set($zone);
 pin('a single date, and a date-time with fractions of a second, are read too', [5 => '1767225600'], $fields->clean(5, ['5' => '2026-01-01T00:00:00.250Z']));
 pin('no impossible offset or year', [null, null, null], [\mindstellar\utility\DateInput::parse('2026-01-01T10:00:00+99:99'), \mindstellar\utility\DateInput::parse('0000-01-01'), \mindstellar\utility\DateInput::parse('9999-12-31T23:59:59-14:00')]);
 pin('a value of the wrong shape is 422 type, never dropped', ['/custom_fields/1 type', '/custom_fields/3 type'], $refused(['1' => ['a', 'b'], '3' => 'not a range']));

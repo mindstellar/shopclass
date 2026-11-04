@@ -103,4 +103,19 @@ pin('both ends are cast', array('from' => 10, 'to' => 20), FieldValidator::sanit
 pin('an emptied end stays empty', array('from' => '', 'to' => 20), FieldValidator::sanitizeValue('DATEINTERVAL', array('from' => '', 'to' => '20')));
 pin('a non-array is no range', array(), FieldValidator::sanitizeValue('DATEINTERVAL', 'x'));
 
+harness_section('a posted day is read on the site clock');
+
+$zone = date_default_timezone_get();
+foreach (array('America/Vancouver', 'Asia/Kolkata', 'Pacific/Auckland', 'UTC') as $tz) {
+    date_default_timezone_set($tz);
+    $day = FieldValidator::sanitizeValue('DATE', '2026-11-01');
+    pin($tz . ': the day stays the day', '2026-11-01 00:00:00', date('Y-m-d H:i:s', $day));
+    $range = FieldValidator::sanitizeValue('DATEINTERVAL', array('from' => '2026-11-01', 'to' => '2026-11-03'));
+    pin($tz . ': a range ends at the end of its last day', '2026-11-01 00:00:00 / 2026-11-03 23:59:59', date('Y-m-d H:i:s', $range['from']) . ' / ' . date('Y-m-d H:i:s', $range['to']));
+}
+date_default_timezone_set($zone);
+pin('a stored timestamp is kept as it is', 1761955200, FieldValidator::sanitizeValue('DATE', '1761955200'));
+pin('a day that does not exist is no day', null, \mindstellar\utility\DateInput::siteDay('2026-02-30'));
+pin('a day that does not exist is not stored as a number', '', FieldValidator::sanitizeValue('DATE', '2026-02-30'));
+
 exit(harness_result());
