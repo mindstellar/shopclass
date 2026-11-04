@@ -71,7 +71,23 @@
   }
 }
 
-// The same buttons once the shell has moved them onto the page title's row.
+// A screen that declares its heading gets one title row here: the title, then its buttons
+// and icon actions. The title keeps the in-page title's size and colour.
+#content-head .page-head {
+  align-items: center;
+  margin-block-end: 0;
+
+  h1.osc-page-title {
+    color: var(--bs-heading-color);
+    font-size: 1.3125rem;
+  }
+}
+
+#content-head .page-head ~ .osc-tabnav-scroll {
+  margin-block: var(--osc-shell-gap) 0;
+}
+
+// The icon actions on the title row look as they do inside the section <h1>.
 .page-head-actions {
   > a.osc-head-action {
     @extend %osc-head-link;

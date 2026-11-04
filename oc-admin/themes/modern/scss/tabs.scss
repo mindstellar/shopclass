@@ -86,8 +86,10 @@
 }
 
 // A screen's own tabs under its group's row: smaller and flat, so two rows stay calm.
+// The group row sits in the header when the header draws the page title.
 .osc-tabnav-scroll:has(.osc-tabnav-group) ~ .osc-tabnav-scroll .osc-tabnav,
-.osc-tabnav-scroll:has(.osc-tabnav-group) ~ * .osc-tabnav-scroll .osc-tabnav {
+.osc-tabnav-scroll:has(.osc-tabnav-group) ~ * .osc-tabnav-scroll .osc-tabnav,
+#content-head:has(.osc-tabnav-group) ~ #content-page .osc-tabnav-scroll .osc-tabnav {
   border-block-end-color: transparent;
   margin-block-start: -.5rem;
 

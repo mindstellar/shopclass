@@ -696,6 +696,112 @@ $sidebar-gutter: 2.35rem;
   }
 }
 
+// The phone menu button: a topbar button whose icon turns into a close while the menu is open.
+// It shows only where responsive.scss turns the sidebar into a panel.
+.admin-topbar .navbar-toggler.admin-topbar-menu {
+  border: 0;
+  box-shadow: none;
+  display: none;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  position: relative;
+
+  > i {
+    font-size: 1.35rem;
+    transition: opacity var(--osc-duration-base) var(--osc-ease),
+                transform var(--osc-duration-base) var(--osc-ease);
+  }
+
+  .admin-topbar-menu-close {
+    inset: 0;
+    margin: auto;
+    opacity: 0;
+    position: absolute;
+    transform: rotate(-90deg);
+    block-size: fit-content;
+    inline-size: fit-content;
+  }
+
+  &[aria-expanded="true"] {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze);
+
+    .admin-topbar-menu-open {
+      opacity: 0;
+      transform: rotate(90deg);
+    }
+
+    .admin-topbar-menu-close {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+// "Section › Page" on the left of the top bar. It takes only the room the tools leave.
+.admin-topbar:has(.admin-breadcrumb) .admin-topbar-tools {
+  flex-shrink: 0;
+}
+
+.admin-breadcrumb {
+  // No intrinsic width, so a long title can never widen the page.
+  contain: inline-size;
+  flex: 1 1 0;
+  font-size: $font-size-label;
+  font-weight: 500;
+  line-height: 1.4;
+  min-inline-size: 0;
+
+  ol {
+    display: flex;
+    list-style: none;
+    margin: 0;
+    min-inline-size: 0;
+    padding: 0;
+  }
+
+  li {
+    color: var(--osc-ink-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  li + li::before {
+    content: "\203A";
+    padding-inline: .4rem;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover,
+    &:focus-visible {
+      color: var(--osc-bronze);
+    }
+  }
+
+  .admin-breadcrumb-section {
+    flex: 0 0 auto;
+    max-inline-size: 100%;
+  }
+
+  .admin-breadcrumb-page {
+    flex: 0 1 auto;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .admin-breadcrumb .admin-breadcrumb-page {
+    display: none;
+  }
+
+  .admin-breadcrumb .admin-breadcrumb-section {
+    flex: 0 1 auto;
+  }
+}
+
 // The flyout header is rail-only: in the expanded menu the parent's own row
 // already names the section, so this injected <li> must never show inline.
 .rail-flyout-title {

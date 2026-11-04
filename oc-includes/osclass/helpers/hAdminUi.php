@@ -705,6 +705,27 @@ if (!function_exists('osc_admin_disclosure_close')) {
  * theme that skips them still gets the same markup; plugins use these class names directly.
  */
 
+if (!function_exists('osc_admin_header_title')) {
+    /**
+     * The page title the admin header drew in its title row, or null when it drew none.
+     * Passing a title records it; osc_admin_page_head() does that at level 1.
+     *
+     * @param string|null $title
+     *
+     * @return string|null
+     * @since 7.1.0
+     */
+    function osc_admin_header_title($title = null)
+    {
+        static $drawn = null;
+        if ($title !== null) {
+            $drawn = (string)$title;
+        }
+
+        return $drawn;
+    }
+}
+
 if (!function_exists('osc_admin_page_head')) {
     /**
      * The page title, and the actions that belong to the page as a whole.
@@ -712,22 +733,35 @@ if (!function_exists('osc_admin_page_head')) {
      * With no actions this emits exactly the `<h2 class="render-title">` every screen
      * already uses, so adopting it changes no pixels.
      *
+     * Level 1 is the title row the admin header draws from osc_admin_page()'s 'heading'.
+     * Once that is drawn, a level-2 call does not draw a second title: with the same text
+     * it prints nothing, with other text it draws a level-3 section heading.
+     *
      * @param string                         $title
      * @param array<int,array<string,mixed>> $actions Action specs; see osc_admin_action_button()
-     * @param array<string,mixed>            $opts    'class' => extra classes on the heading; 'level' => 3 for a section inside a page; 'actions_html' =>
-     *                                                callable printing a control that is not a button (a segmented
-     *                                                toggle, a select), used instead of $actions
+     * @param array<string,mixed>            $opts    'class' => extra classes on the heading; 'level' => 3 for a section inside a page,
+     *                                                1 for the header's title row; 'actions_html' => callable printing a control that
+     *                                                is not a button (a segmented toggle, a select), after $actions
      *
      * @return void
      */
     function osc_admin_page_head($title, array $actions = array(), array $opts = array())
     {
         // Level 2 is the page title; a section inside a page asks for 3 (see the heading scale in render-page.scss).
-        $level = (int)($opts['level'] ?? 2) === 3 ? 3 : 2;
-        if (function_exists('osc_admin_page_titled')) {
-            osc_admin_page_titled($level === 2);
+        $level = (int)($opts['level'] ?? 2);
+        $level = in_array($level, array(1, 3), true) ? $level : 2;
+        if ($level === 1) {
+            osc_admin_header_title((string)$title);
+        } elseif ($level === 2 && osc_admin_header_title() !== null) {
+            if ((string)$title === osc_admin_header_title()) {
+                return;
+            }
+            $level = 3;
         }
-        $class = 'render-title' . ($level === 2 ? ' osc-page-title' : '') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        if (function_exists('osc_admin_page_titled')) {
+            osc_admin_page_titled($level <= 2);
+        }
+        $class = 'render-title' . ($level <= 2 ? ' osc-page-title' : '') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
         if ($actions === array() && empty($opts['actions_html'])) {
             echo '<h' . $level . ' class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h' . $level . '>';

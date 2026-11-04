@@ -57,10 +57,13 @@ if ($oscSidebar !== 'collapsed') {
         </nav>
         <main id="content-render" class="col">
             <header id="header" class="admin-topbar navbar navbar-expand-md">
-                <button class="navbar-toggler" type="button" data-osc-offcanvas="#sidebar-wrapper" aria-controls="sidebar-wrapper"
-                        aria-label="<?php echo osc_esc_html(__('Menu')); ?>">
-                    <div class="toggle-icon"><span></span><span></span><span></span></div>
+                <button class="navbar-toggler admin-topbar-btn admin-topbar-menu" type="button" data-osc-offcanvas="#sidebar-wrapper" aria-controls="sidebar-wrapper"
+                        aria-expanded="false" aria-label="<?php echo osc_esc_html(__('Open menu')); ?>"
+                        data-label-open="<?php echo osc_esc_html(__('Open menu')); ?>" data-label-close="<?php echo osc_esc_html(__('Close menu')); ?>">
+                    <i class="bi bi-list admin-topbar-menu-open" aria-hidden="true"></i>
+                    <i class="bi bi-x-lg admin-topbar-menu-close" aria-hidden="true"></i>
                 </button>
+                <?php osc_admin_breadcrumb(); ?>
                 <ul class="navbar-nav admin-topbar-tools ms-auto">
                     <?php if (!osc_is_moderator()) {
                         $findLabel = osc_esc_html(__('Find a setting')); ?>
