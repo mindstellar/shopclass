@@ -274,7 +274,7 @@ if ($chrome === '') {
         . '<script>' . file_get_contents(__DIR__ . '/lib/item-fields-driver.js') . '</script>'
         . '</body></html>');
 
-    $out = (string) shell_exec('TZ=UTC ' . escapeshellarg($chrome)
+    $out = (string) shell_exec('TZ=America/Vancouver ' . escapeshellarg($chrome)
         . ' --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage'
         . ' --user-data-dir=' . escapeshellarg($dir . '/profile')
         . ' --virtual-time-budget=10000 --dump-dom ' . escapeshellarg('file://' . $fixture) . ' 2>/dev/null');
@@ -295,10 +295,10 @@ if ($chrome === '') {
     pin('and fires no event', array('2'), $r['afterError']['events'] ?? null);
     pin('the stored date shows in the date input', '2026-03-14', $r['dates']['dateShown'] ?? null);
     pin('the stored range end shows its own day', '2026-03-20', $r['dates']['toShown'] ?? null);
-    pin('picking a date writes its midnight timestamp', (string) 1777593600, $r['dates']['dateWritten'] ?? null);
-    pin('picking a range end writes 23:59:59 of that day', (string) (1777766400 + 86399), $r['dates']['toWritten'] ?? null);
-    pin('picking a range start writes its midnight', (string) 1777593600, $r['dates']['fromWritten'] ?? null);
-    pin('clearing a date clears the timestamp', '', $r['dates']['cleared'] ?? null);
+    pin('picking a date writes the day, for the server to read on the site clock', '2026-05-01', $r['dates']['dateWritten'] ?? null);
+    pin('picking a range end writes its day', '2026-05-03', $r['dates']['toWritten'] ?? null);
+    pin('picking a range start writes its day', '2026-05-01', $r['dates']['fromWritten'] ?? null);
+    pin('clearing a date clears the value', '', $r['dates']['cleared'] ?? null);
     pin('clearing the category empties #plugin-hook', true, $r['afterClear']['empty'] ?? null);
     pin('and fires the event with an empty catId', array('2', ''), $r['afterClear']['events'] ?? null);
     pin('the event bubbles from #plugin-hook', 'plugin-hook', $r['afterClear']['target'] ?? null);

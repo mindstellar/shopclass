@@ -101,7 +101,7 @@ final class CustomFieldValues
             }
             $range = [];
             foreach (['from', 'to'] as $end) {
-                $range[$end] = self::date(is_scalar($value[$end] ?? null) ? (string) $value[$end] : '', $pointer . '/' . $end);
+                $range[$end] = self::date(is_scalar($value[$end] ?? null) ? (string) $value[$end] : '', $pointer . '/' . $end, $end === 'to');
             }
 
             return $range;
@@ -116,12 +116,17 @@ final class CustomFieldValues
     /**
      * @throws ProblemException 422 for a date that cannot be read
      */
-    private static function date(string $value, string $pointer): string
+    private static function date(string $value, string $pointer, bool $endOfDay = false): string
     {
         $value = trim($value);
         if ($value === '' || ctype_digit($value)) {
             // Empty clears it; digits are the Unix time a stored value already holds.
             return $value;
+        }
+        // A day is read on the site's clock, the one the site shows stored dates with.
+        $day = DateInput::siteDay($value, $endOfDay);
+        if ($day !== null) {
+            return (string) $day;
         }
         $date = DateInput::parse($value);
         if ($date === null) {

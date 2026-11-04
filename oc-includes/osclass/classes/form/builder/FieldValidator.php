@@ -11,6 +11,7 @@
 
 namespace mindstellar\form\builder;
 
+use mindstellar\utility\DateInput;
 use mindstellar\utility\Sanitize;
 use mindstellar\utility\Validate;
 
@@ -147,13 +148,13 @@ final class FieldValidator
                 $out = array();
                 foreach (array('from', 'to') as $end) {
                     if (is_array($value) && isset($value[$end]) && is_scalar($value[$end])) {
-                        $out[$end] = $value[$end] === '' ? '' : (int) $value[$end];
+                        $out[$end] = $value[$end] === '' ? '' : self::dateValue($value[$end], $end === 'to');
                     }
                 }
 
                 return $out;
             case 'DATE':
-                return ($value === '' || $value === null) ? '' : (int) $value;
+                return ($value === '' || $value === null) ? '' : self::dateValue($value);
             case 'CHECKBOX':
                 return (int) $value;
             case 'URL':
@@ -161,6 +162,24 @@ final class FieldValidator
             default:
                 return (new Sanitize())->html(is_scalar($value) ? (string) $value : '');
         }
+    }
+
+    /**
+     * A posted date as Unix time. A day, `2026-11-01`, is read on the site's clock, so the
+     * visitor's time zone cannot move it; a number is taken as it is, and anything else is empty.
+     *
+     * @param mixed $value
+     *
+     * @return int|string
+     */
+    private static function dateValue($value, bool $endOfDay = false)
+    {
+        $day = is_string($value) ? DateInput::siteDay($value, $endOfDay) : null;
+        if ($day !== null) {
+            return $day;
+        }
+
+        return is_scalar($value) && filter_var($value, FILTER_VALIDATE_INT) !== false ? (int) $value : '';
     }
 
     /**
