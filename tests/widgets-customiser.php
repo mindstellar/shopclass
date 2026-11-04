@@ -563,6 +563,9 @@ check('...the preview is the page on this site', str_starts_with((string) ($ps['
 pin('a page that is not a builder page has no page spec', null, PageBlocks::spec($plain));
 pin('a missing page has no page spec', null, PageBlocks::spec(999999));
 pin('...and no page customiser', null, Customiser::forPage(999999));
+pin('a classic page is a plain page', true, PageBlocks::isPlainPage($plain));
+pin('a builder page is not a plain page', false, PageBlocks::isPlainPage($p7));
+pin('a missing page is not a plain page', false, PageBlocks::isPlainPage(999999));
 customiser_kit_declare();
 
 harness_section('page mode: drafts are per page');

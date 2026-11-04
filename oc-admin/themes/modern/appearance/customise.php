@@ -165,8 +165,7 @@ $currentWidgetConfig = array();
                 <ol class="cz-rows" id="cz-rows" aria-labelledby="cz-rows-title"></ol>
                 <p class="cz-empty" id="cz-empty"<?php echo $czRows === array() ? '' : ' hidden'; ?>><?php echo osc_esc_html($czState['i18n']['noRows']); ?></p>
                 <p class="cz-note" id="cz-other" hidden
-                   data-text-one="<?php echo osc_esc_html($czPageMode ? __('1 block here is not one this page offers. Publishing removes it.') : __('1 widget here is not a section this page offers. Publishing removes it.')); ?>"
-                   data-text-many="<?php echo osc_esc_html($czPageMode ? __('%d blocks here are not ones this page offers. Publishing removes them.') : __('%d widgets here are not sections this page offers. Publishing removes them.')); ?>"></p>
+                   data-text="<?php echo osc_esc_html($czPageMode ? __('Blocks here that this page does not offer: %d. Publishing removes them.') : __('Widgets here that are not sections of this page: %d. Publishing removes them.')); ?>"></p>
                 <button type="button" class="cz-add" id="cz-add" aria-expanded="false" aria-controls="cz-tiles">
                     <i class="bi bi-plus-lg" aria-hidden="true"></i><?php echo osc_esc_html($czPageMode ? __('Add block') : __('Add section')); ?>
                 </button>

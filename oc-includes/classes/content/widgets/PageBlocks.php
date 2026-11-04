@@ -85,6 +85,16 @@ final class PageBlocks
     }
 
     /**
+     * Whether the page exists but its template is not a builder template, so it has no blocks.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function isPlainPage(int $pageId): bool
+    {
+        return $pageId > 0 && self::builderPage($pageId) === null && (new PageQuery())->find((string) $pageId) !== null;
+    }
+
+    /**
      * Remove every draft of one page, whichever admin made it.
      *
      * @return int rows removed

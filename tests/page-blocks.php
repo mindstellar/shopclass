@@ -118,7 +118,7 @@ foreach (array('javascript:alert(1)', 'mailto:', 'data:text/html,x', '//evil.tes
 }
 
 harness_section('one preview path');
-check('the old unsaved-block preview helper is gone', !function_exists('osc_page_block_preview_rows'));
+check('the old unsaved-block preview helper is a no-op', osc_page_block_preview_rows('page.1', array(array('pk_i_id' => '1'))) === array(array('pk_i_id' => '1')));
 ob_start();
 osc_render_widget(array('pk_i_id' => '11', 's_type' => 'core.heading', 's_config' => '{"text":"Saved"}', '_preview' => true));
 check('a row flagged _preview renders with no attribute', str_starts_with((string) ob_get_clean(), '<div class="osc-heading">'));

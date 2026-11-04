@@ -22,7 +22,6 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\StaticPageForm;
 use mindstellar\admin\ListPaging;
-use mindstellar\pages\PageQuery;
 use mindstellar\pages\PageService;
 use mindstellar\utility\AjaxResponse;
 use mindstellar\widgets\Customiser;
@@ -211,7 +210,7 @@ class CAdminPages extends AdminSecBaseModel
         $id         = Params::getParamInt('id');
         $customiser = Customiser::forPage($id);
         if ($customiser === null) {
-            if ($id > 0 && (new PageQuery())->find((string) $id) !== null) {
+            if (PageBlocks::isPlainPage($id)) {
                 osc_add_flash_info_message(_m('This page does not use a block template, so it has no blocks to edit.'), 'admin');
                 $this->redirectTo($this->pageFormUrl($id));
             } else {

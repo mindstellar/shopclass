@@ -265,10 +265,6 @@ msgid_plural "%d blocks"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-admin/themes/modern/appearance/customise.php
-msgid "%d blocks here are not ones this page offers. Publishing removes them."
-msgstr ""
-
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "%d browser"
 msgid_plural "%d browsers"
@@ -510,11 +506,6 @@ msgid "%d widget"
 msgid_plural "%d widgets"
 msgstr[0] ""
 msgstr[1] ""
-
-#: oc-admin/themes/modern/appearance/customise.php
-msgid ""
-"%d widgets here are not sections this page offers. Publishing removes them."
-msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "%d write was refused by strict SQL mode in the last 7 days."
@@ -842,10 +833,6 @@ msgid ""
 "0 uses the default: %1$d, or %2$d while the listing form asks for a captcha."
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/customise.php
-msgid "1 block here is not one this page offers. Publishing removes it."
-msgstr ""
-
 #: oc-admin/themes/modern/functions.php
 msgid "1 day"
 msgstr ""
@@ -868,10 +855,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "1 widget"
-msgstr ""
-
-#: oc-admin/themes/modern/appearance/customise.php
-msgid "1 widget here is not a section this page offers. Publishing removes it."
 msgstr ""
 
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
@@ -2971,6 +2954,10 @@ msgstr ""
 #: oc-admin/themes/modern/pages/frm.php
 msgid ""
 "Blocks are edited with a live preview. Changes go live when you publish."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid "Blocks here that this page does not offer: %d. Publishing removes them."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -17531,6 +17518,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 msgid "Widgets"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/customise.php
+msgid ""
+"Widgets here that are not sections of this page: %d. Publishing removes them."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php

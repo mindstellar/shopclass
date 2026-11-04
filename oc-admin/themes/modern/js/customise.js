@@ -248,7 +248,7 @@
 
         var count = here().other || 0;
         other.hidden = count === 0;
-        other.textContent = count ? other.getAttribute('data-text-' + (count === 1 ? 'one' : 'many')).replace('%d', count) : '';
+        other.textContent = count ? other.getAttribute('data-text').replace('%d', count) : '';
 
         if (focus) {
             var target = list.querySelector('[data-ref="' + CSS.escape(focus.ref) + '"] [data-act="' + focus.act + '"]');

@@ -554,6 +554,21 @@ function osc_customiser_preview_frame_assets(): void
 }
 
 /**
+ * Kept for themes built on 7.1.0.beta4; the page's draft blocks now reach the preview on their own.
+ *
+ * @deprecated since 7.1.0, removed in 8.0
+ *
+ * @param string                         $location
+ * @param array<int,array<string,mixed>> $rows
+ *
+ * @return array<int,array<string,mixed>> the rows unchanged
+ */
+function osc_page_block_preview_rows(string $location, array $rows): array
+{
+    return $rows;
+}
+
+/**
  * Headers a preview response carries, or none outside a preview.
  *
  * @return string[]
