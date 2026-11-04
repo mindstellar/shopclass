@@ -13099,6 +13099,10 @@ msgstr ""
 msgid "See why"
 msgstr ""
 
+#: oc-includes/classes/billing/Receipts.php
+msgid "See your order"
+msgstr ""
+
 #: oc-admin/themes/modern/media/index.php
 #: oc-includes/osclass/classes/form/FieldForm.php
 msgid "Select"

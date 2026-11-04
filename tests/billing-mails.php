@@ -166,6 +166,7 @@ foreach (['2', 'M', 'TEE-M', 'Standard delivery', '1 Main St', 'Austin', 'TX'] a
 }
 check('a seller title is escaped', str_contains($confirm['body'], 'Tee &lt;b&gt;&amp; &quot;Co&quot;&lt;/b&gt;') && !str_contains($confirm['body'], '<b>&'));
 check('it links the receipt', str_contains($confirm['body'], Receipts::url($online->getId())));
+check('it links the order page', str_contains($confirm['body'], 'href="' . osc_esc_html(osc_billing_order_url($online->getId())) . '"'));
 check('it says a shipping mail follows', str_contains($confirm['body'], 'when your order ships'));
 $admin->query("UPDATE {$p}t_billing_order SET s_status = 'delivered' WHERE pk_i_id = {$online->getId()}");
 check('not once the order was delivered', !str_contains(Receipts::emailBody(Receipts::vars(OrderStore::find($online->getId()))), 'when your order ships'));

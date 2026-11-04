@@ -95,7 +95,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ### Changed
 - With **Automatic cron process** on, due background jobs such as order e-mails run within a minute of a visit, not five.
 - Order e-mails link the buyer's order through `osc_billing_order_url()`; a theme sets its own order page with the `billing_order_url` event.
-- A paid order's e-mail says "Your order #12 is paid" and greets the buyer by name.
+- A paid order's e-mail says "Your order #12 is paid", greets the buyer by name and links the order page.
 - A Page builder page's **Edit** opens its block editor, where the **Page text** block edits the page text per language; **Page settings** opens the page form.
 - One image picker: upload or drop a file, pick from the library, or add a link. The page editor has one image button.
 - Pictures in text have buttons to wrap text left or right, centre them or clear it. Text blocks choose reading or full width and a left or centred position, and **Expand** opens a text field's editor large. Saving a page keeps it open.
