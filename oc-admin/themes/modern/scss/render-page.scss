@@ -1,8 +1,44 @@
+%osc-head-link {
+  align-items: center;
+  border-radius: $border-radius;
+  color: var(--osc-ink-muted) !important;
+  display: inline-flex;
+  float: none !important;
+  font-size: 1.1rem;
+  height: 2rem;
+  justify-content: center;
+  line-height: 1;
+  min-width: 2rem;
+  padding-inline: .4rem;
+  text-decoration: none;
+
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze) !important;
+  }
+}
+
+%osc-head-add {
+  border: 1px solid var(--osc-rule-strong);
+  color: var(--osc-bronze) !important;
+  font-size: .875rem;
+  font-weight: 600;
+  gap: .35rem;
+  height: auto;
+  min-height: 2rem;
+  padding-inline: .6rem;
+
+  .bi {
+    font-size: 1rem;
+  }
+}
+
 
 #content-head {
   // Inline inset + gutter reset come from the shared rule below; only the block
   // padding is specific to the title row.
-  padding-block: var(--osc-page-inset-x);
+  padding-block: var(--osc-page-inset-x) var(--osc-shell-gap);
 
   h1, h2, h3 {
     align-items: center;
@@ -22,44 +58,27 @@
 
 
   h1 a, h2 a, h3 a {
-    align-items: center;
-    border-radius: $border-radius;
-    color: var(--osc-ink-muted) !important;
-    display: inline-flex;
-    float: none !important;
-    font-size: 1.1rem;
-    height: 2rem;
-    justify-content: center;
-    line-height: 1;
-    min-width: 2rem;
-    padding-inline: .4rem;
-    text-decoration: none;
+    @extend %osc-head-link;
 
     &:first-of-type {
       margin-inline-start: auto !important;
-    }
-
-    &:hover,
-    &:focus-visible {
-      background-color: var(--osc-chrome-hover);
-      color: var(--osc-bronze) !important;
     }
   }
 
   // The add action carries its label, so the page's main job is not a bare "+".
   h1 a.osc-head-add {
-    border: 1px solid var(--osc-rule-strong);
-    color: var(--osc-bronze) !important;
-    font-size: .875rem;
-    font-weight: 600;
-    gap: .35rem;
-    height: auto;
-    min-height: 2rem;
-    padding-inline: .6rem;
+    @extend %osc-head-add;
+  }
+}
 
-    .bi {
-      font-size: 1rem;
-    }
+// The same buttons once the shell has moved them onto the page title's row.
+.page-head-actions {
+  > a.osc-head-action {
+    @extend %osc-head-link;
+  }
+
+  > a.osc-head-add.osc-head-action {
+    @extend %osc-head-add;
   }
 }
 
@@ -69,6 +88,11 @@
 
 // When the page prints its own title, the header's section name steps down to a small label,
 // so each screen has one large title. A page with no title of its own keeps the large name.
+// Then the head is only that label, so it sits right above the page's own title.
+#content-render:has(#content-page .osc-page-title) #content-head {
+  padding-block-end: var(--osc-shell-tight);
+}
+
 #content-render:has(#content-page .osc-page-title) #content-head h1 {
   color: var(--osc-ink-muted);
   font-size: .8125rem;
@@ -92,8 +116,16 @@
 #content-page {
   min-height: calc(100vh - 9rem);
   position: relative;
+  // The blocks a screen prints are spaced by one gap, not by each block's own margin.
   > .col > .row-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--osc-shell-gap);
     padding: 0;
+
+    > * {
+      margin-block: 0;
+    }
   }
 }
 
@@ -181,3 +213,8 @@ h2.osc-page-title:first-of-type {
   width: 34px !important;
 }
 
+
+// With the head row merged into the page title's row, the page keeps the head's top inset.
+#content-render:not(:has(#content-head)) #content-page {
+  padding-block-start: var(--osc-page-inset-x);
+}

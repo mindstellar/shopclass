@@ -15,24 +15,34 @@
 // because a translated title plus a translated button label will not fit on one
 // line in every language and the layout must survive that.
 .page-head {
-  align-items: baseline;
+  align-items: flex-start;
   display: flex;
   flex-wrap: wrap;
   gap: .5rem 1rem;
-  justify-content: space-between;
   // Matches the 20px a bare .render-title carries, so a title with actions and a title
   // without one sit the same distance above the content they introduce.
   margin-block-end: 20px;
 
+  // A long title wraps before the buttons move; only below about 12rem do they drop under it.
   .render-title {
+    flex: 1 1 12rem;
     margin-block-end: 0;
+    min-inline-size: 0;
+    text-wrap: balance;
   }
 }
 
 .page-head-actions {
+  align-items: center;
   display: flex;
+  flex: 0 0 auto;
   flex-wrap: wrap;
   gap: .5rem;
+  margin-inline-start: auto;
+
+  &:empty {
+    display: none;
+  }
 }
 
 // ---- Panel additions --------------------------------------------------------

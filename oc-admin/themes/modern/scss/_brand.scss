@@ -338,6 +338,10 @@ $table-cell-vertical-align: middle;
   // rows and the page body all read this so they line up on one edge. A runtime token
   // (not a Sass value) so responsive.scss can retune it per breakpoint in one place.
   --osc-page-inset-x: 1.25rem;
+  // The page shell's vertical rhythm: the section label hugs the page title, and one gap
+  // spaces the title and every block the screen prints below it.
+  --osc-shell-tight: .25rem;
+  --osc-shell-gap: 1.125rem;
 
   // 150–250ms. The owner is in a task, not watching choreography.
   --osc-ease:          cubic-bezier(.2, 0, 0, 1);
