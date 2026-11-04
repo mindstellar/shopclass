@@ -646,6 +646,7 @@ final class Receipts
             'name'     => (string) ($user['s_name'] ?? ''),
             'greet'    => (string) ((is_array($buyer) ? ($buyer['name'] ?? '') : '') ?: ($user['s_name'] ?? '')),
             'url'      => self::url($order->getId()),
+            'order_url' => osc_billing_order_url($order->getId()),
             'wallet'   => osc_billing_credits_enabled() ? osc_billing_wallet_url() : '',
             'business' => self::businessDetails(),
             'refunded' => $order->getStatus() === Order::STATUS_REFUNDED,
@@ -964,7 +965,9 @@ final class Receipts
         if (!empty($vars['to_ship'])) {
             $html .= '<p>' . osc_esc_html(__('We will send you another e-mail when your order ships.')) . '</p>';
         }
-        $html .= '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['url']) . '">'
+        $html .= '<p style="margin-top:24px"><a href="' . osc_esc_html($vars['order_url']) . '">'
+                 . osc_esc_html(__('See your order')) . '</a></p>'
+                 . '<p><a href="' . osc_esc_html($vars['url']) . '">'
                  . osc_esc_html(__('View or print your receipt')) . '</a></p>';
         if (($vars['invoice_url'] ?? '') !== '') {
             $html .= '<p><a href="' . osc_esc_html($vars['invoice_url']) . '">'
