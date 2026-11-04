@@ -138,11 +138,11 @@ function osc_show_flash_message($section = 'pubMessages', $class = 'flashmessage
             if (isset($message['msg']) && $message['msg'] != '') {
                 echo '<div' . $idAttr . ' role="' . $role . '" class="' . strtolower($class) . ' '
                     . strtolower($class) . '-' . $type . '">';
+                echo osc_apply_filter('flash_message_text', $message['msg']);
                 if (($message['dismissible'] ?? true) !== false) {
                     echo $dismiss;
                     osc_enqueue_script('osc-flash-dismiss');
                 }
-                echo osc_apply_filter('flash_message_text', $message['msg']);
                 echo '</div>';
             } elseif ($message != '') {
                 echo '<div' . $idAttr . ' role="' . $role . '" class="' . $class . '">';

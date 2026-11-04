@@ -24,7 +24,9 @@ if (!defined('ABS_PATH')) {
         <?php osc_run_hook('account_page_before', 'user-alerts'); ?>
 
         <p class="oe-muted"><?php echo osc_esc_html(
-            _m('A saved search that emails you when a new listing matches it.')
+            osc_is_shop_mode()
+                ? _m('Emails when a saved search has a new product, or a product you follow is back in stock or drops in price.')
+                : _m('A saved search that emails you when a new listing matches it.')
         ); ?></p>
 
         <?php if (osc_count_alerts() === 0) {
@@ -52,6 +54,7 @@ if (!defined('ABS_PATH')) {
                             <span class="oe-badge refunded"><?php echo osc_esc_html(_m('Stopped')); ?></span>
                         <?php }
                         if (!isset($alertParts['held'])) {
+                            unset($alertParts['product']);
                             foreach ($alertParts as $part) { ?>
                                 <span><?php echo osc_esc_html($part['label'] . ': ' . $part['value']); ?></span>
                             <?php }

@@ -101,6 +101,9 @@ final class PageDispatcher
     public function dispatch(string $page, string $action): void
     {
         $target = $this->resolve($page, $action, static fn (): bool => !osc_is_web_user_logged_in());
+        if ($page === 'cart' && $target === $this->fallback && osc_is_shop_mode()) {
+            osc_add_flash_error_message(_m('The active theme has no cart page. Choose a shop theme to use the cart.'));
+        }
         if (str_contains($target, '::')) {
             $target();
 
