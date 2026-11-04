@@ -6745,6 +6745,7 @@ msgstr ""
 msgid "Help text"
 msgstr ""
 
+#: oc-includes/classes/billing/Receipts.php
 #: oc-includes/osclass/install-functions.php
 msgid "Hi %s,"
 msgstr ""
@@ -17930,7 +17931,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/classes/billing/Receipts.php
-msgid "Your order %1$s from %2$s"
+msgid "Your order %s is paid"
 msgstr ""
 
 #: oc-includes/classes/core/mail/CoreEmails.php

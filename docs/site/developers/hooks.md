@@ -224,7 +224,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 646 names. Generated from the source; do not edit by hand.
+Core fires 647 names. Generated from the source; do not edit by hand.
 
 ### Admin (81)
 
@@ -565,7 +565,7 @@ Core fires 646 names. Generated from the source; do not edit by hand.
 | `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
 | `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/classes/search/query/PluginClauses.php` |
 
-### Other (256)
+### Other (257)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -656,6 +656,7 @@ Core fires 646 names. Generated from the source; do not edit by hand.
 | `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/classes/billing/Billing.php` |
 | `billing_order_return_url` | event | `OrderReturnUrlResolving` | `oc-includes/classes/billing/event/OrderReturnUrlResolving.php` |
 | `billing_order_shipped` | event | `OrderShipped` | `oc-includes/classes/billing/event/OrderShipped.php` |
+| `billing_order_url` | event | `OrderUrlResolving` | `oc-includes/classes/billing/event/OrderUrlResolving.php` |
 | `billing_receipt_details` | event | `ReceiptComposing` | `oc-includes/classes/billing/event/ReceiptComposing.php` |
 | `billing_shipment_add_after` | event | `ShipmentAdded` | `oc-includes/classes/billing/event/ShipmentAdded.php` |
 | `billing_tracking_url` | event | `TrackingUrlResolving` | `oc-includes/classes/billing/event/TrackingUrlResolving.php` |

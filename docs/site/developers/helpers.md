@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1280 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1281 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -178,7 +178,7 @@ Core defines 1280 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_user_api_access_url()` | The account page listing the user's API sign-ins and personal keys, for a theme's account menu. |
 | `osc_webhook_emit(string $type, array $data, array $options = [])` | Queue a webhook event for every enabled endpoint that subscribes to it. A plugin's event is named `ext.<plugin-slug>.<name>` and registered on `api_webhook_events` first. |
 
-### hBilling (90)
+### hBilling (91)
 
 `oc-includes/osclass/helpers/hBilling.php`
 
@@ -221,6 +221,7 @@ Core defines 1280 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_billing_order_number(int $orderId, ?string $prefix = null)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
 | `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
 | `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |
+| `osc_billing_order_url(int $orderId)` | The buyer's page for one order, as order e-mails link it. The order on the orders list by default; a theme with its own order page returns that page through the filter. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
 | `osc_billing_packages()` | The packages a buyer can choose from at checkout. |
 | `osc_billing_pay_at_post()` | Whether a listing over the free limit is held until its slot is paid, instead of refused. Needs credits (billing on, not a shop) and slot sales on; the billing_pay_at_post preference defaults to on. Set on the admin Billing &gt; Pricing screen. |
@@ -674,7 +675,7 @@ Core defines 1280 helpers, 29 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_auto_cron_dispatch(bool $responseSent = false)` | Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes. Web pages queue the work to run at shutdown; an API response is already sent, so it runs now. |
+| `osc_auto_cron_dispatch(bool $responseSent = false)` | Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes, and due background jobs at most once a minute. Web pages queue the work to run at shutdown; an API response is already sent, so it runs now. |
 | `osc_job_count(string $status = 'pending', ?string $type = null)` | How many jobs are in one status, optionally of one type. |
 | `osc_job_dead_letters(int $limit = 50)` | The jobs that stopped retrying, newest first, each with its last error. |
 | `osc_job_describe(string $type, string $name, ?callable $detail = null)` | Name a job type for the admin's Background jobs screen and activity log. |

@@ -102,6 +102,7 @@ action billing_order_placed
 action billing_order_processing
 action billing_order_refunded
 action billing_order_shipped
+action billing_order_url
 action billing_shipment_add_after
 action cart_checkout_before
 action cart_item_add_after

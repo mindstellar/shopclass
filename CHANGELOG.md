@@ -93,6 +93,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
+- With **Automatic cron process** on, due background jobs such as order e-mails run within a minute of a visit, not five.
+- Order e-mails link the buyer's order through `osc_billing_order_url()`; a theme sets its own order page with the `billing_order_url` event.
+- A paid order's e-mail says "Your order #12 is paid" and greets the buyer by name.
 - A Page builder page's **Edit** opens its block editor, where the **Page text** block edits the page text per language; **Page settings** opens the page form.
 - One image picker: upload or drop a file, pick from the library, or add a link. The page editor has one image button.
 - Pictures in text have buttons to wrap text left or right, centre them or clear it. Text blocks choose reading or full width and a left or centred position, and **Expand** opens a text field's editor large. Saving a page keeps it open.
@@ -149,6 +152,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- The owner's new-order e-mail goes to the first administrator when the site has no contact address, instead of being dropped.
 - Block fields in the Customise screen can be changed again; only rich text worked. In dark mode a field with an error shows its red border, and the collapsed admin menu shows counts as a dot.
 - Custom date fields no longer save or show the day before when the visitor's time zone differs from the site's. The REST API now reads a custom-field date sent as a day, `2026-11-01`, on the site's clock, and a range ends at the end of its last day.
 - A Page builder page on a child theme uses the parent theme's full-width block layout, not a narrow text column.

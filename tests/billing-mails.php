@@ -159,7 +159,8 @@ Billing::markPaid($online, 'ext-1');
 $sent = $mails();
 pin('the buyer gets one confirmation and the owner one new-order mail', ['tom@example.test', 'owner@shop.test'], array_column($sent, 'to'));
 $confirm = $sent[0];
-pin('the subject names the order and the site', 'Your order #' . $online->getId() . ' from ' . osc_page_title(), $confirm['subject']);
+pin('the subject says the order is paid', 'Your order #' . $online->getId() . ' is paid', $confirm['subject']);
+check('it greets the buyer by name, as the other order mails do', preg_match('/<p>Hi [^<@]+,<\/p>/', $confirm['body']) === 1);
 foreach (['2', 'M', 'TEE-M', 'Standard delivery', '1 Main St', 'Austin', 'TX'] as $word) {
     check("the confirmation shows $word", str_contains($confirm['body'], $word));
 }
@@ -205,6 +206,7 @@ CoreServices::dispatcher()->dispatch(new OrderPlaced($held->getId(), $tom));
 $sent = $mails();
 pin('a bank-transfer order tells the buyer and the owner', ['tom@example.test', 'owner@shop.test'], array_column($sent, 'to'));
 check('the placed mail lists the lines', str_contains($sent[0]['body'], 'TEE-M') && str_contains($sent[0]['body'], '1 Main St'));
+check('the placed mail links this order, not the orders list', str_contains($sent[0]['body'], 'href="' . osc_esc_html(osc_billing_order_url($held->getId())) . '"') && str_contains(osc_billing_order_url($held->getId()), '#order-' . $held->getId()));
 check('the placed mail gives the bank details and the reference', str_contains($sent[0]['body'], 'First Bank<br />') && str_contains($sent[0]['body'], 'Account 12345') && str_contains($sent[0]['body'], 'Reference: ' . osc_billing_order_number($held->getId())));
 check('in the text part too', str_contains($sent[0]['text'], 'Account 12345'));
 CoreServices::dispatcher()->dispatch(new OrderPlaced($held->getId(), $tom));
@@ -217,6 +219,19 @@ $cod = $make('cod');
 CoreServices::dispatcher()->dispatch(new OrderPlaced($cod->getId(), $tom));
 $sent = $mails();
 pin('cash on delivery is held too, with no bank details', [2, false], [count($sent), str_contains($sent[0]['body'], 'First Bank')]);
+
+// A site with no contact address still tells its owner, at the first administrator's address.
+Preference::getInstance()->set('contactEmail', '');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$admin->query("DELETE FROM {$p}t_admin");
+api_admin_seed_admin($admin, 'boss');
+$noContact = $make('cod');
+CoreServices::dispatcher()->dispatch(new OrderPlaced($noContact->getId(), $tom));
+pin('with no contact address the owner mail goes to the administrator', ['tom@example.test', 'boss@example.test'], array_column($mails(), 'to'));
+Preference::getInstance()->set('contactEmail', 'owner@shop.test');
+scratchdb_forget_cache();
+osc_reset_preferences();
 
 $checkout = new GoodsCheckout();
 $tee   = seed_item($admin, $cat, $sue, 'Tee', 699.0);
