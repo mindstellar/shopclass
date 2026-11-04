@@ -750,16 +750,22 @@ if (!function_exists('osc_admin_page_head')) {
         // Level 2 is the page title; a section inside a page asks for 3 (see the heading scale in render-page.scss).
         $level = (int)($opts['level'] ?? 2);
         $level = in_array($level, array(1, 3), true) ? $level : 2;
+        $hasActions = $actions !== array() || !empty($opts['actions_html']);
+        // The header already drew this title: only its actions, if any, are still to draw.
+        $drawn = false;
         if ($level === 1) {
             osc_admin_header_title((string)$title);
         } elseif ($level === 2 && osc_admin_header_title() !== null) {
             if ((string)$title === osc_admin_header_title()) {
-                return;
+                if (!$hasActions) {
+                    return;
+                }
+                $drawn = true;
             }
             $level = 3;
         }
         if (function_exists('osc_admin_page_titled')) {
-            osc_admin_page_titled($level <= 2);
+            osc_admin_page_titled($level <= 2 || $drawn);
         }
         $class = 'render-title' . ($level <= 2 ? ' osc-page-title' : ' osc-section-title') . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
         // A section under the header's h1 title is an h2, so the outline does not skip a level.
@@ -767,7 +773,7 @@ if (!function_exists('osc_admin_page_head')) {
             $level = 2;
         }
 
-        if ($actions === array() && empty($opts['actions_html'])) {
+        if (!$hasActions) {
             echo '<h' . $level . ' class="' . osc_esc_html($class) . '">' . osc_esc_html($title) . '</h' . $level . '>';
             if (function_exists('osc_admin_settings_group_tabs')) {
                 osc_admin_settings_group_tabs();
@@ -776,7 +782,9 @@ if (!function_exists('osc_admin_page_head')) {
             return;
         } ?>
         <div class="page-head">
-            <h<?php echo $level; ?> class="<?php echo osc_esc_html($class); ?>"><?php echo osc_esc_html($title); ?></h<?php echo $level; ?>>
+            <?php if (!$drawn) { ?>
+                <h<?php echo $level; ?> class="<?php echo osc_esc_html($class); ?>"><?php echo osc_esc_html($title); ?></h<?php echo $level; ?>>
+            <?php } ?>
             <div class="page-head-actions">
                 <?php foreach ($actions as $action) {
                     osc_admin_action_button($action);

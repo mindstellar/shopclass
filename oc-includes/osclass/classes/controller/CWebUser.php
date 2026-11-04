@@ -18,6 +18,7 @@ use mindstellar\billing\OrderStore;
 use mindstellar\exception\BlockedException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
+use mindstellar\listing\ListingStatus;
 use mindstellar\search\AlertEnvelope;
 use mindstellar\search\UserAlerts;
 use mindstellar\user\AccountInput;
@@ -193,15 +194,16 @@ class CWebUser extends WebSecBaseModel
         $aAlerts = (new UserAlerts())->live((int) Session::getInstance()->_get('userId'));
         $user    =
             User::getInstance()->findByPrimaryKey(Session::getInstance()->_get('userId'));
-        if (osc_is_shopper()) {
-            $aAlerts = array_values(array_filter($aAlerts, static fn ($a) => AlertEnvelope::productOf((string) $a['s_search']) !== null));
-        }
+        $shopper = osc_is_shopper();
         foreach ($aAlerts as $k => $a) {
             $product = AlertEnvelope::productOf((string) $a['s_search']);
             if ($product !== null) {
                 $item = Item::getInstance()->findByPrimaryKey($product['listing']);
-                $live = is_array($item) && !empty($item['b_enabled']) && !empty($item['b_active']) && empty($item['b_spam']);
-                $aAlerts[$k]['items'] = $live ? array($item) : array();
+                $aAlerts[$k]['items'] = is_array($item) && $item !== array() && ListingStatus::isLive($item) ? array($item) : array();
+                continue;
+            }
+            if ($shopper) {
+                unset($aAlerts[$k]);
                 continue;
             }
             $search = \mindstellar\search\AlertReplay::search($a);
@@ -215,7 +217,7 @@ class CWebUser extends WebSecBaseModel
             $aAlerts[$k]['items'] = $search->doSearch();
         }
 
-        $this->_exportVariableToView('alerts', $aAlerts);
+        $this->_exportVariableToView('alerts', array_values($aAlerts));
         View::getInstance()->_reset('alerts');
         $this->_exportVariableToView('user', $user);
         $this->doView(osc_locate_template(array('user-alerts.php'), 'user-alerts'));

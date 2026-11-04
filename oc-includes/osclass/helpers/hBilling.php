@@ -856,10 +856,9 @@ function osc_billing_order_return_url(int $orderId): string
  */
 function osc_billing_order_url(int $orderId): string
 {
-    static $pattern = null;
-    $pattern ??= \mindstellar\market\PackageManifest::orderUrl(
-        defined('THEMES_PATH') ? \mindstellar\market\PackageManifest::json(THEMES_PATH . osc_theme()) : array()
-    );
+    $pattern = defined('THEMES_PATH')
+        ? \mindstellar\market\PackageManifest::orderUrl(\mindstellar\market\PackageManifest::json(THEMES_PATH . osc_theme()))
+        : '';
     if ($pattern === '') {
         $url = osc_billing_orders_url() . '#order-' . $orderId;
     } else {

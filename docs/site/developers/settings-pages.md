@@ -335,8 +335,8 @@ one.
 | `osc_admin_text()` · `osc_admin_number()` · `osc_admin_select()` · `osc_admin_textarea()` · `osc_admin_checkbox()` · `osc_admin_radio_group()` · `osc_admin_secret()` | One field of that type. |
 | `osc_admin_tree_picker()` | The category checkbox tree: a card per main category, subcategories folded below. |
 | `osc_admin_form_open()` · `osc_admin_form_close()` | The form element, the hidden route, the CSRF token, and the submit row. |
-| `osc_admin_form_section($title)` | A titled group of fields (an h3). |
-| `osc_admin_section_heading($text, $level)` | A section (`'section'`, h3) or sub-section (`'subsection'`, h4) heading. |
+| `osc_admin_form_section($title)` | A titled group of fields (a section heading). |
+| `osc_admin_section_heading($text, $level)` | A section (`'section'`) or sub-section (`'subsection'`) heading. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
 | `osc_admin_page_head($title, $actions)` | The screen title with its action buttons, for a screen that does not declare a `heading`. |
 | `osc_admin_action_section()` | An intro, a status block, and buttons, no form. |
@@ -350,10 +350,12 @@ screen that does.
 | Level | Tag | Size | Use |
 |---|---|---|---|
 | Screen title | h1 | 1.3125rem (18.4px) | `osc_admin_page()`'s `heading`, drawn in the header row. A screen without one calls `osc_admin_page_head($title)` (h2) once. |
-| Section | h3 | 1.125rem (15.75px) | `osc_admin_section_heading($text)` or `osc_admin_form_section($text)` |
-| Sub-section | h4 | 0.9375rem (13.1px) | `osc_admin_section_heading($text, 'subsection')`, only under a section |
+| Section | h2 | 1.125rem (15.75px) | `osc_admin_section_heading($text)` or `osc_admin_form_section($text)` |
+| Sub-section | h3 | 0.9375rem (13.1px) | `osc_admin_section_heading($text, 'subsection')`, only under a section |
 
-Do not skip a level. A declared page gets this for free: its group titles are sections.
+On a screen whose title is the h2 from `osc_admin_page_head()`, sections are h3 and
+sub-sections h4, so the outline never skips a level. The size comes from the class, so both
+look the same. A declared page gets this for free: its group titles are sections.
 
 A theme screen declares its title with the rest of its header:
 

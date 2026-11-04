@@ -138,7 +138,8 @@ class CWebUserNonSecure extends BaseModel
             osc_add_flash_error_message(_m('Oops! There was a problem trying to unsubscribe you. Please contact an administrator'));
         }
 
-        $this->redirectTo(osc_base_url());
+        // A signed-in user stopped it from the Alerts page, so they go back there.
+        $this->redirectTo(osc_is_web_user_logged_in() ? osc_user_alerts_url() : osc_base_url());
     }
 
     /**

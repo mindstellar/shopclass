@@ -97,10 +97,9 @@ class Form
     }
 
     /**
-     * A heading inside a screen, drawn the one way every screen draws it: a section is an h3
-     * and a sub-section an h4, both with the shared heading class, so the size comes from one
-     * scale and the levels stay in order under the page title (h2). Body of
-     * osc_admin_section_heading().
+     * A heading inside a screen, drawn the one way every screen draws it: under the header's h1
+     * title a section is an h2 and a sub-section an h3; under an in-page h2 title, h3 and h4.
+     * The class sets the size, so both look the same. Body of osc_admin_section_heading().
      *
      * @param string      $text
      * @param string      $level  'section' or 'subsection'

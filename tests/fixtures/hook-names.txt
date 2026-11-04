@@ -102,7 +102,6 @@ action billing_order_placed
 action billing_order_processing
 action billing_order_refunded
 action billing_order_shipped
-action billing_order_url
 action billing_shipment_add_after
 action cart_checkout_before
 action cart_item_add_after
@@ -370,6 +369,7 @@ filter billing_feature_duration
 filter billing_feature_price
 filter billing_listing_limit_message
 filter billing_order_return_url
+filter billing_order_url
 filter billing_receipt_details
 filter billing_tracking_url
 filter body_class

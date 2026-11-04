@@ -146,10 +146,15 @@ check('...and the page is plain text marked current', str_contains($crumb, '<li 
 
 harness_section('no second title');
 check('a level-2 call with the same title prints nothing', render(static fn () => osc_admin_page_head('Manage pages')) === '');
+$same = render(static fn () => osc_admin_page_head('Manage pages', array(array('label' => 'Settings', 'url' => 'http://x.test/s'))));
+check('with actions it keeps them and draws no second title', str_contains($same, 'page-head-actions') && str_contains($same, 'Settings') && !str_contains($same, 'Manage pages'));
 $other = render(static fn () => osc_admin_page_head('Other themes'));
 check('one with other text is a section heading, an h2 under the header\'s h1', $other === '<h2 class="render-title osc-section-title">Other themes</h2>', $other);
 check('a level-3 section is an h2 under the header\'s h1', render(static fn () => osc_admin_page_head('Rates', array(), array('level' => 3))) === '<h2 class="render-title osc-section-title">Rates</h2>');
 $form = render(static fn () => \mindstellar\admin\ui\Form::heading('Notes', 'section', 'n') . \mindstellar\admin\ui\Form::heading('More', 'subsection', 'm'));
 check('form sections follow it: h2, sub-sections h3', $form === '<h2 id="n" class="render-title osc-section-title">Notes</h2><h3 id="m" class="render-title osc-subsection-title">More</h3>', $form);
+
+$settingsView = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/gui/admin/settings-page.php');
+check('a registered settings screen declares its title as the header title row', preg_match('/osc_admin_page\(array\([^;]*\'heading\'\s*=>\s*\$page\[\'title\'\]/s', $settingsView) === 1);
 
 exit(harness_result());
