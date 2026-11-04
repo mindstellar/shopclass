@@ -1542,14 +1542,14 @@ Core defines 1279 helpers, 28 of them deprecated. Generated from the source; do 
 | `osc_customiser_draft_value(string $page, string $name)` | The drafted value of one look setting while previewing, or null outside a preview or when that setting is not drafted. |
 | `osc_customiser_preview()` | Whether this request renders the signed-in admin's customiser draft. |
 | `osc_customiser_preview_draft()` | The draft this request previews, or null. A public page previews only with ?osc_preview=1 and a signed-in admin, never in the admin or the API. With no draft saved for the theme being shown it previews an empty draft, so the published page still answers the customiser. Read once per request. |
+| `osc_customiser_preview_frame_assets()` | Load the frame script and style that let the Customise screen pick and outline blocks. Does nothing outside a page-mode preview. |
 | `osc_customiser_preview_headers()` | Headers a preview response carries, or none outside a preview. |
-| `osc_customiser_preview_rows(string $location)` | The drafted rows of one location as t_widget rows, or null when it is not drafted or this is not a preview. An unsaved row has pk_i_id 0; s_key is the id, or the draft key of an unsaved row, for the theme's data-sec attribute. |
+| `osc_customiser_preview_rows(string $location)` | The drafted rows of one location as t_widget rows, or null when it is not drafted or this is not a preview. An unsaved row has pk_i_id 0; s_key is the id, or the draft key of an unsaved row, for the theme's data-sec attribute. A page location (page.N) reads that page's own draft. |
 | `osc_customiser_preview_start()` | On a preview request: keep the page out of every cache and out of search results. |
 | `osc_customiser_preview_url(string $location = 'home')` | The preview address of a customisable location, with osc_preview=1, or '' when the theme does not let that location be customised. |
 | `osc_customiser_spec()` | What the active theme lets the owner customise, checked; null when it declares nothing usable. |
 | `osc_menu(string $id)` | A menu as links in the visitor's language: `[['label' => …, 'url' => …, 'children' => […]], …]`. `main` and `footer` list the top categories and the linked pages until the owner builds them in Appearance &gt; Menus. Labels are plain text: escape them when printing. |
 | `osc_menu_choices()` | The menus a theme or widget can show, id =&gt; name. |
-| `osc_page_block_preview_rows(string $location, array $rows)` | The rows of a page's block canvas with the signed-in admin's unsaved block from the page editor in place: it replaces the block it edits, or is added at the end. Rows are returned unchanged outside an admin preview. |
 | `osc_register_widget($id, $spec)` | Register a widget type so it can be placed from the admin appearance screen and rendered on the front end. Thin wrapper over WidgetRegistry::register(). |
 | `osc_render_widget($widgetRow)` | Render a single widget row. |
 | `osc_widget_locations()` | The widget sections the active theme offers, in the order it offers them: slug =&gt; array('label' =&gt; string, 'description' =&gt; string). |

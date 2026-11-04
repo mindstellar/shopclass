@@ -160,11 +160,44 @@ Preview to admin:
 Any other change (order, hide, add, remove, images) saves the draft and
 reloads the preview.
 
+## Page mode
+
+Core builds a customiser for one Page builder page on any theme, with no theme support needed.
+The screen is `?page=pages&action=blocks&id=N`, and access follows the Pages screen. It has one
+location, `page.N`, which takes every registered type that fits it (`builder` and content types), and
+no look fields.
+
+- The draft is kept per page and admin under the key `page.N`, apart from the theme's draft, for
+  seven days.
+- **Publish** writes only `page.N` and clears the `widget` page cache. It does not run
+  `customiser_published`, which stays theme-scoped.
+- The preview is the page with `?osc_preview=1&osc_blocks=1`. `osc_customiser_preview_rows( 'page.N' )` returns
+  the page draft, whatever the active theme.
+- Rows of a `super_admin` type are locked for a moderator: they can be moved but not edited or
+  removed, and the server ignores posted changes to them. Untyped legacy rows cannot be edited by
+  any admin and their content is never rewritten; only a moderator cannot remove them.
+
+Only when both `osc_preview=1` and `osc_blocks=1` are set, `osc_render_widget()` adds `data-osc-block="<ref>"` and `data-osc-block-name` to the
+first element of each page block. A theme-mode preview has no `osc_blocks`, so it gets neither. `<ref>` is the row id, or the draft key of an unsaved row. A page
+that renders blocks in that preview also loads core's `osclass/customiser-preview.js` and `.css`, so a theme writes
+no preview script for pages. Print `data-osc-block` yourself only if you render a page location
+without `osc_render_widget()`.
+
+The frame script uses the messages below, with `data-osc-block` where Aisle uses `data-sec`:
+
+| Direction | Message |
+|---|---|
+| Admin to preview | `{ select: ref, name }` outlines the block and scrolls it into view. `text` is answered with `{ missed: true }`. |
+| Preview to admin | `{ ready: true }` on load, `{ picked: ref }` on a click. |
+
+Clicks and form submits inside the preview are stopped. A theme may restyle the outline with
+`--osc-preview-outline` and `--osc-preview-outline-text`.
+
 ## Helpers
 
 `osc_customiser_spec()`, `osc_customiser_preview()`,
 `osc_customiser_draft_value()`, `osc_customiser_preview_rows()`,
-`osc_customiser_preview_url()`. See [helpers](/docs/developers/helpers/).
+`osc_customiser_preview_url()`, `osc_customiser_preview_frame_assets()`. See [helpers](/docs/developers/helpers/).
 
 ## Hook
 
