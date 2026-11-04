@@ -17,6 +17,7 @@ if (!defined('ABS_PATH')) {
  */
 
 use mindstellar\admin\ListPaging;
+use mindstellar\market\PluginDependencies;
 use mindstellar\security\PluginAjaxFile;
 
 /**
@@ -134,6 +135,9 @@ class CAdminPlugins extends AdminSecBaseModel
         }
         osc_csrf_check();
         $pn = Params::getParamString('plugin');
+        if ($this->refuseMissingRequirements($pn)) {
+            return;
+        }
 
         // set header just in case it's triggered some fatal error
         header('Location: ' . osc_admin_base_url(true) . '?page=plugins&error=' . $pn, true, 302);
@@ -176,14 +180,36 @@ class CAdminPlugins extends AdminSecBaseModel
             return;
         }
         osc_csrf_check();
+        $plugin = Params::getParamString('plugin');
+        if ($this->refuseMissingRequirements($plugin)) {
+            return;
+        }
 
-        if (Plugins::activate(Params::getParamString('plugin'))) {
+        if (Plugins::activate($plugin)) {
             osc_add_flash_ok_message(_m('Plugin enabled'), 'admin');
         } else {
             osc_add_flash_error_message(_m('Plugin is already enabled'), 'admin');
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+    }
+
+    /**
+     * Send the admin back with an error when a plugin the given one requires is not ready.
+     */
+    private function refuseMissingRequirements(string $plugin): bool
+    {
+        if (Plugins::isEnabled($plugin)) {
+            return false;
+        }
+        $error = PluginDependencies::refuseActivation($plugin);
+        if ($error === null) {
+            return false;
+        }
+        osc_add_flash_error_message(osc_esc_html($error), 'admin');
+        $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+
+        return true;
     }
 
     /**

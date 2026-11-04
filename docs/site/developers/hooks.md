@@ -233,13 +233,13 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `admin_alerts_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `admin_base_url` | filter | `$path, $with_index` | `oc-includes/osclass/helpers/hDefines.php` |
 | `admin_billing_carriers` | event | `CarriersListing` | `oc-includes/classes/billing/event/CarriersListing.php` |
-| `admin_body_class` | filter | `array()` | `oc-admin/themes/modern/parts/header.php` |
+| `admin_body_class` | filter | `array` | `oc-admin/themes/modern/parts/header.php` |
 | `admin_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
 | `admin_comments_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/CommentsDataTable.php` |
 | `admin_contact_form` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `admin_content_footer` | action | none | `oc-admin/themes/modern/parts/footer.php` |
 | `admin_date_format` | filter | `$format, $dateOnly` | `oc-includes/osclass/helpers/hUtils.php` |
-| `admin_edit_completed` | action | `$id, $result['updated']` | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
+| `admin_edit_completed` | action | `$id, updated` | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
 | `admin_favicons` | filter | `$favicons` | `oc-admin/themes/modern/functions.php` |
 | `admin_footer` | action | none | `oc-admin/themes/modern/parts/footer.php` |
 | `admin_forgot_form` | action | none | `oc-admin/gui/forgot_password.php` |
@@ -247,7 +247,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `admin_form_after_save` | action | `$pageId, $exposed, $savedId` | `oc-includes/osclass/helpers/hSettings.php` |
 | `admin_form_before_save` | filter | `$exposed, $pageId` | `oc-includes/osclass/helpers/hSettings.php` |
 | `admin_form_render_field` | filter | `$field, $pageId, $values` | `oc-includes/classes/admin/ui/SettingsForm.php` |
-| `admin_form_save_failed` | action | `$pageId, $errors, array()` | `oc-includes/osclass/helpers/hSettings.php` |
+| `admin_form_save_failed` | action | `$pageId, $errors, array` | `oc-includes/osclass/helpers/hSettings.php` |
 | `admin_header` | action | none | `oc-admin/themes/modern/parts/header.php` |
 | `admin_item_description` | filter | `$description, $itemRecord, $itemLocale` | `oc-admin/themes/modern/items/frm.php` |
 | `admin_item_title` | filter | `$title, $itemRecord, $itemLocale` | `oc-admin/themes/modern/items/frm.php` |
@@ -255,7 +255,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `admin_items_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `admin_keyword_block_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `admin_locations_drawer_fields` | action | `$level, null` | `oc-admin/themes/modern/settings/locations/form.php` |
-| `admin_locations_row_actions` | filter | `array('edit' => $edit), $level, $row` | `oc-admin/themes/modern/settings/locations/list.php` |
+| `admin_locations_row_actions` | filter | `array, $level, $row` | `oc-admin/themes/modern/settings/locations/list.php` |
 | `admin_login_footer` | action | none | `oc-admin/gui/main.php` |
 | `admin_login_form` | action | none | `oc-admin/gui/login.php` |
 | `admin_login_header` | action | none | `oc-admin/gui/main.php` |
@@ -269,12 +269,12 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `admin_pages_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
 | `admin_payment_test_modes` | event | `PaymentTestModes` | `oc-includes/classes/billing/event/PaymentTestModes.php` |
 | `admin_post` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
-| `admin_profile_form` | action | `__get('admin')` | `oc-includes/classes/admin/form/AdminAccountForm.php` |
+| `admin_profile_form` | action | `__get` | `oc-includes/classes/admin/form/AdminAccountForm.php` |
 | `admin_rules_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
 | `admin_scripts_loaded` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
 | `admin_signout_all_after` | action | `$adminId` | `oc-includes/classes/user/auth/SignOut.php` |
-| `admin_title` | filter | `osc_page_title() . ' - Shopclass'` | `oc-admin/themes/modern/parts/header.php` |
-| `admin_user_profile_info` | filter | `$aInfo['s_info'], $aUser['pk_i_id'], $aInfo['fk_c_locale_code']` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
+| `admin_title` | filter | `page_title` | `oc-admin/themes/modern/parts/header.php` |
+| `admin_user_profile_info` | filter | `s_info, pk_i_id, fk_c_locale_code` | `oc-includes/osclass/classes/controller/admin/CAdminUsers.php` |
 | `admin_users_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `init_admin` | action | none | `oc-includes/osclass/classes/controller/AdminSecBaseModel.php` |
 | `init_admin_admins` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
@@ -319,7 +319,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `add_category` | action | `$id` | `oc-includes/classes/listing/category/CategoryService.php` |
 | `after_delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
 | `api_category` | filter | `$data, $context` | `oc-includes/classes/api/serializer/CategorySerializer.php` |
-| `category_suggestions` | filter | `null, $title, self::CATEGORY_LIMIT` | `oc-includes/classes/search/SearchSuggestions.php` |
+| `category_suggestions` | filter | `null, $title, value` | `oc-includes/classes/search/SearchSuggestions.php` |
 | `delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
 | `edited_category` | action | `$id, $outcome` | `oc-includes/classes/listing/category/CategoryService.php` |
 | `edited_category_order` | action | `$error` | `oc-includes/classes/admin/ajax/CategoryAjax.php` |
@@ -334,7 +334,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `comment_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminItemComments.php` |
 | `comment_form` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
 | `comments_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/CommentsDataTable.php` |
-| `datatable_comment_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/comments/index.php` |
+| `datatable_comment_class` | filter | `array, value, $row` | `oc-admin/themes/modern/comments/index.php` |
 | `deactivate_comment` | action | `$id` | `oc-includes/classes/listing/moderation/CommentModeration.php` |
 | `delete_comment` | action | `$commentId` | `oc-includes/classes/content/comment/CommentService.php` |
 | `disable_comment` | action | `$id` | `oc-includes/classes/listing/moderation/CommentModeration.php` |
@@ -345,68 +345,68 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
-| `email_admin_new_item_description` | filter | `$content['s_text'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_admin_new_item_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_admin_new_item_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_admin_new_item_title` | filter | `$content['s_title'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_admin_new_item_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_new_item_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_new_item_description` | filter | `s_text, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_new_item_description_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_new_item_title` | filter | `s_title, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_new_item_title_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
 | `email_admin_new_order_description` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_admin_new_order_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_admin_new_order_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_admin_new_order_title_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
-| `email_admin_user_registration_title` | filter | `$content['s_title'], $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_admin_user_registration_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_admin_user_registration_title', $content['s_title'], $user) ), $words), $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_admin_user_regsitration_description` | filter | `$content['s_text'], $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_admin_user_regsitration_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_admin_user_regsitration_description', $content['s_text'], $user) ), $words ), $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_user_registration_title` | filter | `s_title, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_user_registration_title_after` | filter | `mail_beauty, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_user_regsitration_description` | filter | `s_text, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_admin_user_regsitration_description_after` | filter | `mail_beauty, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
 | `email_after_auto_upgrade_description` | filter | `$body, $result` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_after_auto_upgrade_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_after_auto_upgrade_description', $body, $result) ), $words ), $result` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_after_auto_upgrade_description_after` | filter | `mail_beauty, $result` | `oc-includes/classes/core/mail/CoreEmails.php` |
 | `email_after_auto_upgrade_title` | filter | `$title, $result` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_after_auto_upgrade_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_after_auto_upgrade_title', $title, $result) ), $words), $result` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_alert_validation_description` | filter | `$template['s_text'], $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_alert_validation_description_after` | filter | `osc_mailBeauty($_body, $words), $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_alert_validation_title` | filter | `$template['s_title'], $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_alert_validation_title_after` | filter | `osc_mailBeauty($_title, $words), $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_comment_validated_description` | filter | `$content['s_text'], $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_comment_validated_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_comment_validated_description', $content['s_text'], $aComment) ), $words), $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_comment_validated_title` | filter | `$content['s_title'], $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_comment_validated_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_comment_validated_title', $content['s_title'], $aComment) ), $words), $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_description` | filter | `osc_apply_filter( 'email_alert_validation_description', $template['s_text'], $alert, $email, $secret )` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_inquiry_description` | filter | `$content['s_text'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_inquiry_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_inquiry_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_inquiry_title` | filter | `$content['s_title'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_inquiry_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_description` | filter | `$content['s_text'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_validation_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_non_register_user_description` | filter | `$content['s_text'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_non_register_user_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_item_validation_non_register_user_description', $content['s_text'], $item) ), $words ), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_non_register_user_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_item_validation_non_register_user_title', $content['s_title'], $item) ), $words ), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_title` | filter | `$content['s_title'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_item_validation_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_item_validation_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_legend_words` | filter | `$array, @$email['s_internal_name']` | `oc-includes/osclass/classes/EmailVariables.php` |
+| `email_after_auto_upgrade_title_after` | filter | `mail_beauty, $result` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_alert_validation_description` | filter | `s_text, $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_alert_validation_description_after` | filter | `mail_beauty, $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_alert_validation_title` | filter | `s_title, $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_alert_validation_title_after` | filter | `mail_beauty, $alert, $email, $secret` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_comment_validated_description` | filter | `s_text, $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_comment_validated_description_after` | filter | `mail_beauty, $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_comment_validated_title` | filter | `s_title, $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_comment_validated_title_after` | filter | `mail_beauty, $aComment` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_description` | filter | `apply_filter` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_inquiry_description` | filter | `s_text, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_inquiry_description_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_inquiry_title` | filter | `s_title, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_inquiry_title_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_description` | filter | `s_text, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_description_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_description` | filter | `s_text, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_description_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_title` | filter | `s_title, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_non_register_user_title_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_title` | filter | `s_title, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_item_validation_title_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_legend_words` | filter | `$array, s_internal_name` | `oc-includes/osclass/classes/EmailVariables.php` |
 | `email_listing_unpaid_reminder_description` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_listing_unpaid_reminder_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_listing_unpaid_reminder_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_listing_unpaid_reminder_title_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
-| `email_new_admin_description` | filter | `$content['s_text'], $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_admin_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_admin_description', $content['s_text'], $data) ), $words ), $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_admin_title` | filter | `$content['s_title'], $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_admin_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_admin_title', $content['s_title'], $data) ), $words), $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_admin_description` | filter | `$content['s_text'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_admin_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_comment_admin_description', $content['s_text'], $aItem) ), $words), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_admin_title` | filter | `$content['s_title'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_admin_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_new_comment_admin_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_user_description` | filter | `$content['s_text'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_user_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_comment_user_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_user_title` | filter | `$content['s_title'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_comment_user_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_new_comment_user_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_email_description` | filter | `$content['s_text'], $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_email_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_new_email_description', $content['s_text'], $new_email, $validation_url) ), $words ), $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_email_title` | filter | `$content['s_title'], $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_email_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_email_title', $content['s_title'], $new_email, $validation_url) ), $words), $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_item_non_register_user_description` | filter | `$content['s_text'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_item_non_register_user_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item) ), $words), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_item_non_register_user_title` | filter | `$content['s_title'], $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_new_item_non_register_user_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item) ), $words), $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_admin_description` | filter | `s_text, $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_admin_description_after` | filter | `mail_beauty, $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_admin_title` | filter | `s_title, $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_admin_title_after` | filter | `mail_beauty, $data` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_admin_description` | filter | `s_text, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_admin_description_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_admin_title` | filter | `s_title, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_admin_title_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_user_description` | filter | `s_text, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_user_description_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_user_title` | filter | `s_title, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_comment_user_title_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_email_description` | filter | `s_text, $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_email_description_after` | filter | `mail_beauty, $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_email_title` | filter | `s_title, $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_email_title_after` | filter | `mail_beauty, $new_email, $validation_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_description` | filter | `s_text, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_description_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_title` | filter | `s_title, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_new_item_non_register_user_title_after` | filter | `mail_beauty, $item` | `oc-includes/classes/core/mail/CoreEmails.php` |
 | `email_new_message_description` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_new_message_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_new_message_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
@@ -443,39 +443,39 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `email_product_alert_description_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_product_alert_title` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
 | `email_product_alert_title_after` | event | `MailComposing` | `oc-includes/classes/core/mail/event/MailComposing.php` |
-| `email_send_friend_description` | filter | `$content['s_text'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_send_friend_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_send_friend_title` | filter | `$content['s_title'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_send_friend_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem) ), $titleWords), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_title` | filter | `osc_apply_filter( 'email_alert_validation_title', $template['s_title'], $alert, $email, $secret )` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_forgot_pass_word_title` | filter | `$content['s_title'], $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_forgot_pass_word_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_forgot_pass_word_title', $content['s_title'], $user, $password_url) ), $words ), $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_forgot_password_description` | filter | `$content['s_text'], $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_forgot_password_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter( 'email_user_forgot_password_description', $content['s_text'], $user, $password_url ) ), $words ), $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_registration_description` | filter | `$content['s_text'], $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_registration_description_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_description', osc_apply_filter('email_user_registration_description', $content['s_text'], $user) ), $words), $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_registration_title` | filter | `$content['s_title'], $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_registration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_user_registration_title', $content['s_title'], $user) ), $words ), $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_validation_description` | filter | `$content['s_text'], $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_validation_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_user_validation_description', $content['s_text'], $user, $input) ), $words ), $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_validation_title` | filter | `$content['s_title'], $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_user_validation_title_after` | filter | `osc_mailBeauty(osc_apply_filter( 'email_title', osc_apply_filter('email_user_validation_title', $content['s_title'], $user, $input) ), $words), $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_warn_expiration_description` | filter | `$content['s_text'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_warn_expiration_description_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_description', osc_apply_filter('email_warn_expiration_description', $content['s_text'], $aItem) ), $words ), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_warn_expiration_title` | filter | `$content['s_title'], $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `email_warn_expiration_title_after` | filter | `osc_mailBeauty( osc_apply_filter( 'email_title', osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem) ), $words ), $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_send_friend_description` | filter | `s_text, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_send_friend_description_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_send_friend_title` | filter | `s_title, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_send_friend_title_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_title` | filter | `apply_filter` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_forgot_pass_word_title` | filter | `s_title, $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_forgot_pass_word_title_after` | filter | `mail_beauty, $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_forgot_password_description` | filter | `s_text, $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_forgot_password_description_after` | filter | `mail_beauty, $user, $password_url` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_registration_description` | filter | `s_text, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_registration_description_after` | filter | `mail_beauty, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_registration_title` | filter | `s_title, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_registration_title_after` | filter | `mail_beauty, $user` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_validation_description` | filter | `s_text, $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_validation_description_after` | filter | `mail_beauty, $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_validation_title` | filter | `s_title, $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_user_validation_title_after` | filter | `mail_beauty, $user, $input` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_warn_expiration_description` | filter | `s_text, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_warn_expiration_description_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_warn_expiration_title` | filter | `s_title, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `email_warn_expiration_title_after` | filter | `mail_beauty, $aItem` | `oc-includes/classes/core/mail/CoreEmails.php` |
 | `hook_email_admin_new_item` | action | `$item` | `oc-includes/classes/listing/ListingService.php` |
 | `hook_email_admin_new_user` | action | `$user` | `oc-includes/classes/user/AccountService.php` |
-| `hook_email_alert_validation` | action | `Alerts::getInstance()->findByPrimaryKey($alertID), $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
+| `hook_email_alert_validation` | action | `find_by_primary_key, $email, $secret` | `oc-includes/osclass/helpers/hSearch.php` |
 | `hook_email_comment_validated` | action | `$comment` | `oc-includes/classes/listing/moderation/CommentModeration.php` |
-| `hook_email_contact_user` | action | `(int) $user['pk_i_id'], (string) $args['yourEmail'], (string) $args['yourName'], (string) $args['phoneNumber'], (string) $args['message']` | `oc-includes/classes/core/security/MessageHold.php` |
+| `hook_email_contact_user` | action | `pk_i_id, yourEmail, yourName, phoneNumber, message` | `oc-includes/classes/core/security/MessageHold.php` |
 | `hook_email_item_inquiry` | action | `$args` | `oc-includes/classes/core/security/MessageHold.php` |
 | `hook_email_item_validation` | action | `$item` | `oc-includes/classes/listing/ListingService.php` |
 | `hook_email_item_validation_non_register_user` | action | `$item` | `oc-includes/classes/listing/ListingService.php` |
-| `hook_email_new_admin` | action | `array( 's_name' => $result['values']['s_name'], 's_username' => $result['values']['s_username'], 's_password' => $result['values']['s_password'], 's_email' => $result['values']['s_email'], )` | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
+| `hook_email_new_admin` | action | `array` | `oc-includes/osclass/classes/controller/admin/CAdminAdmins.php` |
 | `hook_email_new_comment_admin` | action | `$mail` | `oc-includes/classes/content/comment/CommentService.php` |
 | `hook_email_new_comment_user` | action | `$mail` | `oc-includes/classes/content/comment/CommentService.php` |
-| `hook_email_new_email` | action | `$newEmail, osc_change_user_email_confirm_url($userId, $code)` | `oc-includes/classes/user/AccountService.php` |
+| `hook_email_new_email` | action | `$newEmail, change_user_email_confirm_url` | `oc-includes/classes/user/AccountService.php` |
 | `hook_email_new_item_non_register_user` | action | `$item` | `oc-includes/classes/listing/ListingService.php` |
 | `hook_email_send_friend` | action | `$args` | `oc-includes/classes/core/security/MessageHold.php` |
 | `hook_email_user_forgot_password` | action | `$user, $password_url` | `oc-includes/classes/user/AccountService.php` |
@@ -501,19 +501,19 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `filters_manage_item_search` | action | none | `oc-admin/themes/modern/items/index.php` |
 | `init_item` | action | none | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `invalidate_item_cache` | action | `$itemId` | `oc-includes/osclass/helpers/hCache.php` |
-| `item_add_prepare_data` | filter | `self::withStoreAddress($data)` | `oc-includes/classes/listing/ListingService.php` |
+| `item_add_prepare_data` | filter | `with_store_address` | `oc-includes/classes/listing/ListingService.php` |
 | `item_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminItems.php` |
 | `item_bumped` | action | `$id` | `oc-includes/classes/listing/ListingService.php` |
 | `item_comments_after` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
 | `item_comments_before` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
-| `item_contact_form` | action | `osc_item_id()` | `oc-includes/osclass/helpers/hItems.php` |
-| `item_content_updated` | action | `(int) $itemId, $locale` | `oc-includes/classes/listing/ListingService.php` |
+| `item_contact_form` | action | `item_id` | `oc-includes/osclass/helpers/hItems.php` |
+| `item_content_updated` | action | `value, $locale` | `oc-includes/classes/listing/ListingService.php` |
 | `item_decrease_stat` | action | `$item` | `oc-includes/classes/listing/ListingStats.php` |
-| `item_description` | filter | `$v['s_description']` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `item_description` | filter | `s_description` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `item_edit` | action | `$catId, $itemId` | `oc-includes/classes/admin/ajax/PluginAjax.php` |
-| `item_edit_prepare_data` | filter | `self::withStoreAddress($data)` | `oc-includes/classes/listing/ListingService.php` |
-| `item_expiration_updated` | action | `(int)$id, $_item['dt_expiration']` | `oc-includes/osclass/classes/model/Item.php` |
-| `item_form` | action | `Params::getParam('catId')` | `oc-includes/classes/admin/ajax/PluginAjax.php` |
+| `item_edit_prepare_data` | filter | `with_store_address` | `oc-includes/classes/listing/ListingService.php` |
+| `item_expiration_updated` | action | `value, dt_expiration` | `oc-includes/osclass/classes/model/Item.php` |
+| `item_form` | action | `get_param` | `oc-includes/classes/admin/ajax/PluginAjax.php` |
 | `item_form_new_validation_messages` | action | none | `oc-includes/osclass/classes/form/ItemForm.php` |
 | `item_form_new_validation_rules` | action | none | `oc-includes/osclass/classes/form/ItemForm.php` |
 | `item_form_validation_messages` | action | none | `oc-includes/osclass/classes/form/ItemForm.php` |
@@ -521,24 +521,24 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `item_increase_stat` | action | `$item` | `oc-includes/classes/listing/ListingStats.php` |
 | `item_mark` | filter | `true, $id, $as` | `oc-includes/classes/listing/ListingService.php` |
 | `item_marked` | action | `$id, $as` | `oc-includes/classes/listing/ListingService.php` |
-| `item_meta_checkbox_value` | filter | `osc_esc_html($label), $checked, $meta` | `oc-includes/osclass/helpers/hItems.php` |
-| `item_post_redirect_url` | filter | `osc_search_category_url(), $saved->id(), $category` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `item_meta_checkbox_value` | filter | `esc_html, $checked, $meta` | `oc-includes/osclass/helpers/hItems.php` |
+| `item_post_redirect_url` | filter | `search_category_url, id, $category` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `item_premium_off` | action | `$id` | `oc-includes/classes/billing/Premium.php` |
 | `item_premium_on` | action | `$id` | `oc-includes/classes/listing/ListingService.php` |
 | `item_prepare_data` | filter | `$aItem` | `oc-includes/classes/listing/ListingInput.php` |
 | `item_price` | filter | `$currencyFormat` | `oc-includes/osclass/helpers/hItems.php` |
-| `item_price_null` | filter | `__('Check with seller')` | `oc-includes/osclass/helpers/hItems.php` |
-| `item_price_zero` | filter | `__('Free')` | `oc-includes/osclass/helpers/hItems.php` |
+| `item_price_null` | filter | `__` | `oc-includes/osclass/helpers/hItems.php` |
+| `item_price_zero` | filter | `__` | `oc-includes/osclass/helpers/hItems.php` |
 | `item_related_ids` | filter | `null, $itemId, $limit, $filters` | `oc-includes/classes/listing/RelatedListings.php` |
 | `item_spam_off` | action | `$id` | `oc-includes/classes/listing/ListingService.php` |
 | `item_spam_on` | action | `$id` | `oc-includes/classes/listing/ListingService.php` |
-| `item_title` | filter | `$v['s_title']` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `item_title` | filter | `s_title` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `item_view_beacon_enabled` | filter | `$enabled` | `oc-includes/osclass/helpers/hViews.php` |
 | `items_bulk_enabled_by_category` | action | `$aIds, $enable` | `oc-includes/osclass/classes/model/Item.php` |
 | `items_processing_reported_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `items_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
-| `manage_item_search_conditions` | action | `$this->mSearch` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
-| `manage_item_search_with_filters` | filter | `$this->withFilters` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
+| `manage_item_search_conditions` | action | `value` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
+| `manage_item_search_with_filters` | filter | `value` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `more_actions_manage_items` | filter | `$options_more, $aRow` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `osc_item_edit_meta_textarea_value_filter` | filter | `$value, $field` | `oc-includes/osclass/classes/form/FieldForm.php` |
 | `osc_item_meta_textarea_value_filter` | filter | `$value, $meta` | `oc-includes/osclass/helpers/hItems.php` |
@@ -556,23 +556,23 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `pre_item_edit` | action | `$aItem, $text` | `oc-includes/classes/listing/ListingService.php` |
 | `pre_item_edit_error` | filter | `$text, $aItem` | `oc-includes/classes/listing/ListingService.php` |
 | `pre_item_send_friend_post` | action | `$item` | `oc-includes/classes/listing/ListingMailService.php` |
-| `pre_show_item` | filter | `$this->itemManager->findByPrimaryKey($id)` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `pre_show_item` | filter | `find_by_primary_key` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `pre_show_items` | filter | `$aItems` | `oc-includes/classes/search/SearchRunner.php` |
-| `rss_feed_item` | filter | `$itemArray, osc_item()` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
+| `rss_feed_item` | filter | `$itemArray, item` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `show_item` | action | `$item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `sitemap_items_source` | filter | `$default, array('page' => $page, 'per_page' => $perPage)` | `oc-includes/osclass/classes/Sitemap.php` |
-| `sitemap_items_total` | filter | `$this->countLiveItems()` | `oc-includes/osclass/classes/Sitemap.php` |
-| `sitemap_url_entry` | filter | `array('loc' => $loc, 'lastmod' => $lastmod, 'changefreq' => $changefreq), $type` | `oc-includes/osclass/classes/Sitemap.php` |
-| `sql_search_item_conditions` | filter | `$this->itemConditions` | `oc-includes/classes/search/query/PluginClauses.php` |
+| `sitemap_items_source` | filter | `$default, array` | `oc-includes/osclass/classes/Sitemap.php` |
+| `sitemap_items_total` | filter | `count_live_items` | `oc-includes/osclass/classes/Sitemap.php` |
+| `sitemap_url_entry` | filter | `array, $type` | `oc-includes/osclass/classes/Sitemap.php` |
+| `sql_search_item_conditions` | filter | `value` | `oc-includes/classes/search/query/PluginClauses.php` |
 
 ### Other (257)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
-| `account_page_after` | action | `'user-addresses'` | `oc-includes/osclass/gui/account/user-addresses-content.php` |
-| `account_page_before` | action | `'user-addresses'` | `oc-includes/osclass/gui/account/user-addresses-content.php` |
+| `account_page_after` | action | `text` | `oc-includes/osclass/gui/account/user-addresses-content.php` |
+| `account_page_before` | action | `text` | `oc-includes/osclass/gui/account/user-addresses-content.php` |
 | `account_upgrade_offers` | filter | `$offers, $userId` | `oc-includes/osclass/helpers/hBilling.php` |
-| `action_throttle_limit` | filter | `array('max' => $max, 'window' => $window), $context` | `oc-includes/classes/core/security/ActionThrottle.php` |
+| `action_throttle_limit` | filter | `array, $context` | `oc-includes/classes/core/security/ActionThrottle.php` |
 | `actions_manage_alerts` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `actions_manage_keyword_block` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `actions_manage_rules` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
@@ -589,35 +589,35 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `after_delete_widget` | action | `$widgetId` | `oc-includes/osclass/classes/controller/admin/CAdminAppearance.php` |
 | `after_html` | action | none | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `after_login` | action | `$user, $redirect` | `oc-includes/classes/user/auth/SignIn.php` |
-| `after_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php` |
+| `after_rewrite_rules` | action | `array` | `oc-includes/osclass/classes/Rewrite.php` |
 | `after_show_pagination_admin` | action | none | `oc-includes/osclass/helpers/hPagination.php` |
-| `alert_email_daily_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_daily_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_daily_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_daily_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_hourly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_hourly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_hourly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_hourly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_weekly_description` | filter | `$template['s_text'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_weekly_description_after` | filter | `osc_mailBeauty($_body, $htmlWords), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_weekly_title` | filter | `$template['s_title'], $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_email_weekly_title_after` | filter | `osc_mailBeauty($_title, $words), $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
-| `alert_row_actions` | filter | `$alertActions, osc_alert()` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
+| `alert_email_daily_description` | filter | `s_text, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_daily_description_after` | filter | `mail_beauty, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_daily_title` | filter | `s_title, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_daily_title_after` | filter | `mail_beauty, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_hourly_description` | filter | `s_text, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_hourly_description_after` | filter | `mail_beauty, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_hourly_title` | filter | `s_title, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_hourly_title_after` | filter | `mail_beauty, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_weekly_description` | filter | `s_text, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_weekly_description_after` | filter | `mail_beauty, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_weekly_title` | filter | `s_title, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_email_weekly_title_after` | filter | `mail_beauty, $user, $ads, $s_search, $items, $totalItems` | `oc-includes/classes/core/mail/CoreEmails.php` |
+| `alert_row_actions` | filter | `$alertActions, alert` | `oc-includes/osclass/gui/account/user-alerts-content.php` |
 | `alerts_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/AlertsDataTable.php` |
 | `api_cors_origins` | filter | `$origins, $request` | `oc-includes/classes/api/http/Cors.php` |
-| `api_fields` | filter | `[]` | `oc-includes/classes/api/serializer/ExtensionMembers.php` |
+| `api_fields` | filter | `value` | `oc-includes/classes/api/serializer/ExtensionMembers.php` |
 | `api_listing` | filter | `$data, $context` | `oc-includes/classes/api/serializer/ListingSerializer.php` |
 | `api_listing_input` | filter | `$input, $request, $credential` | `oc-includes/classes/api/write/ListingWriter.php` |
 | `api_listings_prefetch` | action | `$ids, $context` | `oc-includes/classes/api/serializer/ListingSerializer.php` |
 | `api_menus` | filter | `$menus, $locale` | `oc-includes/classes/api/serializer/PageSerializer.php` |
-| `api_problem_codes` | filter | `[]` | `oc-includes/classes/api/Problem.php` |
+| `api_problem_codes` | filter | `value` | `oc-includes/classes/api/Problem.php` |
 | `api_rate_limit` | filter | `$limit, $credential, $route` | `oc-includes/classes/api/ratelimit/RatePolicy.php` |
 | `api_request_before` | action | `$request, $route, $credential` | `oc-includes/classes/api/Kernel.php` |
 | `api_response` | filter | `$response, $request, $route` | `oc-includes/classes/api/Kernel.php` |
-| `api_routes` | filter | `[]` | `oc-includes/classes/api/routing/Router.php` |
-| `api_schemas` | filter | `[]` | `oc-includes/classes/api/schema/ExtensionSchemas.php` |
-| `api_scopes` | filter | `[]` | `oc-includes/classes/user/apikey/Scopes.php` |
+| `api_routes` | filter | `value` | `oc-includes/classes/api/routing/Router.php` |
+| `api_schemas` | filter | `value` | `oc-includes/classes/api/schema/ExtensionSchemas.php` |
+| `api_scopes` | filter | `value` | `oc-includes/classes/user/apikey/Scopes.php` |
 | `api_webhook_delivered` | action | `$endpointData, $event, $httpStatus, $attempt` | `oc-includes/classes/webhook/Delivery.php` |
 | `api_webhook_events` | filter | `$events` | `oc-includes/classes/webhook/Events.php` |
 | `api_webhook_payload` | filter | `$payload, $type, $endpointData` | `oc-includes/classes/webhook/Dispatcher.php` |
@@ -636,7 +636,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `before_html` | action | none | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `before_login` | action | none | `oc-includes/classes/user/auth/SignIn.php` |
 | `before_login_admin` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
-| `before_rewrite_rules` | action | `array(&$rewrite)` | `oc-includes/osclass/classes/Rewrite.php` |
+| `before_rewrite_rules` | action | `array` | `oc-includes/osclass/classes/Rewrite.php` |
 | `before_show_pagination_admin` | action | none | `oc-includes/osclass/helpers/hPagination.php` |
 | `before_validating_login` | action | none | `oc-includes/classes/user/auth/SignIn.php` |
 | `billing_can_publish` | filter | `$allowed, $userId, $ctx` | `oc-includes/classes/billing/EntitlementStore.php` |
@@ -644,16 +644,16 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `billing_document_compose` | event | `DocumentComposing` | `oc-includes/classes/billing/event/DocumentComposing.php` |
 | `billing_document_issued` | event | `DocumentIssued` | `oc-includes/classes/billing/event/DocumentIssued.php` |
 | `billing_feature_applied` | action | `$featureId, $userId, $price` | `oc-includes/classes/billing/Billing.php` |
-| `billing_feature_duration` | filter | `$days, $this->id, $userId` | `oc-includes/classes/billing/Feature.php` |
-| `billing_feature_price` | filter | `$price, $this->id, $userId` | `oc-includes/classes/billing/Feature.php` |
-| `billing_listing_limit_message` | filter | `osc_billing_slot_enabled() ? _m('You are at your listing limit. Buy an extra listing slot on your credits page, or free up a listing -- delete one or let one expire -- to post again.') : _m('You are at your listing limit. Free up a listing -- delete one or let one expire -- to post again.'), $userId ?? osc_logged_user_id(), $item` | `oc-includes/osclass/helpers/hBilling.php` |
+| `billing_feature_duration` | filter | `$days, value, $userId` | `oc-includes/classes/billing/Feature.php` |
+| `billing_feature_price` | filter | `$price, value, $userId` | `oc-includes/classes/billing/Feature.php` |
+| `billing_listing_limit_message` | filter | `billing_slot_enabled, value, $item` | `oc-includes/osclass/helpers/hBilling.php` |
 | `billing_order_cancelled` | event | `OrderCancelled` | `oc-includes/classes/billing/event/OrderCancelled.php` |
 | `billing_order_delivered` | event | `OrderDelivered` | `oc-includes/classes/billing/event/OrderDelivered.php` |
 | `billing_order_failed` | event | `OrderFailed` | `oc-includes/classes/billing/event/OrderFailed.php` |
 | `billing_order_paid` | event | `OrderPaid` | `oc-includes/classes/billing/event/OrderPaid.php` |
 | `billing_order_placed` | event | `OrderPlaced` | `oc-includes/classes/billing/event/OrderPlaced.php` |
 | `billing_order_processing` | event | `OrderProcessing` | `oc-includes/classes/billing/event/OrderProcessing.php` |
-| `billing_order_refunded` | action | `$order->getId(), $order->getUserId(), $order->getCredits()` | `oc-includes/classes/billing/Billing.php` |
+| `billing_order_refunded` | action | `id, user_id, credits` | `oc-includes/classes/billing/Billing.php` |
 | `billing_order_return_url` | event | `OrderReturnUrlResolving` | `oc-includes/classes/billing/event/OrderReturnUrlResolving.php` |
 | `billing_order_shipped` | event | `OrderShipped` | `oc-includes/classes/billing/event/OrderShipped.php` |
 | `billing_order_url` | event | `OrderUrlResolving` | `oc-includes/classes/billing/event/OrderUrlResolving.php` |
@@ -661,7 +661,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `billing_shipment_add_after` | event | `ShipmentAdded` | `oc-includes/classes/billing/event/ShipmentAdded.php` |
 | `billing_tracking_url` | event | `TrackingUrlResolving` | `oc-includes/classes/billing/event/TrackingUrlResolving.php` |
 | `body_class` | filter | `$classes, $class` | `oc-includes/osclass/helpers/hTheme.php` |
-| `cache_relevant_cookies` | filter | `array_values(array_unique(array( session_name() ?: 'osclass', 'osclass', 'oc_cache_bypass', 'oc_userLocale', 'oc_theme', 'oc_admin_browsing', )))` | `oc-includes/osclass/helpers/hHttpCache.php` |
+| `cache_relevant_cookies` | filter | `array_values` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `cart_checkout_before` | event | `CheckoutStarting` | `oc-includes/classes/billing/event/CheckoutStarting.php` |
 | `cart_discount_lines` | event | `CartDiscountLines` | `oc-includes/classes/billing/event/CartDiscountLines.php` |
 | `cart_free_over` | event | `CartFreeOver` | `oc-includes/classes/billing/event/CartFreeOver.php` |
@@ -671,9 +671,9 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `cart_shipping_methods` | event | `CartShipping` | `oc-includes/classes/billing/event/CartShipping.php` |
 | `cart_tax_lines` | event | `CartTaxLines` | `oc-includes/classes/billing/event/CartTaxLines.php` |
 | `cart_totals` | event | `CartFees` | `oc-includes/classes/billing/event/CartFees.php` |
-| `change_email_confirm` | action | `Params::getParam('userId'), $change['old'], $change['new']` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
+| `change_email_confirm` | action | `get_param, old, new` | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `checkout_fields` | event | `CheckoutFields` | `oc-includes/classes/billing/event/CheckoutFields.php` |
-| `cli_commands` | filter | `array()` | `oc-includes/classes/core/cli/Cli.php` |
+| `cli_commands` | filter | `array` | `oc-includes/classes/core/cli/Cli.php` |
 | `contact_form` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_form_after` | action | none | `oc-includes/osclass/gui/contact-content.php` |
 | `contact_form_top` | action | none | `oc-includes/osclass/gui/contact-content.php` |
@@ -684,13 +684,13 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `conversation_started` | event | `ConversationStarted` | `oc-includes/classes/messaging/event/ConversationStarted.php` |
 | `conversation_unblocked` | event | `ConversationUnblocked` | `oc-includes/classes/messaging/event/ConversationUnblocked.php` |
 | `correct_login_url_redirect` | filter | `$url_redirect` | `oc-includes/osclass/classes/controller/CWebLogin.php` |
-| `count_view_on_beacon` | filter | `osc_request_counts_as_view(), $id` | `oc-includes/osclass/classes/controller/CWebItem.php` |
-| `count_view_on_render` | filter | `osc_request_counts_as_view(), $item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `count_view_on_beacon` | filter | `request_counts_as_view, $id` | `oc-includes/osclass/classes/controller/CWebItem.php` |
+| `count_view_on_render` | filter | `request_counts_as_view, $item` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `cron` | action | none | `oc-includes/osclass/cron.php` |
 | `cron_daily` | action | none | `oc-includes/osclass/cron.php` |
 | `cron_hourly` | action | none | `oc-includes/osclass/cron.php` |
 | `cron_weekly` | action | none | `oc-includes/osclass/cron.php` |
-| `custom_appearance_title` | filter | `__('Appearance')` | `oc-admin/themes/modern/appearance/view.php` |
+| `custom_appearance_title` | filter | `__` | `oc-admin/themes/modern/appearance/view.php` |
 | `custom_controller` | action | none | `oc-includes/osclass/classes/controller/CWebCustom.php` |
 | `custom_field_autocomplete_source` | filter | `$results, $fieldId, $term, $field` | `oc-includes/osclass/classes/controller/CWebAjax.php` |
 | `custom_field_input_class` | filter | `$defaultInputClass, $field, $type, $search` | `oc-includes/osclass/classes/form/FieldForm.php` |
@@ -699,18 +699,18 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `d_file_included` | action | `$file, $replacement, $version, $message` | `oc-includes/classes/core/utility/Deprecate.php` |
 | `d_function_run` | action | `$function, $replacement, $version` | `oc-includes/classes/core/utility/Deprecate.php` |
 | `d_hook_run` | action | `$hook, $replacement, $version, $message` | `oc-includes/classes/core/utility/Deprecate.php` |
-| `datatable_listing_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/items/index.php` |
+| `datatable_listing_class` | filter | `array, value, $row` | `oc-admin/themes/modern/items/index.php` |
 | `delete_locale` | action | `$locale` | `oc-includes/osclass/classes/model/OSCLocale.php` |
 | `delete_resource` | action | `$resourceRow` | `oc-includes/classes/core/storage/ResourceUploader.php` |
-| `edit_page` | action | `$this->pageId()` | `oc-includes/classes/content/widgets/Customiser.php` |
+| `edit_page` | action | `page_id` | `oc-includes/classes/content/widgets/Customiser.php` |
 | `feed` | action | `$feed` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
-| `flash_message_text` | filter | `$message['msg']` | `oc-includes/osclass/helpers/hMessages.php` |
+| `flash_message_text` | filter | `msg` | `oc-includes/osclass/helpers/hMessages.php` |
 | `form_fields` | filter | `$fields, $form, $contextType, $contextId` | `oc-includes/osclass/helpers/hForms.php` |
 | `form_render` | action | `$form, $contextType, $contextId` | `oc-includes/osclass/helpers/hForms.php` |
-| `form_submit` | action | `$form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
-| `form_submit_veto` | filter | `'', $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
-| `form_submitted` | action | `$submissionId, $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
-| `form_validation_errors` | filter | `$result['errors'], $form, $result['values'], $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
+| `form_submit` | action | `$form, values, $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
+| `form_submit_veto` | filter | `text, $form, values, $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
+| `form_submitted` | action | `$submissionId, $form, values, $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
+| `form_validation_errors` | filter | `errors, $form, values, $contextType, $contextId` | `oc-includes/osclass/classes/controller/CWebForm.php` |
 | `geocode_address` | filter | `$address, $countryCode` | `oc-includes/classes/location/Geocoder.php` |
 | `geocode_coordinates` | filter | `$coords, $address, $country, $providerId` | `oc-includes/classes/location/Geocoder.php` |
 | `gettext` | filter | `$string` | `oc-includes/osclass/helpers/hTranslations.php` |
@@ -737,26 +737,26 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `keyword_block_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php` |
 | `language_attributes` | filter | `$attrs` | `oc-includes/osclass/helpers/hTheme.php` |
 | `language_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminLanguages.php` |
-| `listing_list_html` | filter | `null, (array) View::getInstance()->_get('items'), $context` | `oc-includes/osclass/gui/page-fn.php` |
+| `listing_list_html` | filter | `null, _get, $context` | `oc-includes/osclass/gui/page-fn.php` |
 | `listing_row_actions` | filter | `$rowActions, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `listing_row_badges` | filter | `$rowBadges, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `listing_row_meta` | filter | `$rowMeta, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
-| `locations_json_url` | filter | `'https://geo.mindstellar.com/releases/latest.json'` | `oc-includes/osclass/helpers/hUtils.php` |
+| `locations_json_url` | filter | `text` | `oc-includes/osclass/helpers/hUtils.php` |
 | `login_admin` | action | `$admin` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `login_admin_form` | action | none | `oc-admin/gui/login.php` |
-| `login_admin_image` | filter | `osc_admin_base_url() . 'images/shopclass-logo.svg'` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
-| `login_admin_title` | filter | `'Shopclass'` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
-| `login_admin_url` | filter | `'https://github.com/mindstellar/shopclass/'` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
+| `login_admin_image` | filter | `admin_base_url` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
+| `login_admin_title` | filter | `text` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
+| `login_admin_url` | filter | `text` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `logout` | action | none | `oc-includes/osclass/classes/controller/CWebMain.php` |
 | `logout_admin` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminMain.php` |
 | `logs_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/LogsDataTable.php` |
 | `mail_from` | filter | `$from, $params` | `oc-includes/classes/core/mail/Mailer.php` |
 | `mail_from_name` | filter | `$from_name, $params` | `oc-includes/classes/core/mail/Mailer.php` |
-| `mail_layout` | filter | `$html !== '' ? $html : $body, $mail, $params` | `oc-includes/classes/core/mail/Mailer.php` |
-| `mail_layout_vars` | filter | `array( 'body' => '', 'subject' => '', 'preheader' => '', 'site_name' => osc_page_title(), 'site_url' => osc_base_url(), 'logo_url' => '', 'accent' => '#0b7269', 'footer' => '', ), array()` | `oc-includes/classes/billing/Receipts.php` |
+| `mail_layout` | filter | `value, $mail, $params` | `oc-includes/classes/core/mail/Mailer.php` |
+| `mail_layout_vars` | filter | `array, array` | `oc-includes/classes/billing/Receipts.php` |
 | `market_allowed_package_hosts` | filter | `$defaultHosts` | `oc-includes/classes/core/utility/FileSystem.php` |
-| `market_catalog_mirror_base` | filter | `$default, $this->type` | `oc-includes/classes/market/Catalog.php` |
-| `market_catalog_primary_base` | filter | `$default, $this->type` | `oc-includes/classes/market/Catalog.php` |
+| `market_catalog_mirror_base` | filter | `$default, value` | `oc-includes/classes/market/Catalog.php` |
+| `market_catalog_primary_base` | filter | `$default, value` | `oc-includes/classes/market/Catalog.php` |
 | `media_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/MediaDataTable.php` |
 | `message_body` | event | `MessageSending` | `oc-includes/classes/messaging/event/MessageSending.php` |
 | `message_held` | event | `MessageHeld` | `oc-includes/classes/messaging/event/MessageHeld.php` |
@@ -765,9 +765,9 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `meta_description_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_keywords_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
 | `meta_title_filter` | filter | `$text` | `oc-includes/osclass/functions.php` |
-| `mo_core_messages_path` | filter | `osc_translations_path() . $locale . '/messages.mo', $locale` | `oc-includes/osclass/classes/Translation.php` |
-| `mo_core_path` | filter | `osc_translations_path() . $locale . '/core.mo', $locale` | `oc-includes/osclass/classes/Translation.php` |
-| `moderator_access` | filter | `self::DEFAULT_PAGES` | `oc-includes/classes/admin/ModeratorAccess.php` |
+| `mo_core_messages_path` | filter | `translations_path, $locale` | `oc-includes/osclass/classes/Translation.php` |
+| `mo_core_path` | filter | `translations_path, $locale` | `oc-includes/osclass/classes/Translation.php` |
+| `moderator_access` | filter | `value` | `oc-includes/classes/admin/ModeratorAccess.php` |
 | `more_actions_manage_rules` | filter | `$options_more, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
 | `ngettext` | filter | `$string` | `oc-includes/osclass/helpers/hTranslations.php` |
 | `non_remember_login_ttl` | filter | `2 * 3600` | `oc-includes/osclass/helpers/hUsers.php` |
@@ -777,7 +777,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `page_cache_purge_enabled` | filter | `true` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `page_meta` | action | none | `oc-admin/themes/modern/pages/frm.php` |
 | `page_routes` | filter | `$core` | `oc-includes/classes/core/routing/PageDispatcher.php` |
-| `page_templates` | filter | `WebThemes::getInstance()->getAvailableTemplates()` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
+| `page_templates` | filter | `available_templates` | `oc-includes/osclass/classes/controller/admin/CAdminPages.php` |
 | `pages_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
 | `personal_data_export` | filter | `$out, $userId` | `oc-includes/classes/user/privacy/PersonalData.php` |
 | `phpmailer_smtp_timeout` | filter | `15` | `oc-includes/classes/core/mail/Mailer.php` |
@@ -785,44 +785,44 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `pre_send_mail` | filter | `$mail, $params` | `oc-includes/classes/core/mail/Mailer.php` |
 | `public_cache_max_age` | filter | `30` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `regenerate_image` | action | `$resource` | `oc-includes/classes/listing/PhotoService.php` |
-| `regenerated_image` | action | `\ItemResource::getInstance()->findByPrimaryKey($resource['pk_i_id'])` | `oc-includes/classes/listing/PhotoService.php` |
-| `register_email_taken` | action | `$input['s_email']` | `oc-includes/classes/user/AccountService.php` |
+| `regenerated_image` | action | `find_by_primary_key` | `oc-includes/classes/listing/PhotoService.php` |
+| `register_email_taken` | action | `s_email` | `oc-includes/classes/user/AccountService.php` |
 | `register_geocode_providers` | action | `$this` | `oc-includes/classes/location/GeocodeProviderRegistry.php` |
 | `register_jobs` | action | none | `oc-includes/classes/core/job/JobWorker.php` |
 | `register_payment_gateways` | action | `$this` | `oc-includes/classes/billing/PaymentGatewayRegistry.php` |
-| `register_storage_adapters` | action | `StorageManager::getInstance()` | `oc-includes/osclass/helpers/hStorage.php` |
+| `register_storage_adapters` | action | `get_instance` | `oc-includes/osclass/helpers/hStorage.php` |
 | `render_admintoolbar` | action | none | `oc-includes/osclass/classes/AdminToolbar.php` |
-| `resource_alt` | filter | `$title, osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
+| `resource_alt` | filter | `$title, resource` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_download_filename` | filter | `$name, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_download_url` | filter | `$url, $resource, $variant` | `oc-includes/osclass/helpers/hItems.php` |
-| `resource_original_url` | filter | `osc_resource_path() . osc_resource_id() . '_original.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
+| `resource_original_url` | filter | `resource_path, resource` | `oc-includes/osclass/helpers/hItems.php` |
 | `resource_path` | filter | `$path, $resource` | `oc-includes/classes/admin/ui/PhotoGrid.php` |
-| `resource_preview_url` | filter | `osc_resource_path() . osc_resource_id() . '_preview.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
-| `resource_thumbnail_url` | filter | `osc_resource_path() . osc_resource_id() . '_thumbnail.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
-| `resource_url` | filter | `osc_resource_path() . osc_resource_id() . '.' . osc_resource_field('s_extension'), osc_resource()` | `oc-includes/osclass/helpers/hItems.php` |
+| `resource_preview_url` | filter | `resource_path, resource` | `oc-includes/osclass/helpers/hItems.php` |
+| `resource_thumbnail_url` | filter | `resource_path, resource` | `oc-includes/osclass/helpers/hItems.php` |
+| `resource_url` | filter | `resource_path, resource` | `oc-includes/osclass/helpers/hItems.php` |
 | `response_body` | filter | `$data` | `oc-includes/classes/core/security/Csrf.php` |
 | `response_cache_control` | filter | `$header` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `response_is_cacheable` | filter | `true` | `oc-includes/osclass/helpers/hHttpCache.php` |
 | `rules_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |
-| `sanitize_html_allowed` | filter | `implode(',', [ 'p[style]', 'br', 'strong', 'b', 'em', 'i', 'u', 'ul', 'ol', 'li', 'a[href\|title\|rel]', 'h3[style]', 'h4[style]', 'blockquote', 'hr', 'table', 'thead', 'tbody', 'tr', 'th', 'td', 'span[style]', 'img[src\|alt\|width\|height\|class]', ])` | `oc-includes/classes/core/utility/Sanitize.php` |
-| `scripts_defer` | filter | `defined('OC_ADMIN') && OC_ADMIN` | `oc-includes/osclass/classes/Scripts.php` |
+| `sanitize_html_allowed` | filter | `implode` | `oc-includes/classes/core/utility/Sanitize.php` |
+| `scripts_defer` | filter | `defined` | `oc-includes/osclass/classes/Scripts.php` |
 | `scripts_loaded` | action | none | `oc-includes/osclass/helpers/hTheme.php` |
-| `settings_page_after_group` | action | `$page['id'], $group, $index` | `oc-includes/classes/admin/ui/SettingsForm.php` |
+| `settings_page_after_group` | action | `id, $group, $index` | `oc-includes/classes/admin/ui/SettingsForm.php` |
 | `settings_page_saved` | action | `$pageId, $exposed` | `oc-includes/osclass/helpers/hSettings.php` |
-| `shutdown_functions` | filter | `[$injectCsrf]` | `oc-includes/classes/core/security/Csrf.php` |
-| `slug` | filter | `$fieldsDescription['s_name']` | `oc-includes/classes/core/utility/Utils.php` |
-| `static_page_text` | filter | `(string) ($texts[$shown]['s_text'] ?? ''), $shown` | `oc-includes/classes/api/serializer/PageSerializer.php` |
+| `shutdown_functions` | filter | `value` | `oc-includes/classes/core/security/Csrf.php` |
+| `slug` | filter | `s_name` | `oc-includes/classes/core/utility/Utils.php` |
+| `static_page_text` | filter | `value, $shown` | `oc-includes/classes/api/serializer/PageSerializer.php` |
 | `style_url` | filter | `$css` | `oc-includes/osclass/classes/Styles.php` |
 | `template_candidates` | filter | `$candidates, $context` | `oc-includes/osclass/helpers/hTheme.php` |
 | `tinymce_config` | filter | `$config, $preset` | `oc-includes/osclass/helpers/hUtils.php` |
 | `translation_load_after` | event | `TranslationLoaded` | `oc-includes/classes/core/language/event/TranslationLoaded.php` |
-| `upload_image_extension` | filter | `$processor->defaultExt($image)` | `oc-includes/classes/core/storage/ResourceUploader.php` |
-| `upload_image_mime` | filter | `Formats::mime($processor->defaultExt($image))` | `oc-includes/classes/core/storage/ResourceUploader.php` |
+| `upload_image_extension` | filter | `default_ext` | `oc-includes/classes/core/storage/ResourceUploader.php` |
+| `upload_image_mime` | filter | `mime` | `oc-includes/classes/core/storage/ResourceUploader.php` |
 | `uploaded_file` | action | `$stored` | `oc-includes/classes/listing/PhotoService.php` |
 | `uploaded_resource` | action | `$row` | `oc-includes/classes/core/storage/ResourceUploader.php` |
 | `variant_price_changed` | event | `VariantPriceChanged` | `oc-includes/classes/listing/event/VariantPriceChanged.php` |
 | `variant_stock_changed` | event | `VariantStockChanged` | `oc-includes/classes/listing/event/VariantStockChanged.php` |
-| `watermark_font_path` | filter | `LIB_PATH . 'assets/fonts/open-sans/OpenSans-Regular.ttf'` | `oc-includes/classes/media/image/WatermarkText.php` |
+| `watermark_font_path` | filter | `value` | `oc-includes/classes/media/image/WatermarkText.php` |
 | `watermark_font_size` | filter | `30` | `oc-includes/classes/media/image/WatermarkText.php` |
 | `watermark_text_value` | filter | `$text` | `oc-includes/classes/media/image/WatermarkText.php` |
 | `widget_locations` | filter | `$locations` | `oc-includes/osclass/helpers/hWidgets.php` |
@@ -839,8 +839,8 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `before_plugin_deactivate` | action | none | `oc-includes/osclass/classes/Plugins.php` |
 | `before_plugin_install` | action | none | `oc-includes/osclass/classes/Plugins.php` |
 | `before_plugin_uninstall` | action | none | `oc-includes/osclass/classes/Plugins.php` |
-| `custom_plugin_title` | filter | `__('Plugins')` | `oc-admin/themes/modern/plugins/configuration.php` |
-| `mo_plugin_path` | filter | `osc_plugins_path() . $domain . '/languages/' . $locale . '/messages.mo', $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
+| `custom_plugin_title` | filter | `__` | `oc-admin/themes/modern/plugins/configuration.php` |
+| `mo_plugin_path` | filter | `plugins_path, $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
 | `plugin_icon_url` | filter | `$url, $plugin` | `oc-includes/osclass/helpers/hPlugins.php` |
 | `renderplugin_controller` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 
@@ -852,13 +852,13 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `alert_search_params` | filter | `$params, $request` | `oc-includes/classes/search/AlertEnvelope.php` |
 | `before_search` | action | none | `oc-includes/osclass/classes/controller/CWebSearch.php` |
 | `save_latest_searches_pattern` | filter | `$p_sPattern` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
-| `search` | action | `$this->mSearch` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
-| `search_conditions` | action | `\Params::getParamsAsArray(), $search, $context` | `oc-includes/classes/search/SearchBuilder.php` |
+| `search` | action | `value` | `oc-includes/osclass/classes/controller/CWebSearch.php` |
+| `search_conditions` | action | `get_params_as_array, $search, $context` | `oc-includes/classes/search/SearchBuilder.php` |
 | `search_pattern` | filter | `$rawPattern` | `oc-includes/classes/search/SearchCriteria.php` |
-| `search_results` | filter | `null, $search, \Params::getParamsAsArray(), $context, $bare` | `oc-includes/classes/search/SearchRunner.php` |
+| `search_results` | filter | `null, $search, get_params_as_array, $context, $bare` | `oc-includes/classes/search/SearchRunner.php` |
 | `search_suggestions` | filter | `null, $q, $limit, $context` | `oc-includes/classes/search/SearchSuggestions.php` |
 | `sql_search_conditions` | filter | `$list` | `oc-includes/classes/search/query/PluginClauses.php` |
-| `sql_search_fields` | filter | `$this->fields` | `oc-includes/classes/search/query/PluginClauses.php` |
+| `sql_search_fields` | filter | `value` | `oc-includes/classes/search/query/PluginClauses.php` |
 
 ### Theme (9)
 
@@ -867,9 +867,9 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `after_init_web_theme` | action | none | `oc-includes/osclass/classes/theme/WebThemes.php` |
 | `api_theme_functions_enabled` | filter | `false` | `oc-includes/osclass/classes/theme/WebThemes.php` |
 | `before_init_web_theme` | action | none | `oc-includes/osclass/classes/theme/WebThemes.php` |
-| `mo_theme_messages_path` | filter | `osc_themes_path() . $domain . '/languages/' . $locale . '/messages.mo', $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
-| `mo_theme_path` | filter | `osc_themes_path() . $domain . '/languages/' . $locale . '/theme.mo', $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
-| `theme` | filter | `osc_theme()` | `oc-includes/osclass/classes/Translation.php` |
+| `mo_theme_messages_path` | filter | `themes_path, $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
+| `mo_theme_path` | filter | `themes_path, $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
+| `theme` | filter | `theme` | `oc-includes/osclass/classes/Translation.php` |
 | `theme_activate` | action | `$theme` | `oc-includes/classes/market/PluginDependencies.php` |
 | `theme_screenshot_url` | filter | `$url, $theme` | `oc-includes/osclass/helpers/hTheme.php` |
 | `theme_url` | filter | `$script` | `oc-includes/osclass/classes/Scripts.php` |
@@ -881,14 +881,14 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `actions_manage_users` | filter | `$options, $aRow` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `activate_user` | action | `$user` | `oc-includes/classes/user/AccountService.php` |
 | `after_delete_user` | action | `$id` | `oc-includes/osclass/classes/model/User.php` |
-| `after_username_change` | action | `Session::getInstance()->_get('userId'), $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
+| `after_username_change` | action | `_get, $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `api_user` | filter | `$data, $context` | `oc-includes/classes/api/serializer/UserSerializer.php` |
 | `before_user_delete` | action | `$user` | `oc-includes/classes/user/AccountService.php` |
 | `before_user_recover` | action | none | `oc-includes/osclass/classes/controller/CWebLogin.php` |
 | `before_user_register` | action | none | `oc-includes/classes/user/AccountService.php` |
-| `before_username_change` | action | `Session::getInstance()->_get('userId'), $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
-| `bot_user_agents` | filter | `array( // Generic: catches the long tail, which is most of it. 'bot', 'crawler', 'crawling', 'spider', 'scraper', 'archiver', 'fetcher', // Search engines. 'googlebot', 'bingbot', 'slurp', 'duckduckbot', 'baiduspider', 'yandex', 'sogou', 'exabot', 'seznambot', 'petalbot', 'applebot', 'qwantify', // AI and dataset collectors. 'gptbot', 'oai-searchbot', 'chatgpt-user', 'ccbot', 'claudebot', 'claude-web', 'anthropic-ai', 'perplexitybot', 'google-extended', 'bytespider', 'amazonbot', 'meta-externalagent', 'diffbot', // SEO and marketing crawlers. 'ahrefs', 'semrush', 'mj12bot', 'dotbot', 'blexbot', 'dataforseo', 'screaming frog', 'serpstat', 'megaindex', // Monitoring, previews and libraries. 'uptimerobot', 'pingdom', 'statuscake', 'facebookexternalhit', 'telegrambot', 'whatsapp', 'slackbot', 'discordbot', 'embedly', 'curl/', 'wget', 'python-requests', 'python-urllib', 'go-http-client', 'java/', 'okhttp', 'libwww-perl', 'headlesschrome', 'phantomjs', )` | `oc-includes/osclass/helpers/hUtils.php` |
-| `datatable_user_class` | filter | `array(), $aRawRows[$key], $row` | `oc-admin/themes/modern/users/index.php` |
+| `before_username_change` | action | `_get, $username` | `oc-includes/osclass/classes/controller/CWebUser.php` |
+| `bot_user_agents` | filter | `array` | `oc-includes/osclass/helpers/hUtils.php` |
+| `datatable_user_class` | filter | `array, value, $row` | `oc-admin/themes/modern/users/index.php` |
 | `deactivate_user` | action | `$user` | `oc-includes/classes/user/AccountService.php` |
 | `delete_user` | action | `$id` | `oc-includes/osclass/classes/model/User.php` |
 | `disable_user` | action | `$user` | `oc-includes/classes/user/AccountService.php` |
@@ -896,7 +896,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `init_user` | action | none | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `init_user_non_secure` | action | none | `oc-includes/osclass/classes/controller/CWebUserNonSecure.php` |
 | `manage_user_search_conditions` | action | `$dummy` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
-| `manage_user_search_with_filters` | filter | `$this->withFilters` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
+| `manage_user_search_with_filters` | filter | `value` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `more_actions_manage_users` | filter | `$options_more, $aRow` | `oc-includes/osclass/classes/datatables/UsersDataTable.php` |
 | `pre_user_post` | action | none | `oc-includes/classes/user/AccountService.php` |
 | `user_add_flash_error` | filter | `$flash` | `oc-includes/classes/user/AccountService.php` |
@@ -914,7 +914,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `user_menu` | action | none | `oc-includes/osclass/gui/account/nav.php` |
 | `user_menu_filter` | filter | `$items` | `oc-includes/osclass/helpers/hUtils.php` |
 | `user_profile_form` | action | `$user` | `oc-admin/themes/modern/users/frm.php` |
-| `user_profile_info` | filter | `$aInfo['s_info'], $aUser['pk_i_id'], $aInfo['fk_c_locale_code']` | `oc-includes/osclass/classes/controller/CWebUser.php` |
+| `user_profile_info` | filter | `s_info, pk_i_id, fk_c_locale_code` | `oc-includes/osclass/classes/controller/CWebUser.php` |
 | `user_register_completed` | action | `$userId` | `oc-includes/classes/user/AccountService.php` |
 | `user_register_failed` | action | `$codes` | `oc-includes/classes/user/AccountService.php` |
 | `user_register_form` | action | none | `oc-admin/themes/modern/users/frm.php` |

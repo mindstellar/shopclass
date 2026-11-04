@@ -139,6 +139,13 @@ final class PackageManifest
                     $pairs[$bits[0]] = $bits[1] ?? '';
                 }
             }
+        } elseif (is_array($value) && array_is_list($value)) {
+            // A plain list of slugs: any version will do.
+            foreach ($value as $slug) {
+                if (is_string($slug)) {
+                    $pairs[trim($slug)] = '';
+                }
+            }
         } elseif (is_array($value)) {
             $pairs = $value;
         }

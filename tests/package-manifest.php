@@ -57,6 +57,8 @@ $json('{"modes":["nonsense"],"plugins":{"required":{"Bad Slug":"1.0","../x":"1",
 $r = PackageManifest::read($dir, '');
 pin('unknown mode gives default', ['classifieds'], $r['modes']);
 pin('bad slugs dropped, bad constraint becomes any', ['ok-one' => ''], $r['plugins']['required']);
+$json('{"plugins":{"required":["stripe","Bad Slug"],"recommended":["tax"]}}');
+pin('a plain list of slugs takes any version', ['required' => ['stripe' => ''], 'recommended' => ['tax' => '']], PackageManifest::read($dir, '')['plugins']);
 
 harness_section('order_url');
 pin('a path with {id}', 'orders/{id}', PackageManifest::orderUrl(['order_url' => 'orders/{id}']));

@@ -49,6 +49,78 @@ function hooks_call_args(string $src, int $open): string
 }
 
 /**
+ * Splits an argument list at its top-level commas.
+ *
+ * @return string[]
+ */
+function hooks_split_args(string $args): array
+{
+    $parts = array();
+    $depth = 0;
+    $quote = '';
+    $buf   = '';
+    $len   = strlen($args);
+    for ($i = 0; $i < $len; $i++) {
+        $c = $args[$i];
+        if ($quote !== '') {
+            $buf .= $c;
+            if ($c === '\\') {
+                $buf .= $args[++$i] ?? '';
+            } elseif ($c === $quote) {
+                $quote = '';
+            }
+            continue;
+        }
+        if ($c === '"' || $c === "'") {
+            $quote = $c;
+        } elseif ($c === '(' || $c === '[') {
+            $depth++;
+        } elseif ($c === ')' || $c === ']') {
+            $depth--;
+        } elseif ($c === ',' && $depth === 0) {
+            $parts[] = trim($buf);
+            $buf     = '';
+            continue;
+        }
+        $buf .= $c;
+    }
+    if (trim($buf) !== '') {
+        $parts[] = trim($buf);
+    }
+
+    return $parts;
+}
+
+/**
+ * A short readable name for one argument expression.
+ */
+function hooks_arg_name(string $expr): string
+{
+    $snake = static fn (string $s): string => strtolower(preg_replace('/(?<=[a-z0-9])([A-Z])/', '_$1', $s));
+    $expr  = trim($expr);
+    if (preg_match('/^\$(\w+)$/', $expr, $m)) {
+        return '$' . $m[1];
+    }
+    if (preg_match('/\[\s*[\'"](\w+)[\'"]\s*\]\s*$/', $expr, $m)) {
+        return $m[1];
+    }
+    if (preg_match('/->\s*(\w+)\s*\([^()]*\)\s*$/', $expr, $m)) {
+        return $snake(preg_replace('/^(get|is)(?=[A-Z])/', '', $m[1]));
+    }
+    if (preg_match('/^(?:\\\\?[\\w\\\\]+::)?(\\w+)\\s*\\(/', $expr, $m)) {
+        return $snake(preg_replace('/^osc_/', '', $m[1]));
+    }
+    if (preg_match('/^[\'"]/', $expr)) {
+        return 'text';
+    }
+    if (preg_match('/^-?\d/', $expr) || in_array(strtolower($expr), array('true', 'false', 'null'), true)) {
+        return strtolower($expr);
+    }
+
+    return 'value';
+}
+
+/**
  * Every fired hook, as name => ['kind' => …, 'args' => […], 'where' => 'path:line'].
  *
  * @return array<string,array{kind:string,args:string,where:string}>
@@ -99,7 +171,7 @@ function hooks_scan(): array
 
             // Drop the hook name itself; what is left is what a callback receives.
             $args = preg_replace('/^\s*([\'"])' . preg_quote($name, '/') . '\1\s*,?\s*/', '', $args);
-            $args = trim(preg_replace('/\s+/', ' ', $args));
+            $args = implode(', ', array_map('hooks_arg_name', hooks_split_args(trim(preg_replace('/\s+/', ' ', $args)))));
 
             // File only, no line number: a line moves whenever anything above it is
             // edited, and the drift check would then fail on edits that touch no hook.

@@ -27,6 +27,7 @@ final class PluginDependencies
     public const INACTIVE       = 'inactive';
     public const MISSING        = 'missing';
     public const TOO_OLD        = 'too_old';
+    public const TOO_NEW        = 'too_new';
     public const INCOMPATIBLE   = 'incompatible';
     public const NOT_IN_CATALOG = 'not_in_catalog';
 
@@ -109,6 +110,73 @@ final class PluginDependencies
     }
 
     /**
+     * The plugins an installed plugin asks for, from its shopclass.json or its header.
+     *
+     * @param string $path plugin file, as "slug/index.php"
+     *
+     * @return array{required: array<string,string>, recommended: array<string,string>}
+     */
+    public static function pluginRequirements(string $path): array
+    {
+        $none = ['required' => [], 'recommended' => []];
+        if ($path === '' || str_contains($path, '..') || !is_file(osc_plugins_path() . $path)) {
+            return $none;
+        }
+        $needs = \Plugins::getInfo($path)['requires_plugins'] ?? null;
+
+        return is_array($needs) ? array_merge($none, $needs) : $none;
+    }
+
+    /**
+     * Why a plugin that needs $requires cannot be turned on yet, naming each required plugin
+     * that is missing, off or too old. A newer one that is on does not block: its update must
+     * not lock out the plugins that use it. Null when nothing is in the way.
+     *
+     * @param array{required?: array<string,string>, recommended?: array<string,string>} $requires
+     */
+    public function activationBlocker(array $requires): ?string
+    {
+        $parts = [];
+        foreach ($this->missingRequired($requires) as $row) {
+            if ($row['status'] === self::TOO_NEW && !empty($this->installed[$row['slug']]['enabled'])) {
+                continue;
+            }
+            $parts[] = $row['constraint'] === ''
+                ? $row['name']
+                : sprintf(__('%1$s version %2$s'), $row['name'], $row['constraint']);
+        }
+
+        return $parts === [] ? null : sprintf(__('Install and turn on these plugins first: %s.'), implode(', ', $parts));
+    }
+
+    /**
+     * Why the plugin at $path cannot be turned on on this site yet, or null when it can.
+     */
+    public static function refuseActivation(string $path): ?string
+    {
+        $requires = self::pluginRequirements($path);
+        if ($requires['required'] === []) {
+            return null;
+        }
+
+        // Only the required plugins on disk; the catalog is not needed to say what is missing.
+        $installed = [];
+        foreach (array_keys($requires['required']) as $slug) {
+            $file = $slug . '/index.php';
+            if (is_file(osc_plugins_path() . $file)) {
+                $info             = \Plugins::getInfo($file);
+                $installed[$slug] = [
+                    'name'    => (string) ($info['plugin_name'] ?? $slug),
+                    'version' => (string) ($info['version'] ?? ''),
+                    'enabled' => \Plugins::isEnabled($file),
+                ];
+            }
+        }
+
+        return (new self($installed, [], []))->activationBlocker($requires);
+    }
+
+    /**
      * One row per plugin the theme asks for.
      *
      * @param array{required?: array<string,string>, recommended?: array<string,string>} $requires
@@ -170,6 +238,19 @@ final class PluginDependencies
                 $row['status'] = self::INACTIVE;
                 $row['action'] = 'activate';
             }
+
+            return $row;
+        }
+
+        if ($local !== null && VersionConstraint::isAbove($row['installed_version'], $constraint)) {
+            $row['status']     = self::TOO_NEW;
+            $row['offer']      = null;
+            $row['manual_url'] = '';
+            $row['message']    = sprintf(
+                __('Version %1$s is installed, newer than the %2$s this theme accepts. Ask the theme author for an update.'),
+                $row['installed_version'],
+                $constraint
+            );
 
             return $row;
         }
@@ -325,7 +406,11 @@ final class PluginDependencies
      */
     public static function switchOn(string $slug): ?string
     {
-        $path = $slug . '/index.php';
+        $path    = $slug . '/index.php';
+        $blocked = \Plugins::isEnabled($path) ? null : self::refuseActivation($path);
+        if ($blocked !== null) {
+            return $blocked;
+        }
         if (!\Plugins::isInstalled($path)) {
             $installed = \Plugins::install($path);
             $code      = is_array($installed) ? (string) ($installed['error_code'] ?? '') : '';

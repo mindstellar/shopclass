@@ -185,9 +185,9 @@
     });
     var post = input('postcode');
     if (post) {
+      // Marks the field only: reporting here would pull focus back while the buyer moves on.
       post.addEventListener('change', function () {
         mark(post, postcodeProblem());
-        if (post.validationMessage) post.reportValidity();
       });
     }
     form.addEventListener('submit', function (event) {

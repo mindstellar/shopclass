@@ -701,6 +701,8 @@ class Cli
                 $this->out($text . "\n");
             });
         } catch (\mindstellar\database\DbException $e) {
+            $this->err('Reindex stopped: ' . trim((string) preg_replace('/\s+/', ' ', $e->getMessage())) . "\n");
+
             return 1;
         }
 
@@ -1362,6 +1364,13 @@ class Cli
             return 2;
         }
 
+        $blocked = PluginDependencies::refuseActivation($this->normalisePluginPath($plugin));
+        if ($blocked !== null) {
+            $this->err(sprintf("Plugin '%s': %s\n", $plugin, $blocked));
+
+            return 1;
+        }
+
         // Plugins::install() treats any output as a failure, so it must land in a buffer.
         $level = ob_get_level();
         ob_start();
@@ -1405,6 +1414,13 @@ class Cli
         }
         if (Plugins::isEnabled($path)) {
             $this->err(sprintf("Plugin '%s' is already enabled.\n", $plugin));
+
+            return 1;
+        }
+
+        $blocked = PluginDependencies::refuseActivation($path);
+        if ($blocked !== null) {
+            $this->err(sprintf("Plugin '%s': %s\n", $plugin, $blocked));
 
             return 1;
         }

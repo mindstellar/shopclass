@@ -75,6 +75,20 @@ final class VersionConstraint
     }
 
     /**
+     * Whether $version fails $constraint because it is newer than the constraint allows.
+     */
+    public static function isAbove(string $version, string $constraint): bool
+    {
+        $constraint = trim($constraint);
+        if ($version === '' || preg_match(self::PATTERN, $constraint, $m) !== 1 || in_array($m[1], ['', '>=', '>'], true)) {
+            return false;
+        }
+
+        return !self::satisfies($version, $constraint)
+            && version_compare(self::pad($version), self::pad($m[2]) . ($m[3] ?? ''), '>=');
+    }
+
+    /**
      * A version with at least three numeric parts, so 1.0 and 1.0.0 compare equal.
      */
     private static function pad(string $version): string

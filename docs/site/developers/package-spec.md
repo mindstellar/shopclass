@@ -101,8 +101,9 @@ A package in the catalog can say the same in `shopclass.json`, which wins over t
 ```
 
 A theme's required plugins are installed and activated from one screen before the theme goes
-live. Recommended ones can be skipped. A bad slug is ignored, and bad JSON reads as if the
-file had no `modes` or `plugins`.
+live. Recommended ones can be skipped. A plugin cannot be turned on while one of its required
+plugins is missing, off, or the wrong version. A plain list such as `["stripe"]` accepts any
+version. A bad slug is ignored, and bad JSON reads as if the file had no `modes` or `plugins`.
 
 A shop theme with its own order page names it in `order_url`, with `{id}` where the order
 number goes. Order e-mails then link to it. It is a path on the site, or a full `https://`
@@ -127,7 +128,7 @@ support, not the newest one you happen to run.
 ### The compatibility badge
 
 Every package card in the admin carries one short verdict about *that* install.
-These are the four, and what earns each:
+These are the five, and what earns each:
 
 The checks run in this order, and the first one that matches wins:
 

@@ -768,6 +768,31 @@ unset($fiCols['locale']);
 check('every scalar column is a string or null (C4)', all_values_string($fiCols), describe($fiCols));
 pin('an item with no stored values returns an empty array', array(), $model->findByItem(seed_item($admin, seed_category($admin, 'Empty item cat'))));
 
+// The listing page follows the form order search and the post form use.
+scratchdb_truncate_all($admin);
+$kCat   = seed_category($admin, 'Form order');
+$kItem  = seed_item($admin, $kCat);
+$kLoose = $seedField('Loose', 'fo-loose', 'TEXT', 0, 0, null, null, 9);
+$kA     = $seedField('A', 'fo-a', 'TEXT', 0, 0, null, null, 1);
+$kB     = $seedField('B', 'fo-b', 'TEXT', 0, 0, null, null, 2);
+$kForm  = $seedGroup('Order form', 'order-form', 1);
+$linkFieldToGroup($kForm, $kB, 0);
+$linkFieldToGroup($kForm, $kA, 1);
+$linkGroupToCat($kForm, $kCat);
+foreach (array($kLoose, $kA, $kB) as $kId) {
+    $seedItemMeta($kItem, $kId, 'v');
+}
+pin(
+    'findByItem lists loose fields first, then the form order',
+    array((string)$kLoose, (string)$kB, (string)$kA),
+    array_column($model->findByItem($kItem), 'pk_i_id')
+);
+pin(
+    'valuesOf uses the same order',
+    array((string)$kLoose, (string)$kB, (string)$kA),
+    array_column(\mindstellar\fields\FieldQuery::valuesOf(array($kItem)), 'pk_i_id')
+);
+
 /* ----------------------------------------------------------------------------
  * getDateIntervalByPrimaryKey() — the from/to pair keyed by s_multi.
  * ------------------------------------------------------------------------- */
@@ -1063,6 +1088,15 @@ $seedField('Alphabetic', 'alphabetic', 'TEXT'); // s_slug='alphabetic', s_name='
 // Converted: bound '0' compares as a string, so nothing matches.
 pin('findBySlug("0") no longer coerces the VARCHAR column to a numeric match', array(), $model->findBySlug('0'));
 pin('findByName("0") no longer coerces the VARCHAR column to a numeric match', array(), $model->findByName('0'));
+
+$rows = [
+    ['pk_i_id' => 9, 'cf_group_position' => 2, 'cf_field_position' => 1],
+    ['pk_i_id' => 4, 'cf_group_position' => 1, 'cf_field_position' => 2],
+    ['pk_i_id' => 7, 'cf_group_position' => 1, 'cf_field_position' => 2],
+    ['pk_i_id' => 5, 'cf_group_position' => 1, 'cf_field_position' => 1],
+];
+usort($rows, [\mindstellar\fields\FieldQuery::class, 'compareFormOrder']);
+pin('rows from several categories sort in form order: form, then place in it, then id', [5, 4, 7, 9], array_column($rows, 'pk_i_id'));
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

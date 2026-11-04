@@ -214,15 +214,17 @@ class FieldForm extends Form
             return false;
         }
 
+        // One list for all the categories, in form order, each field once.
         $aCustomFields = array();
-        // we check if the category is the same as our plugin
         foreach ($catId as $id) {
-            $aTemp = Field::getInstance()->findByCategory($id);
-            foreach ($aTemp as $field) {
+            foreach (Field::getInstance()->findByCategory($id) as $field) {
                 if ($field['b_searchable']) {
-                    $aCustomFields[$field['pk_i_id']] = $field;
+                    $aCustomFields[$field['pk_i_id']] ??= $field;
                 }
             }
+        }
+        if (count($catId) > 1) {
+            uasort($aCustomFields, array(\mindstellar\fields\FieldQuery::class, 'compareFormOrder'));
         }
 
         if (count($aCustomFields) > 0) {

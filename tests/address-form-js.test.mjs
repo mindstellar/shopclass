@@ -67,6 +67,7 @@ const FORMATS = {
   US: { fields: ['line1', 'city', 'state', 'postcode'], required: ['line1', 'city', 'state', 'postcode'], state: 'State', postcode: 'ZIP code', pattern: null, example: '' },
   GB: { fields: ['line1', 'city', 'postcode'], required: ['line1', 'city', 'postcode'], state: '', postcode: 'Postcode', pattern: null, example: '' },
   IE: { fields: ['line1', 'city', 'state'], required: ['line1', 'city'], state: 'County', postcode: '', pattern: null, example: '' },
+  AT: { fields: ['line1', 'city', 'postcode'], required: ['line1', 'city', 'postcode'], state: '', postcode: 'Postal code', pattern: '^\\d{4}$', example: '1010' },
 };
 const REGIONS = { US: [{ pk_i_id: 1, s_name: 'Texas' }, { pk_i_id: 2, s_name: 'Ohio' }], GB: [{ s_name: 'Kent' }] };
 
@@ -76,6 +77,7 @@ function boot({ saved = '', country = 'US', fetchRows = REGIONS } = {}) {
   holder.textContent = JSON.stringify(FORMATS);
   holder.setAttribute('data-regions-url', '/ajax?countryId=');
   holder.setAttribute('data-choose', 'Choose…');
+  holder.setAttribute('data-pattern', 'Enter a valid %1$s, such as %2$s.');
   const sel = new El('select');
   sel.setAttribute('name', 'country');
   sel.value = country;
@@ -153,6 +155,20 @@ const tick = () => new Promise((r) => setTimeout(r, 0));
   await t.change('IE');
   await t.change('US');
   assert.equal(t.calls.filter((u) => u.endsWith('US')).length, 1);
+}
+
+// A bad postcode is marked when the buyer leaves the field, without pulling focus back to it.
+{
+  const t = boot({ country: 'AT' });
+  await tick();
+  const post = t.fields.postcode.el;
+  let reported = 0;
+  post.setCustomValidity = (message) => { post.validationMessage = message; };
+  post.reportValidity = () => { reported++; };
+  post.value = '10115';
+  post.dispatchEvent({ type: 'change' });
+  assert.equal(post.getAttribute('aria-invalid'), 'true');
+  assert.equal(reported, 0);
 }
 
 console.log('address-form.js: ok');

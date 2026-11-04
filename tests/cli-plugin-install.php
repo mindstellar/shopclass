@@ -19,7 +19,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 define('OSCLASS_VERSION', '9.9.9');
 
 $base = sys_get_temp_dir() . '/osc-cli-plugin-install-' . getmypid() . '/';
-foreach (array('good', 'throws', 'noisy') as $dir) {
+foreach (array('good', 'throws', 'noisy', 'needy') as $dir) {
     @mkdir($base . $dir, 0777, true);
 }
 define('PLUGINS_PATH', $base);
@@ -61,6 +61,8 @@ file_put_contents(
     '<?php Plugins::addHook("install_throws/index.php", function () { throw new Error("needs ext-foo"); });'
 );
 file_put_contents($base . 'noisy/index.php', '<?php echo "hello";');
+file_put_contents($base . 'needy/index.php', '<?php');
+file_put_contents($base . 'needy/shopclass.json', '{"plugins":{"required":{"absent":"^0.2.0"}}}');
 
 /** Keeps what the CLI writes to STDOUT and STDERR, which an output buffer does not see. */
 final class Capture extends php_user_filter
@@ -119,7 +121,17 @@ pin('no --plugin: exit code 2', 2, $code);
 pin('a path outside the plugins folder: exit code 2', 2, $code);
 pin('and nothing is installed', array('good/index.php', 'noisy/index.php'), unserialize($GLOBALS['prefs']['installed_plugins']));
 
-foreach (array('good', 'throws', 'noisy') as $dir) {
+harness_section('required plugins');
+[$code, $out] = cli(array('plugin:install', '--plugin=needy'));
+pin('a missing required plugin: exit code 1', 1, $code);
+pin('names it and the version', true, str_contains($out, 'absent version ^0.2.0'));
+pin('and it is not installed', false, in_array('needy/index.php', unserialize($GLOBALS['prefs']['installed_plugins']), true));
+$GLOBALS['prefs']['installed_plugins'] = serialize(array('good/index.php', 'noisy/index.php', 'needy/index.php'));
+[$code, $out] = cli(array('plugin:activate', '--plugin=needy'));
+pin('activate is refused too', array(1, false), array($code, in_array('needy/index.php', unserialize($GLOBALS['prefs']['active_plugins']), true)));
+unlink($base . 'needy/shopclass.json');
+
+foreach (array('good', 'throws', 'noisy', 'needy') as $dir) {
     unlink($base . $dir . '/index.php');
     rmdir($base . $dir);
 }

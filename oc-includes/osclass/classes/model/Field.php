@@ -421,7 +421,7 @@ class Field extends DAO
             . ' FROM ' . $p . 't_item_meta im'
             . ' INNER JOIN ' . $p . 't_meta_fields mf ON mf.pk_i_id = im.fk_i_field_id'
             . ' WHERE im.fk_i_item_id = ?'
-            . ' ORDER BY mf.i_position ASC';
+            . ' ORDER BY ' . \mindstellar\fields\FieldQuery::formOrderSql();
 
         try {
             $fields = Db::select($sql, array((int)$itemId));

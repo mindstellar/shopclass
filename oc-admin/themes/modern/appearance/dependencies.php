@@ -36,6 +36,7 @@ $states = array(
     PluginDependencies::INACTIVE       => array('disabled', __('Off')),
     PluginDependencies::MISSING        => array('uninstalled', __('Not installed')),
     PluginDependencies::TOO_OLD        => array('update', __('Too old')),
+    PluginDependencies::TOO_NEW        => array('incompatible', __('Newer than this theme accepts')),
     PluginDependencies::INCOMPATIBLE   => array('incompatible', __('Not available')),
     PluginDependencies::NOT_IN_CATALOG => array('incompatible', __('Not in the market')),
 );
@@ -84,7 +85,7 @@ $renderRow = static function (array $row) use ($states, $addPlugin) {
                 <span data-dep-message><?php echo osc_esc_html($row['message']); ?></span>
                 <a data-dep-manual href="<?php echo osc_esc_html($row['manual_url'] !== '' ? $row['manual_url'] : $addPlugin); ?>"
                    <?php echo $row['manual_url'] !== '' ? 'rel="noopener" target="_blank"' : ''; ?>
-                   <?php echo $row['message'] === '' ? 'hidden' : ''; ?>><?php
+                   <?php echo ($row['message'] === '' || $row['status'] === PluginDependencies::TOO_NEW) ? 'hidden' : ''; ?>><?php
                     echo osc_esc_html($row['manual_url'] !== '' ? __('Download the zip') : __('Add plugin')); ?></a>
             </p>
         </div>

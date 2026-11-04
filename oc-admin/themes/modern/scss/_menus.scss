@@ -112,7 +112,14 @@
     margin-inline-start: calc(var(--menu-depth, 0) * 1rem);
 
     .field-chip-row {
-      flex-wrap: wrap;
+      align-items: center;
+      display: grid;
+      gap: 0 .5rem;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+    }
+
+    .chip-grip {
+      grid-row: 1 / span 2;
     }
 
     .chip-grip,
@@ -122,7 +129,8 @@
     }
 
     .chip-actions {
-      margin-inline-start: auto;
+      grid-column: 2 / -1;
+      justify-self: start;
     }
   }
 }

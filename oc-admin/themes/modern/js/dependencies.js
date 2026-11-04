@@ -109,11 +109,22 @@
                 statusLine.textContent = i18n.working || '';
             }
 
-            queue.reduce(function (chain, row) {
-                return chain.then(function () {
-                    return installRow(row);
+            function pass(rows) {
+                return rows.reduce(function (chain, row) {
+                    return chain.then(function () {
+                        return installRow(row);
+                    });
+                }, Promise.resolve());
+            }
+
+            // A plugin that needs another one on the list fails until that one is on, so the
+            // failed ones get a second try once the rest are done.
+            pass(queue).then(function () {
+                var failed = queue.filter(function (row) {
+                    return row.getAttribute('data-dep-status') !== 'active';
                 });
-            }, Promise.resolve()).then(function () {
+                return failed.length > 0 && failed.length < queue.length ? pass(failed) : null;
+            }).then(function () {
                 if (requiredReady() && anyFailed(queue) && statusLine) {
                     run.disabled = false;
                     statusLine.textContent = (i18n.optionalFailed || '') + ' ';

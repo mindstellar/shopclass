@@ -82,6 +82,35 @@ final class FieldQuery
     }
 
     /**
+     * Form order for two field rows that carry cf_group_position and cf_field_position, as
+     * forCategory() returns them: the same order as formOrderSql(), for rows from several queries.
+     *
+     * @param array<string,mixed> $a
+     * @param array<string,mixed> $b
+     */
+    public static function compareFormOrder(array $a, array $b): int
+    {
+        return [(int) ($a['cf_group_position'] ?? 0), (int) ($a['cf_field_position'] ?? 0), (int) ($a['pk_i_id'] ?? 0)]
+            <=> [(int) ($b['cf_group_position'] ?? 0), (int) ($b['cf_field_position'] ?? 0), (int) ($b['pk_i_id'] ?? 0)];
+    }
+
+    /**
+     * ORDER BY terms that put fields in form order: form position, then position inside the
+     * form, then id. A field in no form sorts first by its library position; in several forms,
+     * by the earliest. Needs the field table aliased as mf.
+     */
+    public static function formOrderSql(): string
+    {
+        $p    = DB_TABLE_PREFIX;
+        $from = $p . 't_meta_group_fields gf';
+
+        return 'COALESCE((SELECT MIN(g.i_position) FROM ' . $from . ' JOIN ' . $p . 't_meta_group g ON g.pk_i_id = gf.fk_i_group_id'
+            . ' WHERE gf.fk_i_field_id = mf.pk_i_id), 0) ASC,'
+            . ' COALESCE((SELECT MIN(gf.i_position) FROM ' . $from . ' WHERE gf.fk_i_field_id = mf.pk_i_id), mf.i_position) ASC,'
+            . ' mf.pk_i_id ASC';
+    }
+
+    /**
      * The values of several listings joined to their field, in form order.
      *
      * @param int[] $itemIds
@@ -98,7 +127,7 @@ final class FieldQuery
             . ' FROM ' . $p . 't_item_meta im'
             . ' INNER JOIN ' . $p . 't_meta_fields mf ON mf.pk_i_id = im.fk_i_field_id'
             . ' WHERE im.fk_i_item_id IN (' . implode(', ', array_fill(0, count($itemIds), '?')) . ')'
-            . ' ORDER BY mf.i_position ASC, mf.pk_i_id ASC',
+            . ' ORDER BY ' . self::formOrderSql(),
             $itemIds
         );
     }

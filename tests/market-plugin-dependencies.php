@@ -24,10 +24,12 @@ define('OSCLASS_VERSION', '7.0.0');
 error_reporting(E_ALL & ~E_USER_NOTICE);
 
 $pluginsDir = sys_get_temp_dir() . '/osc-deps-plugins-' . bin2hex(random_bytes(4)) . '/';
-foreach (array('fresh', 'off') as $dir) {
+foreach (array('fresh', 'off', 'needy') as $dir) {
     mkdir($pluginsDir . $dir, 0777, true);
     file_put_contents($pluginsDir . $dir . '/index.php', '<?php');
 }
+file_put_contents($pluginsDir . 'off/index.php', "<?php\n/*\nPlugin Name: Off Plugin\nVersion: 0.1.0\n*/\n");
+file_put_contents($pluginsDir . 'needy/shopclass.json', '{"plugins":{"required":{"absent":"^0.2.0","off":"^0.1.0"}}}');
 define('PLUGINS_PATH', $pluginsDir);
 
 $GLOBALS['prefs']       = array();
@@ -127,6 +129,8 @@ pin('empty accepts any version', true, VersionConstraint::satisfies('0.1', ''));
 pin('no version meets a constraint', false, VersionConstraint::satisfies('', '>=1.0'));
 pin('a suffix in the constraint counts', array(true, false), array(VersionConstraint::satisfies('1.2.0-rc1', '>=1.2.0-beta'), VersionConstraint::satisfies('1.2.0-alpha', '>=1.2.0-beta')));
 pin('four parts are read', array(true, false), array(VersionConstraint::satisfies('1.2.3.5', '>=1.2.3.4'), VersionConstraint::satisfies('1.2.3.3', '>=1.2.3.4')));
+pin('isAbove: newer than ^, ~, < and =', array(true, true, true, true), array(VersionConstraint::isAbove('0.2.1', '^0.1.0'), VersionConstraint::isAbove('1.3.0', '~1.2.3'), VersionConstraint::isAbove('2.0', '<2.0'), VersionConstraint::isAbove('1.0.1', '=1.0')));
+pin('isAbove: older, met, or a minimum is not', array(false, false, false, false), array(VersionConstraint::isAbove('0.0.9', '^0.1.0'), VersionConstraint::isAbove('0.1.4', '^0.1.0'), VersionConstraint::isAbove('9.0', '>=1.0'), VersionConstraint::isAbove('1.0', '>1.0')));
 pin('a constraint the manifest refuses is met by nothing', array(false, false), array(VersionConstraint::isValid('>=1.2 junk'), VersionConstraint::satisfies('9.0', '>=1.2 junk')));
 
 harness_section('resolver states');
@@ -138,6 +142,9 @@ pin('not on disk, in catalog: missing, install', array(Deps::MISSING, 'install',
 pin('...named from the catalog', array('Digital Goods', 'Downloads after payment.'), array($missing['name'], $missing['description']));
 $old = $state('shipping', '>=1.0');
 pin('installed but too old: update to the best match', array(Deps::TOO_OLD, 'update', '1.1.0'), array($old['status'], $old['action'], $old['offer']['version']));
+$newer = $state('stripe', '~1.2.0');
+pin('installed but newer: says so, offers nothing', array(Deps::TOO_NEW, 'none', null, ''), array($newer['status'], $newer['action'], $newer['offer'], $newer['manual_url']));
+check('...with a message', str_contains($newer['message'], 'newer'));
 $stuck = $state('old-only', '>=2.0');
 pin('too old with nothing newer: no action, says why', array(Deps::TOO_OLD, 'none'), array($stuck['status'], $stuck['action']));
 check('...with a message', $stuck['message'] !== '');
@@ -227,6 +234,22 @@ pin('...in both lists', array(true, true), array(
 ));
 check('a plugin with no files says so', str_contains((string) Deps::switchOn('gone'), 'files are missing'));
 
+harness_section('a plugin that needs other plugins');
+pin('requirements come from its shopclass.json', array('required' => array('absent' => '^0.2.0', 'off' => '^0.1.0'), 'recommended' => array()), Deps::pluginRequirements('needy/index.php'));
+pin('a path outside the plugins folder has none', array('required' => array(), 'recommended' => array()), Deps::pluginRequirements('../needy/index.php'));
+$GLOBALS['pluginPrefs']['active_plugins'] = serialize(array());
+$blocked = (string) Deps::switchOn('needy');
+check('switching it on is refused, naming each plugin and version', str_contains($blocked, 'absent version ^0.2.0') && str_contains($blocked, 'Off Plugin version ^0.1.0'), $blocked);
+pin('...and it stays off and not installed', array(false, false), array(
+    in_array('needy/index.php', unserialize($GLOBALS['pluginPrefs']['active_plugins']), true),
+    in_array('needy/index.php', unserialize($GLOBALS['pluginPrefs']['installed_plugins']), true),
+));
+pin('a plugin with no requirements is not held', null, Deps::refuseActivation('fresh/index.php'));
+pin('met requirements do not block', null, $deps->activationBlocker(array('required' => array('stripe' => '>=1.2'))));
+$newer = static fn (bool $on): ?string => (new Deps(array('tax' => array('name' => 'Tax', 'version' => '0.3.0', 'enabled' => $on)), array(), array()))->activationBlocker(array('required' => array('tax' => '^0.2.0')));
+pin('a newer required plugin that is on does not block, so updating it locks nothing out', null, $newer(true));
+check('a newer one that is off still blocks', str_contains((string) $newer(false), 'Tax version ^0.2.0'), (string) $newer(false));
+
 harness_section('theme manifest');
 $GLOBALS['themesDir'] = sys_get_temp_dir() . '/osc-deps-' . bin2hex(random_bytes(4)) . '/';
 mkdir($GLOBALS['themesDir'] . 'aisle', 0777, true);
@@ -258,7 +281,8 @@ $calls = array();
 $r     = $live->ensure($manifest, 'digital-goods');
 pin('a demo site fetches nothing', array(false, array()), array($r['ok'], $calls));
 
-foreach (array('fresh', 'off') as $dir) {
+unlink($pluginsDir . 'needy/shopclass.json');
+foreach (array('fresh', 'off', 'needy') as $dir) {
     unlink($pluginsDir . $dir . '/index.php');
     rmdir($pluginsDir . $dir);
 }

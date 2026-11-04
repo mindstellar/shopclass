@@ -175,7 +175,7 @@
     gap: var(--osc-shell-gap);
     padding: 0;
 
-    > * {
+    > :not(dialog) {
       margin-block: 0;
     }
   }
