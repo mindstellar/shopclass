@@ -19,6 +19,7 @@ $plugin_data = __get('plugin_data');
 
 osc_admin_page(array(
     'section' => static fn () => osc_apply_filter('custom_plugin_title', __('Plugins')),
+    'heading' => static fn () => (string) __get('plugin_data')['plugin_name'],
     'title'   => __('Plugins'),
 ));
 
@@ -54,7 +55,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <input type="hidden" name="plugin" value="<?php echo $plugin_data['filename']; ?>"/>
             <input type="hidden" name="plugin_short_name" value="<?php echo $plugin_data['short_name']; ?>"/>
             <fieldset>
-                <?php osc_admin_page_head($plugin_data['plugin_name']); ?>
                 <p class="text"><?php echo $plugin_data['description']; ?></p>
                 <?php osc_admin_tree_picker(array(
                     'id'         => 'plugin_tree',

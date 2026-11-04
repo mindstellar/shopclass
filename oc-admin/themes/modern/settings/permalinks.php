@@ -23,6 +23,7 @@ $form = __get('permalinks_form');
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Permalinks'),
     'title'   => __('Permalinks'),
     'help'    => __("Activate this option if you want your site's URLs to be more attractive to search engines and intelligible for users."
                     . " <strong>Be careful</strong>: depending on your hosting service, this might not work correctly."),
@@ -32,7 +33,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="mail-setting">
         <!-- settings form -->
         <div id="mail-settings">
-            <?php osc_admin_page_head(__('Permalinks')); ?>
             <p class="settings-lead"><?php _e('Friendly URLs use words instead of question marks and numbers.'); ?></p>
             <?php osc_admin_settings_form($form['id'], $form); ?>
         </div>

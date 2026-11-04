@@ -57,8 +57,17 @@ if (!function_exists('osc_current_admin_locale')) {
     }
 }
 if (!function_exists('osc_current_admin_theme_path')) {
+    // The header draws the title row the screen declared, so its buttons are on the page.
     function osc_current_admin_theme_path($file = '')
     {
+        if ($file === 'parts/header.php') {
+            $declared = osc_admin_page_declared();
+            osc_admin_page_header('', array(
+                'heading'      => $declared['heading'] ?? null,
+                'buttons'      => $declared['buttons'] ?? array(),
+                'buttons_html' => $declared['buttons_html'] ?? null,
+            ));
+        }
     }
 }
 foreach (array('error', 'ok', 'warning', 'info') as $kind) {

@@ -52,10 +52,6 @@ function customText($return = 'title')
     return $text[$return];
 }
 
-osc_admin_page(array(
-    'section' => static fn () => customText('title'),
-));
-
 /**
  * Filter callback for `admin_title`: prefix the browser title with the form's subtitle.
  *
@@ -288,21 +284,26 @@ $itemSellField = static function (string $key, string $label, string $inputmode,
     ));
 };
 
+$headActions = array();
+if ($itemViewUrl !== '') {
+    $headActions[] = array(
+        'label' => osc_mode_text(__('View listing'), __('View product')),
+        'url'   => $itemViewUrl,
+        'icon'  => 'bi-box-arrow-up-right',
+        'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
+    );
+}
+$headActions[] = array('label' => (osc_mode_text(__('Back to listings'), __('Back to products'))), 'url' => $itemBackUrl, 'variant' => 'dim');
+
+osc_admin_page(array(
+    'section' => static fn () => customText('title'),
+    'heading' => customText('subtitle'),
+    'buttons' => $headActions,
+));
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="adminItemForm" data-osc-mode="<?php echo $itemShop ? 'shop' : 'classifieds'; ?>" data-osc-new="<?php echo $new_item ? '1' : '0'; ?>">
     <?php
-    $headActions = array();
-    if ($itemViewUrl !== '') {
-        $headActions[] = array(
-            'label' => osc_mode_text(__('View listing'), __('View product')),
-            'url'   => $itemViewUrl,
-            'icon'  => 'bi-box-arrow-up-right',
-            'attrs' => array('target' => '_blank', 'rel' => 'noopener'),
-        );
-    }
-    $headActions[] = array('label' => (osc_mode_text(__('Back to listings'), __('Back to products'))), 'url' => $itemBackUrl, 'variant' => 'dim');
-    osc_admin_page_head(customText('subtitle'), $headActions);
-
     // The surface the browser-side validator writes its refusals into. It is drawn only
     // when the server left it empty: a rejected save fills the same id from inside the
     // form, and two of them would be one id twice.

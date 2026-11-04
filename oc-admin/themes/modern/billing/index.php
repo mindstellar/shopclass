@@ -13,13 +13,6 @@
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderStore;
 
-osc_admin_page(array(
-    'section' => __('Billing'),
-    'title'   => __('Billing'),
-    'help'    => __('Every payment taken on this site, whichever payment plugin handled it. '
-                    . 'Open an order to see what it bought and to settle or refund it by hand.'),
-));
-
 $orders   = __get('orders');
 $users    = __get('users');
 $summary  = __get('summary');
@@ -50,14 +43,21 @@ $isFiltered = $toShip
               || ($filters['gateway'] ?? '') !== ''
               || (int)($filters['user_id'] ?? 0) > 0
               || ($filters['q'] ?? '') !== '';
-?>
-<?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Orders'), osc_is_shop_mode() ? array(array(
+
+osc_admin_page(array(
+    'section' => __('Billing'),
+    'title'   => __('Billing'),
+    'help'    => __('Every payment taken on this site, whichever payment plugin handled it. '
+                    . 'Open an order to see what it bought and to settle or refund it by hand.'),
+    'heading' => __('Orders'),
+    'buttons' => osc_is_shop_mode() ? array(array(
         'label' => $toShip ? __('All orders') : __('To ship'),
         'url'   => $toShip ? $base : $base . '&toShip=1',
         'icon'  => $toShip ? 'bi-list' : 'bi-box-seam',
-    )) : array()); ?>
-
+    )) : array(),
+));
+?>
+<?php osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php if ((bool) __get('showDocuments')) {
         osc_admin_tab_nav(array(

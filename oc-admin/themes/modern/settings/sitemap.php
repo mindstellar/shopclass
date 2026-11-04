@@ -17,6 +17,7 @@
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Sitemap'),
     'title'   => __('Sitemap'),
     'help'    => __('Configure the XML sitemap: how many URLs go in each file, which extra location pages to '
                     . 'include, any custom URLs to append, and the robots.txt that advertises it to search engines.'),
@@ -37,7 +38,6 @@ $freqOptions = array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="sitemap-setting">
-    <?php osc_admin_page_head(__('Sitemap')); ?>
     <p>
         <?php printf(
             __('The sitemap index is served at %s and always reflects the current site content.'),

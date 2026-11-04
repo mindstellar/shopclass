@@ -93,6 +93,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
+- An admin screen's title, its buttons and its icon actions share one header row, and the top bar shows the path ("Settings › Comments"). The phone menu button matches the top bar.
 - With **Automatic cron process** on, due background jobs such as order e-mails run within a minute of a visit, not five.
 - Order e-mails link the buyer's order through `osc_billing_order_url()`; a theme sets its own order page with the `billing_order_url` event.
 - A paid order's e-mail says "Your order #12 is paid", greets the buyer by name and links the order page.

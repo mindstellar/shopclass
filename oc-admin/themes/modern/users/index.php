@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'heading' => __('Manage users'),
     'title'   => __('Manage users'),
     'help'    => __('Add, edit or delete information associated to registered users. Keep in mind that deleting a user also '
                     . 'deletes all the listings the user published.'),
@@ -83,7 +84,6 @@ $rows        = $aData['aRows'];
 $withFilters = __get('withFilters');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Manage users')); ?>
     <div class="relative">
         <?php osc_admin_list_filter(array(
                 'page'     => 'users',

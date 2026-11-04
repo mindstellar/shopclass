@@ -82,6 +82,7 @@ osc_add_hook('admin_footer', $storage_js, 10);
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Storage Settings'),
     'title'   => __('Storage Settings'),
     'help'    => __('Configure S3-compatible object storage for listing images. When enabled, uploads are moved to your '
                     . 'bucket by the background storage queue; the local disk stays the default until you switch it on.'),
@@ -89,7 +90,6 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="storage-settings">
-        <?php osc_admin_page_head(__('Storage Settings')); ?>
 
         <?php if ($betterS3Active) { ?>
             <div class="flashmessage flashmessage-error">

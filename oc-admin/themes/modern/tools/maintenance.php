@@ -28,6 +28,7 @@ function render_offset()
 
 osc_admin_page(array(
     'section' => __('Tools'),
+    'heading' => __('Maintenance'),
     'title'   => __('Maintenance'),
     'help'    => __('Put a banner on the site while you work, or take the public site down with HTTP 503. Signed-in admins always stay in.'),
 ));
@@ -35,7 +36,6 @@ osc_admin_page(array(
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="backup-setting">
     <div id="backup-settings">
-        <?php osc_admin_page_head(__('Maintenance')); ?>
         <?php osc_admin_action_section(array(
     'intro'     => __('While maintenance mode is on, signed-in admins can still use the site. Everyone else either sees the banner below, or an HTTP 503 page if the public site is blocked.'),
     'body_html' => '<div class="' . ($maintenance ? 'callout-danger' : 'callout-success') . '">'

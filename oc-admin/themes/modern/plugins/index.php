@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Plugins'),
+    'heading' => __('Manage plugins'),
     'title'   => __('Plugins'),
     'help'    => __("Install or uninstall the plugins available in your installation. In some cases, "
                     . "you'll have to configure the plugin in order to get it to work."),
@@ -60,7 +61,6 @@ $marketUpdateUrl  = osc_admin_base_url(true) . '?page=ajax&action=market_update&
 $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh&type=plugin&' . $marketCsrf;
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head(__('Manage plugins')); ?>
 
 <div class="market-app" data-type="plugin"
      data-install-url="<?php echo osc_esc_html($marketInstallUrl); ?>"

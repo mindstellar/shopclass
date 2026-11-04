@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1281 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1282 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -105,7 +105,7 @@ Core defines 1281 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (46)
+### hAdminUi (47)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -139,6 +139,7 @@ Core defines 1281 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_form_row_close()` | Close the row osc_admin_form_row_open() opened. |
 | `osc_admin_form_row_open($label = '', array $opts = array())` | One labelled row of a form. |
 | `osc_admin_form_section($title, array $opts = array())` | A titled group of fields within a screen, with an optional explanatory paragraph. |
+| `osc_admin_header_title($title = null)` | The page title the admin header drew in its title row, or null when it drew none. Passing a title records it; osc_admin_page_head() does that at level 1. |
 | `osc_admin_location_picker(array $opts = array())` | Where a record is: the country select, the region and city inputs with their hidden ids, and the rest of the address behind a disclosure. |
 | `osc_admin_number(array $opts)` | A number, at number width. Keys: the shared set, plus 'min', 'max', 'step', 'prefix', 'suffix'. |
 | `osc_admin_page_head($title, array $actions = array(), array $opts = array())` | The page title, and the actions that belong to the page as a whole. |

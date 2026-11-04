@@ -17,6 +17,7 @@ use mindstellar\currency\CurrencyCode;
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
+    'heading' => __('Currencies'),
     'title'   => __('Currencies'),
     'help'    => __("Add new currencies or edit existing currencies so users can publish listings in their country's currency."),
     'actions' => array(
@@ -53,7 +54,6 @@ foreach ($aCurrencies as $currency) {
 }
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Currencies')); ?>
     <div class="relative">
         <div id="currencies-toolbar" class="table-toolbar">
         </div>

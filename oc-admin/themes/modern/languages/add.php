@@ -15,12 +15,12 @@
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('Add language'),
     'title'   => __('Add language'),
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div class="appearance">
-    <?php osc_admin_page_head(__('Add language')); ?>
     <div id="upload-language">
         <div class="form-horizontal">
             <?php if (is_writable(osc_translations_path())) { ?>

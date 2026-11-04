@@ -136,6 +136,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => __('General Settings'),
     'title'   => __('General Settings'),
     'help'    => osc_mode_text(
         __("Change the basic configuration of your Shopclass. From here, you can modify variables such as the site’s name, "
@@ -151,7 +152,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="general-setting">
     <!-- settings form -->
     <div id="general-settings">
-        <?php osc_admin_page_head(__('General Settings')); ?>
         <ul id="error_list"></ul>
         <?php osc_admin_settings_form($form['id'], $form); ?>
     </div>

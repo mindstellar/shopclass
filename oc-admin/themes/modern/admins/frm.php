@@ -24,11 +24,11 @@ $form = __get('admin_form');
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'heading' => $form['title'],
     'title'   => $form['title'],
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head($form['title']); ?>
 <div class="settings-user">
     <ul id="error_list"></ul>
     <?php osc_admin_settings_form($form['id'], $form); ?>

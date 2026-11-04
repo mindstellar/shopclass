@@ -13,12 +13,6 @@
 use mindstellar\billing\Document;
 use mindstellar\billing\DocumentPage;
 
-osc_admin_page(array(
-    'section' => __('Billing'),
-    'title'   => __('Invoices'),
-    'help'    => __('Every invoice and credit note issued, newest first. They are never changed or deleted.'),
-));
-
 $documents = __get('documents');
 $filters   = __get('filters');
 $total     = (int) __get('total');
@@ -30,13 +24,20 @@ $params     = array_filter($filters);
 $isFiltered = $params !== array();
 $csvUrl     = $base . '&' . http_build_query(array('action' => 'documents_csv') + $params);
 $typeWords  = array(Document::INVOICE => __('Invoices'), Document::CREDIT_NOTE => __('Credit notes'));
-?>
-<?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Invoices'), array(array(
+
+osc_admin_page(array(
+    'section' => __('Billing'),
+    'title'   => __('Invoices'),
+    'help'    => __('Every invoice and credit note issued, newest first. They are never changed or deleted.'),
+    'heading' => __('Invoices'),
+    'buttons' => array(array(
         'label' => __('Download CSV'),
         'url'   => $csvUrl,
         'icon'  => 'bi-download',
-    ))); ?>
+    )),
+));
+?>
+<?php osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php osc_admin_tab_nav(array(
         array('label' => __('Orders'), 'url' => $base, 'active' => false),

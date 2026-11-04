@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Appearance'),
+    'heading' => __('Add new theme'),
     'title'   => __('Add theme'),
     'help'    => __('Manually add Shopclass themes in .zip format. If you prefer, '
                     . 'you can manually upload the decompressed theme to <em>oc-content/themes</em>.'),
@@ -23,7 +24,6 @@ osc_admin_page(array(
 osc_current_admin_theme_path('parts/header.php'); ?>
 <!-- themes list -->
 <div class="appearance">
-    <?php osc_admin_page_head(__('Add new theme')); ?>
     <div id="upload-themes" class="ui-osc-tabs-panel">
         <div class="form-horizontal">
             <?php if (is_writable(osc_themes_path())) { ?>

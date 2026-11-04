@@ -17,6 +17,7 @@ $form = __get('item_form');
 
 osc_admin_page(array(
     'section' => osc_mode_text(__('Listings'), __('Products')),
+    'heading' => static fn () => (string) (osc_settings_page($form['id'])['groups'][0]['title'] ?? ''),
     'title'   => osc_mode_text(__('Listing Settings'), __('Product Settings')),
     'help'    => osc_mode_text(
         __('Modify the general settings for your listings. Decide if users have to register in order to publish something, the number of pictures allowed for each listing, etc.'),

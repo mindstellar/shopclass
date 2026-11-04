@@ -39,6 +39,7 @@ function customFrmText()
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => static fn () => customFrmText()['title'],
 ));
 
 /**
@@ -60,7 +61,6 @@ osc_add_filter('admin_title', 'customPageTitle');
 $aux = customFrmText();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_page_head($aux['title']); ?>
 <div class="settings-user">
     <ul id="error_list"></ul>
     <?php osc_admin_form_open(array(

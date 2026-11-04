@@ -12,6 +12,7 @@
 
 osc_admin_page(array(
     'section' => __('Billing'),
+    'heading' => __('Credits'),
     'title'   => __('Billing'),
     'help'    => __('Credits are what users spend on paid features. They are added when an order is '
                     . 'paid, and you can add or remove them by hand from any account here.'),
@@ -26,7 +27,6 @@ $perPage     = (int)__get('perPage');
 $base = osc_admin_base_url(true) . '?page=billing&action=credits';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Credits')); ?>
 
     <?php osc_admin_toolbar_open(array('align' => 'end')); ?>
         <p class="billing-summary">

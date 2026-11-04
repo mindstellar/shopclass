@@ -43,13 +43,6 @@ function render_offset()
     return 'row-offset';
 }
 
-osc_admin_page(array(
-    'section' => __('Statistics'),
-    'title'   => __('User Statistics'),
-    'help'    => __('Stay up-to-date on the number of users registered on your site. You can also see a breakdown of the '
-                    . 'countries and regions where users live among those available on your site.'),
-));
-
 /**
  * Emit the user-statistics charts and the Google Visualization loader they need.
  *
@@ -137,18 +130,21 @@ function customHead()
     }
 
 osc_add_hook('admin_header', 'customHead', 10);
-?>
-<?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-<?php
 $stats_ranges = array(
     'month' => __('Last 10 months'),
     'week'  => __('Last 10 weeks'),
     'day'   => __('Last 10 days'),
 );
 $active_range = $type ?: 'day';
-osc_admin_page_head(__('User Statistics'), array(), array(
-    'actions_html' => static function () use ($stats_ranges, $active_range) {
+
+osc_admin_page(array(
+    'section' => __('Statistics'),
+    'title'   => __('User Statistics'),
+    'help'    => __('Stay up-to-date on the number of users registered on your site. You can also see a breakdown of the '
+                    . 'countries and regions where users live among those available on your site.'),
+    'heading' => __('User Statistics'),
+    'buttons_html' => static function () use ($stats_ranges, $active_range) {
         $links = array();
         foreach ($stats_ranges as $key => $label) {
             $links[] = array(
@@ -159,7 +155,9 @@ osc_admin_page_head(__('User Statistics'), array(), array(
         }
         osc_admin_link_group($links);
     },
-)); ?>
+));
+?>
+<?php osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="row g-3" id="stats-page">
         <div class="col-md-6">
             <div class="widget-box">

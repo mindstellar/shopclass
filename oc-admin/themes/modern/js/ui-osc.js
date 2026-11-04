@@ -1222,15 +1222,21 @@ osc.sidebar = (function () {
 
     // At 1024px and below the menu is an off-canvas panel opened from the top bar.
     function initMobile(nav) {
-        var icon = document.querySelector('#header .toggle-icon');
+        var toggler = document.querySelector('#header .navbar-toggler');
+        function mark(isOpen) {
+            if (!toggler) { return; }
+            toggler.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
+            var label = toggler.getAttribute(isOpen ? 'data-label-close' : 'data-label-open');
+            if (label) { toggler.setAttribute('aria-label', label); }
+        }
         function apply() {
             var small = !desktop.matches;
             if (!small && osc.offcanvas.isOpen(nav)) { osc.offcanvas.hide(nav); }
             nav.classList.toggle('offcanvas', small);
             nav.classList.toggle('offcanvas-start', small);
         }
-        nav.addEventListener('osc:offcanvas:show', function () { if (icon) { icon.classList.add('open'); } });
-        nav.addEventListener('osc:offcanvas:hide', function () { if (icon) { icon.classList.remove('open'); } });
+        nav.addEventListener('osc:offcanvas:show', function (e) { if (!e.defaultPrevented) { mark(true); } });
+        nav.addEventListener('osc:offcanvas:hide', function (e) { if (!e.defaultPrevented) { mark(false); } });
         desktop.addEventListener('change', apply);
         apply();
     }

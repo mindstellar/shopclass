@@ -19,11 +19,6 @@ $deps          = __get('dependencies');
 $deps          = is_array($deps) ? $deps : array('required' => array(), 'recommended' => array());
 $blocked       = osc_market_changes_blocked();
 
-osc_admin_page(array(
-    'section' => __('Appearance'),
-    'title'   => __('Plugins for this theme'),
-));
-
 osc_current_admin_theme_path('parts/market.php');
 osc_current_admin_theme_path('parts/package-ui.php');
 
@@ -105,6 +100,14 @@ $renderRow = static function (array $row) use ($states, $addPlugin) {
     <?php
 };
 
+osc_admin_page(array(
+    'section' => __('Appearance'),
+    'title'   => __('Plugins for this theme'),
+    'heading' => ($isActiveTheme && $requiredOpen > 0)
+        ? sprintf(__('%s needs these plugins'), $themeName)
+        : ($isActiveTheme ? $themeName : sprintf(__('Before %s goes live'), $themeName)),
+));
+
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="theme-dependencies"
      data-install-url="<?php echo osc_esc_html($ajaxUrl); ?>"
@@ -119,10 +122,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
          'optionalFailed' => __('A recommended plugin could not be installed.'),
          'activateAnyway' => __('Activate the theme without it'),
      ))); ?>'>
-    <?php osc_admin_page_head(($isActiveTheme && $requiredOpen > 0)
-        ? sprintf(__('%s needs these plugins'), $themeName)
-        : ($isActiveTheme ? $themeName : sprintf(__('Before %s goes live'), $themeName))); ?>
-
     <p>
         <?php if ($isActiveTheme && $requiredOpen > 0) {
             _e('Your active theme needs a plugin that is missing or turned off. The parts that use it stay hidden until it is back.');
@@ -144,7 +143,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php endif; ?>
 
     <?php if ($deps['required'] !== array()) : ?>
-        <?php osc_admin_page_head(__('Required')); ?>
+        <?php osc_admin_page_head(__('Required'), array(), array('level' => 3)); ?>
         <?php osc_package_list_open('theme-deps-list'); ?>
         <?php foreach ($deps['required'] as $row) {
             $renderRow($row);
@@ -153,7 +152,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php endif; ?>
 
     <?php if ($deps['recommended'] !== array()) : ?>
-        <?php osc_admin_page_head(__('Recommended'), array(), array('class' => 'separate-top')); ?>
+        <?php osc_admin_page_head(__('Recommended'), array(), array('level' => 3, 'class' => 'separate-top')); ?>
         <?php osc_package_list_open('theme-deps-list'); ?>
         <?php foreach ($deps['recommended'] as $row) {
             $renderRow($row);

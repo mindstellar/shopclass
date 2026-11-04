@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'heading' => __('Manage ban rules'),
     'title'   => __('Manage ban rules'),
     'help'    => __('Add, edit or delete ban rules. Keep in mind that ban rules prevent users to register, publish or comment on listings.'),
     'actions' => array(
@@ -65,7 +66,6 @@ $rows    = $aData['aRows'];
 
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Manage ban rules')); ?>
     <div class="relative">
         <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="users"/>

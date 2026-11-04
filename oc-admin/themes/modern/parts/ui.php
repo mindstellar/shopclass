@@ -42,26 +42,24 @@ if (!function_exists('osc_admin_page')) {
     /**
      * Declare what this screen is, once, at the top of the file.
      *
-     * Every page was writing the same three functions -- a `customPageHeader` emitting an
-     * <h1>, an `addHelp` printing a paragraph, a `customPageTitle` filtering the browser
-     * title -- and registering each against its hook. Three definitions and three
-     * registrations per file, seventy-one times, is how the drift got in: some pages grew
-     * a help toggle without help behind it, some ordered their header links differently,
-     * some forgot the title filter entirely.
-     *
      * Keys:
-     *   'section' => string|callable  The area name shown as the page <h1> (Users,
-     *                        Listings, ...). A callable is resolved when the header
-     *                        renders, which is what a title passing through a plugin
-     *                        filter needs -- at registration time the plugin has not
-     *                        added its filter yet.
+     *   'section' => string|callable  The area name (Users, Listings, ...). It leads the
+     *                        path in the top bar, and is the header <h1> on a screen
+     *                        with no 'heading'. A callable is resolved when the header
+     *                        renders, so a plugin filter added later still applies.
+     *   'heading' => string|callable  The page title. The header then draws one title row:
+     *                        this as the <h1>, then 'buttons', 'buttons_html' and the icon
+     *                        actions. The screen must not call osc_admin_page_head() for it.
+     *   'buttons' => array|callable   Title-row buttons; each an osc_admin_action_button() spec.
+     *   'buttons_html' => callable    Prints a control that is not a button (a segmented
+     *                        toggle), after 'buttons'.
      *   'title'   => string  Browser-title prefix, rendered as "Prefix » Site title".
      *   'help'    => string|callable  Help-box body. Its presence is what puts the "?"
      *                        in the header -- the toggle can no longer exist without it.
      *   'actions' => array   Header icon actions; see osc_admin_page_header().
      *
-     * Registers against the same hooks as before, so a plugin adding its own
-     * `admin_page_header` or `help_box` callback still runs alongside this one.
+     * Callables are resolved when the header is drawn, so they may read data the screen
+     * computes before including parts/header.php.
      *
      * @param array<string,mixed> $opts
      *
@@ -69,15 +67,20 @@ if (!function_exists('osc_admin_page')) {
      */
     function osc_admin_page(array $opts)
     {
+        osc_admin_page_declared($opts);
         $section = $opts['section'] ?? '';
         $actions = $opts['actions'] ?? array();
         $help    = $opts['help'] ?? null;
+        $heading = $opts['heading'] ?? null;
 
-        if ($section !== '' || $actions !== array()) {
-            osc_add_hook('admin_page_header', static function () use ($section, $actions, $help) {
+        if ($section !== '' || $actions !== array() || $heading !== null) {
+            osc_add_hook('admin_page_header', static function () use ($section, $actions, $help, $heading, $opts) {
                 osc_admin_page_header($section, array(
-                    'actions' => $actions,
-                    'help'    => $help !== null,
+                    'actions'      => $actions,
+                    'help'         => $help !== null,
+                    'heading'      => $heading,
+                    'buttons'      => $opts['buttons'] ?? array(),
+                    'buttons_html' => $opts['buttons_html'] ?? null,
                 ));
             });
         }
@@ -102,9 +105,42 @@ if (!function_exists('osc_admin_page')) {
     }
 }
 
+if (!function_exists('osc_admin_page_declared')) {
+    /**
+     * What this request's osc_admin_page() declared; passing an array records it.
+     *
+     * @param array<string,mixed>|null $opts
+     *
+     * @return array<string,mixed>
+     */
+    function osc_admin_page_declared(?array $opts = null)
+    {
+        static $declared = array();
+        if ($opts !== null) {
+            $declared = $opts;
+        }
+
+        return $declared;
+    }
+}
+
+if (!function_exists('osc_admin_page_resolve')) {
+    /**
+     * A declared value, with a callable called.
+     *
+     * @param mixed $value
+     *
+     * @return mixed
+     */
+    function osc_admin_page_resolve($value)
+    {
+        return !is_string($value) && is_callable($value) ? $value() : $value;
+    }
+}
+
 if (!function_exists('osc_admin_section_label')) {
     /**
-     * The name shown above a screen's title. A "Settings" screen that belongs to a section
+     * The name of the area a screen belongs to. A "Settings" screen that belongs to a section
      * (Listings, Users, Media, Billing) shows that section's name instead.
      *
      * @param string $section
@@ -125,9 +161,45 @@ if (!function_exists('osc_admin_section_label')) {
     }
 }
 
+if (!function_exists('osc_admin_breadcrumb')) {
+    /**
+     * The path on the left of the top bar: the section, linked to its main screen, then the
+     * declared heading. A screen with no heading shows only the section.
+     *
+     * @return void
+     */
+    function osc_admin_breadcrumb()
+    {
+        $declared = osc_admin_page_declared();
+        $section  = osc_admin_section_label((string) osc_admin_page_resolve($declared['section'] ?? ''));
+        $heading  = (string) osc_admin_page_resolve($declared['heading'] ?? '');
+        if ($section === '') {
+            return;
+        }
+        $url = '';
+        if (function_exists('osc_is_moderator')) {
+            $menu  = AdminMenu::getInstance();
+            [$lit] = $menu->currentIds();
+            $url   = (string) ($menu->get_array_menu()[$lit][1] ?? '');
+        }
+        echo '<nav class="admin-breadcrumb" aria-label="' . osc_esc_html(__('Breadcrumb')) . '"><ol>';
+        echo '<li class="admin-breadcrumb-section">'
+            . ($url !== '' ? '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($section) . '</a>' : osc_esc_html($section))
+            . '</li>';
+        if ($heading !== '' && $heading !== $section) {
+            echo '<li class="admin-breadcrumb-page" aria-current="page">' . osc_esc_html($heading) . '</li>';
+        }
+        echo '</ol></nav>';
+    }
+}
+
 if (!function_exists('osc_admin_page_header')) {
     /**
-     * The page <h1> and the icon actions that belong beside it.
+     * The header row of a screen: its title and the actions that belong beside it.
+     *
+     * With a 'heading' this is one title row: the heading as the <h1>, then the buttons,
+     * then the icon actions (help last). Without one it is the section name as the <h1>,
+     * with the icon actions inside it, as it always was.
      *
      * Actions are emitted in one order everywhere: what the page is for first (add,
      * upload), then where to configure it, then help last.
@@ -138,18 +210,16 @@ if (!function_exists('osc_admin_page_header')) {
      * `attrs` is how a header action keeps the id its page's JavaScript binds to.
      *
      * @param string|callable     $section
-     * @param array<string,mixed> $opts    'actions' => array, 'help' => bool
+     * @param array<string,mixed> $opts    'actions' => array, 'help' => bool, 'heading' =>
+     *                                     string|callable, 'buttons' => array|callable,
+     *                                     'buttons_html' => callable
      *
      * @return void
      */
     function osc_admin_page_header($section, array $opts = array())
     {
-        if (!is_string($section) && is_callable($section)) {
-            $section = $section();
-        }
-        $section = osc_admin_section_label((string) $section); ?>
-        <h1><?php echo osc_esc_html($section); ?>
-            <?php foreach (($opts['actions'] ?? array()) as $action) {
+        $icons = static function () use ($opts) {
+            foreach (($opts['actions'] ?? array()) as $action) {
                 // `label` is what osc_admin_action_button() calls the visible text, so a
                 // caller who builds an action spec there and reuses it here would
                 // otherwise render an icon with no accessible name at all.
@@ -159,22 +229,44 @@ if (!function_exists('osc_admin_page_header')) {
                     $attrs .= ' ' . osc_esc_html($name) . '="' . osc_esc_html($value) . '"';
                 }
                 // A plus icon marks the page's add action, which shows its title as text.
-                $isAdd = in_array($action['icon'] ?? '', array('bi-plus', 'bi-plus-lg', 'bi-plus-circle', 'bi-plus-circle-fill'), true); ?>
-                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>"<?php $headClass = trim(($isAdd ? 'osc-head-add ' : '') . (string) ($action['class'] ?? ''));
-                echo $headClass !== '' ? ' class="' . osc_esc_html($headClass) . '"' : ''; ?>
+                $isAdd     = in_array($action['icon'] ?? '', array('bi-plus', 'bi-plus-lg', 'bi-plus-circle', 'bi-plus-circle-fill'), true);
+                $headClass = trim('osc-head-action ' . ($isAdd ? 'osc-head-add ' : '') . (string) ($action['class'] ?? '')); ?>
+                <a href="<?php echo osc_esc_html($action['url'] ?? '#'); ?>" class="<?php echo osc_esc_html($headClass); ?>"
                    <?php if (!empty($action['onclick'])) { ?>onclick="<?php echo osc_esc_html($action['onclick']); ?>"<?php } ?>
                    title="<?php echo osc_esc_html($label); ?>"
                    <?php if (!$isAdd) { ?>aria-label="<?php echo osc_esc_html($label); ?>"<?php } ?><?php echo $attrs; ?>>
                     <i class="bi <?php echo osc_esc_html($action['icon'] ?? 'bi-circle'); ?>" aria-hidden="true"></i>
                     <?php if ($isAdd) { ?><span><?php echo osc_esc_html($label); ?></span><?php } ?>
                 </a>
-            <?php } ?>
-            <?php if (!empty($opts['help'])) { ?>
-                <a class="bi bi-question-circle" data-osc-collapse="#help-box" href="#help-box"
+            <?php }
+            if (!empty($opts['help'])) { ?>
+                <a class="osc-head-action bi bi-question-circle" data-osc-collapse="#help-box" href="#help-box"
                    aria-controls="help-box" aria-expanded="false" role="button"
                    title="<?php echo osc_esc_html(__('Help')); ?>"
                    aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
-            <?php } ?>
+            <?php }
+        };
+
+        $heading = (string) osc_admin_page_resolve($opts['heading'] ?? '');
+        if ($heading !== '') {
+            $buttons     = osc_admin_page_resolve($opts['buttons'] ?? array());
+            $buttonsHtml = $opts['buttons_html'] ?? null;
+            osc_admin_page_head($heading, is_array($buttons) ? $buttons : array(), array(
+                'level'        => 1,
+                'actions_html' => static function () use ($buttonsHtml, $icons) {
+                    if (is_callable($buttonsHtml)) {
+                        $buttonsHtml();
+                    }
+                    $icons();
+                },
+            ));
+
+            return;
+        }
+
+        $section = osc_admin_section_label((string) osc_admin_page_resolve($section)); ?>
+        <h1><?php echo osc_esc_html($section); ?>
+            <?php $icons(); ?>
         </h1>
         <?php
     }

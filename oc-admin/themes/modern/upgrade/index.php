@@ -15,6 +15,7 @@
 
 osc_admin_page(array(
     'section' => __('Tools'),
+    'heading' => __('Upgrade'),
 ));
 
 /**
@@ -241,7 +242,6 @@ function upgradeReleaseNotes()
 osc_current_admin_theme_path('parts/header.php'); ?>
 
 <div id="backup-settings">
-    <?php osc_admin_page_head(__('Upgrade')); ?>
     <div id="result">
         <div id="output" class="upgrade-running" style="display:none" role="status" aria-live="polite">
             <span class="spinner-border upgrade-running-spinner" aria-hidden="true"></span>

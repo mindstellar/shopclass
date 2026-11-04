@@ -17,6 +17,7 @@ $form = __get('user_form');
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'heading' => static fn () => (string) (osc_settings_page($form['id'])['groups'][0]['title'] ?? ''),
     'title'   => __('User Settings'),
     'help'    => __('Manage the options related to users on your site. Here, you can decide if users must register or if '
                     . 'email confirmation is necessary, among other options.'),

@@ -73,6 +73,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => static fn () => (string) (osc_settings_page($form['id'])['groups'][0]['title'] ?? ''),
     'title'   => __('Comment Settings'),
     'help'    => __("Modify the options that allow your users to publish comments on your site's listings."),
 ));

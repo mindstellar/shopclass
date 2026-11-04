@@ -20,6 +20,7 @@ osc_enqueue_script('sortablejs');
 
 osc_admin_page(array(
     'section' => __('Appearance'),
+    'heading' => __('Manage Widgets'),
     'title'   => __('Appearance'),
     'help'    => __("Modify your site's header or footer here."),
 ));
@@ -27,7 +28,6 @@ osc_admin_page(array(
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="appearance-page">
     <div class="appearance">
-        <?php osc_admin_page_head(__('Manage Widgets')); ?>
     </div>
 </div>
 </div> <!-- -->

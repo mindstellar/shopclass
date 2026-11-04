@@ -210,13 +210,13 @@ function render_offset()
 
 osc_admin_page(array(
     'section' => __('Tools'),
+    'heading' => __('Upgrade Shopclass'),
     'title'   => __('Upgrade'),
     'help'    => __("Check to see if you're using the latest version of Shopclass. If you're not, "
                     . 'the system will let you know so you can update and use the newest features.'),
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Upgrade Shopclass')); ?>
     <div class="upgrade-tool">
         <p class="form-intro">
             <?php

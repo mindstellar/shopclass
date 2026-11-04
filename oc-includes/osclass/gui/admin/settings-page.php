@@ -27,6 +27,7 @@ $values = __get('settings_values');
 
 osc_admin_page(array(
     'section' => __('Settings'),
+    'heading' => $page['title'],
     'title'   => $page['title'],
     // No help text, no "?" icon: it would open an empty box.
     'help'    => $page['help'] !== '' ? $page['help'] : null,
@@ -34,8 +35,7 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="settings-page-<?php echo osc_esc_html($page['id']); ?>">
-    <?php osc_admin_page_head($page['title']);
-    if ($page['tabs'] !== null) {
+    <?php if ($page['tabs'] !== null) {
         osc_admin_tab_nav(is_callable($page['tabs']) ? ($page['tabs'])() : $page['tabs']);
     } ?>
 

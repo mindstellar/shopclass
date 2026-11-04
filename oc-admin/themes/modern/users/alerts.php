@@ -13,6 +13,7 @@
 
 osc_admin_page(array(
     'section' => __('Users'),
+    'heading' => __('Manage alerts'),
     'title'   => __('Manage alerts'),
     'help'    => __('Add, edit or delete information associated to alerts.'),
 ));
@@ -31,7 +32,6 @@ $heldOnly  = Params::getParam('held') === '1';
 $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <?php osc_admin_page_head(__('Manage alerts')); ?>
     <?php if ($heldCount > 0 || $heldOnly) { ?>
         <div class="callout-warning callout-block">
             <span>

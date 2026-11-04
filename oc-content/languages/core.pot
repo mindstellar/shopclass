@@ -3013,6 +3013,10 @@ msgstr ""
 msgid "Brand"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/ui.php
+msgid "Breadcrumb"
+msgstr ""
+
 #: oc-includes/classes/admin/form/CommentSettingsScreen.php
 msgid "Break comments into pages with"
 msgstr ""
@@ -3794,6 +3798,10 @@ msgstr ""
 #: oc-admin/themes/modern/messages/index.php
 #: oc-admin/themes/modern/messages/thread.php
 msgid "Close conversation"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/header.php
+msgid "Close menu"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
@@ -8902,10 +8910,6 @@ msgstr ""
 msgid "Men's Clothing"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/header.php
-msgid "Menu"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/menus.php
 msgid "Menu to edit"
 msgstr ""
@@ -10529,6 +10533,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
 msgid "Open image"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/header.php
+msgid "Open menu"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
