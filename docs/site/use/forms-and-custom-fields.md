@@ -80,7 +80,10 @@ Editing a field opens its settings beside the form:
   into one a seller can answer without guessing.
 - **Advanced options** holds the rest, including *Tick to allow searches by
   this field* (see [making fields searchable](#making-fields-searchable)),
-  and, for a URL field, *Tick to open links in new tab*. A URL field takes only
+  *Tick to hide this field from visitors* (for a private answer such as a
+  terms checkbox: the poster and admins still see it, the listing page and
+  the public API do not; a hidden field cannot also be searchable), and,
+  for a URL field, *Tick to open links in new tab*. A URL field takes only
   `http` and `https` addresses.
 
 ## Reused fields change everywhere

@@ -1210,7 +1210,7 @@ class Item extends DAO
     }
 
     /**
-     * Return meta fields for a given item
+     * The meta fields visitors may see for an item, keyed by field id.
      *
      * @param int $id Item id
      *
@@ -1218,27 +1218,7 @@ class Item extends DAO
      */
     public function metaFields($id)
     {
-        $metaFields = Field::getInstance()->findByItem($id);
-        if (empty($metaFields)) {
-            return [];
-        }
-        $aTemp = $metaFields;
-
-        $array = array();
-        // prepare data - date interval - from <-> to
-        foreach ($aTemp as $value) {
-            if ($value['e_type'] === 'DATEINTERVAL') {
-                $aValue = array();
-                if (isset($array[$value['pk_i_id']])) {
-                    $aValue = $array[$value['pk_i_id']]['s_value'];
-                }
-                $aValue[$value['s_multi']] = $value['s_value'];
-                $value['s_value']          = $aValue;
-            }
-            $array[$value['pk_i_id']] = $value;
-        }
-
-        return $array;
+        return \mindstellar\fields\FieldQuery::forItem((int) $id);
     }
 
     /**

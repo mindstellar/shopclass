@@ -147,13 +147,31 @@ class FieldForm extends Form
      */
     public static function newtab_checkbox($field = null)
     {
-        $name             = 'b_new_tab';
-        $attributes['id'] = $name;
+        self::metaCheckbox('b_new_tab', $field);
+    }
 
-        if (!empty($field)) {
-            $json_decoded_field = json_decode($field['s_meta'], true);
-        }
-        if (isset($json_decoded_field['b_new_tab']) && $json_decoded_field['b_new_tab']) {
+    /**
+     * Echo the "hide from visitors" checkbox, read from the field's s_meta JSON.
+     *
+     * @param array<string,mixed>|null $field
+     *
+     * @return void
+     */
+    public static function hidden_checkbox($field = null)
+    {
+        self::metaCheckbox(\mindstellar\fields\FieldQuery::HIDDEN, $field);
+    }
+
+    /**
+     * A checkbox named after an s_meta key, ticked when the field's s_meta sets it.
+     *
+     * @param array<string,mixed>|null $field
+     */
+    private static function metaCheckbox(string $name, $field): void
+    {
+        $attributes = array('id' => $name);
+        $meta       = !empty($field['s_meta']) ? json_decode((string) $field['s_meta'], true) : null;
+        if (!empty($meta[$name])) {
             $attributes['checked'] = true;
         }
 

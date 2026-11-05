@@ -146,7 +146,7 @@ final class FieldService
                 : (string) $field['s_slug'],
             'e_type'       => $has('type') ? strtoupper((string) $changes['type']) : (string) $field['e_type'],
             'b_required'   => $has('required') ? ($changes['required'] ? 1 : 0) : (int) $field['b_required'],
-            'b_searchable' => $has('searchable') ? ($changes['searchable'] ? 1 : 0) : (int) $field['b_searchable'],
+            'b_searchable' => FieldQuery::isHidden($field) ? 0 : ($has('searchable') ? ($changes['searchable'] ? 1 : 0) : (int) $field['b_searchable']),
             's_options'    => $has('options') ? AdminText::options((array) $changes['options']) : (string) $field['s_options'],
         ];
         $fields   = $this->fields;

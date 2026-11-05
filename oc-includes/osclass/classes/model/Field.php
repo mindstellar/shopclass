@@ -45,11 +45,7 @@ class Field extends DAO
         $this->setTableName('t_meta_fields');
         $this->setPrimaryKey('pk_i_id');
         $this->setFields(array('pk_i_id', 's_name', 'e_type', 'b_required', 'b_searchable', 's_slug', 's_options', 's_meta', 'i_position', 'fk_i_group_id'));
-        if (defined('OC_ADMIN') && OC_ADMIN) {
-            $this->currentLocaleCode = osc_current_admin_locale();
-        } else {
-            $this->currentLocaleCode = osc_current_user_locale();
-        }
+        $this->currentLocaleCode = \mindstellar\fields\FieldQuery::locale();
     }
 
     /**
@@ -90,22 +86,7 @@ class Field extends DAO
      */
     private function extendField($field)
     {
-        // if s_meta json column is not empty merge it with $field
-        if (!empty($field['s_meta'])) {
-            $aMeta = json_decode($field['s_meta'], true);
-            if (is_array($aMeta)) {
-                $field = array_merge($field, $aMeta);
-            }
-        }
-
-        // check if $field['locale] is set and if it's not empty
-        if (isset($field['locale'][$this->currentLocaleCode]['s_name']) && !empty($field['locale'][$this->currentLocaleCode]['s_name'])) {
-            $field['s_name'] = $field['locale'][$this->currentLocaleCode]['s_name'];
-        } elseif (isset($field['s_name'])) {
-            $field['locale'][$this->currentLocaleCode]['s_name'] = $field['s_name'];
-        }
-
-        return $field;
+        return \mindstellar\fields\FieldQuery::extend($field, $this->currentLocaleCode);
     }
 
     /**
@@ -394,13 +375,9 @@ class Field extends DAO
     }
 
     /**
-     * The meta fields an item has a stored value for (its detail-page values).
+     * The meta fields an item has a stored value for, hidden ones included.
      *
-     * Resolves purely from the values in t_item_meta: any field the item filled in
-     * is returned, regardless of how it was assigned (loose, grouped, or inherited
-     * from a parent category). The old t_meta_categories join required the field to
-     * be assigned to the item's exact category, which hid the value of an inherited
-     * or grouped field — the value was stored but never shown.
+     * @deprecated 7.1.0 Use mindstellar\fields\FieldQuery::forItem().
      *
      * @param int $itemId
      *
@@ -408,34 +385,17 @@ class Field extends DAO
      */
     public function findByItem($itemId)
     {
+        \mindstellar\utility\Deprecate::deprecatedFunction(__METHOD__, '7.1.0', 'mindstellar\\fields\\FieldQuery::forItem()');
         if (!is_numeric($itemId)) {
             return array();
         }
-        // Column aliases and an aliased join the builder cannot express, so the
-        // query stays hand-written; every identifier is a literal or the
-        // DB_TABLE_PREFIX constant and the only value — the item id, (int)-cast —
-        // is bound.
-        $p   = DB_TABLE_PREFIX;
-        $sql = 'SELECT mf.pk_i_id as pk_i_id, im.s_value as s_value, mf.s_name as s_name,'
-            . ' mf.e_type as e_type, im.s_multi as s_multi, mf.s_slug as s_slug, mf.s_meta as s_meta'
-            . ' FROM ' . $p . 't_item_meta im'
-            . ' INNER JOIN ' . $p . 't_meta_fields mf ON mf.pk_i_id = im.fk_i_field_id'
-            . ' WHERE im.fk_i_item_id = ?'
-            . ' ORDER BY ' . \mindstellar\fields\FieldQuery::formOrderSql();
-
         try {
-            $fields = Db::select($sql, array((int)$itemId));
+            $rows = Db::stringifyRows(\mindstellar\fields\FieldQuery::valuesOf(array((int) $itemId)));
         } catch (\mindstellar\database\DbException $e) {
             return array();
         }
 
-        // extend fields
-        $extendedFields = array();
-        foreach (Db::stringifyRows($fields) as $field) {
-            $extendedFields[]    = $this->extendField($field);
-        }
-
-        return $extendedFields;
+        return array_map(fn (array $row): array => $this->extendField(array_diff_key($row, array('fk_i_item_id' => 0))), $rows);
     }
 
     /**

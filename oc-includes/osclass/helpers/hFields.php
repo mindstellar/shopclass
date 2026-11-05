@@ -279,7 +279,7 @@ function osc_field_is_visible($field, $item = null)
     // Map the item's stored custom-field values by slug so a rule referencing a sibling
     // field can be resolved — the same shape FieldValidator evaluates against.
     $slugValues = array();
-    foreach (Item::getInstance()->metaFields($itemId) as $row) {
+    foreach (\mindstellar\fields\FieldQuery::forItem($itemId, true) as $row) {
         if (isset($row['s_slug'])) {
             $slugValues[$row['s_slug']] = $row['s_value'] ?? null;
         }

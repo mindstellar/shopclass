@@ -14,6 +14,7 @@ namespace mindstellar\api\serializer;
 
 use mindstellar\api\read\ListingRelations;
 use mindstellar\api\read\ListingText;
+use mindstellar\fields\FieldQuery;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\VariantStore;
 use mindstellar\utility\Clock;
@@ -105,7 +106,7 @@ final class ListingSerializer
             'contact'      => fn () => $this->contact($item, $context, $now ?? $this->clock->now()),
             'seller'       => fn () => $this->seller($item, $relations),
             'photos'       => fn () => $this->photos($relations->photos($id)),
-            'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($relations->fields($id), $locale) : null,
+            'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($view === ViewContext::PUBLIC ? FieldQuery::visibleToPublic($relations->fields($id)) : $relations->fields($id), $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
             'product'      => fn () => $this->product($relations->variants($id), $relations->photos($id), $view !== ViewContext::PUBLIC, $item['i_price'] ?? null),
             'rating'       => $context->includes('rating') ? fn () => self::rating($relations, $id) : null,

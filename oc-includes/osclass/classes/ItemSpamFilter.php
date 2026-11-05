@@ -95,7 +95,7 @@ class ItemSpamFilter
         }
 
         if (!empty($buckets['meta']) && $itemId > 0) {
-            $metaFields = Item::getInstance()->metaFields($itemId);
+            $metaFields = \mindstellar\fields\FieldQuery::forItem((int) $itemId, true);
             if (!empty($metaFields)) {
                 foreach ($metaFields as $metaField) {
                     if (!isset($metaField['s_value']) || $metaField['s_value'] === '') {

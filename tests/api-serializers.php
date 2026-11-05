@@ -122,6 +122,7 @@ $relations = new ListingRelations(
         ['fk_i_item_id' => '42', 'pk_i_id' => '4', 's_value' => '2010', 's_multi' => '', 's_name' => 'Year', 's_slug' => 'year', 'e_type' => 'NUMBER', 's_meta' => '{"locale":{"de_DE":{"s_name":"Baujahr"}}}'],
         ['fk_i_item_id' => '42', 'pk_i_id' => '5', 's_value' => '1767225600', 's_multi' => 'from', 's_name' => 'Available', 's_slug' => 'available', 'e_type' => 'DATEINTERVAL', 's_meta' => null],
         ['fk_i_item_id' => '42', 'pk_i_id' => '5', 's_value' => '1769904000', 's_multi' => 'to', 's_name' => 'Available', 's_slug' => 'available', 'e_type' => 'DATEINTERVAL', 's_meta' => null],
+        ['fk_i_item_id' => '42', 'pk_i_id' => '6', 's_value' => '1', 's_multi' => '', 's_name' => 'Terms', 's_slug' => 'terms', 'e_type' => 'CHECKBOX', 's_meta' => '{"b_hidden":1}'],
     ]],
     ['EUR' => ['pk_c_code' => 'EUR', 's_name' => 'Euro', 's_description' => '€']]
 );
@@ -229,6 +230,10 @@ pin('include=custom_fields types each value', [
     ['id' => 4, 'slug' => 'year', 'name' => 'Baujahr', 'type' => 'number', 'value' => 2010],
     ['id' => 5, 'slug' => 'available', 'name' => 'Available', 'type' => 'dateinterval', 'value' => ['from' => '2026-01-01T00:00:00Z', 'to' => '2026-02-01T00:00:00Z']],
 ], $full['custom_fields']);
+pin('a field hidden from visitors goes to the owner only', [false, true], array_map(
+    static fn (Credential $c): bool => in_array('terms', array_column($listings->one($item, $relations, $ctx($c, 'en_US', null, ['custom_fields']))['custom_fields'], 'slug'), true),
+    [$anonymous, $owner]
+));
 pin('include=translations lists every locale', ['en_US' => ['title' => 'Red car', 'description' => 'Runs well.'], 'de_DE' => ['title' => 'Rotes Auto', 'description' => 'Fährt gut.']], $full['translations']);
 pin('with includes it still matches the schema', [], $validator->check(Schema::ref('Listing'), $full));
 $sparse = SparseFieldset::parse('title, price', ListingSerializer::MEMBERS, new ExtensionMembers(), 'listing');

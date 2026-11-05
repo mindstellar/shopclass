@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- A custom field can be hidden from visitors: the poster and admins still see it, the listing page and the public API do not. A hidden field cannot be searchable.
 - Invoices and credit notes show tax per line, and a refund of units takes those units' own tax. Tax plugins report it with `CartTaxLines::setLineTax()`.
 - Checkout fields: a plugin can ask the buyer for a tax number or other details with the `checkout_fields` event; they print on the invoice and in the Invoices CSV.
 - The API quote has `checkout_fields` and the order takes their answers in `fields`; quote and order lines carry their own `tax`.
@@ -96,6 +97,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
+- `Field::findByItem()` is deprecated; use `FieldQuery::forItem()`. `Item::metaFields()` now leaves out hidden fields.
 - An admin screen's title, its buttons and its icon actions share one header row, and the top bar shows the path ("Settings › Comments"). The phone menu button matches the top bar.
 - With **Automatic cron process** on, due background jobs such as order e-mails run within a minute of a visit, not five.
 - Order e-mails link the buyer's order through `osc_billing_order_url()`; a theme sets its own order page with the `billing_order_url` event.

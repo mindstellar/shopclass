@@ -636,7 +636,7 @@ function osc_count_premium_meta()
     if (!View::getInstance()->_exists('metafields')) {
         View::getInstance()->_exportVariableToView(
             'metafields',
-            Item::getInstance()->metaFields(osc_premium_id())
+            \mindstellar\fields\FieldQuery::forItem((int) osc_premium_id())
         );
     }
 
@@ -653,7 +653,7 @@ function osc_has_premium_meta()
     if (!View::getInstance()->_exists('metafields')) {
         View::getInstance()->_exportVariableToView(
             'metafields',
-            Item::getInstance()->metaFields(osc_premium_id())
+            \mindstellar\fields\FieldQuery::forItem((int) osc_premium_id())
         );
     }
 
@@ -670,7 +670,7 @@ function osc_get_premium_meta()
     if (!View::getInstance()->_exists('metafields')) {
         View::getInstance()->_exportVariableToView(
             'metafields',
-            Item::getInstance()->metaFields(osc_premium_id())
+            \mindstellar\fields\FieldQuery::forItem((int) osc_premium_id())
         );
     }
 

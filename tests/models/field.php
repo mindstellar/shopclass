@@ -793,6 +793,27 @@ pin(
     array_column(\mindstellar\fields\FieldQuery::valuesOf(array($kItem)), 'pk_i_id')
 );
 
+harness_section('FieldQuery::forItem — fields hidden from visitors');
+$model->updateJsonMeta($kA, \mindstellar\fields\FieldQuery::HIDDEN, 1);
+pin(
+    'forItem leaves out a hidden field',
+    array((int)$kLoose, (int)$kB),
+    array_keys(\mindstellar\fields\FieldQuery::forItem($kItem))
+);
+pin(
+    'forItem with hidden fields keeps every field',
+    array((int)$kLoose, (int)$kB, (int)$kA),
+    array_keys(\mindstellar\fields\FieldQuery::forItem($kItem, true))
+);
+pin(
+    'the deprecated findByItem still returns hidden fields',
+    array((string)$kLoose, (string)$kB, (string)$kA),
+    array_column($model->findByItem($kItem), 'pk_i_id')
+);
+\mindstellar\fields\FieldService::make('en_US')->update((int)$kA, array('searchable' => true));
+pin('a hidden field cannot be made searchable', '0', (string)\mindstellar\fields\FieldQuery::find((int)$kA)['b_searchable']);
+pin('Item::metaFields follows the visitor view', array((int)$kLoose, (int)$kB), array_keys(Item::getInstance()->metaFields($kItem)));
+
 /* ----------------------------------------------------------------------------
  * getDateIntervalByPrimaryKey() — the from/to pair keyed by s_multi.
  * ------------------------------------------------------------------------- */

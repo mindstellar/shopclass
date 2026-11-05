@@ -22,6 +22,9 @@ use mindstellar\database\QueryBuilder;
  */
 final class FieldQuery
 {
+    /** The s_meta flag that keeps a field off the public listing page and the public API. */
+    public const HIDDEN = 'b_hidden';
+
     /**
      * @return array<string,mixed>|null the bare t_meta_fields row
      * @throws \mindstellar\database\DbException
@@ -123,13 +126,102 @@ final class FieldQuery
         $p = DB_TABLE_PREFIX;
 
         return Db::select(
-            'SELECT im.fk_i_item_id, mf.pk_i_id, im.s_value, im.s_multi, mf.s_name, mf.s_slug, mf.e_type, mf.s_meta'
+            'SELECT im.fk_i_item_id, mf.pk_i_id, im.s_value, mf.s_name, mf.e_type, im.s_multi, mf.s_slug, mf.s_meta'
             . ' FROM ' . $p . 't_item_meta im'
             . ' INNER JOIN ' . $p . 't_meta_fields mf ON mf.pk_i_id = im.fk_i_field_id'
             . ' WHERE im.fk_i_item_id IN (' . implode(', ', array_fill(0, count($itemIds), '?')) . ')'
             . ' ORDER BY ' . self::formOrderSql(),
             $itemIds
         );
+    }
+
+    /**
+     * One listing's stored values keyed by field id, with s_meta merged in and a date range's
+     * two ends under one value. Hidden fields are left out unless $withHidden is true.
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function forItem(int $itemId, bool $withHidden = false): array
+    {
+        if ($itemId <= 0) {
+            return [];
+        }
+        try {
+            $rows = Db::stringifyRows(self::valuesOf([$itemId]));
+        } catch (\mindstellar\database\DbException $e) {
+            error_log('Custom field values of listing ' . $itemId . ' could not be read: ' . $e->getMessage());
+
+            return [];
+        }
+        $locale = self::locale();
+        $out    = [];
+        foreach ($withHidden ? $rows : self::visibleToPublic($rows) as $row) {
+            unset($row['fk_i_item_id']);
+            $row = self::extend($row, $locale);
+            $id  = (int) $row['pk_i_id'];
+            if ($row['e_type'] === 'DATEINTERVAL') {
+                $range                     = is_array($out[$id]['s_value'] ?? null) ? $out[$id]['s_value'] : [];
+                $range[$row['s_multi']]    = $row['s_value'];
+                $row['s_value']            = $range;
+            }
+            $out[$id] = $row;
+        }
+
+        return $out;
+    }
+
+    /**
+     * The rows visitors may see: a field ticked "hide from visitors" is dropped.
+     *
+     * @param array<int,array<string,mixed>> $rows rows carrying s_meta
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function visibleToPublic(array $rows): array
+    {
+        return array_values(array_filter($rows, static fn (array $row): bool => !self::isHidden($row)));
+    }
+
+    /**
+     * Whether a field is hidden from visitors. Only the poster form and the admin show it.
+     *
+     * @param array<string,mixed> $field a field row carrying s_meta
+     */
+    public static function isHidden(array $field): bool
+    {
+        $meta = is_string($field['s_meta'] ?? null) && $field['s_meta'] !== '' ? json_decode($field['s_meta'], true) : null;
+
+        return is_array($meta) && !empty($meta[self::HIDDEN]);
+    }
+
+    /**
+     * A field row with its s_meta JSON merged in and its name in $locale when it has one.
+     *
+     * @param array<string,mixed> $field
+     *
+     * @return array<string,mixed>
+     */
+    public static function extend(array $field, string $locale): array
+    {
+        if (!empty($field['s_meta'])) {
+            $meta = json_decode((string) $field['s_meta'], true);
+            if (is_array($meta)) {
+                $field = array_merge($field, $meta);
+            }
+        }
+        if (!empty($field['locale'][$locale]['s_name'])) {
+            $field['s_name'] = $field['locale'][$locale]['s_name'];
+        } elseif (isset($field['s_name'])) {
+            $field['locale'][$locale]['s_name'] = $field['s_name'];
+        }
+
+        return $field;
+    }
+
+    /** The locale field names are shown in: the admin's in the admin, else the visitor's. */
+    public static function locale(): string
+    {
+        return defined('OC_ADMIN') && OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
     }
 
     /**

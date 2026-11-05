@@ -271,6 +271,10 @@ $formCount = (int)__get('form_count');
                                 <label><?php FieldForm::searchable_checkbox($field); ?><?php
 _e('Tick to allow searches by this field'); ?></label>
                             <?php osc_admin_form_row_close(); ?>
+                            <?php osc_admin_form_row_open(''); ?>
+                                <label><?php FieldForm::hidden_checkbox($field); ?><?php
+_e('Tick to hide this field from visitors. The poster and admins still see it.'); ?></label>
+                            <?php osc_admin_form_row_close(); ?>
                             <?php osc_admin_form_row_open('', array('id' => 'field_newtab', 'style' => 'display: none;')); ?>
                                     <label><?php FieldForm::newtab_checkbox($field); ?><?php
 _e('Tick to open links in new tab'); ?></label>
@@ -308,6 +312,24 @@ _e('Tick to open links in new tab'); ?></label>
         var fieldNewtab = document.getElementById('field_newtab');
         var defaultLocale = '<?php echo osc_esc_js(osc_current_admin_locale()); ?>';
         var form = document.getElementById('nedit_field_form');
+
+        // A hidden field cannot be searchable: visitors could filter by it. Ticking one turns the other off.
+        var searchBox = form ? form.querySelector('#field_searchable') : null;
+        var hideBox = form ? form.querySelector('#b_hidden') : null;
+        function syncHidden() {
+            if (searchBox && hideBox) {
+                if (hideBox.checked) {
+                    searchBox.checked = false;
+                }
+                searchBox.disabled = hideBox.checked;
+                hideBox.disabled = searchBox.checked;
+            }
+        }
+        if (searchBox && hideBox) {
+            searchBox.addEventListener('change', syncHidden);
+            hideBox.addEventListener('change', syncHidden);
+            syncHidden();
+        }
 
         // Which config keys each type supports (from the field-type registry).
         var typeConfig = <?php echo json_encode($fieldTypeConfig); ?>;

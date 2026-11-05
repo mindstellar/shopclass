@@ -17,6 +17,7 @@ use Category;
 use Field;
 use FieldGroup;
 use mindstellar\exception\RefusedException;
+use mindstellar\fields\FieldQuery;
 use mindstellar\fields\FieldService;
 use mindstellar\fields\FieldSlug;
 use mindstellar\fields\FieldTypeRegistry;
@@ -111,7 +112,7 @@ final class FieldAjax extends AjaxHandler
                     'e_type'       => $storageType,
                     's_slug'       => $slug,
                     'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
-                    'b_searchable' => Params::getParam('field_searchable') == '1' ? 1 : 0,
+                    'b_searchable' => Params::getParam('field_searchable') == '1' && Params::getParam(FieldQuery::HIDDEN) !== '1' ? 1 : 0,
                     's_options'    => $metaOptions,
                 );
                 if (!$builderMode) {
@@ -126,6 +127,7 @@ final class FieldAjax extends AjaxHandler
                 }
                 Field::getInstance()->updateJsonMeta(Params::getParamInt('id'), 'type', $realTypeMeta);
                 Field::getInstance()->updateJsonMeta(Params::getParamInt('id'), 'b_new_tab', Params::getParam('b_new_tab'));
+                Field::getInstance()->updateJsonMeta(Params::getParamInt('id'), FieldQuery::HIDDEN, Params::getParam(FieldQuery::HIDDEN) === '1' ? 1 : '');
                 Field::getInstance()->updateJsonMeta(Params::getParamInt('id'), 'locale', $metaLocale);
                 self::persistConfig(Params::getParamInt('id'), $chosenType);
                 if (is_bool($res) && !$res) {

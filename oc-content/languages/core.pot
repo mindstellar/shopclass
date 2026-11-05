@@ -16033,6 +16033,11 @@ msgid "Tick to allow searches by this field"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
+msgid ""
+"Tick to hide this field from visitors. The poster and admins still see it."
+msgstr ""
+
+#: oc-admin/themes/modern/fields/iframe.php
 msgid "Tick to open links in new tab"
 msgstr ""
 
