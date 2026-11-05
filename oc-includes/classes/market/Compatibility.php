@@ -16,8 +16,9 @@ namespace mindstellar\market;
  *
  * Decides whether a plugin or theme is safe to install, update, or keep
  * running against the current core and PHP versions, from the
- * `Requires Shopclass` / `Tested up to` / `Requires PHP` header fields (or a
- * catalog entry carrying the same keys).
+ * `Requires Shopclass` / `Requires PHP` header fields (or a catalog entry carrying
+ * the same keys). `Tested up to` is read but never judged: an older one does not
+ * mean the package fails on a newer core.
  *
  * @package mindstellar\market
  */
@@ -26,10 +27,10 @@ final class Compatibility
     /** Declared and compatible with the running core/PHP. */
     public const OK = 'ok';
 
-    /** Neither `requires` nor `tested_up_to` is declared. */
+    /** Neither `requires` nor `requires_php` is declared. */
     public const UNDECLARED = 'undeclared';
 
-    /** `tested_up_to` is behind the running core, compared at minor precision. */
+    /** @deprecated 7.1.0 `evaluate()` no longer returns it; `tested_up_to` is not judged. */
     public const UNTESTED = 'untested';
 
     /** `requires` is above the running core, or `requires_php` is above the running PHP. */
@@ -52,7 +53,7 @@ final class Compatibility
      *
      * @param array<string,mixed> $info        a Plugins::getInfo() / WebThemes::loadThemeInfo() array,
      *                                         or a catalog entry carrying the same 'requires' /
-     *                                         'tested_up_to' / 'requires_php' keys
+     *                                         'requires_php' keys
      * @param string|null         $coreVersion defaults to OSCLASS_VERSION
      * @param string|null         $phpVersion  defaults to PHP_VERSION
      *
@@ -66,7 +67,6 @@ final class Compatibility
 
         $requires    = self::normalize((string) ($info['requires'] ?? ''));
         $requiresPhp = self::normalize((string) ($info['requires_php'] ?? ''));
-        $testedUpTo  = self::normalize((string) ($info['tested_up_to'] ?? ''));
 
         if ($requires !== null && version_compare($requires, self::releaseVersion($coreVersion), '>')) {
             return [
@@ -86,19 +86,6 @@ final class Compatibility
                 'blocked' => true,
                 'reason'  => sprintf(__('Requires PHP %1$s (you have %2$s).'), $requiresPhp, $phpVersion),
             ];
-        }
-
-        if ($testedUpTo !== null) {
-            // Authors declare "tested up to" against a minor line (e.g. "6.1"), not every patch.
-            if (version_compare(self::minor($testedUpTo), self::minor($coreVersion), '<')) {
-                return [
-                    'status'  => self::UNTESTED,
-                    'blocked' => false,
-                    'reason'  => sprintf(__('Not tested with Shopclass %s yet.'), $coreVersion),
-                ];
-            }
-
-            return ['status' => self::OK, 'blocked' => false, 'reason' => ''];
         }
 
         if ($requires !== null || $requiresPhp !== null) {
@@ -170,7 +157,7 @@ final class Compatibility
     }
 
     /**
-     * Short badge label for the admin UI, e.g. "Compatible with 6.0.x" / "Not tested with 6.0 yet" / "Requires 6.2+".
+     * Short badge label for the admin UI, e.g. "Works with 7.1" / "Needs 7.2 or newer".
      *
      * @param array<string,mixed> $info        the package header / catalog entry
      * @param string|null         $coreVersion defaults to OSCLASS_VERSION
@@ -189,9 +176,9 @@ final class Compatibility
      * status does not re-evaluate it and risk disagreeing with itself.
      *
      * One fact per state, each about *this* install: what it needs when it cannot run here,
-     * how far it was tested when that is behind us, and the version it works with otherwise.
+     * and the version it works with otherwise.
      *
-     * @param string              $status      self::OK / UNTESTED / INCOMPATIBLE / UNDECLARED
+     * @param string              $status      self::OK / INCOMPATIBLE / UNDECLARED
      * @param array<string,mixed> $info        the package header / catalog entry
      * @param string|null         $coreVersion defaults to OSCLASS_VERSION
      *
@@ -213,12 +200,6 @@ final class Compatibility
                 return $requiresPhp !== null
                     ? sprintf(__('Needs PHP %s'), self::minor($requiresPhp))
                     : __('Not compatible');
-            case self::UNTESTED:
-                $tested = self::normalize((string) ($info['tested_up_to'] ?? ''));
-
-                return $tested !== null
-                    ? sprintf(__('Tested up to %s'), self::minor($tested))
-                    : sprintf(__('Not tested with %s'), self::minor($coreVersion));
             case self::UNDECLARED:
                 return __('No version declared');
             default:

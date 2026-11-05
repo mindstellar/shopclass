@@ -50,19 +50,6 @@ pin(
     $label(Compatibility::INCOMPATIBLE, array())
 );
 
-harness_section('published, but not tested this far');
-
-pin(
-    'how far the author tested',
-    'Tested up to 6.2',
-    $label(Compatibility::UNTESTED, array('requires' => '6.1.0', 'tested_up_to' => '6.2'))
-);
-pin(
-    'with nothing to quote, it names the running version',
-    'Not tested with 6.3',
-    $label(Compatibility::UNTESTED, array('requires' => '6.1.0'))
-);
-
 harness_section('fine here');
 
 pin(
@@ -78,9 +65,19 @@ pin('says that plainly', 'No version declared', $label(Compatibility::UNDECLARED
 harness_section('badgeLabel() decides the status itself and returns the same words');
 
 pin(
-    'an untested package',
-    'Tested up to 6.2',
-    Compatibility::badgeLabel(array('requires' => '6.1.0', 'tested_up_to' => '6.2'))
+    'an older "Tested up to" is not a warning',
+    'Works with 6.3',
+    Compatibility::badgeLabel(array('requires' => '6.1.0', 'tested_up_to' => '6.2'), '6.3.0')
+);
+pin(
+    'an older "Tested up to" never blocks',
+    array('status' => Compatibility::OK, 'blocked' => false, 'reason' => ''),
+    Compatibility::evaluate(array('requires' => '6.1.0', 'tested_up_to' => '6.2'), '7.1.0', '8.2.0')
+);
+pin(
+    '"Tested up to" alone declares nothing',
+    Compatibility::UNDECLARED,
+    Compatibility::evaluate(array('tested_up_to' => '7.1'), '7.1.0', '8.2.0')['status']
 );
 pin(
     'a package this install is too old for',

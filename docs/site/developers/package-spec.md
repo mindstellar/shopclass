@@ -56,7 +56,7 @@ version `2`. Values also end at the end of the line; they cannot wrap.
 | `Plugin URI` | recommended | Homepage. |
 | `Support URI` | recommended | Rendered as the support icon in the admin list. |
 | `Requires Shopclass` | recommended | Minimum core version. |
-| `Tested up to` | recommended | Highest core version you have verified. |
+| `Tested up to` | optional | Highest core version you have verified. Shown for information only; core never warns or blocks on it. |
 | `Requires PHP` | recommended | Minimum PHP version. |
 | `Modes` | optional | Site types it works for: `classifieds`, `shop`. Absent means `classifieds`. |
 | `Requires Plugins` | optional | Plugins it needs, such as `stripe >=1.2.0, digital-goods`. |
@@ -121,14 +121,14 @@ Use `MAJOR.MINOR.PATCH`. Core compares versions to decide whether an update is
 available, so a version that does not sort meaningfully will not update
 correctly on people's sites.
 
-`Requires Shopclass` and `Tested up to` decide whether an install offers your
+`Requires Shopclass` and `Requires PHP` decide whether an install offers your
 package at all. Set `Requires Shopclass` to the oldest core version you actually
 support, not the newest one you happen to run.
 
 ### The compatibility badge
 
 Every package card in the admin carries one short verdict about *that* install.
-These are the five, and what earns each:
+These are the four, and what earns each:
 
 The checks run in this order, and the first one that matches wins:
 
@@ -136,17 +136,11 @@ The checks run in this order, and the first one that matches wins:
 |---|---|---|
 | **Needs 6.5 or newer** | `Requires Shopclass` is above this install | nothing: the site must upgrade first |
 | **Needs PHP 8.2** | Core is fine, but `Requires PHP` is above this server | nothing: the server must upgrade first |
-| **Tested up to 6.3** | It runs here, but your `Tested up to` minor is behind core's | check it on the new release, then raise `Tested up to` |
-| **Works with 6.4** | It runs here and nothing is behind | nothing: this is the goal |
-| **No version declared** | You declared none of the three headers | declare at least `Requires Shopclass` |
+| **Works with 6.4** | It runs here | nothing: this is the goal |
+| **No version declared** | You declared neither `Requires Shopclass` nor `Requires PHP` | declare at least `Requires Shopclass` |
 
-Two details worth knowing:
-
-- `Tested up to` is compared by **minor line only**. `6.3` and `6.3.7` are the
-  same answer, so you do not re-release for a patch.
-- Declaring `Requires Shopclass` or `Requires PHP` and **no** `Tested up to`
-  still reads as *Works with*. `Tested up to` is what lets a site see that you
-  have fallen behind, so declare it.
+An older `Tested up to` does not change the badge, so you do not re-release a
+package only because core moved on.
 
 The catalog uses the same first two checks when it picks which of your releases
 an install is offered: the newest one whose `Requires Shopclass` and

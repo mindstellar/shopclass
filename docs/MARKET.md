@@ -235,7 +235,7 @@ changes structurally:
 
 ```
 Requires Shopclass: 6.0.0     # minimum core version — hard gate
-Tested up to: 6.4             # highest core version verified — soft warning
+Tested up to: 6.4             # highest core version verified — information only
 Requires PHP: 8.0             # hard gate
 ```
 
@@ -249,15 +249,16 @@ New class `mindstellar\market\Compatibility`:
 |---|---|---|
 | `requires` > core version | `version_compare` | **Blocked** — Install/Update disabled, "Requires Shopclass 6.2 or newer (you have 6.0.3)" |
 | `requires_php` > `PHP_VERSION` | `version_compare` | **Blocked** — "Requires PHP 8.2 (you have 8.0.30)" |
-| `tested_up_to` < core, compared at **minor** precision | `6.0` vs `6.1` | **Untested** — installs, a muted note reads "Not tested with your Shopclass version yet" — informational, never a warning, since nothing is disabled |
-| `tested_up_to` ≥ core minor | — | **OK** |
-| nothing declared | — | Muted "not declared" |
+| `requires` or `requires_php` declared and met | — | **OK** |
+| neither declared | — | Muted "not declared" |
+
+`tested_up_to` is not judged (from 7.1): an older one never warns or blocks.
 
 `evaluate()` is always run **locally**, against whatever core version and PHP version are
 actually running — never trusted from a precomputed value in the catalog (see §5: the
 catalog stopped publishing one). This is what decides whether an action is actually
 blocked; `Compatibility::badgeLabel()` renders that per-install verdict as a short string
-("Compatible with 6.0.x", "Not tested with 6.1 yet", "Requires 6.2+") for the per-version
+("Works with 6.1", "Needs 6.2 or newer") for the per-version
 table in the detail dialog. The card and detail-dialog badge shown *before* that — "does
 this package support my 6.x at all?" — is a different, install-independent string:
 `Compatibility::rangeLabel()` formats the catalog's own published `requires_min` /
@@ -410,7 +411,7 @@ Ordered cheapest-first so an obvious mistake fails in seconds.
 | 1 | **Structure** | ❌ fail | Slug matches directory and `^[a-z0-9][a-z0-9-]{1,40}$`; required files present (`index.php`, `shopclass.json`, `README.md`, `LICENSE`; themes also `screenshot.png` ≥ 1200×900); no symlinks, no `.git`, no `node_modules`, no `.exe/.dll/.so`; unpacked size ≤ 15 MB; single file ≤ 5 MB |
 | 2 | **Manifest** | ❌ fail | `shopclass.json` validates against `schema/package.schema.json`; categories drawn from the fixed vocabulary; icon/screenshot paths resolve |
 | 3 | **Header** | ❌ fail | Parsed with the **same regexes core uses** (see §6.4); `Version:` is semver-ish, is **greater than** the version currently in the catalog, and matches the changelog's newest entry |
-| 4 | **Compatibility** | ❌ fail / ⚠️ warn | `Requires Shopclass` ≤ latest released core (fail if it names a version that does not exist); `Tested up to` must be a real released core version; **warn** if `Tested up to` is more than one minor behind current core |
+| 4 | **Compatibility** | ❌ fail / ⚠️ warn | `Requires Shopclass` ≤ latest released core (fail if it names a version that does not exist); `Tested up to` must be a real released core version |
 | 5 | **Parse** | ❌ fail | `php -l` across 8.0 – 8.5, mirroring `tests/php-lint.sh` |
 | 6 | **PHP floor** | ❌ fail | PHPCompatibility `--runtime-set testVersion 8.0-` (the 7.0 floor; a package that needs core 7.1+ may use 8.2) |
 | 7 | **Deprecated API** | ⚠️ **warn only** | §6.3 |
@@ -659,9 +660,7 @@ view data and hand it to shared partials in
 a card grid rendered from the cached slim index: thumbnail, name, author, short
 description, a badge for the package's published supported range (§4), and one
 primary action (`Install` / `Update to 1.4.0` / `Installed`, or a disabled button
-with the reason when blocked by §4). A package that hasn't been tested with the
-running core yet gets a muted note under the badge — informational, since
-untested never blocks the action. Search, category filter, and sort run
+with the reason when blocked by §4). Search, category filter, and sort run
 client-side over the cached JSON, with **"Recently updated" (`updated_at`
 descending) pre-selected** as the default sort — an abandoned package sinks to
 the bottom of Browse rather than sitting wherever the catalog happened to list

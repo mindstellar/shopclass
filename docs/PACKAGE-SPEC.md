@@ -191,7 +191,7 @@ are the only reason core can offer a *safe* update rather than the newest one.
 
 ```
 Requires Shopclass: 6.0.0     minimum core version — a hard gate
-Tested up to: 6.4             highest core version verified — a soft warning
+Tested up to: 6.4             highest core version verified — information only
 Requires PHP: 8.0             minimum PHP — a hard gate
 ```
 
@@ -206,20 +206,17 @@ admin UI and the updater:
 |---|---|---|
 | `Requires Shopclass` > running core | **Incompatible** | Install/Update disabled. "Requires Shopclass 6.2 or newer (you have 6.0.3)" |
 | `Requires PHP` > running PHP | **Incompatible** | Install/Update disabled |
-| `Tested up to` < running core, compared at **minor precision** | **Untested** | Installs. A muted, informational note reads "Not tested with your Shopclass version yet" |
-| `Tested up to` ≥ running core minor | **OK** | Installs, no note |
-| Nothing declared | **Undeclared** | Installs. Muted "compatibility not declared" |
+| `Requires Shopclass` or `Requires PHP` declared and met | **OK** | Installs, no note |
+| Neither declared | **Undeclared** | Installs. Muted "compatibility not declared" |
+
+`Tested up to` is not judged: an older one says nothing about whether the package works
+on a newer core, so it never warns and never blocks.
 
 This table is evaluated **locally**, by whichever site is reading the catalog — the
 published catalog itself carries only the raw fields above (per version) and a
 package-level `requires_min`/`tested_max` summarising them (docs/MARKET.md §5), never a
 precomputed verdict. A verdict baked at catalog-build time could only ever be correct for
 sites on the one core version the build happened to run against.
-
-`Tested up to` is compared at minor precision on purpose. A package tested against 6.0.1
-is not meaningfully untested on 6.0.3 — patch releases do not break plugin API — so
-declaring `6.0` is sufficient and correct, and demanding a bump every patch would train
-authors to lie.
 
 **Version resolution.** The catalog carries every released version of a package with its
 own `Requires Shopclass` and `Requires PHP`. Core offers the *highest version that
@@ -366,9 +363,8 @@ install in a real container (install → enable → load admin and public pages 
 uninstall, with no fatal and no unexpected output).
 
 **Non-blocking warnings** — use of deprecated core APIs (§10), code style, missing
-compatibility declarations, a `Requires PHP` outside core's own supported range, an
-uninstall that leaves tables behind, and `Tested up to` more than one minor behind current
-core. A pull request can be merged with warnings outstanding; they exist to inform, not to
+compatibility declarations, a `Requires PHP` outside core's own supported range, and an
+uninstall that leaves tables behind. A pull request can be merged with warnings outstanding; they exist to inform, not to
 gate.
 
 The compatibility-field checks that need to know which core versions exist (§4) run via

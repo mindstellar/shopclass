@@ -10094,20 +10094,6 @@ msgstr ""
 msgid "Not set"
 msgstr ""
 
-#: oc-includes/classes/market/Compatibility.php
-msgid "Not tested with %s"
-msgstr ""
-
-#: oc-includes/classes/market/Compatibility.php
-msgid "Not tested with Shopclass %s yet."
-msgstr ""
-
-#: oc-admin/themes/modern/parts/market.php
-msgid ""
-"Not tested with your Shopclass version yet. Installing and updating still "
-"work as normal."
-msgstr ""
-
 #: oc-admin/themes/modern/media/index.php
 msgid "Not used in a page"
 msgstr ""
@@ -14544,14 +14530,6 @@ msgstr ""
 msgid "Test email, %s"
 msgstr ""
 
-#: oc-admin/themes/modern/parts/market.php
-msgid "Tested up to"
-msgstr ""
-
-#: oc-includes/classes/market/Compatibility.php
-msgid "Tested up to %s"
-msgstr ""
-
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Testing…"
 msgstr ""
@@ -18715,10 +18693,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "strict"
-msgstr ""
-
-#: oc-admin/themes/modern/parts/market.php
-msgid "tested to %s"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php

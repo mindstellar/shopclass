@@ -418,7 +418,6 @@
         var dTitle = dialog.querySelector('.market-detail-title');
         var dAuthor = dialog.querySelector('.market-detail-author');
         var dDesc = dialog.querySelector('.market-detail-desc');
-        var dNote = dialog.querySelector('.market-detail-note');
         var dReason = dialog.querySelector('.market-detail-reason');
         var dVersion = dialog.querySelector('.market-detail-version');
         var dRequiresRow = dialog.querySelector('.market-detail-requires-row');
@@ -449,8 +448,6 @@
             switch (status) {
                 case 'ok':
                     return 'active';
-                case 'untested':
-                    return 'untested';
                 case 'incompatible':
                     return 'blocked';
                 default:
@@ -578,10 +575,10 @@
             (versions || []).forEach(function (v) {
                 var tr = document.createElement('tr');
                 var downloads = Number(v.downloads) || 0;
-                // A tabular secondary stat alongside Size/Requires/Tested, all of which already
+                // A tabular secondary stat alongside Size/Requires, all of which already
                 // read "\u2014" for missing data here \u2014 unlike the card, this isn't a number repeated
                 // on its own across dozens of tiles, so the existing table convention applies.
-                [v.version, v.requires || '\u2014', v.requires_php || '\u2014', v.tested || '\u2014', formatBytes(v.size), downloads > 0 ? formatCount(downloads) : '\u2014']
+                [v.version, v.requires || '\u2014', v.requires_php || '\u2014', formatBytes(v.size), downloads > 0 ? formatCount(downloads) : '\u2014']
                     .forEach(function (text) {
                         var td = document.createElement('td');
                         td.textContent = text;
@@ -653,9 +650,6 @@
                 if (newest.requires_php) {
                     needs.push((i18n.requiresPhp || 'PHP %s or newer').replace('%s', newest.requires_php));
                 }
-                if (newest.tested) {
-                    needs.push((i18n.testedTo || 'tested to %s').replace('%s', newest.tested));
-                }
                 dRequires.textContent = needs.join(' \u00b7 ');
                 dRequiresRow.hidden = needs.length === 0;
             }
@@ -725,18 +719,11 @@
             dTitle.textContent = data.name || '';
             dAuthor.textContent = data.author ? (i18n.byAuthor || 'by %s').replace('%s', data.author) : '';
             dDesc.textContent = data.short_description || '';
-            // The muted "not tested yet" note, cloned the same way the badge and the reason
-            // are -- it's server-rendered text, not part of the row JSON, and only present
-            // when osc_market_render_untested_note() actually printed it.
-            var noteSrc = container.querySelector('.market-card-note');
-            if (dNote) {
-                dNote.textContent = noteSrc ? noteSrc.textContent : '';
-            }
             // Prefer the reason actually shown next to the button: a card can be blocked by
             // directory writability or a disabled deployment, neither of which travels in the
             // row JSON. The `data.compat` fallback is gated on `blocked` -- evaluate() also
-            // returns a non-empty 'reason' for untested/undeclared, which is not a block and
-            // already has its own place (the note above); showing it here too would duplicate it.
+            // returns a non-empty 'reason' for undeclared, which is not a block and already
+            // shows as the badge's title; showing it here too would duplicate it.
             var reasonSrc = container.querySelector('.market-card-reason');
             dReason.textContent = reasonSrc
                 ? reasonSrc.textContent
