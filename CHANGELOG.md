@@ -2,7 +2,7 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.beta5
+## Shopclass 7.1.0.beta6
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
@@ -200,3 +200,4 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Custom fields show in one order on the listing page, the post form and search, also with several categories.
 - A theme's plugin screen calls a newer plugin version newer, not too old, and offers no older version.
 - Admin dialogs placed in a page are centred again, menu rows fit a phone, and `search:reindex` prints why it stopped.
+- The plugin and theme catalogs build again: the package-ci bundle ships `Escape.php`, which its README renderer needs.
