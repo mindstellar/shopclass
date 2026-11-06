@@ -679,7 +679,11 @@ class AdminMenu
         if (Params::getParam('page') === 'settings' && in_array(Params::getParam('action'), array('custom', 'custom_post'), true)) {
             $declared = osc_settings_page(Params::getParamString('id'));
             if ($declared !== null && $declared['menu'] === '') {
-                return array('settings', '');
+                // A page reached only through tabs lights the screen its tabs belong to.
+                $tabs = is_callable($declared['tabs']) ? ($declared['tabs'])() : $declared['tabs'];
+
+                return self::forTabs($this->get_array_menu(), is_array($tabs) ? $tabs : array(), osc_is_moderator(), array(osc_admin_base_url(true) . '?', osc_admin_base_url()))
+                    ?? array('settings', '');
             }
         }
 
@@ -690,6 +694,38 @@ class AdminMenu
             osc_is_moderator(),
             array(osc_admin_base_url(true) . '?', osc_admin_base_url())
         );
+    }
+
+    /**
+     * The entry whose link is exactly the first tab's link that is in the menu, or null when none is.
+     *
+     * @param array<string,mixed>            $aMenu
+     * @param array<int,array<string,mixed>> $tabs  tab links, each with a 'url'
+     * @param string[]                       $bases
+     *
+     * @return array{0:string,1:string}|null
+     */
+    public static function forTabs(array $aMenu, array $tabs, bool $is_moderator, array $bases): ?array
+    {
+        foreach ($tabs as $tab) {
+            $url = str_replace($bases, '', (string) ($tab['url'] ?? ''));
+            if ($url === '') {
+                continue;
+            }
+            foreach ($aMenu as $section) {
+                if (!self::isSection($section)) {
+                    continue;
+                }
+                foreach ($section['sub'] ?? array() as $sub) {
+                    $credential = $sub[4] ?? $sub[3];
+                    if ((!$is_moderator || $credential === 'moderator') && str_replace($bases, '', $sub[1]) === $url) {
+                        return array($section[2], $sub[2]);
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     /**

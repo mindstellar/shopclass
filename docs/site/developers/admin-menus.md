@@ -46,6 +46,8 @@ osc_add_admin_submenu_page(
 `security` and `system`. The entry goes at the end of that group. `$match` lists other admin
 URLs that should light this entry, for the tabs of one screen. A declared settings page
 takes the same placement with `'group' => 'content'` and can draw tabs with `'tabs'`.
+A page with `'menu' => ''` that is reached only through its tabs lights the entry of its
+first tab whose link is in the menu.
 
 A section keeps its own settings: Listings, Users, Media and Billing each end with a
 Settings entry, and those screens draw no group tabs. Pages for selling (shipping, tax, offers,

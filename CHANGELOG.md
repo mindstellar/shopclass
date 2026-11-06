@@ -201,3 +201,4 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - A theme's plugin screen calls a newer plugin version newer, not too old, and offers no older version.
 - Admin dialogs placed in a page are centred again, menu rows fit a phone, and `search:reindex` prints why it stopped.
 - The plugin and theme catalogs build again: the package-ci bundle ships `Escape.php`, which its README renderer needs.
+- A settings page reached only through tabs lights the sidebar entry of its first tab that is in the menu, not Settings.

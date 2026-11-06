@@ -138,7 +138,8 @@ final class SettingsPageRegistry extends Registry
      *                             uses 'menu' => 'billing' with no group.
      *   'tabs'       => array|callable  Tab links (label, url, active) drawn above the form,
      *                             or a callable returning them. For a page that is one tab
-     *                             of a larger screen.
+     *                             of a larger screen; with 'menu' => '' the sidebar lights
+     *                             the entry of its first tab that is in the menu.
      *   'return_url' => string|callable  Where to go after a successful save (a callable
      *                             returns the URL); defaults to the page's own URL. For a
      *                             page whose form is shown inside another screen.

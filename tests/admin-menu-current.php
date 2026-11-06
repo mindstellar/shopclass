@@ -51,6 +51,19 @@ pin('the longest matching link still wins', ['settings', 'settings_general'], Ad
 pin('a plugin page highlights its own entry', ['plugins', 'plugins_manage'], AdminMenu::current($menu, 'page=plugins', 'plugins', false, $bases));
 pin('no query string is the dashboard', ['dash', ''], AdminMenu::current($menu, '', null, false, $bases));
 
+harness_section('A page reached only through tabs');
+$menu['appearance'] = ['Appearance', $base . '?page=appearance', 'appearance', 'administrator', 'sub' => [
+    ['Manage themes', $base . '?page=appearance', 'appearance_manage', 'administrator'],
+    ['Theme settings', $base . '?page=settings&action=custom&id=settings-theme', 'appearance_theme', 'administrator'],
+]];
+$tabs = [
+    ['label' => 'Settings', 'url' => $base . '?page=settings&action=custom&id=settings-theme'],
+    ['label' => 'SEO', 'url' => $base . '?page=settings&action=custom&id=seo-theme', 'active' => true],
+];
+pin('lights the entry of its first tab in the menu', ['appearance', 'appearance_theme'], AdminMenu::forTabs($menu, $tabs, false, $bases));
+pin('skips a tab that is not in the menu', ['appearance', 'appearance_theme'], AdminMenu::forTabs($menu, array_reverse($tabs), false, $bases));
+pin('no tab in the menu gives no entry', null, AdminMenu::forTabs($menu, [['label' => 'SEO', 'url' => $base . '?page=settings&action=custom&id=seo-theme']], false, $bases));
+
 harness_section('Group placement');
 
 $m = new AdminMenu();
