@@ -112,14 +112,14 @@ final class FieldAjax extends AjaxHandler
                     'e_type'       => $storageType,
                     's_slug'       => $slug,
                     'b_required'   => Params::getParam('field_required') == '1' ? 1 : 0,
-                    'b_searchable' => Params::getParam('field_searchable') == '1' && Params::getParam(FieldQuery::HIDDEN) !== '1' ? 1 : 0,
+                    'b_searchable' => FieldQuery::searchable(Params::getParam('field_searchable') == '1', Params::getParam(FieldQuery::HIDDEN) === '1'),
                     's_options'    => $metaOptions,
                 );
                 if (!$builderMode) {
                     $groupId = Params::getParamInt('field_group');
                     $updateData['fk_i_group_id'] = $groupId > 0 ? $groupId : null;
                 }
-                $res = Field::getInstance()->update($updateData, array('pk_i_id' => Params::getParam('id')));
+                $res = Field::getInstance()->update($updateData, array('pk_i_id' => Params::getParamInt('id')));
                 // Keep the link table in sync with the single-group editor; the builder
                 // manages links by drag and drop.
                 if (!$builderMode) {

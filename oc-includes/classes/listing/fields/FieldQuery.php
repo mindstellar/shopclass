@@ -195,6 +195,14 @@ final class FieldQuery
     }
 
     /**
+     * The b_searchable value to store: a field hidden from visitors is never searchable.
+     */
+    public static function searchable(bool $wanted, bool $hidden): int
+    {
+        return $wanted && !$hidden ? 1 : 0;
+    }
+
+    /**
      * A field row with its s_meta JSON merged in and its name in $locale when it has one.
      *
      * @param array<string,mixed> $field

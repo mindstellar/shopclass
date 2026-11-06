@@ -106,7 +106,7 @@ final class ListingSerializer
             'contact'      => fn () => $this->contact($item, $context, $now ?? $this->clock->now()),
             'seller'       => fn () => $this->seller($item, $relations),
             'photos'       => fn () => $this->photos($relations->photos($id)),
-            'custom_fields' => $context->includes('custom_fields') ? fn () => $this->fields->values($view === ViewContext::PUBLIC ? FieldQuery::visibleToPublic($relations->fields($id)) : $relations->fields($id), $locale) : null,
+            'custom_fields' => $context->includes('custom_fields') ? fn () => $this->customFields($relations->fields($id), $view, $locale) : null,
             'translations' => $context->includes('translations') ? static fn () => self::translations($item) : null,
             'product'      => fn () => $this->product($relations->variants($id), $relations->photos($id), $view !== ViewContext::PUBLIC, $item['i_price'] ?? null),
             'rating'       => $context->includes('rating') ? fn () => self::rating($relations, $id) : null,
@@ -335,6 +335,18 @@ final class ListingSerializer
             'expired'        => Format::int($item['i_num_expired'] ?? 0),
             'premium_views'  => Format::int($item['i_num_premium_views'] ?? 0),
         ];
+    }
+
+    /**
+     * The listing's custom field values; a field hidden from visitors goes only to the owner and admins.
+     *
+     * @param array<int,array<string,mixed>> $rows value rows joined to their field
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function customFields(array $rows, string $view, string $locale): array
+    {
+        return $this->fields->values($view === ViewContext::PUBLIC ? FieldQuery::visibleToPublic($rows) : $rows, $locale);
     }
 
     /**
