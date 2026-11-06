@@ -97,7 +97,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
 
 ### Changed
-- `Field::findByItem()` is deprecated; use `FieldQuery::forItem()`. `Item::metaFields()` now leaves out hidden fields.
+- `Field::findByItem()` is deprecated; use `FieldQuery::forItem()`. It still returns hidden fields, so a theme or plugin that prints its values should switch. `Item::metaFields()` now leaves out hidden fields.
 - Plugins and themes no longer show a "Tested up to" warning. Only "Requires Shopclass" and "Requires PHP" are checked.
 - An admin screen's title, its buttons and its icon actions share one header row, and the top bar shows the path ("Settings › Comments"). The phone menu button matches the top bar.
 - With **Automatic cron process** on, due background jobs such as order e-mails run within a minute of a visit, not five.

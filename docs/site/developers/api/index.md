@@ -134,7 +134,7 @@ Filters for `GET /listings`:
 | `cursor` | Where the last page ended. Take it from `links.next`. |
 | `count` | `true` to fill `meta.total`; otherwise it is `null`. |
 | `fields` | Keep only these members: `fields=id,title,price`. `id` is always kept. |
-| `include` | Switch on costly members: `custom_fields` (custom field values) and `translations`. |
+| `include` | Switch on costly members: `custom_fields` (custom field values) and `translations`. A field hidden from visitors is sent only to the listing's owner and to admins. |
 
 A parameter the endpoint does not know is a `422`, so a typo does not silently return everything.
 
