@@ -13,8 +13,7 @@
  *
  * The badge is the one thing on a package card that answers "can I install this here?", and
  * its tint alone must never carry that answer. Each state says one fact about the running
- * install: what the package needs when it cannot run, how far it was tested when that is
- * behind us, and the version it works with otherwise.
+ * install: what the package needs when it cannot run, and the version it works with otherwise.
  *
  * Usage: php tests/market-compat-badge.php
  */

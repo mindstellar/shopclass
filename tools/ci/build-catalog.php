@@ -592,9 +592,10 @@ function readZipTextFile(string $bytes, string $slugDir, string $relPath): ?stri
 
 // The README and CHANGELOG renderer and the modes reader are core's own, so the admin and
 // this catalog agree. In the package-ci bundle they sit beside this file; in a checkout, in core.
-foreach (['Markdown.php', 'PackageManifest.php'] as $coreClass) {
-    $found = null;
-    foreach ([__DIR__ . '/' . $coreClass, __DIR__ . '/../../oc-includes/classes/market/' . $coreClass] as $candidate) {
+foreach (['core/utility/Escape.php', 'market/Markdown.php', 'market/PackageManifest.php'] as $corePath) {
+    $coreClass = basename($corePath);
+    $found     = null;
+    foreach ([__DIR__ . '/' . $coreClass, __DIR__ . '/../../oc-includes/classes/' . $corePath] as $candidate) {
         if (is_file($candidate)) {
             $found = $candidate;
             break;
