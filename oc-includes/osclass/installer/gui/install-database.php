@@ -20,101 +20,138 @@ if (!defined('ABS_PATH')) {
 // so it needs pulling in explicitly rather than inheriting the caller's scope.
 global $install_nonce;
 
+require_once __DIR__ . '/fields.php';
+
 /** @var mixed $error */
 
 $ins_field_error = (is_array($error) && !empty($error['field'])) ? $error['field'] : null;
+$ins_createdb    = Params::getParam('createdb') == '1';
+$ins_field_texts = array(
+    'dbhost'      => __('Check the host.'),
+    'dbname'      => __('Check the database name.'),
+    'username'    => __('Check the username.'),
+    'password'    => __('Check this password.'),
+    'tableprefix' => __('Check the table prefix.'),
+);
+$ins_flag = static fn (string $name): array => array(
+    'invalid' => $ins_field_error === $name,
+    'error'   => $ins_field_texts[$name] ?? '',
+);
 ?>
-<h1 class="ins-headline"><?php _e('Connect your database'); ?></h1>
-<p class="ins-body">
-    <?php _e("Enter the database details from your hosting account. If you're not sure, your host's control panel or welcome email usually has them."); ?>
-</p>
-
-<?php if (is_array($error) && !empty($error['error'])) { ?>
-    <div class="ins-panel ins-panel-danger" role="alert">
-        <div class="ins-panel-body"><?php echo osc_esc_html($error['error']); ?></div>
-    </div>
-<?php } ?>
-
-<form action="install.php" method="post" id="ins-database-form">
+<form action="install.php" method="post" id="ins-database-form" class="ins-stage">
     <input type="hidden" name="step" value="3" />
     <input type="hidden" name="install_nonce" value="<?php echo osc_esc_html($install_nonce); ?>" />
 
-    <div class="ins-field">
-        <label for="dbhost"><?php _e('Host'); ?></label>
-        <input class="ins-input" type="text" id="dbhost" name="dbhost" value="<?php echo osc_esc_html($form_data['dbhost'] ?? (defined('DB_HOST') ? DB_HOST : 'localhost')); ?>" <?php echo $ins_field_error === 'dbhost' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
-        <div class="ins-help"><?php _e("Usually 'localhost'. If your host gave you a different one, add a port as host:port."); ?></div>
-    </div>
+    <div class="ins-stage-body">
+        <h1 class="ins-headline"><?php _e('Connect your database'); ?></h1>
+        <p class="ins-body">
+            <?php _e('Your host gives you these four details when you create a database. Look in your hosting control panel under "MySQL Databases".'); ?>
+        </p>
 
-    <div class="ins-field">
-        <label for="dbname"><?php _e('Database name'); ?></label>
-        <input class="ins-input" type="text" id="dbname" name="dbname" value="<?php echo osc_esc_html($form_data['dbname'] ?? ((defined('DB_NAME') && DB_NAME !== '') ? DB_NAME : 'osclass')); ?>" <?php echo $ins_field_error === 'dbname' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
-        <div class="ins-help"><?php _e('The database Shopclass should use.'); ?></div>
-    </div>
+        <?php if (is_array($error) && !empty($error['error'])) { ?>
+            <div class="ins-panel ins-panel-danger" role="alert">
+                <svg class="ins-icon ins-panel-icon" viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8l6.5 11.4h-13z"/><path d="M8 6.5v3M8 11.5v.1"/></svg>
+                <div class="ins-panel-body">
+                    <p class="ins-panel-title"><?php _e("Couldn't connect to the database"); ?></p>
+                    <p class="ins-panel-text"><?php echo osc_esc_html($error['error']); ?></p>
+                </div>
+            </div>
+        <?php } ?>
 
-    <div class="ins-field">
-        <label for="username"><?php _e('Username'); ?></label>
-        <input class="ins-input" type="text" id="username" name="username" value="<?php echo osc_esc_html($form_data['username'] ?? ((defined('DB_USER') && DB_USER !== '') ? DB_USER : 'osclass')); ?>" <?php echo $ins_field_error === 'username' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
-        <div class="ins-help"><?php _e('Your MySQL username.'); ?></div>
-    </div>
-
-    <div class="ins-field">
-        <label for="password"><?php _e('Password'); ?></label>
-        <div class="ins-input-wrap">
-            <input class="ins-input" type="password" id="password" name="password" value="" <?php echo $ins_field_error === 'password' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
-            <button type="button" class="ins-input-btn" data-reveal-target="password" aria-pressed="false" aria-label="<?php echo osc_esc_html(__('Show password')); ?>">
-                <span class="ins-icon-show" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.5" /><circle cx="10" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg></span>
-                <span class="ins-icon-hide" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.5" /><circle cx="10" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M2 2l16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg></span>
-            </button>
+        <div class="ins-grid2">
+            <?php
+            install_field(array(
+                'id'    => 'dbhost',
+                'label' => __('Database host'),
+                'value' => $form_data['dbhost'] ?? (defined('DB_HOST') ? DB_HOST : 'localhost'),
+                'help'  => __("Usually 'localhost'. If your host gave you a different one, add a port as host:port."),
+                'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
+            ) + $ins_flag('dbhost'));
+            install_field(array(
+                'id'    => 'dbname',
+                'label' => __('Database name'),
+                'value' => $form_data['dbname'] ?? ((defined('DB_NAME') && DB_NAME !== '') ? DB_NAME : 'osclass'),
+                'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
+            ) + $ins_flag('dbname'));
+            install_field(array(
+                'id'    => 'username',
+                'label' => __('Username'),
+                'value' => $form_data['username'] ?? ((defined('DB_USER') && DB_USER !== '') ? DB_USER : 'osclass'),
+                'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
+            ) + $ins_flag('username'));
+            install_field(array(
+                'id'     => 'password',
+                'type'   => 'password',
+                'label'  => __('Password'),
+                'value'  => '',
+                'reveal' => true,
+                'attrs'  => array('autocomplete' => 'off'),
+            ) + $ins_flag('password'));
+            ?>
         </div>
-        <div class="ins-help"><?php _e('Your MySQL password.'); ?></div>
+
+        <div id="ins-test-result" class="ins-test-result" role="status" aria-live="polite"></div>
+
+        <details class="ins-disclosure" <?php echo $ins_createdb || in_array($ins_field_error, array('tableprefix', 'createdb', 'reset_unfinished'), true) ? 'open' : ''; ?>>
+            <summary><?php _e('More options'); ?></summary>
+            <div class="ins-disclosure-body">
+                <?php
+                install_field(array(
+                    'id'    => 'tableprefix',
+                    'label' => __('Table prefix'),
+                    'value' => $form_data['tableprefix'] ?? (defined('DB_TABLE_PREFIX') ? DB_TABLE_PREFIX : 'oc_'),
+                    'help'  => __('Only change this if you run more than one Shopclass install in the same database.'),
+                    'attrs' => array('autocomplete' => 'off'),
+                ) + $ins_flag('tableprefix'));
+                ?>
+
+                <label class="ins-check" for="createdb">
+                    <input type="checkbox" id="createdb" name="createdb" value="1" <?php echo $ins_createdb ? 'checked="checked"' : ''; ?> />
+                    <span>
+                        <span class="ins-check-title"><?php _e('Create the database'); ?></span>
+                        <span class="ins-help"><?php _e("Turn this on if the database doesn't exist yet and you want Shopclass to create it."); ?></span>
+                    </span>
+                </label>
+
+                <label class="ins-check" for="reset_unfinished">
+                    <input type="checkbox" id="reset_unfinished" name="reset_unfinished" value="1" <?php echo Params::getParam('reset_unfinished') == '1' ? 'checked="checked"' : ''; ?> <?php echo $ins_field_error === 'reset_unfinished' ? 'aria-invalid="true"' : ''; ?> />
+                    <span>
+                        <span class="ins-check-title"><?php _e('Remove the unfinished install'); ?></span>
+                        <span class="ins-help"><?php _e('Turn this on to delete the tables of a Shopclass install that did not finish, and start again. A finished site is never touched.'); ?></span>
+                    </span>
+                </label>
+
+                <div id="ins-createdb-fields" <?php echo $ins_createdb ? '' : 'hidden'; ?>>
+                    <?php
+                    $ins_admin_attrs = array('autocomplete' => 'off') + ($ins_createdb ? array() : array('disabled' => 'disabled'));
+                    install_field(array(
+                        'id'    => 'admin_username',
+                        'label' => __('Database admin username'),
+                        'value' => $form_data['admin_username'] ?? '',
+                        'attrs' => $ins_admin_attrs,
+                    ));
+                    install_field(array(
+                        'id'    => 'admin_password',
+                        'type'  => 'password',
+                        'label' => __('Database admin password'),
+                        'help'  => __('An account allowed to create databases. Only used once, during setup.'),
+                        'attrs' => $ins_admin_attrs,
+                    ));
+                    ?>
+                </div>
+            </div>
+        </details>
     </div>
-
-    <details class="ins-disclosure" <?php echo Params::getParam('createdb') == '1' || in_array($ins_field_error, array('tableprefix', 'createdb', 'reset_unfinished'), true) ? 'open' : ''; ?>>
-        <summary><?php _e('More options'); ?></summary>
-        <div class="ins-disclosure-body">
-            <div class="ins-field">
-                <label for="tableprefix"><?php _e('Table prefix'); ?></label>
-                <input class="ins-input" type="text" id="tableprefix" name="tableprefix" value="<?php echo osc_esc_html($form_data['tableprefix'] ?? (defined('DB_TABLE_PREFIX') ? DB_TABLE_PREFIX : 'oc_')); ?>" <?php echo $ins_field_error === 'tableprefix' ? 'aria-invalid="true"' : ''; ?> autocomplete="off" />
-                <div class="ins-help"><?php _e('Only change this if you run more than one Shopclass install in the same database.'); ?></div>
-            </div>
-
-            <div class="ins-field ins-checkbox-row">
-                <input type="checkbox" id="createdb" name="createdb" value="1" <?php echo Params::getParam('createdb') == '1' ? 'checked="checked"' : ''; ?> />
-                <div>
-                    <label for="createdb"><?php _e('Create the database'); ?></label>
-                    <div class="ins-help"><?php _e("Turn this on if the database doesn't exist yet and you want Shopclass to create it."); ?></div>
-                </div>
-            </div>
-
-            <div class="ins-field ins-checkbox-row">
-                <input type="checkbox" id="reset_unfinished" name="reset_unfinished" value="1" <?php echo Params::getParam('reset_unfinished') == '1' ? 'checked="checked"' : ''; ?> <?php echo $ins_field_error === 'reset_unfinished' ? 'aria-invalid="true"' : ''; ?> />
-                <div>
-                    <label for="reset_unfinished"><?php _e('Remove the unfinished install'); ?></label>
-                    <div class="ins-help"><?php _e('Turn this on to delete the tables of a Shopclass install that did not finish, and start again. A finished site is never touched.'); ?></div>
-                </div>
-            </div>
-
-            <div id="ins-createdb-fields" <?php echo Params::getParam('createdb') == '1' ? '' : 'hidden'; ?>>
-                <div class="ins-field">
-                    <label for="admin_username"><?php _e('Database admin username'); ?></label>
-                    <input class="ins-input" type="text" id="admin_username" name="admin_username" value="<?php echo osc_esc_html($form_data['admin_username'] ?? ''); ?>" <?php echo Params::getParam('createdb') == '1' ? '' : 'disabled="disabled"'; ?> autocomplete="off" />
-                </div>
-                <div class="ins-field">
-                    <label for="admin_password"><?php _e('Database admin password'); ?></label>
-                    <input class="ins-input" type="password" id="admin_password" name="admin_password" value="" <?php echo Params::getParam('createdb') == '1' ? '' : 'disabled="disabled"'; ?> autocomplete="off" />
-                    <div class="ins-help"><?php _e('An account allowed to create databases. Only used once, during setup.'); ?></div>
-                </div>
-            </div>
-        </div>
-    </details>
-
-    <div id="ins-test-result" class="ins-test-result" role="status" aria-live="polite"></div>
 
     <div class="ins-actions">
+        <a class="ins-btn ins-btn-ghost ins-back" href="install.php?step=1"><?php _e('Back'); ?></a>
         <button type="button" id="ins-test-btn" class="ins-btn ins-btn-secondary">
             <span class="ins-spinner" aria-hidden="true"></span>
             <span class="ins-btn-label"><?php _e('Test connection'); ?></span>
         </button>
-        <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Continue'); ?></button>
+        <button type="submit" id="ins-connect-btn" class="ins-btn ins-btn-primary">
+            <span class="ins-spinner" aria-hidden="true"></span>
+            <span class="ins-btn-label"><?php _e('Connect'); ?></span>
+        </button>
     </div>
 </form>

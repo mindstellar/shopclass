@@ -60,6 +60,13 @@ $box = static function (string $html, string $slug): string {
     return preg_match('/<input type="checkbox" id="ins-plugin-' . $slug . '"[^>]*>/', $html, $m) ? $m[0] : '';
 };
 
+$sample = static function (string $html): string {
+    return preg_match('/<input[^>]*id="sample_data"[^>]*>/', $html, $m) ? $m[0] : '';
+};
+$group = static function (string $html): string {
+    return preg_match('/<div class="ins-addons-pay".*?<\/fieldset>/s', $html, $m) ? $m[0] : '';
+};
+
 $release = static fn (string $version, string $requires = '7.0.0'): array => array(
     'version' => $version, 'requires' => $requires, 'requires_php' => '8.0', 'url' => 'https://github.com/x/' . $version . '.zip', 'sha256' => str_repeat('a', 64),
 );
@@ -81,13 +88,16 @@ $online = new ShopSetup(
 harness_section('offline');
 $html = $render(new ShopSetup(array(), array(), array(), array()));
 check('the step posts to step 4 with the nonce', str_contains($html, 'name="step" value="4"') && str_contains($html, 'value="nonce123"'));
-check('both cards and their text', str_contains($html, 'Local buy and sell, jobs, property, cars, services') && str_contains($html, 'A fashion or gift shop, a bakery, a craft or digital goods store'));
-check('the change-later note', str_contains($html, 'You can change this later in the admin.'));
+check('both cards and their text', str_contains($html, 'Visitors post their own ads: buy and sell, jobs, homes, cars.') && str_contains($html, 'You sell your own products, with a cart and checkout.'));
+check('the change-later note', str_contains($html, 'You can switch later in the admin.'));
 check('the Shop card cannot be chosen', str_contains($shopRadio($html), 'disabled'));
 check('it says why', str_contains($html, 'Needs internet. You can switch to shop mode later in the admin.'));
 check('no plugin list', !str_contains($html, 'ins-shop-plugins'));
 check('classifieds is picked', (bool) preg_match('/value="classifieds" checked/', $html));
-check('the sample data box, unticked', str_contains($html, 'id="sample_data" name="sample_data" value="1"  />'));
+check('the example content switch, unticked', (bool) preg_match('/<input type="checkbox"[^>]*id="sample_data"[^>]*role="switch"[^>]*value="1"\s*\/>/', $html));
+check('the switch has no checked attribute', !str_contains($sample($html), 'checked'));
+check('"Install sample data" is gone', !str_contains($html, 'Install sample data'));
+check('the bar says the database is connected', str_contains($html, 'Database connected'));
 
 harness_section('Aisle listed but no release this core can run');
 $tooNew = new ShopSetup(array('aisle' => array($release('2.0.0', '99.0.0'))), array('aisle' => array('slug' => 'aisle')), array(), array());
@@ -106,14 +116,52 @@ check('razorpay is offered unticked', $box($html, 'razorpay') !== '' && !str_con
 check('a plugin the catalogue lacks is not offered', $box($html, 'analytics') === '');
 check('a plugin Aisle does not ask for is not offered', $box($html, 'tax-gst') === '');
 check('a plugin with no release this core can run is not offered', $box($html, 'promotions') === '');
+$pay = $group($html);
+check('the payments sit in .ins-addons-pay, labelled Take payments', $pay !== '' && str_contains($pay, 'id="ins-pay-label"') && str_contains($pay, 'Take payments'));
+check('stripe, paypal and razorpay are inside it', $box($pay, 'stripe') !== '' && $box($pay, 'paypal') !== '' && $box($pay, 'razorpay') !== '');
+check('the others are not inside it', $box($pay, 'shipping') === '' && $box($pay, 'tax') === '');
+check('the payments come after the others', strpos($html, 'ins-plugin-razorpay') > strpos($html, 'ins-plugin-tax') && strpos($html, 'ins-addons-pay') > strpos($html, 'ins-plugin-tax'));
+check('payments are unticked by default', !str_contains($box($html, 'stripe'), 'checked') && !str_contains($box($html, 'paypal'), 'checked') && !str_contains($box($html, 'razorpay'), 'checked'));
+check('our text replaces the catalogue text', str_contains($html, 'Rates by zone and weight') && !str_contains($html, 'Delivery zones') && str_contains($html, 'Sales tax and VAT rules') && str_contains($html, 'Cards, Apple Pay, Google Pay') && str_contains($html, 'PayPal and cards') && str_contains($html, 'UPI and cards, India'));
+check('the sample data switch has role=switch', str_contains($sample($html), 'role="switch"'));
+check('the section is called Add to your shop', str_contains($html, 'Add to your shop'));
+check('ShopSetup::PAYMENTS lists the three gateways', ShopSetup::PAYMENTS === array('stripe', 'paypal', 'razorpay'));
 check('catalogue names are escaped', str_contains($html, 'Shipping &lt;b&gt;') && !str_contains($html, 'Shipping <b>'));
+
+harness_section('a slug we have no text for');
+$odd = new ShopSetup(
+    array('aisle' => array($release('1.0.0'))),
+    array('aisle' => array('slug' => 'aisle')),
+    array('shipping' => array($release('0.1.0'))),
+    array('shipping' => array('name' => 'Shipping', 'short_description' => 'Catalogue words'))
+);
+check('it keeps the catalogue text for the known slug', str_contains($render($odd), 'Rates by zone and weight'));
+$fb = static function (): string {
+    $setup = new ShopSetup(
+        array('aisle' => array(array('version' => '1.0.0', 'requires' => '7.0.0', 'requires_php' => '8.0', 'url' => 'https://github.com/x/1.zip', 'sha256' => str_repeat('a', 64)))),
+        array('aisle' => array('slug' => 'aisle')),
+        array(),
+        array()
+    );
+    $offer = $setup->offer();
+    $offer['plugins'] = array(array('slug' => 'mystery', 'name' => 'Mystery <i>', 'description' => 'From the catalogue', 'checked' => false));
+    $chosen = array('type' => 'shop', 'sample' => false, 'plugins' => null);
+    ob_start();
+    include LIB_PATH . 'osclass/installer/gui/install-site-type.php';
+
+    return (string) ob_get_clean();
+};
+$html = $fb();
+check('an unknown slug shows the catalogue text', str_contains($html, 'From the catalogue'));
+check('and its name, escaped', str_contains($html, 'Mystery &lt;i&gt;'));
+check('with no payments there is no payments group', !str_contains($html, 'ins-addons-pay'));
 
 harness_section('online, coming back with Shop picked');
 $html = $render($online, array('type' => 'shop', 'sample' => true, 'plugins' => array('razorpay')));
 check('Shop stays picked', str_contains($shopRadio($html), 'checked'));
 check('the plugin list shows', !preg_match('/id="ins-shop-plugins"\s+hidden/', $html));
 check('the earlier ticks are kept', str_contains($box($html, 'razorpay'), 'checked') && !str_contains($box($html, 'shipping'), 'checked'));
-check('sample data stays ticked', str_contains($html, 'name="sample_data" value="1" checked'));
+check('sample data stays ticked', str_contains($sample($html), 'checked'));
 
 harness_section('package installs turned off');
 $GLOBALS['installsOff'] = true;
@@ -139,7 +187,7 @@ check('and no plugins are kept', $s->_get('install_shop_plugins') === array());
 
 harness_section('translations');
 $pot = (string) file_get_contents(ABS_PATH . 'oc-content/languages/core.pot');
-foreach (array('What kind of site?', 'Local buy and sell, jobs, property, cars, services', 'Needs internet. You can switch to shop mode later in the admin.', 'Install sample data') as $msg) {
+foreach (array('Needs internet. You can switch to shop mode later in the admin.') as $msg) {
     check('core.pot has "' . $msg . '"', str_contains($pot, 'msgid "' . $msg . '"'));
 }
 

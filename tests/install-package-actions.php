@@ -72,7 +72,7 @@ $make = static function (bool $themeOk = true, array $required = array()) use ($
     $setup = new ShopSetup(
         array('aisle' => array($release('1.0.0'), $release('9.0.0', '99.0.0'))),
         array('aisle' => array('slug' => 'aisle')),
-        array('shipping' => array($release('0.1.1')), 'razorpay' => array($release('0.1.0'))),
+        array('shipping' => array($release('0.1.1')), 'razorpay' => array($release('0.1.0')), 'stripe' => array($release('0.2.0'))),
         array(),
         static function (string $type, string $slug, array $entry) use ($log, $themeOk): array {
             $log['fetched'] = array_merge($log['fetched'], array($type . ':' . $slug . '@' . $entry['version']));
@@ -136,6 +136,13 @@ check('a path is refused', install_shop_step('install_package', 'plugin', '../sh
 check('an unknown action is refused', install_shop_step('drop_tables', 'theme', 'aisle', $setup)['ok'] === false);
 check('an unknown action on a ticked plugin is refused', install_shop_step('drop_tables', 'plugin', 'shipping', $setup)['ok'] === false);
 check('nothing was fetched', $log['fetched'] === array());
+$choose('shop', array('stripe'));
+$res = install_shop_step('install_package', 'plugin', 'stripe', $setup);
+check('a ticked plugin the theme manifest does not list installs', $res['ok'] === true);
+check('and was fetched and switched on', $log['fetched'] === array('plugin:stripe@0.2.0') && $log['switched'] === array('stripe'));
+$log['fetched'] = array();
+$choose('shop', array('evil'));
+check('a slug outside the offered plugins is still refused', $setup->installPlugin('evil')['ok'] === false && $log['fetched'] === array());
 $choose('classifieds', array('shipping'));
 check('on a classifieds site even Aisle is refused', install_shop_step('install_package', 'theme', 'aisle', $setup)['ok'] === false);
 check('and so is turning shop mode on', install_shop_step('activate_theme', '', '', $setup)['ok'] === false);

@@ -81,20 +81,13 @@ if ($shopAction === 'sample_photos' || $shopAction === 'sample_batch') {
 }
 
 // Re-validate on the server. The browser validates too, but never trust it.
-$adminUser = (string)Params::getParam('s_name');
-$email     = (string)Params::getParam('email');
-if ($adminUser !== '' && !preg_match('/^[A-Za-z0-9]+$/', $adminUser)) {
-    echo json_encode(array(
-        'status' => false,
-        'error'  => __('The admin username may only contain letters and numbers.'),
-    ));
-    exit;
-}
-if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode(array(
-        'status' => false,
-        'error'  => __('Enter a valid contact email address.'),
-    ));
+$detailsProblem = \mindstellar\install\SiteDetails::problem(
+    (string) Params::getParam('s_name'),
+    (string) Params::getParam('email'),
+    (string) Params::getParam('webtitle')
+);
+if ($detailsProblem !== null) {
+    echo json_encode(array('status' => false) + $detailsProblem);
     exit;
 }
 
@@ -108,6 +101,7 @@ try {
     echo json_encode(array(
         'status' => false,
         'error'  => __('The admin account could not be created. Nothing was saved — please try again.'),
+        'field'  => '',
     ));
     exit;
 }

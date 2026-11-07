@@ -43,6 +43,9 @@ final class ShopSetup
         'digital-goods' => true,
     ];
 
+    /** The payment plugins, shown as their own group in the installer. */
+    public const PAYMENTS = ['stripe', 'paypal', 'razorpay'];
+
     /** @var array<string, array<int, array<string,mixed>>> */
     private array $themeVersions;
 
@@ -245,6 +248,10 @@ final class ShopSetup
         $requires = ($this->requirements)();
         if ($requires === null) {
             return self::answer(false, __('Skipped, because the Aisle theme is not installed.'));
+        }
+        // The installer offers plugins the theme's manifest may not list, such as payment gateways.
+        if (!isset($requires['required'][$slug]) && !isset($requires['recommended'][$slug])) {
+            $requires['recommended'][$slug] = '';
         }
         $fetcher = $this->fetcher;
         $deps    = new PluginDependencies(

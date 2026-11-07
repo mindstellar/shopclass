@@ -57,6 +57,91 @@
     }
 
     /* -----------------------------------------------------------------
+       Field errors: one place sets and clears aria-invalid, the message
+       element (#<id>-error) and its entry in aria-describedby.
+       ------------------------------------------------------------- */
+    function setFieldError(input, message) {
+        if (!input) {
+            return;
+        }
+        var errorEl = input.id ? document.getElementById(input.id + '-error') : null;
+        var ids = (input.getAttribute('aria-describedby') || '').split(/\s+/).filter(Boolean);
+        var errorId = input.id + '-error';
+        var at = ids.indexOf(errorId);
+        if (message) {
+            input.setAttribute('aria-invalid', 'true');
+            if (errorEl) {
+                var label = errorEl.querySelector('span');
+                (label || errorEl).textContent = message;
+                errorEl.hidden = false;
+                if (at === -1) {
+                    ids.push(errorId);
+                }
+            }
+        } else {
+            input.removeAttribute('aria-invalid');
+            if (errorEl) {
+                errorEl.hidden = true;
+                if (at !== -1) {
+                    ids.splice(at, 1);
+                }
+            }
+        }
+        if (ids.length) {
+            input.setAttribute('aria-describedby', ids.join(' '));
+        } else {
+            input.removeAttribute('aria-describedby');
+        }
+    }
+
+    // The page renders each field's short error text; reuse it, else the fallback.
+    function renderedError(input, fallback) {
+        var holder = input && input.id ? document.getElementById(input.id + '-error') : null;
+        var span = holder ? holder.querySelector('span') : null;
+        return (span && span.textContent.trim()) || fallback || ' ';
+    }
+
+    function clearErrorOnInput(input) {
+        if (!input) {
+            return;
+        }
+        input.addEventListener('input', function () {
+            if (input.getAttribute('aria-invalid') === 'true') {
+                setFieldError(input, null);
+            }
+        });
+    }
+
+    /* -----------------------------------------------------------------
+       Busy buttons: disabled, aria-busy, .is-loading, label swap, width kept.
+       ------------------------------------------------------------- */
+    function setBusy(btn, busy, busyLabel) {
+        var label = btn.querySelector('.ins-btn-label');
+        if (busy) {
+            if (btn.getAttribute('aria-busy') === 'true') {
+                return;
+            }
+            btn.style.minWidth = btn.offsetWidth + 'px';
+            btn.disabled = true;
+            btn.setAttribute('aria-busy', 'true');
+            btn.classList.add('is-loading');
+            if (label) {
+                btn.setAttribute('data-idle-label', label.textContent);
+                label.textContent = busyLabel;
+            }
+        } else {
+            btn.disabled = false;
+            btn.removeAttribute('aria-busy');
+            btn.classList.remove('is-loading');
+            btn.style.minWidth = '';
+            if (label && btn.hasAttribute('data-idle-label')) {
+                label.textContent = btn.getAttribute('data-idle-label');
+                btn.removeAttribute('data-idle-label');
+            }
+        }
+    }
+
+    /* -----------------------------------------------------------------
        Step 1: language select reloads the page with ?install_locale=
        ------------------------------------------------------------- */
     function initLocaleSelect() {
@@ -87,6 +172,41 @@
                     'aria-label',
                     willShow ? text('hidePassword', 'Hide password') : text('showPassword', 'Show password')
                 );
+            });
+        });
+    }
+
+    /* -----------------------------------------------------------------
+       "Make a strong password": 16 random characters, shown in the field
+       ------------------------------------------------------------- */
+    function initGenerate() {
+        var alphabet = 'abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789-';
+        document.querySelectorAll('[data-generate-target]').forEach(function (btn) {
+            var input = document.getElementById(btn.getAttribute('data-generate-target'));
+            if (!input || !window.crypto || !window.crypto.getRandomValues) {
+                return;
+            }
+            btn.addEventListener('click', function () {
+                var limit = 256 - (256 % alphabet.length);
+                var out = '';
+                while (out.length < 16) {
+                    var bytes = new Uint8Array(32);
+                    window.crypto.getRandomValues(bytes);
+                    for (var i = 0; i < bytes.length && out.length < 16; i++) {
+                        if (bytes[i] < limit) {
+                            out += alphabet.charAt(bytes[i] % alphabet.length);
+                        }
+                    }
+                }
+                input.value = out;
+                input.type = 'text';
+                setFieldError(input, null);
+                var reveal = document.querySelector('[data-reveal-target="' + input.id + '"]');
+                if (reveal) {
+                    reveal.setAttribute('aria-pressed', 'true');
+                    reveal.setAttribute('aria-label', text('hidePassword', 'Hide password'));
+                }
+                input.focus();
             });
         });
     }
@@ -223,8 +343,60 @@
         sync();
     }
 
+    var DB_FIELDS = [
+        'dbhost',
+        'dbname',
+        'username',
+        'password',
+        'tableprefix',
+        'createdb',
+        'reset_unfinished',
+        'admin_username',
+        'admin_password',
+    ];
+
     /* -----------------------------------------------------------------
-       Step 2: "Test connection" — advisory, never blocks "Continue"
+       Step 2 form: clears field flags on input and shows Connect as busy
+       ------------------------------------------------------------- */
+    function initDatabaseForm() {
+        var form = document.getElementById('ins-database-form');
+        if (!form) {
+            return;
+        }
+        var testBtn = document.getElementById('ins-test-btn');
+        var connectBtn = document.getElementById('ins-connect-btn');
+
+        DB_FIELDS.forEach(function (name) {
+            clearErrorOnInput(form.elements[name]);
+        });
+
+        form.addEventListener('submit', function (event) {
+            if (connectBtn && connectBtn.getAttribute('aria-busy') === 'true') {
+                event.preventDefault();
+                return;
+            }
+            if (connectBtn) {
+                setBusy(connectBtn, true, text('creatingTables', 'Creating tables…'));
+            }
+            if (testBtn) {
+                testBtn.disabled = true;
+            }
+        });
+
+        window.addEventListener('pageshow', function (event) {
+            if (event.persisted) {
+                if (connectBtn) {
+                    setBusy(connectBtn, false);
+                }
+                if (testBtn) {
+                    testBtn.disabled = false;
+                }
+            }
+        });
+    }
+
+    /* -----------------------------------------------------------------
+       Step 2: "Test connection" — advisory, never blocks "Connect"
        ------------------------------------------------------------- */
     function initDbTest() {
         var btn = document.getElementById('ins-test-btn');
@@ -234,44 +406,17 @@
             return;
         }
 
-        var fieldNames = [
-            'dbhost',
-            'dbname',
-            'username',
-            'password',
-            'tableprefix',
-            'createdb',
-            'reset_unfinished',
-            'admin_username',
-            'admin_password',
-        ];
-
         function clearFieldFlags() {
-            fieldNames.forEach(function (name) {
-                var el = form.elements[name];
-                if (el) {
-                    el.removeAttribute('aria-invalid');
-                }
+            DB_FIELDS.forEach(function (name) {
+                setFieldError(form.elements[name], null);
             });
         }
 
-        fieldNames.forEach(function (name) {
-            var el = form.elements[name];
-            if (el) {
-                el.addEventListener('input', function () {
-                    el.removeAttribute('aria-invalid');
-                });
-            }
-        });
-
         btn.addEventListener('click', function () {
-            var originalLabel = btn.textContent.trim();
             clearFieldFlags();
             resultEl.textContent = '';
             resultEl.className = 'ins-test-result';
-            btn.disabled = true;
-            btn.classList.add('is-loading');
-            btn.querySelector('.ins-btn-label').textContent = text('testing', 'Testing…');
+            setBusy(btn, true, text('testing', 'Testing…'));
 
             var params = formToUrlEncoded(form, { action: 'test_db' });
 
@@ -286,11 +431,8 @@
                 .then(function (data) {
                     resultEl.textContent = data.message || '';
                     resultEl.classList.add('ins-test-result-' + (data.level || 'error'));
-                    if (data.field) {
-                        var el = form.elements[data.field];
-                        if (el) {
-                            el.setAttribute('aria-invalid', 'true');
-                        }
+                    if (data.field && form.elements[data.field]) {
+                        setFieldError(form.elements[data.field], renderedError(form.elements[data.field], data.message));
                     }
                 })
                 .catch(function () {
@@ -298,9 +440,7 @@
                     resultEl.classList.add('ins-test-result-error');
                 })
                 .then(function () {
-                    btn.disabled = false;
-                    btn.classList.remove('is-loading');
-                    btn.querySelector('.ins-btn-label').textContent = originalLabel;
+                    setBusy(btn, false);
                 });
         });
     }
@@ -337,44 +477,20 @@
         var overlay = document.getElementById('ins-setup-overlay');
         var errorPanel = document.getElementById('ins-target-error');
 
+        var siteName = document.getElementById('webtitle');
         var adminUser = document.getElementById('admin_user');
-        var adminUserError = document.getElementById('admin-user-error');
         var email = document.getElementById('email');
-        var emailError = document.getElementById('email-error');
 
         var userPattern = /^[A-Za-z0-9]+$/;
         var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-        function setInvalid(input, errorEl) {
-            input.setAttribute('aria-invalid', 'true');
-            if (errorEl) {
-                errorEl.hidden = false;
-            }
-        }
-
-        function clearInvalid(input, errorEl) {
-            input.removeAttribute('aria-invalid');
-            if (errorEl) {
-                errorEl.hidden = true;
-            }
-        }
-
-        if (adminUser) {
-            adminUser.addEventListener('input', function () {
-                clearInvalid(adminUser, adminUserError);
-            });
-        }
-        if (email) {
-            email.addEventListener('input', function () {
-                clearInvalid(email, emailError);
-            });
-        }
+        [siteName, adminUser, email].forEach(clearErrorOnInput);
 
         function showOverlay() {
             if (wrap) {
                 wrap.setAttribute('aria-busy', 'true');
             }
-            form.hidden = true;
+            form.inert = true;
             if (overlay) {
                 overlay.hidden = false;
             }
@@ -384,7 +500,7 @@
             if (wrap) {
                 wrap.removeAttribute('aria-busy');
             }
-            form.hidden = false;
+            form.inert = false;
             if (overlay) {
                 overlay.hidden = true;
             }
@@ -504,16 +620,18 @@
         form.addEventListener('submit', function (event) {
             event.preventDefault();
 
-            var hasError = false;
-            if (adminUser && !userPattern.test(adminUser.value)) {
-                setInvalid(adminUser, adminUserError);
-                hasError = true;
+            var firstBad = null;
+            function check(input, ok, message) {
+                if (input && !ok) {
+                    setFieldError(input, message);
+                    firstBad = firstBad || input;
+                }
             }
-            if (email && !emailPattern.test(email.value)) {
-                setInvalid(email, emailError);
-                hasError = true;
-            }
-            if (hasError) {
+            check(siteName, siteName && siteName.value.trim() !== '', renderedError(siteName));
+            check(adminUser, adminUser && userPattern.test(adminUser.value), renderedError(adminUser));
+            check(email, email && emailPattern.test(email.value), renderedError(email));
+            if (firstBad) {
+                firstBad.focus();
                 return;
             }
 
@@ -540,6 +658,12 @@
                         return;
                     }
                     hideOverlay();
+                    var serverField = data && data.field ? document.getElementById(data.field) : null;
+                    if (serverField) {
+                        setFieldError(serverField, renderedError(serverField, data.error));
+                        serverField.focus();
+                        return;
+                    }
                     showServerError((data && data.error) || text('networkError', 'Something went wrong. Check your connection and try again.'));
                 })
                 .catch(function () {
@@ -549,14 +673,87 @@
         });
     }
 
+    /* -----------------------------------------------------------------
+       Theme toggle: stored choice wins, else follow the system setting.
+       ------------------------------------------------------------- */
+    function initThemeToggle() {
+        var button = document.getElementById('ins-theme-toggle');
+        var store = window.insTheme;
+        if (!button || !store) {
+            return;
+        }
+        var root = document.documentElement;
+        var query = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+
+        function apply(theme) {
+            root.setAttribute('data-bs-theme', theme);
+            button.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+        }
+
+        button.addEventListener('click', function () {
+            var next = store.resolve() === 'dark' ? 'light' : 'dark';
+            store.set(next);
+            apply(next);
+        });
+
+        if (query) {
+            var onChange = function () {
+                if (!store.get()) {
+                    apply(store.resolve());
+                }
+            };
+            if (query.addEventListener) {
+                query.addEventListener('change', onChange);
+            } else if (query.addListener) {
+                query.addListener(onChange);
+            }
+        }
+        apply(store.resolve());
+    }
+
+    /* -----------------------------------------------------------------
+       Bottom fade on the stage body, only while it really overflows.
+       ------------------------------------------------------------- */
+    function initScrollFade() {
+        var bodies = document.querySelectorAll('.ins-stage-body');
+        Array.prototype.forEach.call(bodies, function (body) {
+            function update() {
+                body.classList.toggle('is-scrollable', body.scrollHeight > body.clientHeight + 2);
+            }
+            if (window.ResizeObserver) {
+                var observer = new ResizeObserver(update);
+                observer.observe(body);
+                Array.prototype.forEach.call(body.children, function (child) {
+                    observer.observe(child);
+                });
+            }
+            body.addEventListener('toggle', update, true);
+            window.addEventListener('resize', update);
+            update();
+        });
+    }
+
+    function focusFirstInvalid() {
+        var bad = document.querySelector('.ins-stage [aria-invalid="true"]');
+        if (bad) {
+            bad.focus();
+        }
+    }
+
+    // Step 1: initLocaleSelect. Step 2: initCreateDbToggle, initDatabaseForm, initDbTest. Step 3: initSiteType. Step 4: initTargetForm.
     document.addEventListener('DOMContentLoaded', function () {
         initLocaleSelect();
         initReveal();
+        initGenerate();
         initCopy();
         initDismissiblePanels();
         initCreateDbToggle();
+        initDatabaseForm();
         initDbTest();
         initSiteType();
         initTargetForm();
+        initThemeToggle();
+        initScrollFade();
+        focusFirstInvalid();
     });
 })();

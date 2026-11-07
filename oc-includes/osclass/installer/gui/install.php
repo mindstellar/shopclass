@@ -41,7 +41,7 @@ if ($step === 1) {
 
 $ins_step_labels = array(
     1 => __('Check server'),
-    2 => __('Connect database'),
+    2 => __('Database'),
     3 => __('Site type'),
     4 => __('Your site'),
     5 => __('Done'),
@@ -49,6 +49,8 @@ $ins_step_labels = array(
 
 $ins_i18n = array(
     'testing'      => __('Testing…'),
+    'checking'     => __('Checking…'),
+    'creatingTables' => __('Creating tables…'),
     'copied'       => __('Copied'),
     'copyFailed'   => __("Couldn't copy. Select the text and copy it manually."),
     'showPassword' => __('Show password'),
@@ -68,6 +70,28 @@ $ins_i18n = array(
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <script>
+        window.insTheme = {
+            get: function() {
+                try {
+                    var v = localStorage.getItem('ins-theme');
+                    return v === 'light' || v === 'dark' ? v : null;
+                } catch (e) {
+                    return null;
+                }
+            },
+            set: function(v) {
+                try {
+                    localStorage.setItem('ins-theme', v);
+                } catch (e) {}
+            },
+            resolve: function() {
+                return this.get() || (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+            }
+        };
+        document.documentElement.setAttribute('data-bs-theme', window.insTheme.resolve());
+    </script>
     <title><?php _e('Shopclass Installation'); ?></title>
     <link rel="stylesheet" type="text/css" media="all" href="<?php echo get_absolute_url(); ?>oc-includes/osclass/installer/install.css" />
     <script type="application/json" id="ins-i18n"><?php echo json_encode($ins_i18n, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE); ?></script>
@@ -76,9 +100,26 @@ $ins_i18n = array(
 
 <body>
     <div class="ins-page">
-        <div class="ins-logo">
-            <img src="<?php echo get_absolute_url(); ?>oc-includes/images/shopclass-logo.svg" alt="Shopclass" />
-        </div>
+        <header class="ins-topbar">
+            <span class="ins-logo"><?php readfile(__DIR__ . '/../logo.svg'); ?></span>
+            <div class="ins-top-tools">
+                <?php if ($step === 1 && empty($db_unreachable) && !$already_installed && count($jsonLocales) > 1) { ?>
+                    <div class="ins-lang">
+                        <svg class="ins-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M1.5 8h13M8 1.5c-2 2-2.8 4-2.8 6.5S6 12.5 8 14.5c2-2 2.8-4 2.8-6.5S10 3.5 8 1.5z"/></svg>
+                        <label class="ins-visually-hidden" for="install_locale"><?php _e('Language'); ?></label>
+                        <select id="install_locale" name="install_locale" form="ins-requirements-form">
+                            <?php foreach ($jsonLocales as $ins_locale_code => $ins_locale_label) { ?>
+                                <option value="<?php echo osc_esc_html($ins_locale_code); ?>" <?php echo $ins_locale_code === Session::getInstance()->_get('userLocale') ? 'selected="selected"' : ''; ?>><?php echo osc_esc_html($ins_locale_label); ?></option>
+                            <?php } ?>
+                        </select>
+                    </div>
+                <?php } ?>
+                <button type="button" id="ins-theme-toggle" class="ins-btn ins-btn-ghost ins-btn-icon" aria-pressed="false" aria-label="<?php echo osc_esc_html(__('Dark mode')); ?>">
+                    <svg class="ins-icon ins-icon-sun" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="2.75" /><path d="M8 1.5v1.5M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1" /></svg>
+                    <svg class="ins-icon ins-icon-moon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M13 9.5A5.5 5.5 0 016.5 3a5.5 5.5 0 106.5 6.5z" /></svg>
+                </button>
+            </div>
+        </header>
 
         <?php if (!empty($db_unreachable)) { ?>
             <div class="ins-card">
@@ -131,7 +172,7 @@ $ins_i18n = array(
                                     <span>
                                         <span class="ins-step-label"><?php echo osc_esc_html($ins_label); ?></span>
                                         <?php if ($ins_state === 'is-done') { ?>
-                                            <span class="ins-step-status"><?php _e('Done'); ?></span>
+                                            <span class="ins-step-status ins-visually-hidden"><?php _e('Done'); ?></span>
                                         <?php } ?>
                                     </span>
                                 </li>
@@ -140,67 +181,34 @@ $ins_i18n = array(
                     </nav>
 
                     <div class="ins-content">
+                        <div class="ins-mstep" aria-hidden="true">
+                            <div class="ins-mstep-row"><b><?php echo osc_esc_html($ins_step_labels[$ins_rail_step]); ?></b><span class="ins-mstep-count"><?php /* translators: 1: current step number, 2: total steps */ echo osc_esc_html(sprintf(__('Step %1$s of %2$s'), $ins_rail_step, count($ins_step_labels))); ?></span></div>
+                            <div class="ins-segs">
+                                <?php foreach ($ins_step_labels as $ins_n => $ins_label) { ?>
+                                    <span<?php echo $ins_n <= $ins_rail_step ? ' class="is-on"' : ''; ?>></span>
+                                <?php } ?>
+                            </div>
+                        </div>
                         <?php if ($step === 1) { ?>
-                            <h1 class="ins-headline"><?php _e('Welcome to Shopclass'); ?></h1>
-                            <p class="ins-body"><?php _e("Before we begin, let's make sure your server has everything it needs."); ?></p>
-
-                            <form action="install.php" method="post">
+                            <form class="ins-stage" id="ins-requirements-form" action="install.php" method="post">
                                 <input type="hidden" name="step" value="2" />
-
-                                <?php if (count($jsonLocales) > 1) { ?>
-                                    <div class="ins-field">
-                                        <label for="install_locale"><?php _e('Language'); ?></label>
-                                        <select class="ins-input" id="install_locale" name="install_locale">
-                                            <?php foreach ($jsonLocales as $ins_locale_code => $ins_locale_label) { ?>
-                                                <option value="<?php echo osc_esc_html($ins_locale_code); ?>" <?php echo $ins_locale_code === Session::getInstance()->_get('userLocale') ? 'selected="selected"' : ''; ?>><?php echo osc_esc_html($ins_locale_label); ?></option>
-                                            <?php } ?>
-                                        </select>
-                                    </div>
-                                <?php } ?>
-
-                                <?php if ($error) { ?>
-                                    <div class="ins-panel ins-panel-danger" role="alert">
-                                        <div class="ins-panel-body">
-                                            <strong><?php _e('Your server is missing something Shopclass needs.'); ?></strong>
-                                            <ul>
-                                                <?php foreach ($requirements as $ins_req) { ?>
-                                                    <?php if (!$ins_req['fn'] && $ins_req['solution'] !== '') { ?>
-                                                        <li><?php echo $ins_req['solution']; ?></li>
-                                                    <?php } ?>
-                                                <?php } ?>
-                                            </ul>
-                                            <a href="https://github.com/mindstellar/shopclass/discussions" target="_blank" rel="noopener" hreflang="en"><?php _e('Need more help?'); ?></a>
-                                        </div>
-                                    </div>
-                                <?php } else { ?>
-                                    <div class="ins-panel ins-panel-success">
-                                        <div class="ins-panel-body"><?php _e('Your server meets every requirement.'); ?></div>
-                                    </div>
-                                <?php } ?>
-
-                                <h2 class="ins-title"><?php _e('Server checklist'); ?></h2>
-                                <ul class="ins-checklist">
-                                    <?php foreach ($requirements as $ins_req) { ?>
-                                        <li>
-                                            <span><?php echo $ins_req['requirement']; ?></span>
-                                            <?php if ($ins_req['fn']) { ?>
-                                                <span class="ins-check-status is-met">
-                                                    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                                                    <?php _e('Met'); ?>
-                                                </span>
-                                            <?php } else { ?>
-                                                <span class="ins-check-status is-missing">
-                                                    <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-                                                    <?php _e('Missing'); ?>
-                                                </span>
-                                            <?php } ?>
-                                        </li>
-                                    <?php } ?>
-                                </ul>
+                                <div class="ins-stage-body">
+                                    <h1 class="ins-headline"><?php _e('Let’s set up your site'); ?></h1>
+                                    <p class="ins-body"><?php _e('First, a quick check that this server can run Shopclass.'); ?></p>
+                                    <?php
+                                    include __DIR__ . '/install-requirements.php';
+                                    /** @var int $ins_fail_count Set by the partial. */
+                                    ?>
+                                </div>
 
                                 <div class="ins-actions">
-                                    <?php if ($error) { ?>
-                                        <button type="button" class="ins-btn ins-btn-secondary" onclick="document.location = 'install.php?step=1'"><?php _e('Check again'); ?></button>
+                                    <?php if ($ins_fail_count > 0) { ?>
+                                        <span class="ins-hint">
+                                            <svg class="ins-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8l6.5 11.4h-13z"/><path d="M8 6.5v3M8 11.5v.1"/></svg>
+                                            <span><?php echo osc_esc_html(sprintf(_n('Fix the %d item above to continue.', 'Fix the %d items above to continue.', $ins_fail_count), $ins_fail_count)); ?></span>
+                                        </span>
+                                        <a class="ins-btn ins-btn-secondary" href="install.php?step=1"><?php _e('Check again'); ?></a>
+                                        <button type="submit" class="ins-btn ins-btn-primary" disabled><?php _e('Continue'); ?></button>
                                     <?php } else { ?>
                                         <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Continue'); ?></button>
                                     <?php } ?>
@@ -259,15 +267,16 @@ $ins_i18n = array(
             ?>
                     </div>
                 </div>
-                <div class="ins-card-footer">
-                    <ul class="ins-footer-links">
-                        <li><a href="https://docs.mindstellar.com/osclass-docs/" target="_blank" rel="noopener" hreflang="en"><?php _e('Documentation'); ?></a></li>
-                        <li><a href="https://github.com/mindstellar/shopclass/" target="_blank" rel="noopener" hreflang="en"><?php _e('Feedback'); ?></a></li>
-                        <li><a href="https://github.com/mindstellar/shopclass/discussions" target="_blank" rel="noopener" hreflang="en"><?php _e('Forums'); ?></a></li>
-                    </ul>
-                </div>
             </div>
         <?php } ?>
+
+        <footer class="ins-under">
+            <ul class="ins-footer-links">
+                <li><a href="https://docs.mindstellar.com/osclass-docs/" target="_blank" rel="noopener" hreflang="en"><?php _e('Documentation'); ?></a></li>
+                <li><a href="https://github.com/mindstellar/shopclass/" target="_blank" rel="noopener" hreflang="en"><?php _e('Feedback'); ?></a></li>
+                <li><a href="https://github.com/mindstellar/shopclass/discussions" target="_blank" rel="noopener" hreflang="en"><?php _e('Forums'); ?></a></li>
+            </ul>
+        </footer>
     </div>
 </body>
 

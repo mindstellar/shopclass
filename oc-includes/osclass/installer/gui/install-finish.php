@@ -21,107 +21,110 @@ if (!defined('ABS_PATH')) {
 // than inheriting the caller's scope.
 global $error;
 
+require_once __DIR__ . '/fields.php';
+
 /** @var string $password */
 
 $data = finish_installation($password);
 $ins_email_failed = !empty($error) || empty($data['s_email']);
 ?>
-<div class="ins-hero">
-    <h1 class="ins-display"><?php _e('Your site is ready.'); ?></h1>
-</div>
-
-<?php if (Params::getParam('error_location') == 1) { ?>
-    <div class="ins-panel ins-panel-warning" role="alert" data-dismiss-after="6000">
-        <div class="ins-panel-body"><?php _e("We couldn't save your selected location. You can set it later from the admin panel."); ?></div>
-        <button type="button" class="ins-panel-dismiss" aria-label="<?php echo osc_esc_html(__('Dismiss')); ?>">
-            <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
-        </button>
+<div class="ins-stage">
+    <div class="ins-stage-body">
+        <div class="ins-hero">
+        <h1 class="ins-display"><?php _e('Your site is ready.'); ?></h1>
     </div>
-<?php } ?>
 
-<?php if (Session::getInstance()->_get('install_sample_photos_failed')) { ?>
-    <div class="ins-panel ins-panel-warning">
-        <div class="ins-panel-body"><?php _e('Sample photos could not be downloaded, so the sample listings have no photos.'); ?></div>
-    </div>
-<?php } ?>
+    <?php if (Params::getParam('error_location') == 1) { ?>
+        <div class="ins-panel ins-panel-warning" role="alert" data-dismiss-after="6000">
+            <div class="ins-panel-body"><?php _e("We couldn't save your selected location. You can set it later from the admin panel."); ?></div>
+            <button type="button" class="ins-panel-dismiss" aria-label="<?php echo osc_esc_html(__('Dismiss')); ?>">
+                <svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true" focusable="false"><path d="M4 4l8 8M12 4l-8 8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" /></svg>
+            </button>
+        </div>
+    <?php } ?>
 
-<?php if (Session::getInstance()->_get('install_sample_warning')) { ?>
-    <div class="ins-panel ins-panel-warning">
-        <div class="ins-panel-body"><?php _e("Some sample content couldn't be added. Your site will still work fine."); ?></div>
-    </div>
-<?php } ?>
-
-<?php
-$ins_notice = install_shop_notice(osc_site_mode());
-$ins_failed = (array) (Session::getInstance()->_get('install_shop_failed') ?: array());
-unset($ins_failed[mindstellar\install\ShopSetup::THEME]);
-if ($ins_notice !== null) { ?>
-    <div class="ins-panel <?php echo $ins_notice['ok'] ? 'ins-panel-success' : 'ins-panel-warning'; ?>">
-        <div class="ins-panel-body"><?php echo osc_esc_html($ins_notice['text']); ?></div>
-    </div>
-    <?php if ($ins_failed !== array()) { ?>
+    <?php if (Session::getInstance()->_get('install_sample_photos_failed')) { ?>
         <div class="ins-panel ins-panel-warning">
-            <div class="ins-panel-body">
-                <strong><?php _e('Some plugins were not installed.'); ?></strong>
-                <ul class="ins-failed-list">
-                    <?php foreach ($ins_failed as $ins_slug => $ins_fail) { ?>
-                        <li>
-                            <strong><?php echo osc_esc_html((string) $ins_slug); ?></strong>:
-                            <?php echo osc_esc_html((string) ($ins_fail['message'] ?? '')); ?>
-                            <?php _e('Install it later under Plugins.'); ?>
-                        </li>
-                    <?php } ?>
-                </ul>
+            <div class="ins-panel-body"><?php _e('Sample photos could not be downloaded, so the sample listings have no photos.'); ?></div>
+        </div>
+    <?php } ?>
+
+    <?php if (Session::getInstance()->_get('install_sample_warning')) { ?>
+        <div class="ins-panel ins-panel-warning">
+            <div class="ins-panel-body"><?php _e("Some sample content couldn't be added. Your site will still work fine."); ?></div>
+        </div>
+    <?php } ?>
+
+    <?php
+    $ins_notice = install_shop_notice(osc_site_mode());
+    $ins_failed = (array) (Session::getInstance()->_get('install_shop_failed') ?: array());
+    unset($ins_failed[mindstellar\install\ShopSetup::THEME]);
+    if ($ins_notice !== null) { ?>
+        <div class="ins-panel <?php echo $ins_notice['ok'] ? 'ins-panel-success' : 'ins-panel-warning'; ?>">
+            <div class="ins-panel-body"><?php echo osc_esc_html($ins_notice['text']); ?></div>
+        </div>
+        <?php if ($ins_failed !== array()) { ?>
+            <div class="ins-panel ins-panel-warning">
+                <div class="ins-panel-body">
+                    <strong><?php _e('Some plugins were not installed.'); ?></strong>
+                    <ul class="ins-failed-list">
+                        <?php foreach ($ins_failed as $ins_slug => $ins_fail) { ?>
+                            <li>
+                                <strong><?php echo osc_esc_html((string) $ins_slug); ?></strong>:
+                                <?php echo osc_esc_html((string) ($ins_fail['message'] ?? '')); ?>
+                                <?php _e('Install it later under Plugins.'); ?>
+                            </li>
+                        <?php } ?>
+                    </ul>
+                </div>
+            </div>
+        <?php }
+    } ?>
+
+    <?php if ($ins_email_failed) { ?>
+        <div class="ins-panel ins-panel-warning">
+            <div class="ins-panel-body"><?php _e("We couldn't email your password. Copy it now and store it somewhere safe."); ?></div>
+        </div>
+    <?php } else { ?>
+        <p class="ins-body">
+            <?php echo sprintf(
+                __("Save this password now — it won't be shown again. We also emailed it to %s."),
+                osc_esc_html($data['s_email'])
+            ); ?>
+        </p>
+    <?php } ?>
+
+    <div class="ins-cred">
+        <label for="ins-cred-username"><?php _e('Username'); ?></label>
+        <div class="ins-cred-value">
+            <input class="ins-input" id="ins-cred-username" type="text" value="<?php echo osc_esc_html($data['admin_user']); ?>" readonly />
+            <div class="ins-cred-actions">
+                <button type="button" class="ins-btn ins-btn-secondary ins-copy-btn" data-copy-target="ins-cred-username">
+                    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><rect x="6" y="6" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><rect x="3" y="3" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+                    <span class="ins-btn-label"><?php _e('Copy'); ?></span>
+                </button>
             </div>
         </div>
-    <?php }
-} ?>
-
-<?php if ($ins_email_failed) { ?>
-    <div class="ins-panel ins-panel-warning">
-        <div class="ins-panel-body"><?php _e("We couldn't email your password. Copy it now and store it somewhere safe."); ?></div>
     </div>
-<?php } else { ?>
-    <p class="ins-body">
-        <?php echo sprintf(
-            __("Save this password now — it won't be shown again. We also emailed it to %s."),
-            osc_esc_html($data['s_email'])
-        ); ?>
-    </p>
-<?php } ?>
 
-<div class="ins-cred">
-    <label for="ins-cred-username"><?php _e('Username'); ?></label>
-    <div class="ins-cred-value">
-        <input class="ins-input" id="ins-cred-username" type="text" value="<?php echo osc_esc_html($data['admin_user']); ?>" readonly />
-        <div class="ins-cred-actions">
-            <button type="button" class="ins-btn ins-btn-secondary ins-copy-btn" data-copy-target="ins-cred-username">
-                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><rect x="6" y="6" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><rect x="3" y="3" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
-                <span class="ins-btn-label"><?php _e('Copy'); ?></span>
-            </button>
+    <div class="ins-cred">
+        <label for="ins-cred-password"><?php _e('Password'); ?></label>
+        <div class="ins-cred-value">
+            <input class="ins-input" id="ins-cred-password" type="password" value="<?php echo osc_esc_html($data['password']); ?>" readonly />
+            <div class="ins-cred-actions">
+                <?php install_reveal_button('ins-cred-password', 'ins-btn ins-btn-secondary ins-btn-icon'); ?>
+                <button type="button" class="ins-btn ins-btn-secondary ins-copy-btn" data-copy-target="ins-cred-password">
+                    <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><rect x="6" y="6" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><rect x="3" y="3" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
+                    <span class="ins-btn-label"><?php _e('Copy'); ?></span>
+                </button>
+            </div>
         </div>
     </div>
-</div>
 
-<div class="ins-cred">
-    <label for="ins-cred-password"><?php _e('Password'); ?></label>
-    <div class="ins-cred-value">
-        <input class="ins-input" id="ins-cred-password" type="password" value="<?php echo osc_esc_html($data['password']); ?>" readonly />
-        <div class="ins-cred-actions">
-            <button type="button" class="ins-btn ins-btn-secondary ins-btn-icon" data-reveal-target="ins-cred-password" aria-pressed="false" aria-label="<?php echo osc_esc_html(__('Show password')); ?>">
-                <span class="ins-icon-show" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.5" /><circle cx="10" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg></span>
-                <span class="ins-icon-hide" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.5" /><circle cx="10" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M2 2l16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg></span>
-            </button>
-            <button type="button" class="ins-btn ins-btn-secondary ins-copy-btn" data-copy-target="ins-cred-password">
-                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true" focusable="false"><rect x="6" y="6" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /><rect x="3" y="3" width="11" height="11" rx="1.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg>
-                <span class="ins-btn-label"><?php _e('Copy'); ?></span>
-            </button>
-        </div>
+    <span id="ins-copy-announcer" class="ins-visually-hidden" role="status" aria-live="polite"></span>
     </div>
-</div>
 
-<span id="ins-copy-announcer" class="ins-visually-hidden" role="status" aria-live="polite"></span>
-
-<div class="ins-actions">
-    <a class="ins-btn ins-btn-primary" href="<?php echo osc_esc_html(get_absolute_url()); ?>oc-admin/index.php"><?php _e('Open your admin panel'); ?></a>
+    <div class="ins-actions">
+        <a class="ins-btn ins-btn-primary" href="<?php echo osc_esc_html(get_absolute_url()); ?>oc-admin/index.php"><?php _e('Open your admin panel'); ?></a>
+    </div>
 </div>

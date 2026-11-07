@@ -20,6 +20,8 @@ if (!defined('ABS_PATH')) {
 // needs pulling in explicitly rather than inheriting the caller's scope.
 global $install_nonce;
 
+require_once __DIR__ . '/fields.php';
+
 $internet_error = false;
 require_once LIB_PATH . 'osclass/helpers/hUtils.php';
 
@@ -45,79 +47,107 @@ if ($country_list === array()) {
     $internet_error = true;
 }
 
+$countries = array('skip' => __('Skip for now'));
+$selected  = 'skip';
+foreach ($country_list as $c) {
+    $countries[(string) $c['code']] = (string) $c['name'];
+    if ($country_ip && strcasecmp((string) $c['code'], $country_ip) === 0) {
+        $selected = (string) $c['code'];
+    }
+}
+
 // The shop set-up steps run after the form is sent, one request each.
 $ins_choice = install_site_choice();
 $ins_queue  = $ins_choice['type'] === 'shop'
     ? mindstellar\install\ShopSetup::fromCache()->steps((array) $ins_choice['plugins'])
     : array();
 ?>
-<h1 class="ins-headline"><?php _e('Set up your site'); ?></h1>
-
-<noscript>
-    <div class="ins-panel ins-panel-warning">
-        <div class="ins-panel-body"><?php _e('JavaScript is required to complete this step.'); ?></div>
-    </div>
-</noscript>
-
 <div id="ins-target-wrap" class="ins-target-wrap">
-    <form id="ins-target-form" action="#" method="post" data-shop-queue="<?php echo osc_esc_html((string) json_encode($ins_queue)); ?>">
+    <form id="ins-target-form" class="ins-stage" action="#" method="post" novalidate data-shop-queue="<?php echo osc_esc_html((string) json_encode($ins_queue)); ?>">
         <input type="hidden" name="install_nonce" value="<?php echo osc_esc_html($install_nonce); ?>" />
 
-        <div id="ins-target-error" class="ins-panel ins-panel-danger" role="alert" hidden></div>
+        <div class="ins-stage-body">
+            <h1 class="ins-headline"><?php _e('Name your site and your login'); ?></h1>
+            <p class="ins-body"><?php _e('You can change all of this later in Settings.'); ?></p>
 
-        <h2 class="ins-title"><?php _e('Admin account'); ?></h2>
-        <div class="ins-field">
-            <label for="admin_user"><?php _e('Username'); ?></label>
-            <input class="ins-input" id="admin_user" name="s_name" type="text" value="admin" autocomplete="off" />
-            <span id="admin-user-error" class="ins-field-error" hidden><?php _e('Usernames can only contain letters and numbers.'); ?></span>
-        </div>
-        <div class="ins-field">
-            <label for="s_passwd"><?php _e('Password'); ?></label>
-            <div class="ins-input-wrap">
-                <input class="ins-input" name="s_passwd" id="s_passwd" type="password" value="" autocomplete="off" />
-                <button type="button" class="ins-input-btn" data-reveal-target="s_passwd" aria-pressed="false" aria-label="<?php echo osc_esc_html(__('Show password')); ?>">
-                    <span class="ins-icon-show" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.5" /><circle cx="10" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" /></svg></span>
-                    <span class="ins-icon-hide" aria-hidden="true"><svg viewBox="0 0 20 20" width="16" height="16" focusable="false"><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z" fill="none" stroke="currentColor" stroke-width="1.5" /><circle cx="10" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.5" /><path d="M2 2l16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" /></svg></span>
-                </button>
-            </div>
-            <div class="ins-help"><?php _e("Leave blank and we'll generate a strong one for you."); ?></div>
-        </div>
+            <noscript>
+                <div class="ins-panel ins-panel-warning">
+                    <div class="ins-panel-body"><?php _e('JavaScript is required to complete this step.'); ?></div>
+                </div>
+            </noscript>
 
-        <h2 class="ins-title"><?php _e('Site details'); ?></h2>
-        <div class="ins-field">
-            <label for="webtitle"><?php _e('Web title'); ?></label>
-            <input class="ins-input" type="text" id="webtitle" name="webtitle" autocomplete="off" />
-        </div>
-        <div class="ins-field">
-            <label for="email"><?php _e('Contact email'); ?></label>
-            <input class="ins-input" type="text" id="email" name="email" autocomplete="off" />
-            <span id="email-error" class="ins-field-error" hidden><?php _e('Enter a valid email address.'); ?></span>
-        </div>
+            <div id="ins-target-error" class="ins-panel ins-panel-danger" role="alert" hidden></div>
 
-        <h2 class="ins-title"><?php _e('Location'); ?></h2>
-        <?php if (!$internet_error) { ?>
-            <p class="ins-body"><?php _e('Choose the country your visitors are mostly in. You can change this later.'); ?></p>
-            <input type="hidden" id="skip-location-input" name="skip-location-input" value="<?php echo $country_ip ? 0 : 1; ?>" />
-            <div class="ins-field">
-                <label for="location-json"><?php _e('Country'); ?></label>
-                <select class="ins-input" name="location-json" id="location-json">
-                    <option value="skip"><?php _e('Skip for now'); ?></option>
-                    <?php foreach ($country_list as $c) : ?>
-                        <option value="<?php echo osc_esc_html($c['code']); ?>" <?php echo ($country_ip && strcasecmp($c['code'], $country_ip) === 0) ? 'selected="selected"' : ''; ?>>
-                            <?php echo osc_esc_html($c['name']); ?>
-                        </option>
-                    <?php endforeach; ?>
-                </select>
+            <h2 class="ins-group"><?php _e('Your site'); ?></h2>
+            <div class="ins-grid2">
+                <?php
+                install_field(array(
+                    'id'    => 'webtitle',
+                    'label' => __('Site name'),
+                    'error' => __('Give your site a name.'),
+                    'attrs' => array('autocomplete' => 'off', 'required' => 'required'),
+                ));
+                ?>
+                <?php
+                install_field(array(
+                    'id'    => 'email',
+                    'label' => __('Contact email'),
+                    'type'  => 'email',
+                    'error' => __('Enter a valid email address.'),
+                    'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
+                ));
+                ?>
+                <?php
+                if (!$internet_error) {
+                    install_field(array(
+                        'id'      => 'location-json',
+                        'label'   => __('Country'),
+                        'opt'     => __('(for locations)'),
+                        'type'    => 'select',
+                        'options' => $countries,
+                        'value'   => $selected,
+                        'help'    => __('We add its regions and cities so people can pick where they are.'),
+                    ));
+                }
+                ?>
             </div>
-        <?php } else { ?>
-            <div class="ins-panel ins-panel-info">
-                <div class="ins-panel-body"><?php _e('No internet connection. You can continue and add your location later from the admin panel.'); ?></div>
+            <?php if (!$internet_error) { ?>
+                <input type="hidden" id="skip-location-input" name="skip-location-input" value="<?php echo $country_ip ? 0 : 1; ?>" />
+            <?php } else { ?>
+                <p class="ins-help"><?php _e('No internet connection. You can continue and add your location later from the admin panel.'); ?></p>
+                <input type="hidden" id="skip-location-input" name="skip-location-input" value="1" />
+            <?php } ?>
+
+            <h2 class="ins-group"><?php _e('Your admin login'); ?></h2>
+            <div class="ins-grid2">
+                <?php
+                install_field(array(
+                    'id'    => 'admin_user',
+                    'name'  => 's_name',
+                    'label' => __('Username'),
+                    'value' => 'admin',
+                    'help'  => __('Usernames can only contain letters and numbers.'),
+                    'error' => __('Remove spaces and symbols.'),
+                    'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
+                ));
+                ?>
+                <?php
+                install_field(array(
+                    'id'       => 's_passwd',
+                    'label'    => __('Password'),
+                    'type'     => 'password',
+                    'reveal'   => true,
+                    'generate' => true,
+                    'help'     => __("Leave it empty and we make one. You'll see it at the end."),
+                    'attrs'    => array('autocomplete' => 'new-password', 'placeholder' => __("We'll make a strong one")),
+                ));
+                ?>
             </div>
-            <input type="hidden" id="skip-location-input" name="skip-location-input" value="1" />
-        <?php } ?>
+        </div>
 
         <div class="ins-actions">
-            <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Set up my site'); ?></button>
+            <a class="ins-btn ins-btn-ghost ins-back" href="install.php?step=3"><?php _e('Back'); ?></a>
+            <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Install Shopclass'); ?></button>
         </div>
     </form>
 
