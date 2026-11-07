@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.15
+
+### Fixed
+- With GD, photos saved as JPEG no longer get black bars at the sides of their preview and thumbnail.
+
 ## Shopclass 7.0.14
 
 ### Fixed
