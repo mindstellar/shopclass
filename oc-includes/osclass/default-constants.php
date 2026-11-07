@@ -13,7 +13,7 @@
  */
 
 if (!defined('OSCLASS_VERSION')) {
-    define('OSCLASS_VERSION', '7.0.15');
+    define('OSCLASS_VERSION', '7.0.16');
 }
 
 // The oldest version that may update straight to this release, or '' for any. An older site is

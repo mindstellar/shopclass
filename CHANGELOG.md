@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.16
+
+### Fixed
+- With GD, a PNG photo keeps its see-through parts instead of turning them solid black.
+
 ## Shopclass 7.0.15
 
 ### Fixed
