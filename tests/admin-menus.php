@@ -195,7 +195,7 @@ pin('unsaved main starts from the theme default', array(
     array('type' => 'builtin', 'ref' => 'home'),
     array('type' => 'builtin', 'ref' => 'contact', 'label' => array('en_US' => 'Help')),
 ), $r['view']['menuEditor']['items']);
-pin('the palette offers every built-in page, switched-off ones marked', array('home' => true, 'search' => true, 'contact' => true, 'post' => true, 'login' => false, 'register' => false), array_column($r['view']['menuEditor']['builtins'], 'on', 'id'));
+pin('the palette offers every built-in page, switched-off ones marked', array('home' => true, 'search' => true, 'contact' => true, 'post' => !osc_is_shop_mode(), 'login' => false, 'register' => false), array_column($r['view']['menuEditor']['builtins'], 'on', 'id'));
 pin('the status line names the theme default', 'Automatic: your theme&#039;s default menu. Change it and save to make it your own.', $status($screen()));
 $service->save('main', array(array('type' => 'builtin', 'ref' => 'search')));
 check('saved over a theme default: it can go back to automatic', str_contains($screen(), 'Use the automatic menu'));
