@@ -276,6 +276,24 @@ if (!function_exists('osc_max_images_per_item')) {
         return 10;
     }
 }
+if (!function_exists('osc_item_price_required')) {
+    function osc_item_price_required(): bool
+    {
+        return false;
+    }
+}
+if (!function_exists('osc_item_photos_min')) {
+    function osc_item_photos_min(): int
+    {
+        return 0;
+    }
+}
+if (!function_exists('osc_item_location_required')) {
+    function osc_item_location_required(string $place): bool
+    {
+        return false;
+    }
+}
 if (!function_exists('osc_max_characters_per_title')) {
     function osc_max_characters_per_title()
     {

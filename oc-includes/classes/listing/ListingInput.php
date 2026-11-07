@@ -423,7 +423,8 @@ final class ListingInput
         $aItem['regionId']     = $get('regionId');
         $aItem['city']         = $get('city');
         $aItem['cityId']       = $get('cityId');
-        $aItem['price']        = $get('price') ?: null;
+        // Only an empty box is no price: a typed 0 is a price, shown as Free.
+        $aItem['price']        = trim((string) $get('price')) === '' ? null : $get('price');
         $aItem['cityArea']     = $get('cityArea');
         $aItem['address']      = $get('address');
         $aItem['currency']     = $get('currency');

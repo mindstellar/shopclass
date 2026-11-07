@@ -1609,6 +1609,12 @@ msgstr ""
 msgid "Add an image"
 msgstr ""
 
+#: oc-includes/classes/admin/ui/PhotoGrid.php
+msgid "Add at least %d photo."
+msgid_plural "Add at least %d photos."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/users/ban.php
 msgid "Add ban rule"
 msgstr ""
@@ -2573,6 +2579,18 @@ msgstr ""
 msgid "Asked again before an endpoint is added."
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "At least"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "At least %1$d photos is more than the %2$d images a listing can have."
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "At least %1$d photos is more than the %2$d images a product can have."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
 msgid ""
 "At least %d characters. Matched as a whole word unless \"Substring\" is "
@@ -2590,10 +2608,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/ItemSettingsScreen.php
 msgid "Attach"
-msgstr ""
-
-#: oc-includes/classes/admin/form/ItemSettingsScreen.php
-msgid "Attach images"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
@@ -4464,10 +4478,15 @@ msgstr ""
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/classes/admin/ui/Picker.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "Country"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Country and region"
 msgstr ""
 
 #: oc-includes/classes/admin/form/AdvancedSettingsScreen.php
@@ -4480,6 +4499,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "Country not found"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Country, region and city"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-site-type.php
@@ -8604,6 +8627,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Location"
 msgstr ""
@@ -9249,6 +9273,10 @@ msgstr ""
 msgid "Minimum"
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Minimum photos"
+msgstr ""
+
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Misclassified"
 msgstr ""
@@ -9691,6 +9719,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/stats/items.php
 msgid "New alerts"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "New and edited listings must give at least this much of where they are."
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "New and edited products must give at least this much of where they are."
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
@@ -10563,6 +10599,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/frm.php
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/classes/admin/ui/Picker.php
 msgid "Off"
 msgstr ""
@@ -10814,7 +10851,7 @@ msgid "Option name, such as Colour"
 msgstr ""
 
 #: oc-includes/classes/admin/form/ItemSettingsScreen.php
-msgid "Optional fields"
+msgid "Optional"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -11441,6 +11478,7 @@ msgid "Photography handbook, e-book"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/classes/admin/ui/PhotoGrid.php
 msgid "Photos"
 msgstr ""
@@ -12610,6 +12648,7 @@ msgid "Require login for alerts"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
 msgid "Required"
 msgstr ""
 
@@ -12617,8 +12656,24 @@ msgstr ""
 msgid "Required by MinIO and most self-hosted setups; leave off for AWS."
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Required location"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Required only when…"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"Required refuses a listing without a price. A price of 0 counts and shows as "
+"Free."
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"Required refuses a product without a price. A price of 0 counts and shows as "
+"Free."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -18947,6 +19002,10 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "password: %s"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "photos"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php

@@ -417,6 +417,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'temp_url'   => osc_base_url() . 'oc-content/uploads/temp/',
             'secret'     => $new_item ? '' : osc_item_secret(),
             'cover'      => true,
+            'min'        => osc_item_photos_min(),
         ));
         osc_admin_panel_close();
     }
@@ -459,7 +460,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             // The category script hides this whole block for a category that takes no price, by
             // the wrapper the price input sits in -- so the label belongs inside it.
             echo '<div class="osc-field item-price osc-price-field">';
-            echo '<label class="form-label" for="price">' . osc_esc_html(__('Price')) . '</label>';
+            echo '<label class="form-label' . (osc_item_price_required() ? ' osc-field-required' : '') . '" for="price">' . osc_esc_html(__('Price')) . '</label>';
             // The amount and its currency are one field, so they share a row under one label.
             echo '<div class="field-group">';
             osc_admin_field(array(
@@ -687,7 +688,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'zip'       => $itemTyped('zip', $itemRecord['s_zip'] ?? ''),
             'address'   => $itemTyped('address', $itemRecord['s_address'] ?? ''),
         ),
-        'errors' => $itemErrors,
+        'errors'   => $itemErrors,
+        // In shop mode an empty location takes the store address, so the browser asks for none.
+        'required' => $itemShop ? array() : array_values(array_filter(array('country', 'region', 'city'), 'osc_item_location_required')),
     ));
     osc_admin_panel_close();
 

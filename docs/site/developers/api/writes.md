@@ -142,7 +142,7 @@ Required: `category_id`, `title`, `description`.
 | `description` | string, up to 20000 | The same. |
 | `locale` | string | The language of `title` and `description`, such as `en_US`. Must be one of the site's languages. |
 | `translations` | object | `{"de_DE": {"title": "…", "description": "…"}}` for other languages. |
-| `price` | string, number or `null` | A decimal such as `"12.50"`. `null` for no price. |
+| `price` | string, number or `null` | A decimal such as `"12.50"`. `0` is free; `null` for no price. |
 | `currency` | string | Three capitals, such as `USD`. |
 | `country` | string | A two-letter code. Empty clears it. |
 | `region_id`, `city_id` | integer or `null` | Ids from `GET /countries/…/regions` and the like. An unknown id is a `422`. |
@@ -169,6 +169,7 @@ Plugins can change the body before it is saved with the `api_listing_input` filt
 | Answer | Why |
 |---|---|
 | `422 validation_failed` | A bad member, or the web form's own refusal: a missing field, or the posting wait. `errors` points at the member. |
+| `422 validation_failed` (`required`) | A field the site's **Listings → Settings** make Required is missing. A required price is on `/price`: `null` or `""` is none, `0` is a price. A photo minimum is on `/photos`: a new listing counts its `photo_tokens` and `photo_urls`, an edit adds them to the photos the listing already has. A required location is on `/country`, `/region` or `/city`; a typed `region` or `city` name counts as given. |
 | `422 listing_limit` | The user has reached the site's listing limit and the site does not take payment at the end of posting. `detail` says which. Otherwise the listing is saved and `payment` says what it costs. |
 | `403 banned` | The account or address is banned from posting. |
 | `403 wrong_credential` | The site lets only signed-in users post, and the caller is not one. |

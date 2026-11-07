@@ -156,6 +156,12 @@ final class ListingValidator
         if ($aItem['price'] !== null && (float)$aItem['price'] < 0) {
             $errors[] = self::entry('/price', 'invalid', _m('Price must be positive number.'));
         }
+        $errors = array_merge(
+            $errors,
+            self::missingPrice($aItem, osc_item_price_required(), (bool) ($aItem['categoryTakesPrice'] ?? true)),
+            self::tooFewPhotos($aItem, osc_item_photos_min()),
+            self::missingPlaces($aItem, osc_item_required_location())
+        );
         if (!osc_validate_text($aItem['countryName'], 3, false)) {
             $errors[] = self::entry('/country', 'too_short', _m('Country too short.'));
         }
@@ -192,6 +198,87 @@ final class ListingValidator
         // plus, so this is the format of what would be stored, not of what was typed.
         if (!osc_validate_phone((string)($aItem['contactPhone'] ?? ''), 4)) {
             $errors[] = self::entry('/contact_phone', 'invalid', _m('Phone invalid.'));
+        }
+
+        return $errors;
+    }
+
+    /**
+     * The error for a listing with no price when the Price setting is Required. A number,
+     * 0 included, is a price; an empty box is not. A category that takes no price asks for none.
+     *
+     * @param array<string,mixed> $aItem              the prepared listing data
+     * @param bool                $required           osc_item_price_required()
+     * @param bool                $categoryTakesPrice false when the listing's category has prices off
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    public static function missingPrice(array $aItem, bool $required, bool $categoryTakesPrice = true): array
+    {
+        if (!$required || !$categoryTakesPrice || ($aItem['price'] ?? null) !== null) {
+            return array();
+        }
+
+        return array(self::entry('/price', 'required', _m('Add a price.')));
+    }
+
+    /**
+     * The error for a listing with fewer photos than the Photos setting's minimum. An edit
+     * counts the photos the listing still holds, so one removed counts down, plus the ones
+     * this save brings.
+     *
+     * @param array<string,mixed> $aItem the prepared listing data, 'photos' in the $_FILES shape
+     * @param int                 $min   osc_item_photos_min()
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    public static function tooFewPhotos(array $aItem, int $min): array
+    {
+        if ($min <= 0) {
+            return array();
+        }
+        $itemId = (int) ($aItem['idItem'] ?? 0);
+        $count  = $itemId > 0 ? PhotoService::count($itemId) : 0;
+        $files  = $aItem['photos'] ?? null;
+        if (is_array($files) && is_array($files['error'] ?? null)) {
+            foreach ($files['error'] as $key => $error) {
+                if ((int) $error === UPLOAD_ERR_OK && (string) ($files['tmp_name'][$key] ?? '') !== '') {
+                    $count++;
+                }
+            }
+        }
+        if ($count >= $min) {
+            return array();
+        }
+
+        return array(self::entry('/photos', 'required', sprintf(_mn('Add at least %d photo.', 'Add at least %d photos.', $min), $min)));
+    }
+
+    /**
+     * The places the Required location setting asks for that the listing lacks. A place is
+     * there when it has an id or a typed name, so a free-text city counts.
+     *
+     * @param array<string,mixed> $aItem the prepared listing data
+     * @param string              $level 'none', 'country', 'region' or 'city'
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    public static function missingPlaces(array $aItem, string $level): array
+    {
+        $levels = array(
+            'country' => array('countryId', 'countryName', _m('Choose a country.')),
+            'region'  => array('regionId', 'regionName', _m('Choose a region.')),
+            'city'    => array('cityId', 'cityName', _m('Choose a city.')),
+        );
+        $depth = array_search($level, array_keys($levels), true);
+        if ($depth === false) {
+            return array();
+        }
+        $errors = array();
+        foreach (array_slice($levels, 0, $depth + 1, true) as $place => [$id, $name, $message]) {
+            if (trim((string) ($aItem[$id] ?? '')) === '' && trim((string) ($aItem[$name] ?? '')) === '') {
+                $errors[] = self::entry('/' . $place, 'required', $message);
+            }
         }
 
         return $errors;

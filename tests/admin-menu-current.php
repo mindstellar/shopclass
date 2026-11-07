@@ -145,6 +145,9 @@ foreach (['osc_admin_base_url' => static fn ($withFile = false) => 'https://exam
     $GLOBALS['__stub_' . $fn] = $impl;
 }
 
+// The Submissions entry asks the database; this test has none, so its answer is cached up front.
+\mindstellar\cache\CacheGroup::remember('form_submission_menu', 'visible', static fn (): int => 1, 60);
+
 $real = new AdminMenu();
 $real->init();
 $map = [];

@@ -13,6 +13,7 @@ namespace mindstellar\model;
 use mindstellar\base\Model;
 use mindstellar\cache\CacheGroup;
 use mindstellar\database\Db;
+use mindstellar\database\DbException;
 use mindstellar\database\QueryBuilder;
 use Throwable;
 
@@ -315,8 +316,8 @@ class FormSubmission extends Model
             foreach (Db::table(DB_TABLE_PREFIX . self::TABLE)->select('fk_i_group_id')->groupBy('fk_i_group_id')->get() as $row) {
                 $withEntries[(int) $row['fk_i_group_id']] = true;
             }
-        } catch (Throwable $e) {
-            // Show only the block forms when the table cannot be read.
+        } catch (DbException $e) {
+            error_log('Form submissions could not be read, the filter lists only block forms: ' . $e->getMessage());
         }
 
         $out = array();
@@ -356,7 +357,9 @@ class FormSubmission extends Model
 
                 return $any ? 1 : 0;
             }, 60);
-        } catch (Throwable $e) {
+        } catch (DbException $e) {
+            error_log('Form submissions menu check failed, the entry stays shown: ' . $e->getMessage());
+
             return true;
         }
     }

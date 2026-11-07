@@ -55883,7 +55883,7 @@
                         ],
                         "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
                         "minimum": 0,
-                        "description": "A decimal such as \"12.50\"; null for no price."
+                        "description": "A decimal such as \"12.50\"; 0 is free; null for no price. A site that requires a price answers 422 on /price for none."
                     },
                     "currency": {
                         "type": "string",
@@ -55895,7 +55895,7 @@
                             "null"
                         ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; null or \"\" clears it."
+                        "description": "Country code; null or \"\" clears it. The Required location setting can make the country, region or city required: a missing one is a 422 on /country, /region or /city."
                     },
                     "region_id": {
                         "type": [
@@ -55998,7 +55998,7 @@
                             "type": "string",
                             "pattern": "^[0-9a-f]{32}$"
                         },
-                        "description": "Tokens from POST /photos, added in this order."
+                        "description": "Tokens from POST /photos, added in this order. A site with a photo minimum counts these, photo_urls and the photos an edited listing has; too few is a 422 on /photos."
                     },
                     "photo_urls": {
                         "type": "array",
@@ -56076,7 +56076,7 @@
                         ],
                         "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
                         "minimum": 0,
-                        "description": "A decimal such as \"12.50\"; null for no price."
+                        "description": "A decimal such as \"12.50\"; 0 is free; null for no price. A site that requires a price answers 422 on /price for none."
                     },
                     "currency": {
                         "type": "string",
@@ -56088,7 +56088,7 @@
                             "null"
                         ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; null or \"\" clears it."
+                        "description": "Country code; null or \"\" clears it. The Required location setting can make the country, region or city required: a missing one is a 422 on /country, /region or /city."
                     },
                     "region_id": {
                         "type": [
@@ -56191,7 +56191,7 @@
                             "type": "string",
                             "pattern": "^[0-9a-f]{32}$"
                         },
-                        "description": "Tokens from POST /photos, added in this order."
+                        "description": "Tokens from POST /photos, added in this order. A site with a photo minimum counts these, photo_urls and the photos an edited listing has; too few is a 422 on /photos."
                     },
                     "photo_urls": {
                         "type": "array",
@@ -57778,7 +57778,7 @@
                         ],
                         "pattern": "^[0-9]{1,15}([.][0-9]{1,6})?$",
                         "minimum": 0,
-                        "description": "A decimal such as \"12.50\"; null for no price."
+                        "description": "A decimal such as \"12.50\"; 0 is free; null for no price. A site that requires a price answers 422 on /price for none."
                     },
                     "currency": {
                         "type": "string",
@@ -57790,7 +57790,7 @@
                             "null"
                         ],
                         "pattern": "^([A-Za-z]{2})?$",
-                        "description": "Country code; null or \"\" clears it."
+                        "description": "Country code; null or \"\" clears it. The Required location setting can make the country, region or city required: a missing one is a 422 on /country, /region or /city."
                     },
                     "region_id": {
                         "type": [

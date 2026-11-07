@@ -590,8 +590,13 @@ pin(
         'max_chars_per_description'   => 'osclass/description_character_length',
         'tinymce'                     => 'osclass/tinymce_frontend',
         'enableField#f_price@items'   => 'osclass/enableField#f_price@items',
+        'item_price_required'         => 'osclass/item_price_required',
         'enableField#images@items'    => 'osclass/enableField#images@items',
+        'photos_min'                  => '(not stored)',
         'numImages@items'             => 'osclass/numImages@items',
+        'item_photos_min'             => 'osclass/item_photos_min',
+        'item_required_location'      => 'osclass/item_required_location',
+        'item_location_level'         => '(not stored)',
     ),
     keymap(ItemSettingsScreen::register())
 );

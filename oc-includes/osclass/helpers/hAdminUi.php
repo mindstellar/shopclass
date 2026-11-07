@@ -610,7 +610,8 @@ if (!function_exists('osc_admin_location_picker')) {
      * Keys: 'value' and 'errors' keyed by countryId, region, regionId, city, cityId,
      *       cityArea, zip, address; 'names' to post any of them under another name;
      *       'countries'; 'detail' => 'disclosure' (default), 'inline' or 'none';
-     *       'label_*' for each label.
+     *       'label_*' for each label; 'required' => the places marked required
+     *       ('country', 'region', 'city').
      *
      * @param array $opts
      *
@@ -658,7 +659,8 @@ if (!function_exists('osc_admin_photo_grid')) {
      * Keys: 'name' (default photos), 'id', 'label', 'resources' => rows carrying pk_i_id,
      *       fk_i_item_id, s_name, s_path and s_extension, 'staged' => file names in
      *       uploads/temp/, 'max' (0 for no ceiling), 'max_size' in bytes, 'extensions',
-     *       'upload_url', 'delete_url', 'temp_url', 'secret', 'cover'.
+     *       'upload_url', 'delete_url', 'temp_url', 'secret', 'cover', 'min' => the photos
+     *       a listing must have, which marks the label required and says so (0 for none).
      *
      * @param array $opts
      *

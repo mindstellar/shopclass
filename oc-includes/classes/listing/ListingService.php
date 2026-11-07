@@ -14,6 +14,7 @@
 namespace mindstellar\listing;
 
 use mindstellar\auth\Actor;
+use mindstellar\category\CategoryStore;
 use mindstellar\database\Db;
 use mindstellar\database\DbException;
 use mindstellar\exception\ForbiddenException;
@@ -1342,6 +1343,10 @@ final class ListingService
             $aItem['price'] = $this->sanitize->price($aItem['price']);
         }
         $aItem['contactPhone'] = $this->sanitize->phone($aItem['contactPhone']);
+        if ($aItem['price'] === null) {
+            $catId                       = (int) $aItem['catId'];
+            $aItem['categoryTakesPrice'] = $catId <= 0 || CategoryStore::takesPrice($catId);
+        }
 
         return $aItem;
     }

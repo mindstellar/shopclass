@@ -43,6 +43,7 @@ class PhotoGrid
         $resources = array_values((array)($opts['resources'] ?? array()));
         $staged    = array_values((array)($opts['staged'] ?? array()));
         $max       = (int)($opts['max'] ?? 0);
+        $min       = (int)($opts['min'] ?? 0);
         $secret    = (string)($opts['secret'] ?? '');
         $labelId   = $id . '-label';
 
@@ -62,7 +63,7 @@ class PhotoGrid
             . ($cover ? ' data-cover="1"' : '')
             . ' data-strings="' . osc_esc_html((string)json_encode(self::strings())) . '">';
 
-        echo '<span class="form-label" id="' . osc_esc_html($labelId) . '">'
+        echo '<span class="form-label' . ($min > 0 ? ' osc-field-required' : '') . '" id="' . osc_esc_html($labelId) . '">'
             . osc_esc_html($label) . '</span>';
 
         // A list with no items fails the accessibility check, so an empty grid is a group.
@@ -96,6 +97,9 @@ class PhotoGrid
         echo osc_esc_html($cover
             ? __('Drop images here or choose files. The first photo is the cover, and you can change which.')
             : __('Drop images here or choose files. The first photo is the cover.'));
+        if ($min > 0) {
+            echo ' ' . osc_esc_html(sprintf(_n('Add at least %d photo.', 'Add at least %d photos.', $min), $min));
+        }
         echo '</p>';
 
         echo '</div>';

@@ -399,6 +399,10 @@ msgid "Add a description (%s)."
 msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
+msgid "Add a price."
+msgstr ""
+
+#: oc-includes/classes/listing/ListingValidator.php
 msgid "Add a title (%s)."
 msgstr ""
 
@@ -409,6 +413,12 @@ msgstr ""
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 msgid "Add an address"
 msgstr ""
+
+#: oc-includes/classes/listing/ListingValidator.php
+msgid "Add at least %d photo."
+msgid_plural "Add at least %d photos."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/classes/listing/ListingValidator.php
 msgid "Add at least one option row, or turn options off."
@@ -759,6 +769,10 @@ msgstr ""
 msgid "Choose 1 to %d of each item."
 msgstr ""
 
+#: oc-includes/classes/listing/ListingValidator.php
+msgid "Choose a city."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-messages-content.php
 msgid "Choose a conversation"
 msgstr ""
@@ -769,6 +783,10 @@ msgstr ""
 
 #: oc-includes/classes/user/AddressBook.php
 msgid "Choose a country from the list."
+msgstr ""
+
+#: oc-includes/classes/listing/ListingValidator.php
+msgid "Choose a country."
 msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
@@ -789,6 +807,10 @@ msgstr ""
 
 #: oc-includes/classes/messaging/MessagingService.php
 msgid "Choose a reason for the report"
+msgstr ""
+
+#: oc-includes/classes/listing/ListingValidator.php
+msgid "Choose a region."
 msgstr ""
 
 #: oc-includes/classes/user/apikey/ApiKeyService.php

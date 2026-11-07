@@ -33,16 +33,34 @@ final class ItemSettingsScreen extends SettingsScreen
     protected static function declareFields(): void
     {
         $moderated = osc_moderate_items();
+        $photosMin = osc_item_photos_min();
+        $level     = osc_item_required_location();
+        $modes     = array('required' => __('Required'), 'optional' => __('Optional'), 'off' => __('Off'));
+        // The old checkboxes posted '1' or nothing, which still mean Optional and Off.
+        $posted  = static fn ($value): string => match ((string) $value) {
+            '1'     => 'optional',
+            '', '0' => 'off',
+            default => (string) $value,
+        };
+        $enabled = static fn ($value): string => $value === 'off' ? '0' : '1';
 
         $form = CoreSettings::page(self::PAGE_ID, osc_mode_text(__('Listing Settings'), __('Product Settings')))
-            // The two lengths are one rule with its own wording, checked together.
+            // The two lengths are one rule with its own wording, checked together, and the
+            // photo minimum cannot pass the photo limit.
             ->onValidate(static function (array $values) {
                 $errors = \ItemActions::lengthSettingErrors(
                     $values['max_chars_per_title'] ?? '',
                     $values['max_chars_per_description'] ?? ''
                 );
 
-                return array_values(array_filter(explode(PHP_EOL, $errors)));
+                $errors = array_values(array_filter(explode(PHP_EOL, $errors)));
+                $max    = (int) ($values['numImages@items'] ?? 0);
+                $min    = (int) ($values['photos_min'] ?? 0);
+                if ($max > 0 && $min > $max) {
+                    $errors[] = sprintf(osc_mode_text(__('At least %1$d photos is more than the %2$d images a listing can have.'), __('At least %1$d photos is more than the %2$d images a product can have.')), $min, $max);
+                }
+
+                return $errors;
             })
             ->group(osc_mode_text(__('Listing Settings'), __('Product Settings')));
 
@@ -168,11 +186,45 @@ final class ItemSettingsScreen extends SettingsScreen
                 ->rowLabel(__('Rich Edit'))
                 ->column('tinymce_frontend');
 
-        self::rowOpen($form, 'optional', __('Optional fields'));
         $form
-            ->checkbox('enableField#f_price@items', __('Price'))
+            ->select('enableField#f_price@items', __('Price'), $modes, osc_mode_text(__('Required refuses a listing without a price. A price of 0 counts and shows as Free.'), __('Required refuses a product without a price. A price of 0 counts and shows as Free.')))
+                ->sanitize($posted)
+                ->persist($enabled)
+                // Stored as on/off plus the flag below, so the control cannot read it back.
+                ->writeOnly()
+                ->default(!osc_price_enabled_at_items() ? 'off' : (osc_item_price_required() ? 'required' : 'optional'))
+            ->hidden('item_price_required')
+                ->set('collect', static fn (): string => '')
+                ->persist(static fn ($value, array $values): string => ($values['enableField#f_price@items'] ?? '') === 'required' ? '1' : '0')
+                ->writeOnly()
+                ->default('');
+
+        self::rowOpen($form, 'photos', __('Photos'));
+        $form
+            ->select('enableField#images@items', __('Photos'), $modes)
                 ->set('row', false)
-            ->checkbox('enableField#images@items', __('Attach images'))
+                ->attrs(array('aria-label' => __('Photos')))
+                ->sanitize($posted)
+                ->persist($enabled)
+                ->writeOnly()
+                ->default(!osc_images_enabled_at_items() ? 'off' : ($photosMin > 0 ? 'required' : 'optional'))
+            ->custom('photos_min_open', static function () {
+                echo '<div data-osc-depends="enableField#images@items" data-osc-depends-value=\'["required"]\'>';
+            })
+                ->set('row', false)
+            ->number('photos_min', __('Minimum photos'))
+                ->set('row', false)
+                ->prefix(__('At least'))
+                ->suffix(__('photos'))
+                ->clampMin(1)
+                ->dependsOn('enableField#images@items', 'required')
+                // Not stored: item_photos_min below stores it, or 0 when photos are not required.
+                ->persist(false)
+                ->writeOnly()
+                ->default(max(1, $photosMin))
+            ->custom('photos_min_close', static function () {
+                echo '</div>';
+            })
                 ->set('row', false)
             ->number(
                 'numImages@items',
@@ -183,8 +235,52 @@ final class ItemSettingsScreen extends SettingsScreen
                 ->prefix(__('Attach'))
                 ->suffix(osc_mode_text(__('images per listing'), __('images per product')))
                 ->clampMin(0)
-                ->default(0);
-        self::rowClose($form, 'optional');
+                ->default(0)
+            ->hidden('item_photos_min')
+                ->set('collect', static fn (): string => '')
+                ->persist(static fn ($value, array $values): string => ($values['enableField#images@items'] ?? '') === 'required'
+                    ? (string) max(1, (int) ($values['photos_min'] ?? 1))
+                    : '0')
+                ->writeOnly()
+                ->default('');
+        self::rowClose($form, 'photos');
+
+        self::rowOpen($form, 'location', __('Location'));
+        $form
+            ->select('item_required_location', __('Location'), array('required' => __('Required'), 'optional' => __('Optional')))
+                ->set('row', false)
+                ->attrs(array('aria-label' => __('Location')))
+                // Stores the level chosen beside it, or none.
+                ->persist(static fn ($value, array $values): string => $value === 'required'
+                    ? ((string) ($values['item_location_level'] ?? '') ?: 'country')
+                    : 'none')
+                ->writeOnly()
+                ->default($level === 'none' ? 'optional' : 'required')
+            ->custom('location_level_open', static function () {
+                echo '<div data-osc-depends="item_required_location" data-osc-depends-value=\'["required"]\'>';
+            })
+                ->set('row', false)
+            ->select(
+                'item_location_level',
+                __('Required location'),
+                array(
+                    'country' => __('Country'),
+                    'region'  => __('Country and region'),
+                    'city'    => __('Country, region and city'),
+                ),
+                osc_mode_text(__('New and edited listings must give at least this much of where they are.'), __('New and edited products must give at least this much of where they are.'))
+            )
+                ->set('row', false)
+                ->attrs(array('aria-label' => __('Required location')))
+                ->dependsOn('item_required_location', 'required')
+                ->persist(false)
+                ->writeOnly()
+                ->default($level === 'none' ? 'country' : $level)
+            ->custom('location_level_close', static function () {
+                echo '</div>';
+            })
+                ->set('row', false);
+        self::rowClose($form, 'location');
 
         $form->register();
     }

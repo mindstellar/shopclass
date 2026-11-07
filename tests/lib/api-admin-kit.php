@@ -109,6 +109,12 @@ function api_admin_env(): void
             return $text;
         }
     }
+    if (!function_exists('_mn')) {
+        function _mn($one, $many, $count)
+        {
+            return $count == 1 ? $one : $many;
+        }
+    }
     if (!function_exists('osc_item_url')) {
         function osc_item_url($locale = '')
         {

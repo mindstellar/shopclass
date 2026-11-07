@@ -120,6 +120,7 @@ class Picker
             $countries = osc_get_countries();
         }
         $detail = (string)($opts['detail'] ?? 'disclosure');
+        $needed = static fn (string $place): bool => in_array($place, (array)($opts['required'] ?? array()), true);
 
         $field = static function ($key, $label, array $extra = array()) use ($value, $names, $errors) {
             osc_admin_field(array(
@@ -153,14 +154,15 @@ class Picker
                 'value'       => (string)($value['countryId'] ?? ''),
                 'placeholder' => __('Select a country...'),
                 'error'       => (string)($errors['countryId'] ?? ''),
+                'required'    => $needed('country'),
             ));
         } else {
-            $field('country', (string)($opts['label_country'] ?? __('Country')));
+            $field('country', (string)($opts['label_country'] ?? __('Country')), array('required' => $needed('country')));
         }
 
-        $field('region', (string)($opts['label_region'] ?? __('Region')), array('attrs' => array('autocomplete' => 'off')));
+        $field('region', (string)($opts['label_region'] ?? __('Region')), array('attrs' => array('autocomplete' => 'off'), 'required' => $needed('region')));
         $hidden('regionId');
-        $field('city', (string)($opts['label_city'] ?? __('City')), array('attrs' => array('autocomplete' => 'off')));
+        $field('city', (string)($opts['label_city'] ?? __('City')), array('attrs' => array('autocomplete' => 'off'), 'required' => $needed('city')));
         $hidden('cityId');
 
         if ($detail === 'none') {

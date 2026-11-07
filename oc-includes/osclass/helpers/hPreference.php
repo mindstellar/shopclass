@@ -412,6 +412,56 @@ function osc_item_contact_name_required(): bool
 }
 
 /**
+ * How much of the location a listing must give: 'none', 'country', 'region' or 'city'.
+ * Each level includes the ones above it.
+ *
+ * @return string
+ */
+function osc_item_required_location(): string
+{
+    $level = (string) getPreference('item_required_location');
+
+    return in_array($level, array('country', 'region', 'city'), true) ? $level : 'none';
+}
+
+/**
+ * Whether the Required location setting asks for this place.
+ *
+ * @param string $place 'country', 'region' or 'city'
+ *
+ * @return bool
+ */
+function osc_item_location_required(string $place): bool
+{
+    $order = array('none', 'country', 'region', 'city');
+    $want  = array_search($place, $order, true);
+
+    return $want !== false && $want > 0 && array_search(osc_item_required_location(), $order, true) >= $want;
+}
+
+/**
+ * Whether a listing must have a price: prices are on and the Price setting is Required.
+ * A price of 0 counts as one.
+ *
+ * @return bool
+ */
+function osc_item_price_required(): bool
+{
+    return osc_price_enabled_at_items() && getBoolPreference('item_price_required');
+}
+
+/**
+ * How many photos a listing must have: the Photos setting's minimum, or 0 when photos are
+ * off or not required.
+ *
+ * @return int
+ */
+function osc_item_photos_min(): int
+{
+    return osc_images_enabled_at_items() ? max(0, (int) getPreference('item_photos_min')) : 0;
+}
+
+/**
  * Gets if the prices are o not enabled on the item's form
  *
  * @return boolean

@@ -67,6 +67,18 @@ final class CategoryStore extends Model
     }
 
     /**
+     * Whether a listing in this category asks for a price. An unknown category does.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function takesPrice(int $id): bool
+    {
+        $row = self::table()->select('b_price_enabled')->where('pk_i_id', $id)->first();
+
+        return $row === null || (int) $row['b_price_enabled'] === 1;
+    }
+
+    /**
      * @param int[] $ids
      *
      * @throws \mindstellar\database\DbException

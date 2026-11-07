@@ -22,7 +22,9 @@ Set them before you have users, not after.
 | **Signed-in posters skip the e-mail confirmation** | Skips that e-mail step for anyone who is signed in. |
 | **Warn about expiration** | Days of notice a seller gets before a listing expires. 0 sends no warning. |
 | **Search count limit** | The most matches a search page or the API counts. Past it the total shows as "1,000+", which keeps big sites fast. 0 counts every match. New sites start at 1000; updated sites start at 0. |
-| **Attach *n* images per listing** | The photo limit. 0 means no limit. |
+| **Price** | **Required**, **Optional** or **Off**. Required refuses a new or edited listing with an empty price; 0 counts and shows as Free. A category set to take no price never needs one. Off hides the price field. |
+| **Photos** | **Required**, **Optional** or **Off**, beside **Attach *n* images per listing**, the photo limit (0 means no limit). Required asks for **at least *n*** photos, which cannot be more than the limit. An edit counts the photos the listing keeps plus new uploads, so removing one counts down. Off hides the photo field. |
+| **Location** | **Required** or **Optional** (the default). Required asks for the country, the country and region, or the country, region and city. A city typed by hand counts. |
 | **Title length** and **Description length** | The most characters a seller may type. The page refuses a length outside the allowed range and shows why. |
 | **Show reCAPTCHA in add/edit listing form** | A captcha on the posting form, once reCAPTCHA is set up. |
 | **Allow attached files in contact publisher form** | Whether the contact form takes a file: a picture, PDF, text or office document, up to the size set in **Settings → General**. |
@@ -30,6 +32,9 @@ Set them before you have users, not after.
 | **Only allow registered users to contact publisher** | Whether the contact form needs an account. |
 | **Notify admin when a new listing is added** | An e-mail to you on every publish. Useful early, unbearable at volume. |
 | **Enable the "send to a friend" form** | A sharing form on the listing page. |
+
+The posting forms mark a Required price, photos or location, and the web form, the admin,
+the API and imports all refuse a listing without them.
 
 :::note
 **RSS shows** and **Latest listings shown** (how many listings appear in the
