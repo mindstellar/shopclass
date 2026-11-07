@@ -102,6 +102,8 @@ class ImageProcessing
             if ($this->im === false) {
                 throw new RuntimeException(sprintf(__('%s is corrupt or broken!'), $imagePath));
             }
+            // Without this, saving the photo again as PNG turns its see-through pixels solid black.
+            imagesavealpha($this->im, true);
             $this->width  = imagesx($this->im);
             $this->height = imagesy($this->im);
 

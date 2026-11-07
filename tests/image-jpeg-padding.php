@@ -9,9 +9,8 @@
  */
 
 /**
- * A padded photo saved as JPEG with GD keeps white padding in every size. GD turns see-through
- * white into see-through black when it scales, and JPEG drops the see-through part, so a
- * preview cut from a padded normal image came out with black bars.
+ * GD photos keep their background: a padded photo saved as JPEG keeps white padding in every
+ * size, and a see-through PNG stays see-through when the upload step saves it again.
  *
  * Usage: php tests/image-jpeg-padding.php
  */
@@ -64,6 +63,19 @@ harness_section('GD, JPEG, a photo padded to the normal size');
 check('the normal size pads with white', $bright($dir . '/normal.jpg', 30, 240) > 240);
 check('a preview cut from it keeps that padding white, not black', $bright($dir . '/preview.jpg', 40, 170) > 240);
 check('and its own padding is white too', $bright($dir . '/preview.jpg', 5, 170) > 240);
+
+harness_section('GD, PNG, the upload step saves the photo again');
+// The listing form's upload saves the photo to a staging file before any resize.
+$logo = $dir . '/logo.png';
+$im   = imagecreatetruecolor(100, 100);
+imagealphablending($im, false);
+imagesavealpha($im, true);
+imagefill($im, 0, 0, imagecolorallocatealpha($im, 0, 0, 0, 127));
+imagefilledellipse($im, 50, 50, 40, 40, imagecolorallocate($im, 200, 40, 40));
+imagepng($im, $logo);
+ImageProcessing::fromFile($logo)->autoRotate()->saveToFile($dir . '/staged.png', 'png');
+$alpha = (imagecolorat(imagecreatefrompng($dir . '/staged.png'), 2, 2) >> 24) & 127;
+check('a see-through corner stays see-through, not solid black', $alpha === 127);
 
 array_map('unlink', glob($dir . '/*') ?: []);
 @rmdir($dir);
