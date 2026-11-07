@@ -18,13 +18,18 @@ Shipping, Tax, Promotions, Shop emails and Analytics plugins are described in
 
 | Tab | What it shows |
 |---|---|
-| **Installed** | What this site has, as cards with a state badge. |
+| **Installed** | What this site has, as a table: status tabs (All, Active, Disabled, Not installed, Update ready), search, sorting, paging and one short description line per plugin. Tick rows to **Enable**, **Disable** or **Uninstall** them together. |
 | **Browse** | The [plugin registry](/docs/developers/market/): a public catalog of packages, each checked by an automated build before it is listed. One click installs. |
 | **Updates** | Installed plugins with a newer version, with a count in the tab. |
 
 Each card carries the version, the author, a short description, and whether the
 package runs on your version (*Needs 6.5 or newer*, *Needs PHP 8.2*), so you
 never have to compare numbers yourself.
+
+**Browse** hides packages made only for the other site type: a classifieds site
+does not see shop-only plugins. Turn on **Show all site types** to see them too.
+Cards for a one-type package carry a **Shop only** or **Classifieds only** label.
+A package that does not say which site types it supports is never hidden.
 
 Appearance uses the same three tabs and the same cards.
 
@@ -41,7 +46,7 @@ php oc-cli.php market:install better-s3
 
 ## Active, disabled, not installed
 
-Each card carries one of three state badges, and the difference matters:
+Each plugin carries one of three state badges, and the difference matters:
 
 | Badge | Meaning |
 |---|---|
@@ -53,7 +58,7 @@ An active or disabled plugin has two destructive actions, and they do
 different things:
 
 - **Uninstall** drops the plugin's data (its tables and settings), usually
-  for good. The files stay on disk, and the card moves to **Not installed**.
+  for good. The files stay on disk, and the plugin moves to **Not installed**.
 - **Delete files**, offered once a plugin is not installed, removes its
   folder entirely.
 

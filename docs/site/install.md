@@ -1,6 +1,6 @@
 ---
 title: Install ShopClass
-description: "Step-by-step installation guide for ShopClass: server requirements, the five-step installer, and what to do when a step fails."
+description: "Step-by-step installation guide for ShopClass: server requirements, the installer, and what to do when a step fails."
 sidebar:
   order: 1
 ---
@@ -61,38 +61,44 @@ Open your site in a browser (`https://example.com/`) and the installer starts
 automatically. If it does not, go straight to
 `https://example.com/oc-includes/osclass/install.php`.
 
+The rail at the top shows six steps: **Check server**, **Database**, **Site type**,
+**Your site**, **Install** and **Done**.
+
 ### Step 1 · Check server
 
-The installer confirms your PHP version, the required extensions and folder
-write permissions up front, so nothing fails halfway through. Fix anything
-flagged here before continuing.
+The installer checks your PHP version, the required extensions and folder
+write permissions before anything is written. When all is well it says so in one
+line. When something fails, it lists only the failures, each with a plain fix you
+can do in your hosting panel. Fix them and press **Check again**.
 
-![The installer's first step, listing each PHP version, extension and directory permission it requires with a pass or fail against it.](images/install/1-check-server.png)
+![The installer's first step, saying the server is ready.](images/install/1-check-server.png)
 
-### Step 2 · Connect database
+### Step 2 · Database
 
-Enter the details from step 3 and press **Test connection** to confirm they work
-*before* anything is written. On success, the installer writes `config.php` for
-you and creates the schema.
+Enter the details from step 3. **Test connection** checks them without writing
+anything. **Connect** checks them, writes `config.php` for you and moves on.
+If the connection fails, the error shows above the fields.
 
-![The installer's database step: host, name, user, password and table prefix fields above a Test connection button.](images/install/2-connect-database.png)
+Under **More options** you can change the table prefix, have the installer create
+the database, or remove the tables of an install that did not finish.
 
-### Step 3 · What kind of site?
+![The installer's database step: host, name, username and password fields with Test connection and Connect buttons.](images/install/2-connect-database.png)
 
-Pick **Classifieds** (local buy and sell, jobs, property, cars, services) or **Shop**
-(a store with products, variants and a cart). You can change this later in the admin.
+### Step 3 · Site type
+
+Pick **Classifieds** (visitors post their own ads) or **Shop** (you sell your own
+products, with a cart and checkout). You can change this later in the admin.
 
 Shop downloads the Aisle theme and the shop plugins you tick, so it needs internet
 and package installs turned on. When it cannot be used, the Shop card is greyed out and
-the site installs as classifieds. If a download fails, the finish page lists what to
-install later.
+the site installs as classifieds.
 
-Tick **Install sample data** to start with example listings (or products) and custom
-fields. Sample photos are downloaded when the site is online; with no internet the
+Tick **Add example content** to start with example listings (or products) and custom
+fields. Example photos are downloaded when the site is online; with no internet the
 listings install without photos.
 
-While sample data is on the site, the top of **Listings** shows a line with a
-**Remove sample data** button. It removes the sample listings, their photos, fields
+While example content is on the site, the top of **Listings** shows a line with a
+**Remove sample data** button. It removes the example listings, their photos, fields
 and groups; categories stay. The line goes once they are removed.
 
 Either way the site starts with a ready category tree. Classifieds gets Vehicles,
@@ -102,20 +108,32 @@ Clothing, Electronics, Home & Kitchen, Beauty & Health, Sports & Outdoors, Toys 
 Food & Drink, Books & Stationery, Digital Goods and Gifts. Each has subcategories.
 Edit them under **Listings → Categories**.
 
-![The installer's site type step: Classifieds and Shop cards and an Install sample data box.](images/install/3-site-type.png)
+![The installer's site type step: Classifieds and Shop cards and an Add example content box.](images/install/3-site-type.png)
 
 ### Step 4 · Your site
 
-Pick an admin username, your site title, a contact e-mail and your country.
-Leave the password field blank and a strong one is generated for you.
+Enter the site name, a contact e-mail and your country, then an admin username and
+password. Leave the password empty and a strong one is made for you. Press
+**Install Shopclass**.
 
-![The installer's site step: admin username and password, site title, contact e-mail and country.](images/install/4-your-site.png)
+![The installer's site step: site name, contact e-mail, country, and the admin username and password.](images/install/4-your-site.png)
 
-### Step 5 · Done
+### Step 5 · Install
+
+The installer works through a task list: the admin account, starter categories,
+places for your country, the theme, and any example content or shop plugins.
+Each task runs on its own, so a slow host does not time out. Keep the tab open
+until it finishes.
+
+![The installer's install step: a task list with each finished task ticked and a progress bar.](images/install/setting-up-overlay.png)
+
+### Step 6 · Done
 
 Copy the admin password (it is also e-mailed to you) and open the admin panel.
+Anything that could not be done, such as a failed download, is listed under
+**To finish later** with where to do it in the admin. The site works without it.
 
-![The installer's final step, showing the generated admin username and password with a link to the admin panel.](images/install/5-done.png)
+![The installer's done step, showing the admin address, username and password.](images/install/5-done.png)
 
 ## 5. Sign in
 

@@ -194,6 +194,29 @@ The admin menu uses it, so a plugin can listen for `osc:collapse:shown` on
 </div>
 ```
 
+## Drag to reorder in the admin
+
+`osc.sortable(el, opts)` makes a list draggable with the mouse or touch. It wraps
+[SortableJS](https://github.com/SortableJS/Sortable), so add `sortablejs` to your script's
+dependencies. `opts` are SortableJS options, merged over shared defaults: a 250 ms hold on
+touch, the `is-drag-ghost`, `is-drag-chosen` and `is-drag-active` classes, no animation under
+reduced motion, and form fields that do not start a drag. It returns the Sortable instance, the
+same one on a second call, or `null` when SortableJS or the element is missing.
+
+For a tree, add `nested: true` and call it once per level with a shared `group`. Dragging a row
+into another row's child list nests it; dragging it out un-nests it.
+
+```js
+osc.sortable(list, {
+    handle: '.my-handle',
+    onEnd: function (evt) { /* save the new order */ }
+});
+
+document.querySelectorAll('.my-tree, .my-tree ul').forEach(function (ul) {
+    osc.sortable(ul, {group: 'my-tree', nested: true});
+});
+```
+
 ## Bootstrap's JavaScript
 
 The admin does not load Bootstrap's JavaScript. A plugin that still uses `data-bs-toggle`

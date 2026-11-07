@@ -218,6 +218,12 @@ the list of names and returns it. Blank names and repeats are dropped.
 caller is in one. They come after `posted_item` and `edited_item`, not before, and a post or edit
 that is rolled back never fires them. Do not rely on their order against those hooks.
 
+`plugin_bulk_filter` (7.1+) gets the Plugins table's bulk-action options, each
+`array('value' => ..., 'label' => ..., 'data-dialog-content' => ...)`. Add your own and handle it on
+`plugin_bulk_action`, which gets the option's value and the selected plugin files. It fires only with
+a selection and a valid CSRF token. `plugin_bulk_enable`, `plugin_bulk_disable` and
+`plugin_bulk_uninstall` fire after core's own bulk actions, with the plugins that changed.
+
 ## Reference
 
 Every name core fires, with where it is fired and what it passes.

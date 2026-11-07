@@ -144,8 +144,13 @@ There is no deadline to do this, but doing it means one place to look.
 
 A form can also sit on a **page**, to collect enquiries rather than
 describe a listing: a contact form, an application, a request form.
+Tick **Available as a block** in the form's settings, then place it on a page
+in the page builder.
 
-**Forms → Submissions** shows what has come in.
+**Forms → Submissions** shows what has come in. Its form filter lists only block
+forms, plus any other form that still has submissions, marked *(not used as a
+block)*. The **Submissions** menu entry appears once a form is a block or a
+submission exists.
 
 ![The Submissions screen, listing responses to a form with their status and the date received.](../images/forms/forms-submissions.png)
 

@@ -95,11 +95,11 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 <img src="docs/site/images/install/1-check-server.png" width="640" alt="Installer step 1: server requirements check">
 
-**2 · Connect database**: enter the details from your hosting panel and press **Test connection** to confirm they work *before* anything is written. A database on a non-default port can be entered as `host:port`.
+**2 · Database**: enter the details from your hosting panel. **Test connection** checks them without writing anything; **Connect** saves them and moves on. A database on a non-default port can be entered as `host:port`.
 
 <img src="docs/site/images/install/2-connect-database.png" width="640" alt="Installer step 2: connect the database with a test-connection check">
 
-**3 · Site type**: pick **Classifieds** or **Shop**, each with its own starter categories, and tick **Install sample data** for example listings you can remove later.
+**3 · Site type**: pick **Classifieds** or **Shop**, each with its own starter categories, and tick **Add example content** for example listings you can remove later.
 
 <img src="docs/site/images/install/3-site-type.png" width="640" alt="Installer step 3: classifieds or shop, and sample data">
 
@@ -107,9 +107,11 @@ walks through the history, what carries over, and the upgrade path from a 3.x or
 
 <img src="docs/site/images/install/4-your-site.png" width="640" alt="Installer step 4: admin account and site details">
 
-**5 · Done**: copy your admin password (it's also e-mailed to you) and open the admin panel.
+**5 · Install**: a task list shows each part of the install as it finishes.
 
-<img src="docs/site/images/install/5-done.png" width="640" alt="Installer step 5: finished, with admin credentials">
+**6 · Done**: copy your admin password (it's also e-mailed to you) and open the admin panel. Anything that failed is listed under **To finish later**.
+
+<img src="docs/site/images/install/5-done.png" width="640" alt="Installer done step, with admin credentials">
 
 The installer runs once; if the site is already set up it shows a short notice instead of re-running.
 
