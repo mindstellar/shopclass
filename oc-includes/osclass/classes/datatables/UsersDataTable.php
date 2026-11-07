@@ -91,8 +91,8 @@ class UsersDataTable extends DataTable
     {
 
         $this->addColumn('status-border', '');
-        $this->addColumn('status', __('Status'));
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('status', __('Status'));
         $this->addColumn('email', __('E-mail'));
         $this->addColumn('username', __('Username'));
         $this->addColumn('name', __('Name'));
@@ -293,9 +293,9 @@ class UsersDataTable extends DataTable
 
                 $status               = $this->get_row_status($aRow);
                 $row['status-border'] = '';
-                $row['status']        = $status['text'];
                 $row['bulkactions']   = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
                     . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_email'])) . '" /></div>';
+                $row['status']        = $status['text'];
                 $row['email']         =
                     '<a href="' . osc_admin_base_url(true) . '?page=items&userId=' . $aRow['pk_i_id'] . '&user='
                     . rawurlencode($aRow['s_name']) . '">' . osc_esc_html($aRow['s_email']) . '</a>' . $actions;

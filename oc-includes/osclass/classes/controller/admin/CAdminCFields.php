@@ -144,7 +144,7 @@ class CAdminCFields extends AdminSecBaseModel
     private function submissionsView()
     {
         $submissionModel = new \mindstellar\model\FormSubmission();
-        $forms           = FieldGroup::getInstance()->listAll();
+        $forms           = \mindstellar\model\FormSubmission::formsForFilter(FieldGroup::getInstance()->listAll());
 
         // Which form to show — the requested one, else the first with entries, else
         // the first form.

@@ -540,9 +540,17 @@ msgstr ""
 msgid "%s (not set up yet)"
 msgstr ""
 
+#: oc-admin/themes/modern/fields/submissions.php
+msgid "%s (not used as a block)"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "%s (plugin not active)"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "%s (switched off)"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -1079,6 +1087,10 @@ msgstr ""
 msgid "A block ends once the failures are older than this."
 msgstr ""
 
+#: oc-includes/classes/content/menu/MenuItems.php
+msgid "A built-in page is in this menu more than once."
+msgstr ""
+
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid ""
 "A buyer can open and print a receipt for every paid order from their orders "
@@ -1183,6 +1195,10 @@ msgstr ""
 
 #: oc-includes/classes/content/menu/MenuItems.php
 msgid "A menu item has an unknown type."
+msgstr ""
+
+#: oc-includes/classes/content/menu/MenuItems.php
+msgid "A menu item points to a built-in page that does not exist."
 msgstr ""
 
 #: oc-includes/classes/content/menu/MenuItems.php
@@ -1452,6 +1468,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -1498,13 +1515,13 @@ msgstr ""
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/items/index.php
 #: oc-admin/themes/modern/parts/package-ui.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
@@ -2004,6 +2021,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
@@ -2438,6 +2456,10 @@ msgstr ""
 msgid "Are you sure you want to %s the selected pages?"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+msgid "Are you sure you want to %s the selected plugins?"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "Are you sure you want to %s the selected users?"
 msgstr ""
@@ -2589,6 +2611,11 @@ msgid "Automatic: the pages you show as links. Save to use this list instead."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
+msgid ""
+"Automatic: your theme's default menu. Change it and save to make it your own."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
 msgid "Automatic: your top categories. Save to use this list instead."
 msgstr ""
 
@@ -2604,7 +2631,7 @@ msgid "Availability"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/group_iframe.php
-msgid "Available as a block (place this form on pages and layouts)"
+msgid "Available as a block"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
@@ -3075,6 +3102,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/locations.php
+#: oc-includes/classes/content/menu/MenuService.php
 msgid "Browse"
 msgstr ""
 
@@ -3113,6 +3141,14 @@ msgstr ""
 
 #: oc-includes/classes/admin/DatabaseTools.php
 msgid "Building: %1$d of %2$d listings done"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Built-in page"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Built-in pages"
 msgstr ""
 
 #: oc-admin/themes/modern/items/reported.php
@@ -3159,7 +3195,6 @@ msgid "Buyers can add this product to a cart."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "By"
 msgstr ""
 
@@ -3703,6 +3738,10 @@ msgstr ""
 msgid "Classifieds"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/market.php
+msgid "Classifieds only"
+msgstr ""
+
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "Classifieds site"
 msgstr ""
@@ -4053,10 +4092,6 @@ msgstr ""
 msgid "Conditional logic"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Configure"
-msgstr ""
-
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
 "Configure S3-compatible object storage for listing images. When enabled, "
@@ -4128,6 +4163,7 @@ msgid "Connection test"
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
+#: oc-includes/classes/content/menu/MenuService.php
 #: oc-includes/osclass/classes/Breadcrumb.php
 #: oc-includes/osclass/classes/controller/CWebContact.php
 #: oc-includes/osclass/functions.php
@@ -4885,7 +4921,6 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 #: oc-includes/osclass/classes/datatables/AlertsDataTable.php
@@ -4994,7 +5029,7 @@ msgstr ""
 msgid "Delete file"
 msgstr ""
 
-#: oc-admin/themes/modern/plugins/index.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Delete files"
 msgstr ""
 
@@ -5228,6 +5263,7 @@ msgstr ""
 #: oc-admin/themes/modern/tools/cleanup.php
 #: oc-admin/themes/modern/tools/system-info/jobs.php
 #: oc-includes/osclass/classes/datatables/LogsDataTable.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Details"
 msgstr ""
 
@@ -5256,8 +5292,8 @@ msgid "Direction"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Disable"
 msgstr ""
 
@@ -5284,9 +5320,9 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/parts/package-ui.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-includes/classes/core/utility/SystemInfo.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Disabled"
 msgstr ""
 
@@ -5779,8 +5815,8 @@ msgid "Empty: the chosen units"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Enable"
 msgstr ""
 
@@ -6946,6 +6982,7 @@ msgstr ""
 msgid "Holiday Lets"
 msgstr ""
 
+#: oc-includes/classes/content/menu/MenuService.php
 #: oc-includes/classes/content/seo/SeoResolver.php
 #: oc-includes/osclass/classes/Breadcrumb.php
 msgid "Home"
@@ -7317,9 +7354,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/parts/market.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Install"
 msgstr ""
 
@@ -8512,6 +8548,7 @@ msgstr ""
 #: oc-admin/gui/login.php
 #: oc-admin/gui/main.php
 #: oc-admin/gui/recover.php
+#: oc-includes/classes/content/menu/MenuService.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
 msgid "Log in"
 msgstr ""
@@ -8591,6 +8628,14 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Machinery & Tools"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Made for classifieds sites. This site is a shop."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Made for shops. This site is a classifieds site."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -9324,6 +9369,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
+#: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/currency_form.php
@@ -9333,6 +9379,7 @@ msgstr ""
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/classes/admin/form/AdminAccountForm.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 #: oc-includes/osclass/classes/form/CategoryForm.php
 #: oc-includes/osclass/classes/form/FieldForm.php
@@ -9373,6 +9420,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php
 msgid "Name of the friend who wants send"
+msgstr ""
+
+#: oc-admin/themes/modern/plugins/index.php
+msgid "Name or description"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
@@ -9958,6 +10009,10 @@ msgstr ""
 msgid "No plugins installed"
 msgstr ""
 
+#: oc-admin/themes/modern/plugins/index.php
+msgid "No plugins match"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "No plugins match your search."
 msgstr ""
@@ -10160,8 +10215,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/parts/package-ui.php
+#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/locations/data.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Not installed"
 msgstr ""
 
@@ -10994,10 +11049,6 @@ msgstr ""
 msgid "Page title: this field is required"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/widgets.php
-msgid "Page: %s"
-msgstr ""
-
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/pages/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -11367,8 +11418,8 @@ msgstr ""
 msgid "Place price in credits"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/widgets.php
-msgid "Placed on this page in the page builder. Edit it there."
+#: oc-admin/themes/modern/fields/group_iframe.php
+msgid "Place this form on pages and layouts."
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
@@ -11453,10 +11504,6 @@ msgstr ""
 #: oc-includes/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Plugins"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Plugins Site"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
@@ -11614,7 +11661,6 @@ msgid "Private addresses"
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Problems with this plugin? Ask for support."
 msgstr ""
 
@@ -11745,6 +11791,7 @@ msgstr ""
 msgid "Publish"
 msgstr ""
 
+#: oc-includes/classes/content/menu/MenuService.php
 #: oc-includes/osclass/classes/Breadcrumb.php
 #: oc-includes/osclass/functions.php
 msgid "Publish a listing"
@@ -12190,6 +12237,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/list.php
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "Regions"
+msgstr ""
+
+#: oc-includes/classes/content/menu/MenuService.php
+msgid "Register"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
@@ -13107,6 +13158,10 @@ msgstr ""
 msgid "Search page shows"
 msgstr ""
 
+#: oc-admin/themes/modern/plugins/index.php
+msgid "Search plugins"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "Search plugins…"
 msgstr ""
@@ -13249,6 +13304,7 @@ msgstr ""
 #: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
 #: oc-includes/osclass/classes/datatables/MediaDataTable.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Select %s"
 msgstr ""
@@ -13302,6 +13358,7 @@ msgstr ""
 #: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
 #: oc-includes/osclass/classes/datatables/MediaDataTable.php
 #: oc-includes/osclass/classes/datatables/PagesDataTable.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Select all"
 msgstr ""
@@ -13611,7 +13668,6 @@ msgstr ""
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/parts/ui.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/plugins/view.php
 #: oc-admin/themes/modern/settings/advanced.php
 #: oc-admin/themes/modern/settings/api.php
@@ -13634,6 +13690,7 @@ msgstr ""
 #: oc-includes/classes/admin/form/UserSettingsScreen.php
 #: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 #: oc-includes/osclass/gui/admin/settings-page.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Settings"
@@ -13716,6 +13773,10 @@ msgstr ""
 
 #: oc-includes/classes/core/install/ShopSetup.php
 msgid "Shop mode is on."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Shop only"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -13889,6 +13950,14 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Show all listings"
+msgstr ""
+
+#: oc-admin/themes/modern/plugins/index.php
+msgid "Show all plugins"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Show all site types"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
@@ -14363,6 +14432,7 @@ msgstr ""
 #: oc-includes/classes/admin/ui/Editor.php
 #: oc-includes/osclass/classes/datatables/CommentsDataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Status"
 msgstr ""
@@ -14517,7 +14587,7 @@ msgstr ""
 msgid "Sunday"
 msgstr ""
 
-#: oc-admin/themes/modern/plugins/index.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Support"
 msgstr ""
 
@@ -14550,6 +14620,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/footer.php
 msgid "Switch to light mode"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "Switched off on this site"
 msgstr ""
 
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
@@ -15654,10 +15728,6 @@ msgstr ""
 msgid "There's a new comment on his listing"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "There's a new update available"
-msgstr ""
-
 #: oc-includes/osclass/install-functions.php
 msgid ""
 "There's no database called %s yet. Open More options below and let Shopclass "
@@ -16399,6 +16469,10 @@ msgstr ""
 msgid "Try all again"
 msgstr ""
 
+#: oc-admin/themes/modern/plugins/index.php
+msgid "Try another status tab or search."
+msgstr ""
+
 #: oc-admin/themes/modern/media/index.php
 msgid "Try another word, or clear the search."
 msgstr ""
@@ -16650,6 +16724,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Uninstall"
 msgstr ""
 
@@ -16781,6 +16856,7 @@ msgid "Update product"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/package-ui.php
+#: oc-admin/themes/modern/plugins/index.php
 msgid "Update ready"
 msgstr ""
 
@@ -17252,6 +17328,7 @@ msgid "Venue"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 msgid "Version"
 msgstr ""
 
@@ -17268,12 +17345,7 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
-#: oc-admin/themes/modern/plugins/index.php
 msgid "Version %s"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "Version:"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -17535,10 +17607,10 @@ msgstr ""
 msgid "Webhooks"
 msgstr ""
 
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/tools/system-info/security.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/classes/admin/SystemChecks.php
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Website"
 msgstr ""
@@ -18319,7 +18391,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
 #: oc-admin/themes/modern/parts/market.php
-#: oc-admin/themes/modern/plugins/index.php
 msgid "by %s"
 msgstr ""
 

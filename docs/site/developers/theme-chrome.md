@@ -214,7 +214,7 @@ foreach (osc_menu('main') as $link) {
 }
 ```
 
-- `main` and `footer` always exist. Until the owner saves them they list the top categories and the linked pages.
+- `main` and `footer` always exist. Until the owner saves them they show your place's `default` (below), else the top categories and the linked pages.
 - Other ids are menus the owner made. An unknown id gives an empty array.
 - Labels are plain text in the visitor's language. Escape them when printing.
 - Items nest up to three levels. Show as many as your design has room for.
@@ -229,6 +229,24 @@ osc_add_theme_support('menus', [
 ```
 
 The key is a menu id. `label` is required; `depth` is how many levels you show, 1 to 3 (default 3). `hint` is an optional plain-text note the editor shows under the place. A declared menu the owner has not made yet is still listed in the editor. Entries that do not fit are skipped. Older cores ignore the key.
+
+A place can declare `default`: the menu shown until the owner saves their own. The editor starts from it, so the owner sees what the site shows and can change it. **Use the automatic menu** goes back to it.
+
+```php
+osc_add_theme_support('menus', [
+    'main' => ['label' => __('Header', 'mytheme'), 'depth' => 1, 'default' => [
+        ['type' => 'builtin', 'ref' => 'home'],
+        ['type' => 'builtin', 'ref' => 'search'],
+        ['type' => 'builtin', 'ref' => 'contact', 'label' => __('Help', 'mytheme')],
+    ]],
+]);
+```
+
+Items have the stored shape: `type` is `builtin`, `category`, `page` (with an id in `ref`) or `link` (with `url`), plus optional `label` and `children`. In a default, `label` may be one string, used for every language; otherwise it is `[locale => text]`. A default that would not pass the editor's save checks is ignored.
+
+The `builtin` refs are `home`, `search`, `contact`, `post`, `login` and `register`. Core builds their URLs on each request, so they follow the permalink setting, and gives them its own translated labels unless the item has one. `login` and `register` drop out when users are off (`register` also when sign-up is off), and `post` when guests may not post or the site is a shop. Owners add them from **Built-in pages** in the editor.
+
+A `link` to this site is stored as a path and printed as a full URL; links to other sites are kept as typed.
 
 The `core.menu` widget prints one menu as `<nav class="osc-menu">` with nested `<ul>` lists and an optional `<h2 class="osc-menu-title">`. Core adds no CSS for it; style `.osc-menu` in your theme. `osc_menu_choices()` lists the menus as `id => name`.
 

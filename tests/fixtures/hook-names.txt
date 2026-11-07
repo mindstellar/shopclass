@@ -257,6 +257,10 @@ action message_read
 action message_sent
 action page_cache_purge
 action page_meta
+action plugin_bulk_action
+action plugin_bulk_disable
+action plugin_bulk_enable
+action plugin_bulk_uninstall
 action post_item
 action post_item_contact_post
 action post_item_send_friend_post
@@ -591,6 +595,7 @@ filter page_templates
 filter pages_processing_row
 filter personal_data_export
 filter phpmailer_smtp_timeout
+filter plugin_bulk_filter
 filter plugin_icon_url
 filter pre_item_add_error
 filter pre_item_edit_error

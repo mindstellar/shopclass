@@ -22,7 +22,7 @@ osc_admin_page(array(
     'help'    => __('Build the links your theme shows in its header and footer, or in a Menu widget.'),
 ));
 if (is_array($menuEditor)) {
-    osc_register_script('admin-menus', osc_asset_url_versioned(osc_current_admin_theme_js_url('menus.js')), array('admin-osc'));
+    osc_register_script('admin-menus', osc_asset_url_versioned(osc_current_admin_theme_js_url('menus.js')), array('admin-osc', 'admin-ui-osc', 'sortablejs'));
     osc_enqueue_script('admin-menus');
 }
 
@@ -47,6 +47,8 @@ if (!empty($menuEditor['draft'])) {
     $meStatus = __('Saved. Visitors see this menu.');
 } elseif ($menuEditor['saved']) {
     $meStatus = __('Saved. Add a Menu widget to show it on the site.');
+} elseif (!empty($menuEditor['themed'])) {
+    $meStatus = __('Automatic: your theme\'s default menu. Change it and save to make it your own.');
 } elseif ($meId === 'main') {
     $meStatus = __('Automatic: your top categories. Save to use this list instead.');
 } elseif ($meId === 'footer') {
@@ -61,6 +63,7 @@ $meState = array(
     'draft'      => !empty($menuEditor['draft']),
     'categories' => $menuEditor['categories'],
     'pages'      => $menuEditor['pages'],
+    'builtins'   => $menuEditor['builtins'],
     'locales'    => $meLocales,
     'default'    => osc_language(),
     'maxDepth'   => MenuItems::MAX_DEPTH,
@@ -69,6 +72,8 @@ $meState = array(
         'category'   => __('Category'),
         'page'       => __('Page'),
         'link'       => __('Link'),
+        'builtin'    => __('Built-in page'),
+        'builtinOff' => __('Switched off on this site'),
         'missing'    => __('Missing: remove it'),
         'move'       => __('Move %s with the arrow keys'),
         'indent'     => __('Move %s under the item above'),
@@ -192,6 +197,16 @@ $meDepth = static function (array $cat) use ($meCats): int {
                     <button type="button" class="btn btn-dim btn-sm" data-menu-add="page"<?php echo $menuEditor['pages'] === array() ? ' disabled' : ''; ?>><?php _e('Add'); ?></button>
                 </div>
 
+                <label class="form-sublabel" for="menu-add-builtin"><?php _e('Built-in pages'); ?></label>
+                <div class="menu-add-row">
+                    <select id="menu-add-builtin" class="field-select">
+                        <?php foreach ($menuEditor['builtins'] as $meBuiltin) { ?>
+                            <option value="<?php echo osc_esc_html($meBuiltin['id']); ?>"><?php echo osc_esc_html($meBuiltin['on'] ? $meBuiltin['name'] : sprintf(__('%s (switched off)'), $meBuiltin['name'])); ?></option>
+                        <?php } ?>
+                    </select>
+                    <button type="button" class="btn btn-dim btn-sm" data-menu-add="builtin"><?php _e('Add'); ?></button>
+                </div>
+
                 <span class="form-sublabel"><?php _e('Link'); ?></span>
                 <label class="visually-hidden" for="menu-add-link-label"><?php _e('Link label'); ?></label>
                 <input type="text" id="menu-add-link-label" class="input-text" maxlength="<?php echo MenuItems::MAX_LABEL; ?>" placeholder="<?php echo osc_esc_html(__('Label')); ?>" />
@@ -226,7 +241,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
     <template id="menu-row">
         <li class="field-chip menu-item">
             <div class="field-chip-row">
-                <button type="button" class="chip-grip" draggable="true" aria-describedby="menu-grip-help"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
+                <button type="button" class="chip-grip" aria-describedby="menu-grip-help"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
                 <span class="chip-name"></span>
                 <span class="chip-type"></span>
                 <span class="chip-actions">

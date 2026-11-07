@@ -1153,6 +1153,8 @@ function buildPackageEntry(
         $packageJson = $zipJson !== null && is_array($decoded = json_decode($zipJson, true)) ? $decoded : [];
     }
     $modes = \mindstellar\market\PackageManifest::modes($packageJson, (string) ($header['modes'] ?? ''));
+    // Without a declaration `modes` is only the ["classifieds"] default, so say which it is.
+    $modesDeclared = array_key_exists('modes', $packageJson) || trim((string) ($header['modes'] ?? '')) !== '';
 
     $categories = array_values(array_unique(array_map('strval', $manifest['categories'] ?? [])));
     sort($categories, SORT_STRING);
@@ -1178,6 +1180,7 @@ function buildPackageEntry(
         'categories'       => $categories,
         'tags'             => $tags,
         'modes'            => $modes,
+        'modes_declared'   => $modesDeclared,
         'icon'             => $icon,
         'screenshots'      => $screenshots,
         'latest_version'   => $newest['version'] ?? null,
@@ -1241,6 +1244,7 @@ function buildIndexJson(array $packages): array
             'categories'       => $pkg['categories'],
             'tags'             => $pkg['tags'],
             'modes'            => $pkg['modes'],
+            'modes_declared'   => $pkg['modes_declared'],
             'updated_at'       => $pkg['updated_at'],
             'downloads'        => $pkg['downloads'],
             'requires_min'     => $pkg['requires_min'],

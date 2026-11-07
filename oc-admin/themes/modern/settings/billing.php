@@ -78,9 +78,9 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
             <table class="table">
                 <thead>
                 <tr>
+                    <th scope="col" class="col-status"><?php _e('Status'); ?></th>
                     <th scope="col"><?php _e('Payment method'); ?></th>
                     <th scope="col"><?php _e('Currencies'); ?></th>
-                    <th scope="col"><?php _e('Status'); ?></th>
                     <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                 </tr>
                 </thead>
@@ -89,6 +89,12 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
                     $ready = $gateway->isConfigured();
                     $setup = osc_billing_gateway_setup_url($gateway); ?>
                     <tr>
+                        <td class="col-status">
+                            <?php osc_admin_status(
+                                $ready ? 'active' : 'inactive',
+                                $ready ? __('Ready') : __('Needs setting up')
+                            ); ?>
+                        </td>
                         <td>
                             <strong><?php echo osc_esc_html($gateway->getName()); ?></strong>
                             <div class="text-muted osc-mono"><?php echo osc_esc_html($gateway->getId()); ?></div>
@@ -98,12 +104,6 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
                                 ? __('Any currency')
                                 : (implode(', ', $gateway->getSupportedCurrencies()) ?: __('None declared'))
                         ); ?></td>
-                        <td>
-                            <?php osc_admin_status(
-                                $ready ? 'active' : 'inactive',
-                                $ready ? __('Ready') : __('Needs setting up')
-                            ); ?>
-                        </td>
                         <td class="text-end">
                             <?php if ($setup !== '') { ?>
                                 <a href="<?php echo osc_esc_html($setup); ?>"><?php _e('Set up'); ?></a>

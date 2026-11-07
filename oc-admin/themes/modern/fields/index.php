@@ -497,9 +497,9 @@ function customHead()
         }
 
         function initFormSortable(listEl) {
-            if (typeof Sortable === 'undefined' || !listEl || listEl._sortable) { return; }
-            listEl._sortable = new Sortable(listEl, {
-                group: 'fields', handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost',
+            if (!listEl || listEl._sortable) { return; }
+            listEl._sortable = osc.sortable(listEl, {
+                group: 'fields', handle: '.chip-grip', ghostClass: 'chip-ghost',
                 onAdd: function (evt) { saveForm(evt.to); },
                 onRemove: function (evt) { saveForm(evt.from); },
                 onUpdate: function (evt) { saveForm(evt.to); }
@@ -539,10 +539,10 @@ function customHead()
         document.addEventListener('DOMContentLoaded', function () {
             // palette is a clone source only
             var palette = document.getElementById('palette-list');
-            if (typeof Sortable !== 'undefined' && palette) {
-                new Sortable(palette, {
+            if (palette) {
+                osc.sortable(palette, {
                     group: { name: 'fields', pull: 'clone', put: false },
-                    sort: false, handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost'
+                    sort: false, handle: '.chip-grip', ghostClass: 'chip-ghost'
                 });
             }
             document.querySelectorAll('.form-fieldlist').forEach(initFormSortable);

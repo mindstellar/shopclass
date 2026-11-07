@@ -61,6 +61,16 @@
         var categoryFilter = app.querySelector('.market-filter-category');
         var sortSelect = app.querySelector('.market-sort');
         var noResults = app.querySelector('.market-no-results');
+        var showAll = app.querySelector('.market-show-all');
+        var showAllKey = 'osc-market-show-all-' + (app.getAttribute('data-type') || '');
+
+        if (showAll) {
+            try {
+                showAll.checked = window.localStorage.getItem(showAllKey) === '1';
+            } catch {
+                showAll.checked = false;
+            }
+        }
 
         function applyFilters() {
             if (!grid) {
@@ -80,7 +90,8 @@
                     .toLowerCase();
                 var matchesQuery = q === '' || haystack.indexOf(q) !== -1;
                 var matchesCat = cat === '' || (data.categories || []).indexOf(cat) !== -1;
-                var show = matchesQuery && matchesCat;
+                var matchesMode = (showAll && showAll.checked) || !card || !card.hasAttribute('data-market-other-mode');
+                var show = matchesQuery && matchesCat && matchesMode;
                 item.hidden = !show;
                 if (show) {
                     visible++;
@@ -186,6 +197,16 @@
         }
         if (categoryFilter) {
             categoryFilter.addEventListener('change', applyFilters);
+        }
+        if (showAll) {
+            showAll.addEventListener('change', function () {
+                try {
+                    window.localStorage.setItem(showAllKey, showAll.checked ? '1' : '0');
+                } catch {
+                    // Not remembered; the switch still works for this visit.
+                }
+                applyFilters();
+            });
         }
         if (sortSelect) {
             sortSelect.addEventListener('change', function () {
@@ -419,6 +440,7 @@
         var dAuthor = dialog.querySelector('.market-detail-author');
         var dDesc = dialog.querySelector('.market-detail-desc');
         var dReason = dialog.querySelector('.market-detail-reason');
+        var dMode = dialog.querySelector('.market-detail-mode');
         var dVersion = dialog.querySelector('.market-detail-version');
         var dRequiresRow = dialog.querySelector('.market-detail-requires-row');
         var dRequires = dialog.querySelector('.market-detail-requires');
@@ -719,6 +741,12 @@
             dTitle.textContent = data.name || '';
             dAuthor.textContent = data.author ? (i18n.byAuthor || 'by %s').replace('%s', data.author) : '';
             dDesc.textContent = data.short_description || '';
+            if (dMode) {
+                var modeNote = container.querySelector('.market-card-mode-note');
+                var modeLabel = data.mode_only === 'shop' ? i18n.shopOnly : (data.mode_only === 'classifieds' ? i18n.classifiedsOnly : '');
+                dMode.textContent = modeLabel ? modeLabel + (modeNote ? '. ' + modeNote.textContent : '') : '';
+                dMode.hidden = !modeLabel;
+            }
             // Prefer the reason actually shown next to the button: a card can be blocked by
             // directory writability or a disabled deployment, neither of which travels in the
             // row JSON. The `data.compat` fallback is gated on `blocked` -- evaluate() also
@@ -772,7 +800,7 @@
                 return;
             }
             e.preventDefault();
-            var container = trigger.closest('.market-card, .market-update-item, .osc-pkg[data-market-item]');
+            var container = trigger.closest('.market-card, .market-update-item, .osc-pkg[data-market-item], tr[data-market-item]');
             if (container) {
                 openDetail(container);
             }

@@ -22,7 +22,8 @@ use Preference;
 
 /**
  * The site's menus, one t_preference row each in the `menus` section. `main` and `footer`
- * always exist: with no saved row they list the top categories and the linked pages.
+ * always exist. A menu with no saved row shows the theme's declared default, else `main`
+ * lists the top categories and `footer` the linked pages.
  * The admin screen, the API and osc_menu() all read and write them here.
  */
 final class MenuService
@@ -38,6 +39,7 @@ final class MenuService
      * @param \Closure(int):string                    $categoryUrl a category's search URL
      * @param \Closure(int,string,string,string):string $pageUrl   a page's URL from id, slug, title and locale ('' for the default)
      * @param string[]                                $locales     the site's language codes
+     * @param (\Closure():array<string,array{label:string,url:string}>)|null $builtins the built-in pages on offer now; core's when null
      */
     public function __construct(
         private Preference $preferences,
@@ -45,6 +47,7 @@ final class MenuService
         private array $locales,
         private \Closure $categoryUrl,
         private \Closure $pageUrl,
+        private ?\Closure $builtins = null,
     ) {
     }
 
@@ -116,6 +119,82 @@ final class MenuService
     }
 
     /**
+     * The default a theme place declared with 'default' => [items…], in the stored item shape,
+     * or null when it declared none or the list does not pass the save checks. An item's
+     * 'label' may be one string, used for every language.
+     *
+     * @return array<int,array<string,mixed>>|null
+     */
+    public function themeDefault(string $id): ?array
+    {
+        $raw = $this->themeSpec($id);
+        if (!is_array($raw) || !isset($this->themePlaces()[$id])) {
+            return null;
+        }
+
+        return $this->checker()->clean($this->everyLanguage($raw));
+    }
+
+    /**
+     * Labels of every built-in page type, in the current language.
+     *
+     * @return array<string,string>
+     */
+    public static function builtinLabels(): array
+    {
+        return [
+            'home'     => __('Home'),
+            'search'   => __('Browse'),
+            'contact'  => __('Contact'),
+            'post'     => __('Publish a listing'),
+            'login'    => __('Log in'),
+            'register' => __('Register'),
+        ];
+    }
+
+    /**
+     * The built-in pages the site offers now, ref => label and URL. Built on each call from
+     * core's URL helpers, so the links follow the permalink setting.
+     *
+     * @return array<string,array{label:string,url:string}>
+     */
+    public function builtins(): array
+    {
+        return $this->builtins !== null ? ($this->builtins)() : self::coreBuiltins();
+    }
+
+    /**
+     * The built-in pages from core's own settings and URL helpers; see builtins().
+     *
+     * @return array<string,array{label:string,url:string}>
+     */
+    public static function coreBuiltins(): array
+    {
+        $labels = self::builtinLabels();
+        $users  = (bool) osc_users_enabled();
+        $urls   = [
+            'home'    => osc_base_url(),
+            'search'  => osc_search_url(['page' => 'search']),
+            'contact' => osc_contact_url(),
+        ];
+        if (!osc_is_shop_mode() && ($users || !osc_reg_user_post())) {
+            $urls['post'] = osc_item_post_url_in_category();
+        }
+        if ($users) {
+            $urls['login'] = osc_user_login_url();
+            if (osc_user_registration_enabled()) {
+                $urls['register'] = osc_register_account_url();
+            }
+        }
+        $out = [];
+        foreach ($urls as $ref => $url) {
+            $out[$ref] = ['label' => $labels[$ref], 'url' => (string) $url];
+        }
+
+        return $out;
+    }
+
+    /**
      * How many items sit at $depth levels or deeper in a stored menu (level 1 is the top).
      *
      * @param array<mixed> $items
@@ -163,12 +242,17 @@ final class MenuService
     }
 
     /**
-     * The stored-item form of the automatic `main` or `footer`, for an editor to start from.
+     * The stored-item form of a menu with nothing saved, for an editor to start from: the
+     * theme's default, else the automatic `main` or `footer`.
      *
      * @return array<int,array<string,mixed>>
      */
     public function automaticItems(string $id): array
     {
+        $default = $this->themeDefault($id);
+        if ($default !== null) {
+            return $default;
+        }
         if ($id === 'main') {
             $items = [];
             foreach ($this->categories($this->defaultLocale) as $ref => $row) {
@@ -204,12 +288,8 @@ final class MenuService
         if ($this->load($id) === null && !in_array($id, self::CORE, true) && count(array_diff($this->ids(), self::CORE)) >= self::MAX_MENUS) {
             return [sprintf(__('A site can keep at most %d menus besides the main and footer menus.'), self::MAX_MENUS)];
         }
-        $checker = new MenuItems(
-            $this->locales,
-            static fn (int $ref): bool => CategoryStore::exists($ref),
-            static fn (int $ref): bool => (new PageQuery())->find((string) $ref) !== null
-        );
-        $clean = $checker->clean($items);
+        $checker = $this->checker();
+        $clean   = $checker->clean($items);
         if ($clean === null) {
             return $checker->errors();
         }
@@ -234,7 +314,7 @@ final class MenuService
     }
 
     /**
-     * Remove a saved menu; `main` and `footer` go back to the automatic ones.
+     * Remove a saved menu; `main`, `footer` and theme places with a default go back to the automatic ones.
      */
     public function delete(string $id): bool
     {
@@ -277,7 +357,7 @@ final class MenuService
     /**
      * A menu as links in $locale: `[['label' => …, 'url' => …, 'children' => […]], …]`, with
      * `children` only when there are some. Items whose category or page is gone or hidden
-     * are left out with their children.
+     * are left out with their children, and so are built-in pages the site has switched off.
      *
      * @return array<int,array<string,mixed>>
      */
@@ -286,12 +366,18 @@ final class MenuService
         if (preg_match(self::ID, $id) !== 1) {
             return [];
         }
-        $key = implode('|', ['menu', $id, $locale, CacheGroup::generation('category'), CacheGroup::generation('page')]);
+        $spec = $this->themeSpec($id);
+        $key  = implode('|', ['menu', $id, $locale, CacheGroup::generation('category'), CacheGroup::generation('page'), $spec === null ? '' : md5(serialize($spec))]);
 
-        return CacheGroup::remember('preference', $key, function () use ($id, $locale): array {
+        // Built-in pages stay placeholders in the cache; their URLs are built per request.
+        $tree = CacheGroup::remember('preference', $key, function () use ($id, $locale): array {
             $saved = $this->load($id);
             if ($saved !== null) {
                 return $this->links($saved['items'], $locale);
+            }
+            $default = $this->themeDefault($id);
+            if ($default !== null) {
+                return $this->links($default, $locale);
             }
 
             return match ($id) {
@@ -299,7 +385,87 @@ final class MenuService
                 'footer' => $this->linkedPages($locale),
                 default  => [],
             };
-        }) ?? [];
+        });
+        $builtins = null;
+
+        return is_array($tree) ? $this->withBuiltins($tree, $builtins) : [];
+    }
+
+    /**
+     * @param array<mixed>                                       $items
+     * @param array<string,array{label:string,url:string}>|null $builtins filled on first use
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    private function withBuiltins(array $items, ?array &$builtins): array
+    {
+        $out = [];
+        foreach ($items as $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            $link = $item;
+            unset($link['children']);
+            if (isset($item['builtin'])) {
+                $builtins ??= $this->builtins();
+                $found = $builtins[(string) $item['builtin']] ?? null;
+                if ($found === null) {
+                    continue;
+                }
+                $own  = (string) ($item['label'] ?? '');
+                $link = ['label' => $own !== '' ? $own : $found['label'], 'url' => $found['url']];
+            }
+            $children = is_array($item['children'] ?? null) ? $this->withBuiltins($item['children'], $builtins) : [];
+            if ($children !== []) {
+                $link['children'] = $children;
+            }
+            $out[] = $link;
+        }
+
+        return $out;
+    }
+
+    /**
+     * The raw 'default' a theme place declared, or null.
+     */
+    private function themeSpec(string $id): mixed
+    {
+        $raw = ThemeSupports::getInstance()->get('menus');
+
+        return is_array($raw) && is_array($raw[$id] ?? null) ? ($raw[$id]['default'] ?? null) : null;
+    }
+
+    /**
+     * Items whose 'label' is one string get that label in every site language.
+     *
+     * @param array<mixed> $items
+     *
+     * @return array<mixed>
+     */
+    private function everyLanguage(array $items): array
+    {
+        foreach ($items as $i => $item) {
+            if (!is_array($item)) {
+                continue;
+            }
+            if (is_string($item['label'] ?? null)) {
+                $items[$i]['label'] = array_fill_keys($this->locales, $item['label']);
+            }
+            if (is_array($item['children'] ?? null)) {
+                $items[$i]['children'] = $this->everyLanguage($item['children']);
+            }
+        }
+
+        return $items;
+    }
+
+    private function checker(): MenuItems
+    {
+        return new MenuItems(
+            $this->locales,
+            static fn (int $ref): bool => CategoryStore::exists($ref),
+            static fn (int $ref): bool => (new PageQuery())->find((string) $ref) !== null
+        );
     }
 
     /**
@@ -332,8 +498,11 @@ final class MenuService
                     $page = $this->page((int) ($item['ref'] ?? 0), $locale);
                     $link = $page === null ? null : ['label' => $own !== '' ? $own : $page['label'], 'url' => $page['url']];
                     break;
+                case 'builtin':
+                    $link = is_string($item['ref'] ?? null) ? ['builtin' => $item['ref'], 'label' => $own] : null;
+                    break;
             }
-            if ($link === null || $link['label'] === '') {
+            if ($link === null || ($link['label'] === '' && !isset($link['builtin']))) {
                 continue;
             }
             $children = is_array($item['children'] ?? null) ? $this->links($item['children'], $locale) : [];

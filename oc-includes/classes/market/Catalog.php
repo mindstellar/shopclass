@@ -105,6 +105,7 @@ final class Catalog
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
      *              tags:array<int,string>, updated_at:string, downloads:int,
+     *              modes:list<string>, modes_declared:bool,
      *              requires_min:?string, tested_max:?string}>
      */
     public function index(bool $force = false): array
@@ -587,6 +588,7 @@ final class Catalog
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
      *              tags:array<int,string>, updated_at:string, downloads:int,
+     *              modes:list<string>, modes_declared:bool,
      *              requires_min:?string, tested_max:?string}>
      */
     private function sanitizeIndex($raw): array
@@ -637,6 +639,10 @@ final class Catalog
                     : [],
                 'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
                 'downloads'         => $downloads,
+                'modes'             => isset($row['modes']) && is_array($row['modes'])
+                    ? array_values(array_unique(array_intersect(array_filter($row['modes'], 'is_string'), PackageManifest::MODES)))
+                    : [],
+                'modes_declared'    => ($row['modes_declared'] ?? false) === true,
                 // Package-level supported range (docs/MARKET.md §5) — the lowest `requires`
                 // and highest `tested` across every version, so Browse can render
                 // "works with X – Y" from this row alone. Null when the catalog omits it,

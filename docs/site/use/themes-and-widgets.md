@@ -113,10 +113,13 @@ to its own users.
 **Appearance → Menus** sets the links your theme shows in its header and footer.
 Admins only; moderators cannot edit menus.
 
-- **Main menu and Footer menu.** Until you save them, the main menu lists your top
-  categories and the footer lists the pages you show as links. The editor starts
-  from that list. Once saved, visitors see your list instead.
-- **Add items.** Add a category, a page or a link. A link needs a label and an
+- **Main menu and Footer menu.** Until you save them, they show your theme's default
+  menu. A theme without one lists your top categories in the main menu and the pages
+  you show as links in the footer. The editor starts from that list. Once saved,
+  visitors see your list instead.
+- **Add items.** Add a category, a page, a built-in page (Home, Browse, Contact,
+  Publish a listing, Log in, Register) or a link. A built-in page drops out while
+  its feature is switched off. A link needs a label and an
   address starting with `http://`, `https://` or `/`. Category and page items use
   their own name unless you give them a label.
 - **Arrange.** Drag the handle, or focus it and use the arrow keys: up and down
@@ -125,8 +128,8 @@ Admins only; moderators cannot edit menus.
   or a page you delete, drops out of the menu with the items under it.
 - **Labels in each language.** With more than one language, the pencil opens a
   label field for each.
-- **Save menu** stores the whole menu. **Use the automatic menu** throws your main
-  or footer list away and goes back to the automatic one.
+- **Save menu** stores the whole menu. **Use the automatic menu** throws your list
+  away and goes back to the automatic one.
 - **Other menus.** **New menu** makes another one, up to 20, with a name and an id
   such as `top-bar`. The id starts with a letter and has at most 32 lowercase letters,
   digits, `-` or `_`; it cannot be changed, and an id already in use is refused. Show

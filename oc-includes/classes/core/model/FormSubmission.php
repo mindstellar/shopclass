@@ -11,6 +11,7 @@
 namespace mindstellar\model;
 
 use mindstellar\base\Model;
+use mindstellar\cache\CacheGroup;
 use mindstellar\database\Db;
 use mindstellar\database\QueryBuilder;
 use Throwable;
@@ -36,6 +37,7 @@ class FormSubmission extends Model
 {
     protected const TABLE     = 't_form_submission';
     private const VALUE_TABLE = 't_form_submission_value';
+    private const MENU_CACHE   = 'form_submission_menu';
 
     /** Triage statuses. */
     public const STATUSES = array('new', 'read', 'spam', 'archived');
@@ -119,6 +121,7 @@ class FormSubmission extends Model
         } catch (Throwable $e) {
             return false;
         }
+        self::forgetMenu();
 
         return $submissionId > 0 ? $submissionId : false;
     }
@@ -271,6 +274,7 @@ class FormSubmission extends Model
             return false;
         }
 
+        self::forgetMenu();
         osc_run_hook('after_delete_form_submission', $id);
 
         return true;
@@ -290,6 +294,78 @@ class FormSubmission extends Model
             return $this->table()->where('fk_i_group_id', $formId)->delete();
         } catch (Throwable $e) {
             return false;
+        } finally {
+            self::forgetMenu();
         }
+    }
+
+    /**
+     * The forms the Submissions filter lists: those set as a Page builder block, plus any
+     * other form that still holds submissions. The latter get 'not_block' => true so the
+     * screen can label them.
+     *
+     * @param array<int,array<string,mixed>> $forms Rows from FieldGroup::listAll()
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function formsForFilter(array $forms): array
+    {
+        $withEntries = array();
+        try {
+            foreach (Db::table(DB_TABLE_PREFIX . self::TABLE)->select('fk_i_group_id')->groupBy('fk_i_group_id')->get() as $row) {
+                $withEntries[(int) $row['fk_i_group_id']] = true;
+            }
+        } catch (Throwable $e) {
+            // Show only the block forms when the table cannot be read.
+        }
+
+        $out = array();
+        foreach ($forms as $form) {
+            if (self::isBlock($form)) {
+                $out[] = $form;
+            } elseif (isset($withEntries[(int) $form['pk_i_id']])) {
+                $out[] = $form + array('not_block' => true);
+            }
+        }
+
+        return $out;
+    }
+
+    /**
+     * True when the form's Page builder block option is on.
+     *
+     * @param array<string,mixed> $form A FieldGroup row
+     */
+    public static function isBlock(array $form): bool
+    {
+        $meta = (isset($form['s_meta']) && $form['s_meta'] !== '') ? json_decode((string) $form['s_meta'], true) : array();
+
+        return is_array($meta) && !empty($meta['placeable']);
+    }
+
+    /**
+     * Whether the Submissions menu entry is shown: some form is a Page builder block or
+     * any submission exists. Two LIMIT 1 lookups, kept for a minute.
+     */
+    public static function menuVisible(): bool
+    {
+        try {
+            return (bool) CacheGroup::remember(self::MENU_CACHE, 'visible', static function (): int {
+                $block = Db::table(DB_TABLE_PREFIX . 't_meta_group')->like('s_meta', '"placeable"')->limit(1)->first();
+                $any   = $block !== null || Db::table(DB_TABLE_PREFIX . self::TABLE)->select('pk_i_id')->limit(1)->first() !== null;
+
+                return $any ? 1 : 0;
+            }, 60);
+        } catch (Throwable $e) {
+            return true;
+        }
+    }
+
+    /**
+     * Drop the cached menu answer after a form or submission changes.
+     */
+    public static function forgetMenu(): void
+    {
+        CacheGroup::changed(self::MENU_CACHE);
     }
 }

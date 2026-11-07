@@ -12,7 +12,8 @@
  * Appearance > Menus: the save and delete posts check the CSRF token first, refuse a
  * moderator, store the posted JSON through MenuService and flash its errors, create a new
  * empty menu once, and send main back to the automatic menu. The screen starts main from
- * the automatic items and refuses a moderator with 403.
+ * the automatic items or the theme's default, offers the built-in pages, and refuses a
+ * moderator with 403.
  * DB-backed. Usage: php tests/admin-menus.php
  */
 
@@ -36,6 +37,15 @@ foreach (array(
     'osc_core_url'             => 'return "/page/" . (int) (func_get_arg(1)["id"] ?? 0);',
     'osc_autop'                => 'return (string) func_get_arg(0);',
     'osc_plugins_path'         => 'return ABS_PATH . "oc-content/plugins/";',
+    'osc_base_url'                  => 'return "https://shop.test/";',
+    'osc_contact_url'               => 'return "https://shop.test/contact";',
+    'osc_item_post_url_in_category' => 'return "https://shop.test/item/new";',
+    'osc_user_login_url'            => 'return "https://shop.test/user/login";',
+    'osc_register_account_url'      => 'return "https://shop.test/user/register";',
+    'osc_users_enabled'             => 'return false;',
+    'osc_reg_user_post'             => 'return true;',
+    'osc_user_registration_enabled' => 'return false;',
+    'osc_is_shop_mode'              => 'return false;',
 ) as $fn => $body) {
     if (!function_exists($fn)) {
         eval('function ' . $fn . '(...$args) { ' . $body . ' }');
@@ -173,6 +183,25 @@ check('the place hint is printed, escaped', str_contains($html, 'id="menu-place-
 check('no hint, no hint line', !str_contains($screen(), 'id="menu-place-hint"'));
 \mindstellar\theme\ThemeSupports::getInstance()->reset();
 pin('saved with no theme place: says how to show it', 'Saved. Add a Menu widget to show it on the site.', $status($screen()));
+
+harness_section('theme default and built-in pages');
+$service->delete('main');
+\mindstellar\theme\ThemeSupports::getInstance()->add('menus', array('main' => array('label' => 'Top bar', 'default' => array(
+    array('type' => 'builtin', 'ref' => 'home'),
+    array('type' => 'builtin', 'ref' => 'contact', 'label' => 'Help'),
+))));
+$r = drive('menus');
+pin('unsaved main starts from the theme default', array(
+    array('type' => 'builtin', 'ref' => 'home'),
+    array('type' => 'builtin', 'ref' => 'contact', 'label' => array('en_US' => 'Help')),
+), $r['view']['menuEditor']['items']);
+pin('the palette offers every built-in page, switched-off ones marked', array('home' => true, 'search' => true, 'contact' => true, 'post' => true, 'login' => false, 'register' => false), array_column($r['view']['menuEditor']['builtins'], 'on', 'id'));
+pin('the status line names the theme default', 'Automatic: your theme&#039;s default menu. Change it and save to make it your own.', $status($screen()));
+$service->save('main', array(array('type' => 'builtin', 'ref' => 'search')));
+check('saved over a theme default: it can go back to automatic', str_contains($screen(), 'Use the automatic menu'));
+pin('a built-in page is saved as a ref', array(array('type' => 'builtin', 'ref' => 'search')), $service->load('main')['items']);
+$service->delete('main');
+\mindstellar\theme\ThemeSupports::getInstance()->reset();
 $html = $screen('menu_save_post', array('menu' => 'main', 'items' => json_encode(array(array('type' => 'link', 'url' => 'nope', 'label' => array('en_US' => 'x'))))));
 pin('a refused save: no "Saved" line', 'Not saved. Fix the problem named above and save again.', $status($html));
 $service->delete('main');

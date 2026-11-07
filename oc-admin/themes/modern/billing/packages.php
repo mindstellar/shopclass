@@ -39,10 +39,10 @@ osc_admin_page(array(
             <table class="table">
                 <thead>
                 <tr>
+                    <th scope="col" class="col-status"><?php _e('Status'); ?></th>
                     <th scope="col"><?php _e('Name'); ?></th>
                     <th scope="col" class="col-numeric"><?php _e('Price'); ?></th>
                     <th scope="col" class="col-numeric"><?php _e('Credits'); ?></th>
-                    <th scope="col"><?php _e('Status'); ?></th>
                     <th scope="col"><?php _e('Actions'); ?></th>
                 </tr>
                 </thead>
@@ -50,6 +50,12 @@ osc_admin_page(array(
                 <?php foreach ($packages as $package) {
                     $editUrl = $base . '&action=package&id=' . $package['pk_i_id']; ?>
                     <tr>
+                        <td class="col-status">
+                            <?php osc_admin_status(
+                                $package['b_enabled'] ? 'active' : 'inactive',
+                                $package['b_enabled'] ? __('Enabled') : __('Disabled')
+                            ); ?>
+                        </td>
                         <td>
                             <a href="<?php echo osc_esc_html($editUrl); ?>">
                                 <?php echo osc_esc_html($package['s_name']); ?>
@@ -59,12 +65,6 @@ osc_admin_page(array(
                             <?php echo osc_esc_html(osc_admin_money($package['i_amount'], $package['s_currency'])); ?>
                         </td>
                         <td class="col-numeric"><?php echo number_format((int) $package['i_credits']); ?></td>
-                        <td>
-                            <?php osc_admin_status(
-                                $package['b_enabled'] ? 'active' : 'inactive',
-                                $package['b_enabled'] ? __('Enabled') : __('Disabled')
-                            ); ?>
-                        </td>
                         <td>
                             <a class="btn btn-secondary btn-sm" href="<?php echo osc_esc_html($editUrl); ?>">
                                 <?php _e('Edit'); ?>

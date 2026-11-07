@@ -8,6 +8,7 @@
  * on .categories-app so this file stays static and cacheable.
  */
 /* global setJsMessage, oscEscapeHTML, oscInitTabs */
+/* global osc */
 (function () {
     'use strict';
 
@@ -405,18 +406,15 @@
         return out;
     }
 
-    if (typeof Sortable !== 'undefined' && tree) {
+    if (tree) {
         var lists = [tree].concat(Array.prototype.slice.call(app.querySelectorAll('.cat-children')));
         lists.forEach(function (list) {
-            new Sortable(list, {
+            osc.sortable(list, {
                 group: 'nested-categories',
                 handle: '.cat-handle',
                 draggable: '.cat-node',
                 ghostClass: 'drag-ghost',
-                chosenClass: 'sortable-chosen',
-                animation: 150,
-                fallbackOnBody: true,
-                swapThreshold: 0.12,
+                nested: true,
                 onEnd: function (evt) {
                     // A parent that just received its first child needs a disclosure
                     // to stay reachable; reveal the destination branch.

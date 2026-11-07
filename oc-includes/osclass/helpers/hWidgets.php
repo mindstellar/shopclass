@@ -634,8 +634,8 @@ if (function_exists('osc_add_hook')) {
 
 /**
  * A menu as links in the visitor's language: `[['label' => …, 'url' => …, 'children' => […]], …]`.
- * `main` and `footer` list the top categories and the linked pages until the owner builds them
- * in Appearance > Menus. Labels are plain text: escape them when printing.
+ * Until the owner builds it in Appearance > Menus, a menu shows the theme's declared default,
+ * else `main` lists the top categories and `footer` the linked pages. Labels are plain text: escape them when printing.
  *
  * @param string $id `main`, `footer` or the id of a menu the owner made
  *

@@ -288,6 +288,9 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                                        aria-label="<?php echo osc_esc_html(__('Select all on this page')); ?>"/>
                             <?php } ?>
                         </th>
+                        <?php if ($level !== 'country') { ?>
+                            <th scope="col"><?php _e('Status'); ?></th>
+                        <?php } ?>
                         <th scope="col"><?php _e('Name'); ?></th>
                         <?php if ($level === 'country') { ?>
                             <th scope="col" class="col-numeric"><?php _e('Regions'); ?></th>
@@ -295,9 +298,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                             <th scope="col" class="col-numeric"><?php _e('Cities'); ?></th>
                         <?php } ?>
                         <th scope="col" class="col-numeric"><?php echo osc_mode_text(__('Listings'), __('Products')); ?></th>
-                        <?php if ($level !== 'country') { ?>
-                            <th scope="col"><?php _e('Status'); ?></th>
-                        <?php } ?>
                         <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                     </tr>
                     </thead>
@@ -338,6 +338,13 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                                 <input type="checkbox" name="id[]" value="<?php echo osc_esc_html($id); ?>"
                                        aria-label="<?php echo osc_esc_html(sprintf(__('Select %s'), $name)); ?>"/>
                             </td>
+                            <?php if ($level !== 'country') { ?>
+                                <td class="loc-col-status">
+                                    <?php $row['active']
+                                        ? osc_admin_status('active', __('Active'))
+                                        : osc_admin_status('inactive', __('Hidden')); ?>
+                                </td>
+                            <?php } ?>
                             <td class="loc-col-name">
                                 <?php if ($drill !== null) { ?>
                                     <a class="loc-name" href="<?php echo osc_esc_html($drill); ?>" data-loc-nav>
@@ -362,13 +369,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                             <td class="col-numeric loc-col-count" data-col-name="<?php echo osc_esc_html(osc_mode_text(__('Listings'), __('Products'))); ?>">
                                 <?php echo number_format((int) $row['listings']); ?>
                             </td>
-                            <?php if ($level !== 'country') { ?>
-                                <td class="loc-col-status">
-                                    <?php $row['active']
-                                        ? osc_admin_status('active', __('Active'))
-                                        : osc_admin_status('inactive', __('Hidden')); ?>
-                                </td>
-                            <?php } ?>
                             <td class="loc-col-actions">
                                 <?php echo is_array($actions) ? implode('', $actions) : $edit; ?>
                             </td>

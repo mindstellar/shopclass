@@ -158,6 +158,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <table class="table api-keys-table osc-table-stack" cellpadding="0" cellspacing="0">
                     <thead>
                     <tr>
+                        <th class="col-status"><?php _e('Status'); ?></th>
                         <th><?php _e('Name'); ?></th>
                         <th><?php _e('Type'); ?></th>
                         <th><?php _e('Scopes'); ?></th>
@@ -165,7 +166,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         <th><?php _e('Created'); ?></th>
                         <th><?php _e('Last used'); ?></th>
                         <th><?php _e('Expires'); ?></th>
-                        <th><?php _e('Status'); ?></th>
                         <th class="text-end"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                     </tr>
                     </thead>
@@ -175,6 +175,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         $active    = $key['status'] === ApiKeyService::STATUS_ACTIVE;
                         $canRotate = $active && ($key['kind'] === 'public' || $key['owner_admin'] === $adminId); ?>
                         <tr>
+                            <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>">
                                 <strong><?php echo osc_esc_html($key['name']); ?></strong>
                                 <div class="text-muted osc-mono api-key-prefix"><?php echo osc_esc_html($key['prefix']); ?>&hellip;</div>
@@ -187,7 +188,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                             <td data-col-name="<?php echo osc_esc_html(__('Created')); ?>"><?php echo $when($key['created']); ?></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Last used')); ?>"><?php echo $key['last_used'] === null ? '<span class="text-muted">' . osc_esc_html(__('Never')) . '</span>' : $when($key['last_used']); ?></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Expires')); ?>"><?php echo $key['expires'] === null ? '<span class="text-muted">' . osc_esc_html(__('Never')) . '</span>' : $when($key['expires']); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
                             <td class="text-end">
                                 <?php if ($active) { ?>
                                     <span class="api-key-actions">
@@ -308,10 +308,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <table class="table api-webhooks-table osc-table-stack" cellpadding="0" cellspacing="0">
                     <thead>
                     <tr>
+                        <th class="col-status"><?php _e('Status'); ?></th>
                         <th><?php _e('Address'); ?></th>
                         <th><?php _e('Events'); ?></th>
                         <th><?php _e('Last delivery'); ?></th>
-                        <th><?php _e('Status'); ?></th>
                         <th class="text-end"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                     </tr>
                     </thead>
@@ -322,6 +322,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         }
                         [$state, $word] = $hookStates[$hook->status()]; ?>
                         <tr>
+                            <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Address')); ?>">
                                 <strong class="osc-mono api-webhook-url"><?php echo osc_esc_html($hook->url()); ?></strong>
                                 <?php if ($hook->description() !== '') { ?>
@@ -342,7 +343,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                                     <div class="text-muted"><?php echo osc_esc_html(sprintf(__('%d failed in a row'), $hook->failures())); ?></div>
                                 <?php } ?>
                             </td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
                             <td class="text-end">
                                 <span class="api-key-actions">
                                     <?php
@@ -420,24 +420,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <table class="table api-webhook-deliveries osc-table-stack" cellpadding="0" cellspacing="0">
                     <thead>
                     <tr>
+                        <th class="col-status"><?php _e('Status'); ?></th>
                         <th><?php _e('Event'); ?></th>
                         <th><?php _e('Message'); ?></th>
                         <th><?php _e('Tries'); ?></th>
                         <th><?php _e('Last error'); ?></th>
                         <th><?php _e('Next try'); ?></th>
-                        <th><?php _e('Status'); ?></th>
                     </tr>
                     </thead>
                     <tbody>
                     <?php foreach ($deliveries as $delivery) {
                         [$state, $word] = $jobStates[$delivery['status']] ?? array('inactive', $delivery['status']); ?>
                         <tr>
+                            <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Event')); ?>"><code class="osc-mono"><?php echo osc_esc_html($delivery['type']); ?></code></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Message')); ?>"><span class="osc-mono api-key-prefix"><?php echo osc_esc_html($delivery['message_id']); ?></span></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Tries')); ?>"><?php echo (int) $delivery['attempts']; ?></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Last error')); ?>"><?php echo $delivery['last_error'] === null ? '<span class="text-muted">&mdash;</span>' : osc_esc_html($delivery['last_error']); ?></td>
                             <td data-col-name="<?php echo osc_esc_html(__('Next try')); ?>"><?php echo $delivery['status'] === 'pending' ? $when($delivery['next_run']) : '<span class="text-muted">&mdash;</span>'; ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
                         </tr>
                     <?php } ?>
                     </tbody>

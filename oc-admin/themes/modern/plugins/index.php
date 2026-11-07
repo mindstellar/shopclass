@@ -29,7 +29,20 @@ osc_admin_page(array(
 ));
 
 $iDisplayLength = __get('iDisplayLength');
-$aData          = __get('aPlugins');
+$aData          = __get('aData');
+$aRawRows       = __get('aRawRows');
+$aCounts        = __get('aCounts');
+if (!is_array($aData)) {
+    $aData = array('aColumns' => array(), 'aRows' => array(), 'iDisplayLength' => $iDisplayLength, 'iTotalDisplayRecords' => 0, 'iTotalRecords' => 0, 'iPage' => 1);
+}
+$aRawRows  = is_array($aRawRows) ? $aRawRows : array();
+$aCounts   = is_array($aCounts) ? $aCounts : array();
+$columns   = $aData['aColumns'];
+$rows      = $aData['aRows'];
+$sort      = Params::getParamString('sort');
+$direction = Params::getParamString('direction');
+$status    = Params::getParamString('status');
+$search    = Params::getParamString('sSearch');
 
 $tab_index = 2;
 
@@ -91,92 +104,111 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
     <!-- /flash message -->
 <?php } ?>
 <div id="upload-plugins">
-    <?php if (count($aData['aaData']) > 0) { ?>
-        <?php osc_package_list_open('osc-pkg-list--plugins'); ?>
-        <?php foreach ($aData['aaData'] as $array) {
-            $pkg  = $array['pkg'];
-            $url  = osc_admin_base_url(true) . '?page=plugins&amp;action=';
-            $csrf = '&amp;' . osc_csrf_token_url();
-            $file = $pkg['file'];
-
-            $meta   = array(sprintf(__('Version %s'), osc_esc_html($pkg['version'])));
-            $meta[] = $pkg['author_uri'] !== ''
-                ? sprintf(__('by %s'), '<a target="_blank" rel="noopener" href="'
-                    . osc_esc_html(osc_sanitize_url($pkg['author_uri'])) . '">' . osc_esc_html($pkg['author']) . '</a>')
-                : sprintf(__('by %s'), osc_esc_html($pkg['author']));
-
-            $links = array();
-            if ($pkg['configurable']) {
-                $links[] = '<a href="' . $url . 'admin&amp;plugin=' . urlencode($file) . $csrf . '">'
-                    . osc_esc_html(__('Settings')) . '</a>';
-            }
-            if ($pkg['plugin_uri'] !== '') {
-                $links[] = '<a target="_blank" rel="noopener" href="'
-                    . osc_esc_html(osc_sanitize_url($pkg['plugin_uri'])) . '">' . osc_esc_html(__('Website')) . '</a>';
-            }
-            if ($pkg['support_uri'] !== '') {
-                $links[] = '<a target="_blank" rel="noopener" href="'
-                    . osc_esc_html(osc_sanitize_url($pkg['support_uri'])) . '">' . osc_esc_html(__('Support')) . '</a>';
-            }
-
-            $danger = array();
-            if ($pkg['installed']) {
-                $primary = $pkg['enabled']
-                    ? array('label' => __('Disable'), 'url' => $url . 'disable&amp;plugin=' . urlencode($file) . $csrf,
-                            'variant' => 'btn-secondary')
-                    : array('label' => __('Enable'), 'url' => $url . 'enable&amp;plugin=' . urlencode($file) . $csrf,
-                            'variant' => 'btn-primary');
-                $danger[] = '<a href="' . $url . 'uninstall&amp;plugin=' . urlencode($file) . $csrf
-                    . '" onclick="return uninstall_dialog(\'' . osc_esc_js($file) . '\', \''
-                    . osc_esc_js($pkg['name']) . '\');">' . osc_esc_html(__('Uninstall')) . '</a>';
-            } else {
-                $primary  = array('label' => __('Install'),
-                                  'url'   => $url . 'install&amp;plugin=' . urlencode($file) . $csrf,
-                                  'variant' => 'btn-primary');
-                $danger[] = '<a href="#" onclick="return delete_plugin(\'' . osc_esc_js($file) . '\');">'
-                    . osc_esc_html(__('Delete files')) . '</a>';
-            }
-
-            osc_package_row(array(
-                'art'          => osc_market_installed_art('plugin', $pkg['slug']),
-                'slug'         => $pkg['slug'],
-                'name'         => $pkg['name'],
-                'state'        => $pkg['state'],
-                'class'        => 'plugin-' . $pkg['state'],
-                'meta'         => $meta,
-                'description'  => $pkg['description'],
-                'note'         => $pkg['update']
-                    ? osc_esc_html(__('An update is ready for this plugin. Open the Updates tab to apply it.'))
-                    : '',
-                'note_variant' => 'update',
-                'modes'        => $pkg['modes'],
-                'actions'      => array('primary' => $primary, 'links' => $links, 'danger' => $danger),
-                'detail'       => array(
-                    'name'              => $pkg['name'],
-                    'author'            => $pkg['author'],
-                    'version'           => $pkg['version'],
-                    'short_description' => $pkg['description'],
-                ),
-            ));
-        } ?>
-        <?php osc_package_list_close(); ?>
-    <?php } else {
-        osc_admin_empty(array(
-            'icon'   => 'bi-plug',
-            'title'  => __('No plugins installed'),
-            'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload its zip file.'),
-            'action' => array(
-                'label'   => __('Add plugin'),
-                'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
-                'variant' => 'primary',
+    <?php
+    $tabBase = osc_admin_base_url(true) . '?page=plugins' . ($search !== '' ? '&sSearch=' . urlencode($search) : '');
+    $tabs    = array(array('label' => __('All'), 'url' => $tabBase, 'active' => $status === '', 'count' => (int) ($aCounts['all'] ?? 0)));
+    foreach (array('active' => __('Active'), 'disabled' => __('Disabled'), 'uninstalled' => __('Not installed'), 'update' => __('Update ready')) as $key => $label) {
+        if ($key !== 'update' || !empty($aCounts['update']) || $status === 'update') {
+            $tabs[] = array('label' => $label, 'url' => $tabBase . '&status=' . $key, 'active' => $status === $key, 'count' => (int) ($aCounts[$key] ?? 0));
+        }
+    }
+    osc_admin_tab_nav($tabs);
+    osc_admin_list_filter(array(
+        'page'     => 'plugins',
+        'hidden'   => $status !== '' ? array('status' => $status) : array(),
+        'active'   => $search !== '',
+        'reset'    => osc_admin_base_url(true) . '?page=plugins' . ($status !== '' ? '&status=' . urlencode($status) : ''),
+        'fields'   => array(
+            array(
+                'type'        => 'search',
+                'name'        => 'sSearch',
+                'id'          => 'fPluginSearch',
+                'label'       => __('Search plugins'),
+                'placeholder' => __('Name or description'),
+                'value'       => $search,
             ),
-        ));
-    } ?>
+        ),
+        'bulk'     => array('options' => __get('bulk_options'), 'form' => 'datatablesForm'),
+        'per_page' => array('label' => __('%d Plugins'), 'current' => $iDisplayLength),
+    ));
+    ?>
+    <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
+        <input type="hidden" name="page" value="plugins"/>
+        <input type="hidden" name="status" value="<?php echo osc_esc_html($status); ?>"/>
+        <input type="hidden" name="sSearch" value="<?php echo osc_esc_html($search); ?>"/>
+        <div class="table-contains-actions">
+            <table class="table plugins-table" cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <?php foreach ($columns as $k => $v) {
+                        $sorted = $sort === $k ? ($direction === 'desc' ? ' sorting_desc' : ' sorting_asc') : '';
+                        echo '<th class="col-' . $k . $sorted . '">' . $v . '</th>';
+                    } ?>
+                </tr>
+                </thead>
+                <tbody>
+                <?php if (count($rows) > 0) { ?>
+                    <?php foreach ($rows as $key => $row) {
+                        $pkg    = $aRawRows[$key];
+                        $detail = array(
+                            'slug'              => $pkg['slug'],
+                            'name'              => $pkg['name'],
+                            'author'            => $pkg['author'],
+                            'version'           => $pkg['version'],
+                            'short_description' => $pkg['description'],
+                        );
+                        $rowId = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $pkg['slug']);
+                        ?>
+                        <tr id="pkg-<?php echo osc_esc_html($rowId); ?>" class="plugin-<?php echo osc_esc_html($pkg['state']); ?>"
+                            data-market-item="<?php echo osc_esc_html(json_encode($detail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)); ?>">
+                            <?php foreach ($row as $k => $v) { ?>
+                                <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
+                                if ($k === 'status') {
+                                    // The table hands over the plain state; the badges are the theme's.
+                                    osc_package_state($pkg['state']);
+                                    ob_start();
+                                    osc_package_mode_badge($pkg['modes']);
+                                    $badge = (string) ob_get_clean();
+                                    $note  = $pkg['update'] ? osc_esc_html(__('An update is ready for this plugin. Open the Updates tab to apply it.')) : '';
+                                    if ($note !== '' || $badge !== '') {
+                                        echo '<p class="osc-pkg-note osc-pkg-note--' . ($note !== '' ? 'update' : 'info') . '">' . $note . ' ' . $badge . '</p>';
+                                    }
+                                } else {
+                                    echo $v;
+                                }
+                                ?></td>
+                            <?php } ?>
+                        </tr>
+                    <?php } ?>
+                <?php } elseif ($status !== '' || $search !== '') {
+                    osc_admin_table_empty(count($columns), array(
+                        'icon'   => 'bi-search',
+                        'title'  => __('No plugins match'),
+                        'text'   => __('Try another status tab or search.'),
+                        'action' => array(
+                            'label'   => __('Show all plugins'),
+                            'url'     => osc_admin_base_url(true) . '?page=plugins',
+                            'variant' => 'secondary',
+                        ),
+                    ));
+                } else {
+                    osc_admin_table_empty(count($columns), array(
+                        'icon'   => 'bi-plug',
+                        'title'  => __('No plugins installed'),
+                        'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload its zip file.'),
+                        'action' => array(
+                            'label'   => __('Add plugin'),
+                            'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
+                            'variant' => 'primary',
+                        ),
+                    ));
+                } ?>
+                </tbody>
+            </table>
+            <div id="table-row-actions"></div>
+        </div>
+    </form>
     <?php osc_admin_pagination($aData); ?>
-
-    <div class="display-select-bottom">
-            <?php osc_admin_per_page(array('label' => __('%d Plugins'), 'current' => $iDisplayLength)); ?>
-    </div>
 </div>
     </div>
 
@@ -246,4 +278,5 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
         return false;
     }
 </script>
+<?php osc_admin_bulk_confirm_dialog(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

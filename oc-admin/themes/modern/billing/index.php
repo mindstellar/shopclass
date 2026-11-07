@@ -139,7 +139,7 @@ osc_admin_page(array(
             <table class="table billing-orders osc-table-stack">
                 <thead>
                 <tr>
-                    <th scope="col"><?php _e('Status'); ?></th>
+                    <th scope="col" class="col-status"><?php _e('Status'); ?></th>
                     <th scope="col"><?php _ex('Order', 'purchase order'); ?></th>
                     <th scope="col"><?php _e('User'); ?></th>
                     <th scope="col"><?php _e('Payment method'); ?></th>
@@ -155,7 +155,7 @@ osc_admin_page(array(
                     $user    = $users[$order->getUserId()] ?? null;
                     $orderUrl = $base . '&action=order&id=' . $order->getId(); ?>
                     <tr>
-                        <td>
+                        <td class="col-status">
                             <?php osc_admin_status(
                                 $order->getStatus(),
                                 $statusWords[$order->getStatus()] ?? $order->getStatus()

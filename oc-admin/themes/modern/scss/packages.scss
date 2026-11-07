@@ -361,3 +361,75 @@
     margin-inline-start: 0;
   }
 }
+
+// Installed plugins as a data table (Name / Version / Status / Actions).
+.plugins-table {
+  .plugin-name {
+    font-size: 1rem;
+  }
+
+  .plugin-desc,
+  .plugin-by {
+    color: var(--osc-ink-muted);
+    display: block;
+    font-weight: 400;
+    font-size: $font-size-label;
+    margin: .2rem 0 0;
+    max-inline-size: 60ch;
+  }
+
+  .plugin-desc {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .plugin-links {
+    margin-block-start: .35rem;
+  }
+
+  // Table link colours must not reach the buttons in the Actions cell.
+  .col-actions a.btn {
+    color: var(--bs-btn-color);
+
+    &:hover,
+    &:focus-visible {
+      color: var(--bs-btn-hover-color);
+    }
+  }
+
+  .col-actions .osc-pkg-actions {
+    border: 0;
+    justify-content: flex-end;
+    margin: 0;
+    padding: 0;
+  }
+
+  .osc-pkg-note {
+    font-size: $font-size-label;
+    margin: .35rem 0 0;
+  }
+}
+
+// The table sits in #upload-plugins and #datatablesForm, whose phone rules both label cells.
+#upload-plugins #datatablesForm .plugins-table tbody tr {
+  @media (max-width: 768px) {
+    td:is(.col-name, .col-status)::before {
+      content: none;
+    }
+
+    td.col-version::before {
+      content: attr(data-col-name) " ";
+    }
+
+    // On a phone the name leads the card and the status takes its own line under it.
+    td.col-status {
+      flex: 0 0 100%;
+      order: 2;
+    }
+
+    td.col-name {
+      font-size: inherit;
+    }
+  }
+}

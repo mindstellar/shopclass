@@ -16,12 +16,14 @@ use mindstellar\utility\Utils;
 use mindstellar\widgets\WidgetConfig;
 
 /**
- * Checks a posted menu and returns the items to store. An item is a category, a page or a
- * link, with a label per language and up to two levels of children below it.
+ * Checks a posted menu and returns the items to store. An item is a category, a page, a
+ * link or a built-in page (ref one of BUILTINS), with a label per language and up to two
+ * levels of children below it.
  */
 final class MenuItems
 {
-    public const TYPES     = ['category', 'page', 'link'];
+    public const TYPES     = ['category', 'page', 'link', 'builtin'];
+    public const BUILTINS  = ['home', 'search', 'contact', 'post', 'login', 'register'];
     public const MAX_DEPTH = 3;
     public const MAX_ITEMS = 200;
     public const MAX_LABEL = 100;
@@ -104,7 +106,9 @@ final class MenuItems
             if (!in_array($type, self::TYPES, true) || ++$this->count > self::MAX_ITEMS) {
                 continue;
             }
-            $row = ['type' => $type, 'ref' => is_scalar($item['ref'] ?? null) ? (int) $item['ref'] : 0, 'url' => self::plain($item['url'] ?? ''), 'label' => $this->labels($item['label'] ?? [])];
+            $ref = $item['ref'] ?? null;
+            $ref = $type === 'builtin' ? (in_array($ref, self::BUILTINS, true) ? $ref : '') : (is_scalar($ref) ? (int) $ref : 0);
+            $row = ['type' => $type, 'ref' => $ref, 'url' => self::plain($item['url'] ?? ''), 'label' => $this->labels($item['label'] ?? [])];
             $kids = $this->draft($item['children'] ?? [], $depth + 1);
             if ($kids !== []) {
                 $row['children'] = $kids;
@@ -185,6 +189,22 @@ final class MenuItems
             }
 
             return ['type' => 'link', 'url' => $url, 'label' => $labels];
+        }
+        if ($type === 'builtin') {
+            $ref = $item['ref'] ?? null;
+            if (!is_string($ref) || !in_array($ref, self::BUILTINS, true)) {
+                $this->fail(__('A menu item points to a built-in page that does not exist.'));
+
+                return null;
+            }
+            if (isset($this->seen['builtin:' . $ref])) {
+                $this->fail(__('A built-in page is in this menu more than once.'));
+
+                return null;
+            }
+            $this->seen['builtin:' . $ref] = true;
+
+            return $labels === [] ? ['type' => 'builtin', 'ref' => $ref] : ['type' => 'builtin', 'ref' => $ref, 'label' => $labels];
         }
         $ref = $item['ref'] ?? null;
         $ref = is_int($ref) || (is_string($ref) && ctype_digit($ref)) ? (int) $ref : 0;

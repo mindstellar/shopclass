@@ -114,8 +114,8 @@ $describe = static function (array $row): void {
                 <table class="table sysinfo-list">
                     <thead>
                     <tr>
+                        <th class="col-status"><?php _e('State'); ?></th>
                         <th><?php _e('Job'); ?></th>
-                        <th><?php _e('State'); ?></th>
                         <th class="text-end"><?php _e('Tries'); ?></th>
                         <th><?php _e('Next run'); ?></th>
                     </tr>
@@ -124,8 +124,8 @@ $describe = static function (array $row): void {
                     <?php foreach ($active as $row) {
                         $running = (string) $row['s_status'] === 'running'; ?>
                         <tr>
+                            <td class="col-status sysinfo-list-meta"><?php echo osc_esc_html($running ? __('Running') : __('Waiting')); ?></td>
                             <td class="sysinfo-list-main"><?php $describe($row); ?></td>
-                            <td class="sysinfo-list-meta"><?php echo osc_esc_html($running ? __('Running') : __('Waiting')); ?></td>
                             <td class="text-end sysinfo-list-meta"><?php printf(
                                 osc_esc_html(_n('%d try', '%d tries', (int) $row['i_attempts'])),
                                 (int) $row['i_attempts']

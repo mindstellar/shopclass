@@ -611,18 +611,27 @@ class CAdminAppearance extends AdminSecBaseModel
         $id      = in_array($id, $ids, true) ? $id : 'main';
         $saved   = $service->load($id);
         $picker  = $service->pickerItems(osc_current_admin_locale());
+        $themed  = $service->themeDefault($id) !== null;
+        $offered = $service->builtins();
+        $labels  = MenuService::builtinLabels();
+        $builtin = array();
+        foreach ($labels as $ref => $name) {
+            $builtin[] = array('id' => $ref, 'name' => $name, 'on' => isset($offered[$ref]));
+        }
 
         $this->_exportVariableToView('menuEditor', array(
             'id'         => $id,
             'menus'      => osc_menu_choices(),
             'saved'      => $saved !== null,
-            'core'       => in_array($id, MenuService::CORE, true),
+            'core'       => in_array($id, MenuService::CORE, true) || $themed,
+            'themed'     => $themed,
             'place'      => $service->themePlaces()[$id] ?? null,
             'places'     => $service->themePlaces() !== array(),
             'items'      => $draft ?? ($saved !== null ? $saved['items'] : $service->automaticItems($id)),
             'draft'      => $draft !== null,
             'categories' => $picker['categories'],
             'pages'      => $picker['pages'],
+            'builtins'   => $builtin,
         ));
         $this->doView('appearance/menus.php');
     }
@@ -679,8 +688,9 @@ class CAdminAppearance extends AdminSecBaseModel
             return;
         }
         $id   = Params::getParamString('menu');
-        $core = in_array($id, MenuService::CORE, true);
-        if (MenuService::getInstance()->delete($id)) {
+        $service = MenuService::getInstance();
+        $core    = in_array($id, MenuService::CORE, true) || $service->themeDefault($id) !== null;
+        if ($service->delete($id)) {
             osc_add_flash_ok_message($core ? _m('The automatic menu is back.') : _m('Menu deleted.'), 'admin');
         } else {
             osc_add_flash_error_message(_m('The menu could not be deleted.'), 'admin');
@@ -835,6 +845,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 'tags'              => $row['tags'],
                 'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
                 'downloads'         => is_int($row['downloads'] ?? null) ? $row['downloads'] : 0,
+                'mode_only'         => $row['mode_only'],
                 'compat'            => array(
                     'status'  => $row['compatibility']['status'],
                     'blocked' => $row['compatibility']['blocked'],

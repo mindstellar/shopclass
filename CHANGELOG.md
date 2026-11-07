@@ -48,6 +48,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Option and custom-field filters read a filter index (`t_item_facet`), built in the background after the update. `search:reindex` or System info → Database rebuilds it.
 - **Listings → Settings → Search count limit** stops search counts at a number and shows "1,000+" past it. Themes use `osc_search_total_text()` and `osc_search_total_capped()`.
 - **Appearance → Menus** builds the main, footer and extra menus from categories, pages and links. Themes read them with `osc_menu()` and name their menu places with `osc_add_theme_support('menus', …)`.
+- A theme menu place can declare a `default` menu that the owner edits in Appearance → Menus, and menus can hold built-in pages (Home, Browse, Contact, Publish a listing, Log in, Register) whose links follow the permalink setting.
 - The **Page builder** has layout blocks: **Image and text**, **Columns**, **Heading** and **Button**. They stack on phones and appear only on pages, not in Appearance → Widgets.
 - Page builder pages are edited with **Edit blocks**: the block list beside a live preview of the page, saved as a draft until **Publish**. Types are picked from labelled tiles and Custom Code sits apart with a warning.
 - **Page settings → Hide the page title** hides a page's title on screen; screen readers and search engines still get it. Themes read it with `osc_static_page_title_hidden()`.
@@ -202,3 +203,4 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Admin dialogs placed in a page are centred again, menu rows fit a phone, and `search:reindex` prints why it stopped.
 - The plugin and theme catalogs build again: the package-ci bundle ships `Escape.php`, which its README renderer needs.
 - A settings page reached only through tabs lights the sidebar entry of its first tab that is in the menu, not Settings.
+- The Widgets screen no longer lists Page builder pages as sections; their blocks are edited on the page. Blocks of a deleted page still show there so they can be removed.

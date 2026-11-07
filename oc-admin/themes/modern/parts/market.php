@@ -136,6 +136,41 @@ function osc_market_render_thumb($art, $slug, $name)
 }
 
 /**
+ * The "Shop only" / "Classifieds only" label for a package made for one site type.
+ * Nothing for a package that works on both, or that does not say.
+ *
+ * @param string $only 'shop', 'classifieds' or ''
+ *
+ * @return string
+ */
+function osc_market_mode_label($only)
+{
+    if ($only === 'shop') {
+        return __('Shop only');
+    }
+
+    return $only === 'classifieds' ? __('Classifieds only') : '';
+}
+
+/**
+ * Plain note for a package made for the other site type, or '' when it fits this site.
+ *
+ * @param string $only 'shop', 'classifieds' or ''
+ *
+ * @return string
+ */
+function osc_market_mode_note($only)
+{
+    if ($only === '' || $only === osc_site_mode()) {
+        return '';
+    }
+
+    return $only === 'shop'
+        ? __('Made for shops. This site is a classifieds site.')
+        : __('Made for classifieds sites. This site is a shop.');
+}
+
+/**
  * The compatibility badge -- tint, shape and word (The Three Signal Rule) -- reusing
  * the admin's existing .osc-status component instead of a market-specific one. The word
  * is the package's published supported range ("Works with 6.0 – 6.1", "6.0 and newer"),
@@ -342,6 +377,12 @@ function osc_market_render_browse($rows, $meta, $type)
         <?php
     }
     ?>
+    <?php
+    $hasForeign = false;
+    foreach ($rows as $modeRow) {
+        $hasForeign = $hasForeign || osc_market_mode_note((string) ($modeRow['mode_only'] ?? '')) !== '';
+    }
+    ?>
     <div class="market-toolbar">
         <label class="market-search-label">
             <span class="visually-hidden"><?php _e('Search'); ?></span>
@@ -367,6 +408,12 @@ function osc_market_render_browse($rows, $meta, $type)
                 <option value="author-asc"><?php _e('Author (A–Z)'); ?></option>
             </select>
         </label>
+        <?php if ($hasForeign) : ?>
+            <label class="form-check form-switch market-show-all-label">
+                <input type="checkbox" class="form-check-input market-show-all" role="switch">
+                <span class="form-check-label"><?php _e('Show all site types'); ?></span>
+            </label>
+        <?php endif; ?>
         <span class="market-downloads-hint" tabindex="0"
               title="<?php echo osc_esc_html(__("Downloads are GitHub's cumulative count of release-asset downloads — includes CI, mirrors, bots and repeat downloads. Not an install count.")); ?>">
             <i class="bi bi-info-circle" aria-hidden="true"></i>
@@ -400,9 +447,11 @@ function osc_market_render_browse($rows, $meta, $type)
     <?php else : ?>
         <div class="market-grid row row-cols-1 row-cols-lg-2 row-cols-xxl-3">
             <?php foreach ($rows as $row) :
-                $art = osc_market_browse_art($type, $row['slug'], $row['icon']); ?>
+                $art      = osc_market_browse_art($type, $row['slug'], $row['icon']);
+                $modeOnly = (string) ($row['mode_only'] ?? '');
+                $modeNote = osc_market_mode_note($modeOnly); ?>
                 <div class="col market-grid-item">
-                    <div class="market-card card" data-market-item="<?php echo osc_esc_html(json_encode($row)); ?>">
+                    <div class="market-card card"<?php echo $modeNote !== '' ? ' data-market-other-mode' : ''; ?> data-market-item="<?php echo osc_esc_html(json_encode($row)); ?>">
                         <button type="button" class="market-card-thumb-btn" data-market-open-detail
                                 aria-label="<?php echo osc_esc_html(sprintf(__('View details for %s'), $row['name'])); ?>">
                             <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
@@ -415,6 +464,9 @@ function osc_market_render_browse($rows, $meta, $type)
                                     </button>
                                 </h3>
                                 <?php osc_market_render_compat_badge($row['compat']); ?>
+                                <?php if ($modeOnly !== '') : ?>
+                                    <span class="osc-status market-mode-label"><?php echo osc_esc_html(osc_market_mode_label($modeOnly)); ?></span>
+                                <?php endif; ?>
                             </div>
                             <p class="market-card-author">
                                 <?php echo osc_esc_html(sprintf(__('by %s'), $row['author'])); ?>
@@ -426,7 +478,9 @@ function osc_market_render_browse($rows, $meta, $type)
                                     </span>
                                 <?php endif; ?>
                             </p>
-                            <p class="market-card-desc" dir="auto"><?php echo osc_esc_html($row['short_description']); ?></p>
+                            <p class="market-card-desc" dir="auto"><?php echo osc_esc_html($row['short_description']); ?><?php if ($modeNote !== '') : ?>
+                                <span class="market-card-mode-note"><?php echo osc_esc_html($modeNote); ?></span>
+                            <?php endif; ?></p>
                             <div class="market-card-actions">
                                 <?php osc_market_render_action($row, $meta, 'install', __('Install')); ?>
                                 <button type="button" class="btn btn-sm btn-secondary market-card-details"
@@ -486,25 +540,26 @@ function osc_market_render_updates($rows, $meta, $type)
             'text'  => __('Shopclass checks once a day. Check now if you are expecting something.'),
         )); ?>
     <?php else : ?>
-        <ul class="market-updates-list">
-            <?php foreach ($rows as $row) :
-                $art = osc_market_installed_art($type, $row['slug']); ?>
-                <li class="market-update-item" data-market-item="<?php echo osc_esc_html(json_encode($row)); ?>"
-                    data-market-slug="<?php echo osc_esc_html($row['slug']); ?>">
-                    <button type="button" class="market-card-thumb-btn market-update-thumb-btn" data-market-open-detail
-                            aria-label="<?php echo osc_esc_html(sprintf(__('View details for %s'), $row['name'])); ?>">
-                        <?php osc_market_render_thumb($art, $row['slug'], $row['name']); ?>
-                    </button>
-                    <div class="market-update-body">
-                        <div class="market-update-head">
-                            <h3 class="market-update-title">
-                                <button type="button" class="market-card-title-btn" data-market-open-detail>
-                                    <?php echo osc_esc_html($row['name']); ?>
-                                </button>
-                            </h3>
-                            <?php osc_market_render_compat_badge($row['compat']); ?>
-                        </div>
-                        <p class="market-update-versions">
+        <div class="market-updates-list osc-table-stack">
+            <table class="table" cellpadding="0" cellspacing="0">
+                <thead>
+                <tr>
+                    <th class="col-name"><?php _e('Name'); ?></th>
+                    <th class="col-version"><?php _e('Version'); ?></th>
+                    <th class="col-compat"><?php _e('Compatibility'); ?></th>
+                    <th class="col-actions text-end"><?php _e('Actions'); ?></th>
+                </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($rows as $row) : ?>
+                    <tr class="market-update-item" data-market-item="<?php echo osc_esc_html(json_encode($row)); ?>"
+                        data-market-slug="<?php echo osc_esc_html($row['slug']); ?>">
+                        <td class="col-name" data-col-name="<?php echo osc_esc_html(__('Name')); ?>">
+                            <button type="button" class="market-card-title-btn market-update-title" data-market-open-detail>
+                                <?php echo osc_esc_html($row['name']); ?>
+                            </button>
+                        </td>
+                        <td class="col-version" data-col-name="<?php echo osc_esc_html(__('Version')); ?>">
                             <?php echo osc_esc_html(sprintf(
                                 __('%1$s → %2$s'),
                                 $row['installed_version'],
@@ -514,18 +569,24 @@ function osc_market_render_updates($rows, $meta, $type)
                             <?php if ($size !== '') : ?>
                                 <span class="market-update-size"><?php echo osc_esc_html($size); ?></span>
                             <?php endif; ?>
-                        </p>
-                    </div>
-                    <div class="market-update-actions">
-                        <?php osc_market_render_action($row, $meta, 'update', sprintf(__('Update to %s'), $row['new_version'])); ?>
-                        <button type="button" class="btn btn-sm btn-secondary market-card-details"
-                                data-market-open-detail>
-                            <?php _e('Details'); ?>
-                        </button>
-                    </div>
-                </li>
-            <?php endforeach; ?>
-        </ul>
+                        </td>
+                        <td class="col-compat" data-col-name="<?php echo osc_esc_html(__('Compatibility')); ?>">
+                            <?php osc_market_render_compat_badge($row['compat']); ?>
+                        </td>
+                        <td class="col-actions text-end">
+                            <div class="market-update-actions">
+                                <?php osc_market_render_action($row, $meta, 'update', sprintf(__('Update to %s'), $row['new_version'])); ?>
+                                <button type="button" class="btn btn-sm btn-secondary market-card-details"
+                                        data-market-open-detail>
+                                    <?php _e('Details'); ?>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
     <?php endif; ?>
     <?php
 }
@@ -559,6 +620,7 @@ function osc_market_render_detail_dialog($type)
                 <p class="osc-dialog-title market-detail-title"></p>
                 <p class="market-detail-author"></p>
                 <p class="market-detail-desc"></p>
+                <p class="market-detail-mode"></p>
                 <p class="market-detail-reason"></p>
                 <dl class="market-detail-meta">
                     <div class="market-detail-version-row">
@@ -653,5 +715,7 @@ function osc_market_i18n($type)
         'linkDocs'         => __('Documentation'),
         'detailError'      => $type === 'theme' ? __("Couldn't load details for this theme.") : __("Couldn't load details for this plugin."),
         'downloadsCount'   => __('%s downloads'),
+        'shopOnly'         => __('Shop only'),
+        'classifiedsOnly'  => __('Classifieds only'),
     );
 }

@@ -20,6 +20,7 @@ if (!defined('ABS_PATH')) {
 }
 
 require_once __DIR__ . '/lib/harness.php';
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once ABS_PATH . 'oc-includes/classes/core/base/SharedInstance.php';
 require_once ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php';
 

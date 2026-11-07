@@ -1055,6 +1055,47 @@ osc.dropdown = (function () {
     return {show: show, hide: hide};
 })();
 
+// osc.sortable — one SortableJS setup for every drag-to-reorder screen. Returns the Sortable
+// instance, or null when SortableJS is not on the page or el is missing; a second call on the
+// same element returns the first instance. Options are merged over the shared defaults.
+// {nested: true} adds the nested-list preset (one sortable per level, shared group) used by
+// Categories and Menus: drag into another row's child list to nest, out to un-nest.
+// SortableJS is read from window at call time, so only screens that enqueue 'sortablejs' load it.
+osc.sortable = (function () {
+    var instances = new WeakMap();
+
+    function defaults() {
+        var still = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        return {
+            delay: 250,
+            delayOnTouchOnly: true,
+            touchStartThreshold: 5,
+            animation: still ? 0 : 150,
+            ghostClass: 'is-drag-ghost',
+            chosenClass: 'is-drag-chosen',
+            dragClass: 'is-drag-active',
+            scroll: true,
+            scrollSensitivity: 60,
+            filter: 'input, select, textarea, [contenteditable]',
+            preventOnFilter: false,
+            forceFallback: false
+        };
+    }
+
+    return function (el, options) {
+        if (!el || typeof window.Sortable === 'undefined') { return null; }
+        if (instances.has(el)) { return instances.get(el); }
+        var opts = Object.assign(defaults(), options || {});
+        if (opts.nested) {
+            opts = Object.assign({fallbackOnBody: true, swapThreshold: 0.12}, opts);
+        }
+        delete opts.nested;
+        var instance = new window.Sortable(el, opts);
+        instances.set(el, instance);
+        return instance;
+    };
+})();
+
 // osc.sidebar — the admin menu: the rail (collapsed) mode with its flyouts, the ghost
 // scrollbar, and bringing an opened section into view. Runs once on DOMContentLoaded;
 // the collapse button saves the state to the URL in its data-osc-save-url.

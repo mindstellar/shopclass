@@ -13,6 +13,8 @@
  * link address, a link with no label, more than 3 levels, more than 200 items and a 21st
  * menu; labels are kept as plain text in the site's languages only. resolve skips hidden
  * and missing targets with their children and falls back to the target's own name.
+ * Built-in pages store a ref, resolve to a URL per call and drop out when switched off; a
+ * theme place's 'default' is the automatic menu; own-site links are stored as paths.
  * DB-backed. Usage: php tests/menu-service.php
  */
 
@@ -169,6 +171,73 @@ pin('items beyond level 1', 3, MenuService::itemsBeyond($tree, 1));
 pin('items beyond level 2', 1, MenuService::itemsBeyond($tree, 2));
 pin('items beyond level 3', 0, MenuService::itemsBeyond($tree, 3));
 $support->reset();
+
+harness_section('built-in pages');
+$searchUrl = '/index.php?page=search';
+$bi = new MenuService(Preference::getInstance(), 'en_US', ['en_US', 'de_DE'], static fn (int $id): string => '/c/' . $id, static fn (int $id, string $slug, string $title, string $locale): string => '/' . $locale . '/' . $slug, static function () use (&$searchUrl): array {
+    return ['home' => ['label' => 'Home', 'url' => '/'], 'search' => ['label' => 'Browse', 'url' => $searchUrl]];
+});
+check('an unknown built-in page is refused', $fails($bi->save('top', [['type' => 'builtin', 'ref' => 'admin']]), 'built-in page'));
+check('a built-in page twice is refused', $fails($bi->save('top', [['type' => 'builtin', 'ref' => 'home'], ['type' => 'builtin', 'ref' => 'home']]), 'more than once'));
+pin('built-in pages save in the stored shape', [[], [
+    ['type' => 'builtin', 'ref' => 'home'],
+    ['type' => 'builtin', 'ref' => 'search', 'label' => ['en_US' => 'Shop']],
+    ['type' => 'builtin', 'ref' => 'login', 'children' => [$link('Under login', '/u')]],
+]], [$bi->save('top', [
+    ['type' => 'builtin', 'ref' => 'home'],
+    ['type' => 'builtin', 'ref' => 'search', 'label' => ['en_US' => 'Shop']],
+    ['type' => 'builtin', 'ref' => 'login', 'children' => [$link('Under login', '/u')]],
+]), $bi->load('top')['items']]);
+pin('resolved: own label wins, default label else, a switched-off page goes with its children', [
+    ['label' => 'Home', 'url' => '/'],
+    ['label' => 'Shop', 'url' => '/index.php?page=search'],
+], $bi->resolve('top', 'en_US'));
+pin('German: no German label, so the default label', 'Browse', $bi->resolve('top', 'de_DE')[1]['label']);
+$searchUrl = '/search';
+pin('the URL is built on each call, never cached', '/search', $bi->resolve('top', 'en_US')[1]['url']);
+$bi->delete('top');
+
+harness_section('theme default');
+$support->add('menus', [
+    'main'   => ['label' => 'Header', 'default' => [
+        ['type' => 'builtin', 'ref' => 'home'],
+        ['type' => 'builtin', 'ref' => 'search', 'label' => 'Browse all'],
+        ['type' => 'link', 'url' => 'https://elsewhere.test/help', 'label' => ['en_US' => 'Help']],
+    ]],
+    'footer' => ['label' => 'Footer'],
+    'side'   => ['label' => 'Side', 'default' => [['type' => 'tag']]],
+]);
+pin('automaticItems: the theme default, a string label in every language', [
+    ['type' => 'builtin', 'ref' => 'home'],
+    ['type' => 'builtin', 'ref' => 'search', 'label' => ['en_US' => 'Browse all', 'de_DE' => 'Browse all']],
+    ['type' => 'link', 'url' => 'https://elsewhere.test/help', 'label' => ['en_US' => 'Help']],
+], $bi->automaticItems('main'));
+pin('resolve: nothing saved shows the theme default', [
+    ['label' => 'Home', 'url' => '/'],
+    ['label' => 'Browse all', 'url' => '/search'],
+    ['label' => 'Help', 'url' => 'https://elsewhere.test/help'],
+], $bi->resolve('main', 'en_US'));
+pin('no default: footer keeps the linked pages', [], $bi->automaticItems('footer'));
+pin('a default that fails the checks is ignored', null, $bi->themeDefault('side'));
+pin('a saved menu wins over the default', [], $bi->save('main', [$link('Mine')]));
+pin('saved main resolves to the saved items', ['Mine'], array_column($bi->resolve('main', 'en_US'), 'label'));
+$bi->delete('main');
+pin('deleting it brings the default back', ['Home', 'Browse all', 'Help'], array_column($bi->resolve('main', 'en_US'), 'label'));
+$support->reset();
+pin('without the theme, main is the top categories again', [['type' => 'category', 'ref' => $motors]], $bi->automaticItems('main'));
+
+harness_section('site links');
+define('WEB_PATH', 'https://shop.test/sub/');
+if (!function_exists('osc_base_url')) {
+    function osc_base_url(): string
+    {
+        return WEB_PATH;
+    }
+}
+pin('a full URL on this site is stored as a path', [[], '/sub/contact?x=1'], [$menus->save('top', [$link('Ours', WEB_PATH . 'contact?x=1')]), $menus->load('top')['items'][0]['url']]);
+pin('and drawn as a full URL again', 'https://shop.test/sub/contact?x=1', $menus->resolve('top', 'en_US')[0]['url']);
+pin('another site\'s URL stays as typed', [[], 'https://elsewhere.test/a'], [$menus->save('top', [$link('Theirs', 'https://elsewhere.test/a')]), $menus->load('top')['items'][0]['url']]);
+$menus->delete('top');
 
 harness_section('the editor');
 pin('it offers the enabled categories in tree order', [['id' => $motors, 'parent' => 0, 'name' => 'Motors'], ['id' => $cars, 'parent' => $motors, 'name' => 'Cars']], $menus->pickerItems('en_US')['categories']);

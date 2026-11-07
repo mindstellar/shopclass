@@ -162,8 +162,8 @@ class ItemsDataTable extends DataTable
         );
 
         $this->addColumn('status-border', '');
-        $this->addColumn('status', __('Status'));
         $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('status', __('Status'));
         $this->addColumn('image', __('Image'));
         $this->addColumn('title', __('Title'));
         $this->addColumn('user', __('User'));
@@ -403,12 +403,12 @@ class ItemsDataTable extends DataTable
                 $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
                 // fill a row
+                $status               = $this->get_row_status();
+                $row['status-border'] = '';
                 $row['bulkactions']   =
                     '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
                     . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_title'])) . '" active="' . $aRow['b_active']
                     . '" blocked="' . $aRow['b_enabled'] . '"/>';
-                $status               = $this->get_row_status();
-                $row['status-border'] = '';
                 $row['status']        = $status['text'];
 
                 // A spam-quarantined listing has no user reports behind it (that is the

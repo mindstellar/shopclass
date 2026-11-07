@@ -305,8 +305,8 @@ if ($tab === 'profile') {
             <table class="table osc-table-stack user-alerts">
                 <thead>
                 <tr>
+                    <th class="col-status"><?php _e('Status'); ?></th>
                     <th><?php _e('Search'); ?></th>
-                    <th><?php _e('Status'); ?></th>
                     <th class="text-end"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                 </tr>
                 </thead>
@@ -323,8 +323,7 @@ if ($tab === 'profile') {
                     $toggle = osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]=' . (int) $alert['pk_i_id']
                         . '&' . osc_csrf_token_url() . '&user_id=' . (int) $user['pk_i_id'] . '&status=' . ($alert['b_active'] == 1 ? '0' : '1'); ?>
                     <tr>
-                        <td><?php echo osc_esc_html($search !== array() ? implode(' · ', $search) : __('Every new listing')); ?></td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Status')); ?>">
+                        <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>">
                             <?php if (isset($raw['held'])) {
                                 osc_admin_status('spam', __('Needs attention'));
                                 echo ' ' . osc_esc_html(\mindstellar\search\AlertStore::reasonText((string) $raw['held']));
@@ -332,6 +331,7 @@ if ($tab === 'profile') {
                                 $alert['b_active'] == 1 ? osc_admin_status('active', __('On')) : osc_admin_status('inactive', __('Off'));
                             } ?>
                         </td>
+                        <td data-col-name="<?php echo osc_esc_html(__('Search')); ?>"><?php echo osc_esc_html($search !== array() ? implode(' · ', $search) : __('Every new listing')); ?></td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($toggle); ?>"><?php $alert['b_active'] == 1 ? _e('Turn off') : _e('Turn on'); ?></a>
                             <button type="button" class="btn btn-sm btn-outline-danger" onclick="delete_alert('<?php echo (int) $alert['pk_i_id']; ?>');"><?php _e('Delete'); ?></button>

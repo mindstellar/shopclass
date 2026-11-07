@@ -98,7 +98,7 @@ final class PackageIndex
      * @return array<string, array{slug:string, name:string, short_description:string,
      *              author:string, version:string, icon:?string, categories:array<int,string>,
      *              tags:array<int,string>, updated_at:string, requires_min:?string,
-     *              tested_max:?string, offer:array<string,string>,
+     *              tested_max:?string, mode_only:string, offer:array<string,string>,
      *              compatibility:array{status:string, blocked:bool, reason:string}}>
      */
     public function available(): array
@@ -141,7 +141,28 @@ final class PackageIndex
             ];
         }
 
+        $row['mode_only'] = self::onlyMode($row);
+
         return $row + ['offer' => $info, 'compatibility' => Compatibility::evaluate($info)];
+    }
+
+    /**
+     * The one site type a package is made for, or '' when it works on any. A lone
+     * "classifieds" without a declaration is only the catalog default, so it counts as any.
+     *
+     * @param array<string,mixed> $row the index.json row
+     */
+    private static function onlyMode(array $row): string
+    {
+        $modes = is_array($row['modes'] ?? null) ? array_values($row['modes']) : [];
+        if (count($modes) !== 1) {
+            return '';
+        }
+        if ($modes[0] === 'shop' || ($modes[0] === 'classifieds' && ($row['modes_declared'] ?? false) === true)) {
+            return $modes[0];
+        }
+
+        return '';
     }
 
     /**

@@ -31,28 +31,29 @@
   #header .navbar-toggler {
     display: inline-flex;
   }
+  // The main cell (first after the checkbox and the status) keeps its room; later cells are cut.
   #datatablesForm {
     .table {
-      .col-bulkactions {
-        & + td {
-          min-width: 3rem;
+      .col-bulkactions + td:not(.col-status),
+      .col-bulkactions + .col-status + td {
+        min-width: 3rem;
 
-          & ~ td {
-            max-width: 4rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-          }
+        & ~ td {
+          max-width: 4rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
+      }
 
-        & + th {
-          min-width: 3rem;
+      .col-bulkactions + th:not(.col-status),
+      .col-bulkactions + .col-status + th {
+        min-width: 3rem;
 
-          & ~ th {
-            max-width: 6rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-          }
+        & ~ th {
+          max-width: 6rem;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
         }
       }
     }
@@ -117,8 +118,9 @@
     .col-status {
       order: 1;
     }
-    // The main cell: the first after the checkbox, or after the thumbnail when there is one.
-    .col-bulkactions + td:not(.col-image),
+    // The main cell: the first after the checkbox and the status, or after the thumbnail.
+    .col-bulkactions + td:not(.col-image, .col-status),
+    .col-bulkactions + .col-status + td:not(.col-image),
     .col-image + td {
       flex: 1 1 0;
       font-weight: 600;
@@ -240,6 +242,20 @@
       &:not(:first-child)[data-col-name]::before {
         color: var(--osc-ink-muted);
         content: attr(data-col-name) " ";
+      }
+      // A leading status badge gets its own line; the cell after it is the title.
+      &.col-status:first-child {
+        font-size: .8125rem;
+        font-weight: 400;
+      }
+      &.col-status:first-child + td {
+        flex-basis: 100%;
+        font-size: inherit;
+        font-weight: 600;
+
+        &::before {
+          content: none;
+        }
       }
       // The actions cell needs no label; it sits at the end of the last line.
       &.text-end:last-child {

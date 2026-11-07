@@ -1230,11 +1230,16 @@ a.loc-hit-name {
         padding-inline: 0 1rem;
       }
 
+      // Status sits right after the checkbox in the markup but ends the second line here.
+      > .loc-col-status {
+        order: 5;
+      }
+
       > .loc-col-count::before {
         content: attr(data-col-name) " ";
       }
 
-      > .loc-col-count:nth-child(3) {
+      > .loc-col-name + .loc-col-count {
         margin-inline-start: 3.25rem;
       }
     }

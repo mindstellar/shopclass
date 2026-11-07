@@ -49,20 +49,20 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <table class="table" cellpadding="0" cellspacing="0">
         <thead>
             <tr>
+                <th class="col-status"><?php _e('Status'); ?></th>
                 <th><?php _e('Date'); ?></th>
                 <th><?php _e('Sender'); ?></th>
                 <th><?php _e('Message'); ?></th>
-                <th><?php _e('Status'); ?></th>
             </tr>
         </thead>
         <tbody>
             <?php foreach ($messages as $message) {
                 $senderName = (string) ($names[(int) $message['fk_i_sender_id']] ?? ''); ?>
             <tr>
+                <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><span class="osc-status"><?php echo osc_esc_html($states[(string) $message['s_state']] ?? (string) $message['s_state']); ?></span></td>
                 <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_esc_html(osc_format_date((string) $message['dt_created'], osc_admin_date_format())); ?></td>
                 <td data-col-name="<?php echo osc_esc_html(__('Sender')); ?>"><?php echo osc_esc_html($senderName !== '' ? $senderName : __('Former user')); ?></td>
                 <td data-col-name="<?php echo osc_esc_html(__('Message')); ?>"><div style="white-space: pre-wrap;"><?php echo osc_esc_html((string) $message['s_body']); ?></div></td>
-                <td data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><span class="osc-status"><?php echo osc_esc_html($states[(string) $message['s_state']] ?? (string) $message['s_state']); ?></span></td>
             </tr>
             <?php }
             if ($messages === array()) {

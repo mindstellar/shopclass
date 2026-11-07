@@ -307,3 +307,8 @@ select.field-select {
 .field-translate .osc-tab {
   margin-block-end: .5rem;
 }
+
+// The block option in the form editor sits between the name fields and the category tree.
+.form-label-checkbox:has(#group_placeable) {
+  margin-block: .25rem 1.25rem;
+}

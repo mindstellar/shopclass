@@ -88,7 +88,8 @@ foreach (array(
     'osc_admin_page', 'osc_current_admin_theme_path', 'osc_register_script', 'osc_enqueue_script',
     'osc_admin_page_head', 'osc_admin_empty', 'osc_admin_pagination', 'osc_admin_per_page',
     'osc_market_render_browse', 'osc_market_render_updates', 'osc_market_render_detail_dialog',
-    'osc_package_list_open', 'osc_package_list_close',
+    'osc_package_list_open', 'osc_package_list_close', 'osc_admin_tab_nav', 'osc_admin_list_filter',
+    'osc_admin_table_empty', 'osc_admin_bulk_confirm_dialog',
 ) as $name) {
     if (!function_exists($name)) {
         eval('function ' . $name . '(...$args) { return ""; }');

@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\BulkAction;
 use mindstellar\admin\ListPaging;
 use mindstellar\market\PluginDependencies;
 use mindstellar\security\PluginAjaxFile;
@@ -42,6 +43,9 @@ class CAdminPlugins extends AdminSecBaseModel
         'configure_post' => 'configurePost',
         'delete'         => 'deletePlugin',
         'error_plugin'   => 'errorPlugin',
+        'bulk_enable'    => 'bulkEnable',
+        'bulk_disable'   => 'bulkDisable',
+        'bulk_uninstall' => 'bulkUninstall',
     );
 
     /**
@@ -162,7 +166,7 @@ class CAdminPlugins extends AdminSecBaseModel
         }
         osc_csrf_check();
 
-        if (Plugins::uninstall(Params::getParamString('plugin'))) {
+        if ($this->uninstallOne(Params::getParamString('plugin'))) {
             osc_add_flash_ok_message(_m('Plugin uninstalled'), 'admin');
         } else {
             osc_add_flash_error_message(_m("Plugin couldn't be uninstalled"), 'admin');
@@ -180,12 +184,11 @@ class CAdminPlugins extends AdminSecBaseModel
             return;
         }
         osc_csrf_check();
-        $plugin = Params::getParamString('plugin');
-        if ($this->refuseMissingRequirements($plugin)) {
-            return;
-        }
 
-        if (Plugins::activate($plugin)) {
+        $result = $this->enableOne(Params::getParamString('plugin'));
+        if (is_string($result)) {
+            osc_add_flash_error_message(osc_esc_html($result), 'admin');
+        } elseif ($result) {
             osc_add_flash_ok_message(_m('Plugin enabled'), 'admin');
         } else {
             osc_add_flash_error_message(_m('Plugin is already enabled'), 'admin');
@@ -199,10 +202,7 @@ class CAdminPlugins extends AdminSecBaseModel
      */
     private function refuseMissingRequirements(string $plugin): bool
     {
-        if (Plugins::isEnabled($plugin)) {
-            return false;
-        }
-        $error = PluginDependencies::refuseActivation($plugin);
+        $error = $this->missingRequirements($plugin);
         if ($error === null) {
             return false;
         }
@@ -210,6 +210,147 @@ class CAdminPlugins extends AdminSecBaseModel
         $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
 
         return true;
+    }
+
+    /**
+     * Why a plugin cannot be turned on yet, or null when nothing it requires is missing.
+     */
+    private function missingRequirements(string $plugin): ?string
+    {
+        return Plugins::isEnabled($plugin) ? null : PluginDependencies::refuseActivation($plugin);
+    }
+
+    /**
+     * Turn one installed plugin on: true when it changed, false when there was nothing to
+     * change, or the reason it was refused.
+     */
+    private function enableOne(string $plugin): bool|string
+    {
+        if (!Plugins::isInstalled($plugin)) {
+            return false;
+        }
+
+        return $this->missingRequirements($plugin) ?? Plugins::activate($plugin);
+    }
+
+    /**
+     * Turn one installed plugin off: true when it changed.
+     */
+    private function disableOne(string $plugin): bool
+    {
+        return Plugins::isInstalled($plugin) && Plugins::deactivate($plugin);
+    }
+
+    /**
+     * Uninstall one installed plugin: true when it changed.
+     */
+    private function uninstallOne(string $plugin): bool
+    {
+        return Plugins::isInstalled($plugin) && Plugins::uninstall($plugin);
+    }
+
+    /**
+     * Turn the selected plugins on.
+     */
+    private function bulkEnable(): void
+    {
+        $changed = $this->bulk(
+            fn (string $plugin) => $this->enableOne($plugin),
+            static fn (int $n): string => sprintf(_mn('%d plugin has been enabled', '%d plugins have been enabled', $n), $n)
+        );
+        if ($changed !== null) {
+            osc_run_hook('plugin_bulk_enable', $changed);
+            $this->redirectTo($this->listUrl());
+        }
+    }
+
+    /**
+     * Turn the selected plugins off.
+     */
+    private function bulkDisable(): void
+    {
+        $changed = $this->bulk(
+            fn (string $plugin) => $this->disableOne($plugin),
+            static fn (int $n): string => sprintf(_mn('%d plugin has been disabled', '%d plugins have been disabled', $n), $n)
+        );
+        if ($changed !== null) {
+            osc_run_hook('plugin_bulk_disable', $changed);
+            $this->redirectTo($this->listUrl());
+        }
+    }
+
+    /**
+     * Uninstall the selected plugins.
+     */
+    private function bulkUninstall(): void
+    {
+        $changed = $this->bulk(
+            fn (string $plugin) => $this->uninstallOne($plugin),
+            static fn (int $n): string => sprintf(_mn('%d plugin has been uninstalled', '%d plugins have been uninstalled', $n), $n)
+        );
+        if ($changed !== null) {
+            osc_run_hook('plugin_bulk_uninstall', $changed);
+            $this->redirectTo($this->listUrl());
+        }
+    }
+
+    /**
+     * Run one single-plugin step over the selected plugins and flash how many changed and
+     * which were skipped. Returns the plugins that changed, or null when refused on a demo.
+     *
+     * @param callable(string):(bool|string) $step
+     * @param callable(int):string           $done the message for how many changed
+     *
+     * @return string[]|null
+     */
+    private function bulk(callable $step, callable $done): ?array
+    {
+        if ($this->refuseOnDemo($this->listUrl())) {
+            return null;
+        }
+        osc_csrf_check();
+
+        $changed = array();
+        $skipped = array();
+        $known   = array_flip(Plugins::listAll(false));
+        foreach (array_unique(array_filter(Params::getParamArray('plugin'), 'is_string')) as $plugin) {
+            $result = isset($known[$plugin]) ? $step($plugin) : false;
+            if ($result === true) {
+                $changed[] = $plugin;
+            } elseif (is_string($result)) {
+                osc_add_flash_error_message(osc_esc_html($result), 'admin');
+            } else {
+                $skipped[] = $plugin;
+            }
+        }
+
+        osc_add_flash_ok_message($done(count($changed)), 'admin');
+        if ($skipped !== array()) {
+            osc_add_flash_warning_message(osc_esc_html(sprintf(
+                _m('Skipped, nothing to change: %s'),
+                implode(', ', array_map(static fn (string $p): string => dirname($p) !== '.' ? dirname($p) : $p, $skipped))
+            )), 'admin');
+        }
+
+        return $changed;
+    }
+
+    /**
+     * The plugins list with the status tab and search the bulk form came from.
+     */
+    private function listUrl(): string
+    {
+        $url    = osc_admin_base_url(true) . '?page=plugins';
+        $status = Params::getParamString('status');
+        if (in_array($status, PluginsDataTable::STATUSES, true)) {
+            $url .= '&status=' . $status;
+        }
+        $search = trim(Params::getParamString('sSearch'));
+        if ($search !== '') {
+            $url .= '&sSearch=' . urlencode($search);
+        }
+
+        return $url;
     }
 
     /**
@@ -222,7 +363,7 @@ class CAdminPlugins extends AdminSecBaseModel
         }
         osc_csrf_check();
 
-        if (Plugins::deactivate(Params::getParamString('plugin'))) {
+        if ($this->disableOne(Params::getParamString('plugin'))) {
             osc_add_flash_ok_message(_m('Plugin disabled'), 'admin');
         } else {
             osc_add_flash_error_message(_m('Plugin is already disabled'), 'admin');
@@ -398,190 +539,56 @@ class CAdminPlugins extends AdminSecBaseModel
         if (Params::getParam('checkUpdated') != '') {
             osc_admin_toolbar_update_plugins(true);
         }
+        // An option a plugin added through plugin_bulk_filter: its own handler does the work.
+        $action = Params::getParamString('action');
+        $selected = Params::getParamArray('plugin');
+        if ($action !== '' && $selected !== []) {
+            osc_csrf_check();
+            osc_run_hook('plugin_bulk_action', $action, $selected);
+        }
+
+        require_once osc_lib_path() . 'osclass/classes/datatables/PluginsDataTable.php';
 
         $limit = ListPaging::length(25);
         Params::setParam('iDisplayLength', $limit);
         $this->_exportVariableToView('iDisplayLength', $limit);
+        $page = ListPaging::page();
 
-        $p_iPage        = ListPaging::page();
-        $aPlugin        = Plugins::listAll();
-        $active_plugins = osc_get_plugins();
-
-        // pagination
-        $start = ListPaging::start($p_iPage, $limit);
-        $count = count($aPlugin);
-
-        // --------------------------------------------------------
-
-        $aData = array();
-        $aInfo = array();
-        $max   = ($start + $limit);
-        if ($max > $count) {
-            $max = $count;
+        if (Params::getParamString('sort') === '') {
+            Params::setParam('sort', 'status');
         }
-        $aPluginsToUpdate = osc_update_check_state('plugins')['to_update'];
-        $bPluginsToUpdate = is_array($aPluginsToUpdate) ? true : false;
-        // Catalog-sourced updates (docs/MARKET.md) are keyed by slug and read from the
-        // cached catalog only -- cheap, no network egress on page render. Most catalog
-        // packages carry no `Plugin update URI`, so the legacy in_array() check below
-        // (keyed on that URI) cannot tell them apart once it contains more than one
-        // blank entry; this keys the per-row check on the slug instead.
-        try {
-            $aMarketPendingUpdates = \mindstellar\market\PackageIndex::forPlugins()->pendingUpdates();
-        } catch (\Throwable $e) {
-            $aMarketPendingUpdates = array();
-        }
-        for ($i = $start; $i < $max; $i++) {
-            $plugin = $aPlugin[$i];
-            $row    = array();
-            $pInfo  = osc_plugin_get_info($plugin);
-            $pSlug  = dirname($plugin) !== '.' ? dirname($plugin) : $plugin;
-
-            // prepare row 1
-            $installed = 0;
-            if (osc_plugin_is_installed($plugin)) {
-                $installed = 1;
-            }
-            $enabled = 0;
-            if (osc_plugin_is_enabled($plugin)) {
-                $enabled = 1;
-            }
-            // prepare row 2
-            $sUpdate = '';
-            $pUpdateUri = @$pInfo['plugin_update_uri'];
-            if (isset($aMarketPendingUpdates[$pSlug])
-                || ($bPluginsToUpdate && $pUpdateUri != '' && in_array($pUpdateUri, $aPluginsToUpdate, true))
-            ) {
-                $sUpdate = '<a class="market_update market-popup" href="#'
-                    . \mindstellar\utility\Escape::htmlEntities($pUpdateUri) . '">'
-                    . __("There's a new update available") . '</a>';
-            }
-            // prepare row 4
-            $sConfigure = '';
-            if (isset($active_plugins[$plugin . '_configure'])) {
-                $sConfigure =
-                    '<a href="' . osc_admin_base_url(true) . '?page=plugins&amp;action=admin&amp;plugin='
-                    . $pInfo['filename'] . '&amp;' . osc_csrf_token_url() . '">' . __('Configure') . '</a>';
-            }
-            // prepare row 5
-            $sEnable = '';
-            if ($installed) {
-                if ($enabled) {
-                    $sEnable =
-                        '<a href="' . osc_admin_base_url(true) . '?page=plugins&amp;action=disable&amp;plugin='
-                        . $pInfo['filename'] . '&amp;' . osc_csrf_token_url() . '">' . __('Disable') . '</a>';
-                } else {
-                    $sEnable =
-                        '<a href="' . osc_admin_base_url(true) . '?page=plugins&amp;action=enable&amp;plugin='
-                        . $pInfo['filename'] . '&amp;' . osc_csrf_token_url() . '">' . __('Enable') . '</a>';
-                }
-            }
-            // prepare row 6
-            if ($installed) {
-                $sInstall = '<a onclick="javascript:return uninstall_dialog(\'' . $pInfo['filename'] . '\', \''
-                    . $pInfo['plugin_name'] . '\');" href="' . osc_admin_base_url(true)
-                    . '?page=plugins&amp;action=uninstall&amp;plugin=' . $pInfo['filename'] . '&amp;'
-                    . osc_csrf_token_url() . '">' . __('Uninstall') . '</a>';
-            } else {
-                $sInstall =
-                    '<a href="' . osc_admin_base_url(true) . '?page=plugins&amp;action=install&amp;plugin='
-                    . $pInfo['filename'] . '&amp;' . osc_csrf_token_url() . '">' . __('Install') . '</a>';
-            }
-            $sDelete = '';
-            if (!$installed) {
-                $sDelete =
-                    '<a onclick="delete_plugin(\'' . $pInfo['filename'] . '\');" href="#" >' . __('Delete')
-                    . '</a>';
-            }
-
-            $sHelp = '';
-            if ($pInfo['support_uri'] != '') {
-                $sHelp = '<span class="plugin-support-icon plugin-tooltip" ><a target="_blank" href="'
-                    . osc_sanitize_url($pInfo['support_uri']) . '" ><i class="bi bi-info-circle-fill" title="'
-                    . osc_esc_html(__('Problems with this plugin? Ask for support.')) . '" ></i></a></span>';
-            }
-            $sSiteUrl = '';
-            if ($pInfo['plugin_uri'] != '') {
-                $sSiteUrl =
-                    ' | <a target="_blank" href="' . $pInfo['plugin_uri'] . '">' . __('Plugins Site') . '</a>';
-            }
-            if ($pInfo['author_uri'] != '') {
-                $sAuthor =
-                    __('By') . ' <a target="_blank" href="' . $pInfo['author_uri'] . '">' . $pInfo['author']
-                    . '</a>';
-            } else {
-                $sAuthor = __('By') . ' ' . $pInfo['author'];
-            }
-            // The state travels as a word, rendered in the Status column as a badge;
-            // the class on the <tr> only picks the badge's tint and glyph.
-            $plugin_status = 'uninstalled';
-            $sStatusWord   = __('Not installed');
-            if ($installed) {
-                if ($enabled) {
-                    $plugin_status = 'active';
-                    $sStatusWord   = __('Active');
-                } else {
-                    $plugin_status = 'disabled';
-                    $sStatusWord   = __('Disabled');
-                }
-            }
-            $row['plugin_status'] = $plugin_status;
-            // The list renders from this; the cells below stay for anything still
-            // reading the row as the datatable shape it has always had.
-            $row['pkg'] = array(
-                'slug'        => $pSlug,
-                'file'        => $pInfo['filename'],
-                'name'        => $pInfo['plugin_name'],
-                'version'     => $pInfo['version'],
-                'author'      => $pInfo['author'],
-                'author_uri'  => $pInfo['author_uri'],
-                'plugin_uri'  => $pInfo['plugin_uri'],
-                'support_uri' => $pInfo['support_uri'],
-                'description' => $pInfo['description'],
-                'state'       => $plugin_status,
-                'installed'   => (bool) $installed,
-                'enabled'     => (bool) $enabled,
-                'update'      => $sUpdate !== '',
-                'configurable' => isset($active_plugins[$plugin . '_configure']),
-                'modes'       => (array) ($pInfo['modes'] ?? array()),
-            );
-            $row[]   =
-                '<input type="hidden" name="installed" value="' . $installed . '" enabled="' . $enabled . '" />'
-                . $pInfo['plugin_name'] . $sHelp . '<div>' . $sUpdate . '</div>';
-            // Keyed, not appended: the template gives this one cell the .col-status
-            // class, and it has to be able to tell which cell it is.
-            $row['status'] = '<span class="osc-status">' . osc_esc_html($sStatusWord) . '</span>';
-            $row[]   = $pInfo['description'] . '<br />' . __('Version:') . $pInfo['version'] . ' | ' . $sAuthor
-                . $sSiteUrl;
-            $row[]   = ($sUpdate != '') ? $sUpdate : '';
-            $row[]   = ($sConfigure != '') ? $sConfigure : '';
-            $row[]   = ($sEnable != '') ? $sEnable : '';
-            $row[]   = $sInstall;
-            $row[]   = ($sDelete != '') ? $sDelete : '';
-            $aData[] = $row;
-            if (@$pInfo['plugin_update_uri'] != '') {
-                $aInfo[@$pInfo['plugin_update_uri']] = $pInfo;
-            } else {
-                $aInfo[$i] = $pInfo;
-            }
+        if (Params::getParamString('direction') === '') {
+            Params::setParam('direction', 'asc');
         }
 
-        // Nothing filters this list, so both counts are the number of plugins on disk.
-        // iTotalRecords used to carry a page-arithmetic leftover, which the footer read
-        // as "filtered from 20 total" on an install that has five.
-        $array['iTotalRecords']        = $count;
-        $array['iTotalDisplayRecords'] = $count;
-        $array['iDisplayLength']       = $limit;
-        $array['aaData']               = $aData;
-        $array['aaInfo']               = $aInfo;
+        $table = new PluginsDataTable(PluginsDataTable::packages());
+        $aData = $table->table(array(
+            'status'         => Params::getParamString('status'),
+            'sSearch'        => Params::getParamString('sSearch'),
+            'sort'           => Params::getParamString('sort'),
+            'direction'      => Params::getParamString('direction'),
+            'iPage'          => $page,
+            'iDisplayLength' => $limit,
+        ));
 
-        // --------------------------------------------------------
-        $pastEnd = ListPaging::pastEnd($array, $p_iPage);
+        $pastEnd = ListPaging::pastEnd($aData, $page);
         if ($pastEnd !== null) {
             $this->redirectTo($pastEnd);
         }
 
-        $this->_exportVariableToView('aPlugins', $array);
+        $this->_exportVariableToView('aData', $aData);
+        $this->_exportVariableToView('aRawRows', $table->rawRows());
+        $this->_exportVariableToView('aCounts', $table->counts());
+
+        $bulk_options = BulkAction::options(
+            array(
+                'bulk_enable'    => __('Enable'),
+                'bulk_disable'   => __('Disable'),
+                'bulk_uninstall' => __('Uninstall'),
+            ),
+            __('Are you sure you want to %s the selected plugins?')
+        );
+        $this->_exportVariableToView('bulk_options', osc_apply_filter('plugin_bulk_filter', $bulk_options));
 
         list($aMarketBrowse, $aMarketUpdates, $aMarketMeta) = $this->buildMarketViewData();
         $this->_exportVariableToView('aMarketBrowse', $aMarketBrowse);
@@ -621,6 +628,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 'tags'              => $row['tags'],
                 'updated_at'        => is_string($row['updated_at'] ?? null) ? $row['updated_at'] : '',
                 'downloads'         => is_int($row['downloads'] ?? null) ? $row['downloads'] : 0,
+                'mode_only'         => $row['mode_only'],
                 'compat'            => array(
                     'status'  => $row['compatibility']['status'],
                     'blocked' => $row['compatibility']['blocked'],

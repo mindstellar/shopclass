@@ -1551,7 +1551,7 @@ Core defines 1283 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_customiser_preview_start()` | On a preview request: keep the page out of every cache and out of search results. |
 | `osc_customiser_preview_url(string $location = 'home')` | The preview address of a customisable location, with osc_preview=1, or '' when the theme does not let that location be customised. |
 | `osc_customiser_spec()` | What the active theme lets the owner customise, checked; null when it declares nothing usable. |
-| `osc_menu(string $id)` | A menu as links in the visitor's language: `[['label' => …, 'url' => …, 'children' => […]], …]`. `main` and `footer` list the top categories and the linked pages until the owner builds them in Appearance &gt; Menus. Labels are plain text: escape them when printing. |
+| `osc_menu(string $id)` | A menu as links in the visitor's language: `[['label' => …, 'url' => …, 'children' => […]], …]`. Until the owner builds it in Appearance &gt; Menus, a menu shows the theme's declared default, else `main` lists the top categories and `footer` the linked pages. Labels are plain text: escape them when printing. |
 | `osc_menu_choices()` | The menus a theme or widget can show, id =&gt; name. |
 | `osc_page_block_preview_rows(string $location, array $rows)` | **Deprecated since 7.1.0, removed in 8.0.** Kept for themes built on 7.1.0.beta4; the page's draft blocks now reach the preview on their own. |
 | `osc_register_widget($id, $spec)` | Register a widget type so it can be placed from the admin appearance screen and rendered on the front end. Thin wrapper over WidgetRegistry::register(). |

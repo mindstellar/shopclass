@@ -203,6 +203,7 @@ class FieldGroup extends DAO
             return $deleted;
         } finally {
             $this->cacheChanged();
+            \mindstellar\model\FormSubmission::forgetMenu();
         }
     }
 
@@ -240,6 +241,7 @@ class FieldGroup extends DAO
             }
         } finally {
             $this->cacheChanged();
+            \mindstellar\model\FormSubmission::forgetMenu();
         }
     }
 

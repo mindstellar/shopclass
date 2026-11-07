@@ -99,6 +99,24 @@ msgid_plural "%d new messages"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+msgid "%d plugin has been disabled"
+msgid_plural "%d plugins have been disabled"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+msgid "%d plugin has been enabled"
+msgid_plural "%d plugins have been enabled"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+msgid "%d plugin has been uninstalled"
+msgid_plural "%d plugins have been uninstalled"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "%d star"
 msgid_plural "%d stars"
@@ -3052,6 +3070,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Skip the posting wait"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+msgid "Skipped, nothing to change: %s"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php

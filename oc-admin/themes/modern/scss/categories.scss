@@ -576,8 +576,13 @@
   }
 }
 
-.chip-ghost {
+.chip-ghost,
+.is-drag-ghost {
   opacity: .4;
+}
+
+.is-drag-ghost {
+  outline: 1px dashed var(--osc-bronze);
 }
 
 // A button, so a field can be reordered from the keyboard as well as dragged.

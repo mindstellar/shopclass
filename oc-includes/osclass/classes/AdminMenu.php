@@ -197,13 +197,17 @@ class AdminMenu
             'items_cfields',
             'administrator'
         );
-        $this->add_submenu(
-            'forms',
-            __('Submissions'),
-            osc_admin_base_url(true) . '?page=cfields&action=submissions',
-            'items_form_submissions',
-            'administrator'
-        );
+        // Hidden until a form is a Page builder block or a submission exists; the page
+        // itself stays reachable by its URL.
+        if (\mindstellar\model\FormSubmission::menuVisible()) {
+            $this->add_submenu(
+                'forms',
+                __('Submissions'),
+                osc_admin_base_url(true) . '?page=cfields&action=submissions',
+                'items_form_submissions',
+                'administrator'
+            );
+        }
 
         // Billing appears only once an admin has switched it on. Most sites never sell
         // anything, and a permanent menu entry for a feature they will not use is the

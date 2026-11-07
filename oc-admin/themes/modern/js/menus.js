@@ -8,9 +8,11 @@
  */
 
 /*
- * Appearance > Menus. The menu is held as a flat list with a depth per item; saving nests it
- * and posts it as JSON. An item moves with the items nested under it.
+ * Appearance > Menus. The menu is held as a flat list with a depth per item and drawn as nested
+ * lists, one sortable per level. Saving nests it and posts it as JSON. An item moves with the
+ * items nested under it.
  */
+/* global osc */
 (function () {
     'use strict';
 
@@ -34,14 +36,18 @@
     var placeWarn = document.getElementById('menu-place-warn');
     var announce = document.getElementById('menu-announce');
 
-    var names = { category: {}, page: {} };
+    var names = { category: {}, page: {}, builtin: {} };
+    var builtinOn = {};
     state.categories.forEach(function (c) { names.category[c.id] = c.name; });
     state.pages.forEach(function (p) { names.page[p.id] = p.name; });
+    state.builtins.forEach(function (b) {
+        names.builtin[b.id] = b.name;
+        builtinOn[b.id] = b.on;
+    });
 
     var items = [];
     var open = null;
     var dirty = false;
-    var dragFrom = -1;
 
     function fmt(text, value) {
         return String(text).replace('%s', value).replace('%d', value);
@@ -62,6 +68,9 @@
     function problem(item) {
         if (item.type === 'link') {
             return goodUrl(item.url) && hasLabel(item) ? '' : t.badLink;
+        }
+        if (item.type === 'builtin' && names.builtin[item.ref] && !builtinOn[item.ref]) {
+            return t.builtinOff;
         }
         return names[item.type][item.ref] ? '' : t.missing;
     }
@@ -297,10 +306,11 @@
         showPlaceWarning();
         list.textContent = '';
         empty.hidden = items.length > 0;
+        var levels = [list];
         items.forEach(function (item, i) {
             var li = rowTemplate.content.firstElementChild.cloneNode(true);
             var name = labelOf(item);
-            li.style.setProperty('--menu-depth', String(item.depth));
+            li._item = item;
             li.dataset.index = String(i);
             li.querySelector('.chip-name').textContent = name !== '' ? name : '#' + item.ref;
             markRow(li, item);
@@ -320,14 +330,20 @@
                 li.querySelector('[data-act="edit"]').setAttribute('aria-expanded', 'true');
                 editor(item, box);
             }
-            list.appendChild(li);
+            var children = document.createElement('ul');
+            children.className = 'menu-children';
+            li.appendChild(children);
+            levels[item.depth].appendChild(li);
+            levels[item.depth + 1] = children;
         });
-        if (typeof focusIndex === 'number' && list.children[focusIndex]) {
-            var target = list.children[focusIndex].querySelector(focusAct ? '[data-act="' + focusAct + '"]' : '.chip-grip');
+        bindSortables();
+        var row = typeof focusIndex === 'number' ? list.querySelector('.menu-item[data-index="' + focusIndex + '"]') : null;
+        if (row) {
+            var target = row.querySelector(focusAct ? '[data-act="' + focusAct + '"]' : '.chip-grip');
             if (target && !target.disabled) {
                 target.focus();
             } else {
-                list.children[focusIndex].querySelector('.chip-grip').focus();
+                row.querySelector('.chip-grip').focus();
             }
         }
     }
@@ -387,64 +403,66 @@
         }
     });
 
-    list.addEventListener('dragstart', function (e) {
-        if (!e.target.classList || !e.target.classList.contains('chip-grip')) {
-            return;
-        }
-        dragFrom = indexOf(e.target);
-        var li = e.target.closest('.menu-item');
-        li.classList.add('chip-ghost');
-        e.dataTransfer.effectAllowed = 'move';
-        e.dataTransfer.setData('text/plain', String(dragFrom));
-        if (e.dataTransfer.setDragImage) {
-            e.dataTransfer.setDragImage(li, 16, 16);
-        }
-    });
-
-    list.addEventListener('dragover', function (e) {
-        if (dragFrom < 0) {
-            return;
-        }
-        var li = e.target.closest('.menu-item');
-        if (!li) {
-            return;
-        }
-        e.preventDefault();
-        list.querySelectorAll('.is-drop-before, .is-drop-after').forEach(function (el) {
-            el.classList.remove('is-drop-before', 'is-drop-after');
+    // Rebuild items from the lists after a drop: order and depth come from where each row now sits.
+    function readLists(ul, depth, out) {
+        Array.prototype.forEach.call(ul.children, function (li) {
+            if (!li._item) {
+                return;
+            }
+            li._item.depth = depth;
+            out.push(li._item);
+            readLists(li.querySelector(':scope > .menu-children'), depth + 1, out);
         });
-        var box = li.getBoundingClientRect();
-        li.classList.add(e.clientY < box.top + box.height / 2 ? 'is-drop-before' : 'is-drop-after');
-    });
+        return out;
+    }
 
-    list.addEventListener('drop', function (e) {
-        var li = e.target.closest('.menu-item');
-        if (dragFrom < 0 || !li) {
-            return;
-        }
-        e.preventDefault();
-        var target = Number(li.dataset.index);
-        var after = li.classList.contains('is-drop-after');
-        var end = blockEnd(dragFrom);
-        if (target >= dragFrom && target < end) {
-            dragFrom = -1;
-            render();
-            return;
-        }
-        var depth = items[target].depth;
-        var to = after ? blockEnd(target) : target;
-        var at = moveBlock(dragFrom, to);
-        shift(at, depth - items[at].depth);
-        dragFrom = -1;
-        changed(at);
-    });
-
-    list.addEventListener('dragend', function () {
-        dragFrom = -1;
-        list.querySelectorAll('.chip-ghost, .is-drop-before, .is-drop-after').forEach(function (el) {
-            el.classList.remove('chip-ghost', 'is-drop-before', 'is-drop-after');
+    function dropped(evt) {
+        var before = items.map(function (item) { return item.depth; });
+        var order = items.slice();
+        var next = readLists(list, 0, []);
+        var same = next.length === order.length && next.every(function (item, i) {
+            return item === order[i] && item.depth === before[i];
         });
-    });
+        if (same) {
+            return;
+        }
+        items = next;
+        changed(items.indexOf(evt.item._item));
+    }
+
+    // A drop may not push the dragged row and what is under it deeper than the screen allows.
+    function allowed(evt) {
+        var depth = 0;
+        for (var el = evt.to.closest('.menu-item'); el; el = el.parentNode.closest('.menu-item')) {
+            depth++;
+        }
+        var height = 0;
+        evt.dragged.querySelectorAll('.menu-item').forEach(function (inner) {
+            var h = 0;
+            for (var up = inner; up && up !== evt.dragged; up = up.parentNode.closest('.menu-item')) {
+                h++;
+            }
+            height = Math.max(height, h);
+        });
+        return depth + height <= maxDepth;
+    }
+
+    function bindSortables() {
+        [list].concat(Array.prototype.slice.call(list.querySelectorAll('.menu-children'))).forEach(function (ul) {
+            osc.sortable(ul, {
+                nested: true,
+                group: 'menu-items',
+                draggable: '.menu-item',
+                filter: 'input, select, textarea, a, button:not(.chip-grip), .field-chip-editor',
+                ghostClass: 'chip-ghost',
+                onMove: allowed,
+                onEnd: dropped
+            });
+        });
+    }
+
+    // sortablejs is enqueued into the footer, so it may not exist yet while this script is parsed.
+    document.addEventListener('DOMContentLoaded', bindSortables);
 
     root.querySelectorAll('[data-menu-add]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -475,9 +493,10 @@
                 label.value = '';
                 url.value = '';
             } else {
-                item.ref = Number(document.getElementById('menu-add-' + type).value);
+                var picked = document.getElementById('menu-add-' + type).value;
+                item.ref = type === 'builtin' ? picked : Number(picked);
                 var already = items.some(function (other) {
-                    return other.type === type && Number(other.ref) === item.ref;
+                    return other.type === type && String(other.ref) === String(item.ref);
                 });
                 if (already) {
                     addError.textContent = fmt(t.already, names[type][item.ref] || '#' + item.ref);

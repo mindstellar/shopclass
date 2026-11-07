@@ -49,10 +49,14 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
                             )); ?>
                             <p class="help-inline"><?php _e('Only alphanumeric characters are allowed [a-z0-9_-]'); ?></p>
                     <?php osc_admin_form_row_close(); ?>
-                    <?php osc_admin_form_row_open(''); ?>
-                            <label><input type="checkbox" name="group_placeable" value="1"<?php echo $isPlaceable ? ' checked' : ''; ?> />
-                                <span><?php _e('Available as a block (place this form on pages and layouts)'); ?></span></label>
-                    <?php osc_admin_form_row_close(); ?>
+                    <?php osc_admin_checkbox(array(
+                        'name'    => 'group_placeable',
+                        'id'      => 'group_placeable',
+                        'value'   => '1',
+                        'checked' => $isPlaceable,
+                        'label'   => __('Available as a block'),
+                        'help'    => __('Place this form on pages and layouts.'),
+                    )); ?>
                     <?php osc_admin_tree_picker(array(
                         'id'         => 'group_cat_tree',
                         'intro'      => __('Select the categories where you want to apply this group:'),

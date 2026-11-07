@@ -48533,7 +48533,7 @@
         "/menus": {
             "get": {
                 "operationId": "getMenus",
-                "summary": "The site's menus: main and footer (the top categories and linked pages until the owner builds them), menus the owner made, and any a plugin adds",
+                "summary": "The site's menus: main and footer (the theme's default, else the top categories and linked pages, until the owner builds them), menus the owner made, and any a plugin adds",
                 "tags": [
                     "Pages"
                 ],

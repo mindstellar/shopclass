@@ -224,7 +224,7 @@ Every name core fires, with where it is fired and what it passes.
 
 <!-- generated:hooks -->
 
-Core fires 647 names. Generated from the source; do not edit by hand.
+Core fires 652 names. Generated from the source; do not edit by hand.
 
 ### Admin (81)
 
@@ -746,7 +746,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `login_admin_form` | action | none | `oc-admin/gui/login.php` |
 | `login_admin_image` | filter | `admin_base_url` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `login_admin_title` | filter | `text` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
-| `login_admin_url` | filter | `text` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
+| `login_admin_url` | filter | `value` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `logout` | action | none | `oc-includes/osclass/classes/controller/CWebMain.php` |
 | `logout_admin` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminMain.php` |
 | `logs_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/LogsDataTable.php` |
@@ -827,7 +827,7 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `watermark_text_value` | filter | `$text` | `oc-includes/classes/media/image/WatermarkText.php` |
 | `widget_locations` | filter | `$locations` | `oc-includes/osclass/helpers/hWidgets.php` |
 
-### Plugin (12)
+### Plugin (17)
 
 | Name | Kind | Arguments | Fired at |
 |---|---|---|---|
@@ -841,6 +841,11 @@ Core fires 647 names. Generated from the source; do not edit by hand.
 | `before_plugin_uninstall` | action | none | `oc-includes/osclass/classes/Plugins.php` |
 | `custom_plugin_title` | filter | `__` | `oc-admin/themes/modern/plugins/configuration.php` |
 | `mo_plugin_path` | filter | `plugins_path, $locale, $domain` | `oc-includes/osclass/classes/Translation.php` |
+| `plugin_bulk_action` | action | `$action, $selected` | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
+| `plugin_bulk_disable` | action | `$changed` | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
+| `plugin_bulk_enable` | action | `$changed` | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
+| `plugin_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
+| `plugin_bulk_uninstall` | action | `$changed` | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 | `plugin_icon_url` | filter | `$url, $plugin` | `oc-includes/osclass/helpers/hPlugins.php` |
 | `renderplugin_controller` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 

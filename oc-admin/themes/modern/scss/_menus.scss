@@ -11,7 +11,8 @@
   }
 }
 
-.menu-items {
+.menu-items,
+.menu-children {
   display: flex;
   flex-direction: column;
   gap: .4rem;
@@ -20,9 +21,60 @@
   padding: 0;
 }
 
-// Each level of nesting steps the row in.
+// Each level of nesting steps in. An empty list stays a drop target so a row can be nested into it.
+.menu-children {
+  margin-inline-start: 1.75rem;
+  margin-top: .4rem;
+  min-height: .5rem;
+}
+
+// The row's own box is its summary line; its child list sits below, outside that box.
+.menu-items .menu-item.field-chip {
+  background: none;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+
+  > .field-chip-row {
+    background-color: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: var(--bs-border-radius);
+
+    &:hover {
+      border-color: var(--osc-rule-strong);
+    }
+  }
+
+  > .field-chip-editor {
+    border: 1px solid var(--osc-bronze);
+    border-radius: 0 0 var(--bs-border-radius) var(--bs-border-radius);
+    border-top-color: var(--osc-rule);
+  }
+
+  &.is-editing > .field-chip-row {
+    background-color: var(--osc-bronze-tint);
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-color: var(--osc-bronze);
+  }
+}
+
 .menu-item {
-  margin-inline-start: calc(var(--menu-depth, 0) * 1.75rem);
+  cursor: grab;
+
+  input,
+  select,
+  textarea {
+    cursor: text;
+  }
+
+  &.chip-ghost {
+    opacity: .6;
+  }
+
+  &.sortable-chosen {
+    cursor: grabbing;
+  }
 
   &.is-drop-before {
     box-shadow: 0 -2px 0 var(--osc-bronze);

@@ -95,7 +95,7 @@ osc_current_admin_theme_path('parts/header.php');
                     <?php foreach ($forms as $f) {
                         $fid = (int)$f['pk_i_id']; ?>
                         <option value="<?php echo $fid; ?>"<?php echo $fid === $currentFormId ? ' selected' : ''; ?>><?php
-                            echo osc_esc_html($f['s_name'] . ' (' . (int)$f['submission_count'] . ')'); ?></option>
+                            echo osc_esc_html(((isset($f['not_block']) ? sprintf(__('%s (not used as a block)'), $f['s_name']) : $f['s_name'])) . ' (' . (int)$f['submission_count'] . ')'); ?></option>
                     <?php } ?>
                 </select>
                 <?php if ($currentFormId > 0) { ?>

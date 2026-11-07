@@ -69,22 +69,11 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
     if (isset($sections[$stored])) {
         continue;
     }
-    // "page.<id>" is the page builder's own canvas, not a theme section, so it is only
-    // orphaned once the page itself is gone. Its widgets are edited on that page.
+    // "page.<id>" holds a page builder page's blocks: they are edited on that page, so they are not
+    // a section here. Only blocks of a page that is gone are listed, so they can be removed.
     if (strpos($stored, 'page.') === 0) {
         $pageId = (int)substr($stored, 5);
-        $page   = $pageId > 0 ? Page::getInstance()->findByPrimaryKey($pageId) : array();
-        if (!empty($page)) {
-            $locales = isset($page['locale']) && is_array($page['locale']) ? $page['locale'] : array();
-            $current = $locales[osc_current_admin_locale()] ?? reset($locales);
-            $title   = is_array($current) && isset($current['s_title']) && $current['s_title'] !== ''
-                ? $current['s_title']
-                : ($page['s_internal_name'] ?? ('#' . $pageId));
-            $sections[$stored] = array(
-                'label'       => sprintf(__('Page: %s'), $title),
-                'description' => __('Placed on this page in the page builder. Edit it there.'),
-                'orphan'      => false,
-            );
+        if ($pageId > 0 && !empty(Page::getInstance()->findByPrimaryKey($pageId))) {
             continue;
         }
     }
@@ -458,12 +447,12 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
     }
 
     ready(function initDragAndDrop() {
-    if (typeof Sortable !== 'undefined') {
+    {
         // The palette is a clone source of TYPES; dropping one creates a widget.
         document.querySelectorAll('.js-widget-palette').forEach(function (pal) {
-            new Sortable(pal, {
+            osc.sortable(pal, {
                 group: { name: 'widgets', pull: 'clone', put: false },
-                sort: false, handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost'
+                sort: false, handle: '.chip-grip', ghostClass: 'chip-ghost'
             });
         });
 
@@ -472,15 +461,15 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
             if (section.hasAttribute('data-unavailable')) {
                 // A section the theme no longer has: you may drag widgets OUT of it,
                 // but putting more in would be adding to something invisible.
-                new Sortable(list, {
+                osc.sortable(list, {
                     group: { name: 'widgets', pull: true, put: false },
-                    handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost',
+                    handle: '.chip-grip', ghostClass: 'chip-ghost',
                     onStart: closeEditors,
                     onRemove: function (evt) { refreshSection(section); persist(section); }
                 });
                 return;
             }
-            new Sortable(list, {
+            osc.sortable(list, {
                 group: {
                     name: 'widgets',
                     put: function (to, from, dragEl) {
@@ -489,7 +478,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                         return ok;
                     }
                 },
-                handle: '.chip-grip', animation: 150, ghostClass: 'chip-ghost',
+                handle: '.chip-grip', ghostClass: 'chip-ghost',
                 onStart: closeEditors,
                 onAdd: function (evt) {
                     var el = evt.item;

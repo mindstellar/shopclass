@@ -141,10 +141,10 @@ if ($data['release'] !== '') {
                 <table class="table loc-catalog-table">
                     <thead>
                     <tr>
+                        <th scope="col"><?php _e('Status'); ?></th>
                         <th scope="col" class="loc-col-code"><?php _e('Code'); ?></th>
                         <th scope="col"><?php _e('Country'); ?></th>
                         <th scope="col" class="col-numeric loc-col-cities"><?php _e('Cities'); ?></th>
-                        <th scope="col"><?php _e('Status'); ?></th>
                         <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
                     </tr>
                     </thead>
@@ -155,10 +155,10 @@ if ($data['release'] !== '') {
                         <tr data-code="<?php echo osc_esc_html($row['code']); ?>"
                             data-name="<?php echo osc_esc_html(mb_strtolower($row['name'])); ?>"
                             data-state="<?php echo $row['state']; ?>"<?php echo $shown ? '' : ' hidden'; ?>>
+                            <td class="loc-col-status"><?php osc_admin_status($badge, $word); ?></td>
                             <td class="loc-col-code osc-mono"><?php echo osc_esc_html($row['code']); ?></td>
                             <td class="loc-col-country"><?php echo osc_esc_html($row['name']); ?></td>
                             <td class="col-numeric loc-col-cities"><?php echo number_format($row['cities']); ?></td>
-                            <td class="loc-col-status"><?php osc_admin_status($badge, $word); ?></td>
                             <td class="loc-col-actions">
                                 <?php if ($row['state'] === 'update') { ?>
                                     <button type="submit" class="loc-row-action" form="loc-preview-form" name="location"
