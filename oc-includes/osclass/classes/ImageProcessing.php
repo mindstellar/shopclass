@@ -502,7 +502,12 @@ class ImageProcessing
                     if (($this->ext !== 'jpeg' && $this->ext !== 'jpg') || $this->watermarked) {
                         $this->ext = 'jpeg';
                     }
-                    imagejpeg($this->im, $imagePath, $jpeg_quality);
+                    // JPEG has no see-through pixels, and GD scaling turns see-through white into black: lay the image on white.
+                    $flat = imagecreatetruecolor($this->width, $this->height);
+                    imagefilledrectangle($flat, 0, 0, $this->width - 1, $this->height - 1, imagecolorallocate($flat, 255, 255, 255));
+                    imagealphablending($flat, true);
+                    imagecopy($flat, $this->im, 0, 0, 0, 0, $this->width, $this->height);
+                    imagejpeg($flat, $imagePath, $jpeg_quality);
                     break;
             }
         }
