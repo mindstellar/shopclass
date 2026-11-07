@@ -14,6 +14,8 @@ if (!defined('ABS_PATH')) {
 
 use mindstellar\install\ShopSetup;
 
+require_once __DIR__ . '/fields.php';
+
 global $install_nonce;
 
 /**
@@ -45,21 +47,24 @@ foreach ($offer['plugins'] as $ins_plugin) {
     }
 }
 
-$ins_addon_box = static function (array $plugin) use ($chosen, $ins_texts): void {
+$ins_is_checked = static fn (array $plugin): bool => $chosen['plugins'] === null ? (bool) $plugin['checked'] : in_array($plugin['slug'], $chosen['plugins'], true);
+$ins_total      = count($offer['plugins']);
+$ins_picked     = count(array_filter($offer['plugins'], $ins_is_checked));
+/* translators: 1: add-ons selected, 2: all add-ons on offer */
+$ins_count_tpl = _n('%1$s of %2$s add-on selected', '%1$s of %2$s add-ons selected', $ins_total);
+
+$ins_addon_box = static function (array $plugin) use ($ins_is_checked, $ins_texts): void {
     $id      = 'ins-plugin-' . $plugin['slug'];
-    $checked = $chosen['plugins'] === null ? $plugin['checked'] : in_array($plugin['slug'], $chosen['plugins'], true);
+    $checked = $ins_is_checked($plugin);
     $text    = $ins_texts[$plugin['slug']] ?? $plugin['description'];
-    ?>
-    <label class="ins-check" for="<?php echo osc_esc_html($id); ?>">
-        <input type="checkbox" id="<?php echo osc_esc_html($id); ?>" name="shop_plugins[]" value="<?php echo osc_esc_html($plugin['slug']); ?>" <?php echo $checked ? 'checked' : ''; ?> />
-        <span>
-            <span class="ins-check-title"><?php echo osc_esc_html($plugin['name']); ?></span>
-            <?php if ($text !== '') { ?>
-                <span class="ins-help"><?php echo osc_esc_html($text); ?></span>
-            <?php } ?>
-        </span>
-    </label>
-    <?php
+    install_check(array(
+        'id'      => $id,
+        'name'    => 'shop_plugins[]',
+        'value'   => (string) $plugin['slug'],
+        'title'   => (string) $plugin['name'],
+        'help'    => (string) $text,
+        'checked' => $checked,
+    ));
 };
 ?>
 <form action="install.php" method="post" id="ins-site-type-form" class="ins-stage">
@@ -85,7 +90,7 @@ $ins_addon_box = static function (array $plugin) use ($chosen, $ins_texts): void
                 <input type="radio" name="site_type" value="shop" <?php echo $ins_shop ? 'checked' : ''; ?> <?php echo $ins_shop_off ? 'disabled aria-describedby="ins-shop-note"' : ''; ?> />
                 <span class="ins-choice-glyph" aria-hidden="true"><svg viewBox="0 0 24 24" width="22" height="22" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6z" /><path d="M9 8V6.5a3 3 0 016 0V8" /></svg></span>
                 <span class="ins-choice-body">
-                    <span class="ins-choice-title"><?php _e('Shop'); ?> <span class="ins-badge"><?php _e('New'); ?></span></span>
+                    <span class="ins-choice-title"><?php _e('Shop'); ?></span>
                     <span class="ins-choice-text"><?php _e('You sell your own products, with a cart and checkout.'); ?></span>
                 </span>
                 <span class="ins-choice-tick" aria-hidden="true"><svg viewBox="0 0 16 16" width="12" height="12" focusable="false" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-6.5" /></svg></span>
@@ -102,23 +107,29 @@ $ins_addon_box = static function (array $plugin) use ($chosen, $ins_texts): void
             <fieldset class="ins-plugin-list ins-addons" id="ins-shop-plugins" <?php echo $ins_shop ? '' : 'hidden'; ?>>
                 <legend class="ins-group"><?php _e('Add to your shop'); ?></legend>
                 <p class="ins-help"><?php _e('Downloaded with the Aisle shop theme. Change them later under Plugins.'); ?></p>
-                <?php if ($ins_addons !== array()) { ?>
-                    <div class="ins-addons-grid">
-                        <?php foreach ($ins_addons as $ins_plugin) {
-                            $ins_addon_box($ins_plugin);
-                        } ?>
-                    </div>
-                <?php } ?>
-                <?php if ($ins_pay !== array()) { ?>
-                    <div class="ins-addons-pay" role="group" aria-labelledby="ins-pay-label">
-                        <p class="ins-addons-sub" id="ins-pay-label"><?php _e('Take payments'); ?></p>
+                <details class="ins-addons-pick">
+                    <summary>
+                        <span id="ins-addons-count" data-template="<?php echo osc_esc_html($ins_count_tpl); ?>" data-total="<?php echo (int) $ins_total; ?>"><?php echo osc_esc_html(sprintf($ins_count_tpl, $ins_picked, $ins_total)); ?></span>
+                        <span class="ins-addons-change" aria-hidden="true"><?php _e('Change'); ?></span>
+                    </summary>
+                    <?php if ($ins_addons !== array()) { ?>
                         <div class="ins-addons-grid">
-                            <?php foreach ($ins_pay as $ins_plugin) {
+                            <?php foreach ($ins_addons as $ins_plugin) {
                                 $ins_addon_box($ins_plugin);
                             } ?>
                         </div>
-                    </div>
-                <?php } ?>
+                    <?php } ?>
+                    <?php if ($ins_pay !== array()) { ?>
+                        <div class="ins-addons-pay" role="group" aria-labelledby="ins-pay-label">
+                            <p class="ins-addons-sub" id="ins-pay-label"><?php _e('Take payments'); ?></p>
+                            <div class="ins-addons-grid">
+                                <?php foreach ($ins_pay as $ins_plugin) {
+                                    $ins_addon_box($ins_plugin);
+                                } ?>
+                            </div>
+                        </div>
+                    <?php } ?>
+                </details>
             </fieldset>
         <?php } ?>
 
@@ -138,6 +149,6 @@ $ins_addon_box = static function (array $plugin) use ($chosen, $ins_texts): void
             <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 8.5l3 3 6-6.5" /></svg>
             <?php _e('Database connected'); ?>
         </span>
-        <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Continue'); ?></button>
+        <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Continue'); ?><?php install_btn_icon('next'); ?></button>
     </div>
 </form>

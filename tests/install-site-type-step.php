@@ -37,6 +37,11 @@ function _e($text)
     echo $text;
 }
 
+function _n($single, $plural, $count)
+{
+    return (int) $count === 1 ? $single : $plural;
+}
+
 require_once LIB_PATH . 'vendor/autoload.php';
 require_once LIB_PATH . 'osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/harness.php';
@@ -125,6 +130,10 @@ check('payments are unticked by default', !str_contains($box($html, 'stripe'), '
 check('our text replaces the catalogue text', str_contains($html, 'Rates by zone and weight') && !str_contains($html, 'Delivery zones') && str_contains($html, 'Sales tax and VAT rules') && str_contains($html, 'Cards, Apple Pay, Google Pay') && str_contains($html, 'PayPal and cards') && str_contains($html, 'UPI and cards, India'));
 check('the sample data switch has role=switch', str_contains($sample($html), 'role="switch"'));
 check('the section is called Add to your shop', str_contains($html, 'Add to your shop'));
+check('the boxes fold into one closed summary line that counts the ticked ones', (bool) preg_match('/<details class="ins-addons-pick">\s*<summary>\s*<span id="ins-addons-count"[^>]*>2 of 5 add-ons selected<\/span>\s*<span class="ins-addons-change" aria-hidden="true">Change<\/span>/', $html));
+check('every box sits inside the summary, so all of them are still posted', preg_match('/<details class="ins-addons-pick">.*<\/details>/s', $html, $m) === 1 && substr_count($m[0], 'name="shop_plugins[]"') === 5);
+check('the count follows a saved choice', str_contains($render($online, array('type' => 'shop', 'plugins' => array('stripe'))), '1 of 5 add-ons selected'));
+check('the Shop card has no New badge', !str_contains($html, 'ins-badge'));
 check('ShopSetup::PAYMENTS lists the three gateways', ShopSetup::PAYMENTS === array('stripe', 'paypal', 'razorpay'));
 check('catalogue names are escaped', str_contains($html, 'Shipping &lt;b&gt;') && !str_contains($html, 'Shipping <b>'));
 
@@ -190,5 +199,13 @@ $pot = (string) file_get_contents(ABS_PATH . 'oc-content/languages/core.pot');
 foreach (array('Needs internet. You can switch to shop mode later in the admin.') as $msg) {
     check('core.pot has "' . $msg . '"', str_contains($pot, 'msgid "' . $msg . '"'));
 }
+
+harness_section('shared check row');
+$stSrc = (string) file_get_contents(LIB_PATH . 'osclass/installer/gui/install-site-type.php');
+check('the addon box uses the helper', !str_contains($stSrc, '<label class="ins-check"') && str_contains($stSrc, 'install_check('));
+check('the addon box keeps its name and value', str_contains($box($render($online, array('plugins' => array('shipping'))), 'shipping'), 'name="shop_plugins[]" value="shipping" checked="checked"'));
+$guiFiles = glob(LIB_PATH . 'osclass/installer/gui/*.php') ?: array();
+$byHand   = array_filter($guiFiles, static fn (string $f): bool => basename($f) !== 'fields.php' && str_contains((string) file_get_contents($f), 'label class="ins-check"'));
+check('no gui file writes label class="ins-check" by hand', $byHand === array());
 
 exit(harness_result());

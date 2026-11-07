@@ -15,6 +15,7 @@ use mindstellar\backup\BackupStore;
 use mindstellar\database\StrictModeReadiness;
 use mindstellar\routing\ServerRules;
 use mindstellar\utility\Formatting;
+use mindstellar\utility\ProjectLinks;
 
 /**
  * The checks behind Tools > System info. Each tab gets the issues to act on and the
@@ -40,15 +41,15 @@ final class SystemChecks
 
     public const EXTENSIONS = array('mysqli', 'curl', 'mbstring', 'fileinfo', 'zip', 'json', 'openssl', 'ctype');
 
-    public const DOCS_CRON = 'https://mindstellar.com/docs/configure/cron/';
+    public const DOCS_CRON = ProjectLinks::CRON;
 
-    public const DOCS_PROXY = 'https://mindstellar.com/docs/deploy/security/#login-throttling-and-the-real-client-ip';
+    public const DOCS_PROXY = ProjectLinks::SECURITY_PROXY;
 
-    public const DOCS_LIVE = 'https://mindstellar.com/docs/deploy/docker/#live-messages';
-    public const DOCS_PUSH = 'https://mindstellar.com/docs/deploy/docker/#web-push';
-    public const DOCS_ADDRESS = 'https://mindstellar.com/docs/deploy/docker/#configuration';
+    public const DOCS_LIVE = ProjectLinks::DOCKER_LIVE;
+    public const DOCS_PUSH = ProjectLinks::DOCKER_PUSH;
+    public const DOCS_ADDRESS = ProjectLinks::DOCKER_CONFIG;
 
-    public const DOCS_BACKUPS = 'https://mindstellar.com/docs/deploy/security/#the-backups-folder';
+    public const DOCS_BACKUPS = ProjectLinks::SECURITY_BACKUPS;
 
     /** How long a due job may wait while cron runs before the queue counts as stuck. */
     public const JOBS_OVERDUE = 3600;

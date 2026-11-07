@@ -221,33 +221,47 @@ echo "==> creating the admin account"
 NONCE="$(nonce_from "$WORK/step4.html")"
 [ -n "$NONCE" ] || fail "no installer nonce on the site-details form"
 
-# A location that cannot be imported must still let the install finish.
-curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install-location.php" \
-  -d "install_nonce=${NONCE}" \
+# Each unit of the install is its own request. The account call only creates the admin;
+# a country that cannot be imported fails its own unit and the install goes on.
+unit() {
+  local out="$1"
+  shift
+  curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install-location.php" \
+    -d "install_nonce=${NONCE}" "$@" -o "$WORK/$out" || fail "the install endpoint did not respond ($out)"
+}
+
+unit account-1.json \
   -d "s_name=${ADMIN_USER}" -d "s_passwd=first-try-pass" \
   -d "webtitle=Install Smoke Test" -d "email=${ADMIN_MAIL}" \
-  -d "location-json=XX-No-Such-Country.json" \
-  -o "$WORK/finish-1.json" || fail "the finish endpoint did not respond"
-grep -q '"status":true' "$WORK/finish-1.json" && grep -q '"location_error":true' "$WORK/finish-1.json" \
-  || { cat "$WORK/finish-1.json" >&2; fail "a failed location import stopped the install"; }
-ok "a failed location import does not stop the install"
+  -d "location-json=XX-No-Such-Country.json"
+grep -q '"status":true' "$WORK/account-1.json" && ! grep -q '"location_error"' "$WORK/account-1.json" \
+  || { cat "$WORK/account-1.json" >&2; fail "the account call did more than create the admin"; }
+ok "the account call only creates the admin"
+
+unit starter.json -d "action=starter"
+grep -q '"status":true' "$WORK/starter.json" \
+  || { cat "$WORK/starter.json" >&2; fail "the starter categories were not added"; }
+ok "starter categories added"
+
+unit locations-1.json -d "action=locations" -d "location-json=XX-No-Such-Country.json"
+grep -q '"status":false' "$WORK/locations-1.json" \
+  || { cat "$WORK/locations-1.json" >&2; fail "a country that cannot be imported was reported as added"; }
+ok "a failed location import fails only its own unit"
 
 # A second click finds the admin account the first one made. Sign-in below uses the
 # second password, so it also proves the account was updated. It sends what the form
 # sends: a small country when the catalog is reachable, else "Skip for now".
 if [ -n "${CATALOG_OK:-}" ]; then LOCATION_ARGS=(-d "skip-location-input=0" -d "location-json=MT"); \
 else LOCATION_ARGS=(-d "skip-location-input=1" -d "location-json=skip"); fi
-curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install-location.php" \
-  -d "install_nonce=${NONCE}" \
+unit account.json \
   -d "s_name=${ADMIN_USER}" -d "s_passwd=${ADMIN_PASS}" \
-  -d "webtitle=Install Smoke Test" -d "email=${ADMIN_MAIL}" \
-  "${LOCATION_ARGS[@]}" \
-  -o "$WORK/finish.json" || fail "the finish endpoint did not respond"
+  -d "webtitle=Install Smoke Test" -d "email=${ADMIN_MAIL}"
+grep -q '"status":true' "$WORK/account.json" \
+  || { cat "$WORK/account.json" >&2; fail "the account call did not report success"; }
 
-grep -q '"status":true' "$WORK/finish.json" \
-  || { cat "$WORK/finish.json" >&2; fail "the finish endpoint did not report success"; }
-grep -q '"location_error"' "$WORK/finish.json" \
-  && { cat "$WORK/finish.json" >&2; fail "the location step failed (${LOCATION_ARGS[*]})"; }
+unit locations.json -d "action=locations" "${LOCATION_ARGS[@]}"
+grep -q '"status":true' "$WORK/locations.json" \
+  || { cat "$WORK/locations.json" >&2; fail "the location step failed (${LOCATION_ARGS[*]})"; }
 ok "admin account created"
 
 # ---------------------------------------------------------------------------

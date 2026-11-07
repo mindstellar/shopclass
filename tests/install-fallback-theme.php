@@ -60,7 +60,7 @@ check('nothing is fetched', install_fallback_theme(array($release('2.2.0')), $ok
 harness_section('the pinned download is gone');
 $gui = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/installer/gui/install.php');
 check('the 1.2.0 URL is gone', !str_contains($gui, '1.2.0') && !str_contains($gui, 'releases/download'));
-check('the finish step calls the fallback', str_contains($gui, 'install_fallback_theme()'));
+check('the done page leaves the download to the storefront unit', !str_contains($gui, 'install_fallback_theme()') && str_contains((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/install-functions.php'), 'static fn (): bool => install_fallback_theme()'));
 
 rmdir(CONTENT_PATH . 'themes/storefront');
 rmdir(CONTENT_PATH . 'themes');

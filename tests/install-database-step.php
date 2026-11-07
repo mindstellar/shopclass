@@ -54,7 +54,8 @@ check('display_database_config() keeps the typed values', str_contains($tag($htm
 
 harness_section('first visit, no error');
 $html = $render(null);
-check('no alert note', !str_contains($html, 'role="alert"'));
+check('the shared error panel is there but hidden', (bool) preg_match('/<div id="ins-db-error" class="ins-panel ins-panel-danger" role="alert"[^>]*\shidden>/', $html));
+check('Test connection is hidden until the script shows it', (bool) preg_match('/<button type="button" id="ins-test-btn"[^>]*\shidden>/', $html));
 check('no field is flagged', !str_contains($html, 'aria-invalid'));
 check('every error line is hidden', substr_count($html, 'class="ins-field-error"') === 7 && substr_count($html, '-error" hidden>') === 7);
 check('posts to step 3 with the nonce', str_contains($html, 'name="step" value="3"') && str_contains($html, 'name="install_nonce" value="nonce123"'));
@@ -73,9 +74,9 @@ check('password value is empty', str_contains($tag($html, 'password'), 'value=""
 check('#password is flagged', str_contains($tag($html, 'password'), 'aria-invalid="true"'));
 check('#password-error is visible with its text', (bool) preg_match('/<p class="ins-field-error" id="password-error">.*?<span>Check this password\.<\/span>/s', $html));
 check('other fields are not flagged', !str_contains($tag($html, 'dbhost'), 'aria-invalid') && !str_contains($tag($html, 'dbname'), 'aria-invalid'));
-check('the alert note holds the message once', substr_count($html, 'role="alert"') === 1 && substr_count($html, 'Access denied for user') === 1);
-check('the alert note has a title', str_contains($html, "Couldn't connect to the database"));
-check('the alert note carries an icon', (bool) preg_match('/role="alert">\s*<svg class="ins-icon ins-panel-icon"/', $html));
+check('the alert note holds the message once', substr_count($html, 'role="alert"') === 1 && substr_count($html, 'Access denied for user') === 1 && (bool) preg_match('/<div id="ins-db-error" class="ins-panel ins-panel-danger" role="alert" tabindex="-1">/', $html));
+check('the alert note has a title', str_contains($html, 'Couldn&#039;t connect to the database'));
+check('the alert note carries an icon', (bool) preg_match('/role="alert"[^>]*>\s*<svg class="ins-icon ins-panel-icon"/', $html));
 check('More options stays closed', !preg_match('/<details class="ins-disclosure"\s+open/', $html));
 
 harness_section('wrong host');
@@ -107,5 +108,20 @@ harness_section('markup sources');
 $src = (string) file_get_contents(LIB_PATH . 'osclass/installer/gui/install-database.php');
 check('uses the field helper', str_contains($src, 'install_field('));
 check('no pasted field or reveal markup', !str_contains($src, 'class="ins-field') && !str_contains($src, 'ins-icon-hide'));
+
+harness_section('shopclass defaults');
+$html = $render(null);
+check('database name and user default to shopclass', str_contains($tag($html, 'dbname'), 'value="shopclass"') && str_contains($tag($html, 'username'), 'value="shopclass"'));
+check('table prefix stays oc_', str_contains($tag($html, 'tableprefix'), 'value="oc_"'));
+check('no check row is written by hand', !str_contains($src, 'class="ins-check"') && str_contains($src, 'install_check('));
+check('the error panel comes from the helper', !str_contains($src, 'class="ins-panel') && str_contains($src, 'install_panel('));
+
+harness_section('session expired panel');
+ob_start();
+install_session_expired_panel();
+$html = (string) ob_get_clean();
+check('it has the headline', str_contains($html, '<h1 class="ins-headline">Your session ended</h1>'));
+check('it is a stage with a body and an action bar', str_contains($html, 'class="ins-stage"') && str_contains($html, 'class="ins-stage-body"') && str_contains($html, 'class="ins-actions"'));
+check('it keeps the explanation and the restart button', str_contains($html, 'Your session expired before setup finished.') && (bool) preg_match('/<a class="ins-btn ins-btn-primary" href="install.php">Restart the installer<\/a>/', $html));
 
 exit(harness_result());

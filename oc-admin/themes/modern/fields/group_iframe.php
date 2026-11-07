@@ -54,8 +54,7 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
                         'id'      => 'group_placeable',
                         'value'   => '1',
                         'checked' => $isPlaceable,
-                        'label'   => __('Available as a block'),
-                        'help'    => __('Place this form on pages and layouts.'),
+                        'label'   => __('Available as a block (place this form on pages and layouts)'),
                     )); ?>
                     <?php osc_admin_tree_picker(array(
                         'id'         => 'group_cat_tree',

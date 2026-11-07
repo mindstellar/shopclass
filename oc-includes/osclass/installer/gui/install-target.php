@@ -56,14 +56,20 @@ foreach ($country_list as $c) {
     }
 }
 
-// The shop set-up steps run after the form is sent, one request each.
+// Everything the installer runs after the form is sent, one request per unit.
 $ins_choice = install_site_choice();
-$ins_queue  = $ins_choice['type'] === 'shop'
-    ? mindstellar\install\ShopSetup::fromCache()->steps((array) $ins_choice['plugins'])
-    : array();
+$ins_type   = (string) $ins_choice['type'];
+$ins_sample = !empty($ins_choice['sample']);
+$ins_plan   = mindstellar\install\InstallPlan::build(
+    $ins_type,
+    $ins_sample,
+    $ins_sample ? (new mindstellar\install\SampleData())->batches($ins_type) : 0,
+    $ins_type === 'shop' ? mindstellar\install\ShopSetup::fromCache()->steps((array) $ins_choice['plugins']) : array(),
+    !is_dir(CONTENT_PATH . 'themes/storefront')
+);
 ?>
 <div id="ins-target-wrap" class="ins-target-wrap">
-    <form id="ins-target-form" class="ins-stage" action="#" method="post" novalidate data-shop-queue="<?php echo osc_esc_html((string) json_encode($ins_queue)); ?>">
+    <form id="ins-target-form" class="ins-stage" action="#" method="post" novalidate data-install-plan="<?php echo osc_esc_html((string) json_encode($ins_plan)); ?>">
         <input type="hidden" name="install_nonce" value="<?php echo osc_esc_html($install_nonce); ?>" />
 
         <div class="ins-stage-body">
@@ -71,14 +77,18 @@ $ins_queue  = $ins_choice['type'] === 'shop'
             <p class="ins-body"><?php _e('You can change all of this later in Settings.'); ?></p>
 
             <noscript>
-                <div class="ins-panel ins-panel-warning">
-                    <div class="ins-panel-body"><?php _e('JavaScript is required to complete this step.'); ?></div>
-                </div>
+                <?php install_panel('warning', '', __('JavaScript is required to complete this step.')); ?>
             </noscript>
 
-            <div id="ins-target-error" class="ins-panel ins-panel-danger" role="alert" hidden></div>
+            <?php
+            install_panel(
+                'danger',
+                __("We couldn't create your admin account"),
+                __("The server didn't answer. Your details are still here. Press Install Shopclass to try again."),
+                array('id' => 'ins-target-error', 'hidden' => true)
+            );
+            ?>
 
-            <h2 class="ins-group"><?php _e('Your site'); ?></h2>
             <div class="ins-grid2">
                 <?php
                 install_field(array(
@@ -94,7 +104,7 @@ $ins_queue  = $ins_choice['type'] === 'shop'
                     'label' => __('Contact email'),
                     'type'  => 'email',
                     'error' => __('Enter a valid email address.'),
-                    'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
+                    'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false', 'dir' => 'ltr'),
                 ));
                 ?>
                 <?php
@@ -107,6 +117,7 @@ $ins_queue  = $ins_choice['type'] === 'shop'
                         'options' => $countries,
                         'value'   => $selected,
                         'help'    => __('We add its regions and cities so people can pick where they are.'),
+                        'class'   => 'ins-field-wide',
                     ));
                 }
                 ?>
@@ -118,7 +129,7 @@ $ins_queue  = $ins_choice['type'] === 'shop'
                 <input type="hidden" id="skip-location-input" name="skip-location-input" value="1" />
             <?php } ?>
 
-            <h2 class="ins-group"><?php _e('Your admin login'); ?></h2>
+            <h2 class="ins-group"><?php _e('Admin account'); ?></h2>
             <div class="ins-grid2">
                 <?php
                 install_field(array(
@@ -146,13 +157,33 @@ $ins_queue  = $ins_choice['type'] === 'shop'
         </div>
 
         <div class="ins-actions">
-            <a class="ins-btn ins-btn-ghost ins-back" href="install.php?step=3"><?php _e('Back'); ?></a>
+            <a class="ins-btn ins-btn-ghost ins-back" href="install.php?step=3"><?php install_btn_icon('back'); ?><?php _e('Back'); ?></a>
             <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Install Shopclass'); ?></button>
         </div>
     </form>
 
-    <div id="ins-setup-overlay" class="ins-overlay" role="status" aria-live="polite" hidden>
-        <span class="ins-overlay-spinner" aria-hidden="true"></span>
-        <p id="ins-overlay-text"><?php _e("Setting up your site… this can take a minute on shared hosting — don't close this tab."); ?></p>
-    </div>
+    <section id="ins-progress" class="ins-stage" hidden aria-labelledby="ins-progress-title">
+        <div class="ins-stage-body">
+            <h1 id="ins-progress-title" class="ins-headline" tabindex="-1" data-template="<?php echo osc_esc_html(__('Setting up %s')); ?>"></h1>
+            <p class="ins-body"><?php _e('This takes a minute or two. Keep this tab open.'); ?></p>
+            <div class="ins-meter">
+                <div class="ins-meter-row">
+                    <span id="ins-meter-now" class="ins-meter-now"></span>
+                    <span id="ins-meter-count" class="ins-meter-count"></span>
+                </div>
+                <div id="ins-track" class="ins-track" role="progressbar" aria-label="<?php echo osc_esc_html(__('Install progress')); ?>" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="ins-fill" class="ins-fill"></div></div>
+                <p id="ins-slow" class="ins-slow"><?php _e('Still working. A slow host can take a minute on this one.'); ?></p>
+            </div>
+            <?php install_panel('danger', __('Setup stopped'), '', array('id' => 'ins-progress-error', 'hidden' => true)); ?>
+            <div id="ins-progress-announcer" class="ins-visually-hidden" role="status" aria-live="polite"></div>
+            <ul id="ins-tasks" class="ins-tasks"></ul>
+        </div>
+        <div class="ins-actions">
+            <a id="ins-progress-reload" class="ins-btn ins-btn-primary" href="install.php?step=4" hidden><?php _e('Reload'); ?></a>
+            <span id="ins-eta" class="ins-hint ins-hint-progress">
+                <svg class="ins-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6.5"/><path d="M8 4.5V8l2.5 1.5"/></svg>
+                <span><?php _e('Keep this tab open until it finishes.'); ?></span>
+            </span>
+        </div>
+    </section>
 </div>

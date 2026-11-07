@@ -269,8 +269,8 @@ $whatsNew = $release['entries'];
 // to the releases listing if the version can't be parsed.
 $version    = defined('OSCLASS_VERSION') ? OSCLASS_VERSION : '';
 $releaseUrl = preg_match('/^\d+\.\d+\.\d+/', $version, $m)
-    ? 'https://github.com/mindstellar/shopclass/releases/tag/v' . $m[0]
-    : 'https://github.com/mindstellar/shopclass/releases';
+    ? \mindstellar\utility\ProjectLinks::RELEASES . '/tag/v' . $m[0]
+    : \mindstellar\utility\ProjectLinks::RELEASES;
 if (!empty($whatsNew)) {
     $shown     = array_slice($whatsNew, 0, 10);
     $remaining = count($whatsNew) - count($shown);

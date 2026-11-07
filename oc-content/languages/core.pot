@@ -137,7 +137,22 @@ msgid "%1$s must be %2$s or more"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
+#: oc-includes/osclass/installer/gui/install.php
 msgid "%1$s of %2$s"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-site-type.php
+msgid "%1$s of %2$s add-on selected"
+msgid_plural "%1$s of %2$s add-ons selected"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "%1$s of %2$s added"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "%1$s of %2$s done"
 msgstr ""
 
 #: oc-includes/classes/admin/ui/Picker.php
@@ -207,6 +222,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
 msgid "%1$s, until %2$s"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "%1$s. %2$s"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -593,6 +612,10 @@ msgstr[1] ""
 msgid "%s could not be uploaded"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install.php
+msgid "%s couldn't be added. You can add it later."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
 msgid "%s country"
@@ -612,6 +635,10 @@ msgstr[1] ""
 
 #: oc-includes/classes/media/image/Processor.php
 msgid "%s does not exist!"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "%s done"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -704,6 +731,10 @@ msgstr ""
 
 #: oc-includes/classes/media/image/Processor.php
 msgid "%s is not readable!"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid "%s is ready"
 msgstr ""
 
 #: oc-includes/classes/core/settings/SettingsImage.php
@@ -928,21 +959,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid ""
-"<code>config.php</code> file has to be writable, i.e.: <code>chmod 0755 "
-"%sconfig.php</code>"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
 msgid "<code>config.php</code> file is writable"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>downloads</code> folder has to be writable, i.e.: "
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>languages</code> folder has to be writable, i.e.: "
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -955,10 +972,6 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "<code>oc-content/uploads</code> folder is writable"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>uploads</code> folder has to be writable, i.e.: "
 msgstr ""
 
 #: oc-includes/classes/core/mail/CoreEmails.php
@@ -1604,6 +1617,10 @@ msgstr ""
 msgid "Add block"
 msgstr ""
 
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Add categories under Listings → Categories."
+msgstr ""
+
 #: oc-admin/themes/modern/categories/iframe.php
 #: oc-admin/themes/modern/categories/index.php
 msgid "Add category"
@@ -1641,8 +1658,20 @@ msgstr ""
 msgid "Add example content"
 msgstr ""
 
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Add example listings"
+msgstr ""
+
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Add example products"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "Add field"
+msgstr ""
+
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Add it under Plugins → Add plugin."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -1701,6 +1730,10 @@ msgstr ""
 msgid "Add photos"
 msgstr ""
 
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Add places in %s"
+msgstr ""
+
 #: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/plugins/add.php
 #: oc-admin/themes/modern/plugins/index.php
@@ -1719,6 +1752,18 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
 msgid "Add section"
+msgstr ""
+
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Add shop plugins"
+msgstr ""
+
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Add starter categories"
+msgstr ""
+
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Add them under Settings → Locations."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/add.php
@@ -1804,10 +1849,6 @@ msgstr ""
 msgid "Added to the order total. 0 means no fee."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install.php
-msgid "Adding sample listings… (%1$s of %2$s)"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/frm.php
@@ -1857,6 +1898,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Admin #%d"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "Admin account"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid "Admin address"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -2051,6 +2100,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "All credits"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "All done"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
@@ -2631,7 +2684,7 @@ msgid "Availability"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/group_iframe.php
-msgid "Available as a block"
+msgid "Available as a block (place this form on pages and layouts)"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
@@ -2890,6 +2943,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/CommentSettingsScreen.php
 msgid "Before a comment appears, comment author must have at least"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Before we begin, let's make sure your server has everything it needs."
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -3471,6 +3528,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/billing/wallet.php
 #: oc-admin/themes/modern/items/frm.php
+#: oc-includes/osclass/installer/gui/install-site-type.php
 msgid "Change"
 msgstr ""
 
@@ -4474,8 +4532,16 @@ msgstr ""
 msgid "Create page"
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "Create the admin account first."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-database.php
 msgid "Create the database"
+msgstr ""
+
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Create your admin account"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -5340,7 +5406,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/helpers/hMessages.php
-#: oc-includes/osclass/installer/gui/install-finish.php
 msgid "Dismiss"
 msgstr ""
 
@@ -5405,6 +5470,10 @@ msgstr ""
 msgid "Download every remote image back to local disk?"
 msgstr ""
 
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Download example photos"
+msgstr ""
+
 #: oc-includes/classes/market/Installer.php
 msgid ""
 "Download failed, or the downloaded file did not match the expected checksum."
@@ -5416,6 +5485,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Download now"
+msgstr ""
+
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Download the %s shop theme"
+msgstr ""
+
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Download the Storefront theme"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
@@ -5436,10 +5513,6 @@ msgstr ""
 
 #: oc-includes/classes/backup/BackupService.php
 msgid "Downloading it from the bucket: %1$s of %2$s"
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install.php
-msgid "Downloading sample photos…"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -6086,6 +6159,10 @@ msgstr ""
 msgid "Example page title"
 msgstr ""
 
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Example photos"
+msgstr ""
+
 #: oc-includes/classes/core/install/SampleData.php
 msgid "Example seller"
 msgstr ""
@@ -6384,10 +6461,6 @@ msgstr ""
 msgid "First page"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install.php
-msgid "First, a quick check that this server can run Shopclass."
-msgstr ""
-
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Fitness"
 msgstr ""
@@ -6681,10 +6754,6 @@ msgstr ""
 msgid "GD extension for PHP"
 msgstr ""
 
-#: oc-includes/osclass/install-functions.php
-msgid "GD extension is required. How to "
-msgstr ""
-
 #: oc-includes/classes/admin/form/MailServerSettingsScreen.php
 msgid "GMail Server"
 msgstr ""
@@ -6875,6 +6944,11 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Help text"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid ""
+"Here is your admin login. Save the password now. We won't show it again."
 msgstr ""
 
 #: oc-includes/classes/billing/Receipts.php
@@ -7279,6 +7353,25 @@ msgstr ""
 msgid "In this email"
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"In your hosting file manager, create a folder named %1$s inside %2$s. If you "
+"can't, ask your host to create it."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"In your hosting file manager, right-click %1$s, choose Permissions and set "
+"them to %2$s. If this check still fails, ask your host to let the website "
+"write to it."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"In your hosting panel, open the PHP settings and turn on the %s extension. "
+"If you can't find it, ask your host."
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "In-app installs are disabled on this deployment."
 msgstr ""
@@ -7356,6 +7449,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-includes/osclass/classes/datatables/PluginsDataTable.php
+#: oc-includes/osclass/installer/gui/install.php
 msgid "Install"
 msgstr ""
 
@@ -7401,14 +7495,18 @@ msgstr ""
 msgid "Install failed: %s"
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-finish.php
-msgid "Install it later under Plugins."
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Install it under Appearance → Add theme."
 msgstr ""
 
 #: oc-admin/themes/modern/plugins/index.php
 msgid ""
 "Install or uninstall the plugins available in your installation. In some "
 "cases, "
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "Install progress"
 msgstr ""
 
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
@@ -7434,10 +7532,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
 msgid "Installed: %s"
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install.php
-msgid "Installing %1$s… (%2$s of %3$s)"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
@@ -7764,6 +7858,10 @@ msgstr ""
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 msgid ""
 "Keep this high: many people can share one address at an office or on mobile."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "Keep this tab open until it finishes."
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -9356,10 +9454,6 @@ msgstr ""
 msgid "MySQLi extension for PHP"
 msgstr ""
 
-#: oc-includes/osclass/install-functions.php
-msgid "MySQLi extension is required. How to "
-msgstr ""
-
 #: oc-admin/themes/modern/admins/index.php
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/billing/package.php
@@ -9570,7 +9664,6 @@ msgstr ""
 #: oc-admin/themes/modern/fields/submissions.php
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 #: oc-includes/osclass/installer/data/sample-classifieds.php
-#: oc-includes/osclass/installer/gui/install-site-type.php
 msgid "New"
 msgstr ""
 
@@ -11418,16 +11511,16 @@ msgstr ""
 msgid "Place price in credits"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/group_iframe.php
-msgid "Place this form on pages and layouts."
-msgstr ""
-
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Placeholder"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/frm.php
 msgid "Placeholders"
+msgstr ""
+
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Places for your country"
 msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
@@ -12276,6 +12369,10 @@ msgstr ""
 msgid "Relevance"
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "Reload"
+msgstr ""
+
 #: oc-admin/gui/login.php
 msgid "Remember me"
 msgstr ""
@@ -12687,10 +12784,6 @@ msgstr ""
 msgid "Root directory is writable"
 msgstr ""
 
-#: oc-includes/osclass/install-functions.php
-msgid "Root folder has to be writable, i.e.: <code>chmod 0755 %s</code>"
-msgstr ""
-
 #: oc-admin/themes/modern/settings/api.php
 msgid "Rotate"
 msgstr ""
@@ -12820,11 +12913,6 @@ msgid ""
 "any time."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-finish.php
-msgid ""
-"Sample photos could not be downloaded, so the sample listings have no photos."
-msgstr ""
-
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Sat"
 msgstr ""
@@ -12944,11 +13032,6 @@ msgstr ""
 msgid ""
 "Save these backup codes now. Each one signs you in once if you lose your "
 "phone. They are not shown again."
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install-finish.php
-msgid ""
-"Save this password now — it won't be shown again. We also emailed it to %s."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -13653,9 +13736,7 @@ msgid "Set up real-IP forwarding"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
-msgid ""
-"Setting up your site… this can take a minute on shared hosting — don't close "
-"this tab."
+msgid "Setting up %s"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/index.php
@@ -13709,6 +13790,10 @@ msgstr ""
 #: oc-includes/osclass/install-functions.php
 msgid ""
 "Setup couldn't save the site language. The database user may not be able to "
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "Setup stopped"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
@@ -13765,6 +13850,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Shop Fittings"
+msgstr ""
+
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Shop mode"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -13827,6 +13916,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Shopclass can't reach its database."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "Shopclass can't write to its own folder"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -14252,16 +14345,16 @@ msgid ""
 "otherwise in good shape."
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "Some example listings couldn't be added."
+msgstr ""
+
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Some example listings weren't added"
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "Some of the selected locations no longer exist"
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install-finish.php
-msgid "Some plugins were not installed."
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install-finish.php
-msgid "Some sample content couldn't be added. Your site will still work fine."
 msgstr ""
 
 #: oc-includes/classes/core/security/AdminTwoFactor.php
@@ -14391,8 +14484,16 @@ msgstr ""
 msgid "Start processing when you begin to pick and pack this order."
 msgstr ""
 
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Starter categories"
+msgstr ""
+
 #: oc-includes/classes/backup/BackupService.php
 msgid "Starting"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Starting…"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
@@ -14469,6 +14570,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid "Still to do"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "Still working. A slow host can take a minute on this one."
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -14825,6 +14930,22 @@ msgid_plural "All %d checks passed."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "The %s file can't be written to"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The %s file is missing"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The %s folder can't be written to"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The %s folder is missing"
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid ""
 "The %s folder isn't writable, so nothing can be installed from here. Make it "
@@ -14852,8 +14973,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
-msgid ""
-"The <a href=\"https://github.com/mindstellar/shopclass\">Shopclass</a> team"
+msgid "The <a href=\"%s\">Shopclass</a> team"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/storage.php
@@ -14885,6 +15005,10 @@ msgid ""
 "%2$s"
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "The PHP %s extension is not turned on"
+msgstr ""
+
 #: oc-includes/classes/admin/form/MailServerSettingsScreen.php
 msgid ""
 "The PHP <b>openssl</b> extension is not loaded, so SSL and TLS will not work."
@@ -14903,6 +15027,14 @@ msgid ""
 "while it runs."
 msgstr ""
 
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "The Storefront theme"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The Storefront theme couldn't be downloaded."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "The account and its listings are removed for good."
 msgstr ""
@@ -14916,7 +15048,7 @@ msgid ""
 "The active theme shows no comments, so these settings have no visible effect."
 msgstr ""
 
-#: oc-includes/osclass/install-location.php
+#: oc-includes/osclass/install-functions.php
 msgid ""
 "The admin account could not be created. Nothing was saved — please try again."
 msgstr ""
@@ -15182,6 +15314,14 @@ msgstr ""
 
 #: oc-includes/classes/content/widgets/Customiser.php
 msgid "The draft is too large to save."
+msgstr ""
+
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "The example listings have no photos."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The example photos couldn't be downloaded."
 msgstr ""
 
 #: oc-includes/classes/market/Installer.php
@@ -15489,7 +15629,14 @@ msgid ""
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
+#: oc-includes/osclass/installer/gui/install.php
 msgid "The server did not answer in time, or the connection dropped."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid ""
+"The server didn't answer. Your details are still here. Press Install "
+"Shopclass to try again."
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -15556,6 +15703,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "The slug is made from the name. You can change it after saving."
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The starter categories couldn't be added."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -16115,6 +16266,10 @@ msgid "This server accepts files up to %s."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
+msgid "This server runs PHP %1$s. Shopclass needs PHP %2$s or newer"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
 msgid ""
 "This site already has database settings in config.php. Enter the same ones, "
 "or delete config.php to use a different database."
@@ -16126,8 +16281,16 @@ msgid ""
 "image, not from this screen."
 msgstr ""
 
+#: oc-includes/osclass/install-functions.php
+msgid "This step is not part of this install."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 msgid "This takes %1$s credits back from %2$s. If they have already spent "
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "This takes a minute or two. Keep this tab open."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php
@@ -16294,6 +16457,10 @@ msgstr ""
 #: oc-admin/themes/modern/billing/documents.php
 #: oc-includes/osclass/classes/form/FieldForm.php
 msgid "To"
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid "To finish later"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
@@ -16514,6 +16681,10 @@ msgstr ""
 msgid "Turn on a persistent object cache"
 msgstr ""
 
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "Turn on shop mode"
+msgstr ""
+
 #: oc-includes/classes/admin/form/ApiSettingsScreen.php
 msgid "Turn on the REST API"
 msgstr ""
@@ -16536,10 +16707,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid "Turning it off later keeps every order and balance."
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install.php
-msgid "Turning on shop mode…"
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
@@ -17420,6 +17587,7 @@ msgid "View site"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/header.php
+#: oc-includes/osclass/installer/gui/install-finish.php
 msgid "View your site"
 msgstr ""
 
@@ -17537,10 +17705,22 @@ msgstr ""
 msgid "We add its regions and cities so people can pick where they are."
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install-finish.php
+msgid "We also emailed these to %s."
+msgstr ""
+
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid ""
 "We are looking for a friendly barista for our busy corner cafe. Training is "
 "given, and the hours are early."
+msgstr ""
+
+#: oc-includes/osclass/installer/gui/install-target.php
+msgid "We couldn't create your admin account"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "We couldn't download the places for this country."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
@@ -17552,12 +17732,6 @@ msgstr ""
 msgid ""
 "We couldn't reach a database server at %s. If your site and database are on "
 "the "
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install-finish.php
-msgid ""
-"We couldn't save your selected location. You can set it later from the admin "
-"panel."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/media.php
@@ -17971,20 +18145,6 @@ msgstr ""
 msgid "You don't have the necessary permissions"
 msgstr ""
 
-#: oc-includes/osclass/install-functions.php
-msgid "You have to create <code>downloads</code> folder, i.e.: "
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid ""
-"You have to create <code>uploads</code> folder, i.e.: <code>mkdir %soc-"
-"content/uploads/</code>"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "You have to create the <code>languages</code> folder, i.e.: "
-msgstr ""
-
 #: oc-admin/themes/modern/pages/frm.php
 msgid ""
 "You have unpublished block changes. Open Edit blocks to publish or discard "
@@ -18064,10 +18224,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/ui/Field.php
 msgid "Your admin language"
-msgstr ""
-
-#: oc-includes/osclass/installer/gui/install-target.php
-msgid "Your admin login"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
@@ -18231,6 +18387,10 @@ msgid "Your server is ready"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
+msgid "Your session ended"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
 msgid ""
 "Your session expired before setup finished. Please restart the installer to "
 "complete it."
@@ -18248,7 +18408,6 @@ msgstr ""
 msgid "Your session expired. Reload the page and try again."
 msgstr ""
 
-#: oc-includes/osclass/installer/gui/install-target.php
 #: oc-includes/osclass/installer/gui/install.php
 msgid "Your site"
 msgstr ""
@@ -18265,6 +18424,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid "Your site is ready."
+msgstr ""
+
+#: oc-includes/classes/core/install/FinishLater.php
+msgid "Your site works without them."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -18315,10 +18478,6 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Zip extension for PHP"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "Zip extension is required. How to "
 msgstr ""
 
 #: oc-includes/classes/core/upgrade/AutoSecurityUpdate.php
@@ -18381,6 +18540,10 @@ msgstr ""
 msgid "at most"
 msgstr ""
 
+#: oc-includes/classes/core/install/InstallPlan.php
+msgid "batch %1$s of %2$s"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "becomes"
 msgstr ""
@@ -18396,10 +18559,6 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "cURL extension for PHP"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "cURL extension is required. How to "
 msgstr ""
 
 #: oc-includes/osclass/classes/EmailVariables.php

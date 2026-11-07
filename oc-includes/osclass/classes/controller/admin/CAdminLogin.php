@@ -440,7 +440,7 @@ class CAdminLogin extends AdminBaseModel
     public function doView($file = 'gui/main.php')
     {
         $login_admin_title = osc_apply_filter('login_admin_title', 'Shopclass');
-        $login_admin_url   = osc_apply_filter('login_admin_url', 'https://github.com/mindstellar/shopclass/');
+        $login_admin_url   = osc_apply_filter('login_admin_url', \mindstellar\utility\ProjectLinks::REPOSITORY);
         $login_admin_image = osc_apply_filter('login_admin_image', osc_admin_base_url() . 'images/shopclass-logo.svg');
 
         View::getInstance()->_exportVariableToView('login_admin_title', $login_admin_title);

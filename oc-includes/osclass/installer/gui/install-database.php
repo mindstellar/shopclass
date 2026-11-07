@@ -48,15 +48,11 @@ $ins_flag = static fn (string $name): array => array(
             <?php _e('Your host gives you these four details when you create a database. Look in your hosting control panel under "MySQL Databases".'); ?>
         </p>
 
-        <?php if (is_array($error) && !empty($error['error'])) { ?>
-            <div class="ins-panel ins-panel-danger" role="alert">
-                <svg class="ins-icon ins-panel-icon" viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8l6.5 11.4h-13z"/><path d="M8 6.5v3M8 11.5v.1"/></svg>
-                <div class="ins-panel-body">
-                    <p class="ins-panel-title"><?php _e("Couldn't connect to the database"); ?></p>
-                    <p class="ins-panel-text"><?php echo osc_esc_html($error['error']); ?></p>
-                </div>
-            </div>
-        <?php } ?>
+        <?php
+        // One error panel for both Connect (server) and Test connection (script), same place and look.
+        $ins_db_error = is_array($error) && !empty($error['error']) ? (string) $error['error'] : '';
+        install_panel('danger', __("Couldn't connect to the database"), $ins_db_error, array('id' => 'ins-db-error', 'hidden' => $ins_db_error === ''));
+        ?>
 
         <div class="ins-grid2">
             <?php
@@ -70,13 +66,13 @@ $ins_flag = static fn (string $name): array => array(
             install_field(array(
                 'id'    => 'dbname',
                 'label' => __('Database name'),
-                'value' => $form_data['dbname'] ?? ((defined('DB_NAME') && DB_NAME !== '') ? DB_NAME : 'osclass'),
+                'value' => $form_data['dbname'] ?? ((defined('DB_NAME') && DB_NAME !== '') ? DB_NAME : 'shopclass'),
                 'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
             ) + $ins_flag('dbname'));
             install_field(array(
                 'id'    => 'username',
                 'label' => __('Username'),
-                'value' => $form_data['username'] ?? ((defined('DB_USER') && DB_USER !== '') ? DB_USER : 'osclass'),
+                'value' => $form_data['username'] ?? ((defined('DB_USER') && DB_USER !== '') ? DB_USER : 'shopclass'),
                 'attrs' => array('autocomplete' => 'off', 'spellcheck' => 'false'),
             ) + $ins_flag('username'));
             install_field(array(
@@ -105,21 +101,21 @@ $ins_flag = static fn (string $name): array => array(
                 ) + $ins_flag('tableprefix'));
                 ?>
 
-                <label class="ins-check" for="createdb">
-                    <input type="checkbox" id="createdb" name="createdb" value="1" <?php echo $ins_createdb ? 'checked="checked"' : ''; ?> />
-                    <span>
-                        <span class="ins-check-title"><?php _e('Create the database'); ?></span>
-                        <span class="ins-help"><?php _e("Turn this on if the database doesn't exist yet and you want Shopclass to create it."); ?></span>
-                    </span>
-                </label>
-
-                <label class="ins-check" for="reset_unfinished">
-                    <input type="checkbox" id="reset_unfinished" name="reset_unfinished" value="1" <?php echo Params::getParam('reset_unfinished') == '1' ? 'checked="checked"' : ''; ?> <?php echo $ins_field_error === 'reset_unfinished' ? 'aria-invalid="true"' : ''; ?> />
-                    <span>
-                        <span class="ins-check-title"><?php _e('Remove the unfinished install'); ?></span>
-                        <span class="ins-help"><?php _e('Turn this on to delete the tables of a Shopclass install that did not finish, and start again. A finished site is never touched.'); ?></span>
-                    </span>
-                </label>
+                <?php
+                install_check(array(
+                    'id'      => 'createdb',
+                    'title'   => __('Create the database'),
+                    'help'    => __("Turn this on if the database doesn't exist yet and you want Shopclass to create it."),
+                    'checked' => $ins_createdb,
+                ));
+                install_check(array(
+                    'id'      => 'reset_unfinished',
+                    'title'   => __('Remove the unfinished install'),
+                    'help'    => __('Turn this on to delete the tables of a Shopclass install that did not finish, and start again. A finished site is never touched.'),
+                    'checked' => Params::getParam('reset_unfinished') == '1',
+                    'invalid' => $ins_field_error === 'reset_unfinished',
+                ));
+                ?>
 
                 <div id="ins-createdb-fields" <?php echo $ins_createdb ? '' : 'hidden'; ?>>
                     <?php
@@ -144,14 +140,15 @@ $ins_flag = static fn (string $name): array => array(
     </div>
 
     <div class="ins-actions">
-        <a class="ins-btn ins-btn-ghost ins-back" href="install.php?step=1"><?php _e('Back'); ?></a>
-        <button type="button" id="ins-test-btn" class="ins-btn ins-btn-secondary">
+        <a class="ins-btn ins-btn-ghost ins-back" href="install.php?step=1"><?php install_btn_icon('back'); ?><?php _e('Back'); ?></a>
+        <button type="button" id="ins-test-btn" class="ins-btn ins-btn-secondary" hidden>
             <span class="ins-spinner" aria-hidden="true"></span>
             <span class="ins-btn-label"><?php _e('Test connection'); ?></span>
         </button>
         <button type="submit" id="ins-connect-btn" class="ins-btn ins-btn-primary">
             <span class="ins-spinner" aria-hidden="true"></span>
             <span class="ins-btn-label"><?php _e('Connect'); ?></span>
+            <?php install_btn_icon('next'); ?>
         </button>
     </div>
 </form>

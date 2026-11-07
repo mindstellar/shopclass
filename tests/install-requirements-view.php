@@ -32,6 +32,7 @@ function osc_esc_html($text)
     return htmlspecialchars((string) $text, ENT_QUOTES, 'UTF-8');
 }
 
+require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 
 $gui = ABS_PATH . 'oc-includes/osclass/installer/gui';
@@ -90,11 +91,20 @@ check('passed line says 12', str_contains($html, '12 other checks passed.'));
 $html = $render($rows(1, array(1)));
 check('passed line omitted when nothing else passed', !str_contains($html, 'ins-passed-line'));
 
+harness_section('A failure with its own title');
+$req = $rows(3, array(2));
+$req[1]['problem'] = 'The <code>oc-content/downloads</code> folder can&#039;t be written to';
+$html = $render($req);
+check('the failed row leads with the problem, not the passed-state label', str_contains($html, '<p class="ins-problem-title">The <code>oc-content/downloads</code> folder') && !str_contains($html, 'Check number <code>2</code>'));
+$src = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/install-functions.php');
+check('no fix tells the owner to run chmod or mkdir', !str_contains($src, 'chmod 0755') && !str_contains($src, '<code>mkdir'));
+
 harness_section('Shell source');
 $src = (string) file_get_contents($gui . '/install.php');
 check('no inline onclick', !str_contains($src, 'onclick='));
 check('step 1 form includes the partial', str_contains($src, 'id="ins-requirements-form"') && str_contains($src, 'install-requirements.php'));
 check('check again is a link', str_contains($src, 'href="install.php?step=1"'));
+check('check again is the main button while Continue stays disabled', (bool) preg_match('/<button type="submit" class="ins-btn ins-btn-secondary" disabled>.*?<\/button>\s*<a class="ins-btn ins-btn-primary" id="ins-check-again" href="install.php\?step=1">/s', $src));
 check('step count string present', str_contains($src, 'Step %1$s of %2$s'));
 check('locale select is in the top bar and tied to the form', str_contains($src, 'form="ins-requirements-form"') && strpos($src, 'id="install_locale"') < strpos($src, 'class="ins-card"'));
 check('rail label for step 2 is Database', (bool) preg_match("/2 => __\('Database'\)/", $src));

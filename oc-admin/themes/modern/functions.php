@@ -152,11 +152,11 @@ function admin_footer_html()
     <div class="admin-footer-credit">
         <?php printf(
             __('Thank you for using <a href="%s" target="_blank">Shopclass</a>'),
-            'https://github.com/mindstellar/shopclass/'
+            \mindstellar\utility\ProjectLinks::REPOSITORY
         ); ?> -
-        <a title="<?php _e('Forums'); ?>" href="https://github.com/mindstellar/shopclass/discussions"
+        <a title="<?php _e('Forums'); ?>" href="<?php echo osc_esc_html(\mindstellar\utility\ProjectLinks::FORUM); ?>"
            target="_blank" rel="noopener"><?php _e('Forums'); ?></a> &middot;
-        <a title="<?php _e('Report Issue'); ?>" href="https://github.com/mindstellar/shopclass/issues/"
+        <a title="<?php _e('Report Issue'); ?>" href="<?php echo osc_esc_html(\mindstellar\utility\ProjectLinks::ISSUES); ?>"
            target="_blank" rel="noopener"><?php _e('Report Issue'); ?></a>
     </div>
     <div class="admin-footer-version">

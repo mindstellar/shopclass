@@ -93,7 +93,7 @@ function _osc_die_not_ready(string $title, string $message, bool $help = false)
         'primary' => true,
     ]];
     if ($help) {
-        $actions[] = ['label' => 'Need help?', 'href' => 'https://github.com/mindstellar/shopclass/discussions'];
+        $actions[] = ['label' => 'Need help?', 'href' => \mindstellar\utility\ProjectLinks::FORUM];
     }
     osc_die($title, $message, ['tone' => 'info', 'status' => 503, 'actions' => $actions]);
 }

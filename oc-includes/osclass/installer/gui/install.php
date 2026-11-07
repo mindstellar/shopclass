@@ -15,6 +15,8 @@ if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 
+require_once __DIR__ . '/fields.php';
+
 /**
  * @var int                  $step
  * @var mixed                $error
@@ -35,8 +37,10 @@ if ($step === 1) {
     $ins_rail_step = 1;
 } elseif ($step === 2 || $ins_showing_db_retry) {
     $ins_rail_step = 2;
+} elseif ($step === 5) {
+    $ins_rail_step = 6;
 } else {
-    $ins_rail_step = min($step, 5);
+    $ins_rail_step = min($step, 4);
 }
 
 $ins_step_labels = array(
@@ -44,7 +48,8 @@ $ins_step_labels = array(
     2 => __('Database'),
     3 => __('Site type'),
     4 => __('Your site'),
-    5 => __('Done'),
+    5 => __('Install'),
+    6 => __('Done'),
 );
 
 $ins_i18n = array(
@@ -56,16 +61,32 @@ $ins_i18n = array(
     'showPassword' => __('Show password'),
     'hidePassword' => __('Hide password'),
     'networkError' => __('Something went wrong. Check your connection and try again.'),
-    /* translators: 1: a theme or plugin name, 2: its place in the queue, 3: how many there are */
-    'installing'   => __('Installing %1$s… (%2$s of %3$s)'),
-    'shopMode'     => __('Turning on shop mode…'),
-    'samplePhotos' => __('Downloading sample photos…'),
-    /* translators: 1: the batch being added, 2: how many batches there are */
-    'sampleBatch'  => __('Adding sample listings… (%1$s of %2$s)'),
+    /* translators: 1: tasks finished, 2: all tasks */
+    'doneCount'    => __('%1$s of %2$s done'),
+    'allDone'      => __('All done'),
+    'starting'     => __('Starting…'),
+    /* translators: %s: the setup task that finished */
+    'taskDone'     => __('%s done'),
+    /* translators: 1: the setup task, 2: what could not be added and why */
+    'taskSkipped'  => __('%1$s. %2$s'),
+    'lost'         => __('The server did not answer in time, or the connection dropped.'),
+    /* translators: 1: units added, 2: all units */
+    'addedCount'   => __('%1$s of %2$s added'),
+    /* translators: %s: what could not be added */
+    'skippedSub'   => __("%s couldn't be added. You can add it later."),
+    'installStep'  => __('Install'),
+    /* translators: 1: units finished, 2: all units in the task */
+    'unitCount'    => __('%1$s of %2$s'),
+    /* translators: 1: current step number, 2: total steps */
+    'stepCount'    => __('Step %1$s of %2$s'),
 );
+
+$ins_locale_code = isset($current_locale) ? (string) $current_locale : 'en_US';
+$ins_html_lang   = preg_match('/^[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8})*$/', $ins_locale_code) ? str_replace('_', '-', $ins_locale_code) : 'en';
+$ins_html_dir    = isset($locales[$ins_locale_code]['direction']) && $locales[$ins_locale_code]['direction'] === 'rtl' ? 'rtl' : 'ltr';
 ?>
 <!doctype html>
-<html lang="en">
+<html lang="<?php echo osc_esc_html($ins_html_lang); ?>" dir="<?php echo $ins_html_dir; ?>">
 
 <head>
     <meta charset="utf-8">
@@ -161,13 +182,10 @@ $ins_i18n = array(
                                     $ins_state = 'is-current';
                                 }
                                 ?>
-                                <li class="ins-step <?php echo $ins_state; ?>" <?php echo $ins_state === 'is-current' ? 'aria-current="step"' : ''; ?>>
+                                <li class="ins-step <?php echo $ins_state; ?>" data-rail="<?php echo (int)$ins_n; ?>" <?php echo $ins_state === 'is-current' ? 'aria-current="step"' : ''; ?>>
                                     <span class="ins-step-dot" aria-hidden="true">
-                                        <?php if ($ins_state === 'is-done') { ?>
-                                            <svg viewBox="0 0 16 16" width="12" height="12" focusable="false"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
-                                        <?php } else {
-                                            echo (int)$ins_n;
-                                        } ?>
+                                        <span class="ins-step-num"><?php echo (int)$ins_n; ?></span>
+                                        <svg class="ins-step-check" viewBox="0 0 16 16" width="12" height="12" focusable="false"><path d="M3 8.5l3 3 7-7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" /></svg>
                                     </span>
                                     <span>
                                         <span class="ins-step-label"><?php echo osc_esc_html($ins_label); ?></span>
@@ -181,9 +199,9 @@ $ins_i18n = array(
                     </nav>
 
                     <div class="ins-content">
-                        <div class="ins-mstep" aria-hidden="true">
-                            <div class="ins-mstep-row"><b><?php echo osc_esc_html($ins_step_labels[$ins_rail_step]); ?></b><span class="ins-mstep-count"><?php /* translators: 1: current step number, 2: total steps */ echo osc_esc_html(sprintf(__('Step %1$s of %2$s'), $ins_rail_step, count($ins_step_labels))); ?></span></div>
-                            <div class="ins-segs">
+                        <div class="ins-mstep">
+                            <div class="ins-mstep-row"><b id="ins-mstep-label"><?php echo osc_esc_html($ins_step_labels[$ins_rail_step]); ?></b><span id="ins-mstep-count" class="ins-mstep-count"><?php /* translators: 1: current step number, 2: total steps */ echo osc_esc_html(sprintf(__('Step %1$s of %2$s'), $ins_rail_step, count($ins_step_labels))); ?></span></div>
+                            <div class="ins-segs" aria-hidden="true">
                                 <?php foreach ($ins_step_labels as $ins_n => $ins_label) { ?>
                                     <span<?php echo $ins_n <= $ins_rail_step ? ' class="is-on"' : ''; ?>></span>
                                 <?php } ?>
@@ -194,7 +212,7 @@ $ins_i18n = array(
                                 <input type="hidden" name="step" value="2" />
                                 <div class="ins-stage-body">
                                     <h1 class="ins-headline"><?php _e('Let’s set up your site'); ?></h1>
-                                    <p class="ins-body"><?php _e('First, a quick check that this server can run Shopclass.'); ?></p>
+                                    <p class="ins-body"><?php _e("Before we begin, let's make sure your server has everything it needs."); ?></p>
                                     <?php
                                     include __DIR__ . '/install-requirements.php';
                                     /** @var int $ins_fail_count Set by the partial. */
@@ -207,10 +225,10 @@ $ins_i18n = array(
                                             <svg class="ins-icon" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.8l6.5 11.4h-13z"/><path d="M8 6.5v3M8 11.5v.1"/></svg>
                                             <span><?php echo osc_esc_html(sprintf(_n('Fix the %d item above to continue.', 'Fix the %d items above to continue.', $ins_fail_count), $ins_fail_count)); ?></span>
                                         </span>
-                                        <a class="ins-btn ins-btn-secondary" href="install.php?step=1"><?php _e('Check again'); ?></a>
-                                        <button type="submit" class="ins-btn ins-btn-primary" disabled><?php _e('Continue'); ?></button>
+                                        <button type="submit" class="ins-btn ins-btn-secondary" disabled><?php _e('Continue'); ?></button>
+                                        <a class="ins-btn ins-btn-primary" id="ins-check-again" href="install.php?step=1"><?php _e('Check again'); ?></a>
                                     <?php } else { ?>
-                                        <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Continue'); ?></button>
+                                        <button type="submit" class="ins-btn ins-btn-primary"><?php _e('Continue'); ?><?php install_btn_icon('next'); ?></button>
                                     <?php } ?>
                                 </div>
                             </form>
@@ -257,9 +275,6 @@ $ins_i18n = array(
                             }
 
                             display_finish($password);
-
-                            // A git checkout has no bundled theme; the release zip does.
-                            install_fallback_theme();
                         } elseif ($step === 5) {
                             // A missing nonce must never finalize: that writes osclass_installed and locks the installer.
                             install_session_expired_panel();
@@ -272,9 +287,9 @@ $ins_i18n = array(
 
         <footer class="ins-under">
             <ul class="ins-footer-links">
-                <li><a href="https://docs.mindstellar.com/osclass-docs/" target="_blank" rel="noopener" hreflang="en"><?php _e('Documentation'); ?></a></li>
-                <li><a href="https://github.com/mindstellar/shopclass/" target="_blank" rel="noopener" hreflang="en"><?php _e('Feedback'); ?></a></li>
-                <li><a href="https://github.com/mindstellar/shopclass/discussions" target="_blank" rel="noopener" hreflang="en"><?php _e('Forums'); ?></a></li>
+                <li><a href="<?php echo \mindstellar\utility\ProjectLinks::INSTALL; ?>" target="_blank" rel="noopener" hreflang="en"><?php _e('Documentation'); ?></a></li>
+                <li><a href="<?php echo \mindstellar\utility\ProjectLinks::REPOSITORY; ?>" target="_blank" rel="noopener" hreflang="en"><?php _e('Feedback'); ?></a></li>
+                <li><a href="<?php echo \mindstellar\utility\ProjectLinks::FORUM; ?>" target="_blank" rel="noopener" hreflang="en"><?php _e('Forums'); ?></a></li>
             </ul>
         </footer>
     </div>

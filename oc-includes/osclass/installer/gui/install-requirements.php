@@ -17,8 +17,9 @@ if (!defined('ABS_PATH')) {
 /**
  * Step 1 body: one line when the server is fine, only the failures when it is not.
  * Requirement labels and fixes hold our own markup (code, links), so they are printed as they are.
+ * A failed row leads with its 'problem' title when it has one, else its label.
  *
- * @var array<int,array{requirement:string,fn:bool,solution:string}> $requirements
+ * @var array<int,array{requirement:string,fn:bool,solution:string,problem?:string}> $requirements
  * @var int $ins_fail_count Set here for the action bar.
  */
 
@@ -70,7 +71,7 @@ if ($ins_fail_count === 0) { ?>
             <li>
                 <?php echo $ins_icon_alert; ?>
                 <div>
-                    <p class="ins-problem-title"><?php echo $ins_req['requirement']; ?></p>
+                    <p class="ins-problem-title"><?php echo $ins_req['problem'] ?? $ins_req['requirement']; ?></p>
                     <?php if ($ins_req['solution'] !== '') { ?>
                         <p class="ins-problem-fix"><?php echo $ins_req['solution']; ?></p>
                     <?php } ?>
@@ -81,5 +82,5 @@ if ($ins_fail_count === 0) { ?>
     <?php if ($ins_pass_count > 0) { ?>
         <p class="ins-passed-line"><?php echo $ins_icon_check; ?><?php echo osc_esc_html(sprintf(_n('%d other check passed.', '%d other checks passed.', $ins_pass_count), $ins_pass_count)); ?></p>
     <?php } ?>
-    <p class="ins-help"><a href="https://github.com/mindstellar/shopclass/discussions" target="_blank" rel="noopener" hreflang="en"><?php echo osc_esc_html(__('Need more help?')); ?></a></p>
+    <p class="ins-help"><a href="<?php echo \mindstellar\utility\ProjectLinks::FORUM; ?>" target="_blank" rel="noopener" hreflang="en"><?php echo osc_esc_html(__('Need more help?')); ?></a></p>
 <?php } ?>

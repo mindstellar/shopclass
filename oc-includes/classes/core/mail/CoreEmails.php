@@ -34,6 +34,7 @@ use mindstellar\event\DispatcherInterface;
 use mindstellar\listing\ListingStatus;
 use mindstellar\mail\event\MailComposing;
 use mindstellar\mail\event\MailSent;
+use mindstellar\utility\ProjectLinks;
 use OSCLocale;
 use Page;
 use Params;
@@ -2443,7 +2444,7 @@ final class CoreEmails
             $body  .= '<p>We failed trying to upgrade your site to Shopclass {VERSION}. Heres is the error message: {MESSAGE}</p>';
         }
         $body .= '<p>If you experience any issues or need support, we will be happy to help you at the Shopclass support forums</p>';
-        $body .= '<p><a href="https://github.com/mindstellar/shopclass/discussions">https://github.com/mindstellar/shopclass/discussions</a></p>';
+        $body .= '<p><a href="' . ProjectLinks::FORUM . '">' . ProjectLinks::FORUM . '</a></p>';
         $body .= '<p>The Shopclass team</p>';
 
         $words   = array();

@@ -34,6 +34,7 @@ use mindstellar\apikey\ApiSettings;
 use mindstellar\apikey\Credential;
 use mindstellar\apikey\CredentialKind;
 use mindstellar\exception\RefusedException;
+use mindstellar\utility\ProjectLinks;
 
 /**
  * Answers one API request as an ordered pipeline from the on/off switch to caching, where any step
@@ -43,7 +44,7 @@ use mindstellar\exception\RefusedException;
 final class Kernel
 {
     /** Where deprecations are announced. */
-    public const CHANGELOG = 'https://mindstellar.com/docs/developers/api/changelog/';
+    public const CHANGELOG = ProjectLinks::API_CHANGELOG;
 
     /** The writes that honour If-Match. */
     private const CHECKED_WRITES = ['PUT', 'PATCH', 'DELETE'];

@@ -19,7 +19,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - **Settings → General → Site is a** sets classifieds or shop. In shop mode only admins post and shoppers see buyer pages only. `osc_site_mode()` reads it.
 - The installer asks for the site type and offers sample data; the CLI takes `--site-type` and `--sample-data`. **Listings** offers to remove the sample data later.
 - New category trees for classifieds and shop sites, on new installs only.
-- The installer takes Storefront's look, and installs Storefront from the catalogue when it is missing.
+- The web installer is redesigned: admin colours in light and dark, one fixed-height card, a short server check, and an install step that lists each task and moves its bar only when a task finishes. Anything that could not be done is listed under To finish later.
 - Listings can be products with option rows (Colour x Size and so on), each with its own SKU, price, stock, weight and shipping class.
 - A variant can have an old price shown crossed out, and says how many are left when stock is low.
 - **Goods orders**: a cart is priced on the server and paid by a card plugin, bank transfer or cash on delivery. Stock is taken when the order is placed and given back on refund or cancel.
@@ -163,6 +163,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- The installer's Documentation link opens the Shopclass docs.
 - The owner's new-order e-mail goes to the first administrator when the site has no contact address, instead of being dropped.
 - Block fields in the Customise screen can be changed again; only rich text worked. In dark mode a field with an error shows its red border, and the collapsed admin menu shows counts as a dot.
 - Custom date fields no longer save or show the day before when the visitor's time zone differs from the site's. The REST API now reads a custom-field date sent as a day, `2026-11-01`, on the site's clock, and a range ends at the end of its last day.

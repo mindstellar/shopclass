@@ -226,7 +226,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 printf(
                     osc_esc_html(__('Your Shopclass installation can be auto-upgraded. %1$s: the database and oc-content. You can also upgrade Shopclass manually, more information in the %2$s.')),
                     '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">' . osc_esc_html(__('Back up first')) . '</a>',
-                    '<a href="https://docs.mindstellar.com/">' . osc_esc_html(__('Documentation')) . '</a>'
+                    '<a href="' . osc_esc_html(\mindstellar\utility\ProjectLinks::DOCS) . '">' . osc_esc_html(__('Documentation')) . '</a>'
                 );
             }
             ?>

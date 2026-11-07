@@ -14,7 +14,7 @@
     if (i18nNode) {
         try {
             i18n = JSON.parse(i18nNode.textContent);
-        } catch (e) {
+        } catch {
             i18n = {};
         }
     }
@@ -45,8 +45,9 @@
         form.appendChild(input);
     }
 
-    function announce(message) {
-        var el = document.getElementById('ins-copy-announcer');
+    // Speaks a message through a polite live region; the copy announcer unless another id is given.
+    function announce(message, regionId) {
+        var el = document.getElementById(regionId || 'ins-copy-announcer');
         if (!el) {
             return;
         }
@@ -186,6 +187,7 @@
             if (!input || !window.crypto || !window.crypto.getRandomValues) {
                 return;
             }
+            btn.hidden = false;
             btn.addEventListener('click', function () {
                 var limit = 256 - (256 % alphabet.length);
                 var out = '';
@@ -215,14 +217,26 @@
        Copy-to-clipboard buttons (finish screen credentials)
        ------------------------------------------------------------- */
     function fallbackCopy(input) {
+        if (!('value' in input)) {
+            var range = document.createRange();
+            range.selectNodeContents(input);
+            var selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                return document.execCommand('copy');
+            } catch {
+                return false;
+            }
+        }
         var wasReadOnly = input.hasAttribute('readonly');
         input.focus();
         input.select();
         input.setSelectionRange(0, 999999);
-        var ok = false;
+        var ok;
         try {
             ok = document.execCommand('copy');
-        } catch (e) {
+        } catch {
             ok = false;
         }
         if (wasReadOnly) {
@@ -262,7 +276,7 @@
 
             btn.addEventListener('click', function () {
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText(input.value).then(
+                    navigator.clipboard.writeText('value' in input ? input.value : input.textContent).then(
                         function () {
                             onCopied(true);
                         },
@@ -396,15 +410,21 @@
     }
 
     /* -----------------------------------------------------------------
-       Step 2: "Test connection" — advisory, never blocks "Connect"
+       Step 2: "Test connection" — advisory, never blocks "Connect". A failed
+       test fills the same panel and flags the same field as a failed Connect.
        ------------------------------------------------------------- */
+    var TEST_TIMEOUT = 30000;
+
     function initDbTest() {
         var btn = document.getElementById('ins-test-btn');
         var form = document.getElementById('ins-database-form');
         var resultEl = document.getElementById('ins-test-result');
-        if (!btn || !form || !resultEl) {
+        var panel = document.getElementById('ins-db-error');
+        var panelText = panel ? panel.querySelector('.ins-panel-text') : null;
+        if (!btn || !form || !resultEl || !panel || !panelText || !window.fetch) {
             return;
         }
+        btn.hidden = false;
 
         function clearFieldFlags() {
             DB_FIELDS.forEach(function (name) {
@@ -412,34 +432,66 @@
             });
         }
 
+        function showError(message, fieldName) {
+            var field = fieldName ? form.elements[fieldName] : null;
+            panelText.textContent = message;
+            panel.classList.remove('is-dismissing');
+            panel.hidden = false;
+            if (field) {
+                var more = field.closest ? field.closest('details') : null;
+                if (more) {
+                    more.open = true;
+                }
+                setFieldError(field, renderedError(field, message));
+                field.focus();
+            } else {
+                panel.focus();
+            }
+        }
+
         btn.addEventListener('click', function () {
+            if (btn.getAttribute('aria-busy') === 'true') {
+                return;
+            }
             clearFieldFlags();
+            panel.hidden = true;
             resultEl.textContent = '';
             resultEl.className = 'ins-test-result';
             setBusy(btn, true, text('testing', 'Testing…'));
 
             var params = formToUrlEncoded(form, { action: 'test_db' });
+            var controller = window.AbortController ? new AbortController() : null;
+            var timer = window.setTimeout(function () {
+                if (controller) {
+                    controller.abort();
+                }
+            }, TEST_TIMEOUT);
 
             fetch('install.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: params.toString(),
+                signal: controller ? controller.signal : undefined,
             })
                 .then(function (response) {
                     return response.json();
                 })
                 .then(function (data) {
-                    resultEl.textContent = data.message || '';
-                    resultEl.classList.add('ins-test-result-' + (data.level || 'error'));
-                    if (data.field && form.elements[data.field]) {
-                        setFieldError(form.elements[data.field], renderedError(form.elements[data.field], data.message));
+                    if (data && data.level === 'success') {
+                        resultEl.textContent = data.message || '';
+                        resultEl.classList.add('ins-test-result-success');
+                        if (resultEl.scrollIntoView) {
+                            resultEl.scrollIntoView({ block: 'nearest' });
+                        }
+                    } else {
+                        showError((data && data.message) || text('networkError', 'Something went wrong. Check your connection and try again.'), data && data.field);
                     }
                 })
                 .catch(function () {
-                    resultEl.textContent = text('networkError', 'Something went wrong. Check your connection and try again.');
-                    resultEl.classList.add('ins-test-result-error');
+                    showError(text('networkError', 'Something went wrong. Check your connection and try again.'), null);
                 })
                 .then(function () {
+                    window.clearTimeout(timer);
                     setBusy(btn, false);
                 });
         });
@@ -462,159 +514,373 @@
             radio.addEventListener('change', sync);
         });
         sync();
+
+        var count = document.getElementById('ins-addons-count');
+        if (count) {
+            var boxes = list.querySelectorAll('input[name="shop_plugins[]"]');
+            var syncCount = function () {
+                var picked = Array.prototype.filter.call(boxes, function (box) {
+                    return box.checked;
+                }).length;
+                count.textContent = format(count.getAttribute('data-template') || '%1$s / %2$s', picked, boxes.length);
+            };
+            list.addEventListener('change', syncCount);
+        }
     }
 
     /* -----------------------------------------------------------------
-       Step 4: site + admin form, submitted via fetch, then a synthetic
-       POST to install.php carrying the result to step 5.
+       Steps 4 and 5: the site + admin form runs the install plan one request per unit, then a
+       synthetic POST to install.php carries the result to the done step.
        ------------------------------------------------------------- */
+    var UNIT_TIMEOUT = 180000;
+    var SLOW_AFTER = 8000;
+    var FINISH_PAUSE = 700;
+
+    function format(template, a, b) {
+        return template.replace('%1$s', String(a)).replace('%2$s', String(b)).replace('%s', String(a));
+    }
+
+    // Marks step n of the rail and the phone step line.
+    function setRail(n) {
+        document.querySelectorAll('.ins-steps li[data-rail]').forEach(function (li) {
+            var num = parseInt(li.getAttribute('data-rail'), 10);
+            li.classList.remove('is-done', 'is-current', 'is-upcoming');
+            li.classList.add(num < n ? 'is-done' : num === n ? 'is-current' : 'is-upcoming');
+            if (num === n) {
+                li.setAttribute('aria-current', 'step');
+            } else {
+                li.removeAttribute('aria-current');
+            }
+        });
+        var label = document.querySelector('.ins-steps li[data-rail="' + n + '"] .ins-step-label');
+        var mLabel = document.getElementById('ins-mstep-label');
+        var mCount = document.getElementById('ins-mstep-count');
+        var segs = document.querySelectorAll('.ins-segs > span');
+        if (label && mLabel) {
+            mLabel.textContent = label.textContent;
+        }
+        if (mCount) {
+            mCount.textContent = format(text('stepCount', 'Step %1$s of %2$s'), n, segs.length || 6);
+        }
+        segs.forEach(function (seg, i) {
+            seg.classList.toggle('is-on', i < n);
+        });
+    }
+
+    // The tasks from data-install-plan; the places task only when a country is picked.
+    function readPlan(form, country) {
+        var plan;
+        try {
+            plan = JSON.parse(form.getAttribute('data-install-plan') || '[]');
+        } catch {
+            plan = [];
+        }
+        var countryText = '';
+        var wantsCountry = !!country && country.value !== '' && country.value !== 'skip';
+        if (wantsCountry && country.selectedOptions && country.selectedOptions[0]) {
+            countryText = country.selectedOptions[0].textContent.trim();
+        }
+        return plan.filter(function (task) {
+            return task.when !== 'country' || wantsCountry;
+        }).map(function (task) {
+            task.label = String(task.label || '').replace('%s', countryText);
+            return task;
+        });
+    }
+
+    // One request for one unit. Resolves to the parsed JSON, or null when nothing usable came back.
+    function unitRequest(form, country, unit, isAccount) {
+        var nonceField = form.elements.install_nonce;
+        var params;
+        if (isAccount) {
+            params = formToUrlEncoded(form, { action: unit.action });
+        } else {
+            params = new URLSearchParams(unit.fields || {});
+            params.set('action', unit.action);
+            params.set('install_nonce', nonceField ? nonceField.value : '');
+            if (unit.action === 'locations' && country) {
+                params.set('location-json', country.value);
+            }
+        }
+        var controller = new AbortController();
+        var timer = window.setTimeout(function () {
+            controller.abort();
+        }, UNIT_TIMEOUT);
+        return fetch('install-location.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params.toString(),
+            signal: controller.signal,
+        }).then(function (response) {
+            return response.json();
+        }).catch(function () {
+            return null;
+        }).then(function (data) {
+            window.clearTimeout(timer);
+            return data && typeof data === 'object' ? data : null;
+        });
+    }
+
+    function buildRows(list, plan) {
+        list.textContent = '';
+        return plan.map(function (task) {
+            var li = document.createElement('li');
+            li.className = 'ins-task';
+            li.setAttribute('data-s', 'wait');
+            var st = document.createElement('span');
+            st.className = 'ins-task-st';
+            var name = document.createElement('span');
+            name.className = 'ins-task-name';
+            name.appendChild(document.createTextNode(task.label));
+            var sub = document.createElement('span');
+            sub.className = 'ins-task-sub';
+            name.appendChild(sub);
+            var state = document.createElement('span');
+            state.className = 'ins-task-state';
+            li.appendChild(st);
+            li.appendChild(name);
+            li.appendChild(state);
+            list.appendChild(li);
+            return { li: li, sub: sub, state: state };
+        });
+    }
+
+    // While the install runs, closing or leaving the tab asks first.
+    function onLeaveWhileRunning(event) {
+        event.preventDefault();
+        event.returnValue = '';
+    }
+
+    function guardLeave(on) {
+        if (on) {
+            window.addEventListener('beforeunload', onLeaveWhileRunning);
+        } else {
+            window.removeEventListener('beforeunload', onLeaveWhileRunning);
+        }
+    }
+
+    function submitFinish(form, emailStatus, password, lost) {
+        guardLeave(false);
+        var nextForm = document.createElement('form');
+        nextForm.method = 'POST';
+        nextForm.action = 'install.php';
+        nextForm.style.display = 'none';
+        addHiddenField(nextForm, 'step', '5');
+        addHiddenField(nextForm, 'result', emailStatus || '');
+        addHiddenField(nextForm, 'password', password || '');
+        lost.forEach(function (token) {
+            addHiddenField(nextForm, 'lost[]', token);
+        });
+        var nonceField = form.elements.install_nonce;
+        addHiddenField(nextForm, 'install_nonce', nonceField ? nonceField.value : '');
+        document.body.appendChild(nextForm);
+        nextForm.submit();
+    }
+
+    // A fatal answer: the row and the bar stop, and the rendered panel and Reload link are shown.
+    function fatalStop(ui, row, message) {
+        guardLeave(false);
+        row.li.setAttribute('data-s', 'skip');
+        row.state.textContent = '';
+        row.sub.textContent = message;
+        ui.track.classList.add('is-finished');
+        ui.nowLine.textContent = '';
+        if (ui.eta) {
+            ui.eta.hidden = true;
+        }
+        if (ui.reload) {
+            ui.reload.hidden = false;
+        }
+        if (ui.fatal) {
+            var slot = ui.fatal.querySelector('.ins-panel-text');
+            if (slot) {
+                slot.textContent = message;
+            }
+            ui.fatal.hidden = false;
+            ui.fatal.focus();
+        }
+    }
+
+    /*
+     * Runs the plan one unit at a time. A failed account calls onAccountFail(data) and stops;
+     * otherwise onDone(account, lost) runs after the last unit.
+     */
+    function runPlan(plan, rows, ui, onAccountFail, onDone) {
+        var total = plan.reduce(function (sum, task) {
+            return sum + task.units.length;
+        }, 0);
+        var done = 0;
+        var lost = [];
+        var account = { password: '', emailStatus: '' };
+        var slowTimer = 0;
+
+        // The only place the bar moves, and it runs only when a unit has settled.
+        function settleUnit() {
+            done++;
+            var pct = total ? done / total : 0;
+            ui.fill.style.transform = 'scaleX(' + pct + ')';
+            ui.track.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
+            var count = format(text('doneCount', '%1$s of %2$s done'), done, total);
+            ui.countLine.textContent = count;
+            ui.track.setAttribute('aria-valuetext', count);
+        }
+
+        // One screen reader message per finished task, never per request.
+        function announceTask(message) {
+            announce(message, 'ins-progress-announcer');
+        }
+
+        ui.countLine.textContent = format(text('doneCount', '%1$s of %2$s done'), 0, total);
+        ui.nowLine.textContent = text('starting', 'Starting…');
+
+        function finishAll() {
+            ui.nowLine.textContent = text('allDone', 'All done');
+            announceTask(text('allDone', 'All done'));
+            ui.track.classList.add('is-finished');
+            window.setTimeout(function () {
+                onDone(account, lost);
+            }, FINISH_PAUSE);
+        }
+
+        function runTask(ti) {
+            if (ti >= plan.length) {
+                finishAll();
+                return;
+            }
+            var task = plan[ti];
+            var row = rows[ti];
+            var skipped = [];
+            row.li.setAttribute('data-s', 'run');
+
+            function endTask() {
+                var count = task.units.length;
+                if (skipped.length) {
+                    row.li.setAttribute('data-s', 'skip');
+                    if (count > 1) {
+                        row.state.textContent = format(text('addedCount', '%1$s of %2$s added'), count - skipped.length, count);
+                        row.sub.textContent = format(text('skippedSub', "%s couldn't be added. You can add it later."), skipped.map(function (s) {
+                            return s.label;
+                        }).join(', '));
+                    } else {
+                        row.state.textContent = '';
+                        row.sub.textContent = skipped[0].reason;
+                    }
+                } else {
+                    row.li.setAttribute('data-s', 'ok');
+                    row.state.textContent = count > 1 ? format(text('unitCount', '%1$s of %2$s'), count, count) : '';
+                }
+                announceTask(skipped.length ? format(text('taskSkipped', '%1$s. %2$s'), task.label, row.sub.textContent) : format(text('taskDone', '%s done'), task.label));
+                runTask(ti + 1);
+            }
+
+            function runUnit(unitIndex) {
+                if (unitIndex >= task.units.length) {
+                    endTask();
+                    return;
+                }
+                var unit = task.units[unitIndex];
+                var isAccount = !!task.stop;
+                var unitLabel = unit.label || '';
+                ui.nowLine.textContent = task.label + (unitLabel && task.units.length > 1 ? ': ' + unitLabel : '') + '…';
+                if (task.units.length > 1) {
+                    row.state.textContent = format(text('unitCount', '%1$s of %2$s'), unitIndex + 1, task.units.length);
+                }
+                window.clearTimeout(slowTimer);
+                slowTimer = window.setTimeout(function () {
+                    ui.slow.classList.add('is-on');
+                }, SLOW_AFTER);
+
+                unitRequest(ui.form, ui.country, unit, isAccount).then(function (data) {
+                    window.clearTimeout(slowTimer);
+                    ui.slow.classList.remove('is-on');
+
+                    if (isAccount) {
+                        if (data && data.status) {
+                            account.password = data.password || '';
+                            account.emailStatus = data.email_status || '';
+                        } else {
+                            onAccountFail(data);
+                            return;
+                        }
+                    } else if (data && data.fatal) {
+                        fatalStop(ui, row, data.error || text('networkError', 'Something went wrong. Check your connection and try again.'));
+                        return;
+                    } else if (!data) {
+                        if (unit.lost && lost.indexOf(unit.lost) === -1) {
+                            lost.push(unit.lost);
+                        }
+                        skipped.push({ label: unitLabel || task.label, reason: text('lost', 'The server did not answer in time, or the connection dropped.') });
+                    } else if (!data.status) {
+                        skipped.push({ label: unitLabel || task.label, reason: data.message || data.error || text('lost', 'The server did not answer in time, or the connection dropped.') });
+                    }
+                    settleUnit();
+                    runUnit(unitIndex + 1);
+                });
+            }
+
+            runUnit(0);
+        }
+
+        runTask(0);
+    }
+
     function initTargetForm() {
         var form = document.getElementById('ins-target-form');
         if (!form) {
             return;
         }
-        var wrap = document.getElementById('ins-target-wrap');
-        var overlay = document.getElementById('ins-setup-overlay');
         var errorPanel = document.getElementById('ins-target-error');
-
+        var errorSlot = errorPanel ? errorPanel.querySelector('.ins-panel-text') : null;
+        var errorDefault = errorSlot ? errorSlot.textContent : '';
+        var title = document.getElementById('ins-progress-title');
         var siteName = document.getElementById('webtitle');
         var adminUser = document.getElementById('admin_user');
         var email = document.getElementById('email');
-
+        var ui = {
+            form: form,
+            country: document.getElementById('location-json'),
+            progress: document.getElementById('ins-progress'),
+            nowLine: document.getElementById('ins-meter-now'),
+            fatal: document.getElementById('ins-progress-error'),
+            reload: document.getElementById('ins-progress-reload'),
+            countLine: document.getElementById('ins-meter-count'),
+            track: document.getElementById('ins-track'),
+            fill: document.getElementById('ins-fill'),
+            slow: document.getElementById('ins-slow'),
+            eta: document.getElementById('ins-eta'),
+        };
+        var list = document.getElementById('ins-tasks');
         var userPattern = /^[A-Za-z0-9]+$/;
         var emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
         [siteName, adminUser, email].forEach(clearErrorOnInput);
 
-        function showOverlay() {
-            if (wrap) {
-                wrap.setAttribute('aria-busy', 'true');
-            }
-            form.inert = true;
-            if (overlay) {
-                overlay.hidden = false;
-            }
+        function showForm() {
+            guardLeave(false);
+            ui.progress.hidden = true;
+            form.hidden = false;
+            setRail(4);
         }
 
-        function hideOverlay() {
-            if (wrap) {
-                wrap.removeAttribute('aria-busy');
-            }
-            form.inert = false;
-            if (overlay) {
-                overlay.hidden = true;
-            }
-        }
-
-        function showServerError(message) {
-            if (!errorPanel) {
+        function onAccountFail(data) {
+            // A fatal answer means the session is gone; step 4 without it renders the "Your session ended" stage.
+            if (data && data.fatal) {
+                guardLeave(false);
+                window.location.assign('install.php?step=4');
                 return;
             }
-            errorPanel.textContent = message;
-            errorPanel.hidden = false;
-        }
-
-        // Steps whose request got no answer (network error, time limit, not JSON); the finish page lists them.
-        var lost = [];
-
-        function submitFinish(emailStatus, password, locationError) {
-            var nextForm = document.createElement('form');
-            nextForm.method = 'POST';
-            nextForm.action = 'install.php';
-            nextForm.style.display = 'none';
-            addHiddenField(nextForm, 'step', '5');
-            addHiddenField(nextForm, 'result', emailStatus || '');
-            addHiddenField(nextForm, 'password', password || '');
-            if (locationError) {
-                addHiddenField(nextForm, 'error_location', '1');
-            }
-            lost.forEach(function (token) {
-                addHiddenField(nextForm, 'lost[]', token);
-            });
-            var nonceField = form.elements.install_nonce;
-            addHiddenField(nextForm, 'install_nonce', nonceField ? nonceField.value : '');
-            document.body.appendChild(nextForm);
-            nextForm.submit();
-        }
-
-        var queue = [];
-        try {
-            queue = JSON.parse(form.getAttribute('data-shop-queue') || '[]');
-        } catch (e) {
-            queue = [];
-        }
-        var overlayText = document.getElementById('ins-overlay-text');
-
-        function shopRequest(fields) {
-            var params = new URLSearchParams(fields);
-            var nonceField = form.elements.install_nonce;
-            params.set('install_nonce', nonceField ? nonceField.value : '');
-            return fetch('install-location.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params.toString(),
-            }).then(
-                function (response) {
-                    return response.json();
-                },
-                function () {
-                    return null;
+            showForm();
+            var serverField = data && data.field ? document.getElementById(data.field) : null;
+            if (serverField) {
+                setFieldError(serverField, renderedError(serverField, data.error));
+                serverField.focus();
+            } else if (errorPanel) {
+                if (errorSlot) {
+                    errorSlot.textContent = (data && data.error) || errorDefault;
                 }
-            ).catch(function () {
-                return null;
-            });
-        }
-
-        // One package or one batch of sample listings per request, so no request runs into a
-        // shared host's time limit. A failure does not stop the queue; the server keeps it for the finish page.
-        function buildSteps(sampleBatches) {
-            var steps = [];
-            if (sampleBatches > 0) {
-                steps.push({ fields: { action: 'sample_photos' }, lost: 'sample_photos', label: text('samplePhotos', 'Downloading sample photos…') });
+                errorPanel.hidden = false;
+                errorPanel.focus();
             }
-            for (var b = 0; b < sampleBatches; b++) {
-                steps.push({
-                    fields: { action: 'sample_batch', batch: String(b) },
-                    lost: 'sample_batch',
-                    label: text('sampleBatch', 'Adding sample listings… (%1$s of %2$s)')
-                        .replace('%1$s', String(b + 1))
-                        .replace('%2$s', String(sampleBatches)),
-                });
-            }
-            var packages = queue.filter(function (item) {
-                return item.action === 'install_package';
-            });
-            queue.forEach(function (item) {
-                var label = text('shopMode', 'Turning on shop mode…');
-                if (item.action === 'install_package') {
-                    label = text('installing', 'Installing %1$s… (%2$s of %3$s)')
-                        .replace('%1$s', item.name)
-                        .replace('%2$s', String(packages.indexOf(item) + 1))
-                        .replace('%3$s', String(packages.length));
-                }
-                steps.push({
-                    fields: { action: item.action, type: item.type, slug: item.slug },
-                    lost: item.action === 'install_package' ? item.type + ':' + item.slug : 'activate',
-                    label: label,
-                });
-            });
-            return steps;
-        }
-
-        function runSteps(steps, index, done) {
-            if (index >= steps.length) {
-                done();
-                return;
-            }
-            if (overlayText) {
-                overlayText.textContent = steps[index].label;
-            }
-            shopRequest(steps[index].fields).then(function (data) {
-                if (!data && lost.indexOf(steps[index].lost) === -1) {
-                    lost.push(steps[index].lost);
-                }
-                runSteps(steps, index + 1, done);
-            });
         }
 
         form.addEventListener('submit', function (event) {
@@ -638,38 +904,41 @@
             if (errorPanel) {
                 errorPanel.hidden = true;
             }
-            showOverlay();
+            if (!ui.progress || !list || !ui.track || !ui.fill) {
+                return;
+            }
 
-            var params = formToUrlEncoded(form);
-
-            fetch('install-location.php', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params.toString(),
-            })
-                .then(function (response) {
-                    return response.json();
-                })
-                .then(function (data) {
-                    if (data && data.status) {
-                        runSteps(buildSteps(parseInt(data.sample_batches, 10) || 0), 0, function () {
-                            submitFinish(data.email_status, data.password, data.location_error);
-                        });
-                        return;
-                    }
-                    hideOverlay();
-                    var serverField = data && data.field ? document.getElementById(data.field) : null;
-                    if (serverField) {
-                        setFieldError(serverField, renderedError(serverField, data.error));
-                        serverField.focus();
-                        return;
-                    }
-                    showServerError((data && data.error) || text('networkError', 'Something went wrong. Check your connection and try again.'));
-                })
-                .catch(function () {
-                    hideOverlay();
-                    showServerError(text('networkError', 'Something went wrong. Check your connection and try again.'));
-                });
+            var plan = readPlan(form, ui.country);
+            if (!plan.length) {
+                return;
+            }
+            var rows = buildRows(list, plan);
+            ui.fill.style.transform = 'scaleX(0)';
+            ui.track.setAttribute('aria-valuenow', '0');
+            ui.track.classList.remove('is-finished');
+            ui.track.removeAttribute('aria-valuetext');
+            if (ui.fatal) {
+                ui.fatal.hidden = true;
+            }
+            if (ui.reload) {
+                ui.reload.hidden = true;
+            }
+            if (ui.slow) {
+                ui.slow.classList.remove('is-on');
+            }
+            if (title) {
+                title.textContent = (title.getAttribute('data-template') || '%s').replace('%s', siteName ? siteName.value.trim() : '');
+            }
+            form.hidden = true;
+            ui.progress.hidden = false;
+            guardLeave(true);
+            setRail(5);
+            if (title) {
+                title.focus();
+            }
+            runPlan(plan, rows, ui, onAccountFail, function (account, lost) {
+                submitFinish(form, account.emailStatus, account.password, lost);
+            });
         });
     }
 
@@ -733,11 +1002,63 @@
         });
     }
 
+    // The done page opens on its headline so the screen reader starts there.
+    function focusDoneTitle() {
+        var heading = document.getElementById('ins-done-title');
+        if (heading) {
+            heading.focus({ preventScroll: true });
+        }
+    }
+
     function focusFirstInvalid() {
         var bad = document.querySelector('.ins-stage [aria-invalid="true"]');
         if (bad) {
             bad.focus();
         }
+    }
+
+    /* -----------------------------------------------------------------
+       Plain posts (steps 1 and 3) and "Check again": one press only. The
+       browser's back button brings the page back usable.
+       ------------------------------------------------------------- */
+    function initSinglePress() {
+        ['ins-requirements-form', 'ins-site-type-form'].forEach(function (id) {
+            var form = document.getElementById(id);
+            if (!form) {
+                return;
+            }
+            form.addEventListener('submit', function (event) {
+                if (form.getAttribute('data-sent') === '1') {
+                    event.preventDefault();
+                    return;
+                }
+                form.setAttribute('data-sent', '1');
+            });
+        });
+        var again = document.getElementById('ins-check-again');
+        var againLabel = again ? again.textContent : '';
+        if (again) {
+            again.addEventListener('click', function (event) {
+                if (again.getAttribute('aria-disabled') === 'true') {
+                    event.preventDefault();
+                    return;
+                }
+                again.setAttribute('aria-disabled', 'true');
+                again.textContent = text('checking', 'Checking…');
+            });
+        }
+        window.addEventListener('pageshow', function (event) {
+            if (!event.persisted) {
+                return;
+            }
+            document.querySelectorAll('form[data-sent]').forEach(function (form) {
+                form.removeAttribute('data-sent');
+            });
+            if (again) {
+                again.removeAttribute('aria-disabled');
+                again.textContent = againLabel;
+            }
+        });
     }
 
     // Step 1: initLocaleSelect. Step 2: initCreateDbToggle, initDatabaseForm, initDbTest. Step 3: initSiteType. Step 4: initTargetForm.
@@ -752,8 +1073,10 @@
         initDbTest();
         initSiteType();
         initTargetForm();
+        initSinglePress();
         initThemeToggle();
         initScrollFade();
         focusFirstInvalid();
+        focusDoneTitle();
     });
 })();

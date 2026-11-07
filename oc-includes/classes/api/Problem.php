@@ -19,6 +19,7 @@ use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
 use mindstellar\exception\RefusedException;
 use mindstellar\messaging\MessagePolicy;
+use mindstellar\utility\ProjectLinks;
 
 /**
  * RFC 9457 problem answers and the error catalogue. `code` is the stable name a client branches on,
@@ -28,7 +29,7 @@ use mindstellar\messaging\MessagePolicy;
 final class Problem
 {
     /** @api Where the `type` URLs point. */
-    public const TYPE_BASE = 'https://mindstellar.com/docs/developers/api/errors/#';
+    public const TYPE_BASE = ProjectLinks::API_ERRORS;
 
     /** @api A plugin's code: `ext_<slug>_<name>`, the slug's `-` written `_`. */
     public const PLUGIN_CODE = '/^ext_[a-z0-9]+(?:_[a-z0-9]+)+$/D';

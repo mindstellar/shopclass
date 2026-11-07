@@ -138,7 +138,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $issues[] = array(
             'tone'   => 'danger',
             'text'   => __('Your backups folder is open to the web. Anyone who guesses a file name could download a backup.'),
-            'action' => array('label' => __('How to close it'), 'url' => 'https://mindstellar.com/docs/deploy/security/#the-backups-folder'),
+            'action' => array('label' => __('How to close it'), 'url' => \mindstellar\utility\ProjectLinks::SECURITY_BACKUPS),
         );
     }
     if ($address !== '') {
@@ -155,7 +155,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $issues[] = array(
             'tone'   => 'danger',
             'text'   => __('Anyone can read your backups in this bucket. Make the bucket private.'),
-            'action' => array('label' => __('How to close it'), 'url' => 'https://mindstellar.com/docs/deploy/security/#backups-in-a-bucket'),
+            'action' => array('label' => __('How to close it'), 'url' => \mindstellar\utility\ProjectLinks::SECURITY_BACKUPS_BUCKET),
         );
     }
     if ($plain) {

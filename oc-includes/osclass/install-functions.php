@@ -106,10 +106,41 @@ function get_relative_url()
  */
 function get_requirements()
 {
+    // Failure titles and fixes in hosting-panel words; the exact path stays in a code span.
+    $code      = static fn (string $s): string => '<code>' . osc_esc_html($s) . '</code>';
+    $chmod     = static fn (string $path, string $mode): string => sprintf(
+        __('In your hosting file manager, right-click %1$s, choose Permissions and set them to %2$s. If this check still fails, ask your host to let the website write to it.'),
+        $code($path),
+        $mode
+    );
+    $extension = static fn (string $name): array => array(
+        'problem'  => sprintf(__('The PHP %s extension is not turned on'), $name),
+        'solution' => sprintf(__("In your hosting panel, open the PHP settings and turn on the %s extension. If you can't find it, ask your host."), $code(strtolower($name))),
+    );
+    $folder    = static fn (string $name, string $existsLabel, string $writableLabel): array => array(
+        'Folder <code>oc-content/' . $name . '</code> exists' => array(
+            'requirement' => $existsLabel,
+            'problem'     => sprintf(__('The %s folder is missing'), $code('oc-content/' . $name)),
+            'fn'          => file_exists(ABS_PATH . 'oc-content/' . $name . '/'),
+            'solution'    => sprintf(
+                __('In your hosting file manager, create a folder named %1$s inside %2$s. If you can\'t, ask your host to create it.'),
+                $code($name),
+                $code(ABS_PATH . 'oc-content/')
+            ),
+        ),
+        'Folder <code>oc-content/' . $name . '</code> is writable' => array(
+            'requirement' => $writableLabel,
+            'problem'     => sprintf(__("The %s folder can't be written to"), $code('oc-content/' . $name)),
+            'fn'          => is_writable(ABS_PATH . 'oc-content/' . $name . '/'),
+            'solution'    => $chmod(ABS_PATH . 'oc-content/' . $name . '/', '755'),
+        ),
+    );
+
     $array = array(
         'PHP version' => array(
             'requirement' => sprintf(__('PHP version >= %s'), SystemChecks::PHP_FLOOR),
             'fn'          => install_php_version_supported(PHP_VERSION),
+            'problem'     => sprintf(__('This server runs PHP %1$s. Shopclass needs PHP %2$s or newer'), PHP_VERSION, SystemChecks::PHP_FLOOR),
             'solution'    => sprintf(__('At least PHP %s (PHP %s or higher recommended) is required to run Shopclass. '
                 . 'You may talk with your hosting to upgrade your PHP version.'), SystemChecks::PHP_FLOOR, '8.4')
         ),
@@ -117,87 +148,23 @@ function get_requirements()
         'MySQLi extension for PHP' => array(
             'requirement' => __('MySQLi extension for PHP'),
             'fn'          => extension_loaded('mysqli'),
-            'solution'    => __('MySQLi extension is required. How to '
-                . '<a target="_blank" href="http://www.php.net/manual/en/mysqli.setup.php">install/configure</a>.')
-        ),
-
+        ) + $extension('MySQLi'),
         'GD extension for PHP'   => array(
             'requirement' => __('GD extension for PHP'),
             'fn'          => extension_loaded('gd'),
-            'solution'    => __('GD extension is required. How to '
-                . '<a target="_blank" href="http://www.php.net/manual/en/image.setup.php">install/configure</a>.')
-        ),
+        ) + $extension('GD'),
         'cURL extension for PHP' => array(
             'requirement' => __('cURL extension for PHP'),
             'fn'          => extension_loaded('curl'),
-            'solution'    => __('cURL extension is required. How to '
-                . '<a target="_blank" href="https://www.php.net/manual/en/curl.setup.php">install/configure</a>.')
-        ),
+        ) + $extension('cURL'),
         'Zip extension for PHP' => array(
             'requirement' => __('Zip extension for PHP'),
             'fn'          => extension_loaded('zip'),
-            'solution'    => __('Zip extension is required. How to '
-                . '<a target="_blank" href="https://www.php.net/manual/en/zip.installation.php">install/configure</a>.')
-        ),
-        'Folder <code>oc-content/uploads</code> exists' => array(
-            'requirement' => __('Folder <code>oc-content/uploads</code> exists'),
-            'fn'          => file_exists(ABS_PATH . 'oc-content/uploads/'),
-            'solution'    => sprintf(
-                __('You have to create <code>uploads</code> folder, i.e.: <code>mkdir %soc-content/uploads/</code>'),
-                ABS_PATH
-            )
-        ),
-
-        'Folder <code>oc-content/uploads</code> is writable' => array(
-            'requirement' => __('<code>oc-content/uploads</code> folder is writable'),
-            'fn'          => is_writable(ABS_PATH . 'oc-content/uploads/'),
-            'solution'    => sprintf(
-                __('<code>uploads</code> folder has to be writable, i.e.: '
-                    . '<code>chmod 0755 %soc-content/uploads/</code>'),
-                ABS_PATH
-            )
-        ),
-        // oc-content/downlods
-        'Folder <code>oc-content/downloads</code> exists'    => array(
-            'requirement' => __('Folder <code>oc-content/downloads</code> exists'),
-            'fn'          => file_exists(ABS_PATH . 'oc-content/downloads/'),
-            'solution'    => sprintf(
-                __('You have to create <code>downloads</code> folder, i.e.: '
-                    . '<code>mkdir %soc-content/downloads/</code>'),
-                ABS_PATH
-            )
-        ),
-
-        'Folder <code>oc-content/downloads</code> is writable' => array(
-            'requirement' => __('<code>oc-content/downloads</code> folder is writable'),
-            'fn'          => is_writable(ABS_PATH . 'oc-content/downloads/'),
-            'solution'    => sprintf(
-                __('<code>downloads</code> folder has to be writable, i.e.: '
-                    . '<code>chmod 0755 %soc-content/downloads/</code>'),
-                ABS_PATH
-            )
-        ),
-        // oc-content/languages
-        'Folder <code>oc-content/languages</code> exists'      => array(
-            'requirement' => __('Folder <code>oc-content/languages</code> folder exists'),
-            'fn'          => file_exists(ABS_PATH . 'oc-content/languages/'),
-            'solution'    => sprintf(
-                __('You have to create the <code>languages</code> folder, i.e.: '
-                    . '<code>mkdir %soc-content/languages/</code>'),
-                ABS_PATH
-            )
-        ),
-
-        'Folder <code>oc-content/languages</code> is writable' => array(
-            'requirement' => __('<code>oc-content/languages</code> folder is writable'),
-            'fn'          => is_writable(ABS_PATH . 'oc-content/languages/'),
-            'solution'    => sprintf(
-                __('<code>languages</code> folder has to be writable, i.e.: '
-                    . '<code>chmod 0755 %soc-content/languages/</code>'),
-                ABS_PATH
-            )
-        ),
-    );
+        ) + $extension('Zip'),
+    )
+        + $folder('uploads', __('Folder <code>oc-content/uploads</code> exists'), __('<code>oc-content/uploads</code> folder is writable'))
+        + $folder('downloads', __('Folder <code>oc-content/downloads</code> exists'), __('<code>oc-content/downloads</code> folder is writable'))
+        + $folder('languages', __('Folder <code>oc-content/languages</code> folder exists'), __('<code>oc-content/languages</code> folder is writable'));
 
     // Only when a database is already configured (config.php or environment); otherwise
     // there is nothing to connect to until step 2.
@@ -220,11 +187,9 @@ function get_requirements()
         }
         $array['File <code>config.php</code> is writable'] = array(
             'requirement' => __('<code>config.php</code> file is writable'),
+            'problem'     => sprintf(__("The %s file can't be written to"), $code('config.php')),
             'fn'          => $config_writable,
-            'solution'    => sprintf(
-                __('<code>config.php</code> file has to be writable, i.e.: <code>chmod 0755 %sconfig.php</code>'),
-                ABS_PATH
-            )
+            'solution'    => $chmod(ABS_PATH . 'config.php', '644'),
         );
     } else {
         if (is_writable(ABS_PATH)) {
@@ -232,11 +197,9 @@ function get_requirements()
         }
         $array['Root directory is writable'] = array(
             'requirement' => __('Root directory is writable'),
+            'problem'     => __("Shopclass can't write to its own folder"),
             'fn'          => $root_writable,
-            'solution'    => sprintf(
-                __('Root folder has to be writable, i.e.: <code>chmod 0755 %s</code>'),
-                ABS_PATH
-            )
+            'solution'    => $chmod(ABS_PATH, '755'),
         );
 
         if (file_exists(ABS_PATH . 'config-sample.php')) {
@@ -244,6 +207,7 @@ function get_requirements()
         }
         $array['File <code>config-sample.php</code> exists'] = array(
             'requirement' => __('<code>config-sample.php</code> file exists'),
+            'problem'     => sprintf(__('The %s file is missing'), $code('config-sample.php')),
             'fn'          => $config_sample,
             'solution'    => __('<code>config-sample.php</code> file is required, you should re-download Shopclass.')
         );
@@ -1547,12 +1511,15 @@ function display_database_config($form_data = null, $error = null)
 function install_session_expired_panel()
 {
     ?>
-    <div class="ins-panel ins-panel-warning" role="alert">
-        <?php _e('Your session expired before setup finished. Please restart the installer to complete it.'); ?>
+    <div class="ins-stage">
+        <div class="ins-stage-body">
+            <h1 class="ins-headline"><?php _e('Your session ended'); ?></h1>
+            <p class="ins-body"><?php _e('Your session expired before setup finished. Please restart the installer to complete it.'); ?></p>
+        </div>
+        <div class="ins-actions">
+            <a class="ins-btn ins-btn-primary" href="install.php"><?php _e('Restart the installer'); ?></a>
+        </div>
     </div>
-    <p>
-        <a class="ins-btn ins-btn-primary" href="install.php"><?php _e('Restart the installer'); ?></a>
-    </p>
     <?php
 }
 
@@ -1691,10 +1658,174 @@ function install_shop_step(string $action, string $type, string $slug, ?\mindste
 }
 
 /**
+ * Run one unit of the install the browser asked for and say how it went. Each unit is one request,
+ * so no request runs into a shared host's time limit; the caller has checked the nonce already.
+ *
+ * @param string $action account (or ''), starter, locations, storefront, install_package,
+ *                       activate_theme, sample_photos or sample_batch
+ *
+ * @return array<string, mixed> the JSON answer: status plus message, or the account fields
+ */
+function install_run_unit(string $action): array
+{
+    if ($action === '' || $action === 'account') {
+        return install_account_unit();
+    }
+    if ($action === 'install_package' || $action === 'activate_theme') {
+        install_load_app_helpers();
+        $result = install_shop_step($action, Params::getParamString('type'), Params::getParamString('slug'));
+
+        return array('status' => $result['ok'], 'message' => $result['message']);
+    }
+    if ($action === 'sample_photos' || $action === 'sample_batch') {
+        install_load_seed_helpers();
+        $ok = install_sample_step($action, Params::getParamInt('batch'))['ok'];
+
+        return array('status' => $ok, 'message' => $ok ? '' : ($action === 'sample_photos'
+            ? __("The example photos couldn't be downloaded.")
+            : __("Some example listings couldn't be added.")));
+    }
+    if (!in_array($action, array('starter', 'locations', 'storefront'), true)) {
+        return array('status' => false, 'message' => __('This step is not part of this install.'));
+    }
+    if (!install_admin_exists()) {
+        return array('status' => false, 'message' => __('Create the admin account first.'));
+    }
+    if ($action === 'starter') {
+        return install_starter_unit();
+    }
+    if ($action === 'locations') {
+        $location = Params::getParamString('location-json');
+
+        return install_locations_unit(Params::getParam('skip-location-input') === 'skip' ? 'skip' : $location);
+    }
+
+    return install_storefront_unit();
+}
+
+/**
+ * Check the site details and create (or update) the admin account. Nothing else runs here.
+ *
+ * @return array<string, mixed> {status, email_status, password}, or {status:false, error, field}
+ */
+function install_account_unit(): array
+{
+    // Re-validate on the server. The browser validates too, but never trust it.
+    $problem = \mindstellar\install\SiteDetails::problem(
+        (string) Params::getParam('s_name'),
+        (string) Params::getParam('email'),
+        (string) Params::getParam('webtitle')
+    );
+    if ($problem !== null) {
+        return array('status' => false) + $problem;
+    }
+    try {
+        $result = basic_info();
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: creating the admin account failed: ' . $e->getMessage());
+
+        return array(
+            'status' => false,
+            'error'  => __('The admin account could not be created. Nothing was saved — please try again.'),
+            'field'  => '',
+        );
+    }
+
+    return array('status' => true, 'email_status' => $result['email_status'], 'password' => $result['s_password']);
+}
+
+/**
+ * Whether the account unit has saved the admin row; the other content units wait for it.
+ *
+ * @return bool
+ */
+function install_admin_exists(): bool
+{
+    return \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first() !== null;
+}
+
+/**
+ * Add the starter categories and the example page for the chosen site type.
+ *
+ * @param callable(string): bool|null $seed writes them; install_seed_starter() when null
+ *
+ * @return array{status:bool, message:string}
+ */
+function install_starter_unit(?callable $seed = null): array
+{
+    if ($seed === null) {
+        install_load_seed_helpers();
+        $seed = 'install_seed_starter';
+    }
+    $ok = (bool) $seed(install_site_choice()['type']);
+    Session::getInstance()->_set('install_starter_failed', $ok ? 0 : 1);
+
+    return array('status' => $ok, 'message' => $ok ? '' : __("The starter categories couldn't be added."));
+}
+
+/**
+ * Import the places of the country picked on the form. 'skip' or '' imports nothing.
+ * A failure keeps the country code in the session for the done step.
+ *
+ * @param string                      $location a country code or catalogue file name, or 'skip'
+ * @param callable(string): bool|null $import   osc_install_json_locations() when null
+ *
+ * @return array{status:bool, message:string}
+ */
+function install_locations_unit(string $location, ?callable $import = null): array
+{
+    $session = Session::getInstance();
+    if ($location === '' || $location === 'skip') {
+        $session->_set('install_location_failed', '');
+
+        return array('status' => true, 'message' => '');
+    }
+    // Only a code or a file name reaches the catalogue download, never a path.
+    $ok = false;
+    if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/', $location) === 1) {
+        try {
+            $ok = (bool) ($import ?? 'osc_install_json_locations')($location);
+        } catch (\Throwable $e) {
+            error_log('Shopclass install: importing locations failed: ' . $e->getMessage());
+        }
+    } else {
+        $location = 'lost';
+    }
+    $session->_set('install_location_failed', $ok ? '' : $location);
+
+    return array('status' => $ok, 'message' => $ok ? '' : __("We couldn't download the places for this country."));
+}
+
+/**
+ * Download Storefront when it is not on disk, as on a git checkout. A release zip bundles it.
+ *
+ * @param callable(): bool|null $fetch install_fallback_theme() when null
+ *
+ * @return array{status:bool, message:string}
+ */
+function install_storefront_unit(?callable $fetch = null): array
+{
+    try {
+        if ($fetch === null) {
+            install_load_app_helpers();
+            $fetch = static fn (): bool => install_fallback_theme();
+        }
+        $ok = (bool) $fetch();
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: downloading Storefront failed: ' . $e->getMessage());
+        $ok = false;
+    }
+    Session::getInstance()->_set('install_storefront_failed', $ok ? 0 : 1);
+
+    return array('status' => $ok, 'message' => $ok ? '' : __("The Storefront theme couldn't be downloaded."));
+}
+
+/**
  * Record the steps whose request the browser got no answer to, so the finish page lists them.
  * Only steps this install chose are kept.
  *
- * @param array<int, mixed> $tokens sample_photos, sample_batch, activate, theme:aisle or plugin:<slug>
+ * @param array<int, mixed> $tokens starter, locations, storefront, sample_photos, sample_batch, activate,
+ *                                  theme:aisle or plugin:<slug>
  *
  * @return void
  */
@@ -1709,7 +1840,14 @@ function install_record_lost_steps(array $tokens): void
         (array) $choice['plugins']
     ));
     foreach (array_filter($tokens, 'is_string') as $token) {
-        if ($choice['sample'] && $token === 'sample_photos') {
+        if ($token === 'starter') {
+            $session->_set('install_starter_failed', 1);
+        } elseif ($token === 'locations') {
+            // The posted country is not trusted here, so the done step only knows places are missing.
+            $session->_set('install_location_failed', 'lost');
+        } elseif ($token === 'storefront' && !is_dir(CONTENT_PATH . 'themes/storefront')) {
+            $session->_set('install_storefront_failed', 1);
+        } elseif ($choice['sample'] && $token === 'sample_photos') {
             $session->_set('install_sample_photos_failed', 1);
         } elseif ($choice['sample'] && $token === 'sample_batch') {
             $session->_set('install_sample_warning', 1);
@@ -1771,7 +1909,7 @@ function display_target()
 }
 
 /**
- * Render the installer's finish step.
+ * Render the installer's finish step: lock the installer, then show the login and what to finish later.
  *
  * @param string $password Plain-text admin password shown on the screen
  *
@@ -1779,7 +1917,39 @@ function display_target()
  */
 function display_finish($password)
 {
+    $data      = finish_installation($password);
+    $ins_later = install_finish_later();
     include_once 'installer/gui/install-finish.php';
+}
+
+/**
+ * What the owner still has to do by hand, from the failures this install kept in the session.
+ *
+ * @return list<array{what:string, how:string}>
+ */
+function install_finish_later(): array
+{
+    $session = Session::getInstance();
+    $flags   = array();
+    foreach (array(
+        'install_location_failed', 'install_starter_failed', 'install_storefront_failed', 'install_sample_photos_failed',
+        'install_sample_warning', 'install_shop_failed', 'install_shop_activate_error',
+    ) as $flag) {
+        $flags[$flag] = $session->_get($flag);
+    }
+    $names  = array();
+    $choice = install_site_choice();
+    if ($choice['type'] === SiteMode::SHOP && !empty($flags['install_shop_failed'])) {
+        try {
+            foreach (\mindstellar\install\ShopSetup::fromCache()->steps((array) $choice['plugins']) as $step) {
+                $names[$step['slug']] = $step['name'];
+            }
+        } catch (\Throwable $e) {
+            $names = array();
+        }
+    }
+
+    return (new \mindstellar\install\FinishLater($flags, $names, install_shop_notice(osc_site_mode())))->items();
 }
 
 /**
@@ -1843,10 +2013,10 @@ function basic_info()
     $body .= '</ul>';
     $body .= sprintf(
         __('Remember that for any doubts you might have you can consult our <a href="%1$s">documentation</a>'),
-        'https://osclass.gitbook.io/osclass-docs/'
+        \mindstellar\utility\ProjectLinks::DOCS
     );
     $body .= __('Cheers,') . '<br/>';
-    $body .= __('The <a href="https://github.com/mindstellar/shopclass">Shopclass</a> team');
+    $body .= sprintf(__('The <a href="%s">Shopclass</a> team'), \mindstellar\utility\ProjectLinks::REPOSITORY);
 
     $sitename = strtolower(Params::getServerParam('SERVER_NAME'));
     if (0 === strpos($sitename, 'www.')) {

@@ -115,8 +115,9 @@ check('a wrong nonce is refused', install_ajax_allowed() === false);
 Params::setParam('install_nonce', 'n1');
 check('the nonce and the database step pass', install_ajax_allowed() === true);
 $loc = (string) file_get_contents(LIB_PATH . 'osclass/install-location.php');
-check('install-location.php checks the guard before any shop step', strpos($loc, 'install_ajax_allowed()') !== false
-    && strpos($loc, 'install_ajax_allowed()') < strpos($loc, 'install_shop_step('));
+check('install-location.php checks the guard before any unit runs', strpos($loc, 'install_ajax_allowed()') !== false
+    && strpos($loc, 'install_ajax_allowed()') < (int) strpos($loc, 'install_run_unit('));
+check('shop steps run through the unit dispatcher', strpos((string) file_get_contents(LIB_PATH . 'osclass/install-functions.php'), "install_shop_step(\$action, Params::getParamString('type')") !== false);
 
 harness_section('one sequence');
 [$setup] = $make();

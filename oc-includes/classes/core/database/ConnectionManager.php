@@ -15,6 +15,7 @@
 namespace mindstellar\database;
 
 use Exception;
+use mindstellar\utility\ProjectLinks;
 use mindstellar\utility\Utils;
 use mysqli;
 use mysqli_sql_exception;
@@ -185,7 +186,7 @@ class ConnectionManager
 
         if ($conn === false) {
             $this->handleDbError(
-                'Shopclass database server is not available. <a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>'
+                'Shopclass database server is not available. <a href="' . ProjectLinks::FORUM . '">Need more help?</a></p>'
             );
             return false;
         }
@@ -203,7 +204,7 @@ class ConnectionManager
             $this->errorReport();
             $this->releaseDb();
             $this->handleDbError(
-                'Shopclass database is not available. <a href="https://github.com/mindstellar/shopclass/discussions">Need more help?</a></p>'
+                'Shopclass database is not available. <a href="' . ProjectLinks::FORUM . '">Need more help?</a></p>'
             );
         }
 

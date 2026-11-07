@@ -54,80 +54,15 @@ if (is_osclass_installed() || install_database_unreachable()) {
 header('Content-Type: application/json; charset=utf-8');
 
 // State-changing request: require the installer nonce (osc_csrf_check() cannot
-// work yet — no preferences exist).
+// work yet — no preferences exist). The browser stops the whole run on a fatal answer.
 if (!install_ajax_allowed()) {
     echo json_encode(array(
         'status' => false,
+        'fatal'  => true,
         'error'  => __('Your session expired. Reload the page and start again.'),
     ));
     exit;
 }
 
-// Shop set-up, one package per request.
-$shopAction = Params::getParamString('action');
-if ($shopAction === 'install_package' || $shopAction === 'activate_theme') {
-    install_load_app_helpers();
-    $shopResult = install_shop_step($shopAction, Params::getParamString('type'), Params::getParamString('slug'));
-    echo json_encode(array('status' => $shopResult['ok'], 'message' => $shopResult['message']));
-    exit;
-}
-
-// Sample data, one batch per request.
-if ($shopAction === 'sample_photos' || $shopAction === 'sample_batch') {
-    install_load_seed_helpers();
-    $sampleResult = install_sample_step($shopAction, Params::getParamInt('batch'));
-    echo json_encode(array('status' => $sampleResult['ok']));
-    exit;
-}
-
-// Re-validate on the server. The browser validates too, but never trust it.
-$detailsProblem = \mindstellar\install\SiteDetails::problem(
-    (string) Params::getParam('s_name'),
-    (string) Params::getParam('email'),
-    (string) Params::getParam('webtitle')
-);
-if ($detailsProblem !== null) {
-    echo json_encode(array('status' => false) + $detailsProblem);
-    exit;
-}
-
-$json_message           = array();
-$json_message['status'] = true;
-
-try {
-    $result = basic_info();
-} catch (\Throwable $e) {
-    error_log('Shopclass install: creating the admin account failed: ' . $e->getMessage());
-    echo json_encode(array(
-        'status' => false,
-        'error'  => __('The admin account could not be created. Nothing was saved — please try again.'),
-        'field'  => '',
-    ));
-    exit;
-}
-
-$json_message['email_status'] = $result['email_status'];
-$json_message['password']     = $result['s_password'];
-
-// The admin account is saved by now, so a failed location download must not stop the
-// install. The finish step writes osclass_installed and tells the owner to add locations later.
-$location = Params::getParamString('location-json');
-if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $location !== 'skip') {
-    try {
-        $locationsSaved = osc_install_json_locations($location);
-    } catch (\Throwable $e) {
-        error_log('Shopclass install: importing locations failed: ' . $e->getMessage());
-        $locationsSaved = false;
-    }
-    if (!$locationsSaved) {
-        $json_message['location_error'] = true;
-    }
-}
-
-// Starter categories now; sample data follows in its own requests. A failure only raises the finish-page notice.
-$choice = install_site_choice();
-install_load_seed_helpers();
-install_seed_site($choice['type'], false);
-$json_message['sample_batches'] = $choice['sample'] ? (new \mindstellar\install\SampleData())->batches($choice['type']) : 0;
-
-echo json_encode($json_message);
+// One unit of work per request, so no request runs into a shared host's time limit.
+echo json_encode(install_run_unit(Params::getParamString('action')));
