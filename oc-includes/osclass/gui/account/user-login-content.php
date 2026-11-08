@@ -33,10 +33,10 @@ if (!defined('ABS_PATH')) {
             <span><?php echo osc_esc_html(_m('Keep me signed in')); ?></span>
         </label>
 
+        <?php osc_run_hook('user_login_form'); ?>
         <?php if (osc_captcha_enabled()) {
             osc_show_captcha('login');
         } ?>
-        <?php osc_run_hook('user_login_form'); ?>
 
         <?php osc_gui_actions(array(
             array('label' => _m('Sign in')),

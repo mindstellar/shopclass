@@ -33,10 +33,10 @@ if (!defined('ABS_PATH')) {
         <?php osc_gui_field('s_password', _m('Password'), UserForm::password_text(...)); ?>
         <?php osc_gui_field('s_password2', _m('Repeat password'), UserForm::check_password_text(...)); ?>
 
+        <?php osc_run_hook('user_register_form'); ?>
         <?php if (osc_captcha_enabled()) {
             osc_show_captcha('register');
         } ?>
-        <?php osc_run_hook('user_register_form'); ?>
 
         <?php osc_gui_actions(array(array('label' => _m('Create account')))); ?>
     </form>

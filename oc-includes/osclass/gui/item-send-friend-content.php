@@ -44,11 +44,11 @@ if (!defined('ABS_PATH')) {
         osc_gui_field('oe-sf-message', _m('Message'), '<textarea class="oe-input" id="oe-sf-message" name="message" rows="4"'
             . ($sfMax > 0 ? ' maxlength="' . $sfMax . '"' : '') . '>' . osc_esc_html(osc_gui_kept('message_body')) . '</textarea>'); ?>
 
+        <?php osc_run_hook('contact_form'); ?>
+        <?php osc_run_hook('admin_contact_form'); ?>
         <?php if (osc_captcha_enabled()) { ?>
             <div class="oe-field"><?php osc_show_captcha('send_friend'); ?></div>
         <?php } ?>
-        <?php osc_run_hook('contact_form'); ?>
-        <?php osc_run_hook('admin_contact_form'); ?>
 
         <?php osc_gui_actions(array(array('label' => _m('Send')))); ?>
     </form>

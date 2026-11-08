@@ -98,12 +98,12 @@ if ($cfMsg) { ?>
             . ' accept="' . osc_esc_html('.' . implode(',.', \mindstellar\storage\UploadMimes::attachmentExtensions())) . '" />');
     } ?>
 
-    <?php if (osc_captcha_enabled()) { ?>
-        <div class="oe-field"><?php osc_show_captcha((string) $cf['captcha']); ?></div>
-    <?php }
-    if (isset($cf['hooks'])) {
+    <?php if (isset($cf['hooks'])) {
         ($cf['hooks'])();
-    } ?>
+    }
+    if (osc_captcha_enabled()) { ?>
+        <div class="oe-field"><?php osc_show_captcha((string) $cf['captcha']); ?></div>
+    <?php } ?>
 
     <?php osc_gui_actions(array(array('label' => _m('Send message')))); ?>
 </form>
