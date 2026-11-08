@@ -987,7 +987,10 @@
 // =============================================================================
 
 .categories-app {
-  --cat-indent: 1.9rem;
+  --cat-chev: 1.25rem;
+  --cat-handle: 1rem;
+  --cat-indent: 1.75rem;
+  --cat-pad-x: .75rem;
 }
 
 // ---- Tabs, toolbar, filter line ---------------------------------------------
@@ -1089,29 +1092,42 @@
 }
 
 // ---- The tree table ---------------------------------------------------------
+// One line per category. The name column takes the spare width; the rest shrink to their content.
 .cat-table {
-  --#{$prefix}table-cell-padding-x: .85rem;
-  --#{$prefix}table-cell-padding-y: .6rem;
+  --#{$prefix}table-cell-padding-x: var(--cat-pad-x);
+  --#{$prefix}table-cell-padding-y: .4rem;
   margin-block-end: 0;
 
-  > tbody > tr > td {
-    vertical-align: top;
+  > tbody > tr {
+    --cat-row-bg: var(--osc-bench);
+
+    > td {
+      vertical-align: middle;
+    }
+
+    &:hover {
+      --cat-row-bg: var(--osc-bench-warm);
+    }
+
+    // Keyboard focus anywhere in the row outlines the row, as on the Menus screen.
+    &:has(:focus-visible) {
+      outline: 1px solid var(--osc-bronze);
+      outline-offset: -1px;
+    }
   }
 
   .col-status {
-    inline-size: 7.5rem;
+    font-size: $font-size-label;
+    inline-size: 1px;
     white-space: nowrap;
   }
 
-  .cat-num {
-    font-variant-numeric: tabular-nums;
-    inline-size: 8rem;
-    text-align: end;
-    white-space: nowrap;
-  }
-
+  .cat-num,
   .col-expiry {
-    inline-size: 9rem;
+    font-variant-numeric: tabular-nums;
+    inline-size: 1px;
+    padding-inline-start: 1.5rem;
+    text-align: end;
     white-space: nowrap;
   }
 
@@ -1119,20 +1135,36 @@
   > tbody > tr > .cat-num,
   > tbody > tr > .col-expiry {
     color: var(--osc-ink-emphasis);
-    padding-block-start: .8rem;
   }
 
   .col-bulkactions input {
     accent-color: var(--osc-bronze);
     block-size: 1.05rem;
+    display: block;
     inline-size: 1.05rem;
-    margin-block-start: .3rem;
+    margin: 0;
   }
 
   // Selected and being edited share the bronze wash; the checked box stays the signal.
-  > tbody > tr.is-selected > *,
-  > tbody > tr.is-editing > * {
-    --#{$prefix}table-bg-state: var(--osc-bronze-tint);
+  > tbody > tr.is-selected,
+  > tbody > tr.is-editing {
+    --cat-row-bg: var(--osc-bronze-tint);
+
+    > * {
+      --#{$prefix}table-bg-state: var(--osc-bronze-tint);
+    }
+  }
+}
+
+// The shared table pads cells below for in-flow actions at tablet widths; these rows stay one line.
+// The guides below are placed from --cat-pad-x, so the cells use it too.
+@media (min-width: 34.0625rem) {
+  .table-contains-actions .cat-table > tbody > tr > td {
+    padding-block: .4rem;
+  }
+
+  .table-contains-actions .cat-table > * > tr > * {
+    padding-inline: var(--cat-pad-x);
   }
 }
 
@@ -1145,7 +1177,7 @@
   align-items: center;
   color: var(--osc-ink-muted);
   display: inline-flex;
-  gap: .35rem;
+  gap: .3rem;
 }
 
 .cat-row.is-disabled .cat-name {
@@ -1171,19 +1203,20 @@
   padding: 0 1px;
 }
 
-// ---- Name cell: handle, indent, disclosure, name ----------------------------
+// ---- Name cell: indent, handle, disclosure, name ----------------------------
 .cat-table .col-name {
   position: relative;
 }
 
+// The handle moves with the indent, so it always sits right before its own chevron and name.
 .cat-name-line {
   align-items: center;
   display: flex;
-  gap: .15rem;
-  min-block-size: 1.9rem;
+  min-block-size: 2rem;
+  min-inline-size: 0;
+  padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent));
 }
 
-// The indent comes after the handle so the guide line can sit under the parent's chevron.
 .cat-handle {
   align-items: center;
   background: transparent;
@@ -1193,12 +1226,12 @@
   cursor: grab;
   display: inline-flex;
   flex: 0 0 auto;
-  block-size: 1.9rem;
-  inline-size: 1.6rem;
-  justify-content: center;
-  margin-inline-end: calc(var(--cat-depth, 0) * var(--cat-indent));
+  block-size: 2rem;
+  inline-size: var(--cat-handle);
+  justify-content: flex-end;
   padding: 0;
   touch-action: none;
+  transition: color var(--osc-duration-fast) var(--osc-ease);
 
   &:hover {
     background-color: var(--osc-chrome-hover);
@@ -1221,11 +1254,27 @@
   }
 }
 
+// Centre the glyphs on the row's line; Bootstrap Icons sit them on the text baseline.
+.cat-handle > i,
+.cat-disclosure > i {
+  display: block;
+  line-height: 1;
+
+  &::before {
+    display: block;
+    vertical-align: 0;
+  }
+}
+
+.cat-row:hover .cat-handle:not([aria-disabled="true"]) {
+  color: var(--osc-ink-muted);
+}
+
 .cat-disclosure,
 .cat-disclosure-spacer {
-  block-size: 1.9rem;
+  block-size: 2rem;
   flex: 0 0 auto;
-  inline-size: 1.6rem;
+  inline-size: var(--cat-chev);
 }
 
 .cat-disclosure {
@@ -1236,6 +1285,7 @@
   color: var(--osc-ink-muted);
   cursor: pointer;
   display: inline-flex;
+  font-size: .8rem;
   justify-content: center;
   padding: 0;
 
@@ -1262,14 +1312,20 @@
   }
 }
 
-// A 1px guide under the parent's chevron ties a subcategory to its group.
-.cat-row:not([data-depth="1"]) .col-name::before {
-  background-color: var(--osc-rule);
+// One hairline per ancestor level, each under that ancestor's chevron. Every row draws the guides
+// of the levels above it, so together they run down the whole group.
+.cat-table .col-name::before {
+  background-image: repeating-linear-gradient(to right, var(--osc-rule) 0 1px, transparent 1px var(--cat-indent));
   content: "";
-  inline-size: 1px;
+  inline-size: calc((var(--cat-depth, 0) - 1) * var(--cat-indent) + 1px);
   inset-block: 0;
-  inset-inline-start: calc(.85rem + (var(--cat-depth, 1) - 1) * var(--cat-indent) + 2.45rem);
+  inset-inline-start: calc(var(--cat-pad-x) + var(--cat-handle) + var(--cat-chev) / 2 - .5px);
+  pointer-events: none;
   position: absolute;
+}
+
+.cat-table .col-name:dir(rtl)::before {
+  background-image: repeating-linear-gradient(to left, var(--osc-rule) 0 1px, transparent 1px var(--cat-indent));
 }
 
 .cat-name {
@@ -1277,12 +1333,16 @@
   border: 0;
   border-radius: 3px;
   color: var(--osc-ink);
+  flex: 0 1 auto;
   font-size: $font-size-base;
-  font-weight: 500;
+  font-weight: 400;
   line-height: 1.35;
   min-inline-size: 0;
+  overflow: hidden;
   padding: .1rem .25rem;
   text-align: start;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 
   &:hover {
     color: var(--osc-bronze);
@@ -1292,7 +1352,7 @@
 
   &:focus-visible {
     outline: 2px solid var(--osc-bronze);
-    outline-offset: 1px;
+    outline-offset: -2px;
   }
 }
 
@@ -1322,12 +1382,15 @@
   display: none;
   font-size: $font-size-label;
   margin: 0;
-  padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
+  padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + var(--cat-handle) + var(--cat-chev) + .25rem);
 }
 
-// ---- Row actions: text buttons under the name -------------------------------
+// ---- Row actions -------------------------------------------------------------
+// On a phone they sit under the name. Wider, they sit at the end of the name's line, and with a
+// mouse they show only while the row is pointed at or has focus; they stay in the tab order.
 .cat-table .cat-actions {
-  padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
+  margin: 0;
+  padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + var(--cat-handle) + var(--cat-chev) + .25rem);
 
   button {
     background: none;
@@ -1367,6 +1430,40 @@
     block-size: .95rem;
     inline-size: 1px;
     margin-inline: .25rem;
+  }
+}
+
+@media (min-width: 34.0625rem) {
+  .cat-table .cat-actions {
+    align-items: center;
+    background-image: linear-gradient(to right, transparent, var(--cat-row-bg) 1.5rem);
+    display: flex;
+    inset-block: 0;
+    inset-inline-end: 0;
+    padding-inline: 2.25rem var(--cat-pad-x);
+    position: absolute;
+    transition: opacity var(--osc-duration-fast) var(--osc-ease);
+
+    ul {
+      flex-wrap: nowrap;
+    }
+
+    &:dir(rtl) {
+      background-image: linear-gradient(to left, transparent, var(--cat-row-bg) 1.5rem);
+    }
+  }
+}
+
+@media (min-width: 34.0625rem) and (hover: hover) {
+  .cat-table .cat-actions {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .cat-row:hover .cat-actions,
+  .cat-row:focus-within .cat-actions {
+    opacity: 1;
+    pointer-events: auto;
   }
 }
 
@@ -1789,7 +1886,10 @@
 // ---- Phone ------------------------------------------------------------------
 @media (max-width: 34rem) {
   .categories-app {
+    --cat-chev: 1.6rem;
+    --cat-handle: 1.6rem;
     --cat-indent: 1.1rem;
+    --cat-pad-x: .25rem;
   }
 
   .cat-search {
@@ -1819,13 +1919,17 @@
     }
 
     > tbody > tr > td {
-      padding: .65rem .75rem .65rem .25rem;
+      padding: .65rem .75rem .65rem var(--cat-pad-x);
     }
 
     > tbody > tr > .col-bulkactions {
       grid-row: 1 / span 2;
       inline-size: auto;
       padding-inline: .75rem 0;
+
+      input {
+        margin-block-start: .45rem;
+      }
     }
 
     > tbody > tr:has(.cat-off) > .col-name {
@@ -1847,7 +1951,7 @@
       grid-column: 2;
       inline-size: auto;
       padding-block: 0 .65rem;
-      padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.9rem);
+      padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + var(--cat-handle) + var(--cat-chev) + .3rem);
 
       &:not(:has(.cat-off)) {
         display: none;
@@ -1856,12 +1960,9 @@
 
     .cat-meta {
       display: block;
-      padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
     }
 
     .cat-actions {
-      padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
-
       ul {
         gap: .25rem .9rem;
       }
@@ -1871,16 +1972,20 @@
       }
     }
 
+    // On a phone the handle stays at the row start, where a thumb finds it; the indent follows it.
     .cat-name-line {
       flex-wrap: wrap;
+      padding-inline-start: 0;
+    }
+
+    .cat-handle {
+      justify-content: center;
+      margin-inline-end: calc(var(--cat-depth, 0) * var(--cat-indent));
     }
 
     .cat-name {
       flex: 1 1 0;
-    }
-
-    .col-name::before {
-      inset-inline-start: calc(.25rem + (var(--cat-depth, 1) - 1) * var(--cat-indent) + 2.45rem);
+      white-space: normal;
     }
   }
 

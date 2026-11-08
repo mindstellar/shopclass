@@ -79,14 +79,16 @@ function table_ui_run_live(string $body, array $tree, int $width = 1440): ?array
         . "window.catDriver = async function (t) {\nvar r = {};\n" . $body . "\nreturn r;\n};\n";
     file_put_contents($dir . '/driver.js', $js);
     file_put_contents($dir . '/page.html', categories_browser_page($tree, array('driver' => $dir . '/driver.js')));
-    file_put_contents($dir . '/run.mjs', <<<'MJS'
+    file_put_contents($dir . '/run.mjs', 'const BLINK = ' . json_encode(trim(CATEGORIES_BROWSER_MOUSE)) . ";\n" . <<<'MJS'
 const [pc, chrome, page, width] = process.argv.slice(2);
 const {default: puppeteer} = await import(pc + '/lib/puppeteer/puppeteer-core.js');
 const browser = await puppeteer.launch({executablePath: chrome, headless: true,
-    args: ['--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + width + ',900']});
+    args: ['--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + width + ',900', BLINK]});
 try {
     const tab = await browser.newPage();
     await tab.setViewport({width: +width, height: 900});
+    // A real key press for the driver: await window.oscPress('Tab').
+    await tab.exposeFunction('oscPress', (key) => tab.keyboard.press(key));
     await tab.goto('file://' + page);
     await tab.waitForSelector('html[data-done="1"]', {timeout: 60000});
     process.stdout.write(await tab.$eval('#osc-out', (el) => el.textContent));
@@ -425,6 +427,35 @@ if ($r !== null) {
     pin('no sideways scroll with every group open', 0, $r['overflowOpen'] ?? null);
     pin('the bulk bar and selection note show', true, $r['bulk'] ?? null);
     pin('the search shows', true, $r['search'] ?? null);
+}
+
+harness_section('desktop rows (1440)');
+$r = table_ui_run_live(<<<'JS'
+var veh = t.row('Vehicles');
+var acts = veh.querySelector('.cat-actions');
+var wait = function () { return new Promise(function (res) { setTimeout(res, 300); }); };
+r.height = veh.getBoundingClientRect().height;
+r.rest = getComputedStyle(acts).opacity;
+veh.querySelector('.cat-name').focus();
+await window.oscPress('Tab');
+await wait();
+var on = document.activeElement;
+r.focused = veh.contains(on) && on.closest('.cat-actions') ? on.dataset.catAct : null;
+r.shown = getComputedStyle(acts).opacity;
+var row = veh.getBoundingClientRect(), box = acts.getBoundingClientRect();
+r.inline = box.top >= row.top && box.bottom <= row.bottom;
+r.heightFocused = row.height;
+r.ring = getComputedStyle(veh).outlineStyle;
+JS, $demo);
+if ($r !== null) {
+    pin('no script error', array(), $r['errors'] ?? null);
+    check('a row is at most 44 px high', ($r['height'] ?? 99) <= 44, (string) ($r['height'] ?? ''));
+    pin('the row actions are hidden at rest', '0', $r['rest'] ?? null);
+    pin('Tab from the name reaches Edit', 'edit', $r['focused'] ?? null);
+    pin('focus shows the row actions', '1', $r['shown'] ?? null);
+    pin('they sit on the row line', true, $r['inline'] ?? null);
+    pin('the row keeps its height', $r['height'] ?? null, $r['heightFocused'] ?? null);
+    pin('the focused row is outlined', 'solid', $r['ring'] ?? null);
 }
 
 harness_section('1500 categories');

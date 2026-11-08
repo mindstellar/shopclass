@@ -19,6 +19,9 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/categories-fixture.php';
 
+// Headless Chrome reports no mouse, so (hover: hover) rules would never apply; this makes it report one.
+const CATEGORIES_BROWSER_MOUSE = ' --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4';
+
 /**
  * Finds Chrome; stops the test (skip, or fail on CI) when there is none.
  */
@@ -334,6 +337,7 @@ function categories_browser_run(string $driverJs, array $tree, array $opts = arr
 
     $out = (string) shell_exec('TZ=UTC ' . escapeshellarg($chrome)
         . ' --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage --allow-file-access-from-files'
+        . CATEGORIES_BROWSER_MOUSE
         . ' --window-size=' . (int) ($opts['width'] ?? 1440) . ',900'
         . ' --user-data-dir=' . escapeshellarg($dir . '/profile')
         . ' --virtual-time-budget=20000 --dump-dom ' . escapeshellarg('file://' . $page) . ' 2>/dev/null');
@@ -371,6 +375,7 @@ function categories_browser_shot(string $state, int $width, bool $dark, string $
     @unlink($png);
     shell_exec('TZ=UTC ' . escapeshellarg($chrome)
         . ' --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage --allow-file-access-from-files'
+        . CATEGORIES_BROWSER_MOUSE
         . ' --hide-scrollbars --force-device-scale-factor=1 --window-size=' . $width . ',' . ($width < 600 ? 844 : 900)
         . ' --user-data-dir=' . escapeshellarg($dir . '/profile')
         . ' --virtual-time-budget=20000 --screenshot=' . escapeshellarg($png) . ' ' . escapeshellarg('file://' . $page) . ' >/dev/null 2>&1');
