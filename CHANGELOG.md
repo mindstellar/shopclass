@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.17
+
+### Fixed
+- Fields a plugin adds to the register, login, comment and contact forms now sit above the captcha.
+
 ## Shopclass 7.0.16
 
 ### Fixed
