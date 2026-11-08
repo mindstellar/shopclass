@@ -14,7 +14,7 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Settings'),
+    'section' => __('Languages'),
     'heading' => __('Manage Languages'),
     'title'   => __('Languages'),
     'help'    => __("Add, edit or delete the language in which your Shopclass is displayed, "

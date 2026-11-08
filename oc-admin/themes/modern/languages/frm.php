@@ -15,7 +15,7 @@
  */
 
 osc_admin_page(array(
-    'section' => __('Settings'),
+    'section' => __('Languages'),
     'heading' => __('Edit language'),
     'title'   => __('Edit language'),
 ));

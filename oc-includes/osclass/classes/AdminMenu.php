@@ -58,6 +58,7 @@ class AdminMenu
         'appearance' => array('bi bi-palette', 'palette'),
         'plugins'    => array('bi bi-plugin', 'plug'),
         'settings'   => array('bi bi-gear', 'sliders'),
+        'languages'  => array('bi bi-translate', 'globe'),
         'tools'      => array('bi bi-tools', 'tools'),
     );
 
@@ -380,7 +381,6 @@ class AdminMenu
             'general'  => array(__('General'), array(
                 array(__('General'), '?page=settings', 'settings_general'),
                 array(__('Permalinks'), '?page=settings&action=permalinks', 'settings_permalinks'),
-                array(__('Languages'), '?page=languages', 'settings_language'),
                 array(__('Sitemap'), '?page=settings&action=sitemap', 'settings_sitemap'),
             )),
             'content'  => array(__('Content'), array(
@@ -414,6 +414,10 @@ class AdminMenu
                 $this->add_submenu('settings', $label, $b . $path, $id, 'administrator');
             }
         }
+
+        $this->add_menu(__('Languages'), $b . '?page=languages', 'languages', 'administrator', 'bi bi-translate');
+        $this->add_submenu('languages', __('Manage languages'), $b . '?page=languages', 'languages_manage', 'administrator');
+        $this->add_submenu('languages', __('Add language'), $b . '?page=languages&action=add', 'languages_add', 'administrator');
 
         $this->add_menu(__('Tools'), osc_admin_base_url(true) . '?page=tools&action=system-info', 'tools', 'administrator', 'bi bi-tools');
         $this->add_submenu(
@@ -807,7 +811,7 @@ class AdminMenu
                 $out[$entry['id']] = array('path' => array($this->aMenu['settings'][0] ?? 'Settings', $group['title'], $entry['title']), 'url' => $entry['url']);
             }
         }
-        $own = array('items_settings', 'users_settings', 'media_settings', 'billing_settings');
+        $own = array('items_settings', 'users_settings', 'media_settings', 'billing_settings', 'languages_manage');
         foreach ($this->aMenu as $menuId => $menu) {
             if ($menuId === 'settings' || !self::isSection($menu)) {
                 continue;
