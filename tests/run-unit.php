@@ -23,6 +23,9 @@ const RUNNER_EXCLUDE = array(
     'run-models'   => 'its own runner; run it with php tests/run-models.php',
 );
 
+// Timing tests measure wall-clock budgets, so they run last and one at a time, with nothing else running.
+const RUN_ALONE = array('categories-drag-perf', 'categories-table-ui', 'category-table');
+
 $dir = __DIR__;
 $all = array();
 foreach (glob($dir . '/*.php') ?: array() as $f) {
@@ -73,7 +76,7 @@ if ($names !== array()) {
 }
 
 $start   = microtime(true);
-$queue   = $all;
+$queue   = array_merge(array_values(array_diff($all, RUN_ALONE)), array_values(array_intersect($all, RUN_ALONE)));
 $running = array();
 $failed  = array();
 $done    = 0;
@@ -94,6 +97,10 @@ $finish = static function (string $name, array $p, int $code) use (&$failed, &$d
 
 while ($queue !== array() || $running !== array()) {
     while ($queue !== array() && count($running) < $jobs) {
+        $alone = in_array($queue[0], RUN_ALONE, true);
+        if (($alone && $running !== array()) || array_intersect(array_keys($running), RUN_ALONE) !== array()) {
+            break;
+        }
         $name = array_shift($queue);
         $cmd  = array(PHP_BINARY, $dir . '/' . $name . '.php');
         $proc = proc_open($cmd, array(1 => array('pipe', 'w'), 2 => array('redirect', 1)), $pipes, dirname($dir));
