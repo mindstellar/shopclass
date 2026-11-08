@@ -8,9 +8,9 @@
  */
 
 /*
- * Appearance > Menus. The menu is held as a flat list with a depth per item and drawn as nested
- * lists, one sortable per level. Saving nests it and posts it as JSON. An item moves with the
- * items nested under it.
+ * Appearance > Menus. The menu is held as a flat list with a depth per item and drawn as one flat
+ * list, indented by depth. Dragging and the handle keys run on osc.sortable's tree mode; saving
+ * nests the list and posts it as JSON. An item moves with the items nested under it.
  */
 /* global osc */
 (function () {
@@ -24,7 +24,6 @@
 
     var state = JSON.parse(stateEl.textContent);
     var t = state.i18n;
-    var maxDepth = state.maxDepth - 1;
     var list = document.getElementById('menu-items');
     var empty = document.getElementById('menu-empty');
     var status = document.getElementById('menu-status');
@@ -82,22 +81,8 @@
     }
 
     function position(i) {
-        var depth = items[i].depth;
-        var at = 0;
-        var of = 0;
-        var start = i;
-        while (start > 0 && items[start - 1].depth >= depth) {
-            start--;
-        }
-        for (var k = start; k < items.length && items[k].depth >= depth; k++) {
-            if (items[k].depth === depth) {
-                of++;
-                if (k <= i) {
-                    at++;
-                }
-            }
-        }
-        return String(t.position).replace('%1$d', at).replace('%2$d', of).replace('%3$d', depth + 1);
+        var at = osc.flatTree.siblingIndex(items, i);
+        return String(t.position).replace('%1$d', at.index).replace('%2$d', at.count).replace('%3$d', items[i].depth + 1);
     }
 
     function flatten(nested, depth) {
@@ -152,27 +137,12 @@
         return names[item.type][item.ref] || '';
     }
 
-    function blockEnd(i) {
-        var end = i + 1;
-        while (end < items.length && items[end].depth > items[i].depth) {
-            end++;
-        }
-        return end;
-    }
-
-    function clamp() {
-        items.forEach(function (item, i) {
-            var cap = i === 0 ? 0 : Math.min(items[i - 1].depth + 1, maxDepth);
-            if (item.depth > cap) {
-                item.depth = cap;
-            }
-        });
-    }
+    var FT = osc.flatTree;
 
     function changed(focusIndex, focusAct) {
         dirty = true;
         status.textContent = t.unsaved;
-        clamp();
+        FT.clamp(items, state.maxDepth);
         render(focusIndex, focusAct);
     }
 
@@ -185,54 +155,12 @@
         }
     }
 
-    function moveBlock(from, to) {
-        var end = blockEnd(from);
-        var block = items.splice(from, end - from);
-        if (to > from) {
-            to -= block.length;
-        }
-        Array.prototype.splice.apply(items, [to, 0].concat(block));
-        return to;
-    }
-
-    function moveUp(i) {
-        if (i === 0) {
-            return i;
-        }
-        var j = i - 1;
-        while (j > 0 && items[j].depth > items[i].depth) {
-            j--;
-        }
-        return moveBlock(i, j);
-    }
-
-    function moveDown(i) {
-        var end = blockEnd(i);
-        if (end >= items.length) {
-            return i;
-        }
-        return moveBlock(i, blockEnd(end));
-    }
-
-    function shift(i, by) {
-        var end = blockEnd(i);
-        for (var k = i; k < end; k++) {
-            items[k].depth += by;
-        }
-    }
-
     function canIndent(i) {
-        if (i === 0 || items[i].depth >= items[i - 1].depth + 1) {
-            return false;
-        }
-        var end = blockEnd(i);
-        for (var k = i; k < end; k++) {
-            if (items[k].depth + 1 > maxDepth) {
-                return false;
-            }
-        }
-        return true;
+        return !FT.keyTarget(items, i, 'in', state.maxDepth).refused;
     }
+
+    // The row for an item is kept between draws, so a move can slide the rows instead of redrawing them.
+    var rowsOf = new WeakMap();
 
     function editor(item, box) {
         box.textContent = '';
@@ -313,14 +241,18 @@
 
     function render(focusIndex, focusAct) {
         showPlaceWarning();
-        list.textContent = '';
         empty.hidden = items.length > 0;
-        var levels = [list];
-        items.forEach(function (item, i) {
-            var li = rowTemplate.content.firstElementChild.cloneNode(true);
+        var lis = items.map(function (item, i) {
+            var li = rowsOf.get(item);
+            if (!li) {
+                li = rowTemplate.content.firstElementChild.cloneNode(true);
+                rowsOf.set(item, li);
+            }
             var name = labelOf(item);
             li._item = item;
             li.dataset.index = String(i);
+            li.dataset.depth = String(item.depth);
+            li.style.setProperty('--tree-d', String(item.depth));
             li.querySelector('.chip-name').textContent = name !== '' ? name : '#' + item.ref;
             markRow(li, item);
             var grip = li.querySelector('.chip-grip');
@@ -332,20 +264,19 @@
                 btn.setAttribute('aria-label', fmt(t[pair[0]], name));
                 btn.title = fmt(t[pair[0]], name);
             });
-            if (open === item) {
-                li.classList.add('is-editing');
-                var box = li.querySelector('.field-chip-editor');
-                box.hidden = false;
-                li.querySelector('[data-act="edit"]').setAttribute('aria-expanded', 'true');
+            var box = li.querySelector('.field-chip-editor');
+            var editing = open === item;
+            li.classList.toggle('is-editing', editing);
+            li.querySelector('[data-act="edit"]').setAttribute('aria-expanded', editing ? 'true' : 'false');
+            box.hidden = !editing;
+            if (editing) {
                 editor(item, box);
+            } else {
+                box.textContent = '';
             }
-            var children = document.createElement('ul');
-            children.className = 'menu-children';
-            li.appendChild(children);
-            levels[item.depth].appendChild(li);
-            levels[item.depth + 1] = children;
+            return li;
         });
-        bindSortables();
+        list.replaceChildren.apply(list, lis);
         var row = typeof focusIndex === 'number' ? list.querySelector('.menu-item[data-index="' + focusIndex + '"]') : null;
         if (row) {
             var target = row.querySelector(focusAct ? '[data-act="' + focusAct + '"]' : '.chip-grip');
@@ -370,117 +301,73 @@
         var i = indexOf(btn);
         var act = btn.dataset.act;
         if (act === 'remove') {
-            var end = blockEnd(i);
+            var end = FT.blockEnd(items, i);
             for (var k = i + 1; k < end; k++) {
                 items[k].depth -= 1;
             }
             items.splice(i, 1);
             changed(Math.min(i, items.length - 1));
-        } else if (act === 'indent' && canIndent(i)) {
-            shift(i, 1);
-            changed(i, 'indent');
-        } else if (act === 'outdent' && items[i].depth > 0) {
-            shift(i, -1);
-            changed(i, 'outdent');
+        } else if (act === 'indent' || act === 'outdent') {
+            var target = FT.keyTarget(items, i, act === 'indent' ? 'in' : 'out', state.maxDepth);
+            if (!target.refused) {
+                var to = FT.moveBlock(items, i, target.at, target.depth);
+                changed(to, act);
+                say(position(to));
+            }
         } else if (act === 'edit') {
             open = open === items[i] ? null : items[i];
             render(i, 'edit');
         }
     });
 
-    list.addEventListener('keydown', function (e) {
-        if (!e.target.classList.contains('chip-grip')) {
-            return;
-        }
-        var i = indexOf(e.target);
-        var to = i;
-        if (e.key === 'ArrowUp') {
-            to = moveUp(i);
-        } else if (e.key === 'ArrowDown') {
-            to = moveDown(i);
-        } else if (e.key === 'ArrowRight' && canIndent(i)) {
-            shift(i, 1);
-        } else if (e.key === 'ArrowLeft' && items[i].depth > 0) {
-            shift(i, -1);
-        } else {
-            return;
-        }
-        e.preventDefault();
-        changed(to);
-        settle(to);
-        if (announce) {
-            announce.textContent = position(to);
+    function say(text) {
+        osc.announce(announce, text);
+    }
+
+    function labelFor(parentEl) {
+        return parentEl ? fmt(t.inside, labelOf(parentEl._item)) : t.topLevel;
+    }
+
+    var refusals = {
+        first: 'isFirst',
+        last: 'isLast',
+        top: 'isTop',
+        'nothing-above': 'nothingAbove'
+    };
+
+    osc.sortable(list, {
+        handle: '.chip-grip',
+        tree: {
+            rows: 'li.menu-item',
+            depth: function (el) { return el._item.depth; },
+            indent: null,
+            maxLevels: state.maxDepth,
+            label: labelFor,
+            tooDeep: fmt(t.tooDeep, state.maxDepth),
+            ghost: function (el, below) {
+                return {
+                    name: labelOf(el._item),
+                    more: below > 0 ? fmt(osc.plural(t.more, below), below) : ''
+                };
+            },
+            keys: true,
+            hint: [t.hintMove, t.hintIn, t.hintOut],
+            commit: function (move) {
+                var at = FT.moveBlock(items, move.from, move.at, move.depth);
+                changed(move.via === 'key' ? at : undefined);
+                say(position(at));
+            },
+            cancelled: function (reason, info) {
+                if (reason === 'refused-key' && info) {
+                    var name = labelOf(info.el._item);
+                    say(fmt(t[info.refused === 'deep' ? 'tooDeep' : refusals[info.refused]], info.refused === 'deep' ? state.maxDepth : name));
+                } else if (reason === 'deep') {
+                    say(fmt(t.tooDeep, state.maxDepth));
+                }
+            },
+            say: say
         }
     });
-
-    // Rebuild items from the lists after a drop: order and depth come from where each row now sits.
-    function readLists(ul, depth, out) {
-        Array.prototype.forEach.call(ul.children, function (li) {
-            if (!li._item) {
-                return;
-            }
-            li._item.depth = depth;
-            out.push(li._item);
-            readLists(li.querySelector(':scope > .menu-children'), depth + 1, out);
-        });
-        return out;
-    }
-
-    function dropped(evt) {
-        var before = items.map(function (item) { return item.depth; });
-        var order = items.slice();
-        var next = readLists(list, 0, []);
-        var same = next.length === order.length && next.every(function (item, i) {
-            return item === order[i] && item.depth === before[i];
-        });
-        if (same) {
-            return;
-        }
-        items = next;
-        var at = items.indexOf(evt.item._item);
-        changed(at);
-        settle(at);
-    }
-
-    // A drop may not push the dragged row and what is under it deeper than the screen allows.
-    function allowed(evt) {
-        var depth = 0;
-        for (var el = evt.to.closest('.menu-item'); el; el = el.parentNode.closest('.menu-item')) {
-            depth++;
-        }
-        var height = 0;
-        evt.dragged.querySelectorAll('.menu-item').forEach(function (inner) {
-            var h = 0;
-            for (var up = inner; up && up !== evt.dragged; up = up.parentNode.closest('.menu-item')) {
-                h++;
-            }
-            height = Math.max(height, h);
-        });
-        return depth + height <= maxDepth;
-    }
-
-    function bindSortables() {
-        [list].concat(Array.prototype.slice.call(list.querySelectorAll('.menu-children'))).forEach(function (ul) {
-            osc.sortable(ul, {
-                nested: true,
-                group: 'menu-items',
-                draggable: '.menu-item',
-                filter: 'input, select, textarea, a, button:not(.chip-grip), .field-chip-editor',
-                ghostClass: 'chip-ghost',
-                onMove: allowed,
-                onStart: function () {
-                    root.classList.add('is-dragging');
-                },
-                onEnd: function (evt) {
-                    root.classList.remove('is-dragging');
-                    dropped(evt);
-                }
-            });
-        });
-    }
-
-    // sortablejs is enqueued into the footer, so it may not exist yet while this script is parsed.
-    document.addEventListener('DOMContentLoaded', bindSortables);
 
     root.querySelectorAll('[data-menu-add]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -581,7 +468,7 @@
     });
 
     flatten(state.items, 0);
-    clamp();
+    FT.clamp(items, state.maxDepth);
     render();
     if (state.draft) {
         dirty = true;

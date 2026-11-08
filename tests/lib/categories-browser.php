@@ -22,6 +22,14 @@ require_once __DIR__ . '/categories-fixture.php';
 // Headless Chrome reports no mouse, so (hover: hover) rules would never apply; this makes it report one.
 const CATEGORIES_BROWSER_MOUSE = ' --blink-settings=primaryHoverType=2,availableHoverTypes=2,primaryPointerType=4,availablePointerTypes=4';
 
+// Still shots run with reduced motion, so script slides are skipped too.
+const CATEGORIES_BROWSER_STILL = ' --force-prefers-reduced-motion';
+
+// Stops CSS motion and holds timers of a second or more, so a toast or a "placed" tag is still
+// open when the virtual clock runs ahead to take the shot.
+const CATEGORIES_BROWSER_STILL_HEAD = '<style>*,*::before,*::after{transition:none!important;animation:none!important}</style>'
+    . '<script>(function(){var later=window.setTimeout;window.setTimeout=function(fn,ms){return (+ms||0)>=1000?0:later.apply(window,arguments);};}());</script>';
+
 /**
  * Finds Chrome; stops the test (skip, or fail on CI) when there is none.
  */
@@ -167,7 +175,7 @@ function categories_browser_drawers(array $tree, array $opts): array
 
 /**
  * The helpers a driver or state gets as t: row(name), tab(label), act(name, action), click,
- * type, tick, settle, frame, $ and $$.
+ * type, tick, settle, frame, $ and $$, plus drag(handle) and key(el, key) from tree-pointer.js.
  */
 function categories_browser_helpers_js(): string
 {
@@ -219,6 +227,7 @@ function categories_browser_helpers_js(): string
         box.dispatchEvent(new Event('change', {bubbles: true}));
         await t.settle();
     };
+    if (window.treePointer) { window.treePointer.install(t); }
     window.catHelpers = t;
 }());
 JS;
@@ -228,7 +237,7 @@ JS;
  * Builds the page file for a run. Needs categories_page_html() from tests/lib/categories-page.php.
  *
  * @param array<int,array<string,mixed>> $tree
- * @param array<string,mixed>            $opts dark, width, status, depthLimit, state, drawer_ids, answers, driver
+ * @param array<string,mixed>            $opts dark, rtl, width, status, depthLimit or limit, state, drawer_ids, answers, driver
  */
 function categories_browser_page(array $tree, array $opts): string
 {
@@ -237,20 +246,21 @@ function categories_browser_page(array $tree, array $opts): string
     }
     $html = categories_page_html($tree, array(
         'status'     => (string) ($opts['status'] ?? ''),
-        'depthLimit' => $opts['depthLimit'] ?? null,
+        'depthLimit' => $opts['limit'] ?? $opts['depthLimit'] ?? null,
         'shell'      => true,
     ));
 
     $theme  = ABS_PATH . 'oc-admin/themes/modern/';
     $assets = ABS_PATH . 'oc-includes/assets/';
     $dark   = !empty($opts['dark']);
+    $rtl    = !empty($opts['rtl']) ? ' dir="rtl"' : '';
     $json   = static fn ($v): string => (string) json_encode($v, JSON_HEX_TAG | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE);
 
     $head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">'
         . '<link rel="stylesheet" href="file://' . $theme . 'css/main.css">'
         . '<link rel="stylesheet" href="file://' . $assets . 'bootstrap-icons/bootstrap-icons.min.css">'
         // A screenshot is of the settled screen, never of a drawer half way in.
-        . (!empty($opts['still']) ? '<style>*,*::before,*::after{transition:none!important;animation:none!important}</style>' : '');
+        . (!empty($opts['still']) ? CATEGORIES_BROWSER_STILL_HEAD : '');
 
     $driver = isset($opts['driver']) && basename((string) $opts['driver']) !== 'categories-states.js'
         ? (string) file_get_contents((string) $opts['driver']) : '';
@@ -261,8 +271,10 @@ function categories_browser_page(array $tree, array $opts): string
         . '<script>window.osc = window.osc || {}; osc.locales = {_default: "en_US", current: "en_US", codes: ["en_US", "en_IN", "hi_IN"]}; osc.langs = {};</script>'
         . '<script src="file://' . $theme . 'js/osc.js"></script>'
         . '<script src="file://' . $theme . 'js/ui-osc.js"></script>'
+        . '<script src="file://' . $theme . 'js/tree-drag.js"></script>'
         . '<script src="file://' . $assets . 'sortablejs/Sortable.min.js"></script>'
         . '<script src="file://' . $theme . 'js/categories.js"></script>'
+        . '<script>' . file_get_contents(__DIR__ . '/tree-pointer.js') . '</script>'
         . '<script>' . categories_browser_helpers_js() . '</script>'
         . '<script>' . file_get_contents(__DIR__ . '/categories-states.js') . '</script>'
         . '<script>' . $driver . '</script>'
@@ -271,9 +283,9 @@ function categories_browser_page(array $tree, array $opts): string
     if (stripos($html, '</body>') !== false) {
         $html = str_ireplace('</body>', $scripts . '</body>', $html);
         $html = stripos($html, '</head>') !== false ? str_ireplace('</head>', $head . '</head>', $html) : $head . $html;
-        $html = preg_replace('/<html\b/i', '<html data-bs-theme="' . ($dark ? 'dark' : 'light') . '"', $html, 1) ?? $html;
+        $html = preg_replace('/<html\b/i', '<html' . $rtl . ' data-bs-theme="' . ($dark ? 'dark' : 'light') . '"', $html, 1) ?? $html;
     } else {
-        $html = '<!doctype html><html lang="en" data-bs-theme="' . ($dark ? 'dark' : 'light') . '"><head>' . $head . '</head><body>' . $html . $scripts . '</body></html>';
+        $html = '<!doctype html><html lang="en"' . $rtl . ' data-bs-theme="' . ($dark ? 'dark' : 'light') . '"><head>' . $head . '</head><body>' . $html . $scripts . '</body></html>';
     }
 
     return $html;
@@ -323,7 +335,7 @@ JS;
  *
  * @param string                         $driverJs path to a script that sets window.catDriver
  * @param array<int,array<string,mixed>> $tree     a toTreeAll tree
- * @param array<string,mixed>            $opts     dark, width, status, depthLimit, drawer_ids, answers
+ * @param array<string,mixed>            $opts     dark, rtl, width, status, depthLimit or limit, drawer_ids, answers
  *
  * @return array<string,mixed>
  */
@@ -375,7 +387,7 @@ function categories_browser_shot(string $state, int $width, bool $dark, string $
     @unlink($png);
     shell_exec('TZ=UTC ' . escapeshellarg($chrome)
         . ' --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage --allow-file-access-from-files'
-        . CATEGORIES_BROWSER_MOUSE
+        . CATEGORIES_BROWSER_MOUSE . CATEGORIES_BROWSER_STILL
         . ' --hide-scrollbars --force-device-scale-factor=1 --window-size=' . $width . ',' . ($width < 600 ? 844 : 900)
         . ' --user-data-dir=' . escapeshellarg($dir . '/profile')
         . ' --virtual-time-budget=20000 --screenshot=' . escapeshellarg($png) . ' ' . escapeshellarg('file://' . $page) . ' >/dev/null 2>&1');

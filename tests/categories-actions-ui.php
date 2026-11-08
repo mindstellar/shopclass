@@ -10,7 +10,7 @@
 
 /**
  * Categories screen row actions in headless Chrome: Disable, Delete, the bulk bar, Move to…,
- * Set expiry… and the sibling drag, against a fake fetch.
+ * and Set expiry…, against a fake fetch. Drag is in categories-drag-ui.php.
  *
  * Usage: php tests/categories-actions-ui.php
  */
@@ -229,7 +229,7 @@ r.post = [c.body.do, c.body.ids];
 r.off = t.$$('tr.cat-row.is-disabled').length;
 r.selAfter = t.$$('tr.cat-row.is-selected').length;
 r.off0 = 8;
-r.flash = window.__flash.slice();
+r.flash = [['ok', t.$('.osc-toast-text').textContent]];
 window.__answers.category_bulk = function (call) {
     if (call.body.do === 'enable') {
         var m = {};
@@ -257,7 +257,7 @@ pin('naming the one top-most category', 'Disable Vehicles?', $r['title'] ?? null
 pin('Cars is inside Vehicles, so only Vehicles is posted', array('disable', array((string) $ids['Vehicles'])), $r['post'] ?? null);
 pin('Vehicles and its 10 below are off', 8 + 11, $r['off'] ?? null);
 pin('the selection clears', 0, $r['selAfter'] ?? null);
-pin('the flash is the server message', array(array('ok', '1 done.')), $r['flash'] ?? null);
+pin('the toast is the server message', array(array('ok', '1 done.')), $r['flash'] ?? null);
 pin('failed ids are reported in the flash', array('error', 'Parent category is disabled, you can not enable that category'), $r['enableFlash'] ?? null);
 pin('and the row stays off', true, $r['enableOff'] ?? null);
 pin('bulk delete names the count', 'Delete 2 categories?', $r['delTitle'] ?? null);
@@ -299,7 +299,7 @@ var cars = t.row('Cars');
 r.moved = [cars.dataset.parent === re.dataset.id, cars.dataset.depth, name(cars.previousElementSibling), !cars.hidden];
 r.after = [veh.dataset.listings, re.dataset.listings, re.dataset.subs];
 r.cells = [veh.querySelector('.col-listings').textContent, re.querySelector('.col-listings').textContent];
-r.flash = window.__flash.slice();
+r.flash = [['ok', t.$('.osc-toast-text').textContent]];
 JS, $demo);
 pin('Move to… opens the dialog', true, $r['open'] ?? null);
 pin('its title names the category', 'Move Cars', $r['moveTitle'] ?? null);
@@ -319,7 +319,7 @@ pin('the dialog closes', true, $r['closed'] ?? null);
 pin('Cars is last under Real estate and shown', array(true, '2', 'Shops for Rent - Sale', true), $r['moved'] ?? null);
 pin('Vehicles loses 19 listings and Real estate gains 19', array((string) ((int) $re[0] - 19), (string) ((int) $re[1] + 19), '10'), $r['after'] ?? null);
 pin('the cells show it', array((string) ((int) $re[0] - 19), (string) ((int) $re[1] + 19)), $r['cells'] ?? null);
-pin('the flash says Moved.', array(array('ok', 'Moved.')), $r['flash'] ?? null);
+pin('the toast says where it went', array(array('ok', 'Moved Cars to Real estate, 10 of 10.')), $r['flash'] ?? null);
 
 harness_section('Set expiry…');
 $r = actions_ui_run(<<<'JS'
@@ -375,68 +375,5 @@ pin('the dialog resets to Keep when opened again', true, $r['postedBack'] ?? nul
 pin('a selection with no listings hides the posted choice', true, $r['noListingsPosted'] ?? null);
 pin('and keeps it hidden after a change', true, $r['noListingsStill'] ?? null);
 pin('and sends keep, with no subcategory flag', array('0', 'keep', true), $r['keep'] ?? null);
-
-harness_section('Drag within a group');
-$r = actions_ui_run(<<<'JS'
-await t.click(t.row('Vehicles').querySelector('.cat-disclosure'));
-var tbody = t.$('#cat-rows');
-var inst = window.Sortable.get(tbody);
-r.hasSortable = !!inst;
-var kids = function (p) { return t.$$('tr.cat-row').filter(function (tr) { return tr.dataset.parent === p; }).map(name); };
-var vid = t.row('Vehicles').dataset.id;
-r.before = kids(vid).slice(0, 3);
-var drag = function (from, afterName) {
-    var item = t.row(from);
-    var o = inst.options;
-    o.onStart({item: item});
-    var rel = t.row(afterName);
-    var allowed = o.onMove({dragged: item, related: rel});
-    rel.after(item);
-    o.onEnd({item: item});
-    return allowed;
-};
-r.crossRefused = inst.options.onMove({dragged: t.row('Cars'), related: t.row('Real estate')});
-r.rowAllowed = inst.options.onMove({dragged: t.row('Cars'), related: t.row('Motorcycles')});
-r.handleHidden = false;
-inst.options.onStart({item: t.row('Car Parts')});
-t.row('Car Parts').querySelector('.cat-disclosure').click();
-await t.settle();
-inst.options.onStart({item: t.row('Cars')});
-r.deepHidden = t.row('Engine - Gearbox').hidden;
-inst.options.onEnd({item: t.row('Cars')});
-await t.settle();
-r.allowed = drag('Cars', 'Car Parts');
-await t.settle(400);
-r.after = kids(vid).slice(0, 3);
-var c = last('category_move');
-r.post = [c.method, c.body.id, c.body.parent_id, c.body.position];
-r.blockTogether = name(t.row('Car Parts').nextElementSibling);
-r.listings = t.row('Vehicles').dataset.listings;
-window.__answers.category_move = {error: 'Nope'};
-drag('Motorcycles', 'Car Parts');
-await t.settle(400);
-r.rolledBack = kids(vid).slice(0, 4);
-r.flash = window.__flash.slice();
-r.domOrder = t.$$('tr.cat-row').filter(function (tr) { return tr.dataset.parent === vid; }).map(name).slice(0, 4);
-await t.type('#cat-q', 'car');
-r.disabledWhileFiltering = inst.option('disabled');
-await t.type('#cat-q', '');
-r.enabledAgain = inst.option('disabled');
-r.callsBefore = calls('category_move').length;
-JS, $demo);
-pin('the table is sortable', true, $r['hasSortable'] ?? null);
-pin('Vehicles starts with Cars, Car Parts, Motorcycles', array('Cars', 'Car Parts', 'Motorcycles'), $r['before'] ?? null);
-pin('a drop into another group is refused', false, $r['crossRefused'] ?? null);
-pin('a drop among siblings is allowed', true, $r['rowAllowed'] ?? null);
-pin('the open group folds away while dragging', true, $r['deepHidden'] ?? null);
-pin('dragging over a sibling is allowed', true, $r['allowed'] ?? null);
-pin('Cars lands after Car Parts', array('Car Parts', 'Cars', 'Motorcycles'), $r['after'] ?? null);
-pin('the save posts id, parent_id and position', array('POST', (string) $ids['Cars'], (string) $ids['Vehicles'], '1'), $r['post'] ?? null);
-pin('Car Parts keeps its subcategories with it', 'Engine - Gearbox', $r['blockTogether'] ?? null);
-pin('a failed save puts the group back', array('Car Parts', 'Cars', 'Motorcycles', 'Boats - Ships'), $r['rolledBack'] ?? null);
-pin('in the table too', array('Car Parts', 'Cars', 'Motorcycles', 'Boats - Ships'), $r['domOrder'] ?? null);
-pin('and flashes the error', array(array('error', 'Nope')), $r['flash'] ?? null);
-pin('dragging is off while filtering', true, $r['disabledWhileFiltering'] ?? null);
-pin('and back on after', false, $r['enabledAgain'] ?? null);
 
 exit(harness_result());

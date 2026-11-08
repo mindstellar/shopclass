@@ -1,0 +1,85 @@
+<style>
+    #tree { --tree-indent: 24px; }
+    #tree .tree-name-line { display: flex; align-items: center; gap: .25rem; padding-inline-start: calc(var(--tree-d, 0) * var(--tree-indent)); }
+    #tree .tree-handle { border: 0; background: none; padding: .25rem; }
+</style>
+<div style="padding: 2rem; max-width: 60rem;">
+    <table class="table">
+        <thead><tr><th scope="col" style="width: 3rem;"></th><th scope="col">Name</th><th scope="col">Listings</th></tr></thead>
+        <tbody id="tree">
+            <tr class="tree-row" data-depth="0" data-open="1"><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Vehicles</span></div></td><td>12</td></tr>
+            <tr class="tree-row" data-depth="1" data-open="1"><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Cars</span></div></td><td>8</td></tr>
+            <tr class="tree-row" data-depth="2" data-open="1"><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Car Parts</span></div></td><td>3</td></tr>
+            <tr class="tree-row" data-depth="1" data-open="1"><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Boats</span></div></td><td>4</td></tr>
+            <tr class="tree-row" data-depth="0" data-open="0"><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Real estate</span></div></td><td>6</td></tr>
+            <tr class="tree-row" data-depth="1" data-open="1" hidden><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Houses</span></div></td><td>2</td></tr>
+            <tr class="tree-row" data-depth="1" data-open="1" hidden><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Flats</span></div></td><td>4</td></tr>
+            <tr class="tree-row" data-depth="0" data-open="1"><td><input type="checkbox" aria-label="Select"></td><td><div class="tree-name-line"><button type="button" class="tree-handle" aria-label="Reorder"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button><span class="tree-name">Jobs</span></div></td><td>5</td></tr>
+        </tbody>
+    </table>
+    <ul id="plain"><li>One</li><li>Two</li></ul>
+</div>
+<script>
+(function () {
+    var opts = window.__treeOpts || {};
+    var tbody = document.getElementById('tree');
+    var FT = osc.flatTree;
+    window.__moves = [];
+    window.__cancelled = [];
+    window.__opened = [];
+
+    function rows() { return Array.from(tbody.querySelectorAll('tr.tree-row')); }
+    function name(el) { return el ? el.querySelector('.tree-name').textContent : null; }
+    function items() { return rows().map(function (el) { return {el: el, depth: Number(el.dataset.depth)}; }); }
+    function kids(el) {
+        var all = rows();
+        var i = all.indexOf(el);
+        return all.slice(i + 1, FT.blockEnd(items(), i));
+    }
+    function open(el) {
+        el.dataset.open = '1';
+        var d = Number(el.dataset.depth);
+        kids(el).forEach(function (k) {
+            if (Number(k.dataset.depth) === d + 1) { k.hidden = false; }
+        });
+    }
+    function paint() {
+        rows().forEach(function (r) { r.style.setProperty('--tree-d', r.dataset.depth); });
+    }
+    paint();
+
+    window.__ctl = osc.sortable(tbody, {
+        handle: '.tree-handle',
+        tree: {
+            rows: 'tr.tree-row',
+            depth: function (el) { return Number(el.dataset.depth); },
+            indent: null,
+            maxLevels: opts.limit || 0,
+            canMove: function () { return !window.__filtered; },
+            isCollapsed: function (el) { return el.dataset.open === '0' && kids(el).length > 0; },
+            open: function (el) { window.__opened.push(name(el)); open(el); },
+            label: function (p) { return p ? 'Inside ' + name(p) : 'Top level'; },
+            tooDeep: 'Too deep',
+            ghost: function (el, below) { return {name: name(el), more: below ? '+ ' + below + ' more' : ''}; },
+            keys: true,
+            hint: ['move up or down', 'put under the row above', 'move out of its group'],
+            commit: function (m) {
+                window.__moves.push({name: name(m.el), from: m.from, at: m.at, depth: m.depth, parent: name(m.parentEl), index: m.index, via: m.via});
+                var list = items();
+                FT.moveBlock(list, m.from, m.at, m.depth);
+                list.forEach(function (it) {
+                    it.el.dataset.depth = String(it.depth);
+                    tbody.appendChild(it.el);
+                });
+                if (m.parentEl && m.parentEl.dataset.open === '0') { open(m.parentEl); }
+                paint();
+                if (window.__hold) { return new Promise(function (r) { window.__release = r; }); }
+            },
+            cancelled: function (reason, info) {
+                window.__cancelled.push(info && info.refused ? reason + ':' + info.refused : reason);
+            },
+            say: function () {}
+        }
+    });
+})();
+</script>

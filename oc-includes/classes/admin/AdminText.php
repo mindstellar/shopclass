@@ -65,4 +65,29 @@ final class AdminText
 
         return implode(',', $out);
     }
+
+    /**
+     * Plural forms for a script: each distinct form once, and which one n = 0..199 takes as one
+     * digit per n. Every gettext Plural-Forms rule gives n >= 200 the form of 100 + n % 100.
+     *
+     * @param callable(int):string $form
+     *
+     * @return array{forms: list<string>, idx: string}
+     */
+    public static function pluralForms(callable $form): array
+    {
+        $forms = [];
+        $idx   = '';
+        for ($n = 0; $n < 200; $n++) {
+            $text = $form($n);
+            $at   = array_search($text, $forms, true);
+            if ($at === false) {
+                $at      = count($forms);
+                $forms[] = $text;
+            }
+            $idx .= chr(48 + (int) $at);
+        }
+
+        return ['forms' => $forms, 'idx' => $idx];
+    }
 }

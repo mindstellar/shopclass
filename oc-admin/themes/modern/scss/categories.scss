@@ -991,6 +991,8 @@
   --cat-handle: 1rem;
   --cat-indent: 1.75rem;
   --cat-pad-x: .75rem;
+  --tree-indent: var(--cat-indent);
+  --tree-slot-pad-x: var(--cat-pad-x);
 }
 
 // ---- Tabs, toolbar, filter line ---------------------------------------------
@@ -1097,6 +1099,11 @@
   --#{$prefix}table-cell-padding-x: var(--cat-pad-x);
   --#{$prefix}table-cell-padding-y: .4rem;
   margin-block-end: 0;
+
+  // Long lists are split over several tbodies; only the table's last row drops its rule.
+  > tbody:not(:last-child) > tr:last-child > * {
+    border-bottom-width: var(--#{$prefix}border-width);
+  }
 
   > tbody > tr {
     --cat-row-bg: var(--osc-bench);
@@ -1360,7 +1367,8 @@
   font-weight: 600;
 }
 
-.cat-row.is-editing .cat-name {
+.cat-row.is-editing .cat-name,
+.cat-row.is-drop-parent .cat-name {
   color: var(--osc-bronze);
 }
 
@@ -1487,15 +1495,6 @@
   100% {
     box-shadow: inset 0 0 0 9999px transparent;
   }
-}
-
-// Sibling drag.
-.cat-row.sortable-ghost > * {
-  --#{$prefix}table-bg-state: var(--osc-bronze-tint);
-}
-
-.cat-row.sortable-chosen .cat-handle {
-  color: var(--osc-bronze);
 }
 
 // ---- Search result states, empty, footer ------------------------------------

@@ -82,7 +82,9 @@
         border-bottom-width: 0;
       }
 
-      &:hover > * {
+      // Set on the row and inherited by the cells: a `:has()` followed by `> *` makes any change
+      // inside one row restyle the whole table.
+      &:hover {
         --#{$prefix}table-bg-state: var(--osc-bench-warm);
       }
 
@@ -90,7 +92,7 @@
       // signal (The Three Signal Rule). `:has()` is Baseline 2023, and where it is missing
       // this degrades to "no wash, checkbox still checked", which is exactly why it is safe
       // to lean on here rather than shipping JS to toggle a class.
-      &:has(.col-bulkactions input:checked) > * {
+      &:has(.col-bulkactions input:checked) {
         --#{$prefix}table-bg-state: var(--osc-bronze-tint);
       }
     }

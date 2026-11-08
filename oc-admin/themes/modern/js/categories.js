@@ -60,16 +60,11 @@
 
         // A plural table from the server ({forms, idx} for n = 0..199), or a plain string, filled with n.
         function plural(key, n) {
-            const p = I18N[key];
-            let tpl = p;
-            if (p && Array.isArray(p.forms)) {
-                const i = n < 200 ? n : 100 + (n % 100);
-                tpl = p.forms[+p.idx.charAt(i) || 0];
-            }
-            return oscFill(tpl, [fmt(n)]);
+            return oscFill(window.osc.plural(I18N[key], n), [fmt(n)]);
         }
 
         const tbody = document.getElementById('cat-rows');
+        const table = tbody ? tbody.closest('table') : null;
         const checkAll = document.getElementById('cat-check-all');
         const search = document.getElementById('cat-q');
         const filterLine = document.getElementById('cat-filter-line');
@@ -91,13 +86,7 @@
         }
 
         function announce(text) {
-            if (!announcer) {
-                return;
-            }
-            announcer.textContent = '';
-            window.requestAnimationFrame(function () {
-                announcer.textContent = text || '';
-            });
+            window.osc.announce(announcer, text);
         }
 
         // One request path for the screen: a body makes it a POST; replies are JSON (null when
@@ -177,6 +166,22 @@
                     roots.push(node);
                 }
                 rows.push(node);
+            }
+            splitRows();
+        }
+
+        // Adding or removing a row restyles every row in its tbody, so long lists are cut into
+        // tbodies of PART rows: a move then restyles a few dozen rows, not all of them.
+        const PART = 40;
+
+        function splitRows() {
+            const list = Array.from(tbody.children);
+            let part = tbody;
+            for (let i = PART; i < list.length; i += PART) {
+                const next = el('tbody', {class: 'cat-rows-part'});
+                part.after(next);
+                next.append(...list.slice(i, i + PART));
+                part = next;
             }
         }
 
@@ -376,8 +381,9 @@
             reorder();
             const at = rows.indexOf(node);
             const next = rows[at + size];
+            const anchor = next ? next.el : stateRow();
             rows.slice(at, at + size).forEach(function (n) {
-                tbody.insertBefore(n.el, next ? next.el : stateRow());
+                anchor.before(n.el);
             });
             syncRows();
             syncParentTemplate();
@@ -463,7 +469,7 @@
                 const d = id === 0 ? 0 : (+o.dataset.depth || 1);
                 if (banned.has(id)) {
                     o.disabled = true;
-                } else if (CFG.limit && d + h > CFG.limit && d + h > today) {
+                } else if (!window.osc.flatTree.fits(h - 1, d, CFG.limit) && d + h > today) {
                     o.disabled = true;
                     o.textContent += ' ' + (I18N.tooDeep || '');
                     deep = true;
@@ -552,7 +558,7 @@
         function stateRow() {
             if (!noResult) {
                 noResult = el('tr', {class: 'cat-state', hidden: ''}, [el('td', {colspan: '6'})]);
-                tbody.append(noResult);
+                table.tBodies[table.tBodies.length - 1].append(noResult);
             }
             return noResult;
         }
@@ -1128,21 +1134,193 @@
             });
         }
 
-        // After a move under a disabled parent the server switches the category off.
-        function followMove(node, parentId, position) {
-            relocate(node.id, parentId, position);
-            const parent = byId.get(parentId);
+        // A toast with Undo, spoken too. Without the toast layer the flash bar stands in.
+        function notify(text, undo) {
+            announce(text);
+            if (typeof window.osc.toast === 'function') {
+                window.osc.toast(text, undo ? {undo: undo} : {});
+            } else {
+                flash('ok', text);
+            }
+        }
+
+        // A request that must answer ok; otherwise it throws {reply: text} for the caller to flash.
+        function must(url, params) {
+            return post(url, params).then(function (res) {
+                if (!res || res.error || !res.ok) {
+                    throw {reply: replyError(res)};
+                }
+                return res;
+            });
+        }
+
+        function undoFailed(e) {
+            flash('error', e && e.reply ? e.reply : I18N.ajaxError);
+        }
+
+        // The on or off state of these rows and everything below them.
+        function snapStates(nodes) {
+            const map = new Map();
+            nodes.forEach(function (top) {
+                subtree(top).forEach(function (n) {
+                    map.set(n.id, n.enabled);
+                });
+            });
+            return map;
+        }
+
+        // Puts the rows under tops back to the wanted states. Enable and disable reach every level
+        // below, so a row is only changed when it differs from what its parent's change left it as.
+        function restoreStates(tops, want) {
+            const sim = snapStates(tops);
+            const steps = [];
+            tops.forEach(function (top) {
+                const walk = function (n, isTop) {
+                    const on = want.get(n.id);
+                    if (on !== undefined && on !== sim.get(n.id)) {
+                        subtree(n).forEach(function (s) {
+                            sim.set(s.id, on);
+                        });
+                        const last = steps[steps.length - 1];
+                        if (isTop) {
+                            steps.push({one: n.id, on: on});
+                        } else if (last && !last.one && last.on === on) {
+                            last.ids.push(n.id);
+                        } else {
+                            steps.push({ids: [n.id], on: on});
+                        }
+                    }
+                    n.kids.forEach(function (k) {
+                        walk(k, false);
+                    });
+                };
+                walk(top, true);
+            });
+            return steps.reduce(function (chain, step) {
+                return chain.then(function () {
+                    if (step.one) {
+                        return must(CFG.enable, new URLSearchParams({id: String(step.one), enabled: step.on ? '1' : '0'}));
+                    }
+                    const body = new URLSearchParams();
+                    body.set('do', step.on ? 'enable' : 'disable');
+                    step.ids.forEach(function (id) {
+                        body.append('ids[]', String(id));
+                    });
+                    return must(CFG.bulk, body);
+                });
+            }, Promise.resolve()).then(function () {
+                want.forEach(function (on, id) {
+                    const n = byId.get(id);
+                    if (n && n.enabled !== on) {
+                        setEnabled(n, on);
+                    }
+                });
+                totals();
+                refilter();
+            });
+        }
+
+        // Switches an enabled block off locally, as the server does after a move under a disabled parent.
+        function offUnder(node) {
+            const parent = byId.get(node.parent);
             if (parent && !parent.enabled && node.enabled) {
                 subtree(node).forEach(function (n) {
                     setEnabled(n, false);
                 });
             }
+        }
+
+        // Where a category sits now, for putting it back.
+        function spot(node) {
+            const list = node.parent ? byId.get(node.parent).kids : roots;
+            return {node: node, parent: node.parent, index: list.indexOf(node), states: snapStates([node])};
+        }
+
+        // Quiet "Inside X" tag, tint and flash on a row that just landed.
+        function markLanded(node) {
+            const row = node.el;
+            const handle = row.querySelector('.cat-handle');
+            row.classList.remove('is-tree-flash');
+            void row.offsetWidth;
+            row.classList.add('is-tree-flash');
+            window.setTimeout(function () {
+                row.classList.remove('is-tree-flash');
+            }, 1700);
+            const parent = byId.get(node.parent);
+            const tag = el('span', {class: 'tree-place-tag', 'aria-hidden': 'true', text: parent ? oscFill(I18N.inside, [parent.name]) : I18N.topLevel});
+            (handle ? handle.parentNode : row).appendChild(tag);
+            row.classList.add('is-tree-placed');
+            if (parent) {
+                parent.el.classList.add('is-drop-parent');
+            }
+            window.setTimeout(function () {
+                tag.remove();
+                row.classList.remove('is-tree-placed');
+                if (parent) {
+                    parent.el.classList.remove('is-drop-parent');
+                }
+            }, 1600);
+        }
+
+        // Runs a change that moves rows with the rows sliding to their new places.
+        function sliding(change) {
+            if (sorter) {
+                sorter.flip(change);
+            } else {
+                change();
+            }
+        }
+
+        // Undo of moves: each category goes back to its old parent and position, lowest position
+        // first, then the on or off states it had come back as.
+        function undoMoves(entries) {
+            const order = entries.slice().sort(function (a, b) {
+                return a.index - b.index;
+            });
+            return order.reduce(function (chain, e) {
+                return chain.then(function () {
+                    return must(CFG.move, new URLSearchParams({id: String(e.node.id), parent_id: String(e.parent), position: String(e.index)}))
+                        .then(function () {
+                            sliding(function () {
+                                relocate(e.node.id, e.parent, e.index);
+                            });
+                        });
+                });
+            }, Promise.resolve()).then(function () {
+                const want = new Map();
+                entries.forEach(function (e) {
+                    e.states.forEach(function (on, id) {
+                        want.set(id, on);
+                    });
+                });
+                return restoreStates(entries.map(function (e) {
+                    return e.node;
+                }), want);
+            }).then(function () {
+                openTo(order[0].node);
+                markLanded(order[0].node);
+                notify(I18N.undone);
+            }).catch(undoFailed);
+        }
+
+        // Undo of an enable or disable: the rows go back to the states they had.
+        function undoStates(tops, before) {
+            return restoreStates(tops, before).then(function () {
+                notify(I18N.undone);
+            }).catch(undoFailed);
+        }
+
+        // After a move under a disabled parent the server switches the category off.
+        function followMove(node, parentId, position) {
+            relocate(node.id, parentId, position);
+            offUnder(node);
             totals();
             openTo(node);
         }
 
         function toggle(node) {
             const on = !node.enabled;
+            const before = snapStates([node]);
             const run = function () {
                 post(CFG.enable, new URLSearchParams({id: String(node.id), enabled: on ? '1' : '0'})).then(function (res) {
                     if (!res || res.error || !res.ok) {
@@ -1152,7 +1330,9 @@
                     applyEnabled(node, on, res);
                     totals();
                     refilter();
-                    announce(node.name + ': ' + (on ? I18N.enabled : I18N.disabled));
+                    notify(oscFill(I18N.nameState, [node.name, on ? I18N.enabled : I18N.disabled]), function () {
+                        undoStates([node], before);
+                    });
                 }).catch(function () {
                     flash('error', I18N.ajaxError);
                 });
@@ -1276,6 +1456,7 @@
             if (submit) {
                 submit.disabled = true;
             }
+            const was = list.map(spot);
             const body = new URLSearchParams();
             if (list.length === 1) {
                 body.set('id', String(list[0].id));
@@ -1296,20 +1477,37 @@
                     moveHint.textContent = replyError(res);
                     return;
                 }
-                const done = list.length === 1 ? [list[0].id] : (res.done || []);
-                done.forEach(function (id, i) {
-                    const node = byId.get(+id);
-                    if (node) {
-                        followMove(node, parentId, position + i);
-                    }
+                const done = list.length === 1 ? [list[0].id] : (res.done || []).map(Number);
+                sliding(function () {
+                    done.forEach(function (id, i) {
+                        const node = byId.get(+id);
+                        if (node) {
+                            followMove(node, parentId, position + i);
+                        }
+                    });
                 });
                 moveDlg.close();
                 if (list.length > 1) {
                     clearSelection();
                 }
+                const moved = was.filter(function (e) {
+                    return done.indexOf(e.node.id) !== -1;
+                });
                 const bad = failedText(res);
-                flash(bad ? 'error' : 'ok', bad || res.message || I18N.moved);
-                announce(I18N.moved);
+                if (bad) {
+                    flash('error', bad);
+                }
+                if (moved.length) {
+                    markLanded(moved[0].node);
+                    const sentence = list.length === 1
+                        ? moveSentence(list[0], {via: 'drag'}, byId.get(was[0].parent) || null)
+                        : (res.message || I18N.moved);
+                    notify(sentence, function () {
+                        undoMoves(moved);
+                    });
+                } else {
+                    announce(I18N.moved);
+                }
             }).catch(function () {
                 if (submit) {
                     submit.disabled = false;
@@ -1371,6 +1569,12 @@
             const keep = !posted || posted.hidden;
             const pick = form.querySelector('input[name="expiry_listings"]:checked');
             const toSub = form.querySelector('#cat-bx-sub').checked;
+            const reach = [];
+            list.forEach(function (n) {
+                (toSub ? subtree(n) : [n]).forEach(function (r) {
+                    reach.push({node: r, days: r.expiry});
+                });
+            });
             const body = new URLSearchParams();
             body.set('do', 'expiry');
             list.forEach(function (n) {
@@ -1398,10 +1602,41 @@
                 });
                 expiryDlg.close();
                 clearSelection();
-                flash('ok', res.message);
+                notify(res.message || '', body.get('expiry_listings') === 'keep' ? function () {
+                    undoExpiry(reach);
+                } : null);
             }).catch(function () {
                 flash('error', I18N.ajaxError);
             });
+        }
+
+        // Undo of Set expiry (end dates kept): one request per old value.
+        function undoExpiry(reach) {
+            const groups = new Map();
+            reach.forEach(function (r) {
+                if (!groups.has(r.days)) {
+                    groups.set(r.days, []);
+                }
+                groups.get(r.days).push(r.node);
+            });
+            return Array.from(groups).reduce(function (chain, g) {
+                return chain.then(function () {
+                    const body = new URLSearchParams();
+                    body.set('do', 'expiry');
+                    g[1].forEach(function (n) {
+                        body.append('ids[]', String(n.id));
+                    });
+                    body.set('days', String(g[0]));
+                    body.set('expiry_listings', 'keep');
+                    return must(CFG.bulk, body);
+                });
+            }, Promise.resolve()).then(function () {
+                reach.forEach(function (r) {
+                    r.node.expiry = r.days;
+                    setExpiryCell(r.node);
+                });
+                notify(I18N.undone);
+            }).catch(undoFailed);
         }
 
         // The bulk bar: only the top-most selected rows go to the server, the rest ride along.
@@ -1421,6 +1656,7 @@
                 openExpiry(nodes);
                 return;
             }
+            const before = snapStates(nodes);
             const finish = function (res) {
                 if (!res || res.error || !res.ok) {
                     flash('error', replyError(res));
@@ -1444,7 +1680,13 @@
                 clearSelection();
                 totals();
                 refilter();
-                flash(bad ? 'error' : 'ok', bad || res.message);
+                if (bad || what === 'delete') {
+                    flash(bad ? 'error' : 'ok', bad || res.message);
+                } else {
+                    notify(res.message || '', function () {
+                        undoStates(nodes, before);
+                    });
+                }
             };
             const run = function () {
                 const body = new URLSearchParams();
@@ -1514,72 +1756,163 @@
             expiryForm.addEventListener('change', onExpiryInput);
         }
 
-        // Dragging keeps a category inside its sibling group. Everything deeper folds away while
-        // it moves, so the only rows left to cross are siblings. A refused save puts it back.
-        const sorter = tbody && typeof window.osc === 'object' && typeof window.osc.sortable === 'function'
-            ? window.osc.sortable(tbody, {
-                handle: '.cat-handle',
-                draggable: 'tr.cat-row',
-                onStart: function (evt) {
-                    const node = byId.get(+evt.item.dataset.id);
-                    if (!node) {
-                        return;
-                    }
-                    node.open = false;
-                    rows.forEach(function (n) {
-                        if (n.shown && n.depth > node.depth) {
-                            n.el.hidden = true;
-                        }
+        if (window.osc && typeof window.osc.toast === 'function' && window.osc.toast.labels) {
+            window.osc.toast.labels({undo: I18N.undo, close: I18N.close});
+        }
+
+        // --- Drag and arrow keys: the shared tree layer in ui-osc.js -------------------------
+        const place = function (parent) {
+            return parent ? parent.name : I18N.topLevel;
+        };
+
+        // Shows a group's rows at once, without the filter pass, which would unhide a row in flight.
+        function openGroup(node) {
+            node.open = true;
+            setExpanded(node, true);
+            subtree(node).slice(1).forEach(function (n) {
+                const p = byId.get(n.parent);
+                n.shown = !!p && p.open && p.shown;
+                n.el.hidden = !n.shown;
+            });
+        }
+
+        const slotOffset = function () {
+            const first = table.querySelector('tr.cat-row:not([hidden])');
+            let w = 0;
+            if (first && getComputedStyle(first).display === 'grid') {
+                // Phone: the handle leads the row and the indent follows it.
+                const handle = first.querySelector('.cat-handle');
+                w = first.cells[0].offsetWidth + (handle ? handle.offsetWidth : 0);
+            } else if (first) {
+                w = (first.cells[0] ? first.cells[0].offsetWidth : 0) + (first.cells[1] ? first.cells[1].offsetWidth : 0);
+            }
+            return w;
+        };
+
+        function moveSentence(node, m, oldParent) {
+            const list = node.parent ? byId.get(node.parent).kids : roots;
+            const where = place(byId.get(node.parent));
+            const at = list.indexOf(node) + 1;
+            if (m.via === 'key') {
+                if (m.key === 'up' || m.key === 'down') {
+                    return oscFill(m.key === 'up' ? I18N.movedUp : I18N.movedDown, [node.name, at, list.length, where]);
+                }
+                if (m.key === 'in') {
+                    return oscFill(I18N.movedUnder, [node.name, where, list.length]);
+                }
+                return oscFill(I18N.movedOut, [node.name, place(oldParent), where]);
+            }
+            return oscFill(I18N.movedTo, [node.name, where, at, list.length]);
+        }
+
+        function commitMove(m) {
+            const node = byId.get(+m.el.dataset.id);
+            if (!node) {
+                return;
+            }
+            const target = m.parentEl ? byId.get(+m.parentEl.dataset.id) : null;
+            const oldParent = byId.get(node.parent) || null;
+            const oldList = oldParent ? oldParent.kids : roots;
+            const oldIndex = oldList.indexOf(node);
+            const was = {node: node, parent: oldParent ? oldParent.id : 0, index: oldIndex, states: snapStates([node])};
+            const newParent = target ? target.id : 0;
+            relocate(node.id, newParent, m.index);
+            if (target) {
+                openGroup(target);
+            }
+            const sentence = moveSentence(node, m, oldParent);
+            const back = function (text) {
+                if (sorter) {
+                    sorter.flip(function () {
+                        relocate(node.id, oldParent ? oldParent.id : 0, oldIndex);
                     });
-                },
-                onMove: function (evt) {
-                    const node = byId.get(+evt.dragged.dataset.id);
-                    const rel = evt.related;
-                    return !!node && rel.classList.contains('cat-row') && (+rel.dataset.parent || 0) === node.parent;
-                },
-                onEnd: function (evt) {
-                    const node = byId.get(+evt.item.dataset.id);
-                    if (!node) {
-                        refilter();
+                } else {
+                    relocate(node.id, oldParent ? oldParent.id : 0, oldIndex);
+                }
+                flash('error', text);
+                announce(text);
+            };
+            return post(CFG.move, new URLSearchParams({id: String(node.id), parent_id: String(newParent), position: String(m.index)}))
+                .then(function (res) {
+                    if (!res || res.error || !res.ok) {
+                        back(replyError(res));
                         return;
                     }
-                    let idx = 0;
-                    for (let p = evt.item.previousElementSibling; p; p = p.previousElementSibling) {
-                        if (!p.classList.contains('cat-row')) {
-                            continue;
+                    offUnder(node);
+                    totals();
+                    notify(sentence, function () {
+                        undoMoves([was]);
+                    });
+                })
+                .catch(function () {
+                    back(I18N.ajaxError);
+                });
+        }
+
+        function moveRefused(reason, info) {
+            const node = info && info.el ? byId.get(+info.el.dataset.id) : null;
+            const deep = [I18N.notMoved, I18N.tooDeepDrag].filter(Boolean).join(' ');
+            let text = '';
+            if (reason === 'escape') {
+                text = I18N.moveCancelled;
+            } else if (reason === 'deep') {
+                text = deep;
+            } else if (reason === 'filtered') {
+                text = I18N.filterNoReorder;
+            } else if (reason === 'refused-key' && node) {
+                const where = place(byId.get(node.parent));
+                text = {
+                    first: oscFill(I18N.alreadyFirst, [node.name, where]),
+                    last: oscFill(I18N.alreadyLast, [node.name, where]),
+                    top: oscFill(I18N.alreadyTop, [node.name]),
+                    'nothing-above': oscFill(I18N.nothingAbove, [node.name]),
+                    deep: deep
+                }[info.refused] || '';
+            }
+            if (text) {
+                announce(text);
+            }
+        }
+
+        const sorter = tbody && typeof window.osc === 'object' && typeof window.osc.sortable === 'function'
+            ? window.osc.sortable(table, {
+                handle: '.cat-handle',
+                tree: {
+                    rows: 'tr.cat-row',
+                    depth: function (row) {
+                        return (+row.dataset.depth || 1) - 1;
+                    },
+                    indent: null,
+                    maxLevels: CFG.limit,
+                    canMove: function () {
+                        return !filtering();
+                    },
+                    isCollapsed: function (row) {
+                        const n = byId.get(+row.dataset.id);
+                        return !!n && n.kids.length > 0 && !n.open;
+                    },
+                    open: function (row) {
+                        const n = byId.get(+row.dataset.id);
+                        if (n) {
+                            openGroup(n);
                         }
-                        if ((+p.dataset.parent || 0) === node.parent) {
-                            idx++;
-                        } else if (+p.dataset.id === node.parent) {
-                            break;
-                        }
-                    }
-                    const list = node.parent ? byId.get(node.parent).kids : roots;
-                    const was = list.indexOf(node);
-                    relocate(node.id, node.parent, idx);
-                    if (idx === was) {
-                        return;
-                    }
-                    post(CFG.move, new URLSearchParams({id: String(node.id), parent_id: String(node.parent), position: String(idx)}))
-                        .then(function (res) {
-                            if (!res || res.error || !res.ok) {
-                                relocate(node.id, node.parent, was);
-                                flash('error', replyError(res));
-                            }
-                        })
-                        .catch(function () {
-                            relocate(node.id, node.parent, was);
-                            flash('error', I18N.ajaxError);
-                        });
+                    },
+                    label: function (row) {
+                        return row ? oscFill(I18N.inside, [byId.get(+row.dataset.id).name]) : I18N.topLevel;
+                    },
+                    tooDeep: I18N.tooDeepDrag || '',
+                    ghost: function (row, below) {
+                        const n = byId.get(+row.dataset.id);
+                        return {name: n ? n.name : '', more: below > 0 ? plural('moreSubs', below) : ''};
+                    },
+                    slotOffset: slotOffset,
+                    keys: true,
+                    hint: [I18N.hintMove, I18N.hintIn, I18N.hintOut],
+                    commit: commitMove,
+                    cancelled: moveRefused
                 }
             })
             : null;
-        if (sorter) {
-            sorter.option('disabled', filtering());
-            app.addEventListener('cat:filtered', function () {
-                sorter.option('disabled', filtering());
-            });
-        }
 
         // --- Events -------------------------------------------------------------------------
         // Row actions by data-cat-act.
@@ -1599,7 +1932,7 @@
 
         app.addEventListener('click', function (e) {
             const disc = e.target.closest('.cat-disclosure');
-            if (disc && tbody && tbody.contains(disc)) {
+            if (disc && table && table.contains(disc)) {
                 if (disc.getAttribute('aria-disabled') === 'true') {
                     return;
                 }
@@ -1653,8 +1986,8 @@
             }
         });
 
-        if (tbody) {
-            tbody.addEventListener('change', function (e) {
+        if (table) {
+            table.addEventListener('change', function (e) {
                 if (!e.target.matches('.col-bulkactions input')) {
                     return;
                 }

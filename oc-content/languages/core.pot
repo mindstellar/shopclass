@@ -82,8 +82,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid ""
-"%1$s Drag a row by its handle to reorder it among its siblings. To put a "
-"category inside another, use %2$s or the Parent field when you edit it."
+"%1$s Drag a row by its handle: up or down to reorder it, right to put it "
+"under the category above, left to move it out. On a phone, press and hold "
+"the handle first. With a keyboard, focus the handle and use the arrow keys. "
+"Or use %2$s."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -130,10 +132,34 @@ msgstr ""
 msgid "%1$s in %2$s · %3$s"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s is already first in %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s is already last in %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s is now under %2$s, last of %3$d."
+msgstr ""
+
 #: oc-includes/classes/admin/SystemChecks.php
 msgid ""
 "%1$s is older than Shopclass supports. Ask your host for MySQL %2$s or "
 "MariaDB %3$s or newer."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s moved down. Now %2$d of %3$d in %4$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s moved out of %2$s. Now in %3$s, after %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s moved up. Now %2$d of %3$d in %4$s."
 msgstr ""
 
 #: oc-includes/classes/core/settings/SettingsImage.php
@@ -250,6 +276,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "%1$s: %2$d, %3$s holds %4$d"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s: %2$s"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/index.php
@@ -740,8 +770,21 @@ msgstr ""
 msgid "%s incl."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+#: oc-admin/themes/modern/categories/index.php
+msgid "%s is already at the top level."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "%s is already first."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/locations.php
 msgid "%s is already installed. Update it from the Data tab."
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "%s is already last."
 msgstr ""
 
 #: oc-includes/classes/media/image/Formats.php
@@ -940,6 +983,18 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php
 msgid "(too deep)"
 msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "+ %d item under it"
+msgid_plural "+ %d items under it"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "+ %d subcategory"
+msgid_plural "+ %d subcategories"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 msgid ""
@@ -1254,6 +1309,7 @@ msgstr ""
 msgid "A menu can hold at most %d items."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-includes/classes/content/menu/MenuItems.php
 msgid "A menu can nest items at most %d levels deep."
 msgstr ""
@@ -5630,10 +5686,6 @@ msgstr ""
 msgid "Drag into a section"
 msgstr ""
 
-#: oc-admin/themes/modern/categories/index.php
-msgid "Drag to reorder"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "Drag to reorder or move, or focus and use the arrow keys"
 msgstr ""
@@ -7549,6 +7601,7 @@ msgstr ""
 msgid "Ingredients and allergens"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/categories/index.php
 msgid "Inside %s"
 msgstr ""
@@ -9563,6 +9616,10 @@ msgstr ""
 msgid "Move a file to remote storage"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Move cancelled."
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "Move into forms"
 msgstr ""
@@ -9573,6 +9630,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/ajax/FormBuilderAjax.php
 msgid "Moved %1$d fields into %2$d forms."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Moved %1$s to %2$s, %3$d of %4$d."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -9906,8 +9967,9 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
 msgid ""
-"New items go to the end of the menu. Drag them into place, or use the arrow "
-"keys on the handle."
+"New items go to the end of the menu. Drag them into place: up or down to "
+"move, left or right to change the nesting. The arrow keys on the handle do "
+"the same."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -10511,6 +10573,10 @@ msgstr ""
 msgid "Not marked for %s"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Not moved."
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 msgid "Not saved yet"
@@ -10534,6 +10600,11 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Notebooks & Planners"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+#: oc-admin/themes/modern/categories/index.php
+msgid "Nothing above %s to put it under."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -12722,6 +12793,10 @@ msgstr ""
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Removed by admin"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Reorder"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
@@ -16808,6 +16883,10 @@ msgstr ""
 msgid "Toggle the %s submenu"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Too deep. %s"
+msgstr ""
+
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Too many images. The limit is {limit}."
 msgstr ""
@@ -16852,6 +16931,7 @@ msgstr ""
 msgid "Top Right"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/categories/iframe.php
 #: oc-admin/themes/modern/categories/index.php
 msgid "Top level"
@@ -17201,6 +17281,14 @@ msgid ""
 "banner. The choice is kept when maintenance mode is turned off."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Undo"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Undone."
+msgstr ""
+
 #: oc-admin/themes/modern/fields/iframe.php
 msgid "Ungrouped"
 msgstr ""
@@ -17505,6 +17593,12 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/StorageSettingsScreen.php
 msgid "Use path-style bucket URLs."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid ""
+"Use the arrow keys to move it: up or down to reorder, sideways to put it "
+"under the category above or move it out of its group."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
@@ -19098,6 +19192,16 @@ msgstr ""
 msgid "moderator"
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/menus.php
+#: oc-admin/themes/modern/categories/index.php
+msgid "move out of its group"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+#: oc-admin/themes/modern/categories/index.php
+msgid "move up or down"
+msgstr ""
+
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "nchan — last publish failed %1$s ago: %2$s"
 msgstr ""
@@ -19291,6 +19395,14 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "products at most"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "put under the category above"
+msgstr ""
+
+#: oc-admin/themes/modern/appearance/menus.php
+msgid "put under the item above"
 msgstr ""
 
 #: oc-includes/classes/admin/form/LatestSearchSettingsScreen.php

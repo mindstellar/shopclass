@@ -11,37 +11,58 @@
   }
 }
 
-.menu-items,
-.menu-children {
+.menu-items {
+  --tree-indent: 1.75rem;
+  --tree-slot-pad: .1875rem;
   display: flex;
   flex-direction: column;
-  gap: .375rem;
   list-style: none;
-  margin: 0;
+  margin: .75rem 0 0;
   padding: 0;
 }
 
-.menu-items {
-  margin-top: .75rem;
-}
+// One flat list: each row steps in by its depth, and a hairline per ancestor level runs down the
+// side so depth reads at a glance.
+.menu-items .menu-item.field-chip {
+  padding-block: .1875rem;
+  position: relative;
 
-// Each level steps in, with a hairline guide down the side so depth reads at a glance. An empty
-// list stays a thin drop target so a row can be nested into it, and adds no gap of its own.
-.menu-children {
-  border-inline-start: 1px solid var(--osc-rule);
-  margin-inline-start: .875rem;
-  padding-inline-start: .875rem;
-
-  &:not(:empty) {
-    margin-top: .375rem;
+  &::before {
+    background-image: repeating-linear-gradient(
+      to right,
+      transparent 0,
+      transparent calc(var(--tree-indent) / 2 - .5px),
+      var(--osc-rule) calc(var(--tree-indent) / 2 - .5px),
+      var(--osc-rule) calc(var(--tree-indent) / 2 + .5px),
+      transparent calc(var(--tree-indent) / 2 + .5px),
+      transparent var(--tree-indent)
+    );
+    content: "";
+    inline-size: calc(var(--tree-d, 0) * var(--tree-indent));
+    inset-block: 0;
+    inset-inline-start: 0;
+    pointer-events: none;
+    position: absolute;
   }
 
-  &:empty {
-    border-inline-start-color: transparent;
-    margin-bottom: -.375rem;
-    min-height: .375rem;
+  > .field-chip-row,
+  > .field-chip-editor {
+    margin-inline-start: calc(var(--tree-d, 0) * var(--tree-indent));
   }
 }
+
+[dir="rtl"] .menu-items .menu-item.field-chip::before {
+  background-image: repeating-linear-gradient(
+    to left,
+    transparent 0,
+    transparent calc(var(--tree-indent) / 2 - .5px),
+    var(--osc-rule) calc(var(--tree-indent) / 2 - .5px),
+    var(--osc-rule) calc(var(--tree-indent) / 2 + .5px),
+    transparent calc(var(--tree-indent) / 2 + .5px),
+    transparent var(--tree-indent)
+  );
+}
+
 
 // The row's own box is its summary line; its child list sits below, outside that box.
 .menu-items .menu-item.field-chip {
@@ -135,35 +156,6 @@
     white-space: normal;
   }
 
-  // Drag: the slot the row will land in is a dashed teal outline at the depth it will take.
-  &.chip-ghost {
-    opacity: 1;
-
-    .field-chip-row,
-    .field-chip-row:hover {
-      background-color: var(--osc-bronze-tint);
-      border: 1px dashed var(--osc-bronze);
-      box-shadow: none;
-
-      > * {
-        visibility: hidden;
-      }
-    }
-
-    .field-chip-editor {
-      display: none;
-    }
-
-    .menu-children {
-      border-inline-start-color: transparent;
-    }
-  }
-
-  &.is-drag-chosen:not(.chip-ghost) > .field-chip-row {
-    box-shadow: var(--osc-shadow-overlay);
-    cursor: grabbing;
-  }
-
   &.is-missing .chip-type {
     background-color: var(--osc-warning-tint);
     color: var(--osc-warning-deep);
@@ -194,18 +186,6 @@
   [data-act="indent"] .bi,
   [data-act="outdent"] .bi {
     transform: scaleX(-1);
-  }
-}
-
-// While a row is dragged nothing else reacts to the pointer.
-.menus-page.is-dragging {
-  .field-chip-row:hover {
-    background-color: var(--osc-bench);
-    border-color: var(--osc-rule);
-  }
-
-  .field-chip-row:hover .chip-grip {
-    color: var(--osc-rule-strong);
   }
 }
 
@@ -294,9 +274,8 @@
 // Phones: 44px targets, a shallower step per level, and the row wraps instead of pushing the
 // page sideways.
 @include media-breakpoint-down(md) {
-  .menu-children {
-    margin-inline-start: .5rem;
-    padding-inline-start: .5rem;
+  .menu-items {
+    --tree-indent: 1.25rem;
   }
 
   .menu-items .menu-item {

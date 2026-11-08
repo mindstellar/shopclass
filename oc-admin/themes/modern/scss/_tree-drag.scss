@@ -1,0 +1,314 @@
+// Shared tree drag (Categories, Menus) and the toast. Positions come from the script as custom
+// properties: --tree-d (depth), --tree-indent, --tree-slot-offset, --tree-slot-h, --tree-gap.
+
+// The shield over the page carries the cursor and keeps text from being selected. An inherited
+// property on the root would restyle the whole list when a drag starts.
+html.is-tree-dragging {
+  overscroll-behavior: none;
+}
+
+.tree-layer {
+  display: contents;
+}
+
+.tree-shield {
+  cursor: grabbing;
+  -webkit-user-select: none;
+  user-select: none;
+  inset: 0;
+  position: fixed;
+  z-index: 1075;
+}
+
+// The slot floats over the list; the row it sits before (or after) opens a gap of its height.
+.tree-slot {
+  box-sizing: border-box;
+  padding-block: var(--tree-slot-pad, .35rem);
+  padding-inline: var(--tree-slot-pad-x, 0);
+  pointer-events: none;
+  position: fixed;
+  z-index: 1;
+}
+
+tr.is-tree-gap-before > * {
+  border-block-start: var(--tree-gap) solid transparent;
+}
+
+tr.is-tree-gap-after > * {
+  border-block-end: var(--tree-gap) solid transparent;
+}
+
+.is-tree-gap-before:not(tr) {
+  margin-block-start: var(--tree-gap);
+}
+
+.is-tree-gap-after:not(tr) {
+  margin-block-end: var(--tree-gap);
+}
+
+.tree-slot-box {
+  align-items: center;
+  background: var(--osc-bronze-tint);
+  border: 1px dashed var(--osc-bronze);
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  display: flex;
+  gap: .5rem;
+  margin-inline-start: calc(var(--tree-slot-offset, 0px) + var(--tree-d, 0) * var(--tree-indent, 1.9rem));
+  min-block-size: var(--tree-slot-h, 2.25rem);
+  padding: .3rem .4rem .3rem .65rem;
+  transition:
+    margin-inline-start 120ms var(--osc-ease),
+    background-color var(--osc-duration-fast) var(--osc-ease),
+    border-color var(--osc-duration-fast) var(--osc-ease);
+}
+
+.tree-slot-tag,
+.tree-place-tag {
+  align-items: center;
+  background: var(--osc-bench);
+  border: 1px solid color-mix(in srgb, var(--osc-bronze) 45%, transparent);
+  border-radius: 999px;
+  color: var(--osc-bronze);
+  display: inline-flex;
+  flex: none;
+  font-size: .8125rem;
+  font-weight: 600;
+  gap: .3rem;
+  margin-inline-start: auto;
+  padding: .1rem .55rem;
+  white-space: nowrap;
+}
+
+.tree-place-tag {
+  margin-inline-start: .5rem;
+}
+
+.tree-slot.is-refused {
+  .tree-slot-box {
+    background: var(--osc-danger-tint);
+    border-color: var(--osc-danger);
+  }
+
+  .tree-slot-tag {
+    border-color: color-mix(in srgb, var(--osc-danger) 45%, transparent);
+    color: var(--osc-danger);
+  }
+}
+
+.tree-place-tag.is-refused {
+  border-color: color-mix(in srgb, var(--osc-danger) 45%, transparent);
+  color: var(--osc-danger);
+}
+
+.is-drop-parent {
+  background: color-mix(in srgb, var(--osc-bronze-tint) 70%, transparent);
+}
+
+// Table cells paint their own state layer over the row, so a table row tints through it.
+.table > tbody > tr.is-drop-parent > * {
+  --#{$prefix}table-bg-state: color-mix(in srgb, var(--osc-bronze-tint) 70%, transparent);
+}
+
+.is-will-open .cat-disclosure {
+  background: var(--osc-bronze-tint);
+  color: var(--osc-bronze);
+}
+
+.tree-ghost {
+  align-items: center;
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  box-shadow: var(--osc-shadow-modal);
+  display: flex;
+  font-weight: 600;
+  gap: .4rem;
+  inset: 0 auto auto 0;
+  max-inline-size: min(22rem, 80vw);
+  padding: .45rem .8rem;
+  pointer-events: none;
+  position: fixed;
+  white-space: nowrap;
+  z-index: 1080;
+}
+
+.tree-ghost-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tree-ghost-more {
+  color: var(--osc-ink-muted);
+  font-weight: 400;
+}
+
+.is-tree-placed {
+  outline: 1px dashed var(--osc-bronze);
+  outline-offset: -3px;
+
+  // A table row's cells paint over its outline unless the row is lifted above them.
+  &:is(tr) {
+    position: relative;
+    z-index: 1;
+  }
+
+  &.is-refused {
+    outline-color: var(--osc-danger);
+  }
+}
+
+.is-tree-flash {
+  animation: tree-flash 1.6s var(--osc-ease);
+}
+
+.table > tbody > tr.is-tree-flash {
+  animation: none;
+
+  > * {
+    animation: tree-flash-cell 1.6s var(--osc-ease);
+  }
+}
+
+@keyframes tree-flash {
+  0%,
+  35% {
+    background: var(--osc-bronze-tint);
+  }
+
+  100% {
+    background: transparent;
+  }
+}
+
+@keyframes tree-flash-cell {
+  0%,
+  35% {
+    box-shadow: inset 0 0 0 9999px var(--osc-bronze-tint);
+  }
+
+  100% {
+    box-shadow: inset 0 0 0 9999px transparent;
+  }
+}
+
+.tree-key-hint {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  box-shadow: var(--osc-shadow-overlay);
+  color: var(--osc-ink-emphasis);
+  font-size: .8125rem;
+  max-inline-size: 22rem;
+  padding: .5rem .7rem;
+  position: fixed;
+  z-index: 1070;
+
+  div + div {
+    margin-block-start: .25rem;
+  }
+
+  kbd {
+    background: var(--osc-bench);
+    border: 1px solid var(--osc-rule);
+    border-radius: 3px;
+    box-shadow: none;
+    color: var(--osc-ink-emphasis);
+    font-size: .75rem;
+    padding: 0 .3rem;
+  }
+}
+
+.osc-toast {
+  align-items: center;
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 6px;
+  box-shadow: var(--osc-shadow-overlay);
+  display: flex;
+  gap: .75rem;
+  inset-block-end: 1.25rem;
+  inset-inline: 1rem;
+  margin-inline: auto;
+  max-inline-size: min(36rem, calc(100vw - 2rem));
+  padding: .5rem .5rem .5rem 1rem;
+  padding-inline: 1rem .5rem;
+  position: fixed;
+  transition:
+    opacity var(--osc-duration-base) var(--osc-ease),
+    transform var(--osc-duration-base) var(--osc-ease);
+  width: fit-content;
+  z-index: 1090;
+
+  @media (min-width: 1025px) {
+    inset-inline: 15rem 0;
+  }
+
+  &.is-leaving {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(.5rem);
+  }
+}
+
+.osc-toast-text {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+.osc-toast-icon {
+  color: var(--osc-success);
+  flex: none;
+}
+
+.osc-toast-undo {
+  flex: none;
+  min-block-size: 2rem;
+  padding-block: .25rem;
+}
+
+.osc-toast-close {
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  line-height: 1;
+  min-block-size: 2rem;
+  min-inline-size: 2rem;
+
+  &:hover {
+    color: var(--osc-ink-emphasis);
+  }
+}
+
+@media (max-width: 575.98px) {
+  .osc-toast {
+    inline-size: auto;
+    max-inline-size: none;
+  }
+
+  .osc-toast-text {
+    flex: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tree-slot-box,
+  .osc-toast {
+    transition: none;
+  }
+
+  .is-tree-flash {
+    animation: none;
+    background: var(--osc-bronze-tint);
+  }
+
+  .table > tbody > tr.is-tree-flash {
+    background: none;
+
+    > * {
+      animation: none;
+      --#{$prefix}table-bg-state: var(--osc-bronze-tint);
+    }
+  }
+}

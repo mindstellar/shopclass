@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\AdminText;
 use mindstellar\menu\MenuItems;
 use mindstellar\menu\MenuService;
 
@@ -22,7 +23,7 @@ osc_admin_page(array(
     'help'    => __('Build the links your theme shows in its header and footer, or in a Menu widget.'),
 ));
 if (is_array($menuEditor)) {
-    osc_register_script('admin-menus', osc_asset_url_versioned(osc_current_admin_theme_js_url('menus.js')), array('admin-osc', 'admin-ui-osc', 'sortablejs'));
+    osc_register_script('admin-menus', osc_asset_url_versioned(osc_current_admin_theme_js_url('menus.js')), array('admin-osc', 'admin-ui-osc', 'admin-tree-drag'));
     osc_enqueue_script('admin-menus');
 }
 
@@ -94,6 +95,17 @@ $meState = array(
         'leave'      => __('You have unsaved changes to this menu.'),
         'hidden1'    => __('1 item is deeper than your theme shows here and will not show.'),
         'hiddenN'    => __('%d items are deeper than your theme shows here and will not show.'),
+        'inside'     => __('Inside %s'),
+        'topLevel'   => __('Top level'),
+        'tooDeep'    => __('A menu can nest items at most %d levels deep.'),
+        'more'       => AdminText::pluralForms(static fn (int $n): string => _n('+ %d item under it', '+ %d items under it', $n)),
+        'hintMove'   => __('move up or down'),
+        'hintIn'     => __('put under the item above'),
+        'hintOut'    => __('move out of its group'),
+        'isFirst'    => __('%s is already first.'),
+        'isLast'     => __('%s is already last.'),
+        'isTop'      => __('%s is already at the top level.'),
+        'nothingAbove' => __('Nothing above %s to put it under.'),
     ),
 );
 $meJson = json_encode($meState, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
@@ -174,7 +186,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
             <div class="col-head">
                 <h3 class="col-title" id="menu-add-title"><?php _e('Add items'); ?></h3>
             </div>
-            <p class="col-hint"><?php _e('New items go to the end of the menu. Drag them into place, or use the arrow keys on the handle.'); ?></p>
+            <p class="col-hint"><?php _e('New items go to the end of the menu. Drag them into place: up or down to move, left or right to change the nesting. The arrow keys on the handle do the same.'); ?></p>
 
             <div class="form-card menu-add-card">
                 <label class="form-sublabel" for="menu-add-category"><?php _e('Category'); ?></label>

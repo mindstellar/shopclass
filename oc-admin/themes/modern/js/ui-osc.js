@@ -1055,11 +1055,190 @@ osc.dropdown = (function () {
     return {show: show, hide: hide};
 })();
 
+// osc.flatTree — pure helpers for a tree held as a pre-order list of objects with a 0-based
+// depth. A block is a row plus every row nested under it; skipFrom/skipTo leave out a moving block.
+// osc.announce(el, text): puts text in a live region. A message the same as the one shown is
+// cleared and set again on the next frame, so a screen reader reads it again.
+osc.announce = function (el, text) {
+    if (!el) {
+        return;
+    }
+    if (el.textContent !== (text || '')) {
+        el.textContent = text || '';
+        return;
+    }
+    el.textContent = '';
+    window.requestAnimationFrame(function () {
+        el.textContent = text || '';
+    });
+};
+
+// osc.plural(p, n): the text for n from plural forms the server sent as {forms, idx} (one digit
+// per n = 0..199); a plain string is returned as it is.
+osc.plural = function (p, n) {
+    if (!p || !Array.isArray(p.forms)) {
+        return p;
+    }
+    var i = n < 200 ? n : 100 + (n % 100);
+    return p.forms[+p.idx.charAt(i) || 0];
+};
+
+osc.flatTree = (function () {
+    function inSkip(k, skipFrom, skipTo) {
+        return skipTo > skipFrom && k >= skipFrom && k < skipTo;
+    }
+
+    function above(at, skipFrom, skipTo) {
+        var k = at - 1;
+        return inSkip(k, skipFrom, skipTo) ? skipFrom - 1 : k;
+    }
+
+    function below(items, at, skipFrom, skipTo) {
+        var k = inSkip(at, skipFrom, skipTo) ? skipTo : at;
+        return k < items.length ? k : -1;
+    }
+
+    function blockEnd(items, i) {
+        var end = i + 1;
+        while (end < items.length && items[end].depth > items[i].depth) {
+            end++;
+        }
+        return end;
+    }
+
+    function height(items, i) {
+        var h = 0;
+        for (var k = i + 1, end = blockEnd(items, i); k < end; k++) {
+            h = Math.max(h, items[k].depth - items[i].depth);
+        }
+        return h;
+    }
+
+    function range(items, at, skipFrom, skipTo) {
+        var p = above(at, skipFrom, skipTo);
+        var n = below(items, at, skipFrom, skipTo);
+        return {min: n < 0 ? 0 : items[n].depth, max: p < 0 ? 0 : items[p].depth + 1};
+    }
+
+    function parentAt(items, at, depth, skipFrom, skipTo) {
+        if (depth <= 0) {
+            return -1;
+        }
+        for (var k = above(at, skipFrom, skipTo); k >= 0; k--) {
+            if (!inSkip(k, skipFrom, skipTo) && items[k].depth < depth) {
+                return items[k].depth === depth - 1 ? k : -1;
+            }
+        }
+        return -1;
+    }
+
+    function fits(h, depth, maxLevels) {
+        return !maxLevels || depth + h <= maxLevels - 1;
+    }
+
+    // Lowers depths so no item sits more than one level below the one before it, nor deeper than
+    // maxLevels allow (0 = no limit), as a list must be after a removal.
+    function clamp(items, maxLevels) {
+        items.forEach(function (item, i) {
+            var cap = i === 0 ? 0 : items[i - 1].depth + 1;
+            if (maxLevels) {
+                cap = Math.min(cap, maxLevels - 1);
+            }
+            if (item.depth > cap) {
+                item.depth = cap;
+            }
+        });
+    }
+
+    function moveBlock(items, from, at, depth) {
+        var block = items.splice(from, blockEnd(items, from) - from);
+        var by = depth - block[0].depth;
+        block.forEach(function (item) { item.depth += by; });
+        if (at > from) {
+            at = Math.max(from, at - block.length);
+        }
+        Array.prototype.splice.apply(items, [at, 0].concat(block));
+        return at;
+    }
+
+    function prevSibling(items, i) {
+        for (var k = i - 1; k >= 0 && items[k].depth >= items[i].depth; k--) {
+            if (items[k].depth === items[i].depth) {
+                return k;
+            }
+        }
+        return -1;
+    }
+
+    function keyTarget(items, i, key, maxLevels) {
+        var depth = items[i].depth;
+        var end = blockEnd(items, i);
+        var k;
+        if (key === 'up') {
+            k = prevSibling(items, i);
+            return k < 0 ? {refused: 'first'} : {at: k, depth: depth};
+        }
+        if (key === 'down') {
+            if (end >= items.length || items[end].depth !== depth) {
+                return {refused: 'last'};
+            }
+            return {at: blockEnd(items, end), depth: depth};
+        }
+        if (key === 'in') {
+            if (prevSibling(items, i) < 0) {
+                return {refused: 'nothing-above'};
+            }
+            return fits(height(items, i), depth + 1, maxLevels) ? {at: i, depth: depth + 1} : {refused: 'deep'};
+        }
+        if (key === 'out') {
+            if (depth === 0) {
+                return {refused: 'top'};
+            }
+            return {at: blockEnd(items, parentAt(items, i, depth)), depth: depth - 1};
+        }
+        return null;
+    }
+
+    // index is 1-based, for messages such as "3 of 5".
+    function siblingIndex(items, i) {
+        var depth = items[i].depth;
+        var p = parentAt(items, i, depth);
+        var stop = p < 0 ? items.length : blockEnd(items, p);
+        var out = {index: 0, count: 0};
+        for (var k = p + 1; k < stop; k++) {
+            if (items[k].depth === depth) {
+                out.count++;
+                if (k <= i) {
+                    out.index++;
+                }
+            }
+        }
+        return out;
+    }
+
+    // 0-based place among the new siblings of a block dropped before `at` at `depth`.
+    function position(items, at, depth, skipFrom, skipTo) {
+        var n = 0;
+        for (var k = parentAt(items, at, depth, skipFrom, skipTo) + 1; k < at; k++) {
+            if (!inSkip(k, skipFrom, skipTo) && items[k].depth === depth) {
+                n++;
+            }
+        }
+        return n;
+    }
+
+    return {
+        blockEnd: blockEnd, height: height, range: range, parentAt: parentAt, fits: fits, clamp: clamp,
+        moveBlock: moveBlock, keyTarget: keyTarget, siblingIndex: siblingIndex, position: position
+    };
+})();
+
 // osc.sortable — one SortableJS setup for every drag-to-reorder screen. Returns the Sortable
 // instance, or null when SortableJS is not on the page or el is missing; a second call on the
 // same element returns the first instance. Options are merged over the shared defaults.
-// {nested: true} adds the nested-list preset (one sortable per level, shared group) used by
-// Categories and Menus: drag into another row's child list to nest, out to un-nest.
+// {nested: true} adds the nested-list preset (one sortable per level, shared group).
+// {tree: {...}} hands the list to osc.treeDrag (tree-drag.js, Categories and Menus), which
+// returns a controller; SortableJS is not used for it.
 // SortableJS is read from window at call time, so only screens that enqueue 'sortablejs' load it.
 osc.sortable = (function () {
     var instances = new WeakMap();
@@ -1083,6 +1262,12 @@ osc.sortable = (function () {
     }
 
     return function (el, options) {
+        if (el && options && options.tree) {
+            if (!instances.has(el) && osc.treeDrag) {
+                instances.set(el, osc.treeDrag(el, options, function () { instances.delete(el); }));
+            }
+            return instances.get(el) || null;
+        }
         if (!el || typeof window.Sortable === 'undefined') { return null; }
         if (instances.has(el)) { return instances.get(el); }
         var opts = Object.assign(defaults(), options || {});
@@ -1094,6 +1279,110 @@ osc.sortable = (function () {
         instances.set(el, instance);
         return instance;
     };
+})();
+
+// osc.toast(text, {undo, ms}) — one short note at the foot of the screen, with an optional Undo.
+// A new toast replaces the old one; Undo runs once. It never takes focus. Labels come from the
+// screen once: osc.toast.labels({undo, close}).
+osc.toast = (function () {
+    var labels = {undo: 'Undo', close: 'Close'};
+    var box = null;
+    var text = null;
+    var undoBtn = null;
+    var closeBtn = null;
+    var timer = 0;
+    var undo = null;
+    var ms = 7000;
+    var current = null;
+
+    function still() {
+        return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }
+
+    function close() {
+        clearTimeout(timer);
+        undo = null;
+        current = null;
+        if (!box || box.hidden) {
+            return;
+        }
+        box.classList.add('is-leaving');
+        setTimeout(function () {
+            if (box.classList.contains('is-leaving')) {
+                box.hidden = true;
+            }
+        }, still() ? 0 : 200);
+    }
+
+    function arm() {
+        clearTimeout(timer);
+        timer = setTimeout(close, ms);
+    }
+
+    function build() {
+        box = document.createElement('div');
+        box.className = 'osc-toast is-leaving';
+        box.setAttribute('role', 'status');
+        box.setAttribute('aria-live', 'polite');
+        box.hidden = true;
+        var icon = document.createElement('i');
+        icon.className = 'bi bi-check-circle-fill osc-toast-icon';
+        icon.setAttribute('aria-hidden', 'true');
+        text = document.createElement('span');
+        text.className = 'osc-toast-text';
+        undoBtn = document.createElement('button');
+        undoBtn.type = 'button';
+        undoBtn.className = 'btn btn-secondary osc-toast-undo';
+        closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.className = 'osc-toast-close';
+        closeBtn.innerHTML = '<i class="bi bi-x-lg" aria-hidden="true"></i>';
+        box.append(icon, text, undoBtn, closeBtn);
+        document.body.appendChild(box);
+        undoBtn.addEventListener('click', function () {
+            var run = undo;
+            close();
+            if (run) {
+                run();
+            }
+        });
+        closeBtn.addEventListener('click', close);
+        // A toast someone is reading or tabbing through stays until they leave it.
+        box.addEventListener('mouseenter', function () { clearTimeout(timer); });
+        box.addEventListener('focusin', function () { clearTimeout(timer); });
+        box.addEventListener('mouseleave', function () { if (current) { arm(); } });
+        box.addEventListener('focusout', function () { if (current) { arm(); } });
+    }
+
+    function toast(message, opts) {
+        opts = opts || {};
+        if (!box) {
+            build();
+        }
+        osc.announce(text, message);
+        undo = typeof opts.undo === 'function' ? opts.undo : null;
+        undoBtn.hidden = !undo;
+        undoBtn.textContent = labels.undo;
+        closeBtn.setAttribute('aria-label', labels.close);
+        box.hidden = false;
+        void box.offsetWidth;
+        box.classList.remove('is-leaving');
+        ms = opts.ms > 0 ? opts.ms : 7000;
+        arm();
+        var handle = {close: function () { if (current === handle) { close(); } }};
+        current = handle;
+        return handle;
+    }
+
+    toast.labels = function (next) {
+        Object.assign(labels, next || {});
+        if (box) {
+            undoBtn.textContent = labels.undo;
+            closeBtn.setAttribute('aria-label', labels.close);
+        }
+    };
+
+    return toast;
 })();
 
 // osc.sidebar — the admin menu: the rail (collapsed) mode with its flyouts, the ghost

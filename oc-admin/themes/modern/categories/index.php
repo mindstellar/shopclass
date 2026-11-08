@@ -42,7 +42,7 @@ osc_admin_page(array(
         $bold = static fn (string $label): string => '<strong>' . osc_esc_html($label) . '</strong>'; ?>
         <ul>
             <li><?php printf(
-                __('%1$s Drag a row by its handle to reorder it among its siblings. To put a category inside another, use %2$s or the Parent field when you edit it.'),
+                __('%1$s Drag a row by its handle: up or down to reorder it, right to put it under the category above, left to move it out. On a phone, press and hold the handle first. With a keyboard, focus the handle and use the arrow keys. Or use %2$s.'),
                 $bold(__('Order and nesting:')),
                 osc_esc_html(__('Move to…'))
             ); ?></li>
@@ -57,23 +57,7 @@ $ajax = static fn (string $action, bool $csrf = true): string => osc_esc_html(
     $base . '?page=ajax&action=' . $action . ($csrf ? '&' . osc_csrf_token_url() : '')
 );
 
-// Plural forms for the script: each distinct form once, and which one n = 0..199 takes. Every
-// gettext Plural-Forms rule gives n >= 200 the same form as 100 + n % 100.
-$plural = static function (callable $form): array {
-    $forms = array();
-    $idx   = '';
-    for ($n = 0; $n < 200; $n++) {
-        $text = $form($n);
-        $at   = array_search($text, $forms, true);
-        if ($at === false) {
-            $at      = count($forms);
-            $forms[] = $text;
-        }
-        $idx .= chr(48 + (int)$at);
-    }
-
-    return array('forms' => $forms, 'idx' => $idx);
-};
+$plural = static fn (callable $form): array => \mindstellar\admin\AdminText::pluralForms($form);
 
 $i18n = array(
     'deleteTitle'      => __('Delete category'),
@@ -121,7 +105,28 @@ $i18n = array(
     'emptyOn'          => __('No enabled categories.'),
     'emptyOff'         => __('No disabled categories.'),
     'pair'             => __('%1$s · %2$s'),
+    // translators: 1: category name, 2: Enabled or Disabled
+    'nameState'        => __('%1$s: %2$s'),
     'filterNoReorder'  => __('Reordering is off while a filter is on.'),
+    'tooDeepDrag'      => $limit === null ? '' : sprintf(__('Too deep. %s'), sprintf(__('This theme shows %d levels of categories.'), $limit)),
+    'moreSubs'         => $plural(static fn (int $n): string => _n('+ %d subcategory', '+ %d subcategories', $n)),
+    'hintMove'         => __('move up or down'),
+    'hintIn'           => __('put under the category above'),
+    'hintOut'          => __('move out of its group'),
+    'movedUp'          => __('%1$s moved up. Now %2$d of %3$d in %4$s.'),
+    'movedDown'        => __('%1$s moved down. Now %2$d of %3$d in %4$s.'),
+    'movedUnder'       => __('%1$s is now under %2$s, last of %3$d.'),
+    'movedOut'         => __('%1$s moved out of %2$s. Now in %3$s, after %2$s.'),
+    'movedTo'          => __('Moved %1$s to %2$s, %3$d of %4$d.'),
+    'alreadyFirst'     => __('%1$s is already first in %2$s.'),
+    'alreadyLast'      => __('%1$s is already last in %2$s.'),
+    'nothingAbove'     => __('Nothing above %s to put it under.'),
+    'alreadyTop'       => __('%s is already at the top level.'),
+    'notMoved'         => __('Not moved.'),
+    'moveCancelled'    => __('Move cancelled.'),
+    'undo'             => __('Undo'),
+    'undone'           => __('Undone.'),
+    'close'            => __('Close'),
     'applyLabel'       => $plural(static fn (int $n): string => _n('Also apply to its %d subcategory', 'Also apply to its %d subcategories', $n)),
     'applyOn'          => __('Every subcategory gets this setting too.'),
     'applyOff'         => __('Left off, each subcategory keeps its own setting.'),
@@ -250,7 +255,7 @@ foreach ($rows as $row) {
                         <td class="col-status"><?php if ($row['enabled']) { ?><span class="visually-hidden"><?php _e('Enabled'); ?></span><?php } else { ?><span class="cat-off"><i class="bi bi-dash-circle" aria-hidden="true"></i><?php _e('Disabled'); ?></span><?php } ?></td>
                         <td class="col-name">
                             <div class="cat-name-line">
-                                <button type="button" class="cat-handle" aria-label="<?php echo osc_esc_html(__('Drag to reorder')); ?>" aria-describedby="cat-n-<?php echo $id; ?>"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
+                                <button type="button" class="cat-handle" aria-label="<?php echo osc_esc_html(__('Reorder')); ?>" aria-describedby="cat-n-<?php echo $id; ?> cat-key-help"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
 <?php if ($row['subs'] > 0) { ?>
                                 <button type="button" class="cat-disclosure" aria-expanded="false" aria-label="<?php echo osc_esc_html(__('Show subcategories')); ?>" aria-describedby="cat-n-<?php echo $id; ?>"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
 <?php } else { ?>
@@ -383,6 +388,7 @@ echo preg_replace('/\s+/', ' ', preg_replace('/>\s+</', '><', (string)ob_get_cle
 <?php } ?>
 
         <p class="visually-hidden" id="cat-announce" aria-live="polite"></p>
+        <p class="visually-hidden" id="cat-key-help"><?php _e('Use the arrow keys to move it: up or down to reorder, sideways to put it under the category above or move it out of its group.'); ?></p>
     </div>
 
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
