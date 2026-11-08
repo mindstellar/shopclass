@@ -613,7 +613,7 @@ function osc_admin_toolbar_comments()
     $total = ItemComment::getInstance()->countAll('( c.b_active = 0 OR c.b_enabled = 0 OR c.b_spam = 1 )');
     if ($total > 0) {
         $label = __('New comments');
-        $title = osc_admin_icon('chat')
+        $title = '<i class="bi bi-chat-left-text" aria-hidden="true"></i>'
             . '<span class="toolbar-label">' . $label . '</span>'
             . '<i class="circle circle-green">' . $total . '</i>';
 
@@ -638,7 +638,7 @@ function osc_admin_toolbar_spam()
     $total = Item::getInstance()->countByMarkas('spam');
     if ($total > 0) {
         $label = __('Spam');
-        $title = osc_admin_icon('shield')
+        $title = '<i class="bi bi-shield-exclamation" aria-hidden="true"></i>'
             . '<span class="toolbar-label">' . $label . '</span>'
             . '<i class="circle circle-red">' . $total . '</i>';
 
@@ -748,9 +748,9 @@ function osc_admin_toolbar_update_counter(string $kind, bool $force = false): vo
         return;
     }
     $entries = array(
-        'plugins'   => array('update_plugin', __('Plugin updates'), 'plug', '?page=plugins#update-plugins'),
-        'themes'    => array('update_theme', __('Theme updates'), 'palette', '?page=appearance'),
-        'languages' => array('update_language', __('Language updates'), 'globe', '?page=languages'),
+        'plugins'   => array('update_plugin', __('Plugin updates'), 'bi-plug', '?page=plugins#update-plugins'),
+        'themes'    => array('update_theme', __('Theme updates'), 'bi-brush', '?page=appearance'),
+        'languages' => array('update_language', __('Language updates'), 'bi-translate', '?page=languages'),
     );
     [$id, $label, $icon, $query] = $entries[$kind];
     $total = osc_update_check_count($kind, $force);
@@ -762,7 +762,7 @@ function osc_admin_toolbar_update_counter(string $kind, bool $force = false): vo
         AdminToolbar::getInstance()->add_menu(
             array(
                 'id'    => $id,
-                'title' => osc_admin_icon($icon)
+                'title' => '<i class="bi ' . $icon . '" aria-hidden="true"></i>'
                     . '<span class="toolbar-label">' . $label . '</span>'
                     . '<i class="circle circle-gray">' . $total . '</i>',
                 'href'  => osc_admin_base_url(true) . $query,
@@ -798,7 +798,7 @@ function osc_admin_toolbar_update_core($force = false)
                 return;
             }
             $label       = __('Shopclass ') . $package['s_new_version'] . __(' is available');
-            $title       = osc_admin_icon('upgrade')
+            $title       = '<i class="bi bi-arrow-up-circle" aria-hidden="true"></i>'
                 . '<span class="toolbar-label">' . $label . '</span>';
             AdminToolbar::getInstance()->add_menu(
                 array(

@@ -1170,22 +1170,4 @@ if (!function_exists('osc_admin_captcha_settings_path')) {
     }
 }
 
-if (!function_exists('osc_admin_icon')) {
-    /**
-     * One icon from the admin chrome sprite (oc-admin/themes/modern/parts/icons.php).
-     *
-     * @param string $name  Symbol name without the `osc-i-` prefix, e.g. 'home'
-     * @param string $class Extra classes for the <svg>
-     *
-     * @return string
-     */
-    function osc_admin_icon(string $name, string $class = ''): string
-    {
-        $classes = trim('osc-i ' . $class);
-
-        return '<svg class="' . osc_esc_html($classes) . '" aria-hidden="true" focusable="false">'
-            . '<use href="#osc-i-' . osc_esc_html($name) . '"/></svg>';
-    }
-}
-
 /* file end: ./oc-includes/osclass/helpers/hAdminUi.php */

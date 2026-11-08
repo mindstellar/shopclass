@@ -293,27 +293,6 @@ pin('in debug one warning names the entry and its missing parent', [1, true, tru
 pin('without debug nothing is logged', '', $child(false));
 pin('with billing off there is no Billing section', false, isset($off->get_array_menu()['billing']));
 
-harness_section('Sidebar icons');
-$GLOBALS['__stub_osc_is_moderator'] = static fn () => false;
-if (!function_exists('osc_esc_html')) {
-    function osc_esc_html($s)
-    {
-        return htmlspecialchars((string) $s, ENT_QUOTES);
-    }
-}
-require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
-$render = new ReflectionMethod(AdminMenu::class, 'renderMenu');
-$render->setAccessible(true);
-$icons = new AdminMenu();
-$icons->add_menu('Tools', $base . '?page=tools', 'tools', 'administrator', 'bi bi-tools');
-$icons->add_menu('Shop', $base . '?page=shop', 'myshop', 'administrator', 'bi bi-shop');
-$icons->add_menu('Tools again', $base . '?page=x', 'pages', 'administrator', 'bi bi-star');
-$aIcons = $icons->get_array_menu();
-$coreRow = $render->invoke($icons, 'tools', $aIcons['tools'], '', '');
-pin('a core section draws its sprite icon', [true, false], [str_contains($coreRow, '<use href="#osc-i-tools"/>'), str_contains($coreRow, 'bi-tools')]);
-pin('a plugin section keeps its Bootstrap icon class', true, str_contains($render->invoke($icons, 'myshop', $aIcons['myshop'], '', ''), '<i class="bi bi-shop"></i>'));
-pin('a core section given another icon keeps that icon', true, str_contains($render->invoke($icons, 'pages', $aIcons['pages'], '', ''), '<i class="bi bi-star"></i>'));
-
 require_once ABS_PATH . 'oc-includes/classes/admin/ui/Form.php';
 pin('a section heading id is a stable slug of its title', ['s-server-rules-nginx', 's-server-rules-htaccess', 's-keys'],
     [\mindstellar\admin\ui\Form::anchor('Server rules (nginx)'), \mindstellar\admin\ui\Form::anchor('Server rules (.htaccess)'), \mindstellar\admin\ui\Form::anchor(' Keys ')]);
