@@ -117,6 +117,8 @@ $oeCommentOld   = static function ($key) {
                     echo $oeCommentOld('commentBody'); ?></textarea>
             </div>
 
+            <?php osc_run_hook('comment_form'); ?>
+
             <?php
             // Rendered exactly when the add_comment action will verify one, so a
             // visitor is never shown a challenge that is not checked, or asked for
@@ -124,8 +126,6 @@ $oeCommentOld   = static function ($key) {
             if (osc_recaptcha_comments_enabled() && osc_captcha_enabled()) { ?>
                 <div class="oe-field"><?php osc_show_captcha('comment'); ?></div>
             <?php } ?>
-
-            <?php osc_run_hook('comment_form'); ?>
 
             <div class="oe-actions">
                 <button type="submit"><?php echo osc_esc_html(_m('Post comment')); ?></button>

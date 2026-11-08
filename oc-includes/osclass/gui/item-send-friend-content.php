@@ -62,11 +62,11 @@ if (!defined('ABS_PATH')) {
                 echo $sfMax > 0 ? ' maxlength="' . $sfMax . '"' : ''; ?>><?php echo osc_esc_html(osc_gui_kept('message_body')); ?></textarea>
         </div>
 
+        <?php osc_run_hook('contact_form'); ?>
+        <?php osc_run_hook('admin_contact_form'); ?>
         <?php if (osc_captcha_enabled()) { ?>
             <div class="oe-field"><?php osc_show_captcha('send_friend'); ?></div>
         <?php } ?>
-        <?php osc_run_hook('contact_form'); ?>
-        <?php osc_run_hook('admin_contact_form'); ?>
 
         <div class="oe-actions">
             <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send')); ?></button>
