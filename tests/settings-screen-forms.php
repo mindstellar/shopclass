@@ -1535,7 +1535,7 @@ $run = drive('CAdminSettingsPermalinks', 'permalinks_post', array_diff_key($perm
 check('a .htaccess written by hand is left where it is', file_exists($htaccess));
 pin(
     'and the screen says why',
-    array('warning:Friendly URLs deactivated, but .htaccess file was modified outside Shopclass and was not deleted'),
+    array('warning:Friendly URLs are off. The .htaccess file was changed outside Shopclass, so it was not deleted.'),
     flashed($run)
 );
 @unlink($htaccess);
@@ -1546,7 +1546,7 @@ $run = drive('CAdminSettingsPermalinks', 'permalinks_post', $permalinks);
 check('on nginx no file is written', !file_exists($htaccess));
 pin(
     'and the save points at the server block instead of a file nobody reads',
-    array('ok:Permalinks structure updated nginx does not read .htaccess: check the server rules below are in your nginx configuration, then reload nginx.'),
+    array('ok:Permalinks structure updated nginx does not read .htaccess files. Check that the server rules below are in your nginx configuration, then reload nginx.'),
     flashed($run)
 );
 pin('the structure is still stored', array('1', 'BOOLEAN'), pref($admin, 'rewriteEnabled'));
