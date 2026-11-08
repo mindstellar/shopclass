@@ -110,7 +110,7 @@ $add = array('icon' => 'bi-plus-circle-fill', 'url' => 'https://example.test/add
 harness_section('no heading');
 $old = render(static fn () => osc_admin_page_header('Pages', array('actions' => array($add), 'help' => true)));
 check('the section is the h1', (bool)preg_match('~<h1>Pages\s*<a~', $old), $old);
-check('...with the icon actions inside it, help last', preg_match('~Create page.*bi-question-circle.*</a>\s*</h1>~s', $old) === 1, $old);
+check('...with the icon actions inside it, help last', preg_match('~Create page.*osc-head-help.*</a>\s*</h1>~s', $old) === 1, $old);
 check('...and no title row', !str_contains($old, 'page-head'), $old);
 check('a level-2 page head still draws the page title', str_contains(render(static fn () => osc_admin_page_head('Manage pages')), '<h2 class="render-title osc-page-title">Manage pages</h2>'));
 
@@ -134,9 +134,9 @@ $row = render(static fn () => osc_run_hook('admin_page_header'));
 check('one h1, the page title', substr_count($row, '<h1') === 1 && str_contains($row, '<h1 class="render-title osc-page-title">Manage pages</h1>'), $row);
 check('the section name is not printed', !str_contains($row, '>Pages<'), $row);
 check('the title sits in a title row', (bool)preg_match('~<div class="page-head">\s*<h1~', $row), $row);
-$order = array(strpos($row, 'Export'), strpos($row, 'class="seg"'), strpos($row, 'Create page'), strpos($row, 'bi-question-circle'));
+$order = array(strpos($row, 'Export'), strpos($row, 'class="seg"'), strpos($row, 'Create page'), strpos($row, 'osc-head-help'));
 check('buttons, then the custom control, then icon actions, help last', $order === array_values(array_filter($order)) && $order[0] < $order[1] && $order[1] < $order[2] && $order[2] < $order[3], json_encode($order));
-check('the icon actions keep their look', str_contains($row, 'class="osc-head-action osc-head-add"') && str_contains($row, 'class="osc-head-action bi bi-question-circle"'), $row);
+check('the icon actions keep their look', str_contains($row, 'class="osc-head-action osc-head-add"') && str_contains($row, 'class="osc-head-action osc-head-help"'), $row);
 check('the header recorded the title', osc_admin_header_title() === 'Manage pages' && osc_admin_page_titled());
 
 $crumb = render(static fn () => osc_admin_breadcrumb());

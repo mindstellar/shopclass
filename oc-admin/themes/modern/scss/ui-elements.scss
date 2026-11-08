@@ -2,6 +2,42 @@
   clear: both;
 }
 
+// Line icons for the admin chrome, from the inline sprite in parts/icons.php.
+// Sized in em so each place sets the size with font-size, as it did for icon fonts.
+.osc-i-sprite {
+  block-size: 0;
+  inline-size: 0;
+  overflow: hidden;
+  position: absolute;
+}
+
+.osc-i {
+  block-size: 1.15em;
+  fill: none;
+  flex: none;
+  inline-size: 1.15em;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.75;
+  vertical-align: -.2em;
+}
+
+// Arrows that point along the reading direction.
+.osc-i-flip:dir(rtl) {
+  transform: scaleX(-1);
+}
+
+// The theme toggle carries both icons; the current theme picks one.
+.osc-theme-sun,
+:root[data-bs-theme="dark"] .osc-theme-moon {
+  display: none;
+}
+
+:root[data-bs-theme="dark"] .osc-theme-sun {
+  display: inline-block;
+}
+
 .ico-48 {
   display: block;
   height: 48px;

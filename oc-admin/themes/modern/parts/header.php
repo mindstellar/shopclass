@@ -29,6 +29,7 @@ if ($oscSidebar !== 'collapsed') {
     <?php osc_run_hook('admin_header'); ?>
 </head>
 <body class="<?php echo implode(' ', osc_apply_filter('admin_body_class', array())); ?>">
+<?php require __DIR__ . '/icons.php'; ?>
 <div id="content" class="container-fluid">
     <div class="row flex-nowrap">
         <nav id="sidebar-wrapper" class="col-auto dashboard-sidebar"
@@ -36,7 +37,7 @@ if ($oscSidebar !== 'collapsed') {
             <a id="osc_toolbar_home" class="sidebar-brand" target="_blank" rel="noopener"
                href="<?php echo osc_base_url(); ?>"
                title="<?php echo osc_esc_html(__('View your site')); ?>">
-                <i class="bi bi-house-door" aria-hidden="true"></i>
+                <?php echo osc_admin_icon('shop'); ?>
                 <span class="sidebar-brand-label"><?php echo osc_esc_html(osc_page_title()); ?></span>
             </a>
             <div class="sidebar-scroll-frame">
@@ -50,7 +51,7 @@ if ($oscSidebar !== 'collapsed') {
                         aria-controls="sidebar-wrapper"
                         aria-expanded="<?php echo $oscSidebar === 'collapsed' ? 'false' : 'true'; ?>"
                         aria-label="<?php echo osc_esc_html(__('Collapse or expand the menu')); ?>">
-                    <i class="bi bi-chevron-double-left" aria-hidden="true"></i>
+                    <?php echo osc_admin_icon('chevs-left', 'osc-i-flip'); ?>
                     <span class="sidebar-collapse-toggle-label"><?php _e('Collapse'); ?></span>
                 </button>
             </div>
@@ -60,8 +61,8 @@ if ($oscSidebar !== 'collapsed') {
                 <button class="navbar-toggler admin-topbar-btn admin-topbar-menu" type="button" data-osc-offcanvas="#sidebar-wrapper" aria-controls="sidebar-wrapper"
                         aria-expanded="false" aria-label="<?php echo osc_esc_html(__('Open menu')); ?>"
                         data-label-open="<?php echo osc_esc_html(__('Open menu')); ?>" data-label-close="<?php echo osc_esc_html(__('Close menu')); ?>">
-                    <i class="bi bi-list admin-topbar-menu-open" aria-hidden="true"></i>
-                    <i class="bi bi-x-lg admin-topbar-menu-close" aria-hidden="true"></i>
+                    <?php echo osc_admin_icon('menu', 'admin-topbar-menu-open'); ?>
+                    <?php echo osc_admin_icon('x', 'admin-topbar-menu-close'); ?>
                 </button>
                 <?php osc_admin_breadcrumb(); ?>
                 <ul class="navbar-nav admin-topbar-tools ms-auto">
@@ -73,17 +74,17 @@ if ($oscSidebar !== 'collapsed') {
                         data-count="<?php echo osc_esc_html(__('%d results')); ?>">
                         <button type="button" class="admin-topbar-btn osc-find-open" aria-expanded="false"
                                 title="<?php echo $findLabel; ?>" aria-label="<?php echo $findLabel; ?>">
-                            <i class="bi bi-search" aria-hidden="true"></i>
+                            <?php echo osc_admin_icon('search'); ?>
                         </button>
                         <div class="osc-find-panel" role="search">
                             <label class="visually-hidden" for="osc-find-input"><?php echo $findLabel; ?></label>
-                            <i class="bi bi-search osc-find-icon" aria-hidden="true"></i>
+                            <?php echo osc_admin_icon('search', 'osc-find-icon'); ?>
                             <input type="search" id="osc-find-input" class="form-control form-control-sm" autocomplete="off"
                                    placeholder="<?php echo $findLabel; ?>" role="combobox" aria-expanded="false"
                                    aria-controls="osc-find-list" aria-autocomplete="list">
                             <kbd class="osc-find-key" aria-hidden="true">/</kbd>
                             <button type="button" class="osc-find-close" aria-label="<?php echo osc_esc_html(__('Close')); ?>">
-                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                <?php echo osc_admin_icon('x'); ?>
                             </button>
                             <ul id="osc-find-list" class="osc-find-list" role="listbox" hidden></ul>
                             <span class="visually-hidden osc-find-status" role="status" aria-live="polite"></span>
@@ -97,20 +98,21 @@ if ($oscSidebar !== 'collapsed') {
                         <button type="button" id="oscThemeToggle" class="admin-topbar-btn"
                                 title="<?php echo osc_esc_html(__('Toggle dark mode')); ?>"
                                 aria-label="<?php echo osc_esc_html(__('Toggle dark mode')); ?>">
-                            <i class="bi <?php echo $oscAdminTheme === 'dark' ? 'bi-sun' : 'bi-moon'; ?>" aria-hidden="true"></i>
+                            <?php echo osc_admin_icon('moon', 'osc-theme-moon'); ?>
+                            <?php echo osc_admin_icon('sun', 'osc-theme-sun'); ?>
                         </button>
                     </li>
                     <li class="nav-item dropdown admin-topbar-account">
                         <button type="button" id="userDropdown" class="admin-topbar-btn admin-topbar-account-btn"
                                 data-osc-dropdown aria-haspopup="true" aria-expanded="false"
                                 title="<?php echo osc_esc_html(__('User Menu')); ?>">
-                            <i class="bi bi-person-circle admin-topbar-avatar" aria-hidden="true"></i>
+                            <?php echo osc_admin_icon('user', 'admin-topbar-avatar'); ?>
                             <span class="admin-topbar-account-name"><?php echo osc_esc_html(osc_logged_admin_username()); ?></span>
-                            <i class="bi bi-chevron-down admin-topbar-account-caret" aria-hidden="true"></i>
+                            <?php echo osc_admin_icon('chev-down', 'admin-topbar-account-caret'); ?>
                         </button>
                         <div class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                             <div class="admin-topbar-account-head">
-                                <i class="bi bi-person-circle" aria-hidden="true"></i>
+                                <?php echo osc_admin_icon('user'); ?>
                                 <div class="admin-topbar-account-head-text">
                                     <span class="admin-topbar-account-head-name"><?php echo osc_esc_html(osc_logged_admin_name() ?: osc_logged_admin_username()); ?></span>
                                     <span class="admin-topbar-account-head-mail"><?php echo osc_esc_html(osc_logged_admin_email()); ?></span>
@@ -119,12 +121,12 @@ if ($oscSidebar !== 'collapsed') {
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item"
                                href="<?php echo osc_admin_base_url(true) . '?page=admins&action=edit&id=' . osc_logged_admin_id(); ?>">
-                                <i class="bi bi-person"></i> <?php _e('Edit profile'); ?></a>
+                                <?php echo osc_admin_icon('user'); ?> <?php _e('Edit profile'); ?></a>
                             <a class="dropdown-item" href="<?php echo osc_admin_base_url(true).'?page=settings'?>">
-                                <i class="bi bi-gear"></i> <?php _e('Settings'); ?></a>
+                                <?php echo osc_admin_icon('sliders'); ?> <?php _e('Settings'); ?></a>
                             <div class="dropdown-divider"></div>
                             <a class="dropdown-item" href="<?php echo osc_admin_base_url(true) . '?action=logout'; ?>">
-                                <i class="bi bi-box-arrow-right"></i> <?php _e('Sign out') ?></a>
+                                <?php echo osc_admin_icon('logout', 'osc-i-flip'); ?> <?php _e('Sign out') ?></a>
                         </div>
                     </li>
                 </ul>
@@ -136,13 +138,13 @@ if ($oscSidebar !== 'collapsed') {
                 <div id="help-box" class="collapse">
                     <div id="help-wrapper">
                         <div class="help-callout" role="note">
-                            <i class="bi bi-info-circle help-callout-icon" aria-hidden="true"></i>
+                            <?php echo osc_admin_icon('info', 'help-callout-icon'); ?>
                             <div class="help-callout-body">
                                 <?php osc_run_hook('help_box'); ?>
                             </div>
                             <button type="button" class="help-callout-close" data-osc-collapse="#help-box" aria-controls="help-box"
                                     aria-label="<?php echo osc_esc_html(__('Close')); ?>">
-                                <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                <?php echo osc_admin_icon('x'); ?>
                             </button>
                         </div>
                     </div>

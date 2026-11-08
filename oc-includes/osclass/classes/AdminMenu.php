@@ -42,6 +42,25 @@ class AdminMenu
 
     private const BAND_STARTS = array('items', 'appearance', 'settings');
 
+    /**
+     * Sprite icon per core section, used only while the section keeps the icon class core
+     * gave it. Plugin sections and changed icons render their own class as before.
+     */
+    private const CORE_ICONS = array(
+        'dash'       => array('bi bi-speedometer', 'home'),
+        'items'      => array('bi bi-list-ul', 'list'),
+        'users'      => array('bi bi-people', 'users'),
+        'media'      => array('bi bi-images', 'image'),
+        'pages'      => array('bi bi-file-earmark-text', 'file'),
+        'forms'      => array('bi bi-ui-checks-grid', 'grid'),
+        'billing'    => array('bi bi-receipt', 'receipt'),
+        'stats'      => array('bi bi-bar-chart', 'chart'),
+        'appearance' => array('bi bi-palette', 'palette'),
+        'plugins'    => array('bi bi-plugin', 'plug'),
+        'settings'   => array('bi bi-gear', 'sliders'),
+        'tools'      => array('bi bi-tools', 'tools'),
+    );
+
     private $aMenu;
 
     /** Submenu keys per section as core left them, before anyone else registered. */
@@ -1043,7 +1062,10 @@ class AdminMenu
         $str          = '';
         //If user is moderator and menu access is not available don't print menu
         if (!$is_moderator || ($value[3] === 'moderator')) {
-            if (!$value[4] || strpos($value[4], "http") === 0) {
+            $sprite = self::CORE_ICONS[$menuId] ?? null;
+            if ($sprite !== null && $value[4] === $sprite[0] && function_exists('osc_admin_icon')) {
+                $menuTag = osc_admin_icon($sprite[1]) . ' ';
+            } elseif (!$value[4] || strpos($value[4], "http") === 0) {
                 $menuTag = '<i class="bi bi-app"></i> ';
             } else {
                 $menuTag = '<i class="' . $value[4] . '"></i> ';
@@ -1069,7 +1091,8 @@ class AdminMenu
                            . ' aria-controls="' . $menuId . '-submenu"'
                            . ' aria-label="'
                            . osc_esc_html(sprintf(__('Toggle the %s submenu'), \mindstellar\utility\Sanitize::stripTags($value[0]))) . '">'
-                           . '<i class="bi bi-chevron-down" aria-hidden="true"></i></button>';
+                           . (function_exists('osc_admin_icon') ? osc_admin_icon('chev-down') : '<i class="bi bi-chevron-down" aria-hidden="true"></i>')
+                           . '</button>';
                 $str .= '</div>';
                 $str .= $this->renderSubMenu($menuId, $value['sub'], $is_moderator, $activeMenu, $activeSubmenu);
             } else {

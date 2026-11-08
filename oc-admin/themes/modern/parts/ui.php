@@ -240,10 +240,10 @@ if (!function_exists('osc_admin_page_header')) {
                 </a>
             <?php }
             if (!empty($opts['help'])) { ?>
-                <a class="osc-head-action bi bi-question-circle" data-osc-collapse="#help-box" href="#help-box"
+                <a class="osc-head-action osc-head-help" data-osc-collapse="#help-box" href="#help-box"
                    aria-controls="help-box" aria-expanded="false" role="button"
                    title="<?php echo osc_esc_html(__('Help')); ?>"
-                   aria-label="<?php echo osc_esc_html(__('Help')); ?>"></a>
+                   aria-label="<?php echo osc_esc_html(__('Help')); ?>"><?php echo osc_admin_icon('help'); ?></a>
             <?php }
         };
 

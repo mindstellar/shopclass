@@ -22,7 +22,6 @@
         var btn = document.getElementById('oscThemeToggle');
         if (btn) {
             var root = document.documentElement;
-            var icon = btn.querySelector('i');
             // Flip the attribute first so the change is instant — the whole theme is CSS custom
             // properties keyed off data-bs-theme, nothing to reload — then persist it best-effort.
             // If the write fails the UI is still correct for this page; the next load reverts.
@@ -30,10 +29,6 @@
                 e.preventDefault();
                 var next = root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark';
                 root.setAttribute('data-bs-theme', next);
-                if (icon) {
-                    icon.classList.toggle('bi-moon-stars-fill', next === 'light');
-                    icon.classList.toggle('bi-sun-fill', next === 'dark');
-                }
                 var hint = next === 'dark' ? '<?php echo osc_esc_js(__('Switch to light mode')); ?>' : '<?php echo osc_esc_js(__('Switch to dark mode')); ?>';
                 btn.setAttribute('title', hint);
                 btn.setAttribute('aria-label', hint);

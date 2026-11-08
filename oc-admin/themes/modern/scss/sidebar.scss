@@ -79,7 +79,8 @@ $sidebar-gutter: 2.35rem;
       padding-block: .5rem;
       @extend .text-decoration-none;
 
-      > i {
+      > i,
+      > .osc-i {
         flex: 0 0 1.25rem;
         text-align: center;
         width: 1.25rem;
@@ -139,7 +140,8 @@ $sidebar-gutter: 2.35rem;
       color: var(--osc-sidebar-strong);
 
       // The delight moment (see `> i` above): brand teal + a small lift on the icon.
-      a > i {
+      a > i,
+      a > .osc-i {
         color: var(--osc-sidebar-accent-hover);
         transform: scale(1.08);
       }
@@ -378,7 +380,8 @@ $sidebar-gutter: 2.35rem;
     margin-inline: -.5rem;
   }
 
-  > i {
+  > i,
+  > .osc-i {
     color: var(--osc-sidebar-brand-accent);
     flex: 0 0 auto;
     font-size: 1.15rem;
@@ -427,7 +430,8 @@ $sidebar-gutter: 2.35rem;
               color var(--osc-duration-fast) var(--osc-ease);
   width: 100%;
 
-  > i {
+  > i,
+  > .osc-i {
     flex: 0 0 auto;
     font-size: 1.05rem;
     transition: transform var(--osc-duration-base) var(--osc-ease);
@@ -489,7 +493,8 @@ $sidebar-gutter: 2.35rem;
     // Labels grow the bar horizontally; they never wrap to a second line.
     white-space: nowrap;
 
-    > i {
+    > i,
+    > .osc-i {
       font-size: 1.1rem;
     }
 
@@ -574,7 +579,8 @@ $sidebar-gutter: 2.35rem;
     transition: background-color var(--osc-duration-fast) var(--osc-ease),
                 color var(--osc-duration-fast) var(--osc-ease);
 
-    > i {
+    > i,
+    > .osc-i {
       font-size: 1.1rem;
     }
 
@@ -638,7 +644,8 @@ $sidebar-gutter: 2.35rem;
     gap: .6rem;
     padding: .35rem 1rem .5rem;
 
-    > i {
+    > i,
+    > .osc-i {
       color: var(--osc-ink-muted);
       font-size: 1.9rem;
     }
@@ -707,7 +714,8 @@ $sidebar-gutter: 2.35rem;
   min-width: max(2.75rem, 44px);
   position: relative;
 
-  > i {
+  > i,
+  > .osc-i {
     font-size: 1.35rem;
     transition: opacity var(--osc-duration-base) var(--osc-ease),
                 transform var(--osc-duration-base) var(--osc-ease);
@@ -719,8 +727,11 @@ $sidebar-gutter: 2.35rem;
     opacity: 0;
     position: absolute;
     transform: rotate(-90deg);
-    block-size: fit-content;
-    inline-size: fit-content;
+
+    &:is(i) {
+      block-size: fit-content;
+      inline-size: fit-content;
+    }
   }
 
   // Open, it stays above the panel and its backdrop, so the close is where the menu was opened.
@@ -981,8 +992,13 @@ $sidebar-gutter: 2.35rem;
       display: none;
     }
 
-    .sidebar-collapse-toggle > i {
+    .sidebar-collapse-toggle > i,
+    .sidebar-collapse-toggle > .osc-i:dir(ltr) {
       transform: rotate(180deg);
+    }
+
+    .sidebar-collapse-toggle > .osc-i:dir(rtl) {
+      transform: none;
     }
 
     // Icon-only menu rows. `font-size: 0` collapses the label's text node while
@@ -1004,7 +1020,8 @@ $sidebar-gutter: 2.35rem;
         gap:initial;
         position: relative;
 
-        .bi {
+        .bi,
+        .osc-i {
           font-size: 1.05rem;
         }
 

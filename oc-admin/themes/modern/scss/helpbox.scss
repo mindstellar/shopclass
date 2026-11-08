@@ -20,6 +20,10 @@
   line-height: 1.55;
 }
 
+svg.help-callout-icon {
+  margin-block-start: .2em;
+}
+
 .help-callout-body {
   flex: 1 1 auto;
   max-width: 75ch;
