@@ -1,5 +1,6 @@
 // Shared tree drag (Categories, Menus) and the toast. Positions come from the script as custom
 // properties: --tree-d (depth), --tree-indent, --tree-slot-offset, --tree-slot-h, --tree-gap.
+// --tree-slot-pad-start moves the slot's text in to where a row's label starts.
 
 // The shield over the page carries the cursor and keeps text from being selected. An inherited
 // property on the root would restyle the whole list when a drag starts.
@@ -56,7 +57,8 @@ tr.is-tree-gap-after > * {
   gap: .5rem;
   margin-inline-start: calc(var(--tree-slot-offset, 0px) + var(--tree-d, 0) * var(--tree-indent, 1.9rem));
   min-block-size: var(--tree-slot-h, 2.25rem);
-  padding: .3rem .4rem .3rem .65rem;
+  padding-block: .3rem;
+  padding-inline: var(--tree-slot-pad-start, .65rem) .4rem;
   transition:
     margin-inline-start 120ms var(--osc-ease),
     background-color var(--osc-duration-fast) var(--osc-ease),
@@ -90,9 +92,14 @@ tr.is-tree-gap-after > * {
     border-color: var(--osc-danger);
   }
 
+  // The reason may be long; on a narrow list it wraps inside the slot instead of running past it.
   .tree-slot-tag {
     border-color: color-mix(in srgb, var(--osc-danger) 45%, transparent);
+    border-radius: .75rem;
     color: var(--osc-danger);
+    flex: 0 1 auto;
+    min-inline-size: 0;
+    white-space: normal;
   }
 }
 
@@ -227,11 +234,11 @@ tr.is-tree-gap-after > * {
   box-shadow: var(--osc-shadow-overlay);
   display: flex;
   gap: .75rem;
-  inset-block-end: 1.25rem;
+  inset-block-end: max(1.25rem, env(safe-area-inset-bottom));
   inset-inline: 1rem;
   margin-inline: auto;
   max-inline-size: min(36rem, calc(100vw - 2rem));
-  padding: .5rem .5rem .5rem 1rem;
+  padding: .5rem;
   padding-inline: 1rem .5rem;
   position: fixed;
   transition:
@@ -284,6 +291,7 @@ tr.is-tree-gap-after > * {
 @media (max-width: 575.98px) {
   .osc-toast {
     inline-size: auto;
+    inset-inline: 16px;
     max-inline-size: none;
   }
 

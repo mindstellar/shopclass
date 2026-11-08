@@ -540,7 +540,7 @@ Core fires 652 names. Generated from the source; do not edit by hand.
 | `item_spam_on` | action | `$id` | `oc-includes/classes/listing/ListingService.php` |
 | `item_title` | filter | `s_title` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `item_view_beacon_enabled` | filter | `$enabled` | `oc-includes/osclass/helpers/hViews.php` |
-| `items_bulk_enabled_by_category` | action | `$aIds, $enable` | `oc-includes/osclass/classes/model/Item.php` |
+| `items_bulk_enabled_by_category` | action | `$ids, 1` | `oc-includes/classes/listing/category/CategoryService.php` |
 | `items_processing_reported_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `items_processing_row` | filter | `$row, $aRow` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |
 | `manage_item_search_conditions` | action | `value` | `oc-includes/osclass/classes/datatables/ItemsDataTable.php` |

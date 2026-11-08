@@ -39,12 +39,19 @@ osc_admin_page(array(
         $add_button,
     ),
     'help'    => static function () {
-        $bold = static fn (string $label): string => '<strong>' . osc_esc_html($label) . '</strong>'; ?>
+        $bold = static fn (string $label): string => '<strong>' . osc_esc_html($label) . '</strong>';
+        $kbd  = static fn (string $key, string $class = ''): string => '<kbd class="cat-k' . ($class !== '' ? ' ' . $class : '') . '">' . $key . '</kbd>';
+        $rtl  = osc_locale_text_direction() === 'rtl';
+        $grip = '<i class="bi bi-grip-vertical cat-help-grip" aria-hidden="true"></i>'; ?>
         <ul>
             <li><?php printf(
-                __('%1$s Drag a row by its handle: up or down to reorder it, right to put it under the category above, left to move it out. On a phone, press and hold the handle first. With a keyboard, focus the handle and use the arrow keys. Or use %2$s.'),
+                __('%1$s drag the %2$s handle up or down; while dragging, move it right to put it under the category above, or left to move it out. On a phone, press and hold the handle first. With a keyboard, focus the handle: %3$s move it, %4$s puts it under the category above, %5$s moves it out of its group. Or use %6$s.'),
                 $bold(__('Order and nesting:')),
-                osc_esc_html(__('Move to…'))
+                $grip,
+                $kbd('↑') . ' ' . $kbd('↓'),
+                $kbd($rtl ? '←' : '→', 'cat-k-in'),
+                $kbd($rtl ? '→' : '←', 'cat-k-out'),
+                '<em>' . osc_esc_html(__('Move to…')) . '</em>'
             ); ?></li>
             <li><?php printf(__('%s hides a category and its subcategories from your site. Nothing is deleted.'), $bold(__('Disable'))); ?></li>
             <li><?php printf(__('%s removes the category, its subcategories and every listing in them.'), $bold(__('Delete'))); ?></li>
@@ -98,16 +105,21 @@ $i18n = array(
     'listingsN'        => $plural(static fn (int $n): string => _n('%d listing', '%d listings', $n)),
     'subcategoriesN'   => $plural(static fn (int $n): string => _n('%d subcategory', '%d subcategories', $n)),
     'daysN'            => $plural(static fn (int $n): string => _n('After %d day', 'After %d days', $n)),
-    'filterShown'      => $plural(static fn (int $n): string => _n('%d category shown.', '%d categories shown.', $n)),
-    'filterSearch'     => __('Searching for “%s”.'),
-    'filterOn'         => __('Showing enabled categories only.'),
-    'filterOff'        => __('Showing disabled categories only.'),
+    'filterMatch'      => $plural(static fn (int $n): string => _n('%d category matches “%s”.', '%d categories match “%s”.', $n)),
+    'filterTabOn'      => $plural(static fn (int $n): string => _n('Showing %d enabled category.', 'Showing %d enabled categories.', $n)),
+    'filterTabOff'     => $plural(static fn (int $n): string => _n('Showing %d disabled category.', 'Showing %d disabled categories.', $n)),
+    'filterGrey'       => __('Their groups are shown in grey. Clear the search and filter to reorder.'),
+    'filterReorder'    => __('Clear the search and status filter to reorder.'),
+    'noMatchIn'        => __('No category matches “%1$s” in %2$s'),
+    'noMatchHint'      => __('Check the spelling, or search for part of the name.'),
+    'allShowing'       => __('Every category is showing on your site.'),
+    'allDisabled'      => __('Every category is disabled, so sellers cannot post.'),
+    'noListings'       => __('No listings'),
+    'expiryTag'        => __('%d-day expiry'),
     'emptyOn'          => __('No enabled categories.'),
     'emptyOff'         => __('No disabled categories.'),
-    'pair'             => __('%1$s · %2$s'),
     // translators: 1: category name, 2: Enabled or Disabled
     'nameState'        => __('%1$s: %2$s'),
-    'filterNoReorder'  => __('Reordering is off while a filter is on.'),
     'tooDeepDrag'      => $limit === null ? '' : sprintf(__('Too deep. %s'), sprintf(__('This theme shows %d levels of categories.'), $limit)),
     'moreSubs'         => $plural(static fn (int $n): string => _n('+ %d subcategory', '+ %d subcategories', $n)),
     'hintMove'         => __('move up or down'),
@@ -130,15 +142,75 @@ $i18n = array(
     'applyLabel'       => $plural(static fn (int $n): string => _n('Also apply to its %d subcategory', 'Also apply to its %d subcategories', $n)),
     'applyOn'          => __('Every subcategory gets this setting too.'),
     'applyOff'         => __('Left off, each subcategory keeps its own setting.'),
+    'applyChange'      => $plural(static fn (int $n): string => _n('%d of them changes.', '%d of them change.', $n)),
+    'applyNoChange'    => __('None of them change.'),
+    'applyDiffer'      => $plural(static fn (int $n): string => _n('%d subcategory differs from this one now.', '%d subcategories differ from this one now.', $n)),
+    'applyMatch'       => __('They all match this one now.'),
     'redateNew'        => __('Give them new end dates'),
     'redateNever'      => __('Remove their end dates'),
+    'redateHintNever'  => __('Their end dates are removed, so they stay up until taken down.'),
+    'redateHintDays'   => $plural(static fn (int $n): string => _n('Each one ends %d day after it was published.', 'Each one ends %d days after it was published.', $n)),
     'disableTitle'     => __('Disable %s?'),
-    'disableFacts'     => __('Its subcategories are disabled too. Nothing is deleted. You can enable it again at any time.'),
+    'disableSelTitle'  => $plural(static fn (int $n): string => _n('Disable %d selected category?', 'Disable %d selected categories?', $n)),
+    'disableSubs'      => $plural(static fn (int $n): string => _n('Its %d subcategory is disabled too.', 'Its %d subcategories are disabled too.', $n)),
+    'withSubs'         => __('With their subcategories, that is %s.'),
+    'disableListings'  => $plural(static fn (int $n): string => _n(
+        '%d listing stops showing on your site, and sellers can\'t post here.',
+        '%d listings stop showing on your site, and sellers can\'t post here.',
+        $n
+    )),
+    'disableNoListings' => __('It has no listings. Sellers can\'t post here while it is disabled.'),
+    'disableSafe'      => __('Nothing is deleted. You can enable it again at any time.'),
+    'disableButton'    => __('Disable %s'),
+    'alreadyOff'       => __('Those categories are already disabled.'),
+    'disabledOne'      => __('Disabled %s.'),
+    'disabledSubs'     => __('Disabled %1$s and %2$s.'),
+    'enabledOne'       => __('Enabled %s.'),
+    'enabledSubs'      => __('Enabled %1$s and %2$s.'),
+    'stillHidden'      => __('It stays hidden until %s is enabled.'),
     'deleteConfirm'    => __('Delete %s?'),
-    'deleteFacts'      => __('This also deletes its subcategories and every listing in them, including expired and unapproved ones. This cannot be undone.'),
-    'deleteFactsOne'   => __('This also deletes every listing in it, including expired and unapproved ones. This cannot be undone.'),
-    'deleteFactsMany'  => __('This also deletes every listing in them, including expired and unapproved ones. This cannot be undone.'),
+    'deleteSelTitle'   => $plural(static fn (int $n): string => _n('Delete %d selected category?', 'Delete %d selected categories?', $n)),
+    'deleteSubs'       => $plural(static fn (int $n): string => _n('Its %d subcategory is deleted too.', 'Its %d subcategories are deleted too.', $n)),
+    'deleteListings'   => $plural(static fn (int $n): string => _n(
+        '%d listing is deleted, along with any expired or unapproved ones.',
+        '%d listings are deleted, along with any expired or unapproved ones.',
+        $n
+    )),
+    'deleteNoListings' => __('It has no listings. Any expired or unapproved ones are deleted.'),
+    'deleteForever'    => __('This can\'t be undone.'),
+    'deleteButton'     => __('Delete %s'),
+    'deleteButtonBoth' => __('Delete %1$s and %2$s'),
+    'deleteAside'      => __('Want to keep the listings? Disable instead. It hides everything and deletes nothing.'),
+    'disableInstead'   => __('Disable instead'),
+    'deletedDone'      => __('Deleted %s.'),
+    'overlapOne'       => __('%1$s is inside %2$s, so it is counted once.'),
+    'overlapMany'      => $plural(static fn (int $n): string => _n(
+        '%d of the selected is inside another selected category, so it is counted once.',
+        '%d of the selected are inside other selected categories, so each is counted once.',
+        $n
+    )),
     'deleteQueued'     => __('Deleting in the background. This can take a moment.'),
+    'expiryFor'        => __('Set expiry for %s'),
+    'expiryForMany'    => $plural(static fn (int $n): string => _n('Set expiry for %d category', 'Set expiry for %d categories', $n)),
+    'expiryNow'        => __('Now: %s'),
+    'expiryNowAfter'   => $plural(static fn (int $n): string => _n('after %d day', 'after %d days', $n)),
+    'expiryNowNever'   => __('never expire'),
+    'expiryMixed'      => __('Mixed (%s)'),
+    'expiryDays'       => $plural(static fn (int $n): string => _n('%d day', '%d days', $n)),
+    'expirySet'        => __('Set on %s'),
+    'expiryNoListOne'  => __('It has no listings now. New listings get it from now on.'),
+    'expiryNoListMany' => __('They have no listings now. New listings get it from now on.'),
+    'endToday'         => $plural(static fn (int $n): string => _n('%d listing ends today.', '%d listings end today.', $n)),
+    'expiryDoneAfter'  => __('Listings in %1$s now expire after %2$s.'),
+    'expiryDoneNever'  => __('Listings in %s now never expire.'),
+    'postedKeep'       => __('Listings already posted keep their end dates.'),
+    'postedNone'       => __('Listings already posted no longer have end dates.'),
+    'postedNew'        => __('Listings already posted got new end dates.'),
+    'postedNewEnded'   => $plural(static fn (int $n): string => _n(
+        'Listings already posted got new end dates; %d listing ended today.',
+        'Listings already posted got new end dates; %d listings ended today.',
+        $n
+    )),
     'working'          => __('This can take a moment on a large category.'),
 );
 ?>
@@ -151,6 +223,7 @@ $i18n = array(
          data-move-url="<?php echo $ajax('category_move'); ?>"
          data-bulk-url="<?php echo $ajax('category_bulk'); ?>"
          data-preview-url="<?php echo $ajax('category_delete_preview', false); ?>"
+         data-expiry-preview-url="<?php echo $ajax('category_expiry_preview', false); ?>"
          data-order-url="<?php echo $ajax('categories_order'); ?>"
          data-depth-limit="<?php echo $limit === null ? '' : (int)$limit; ?>"
          data-status="<?php echo osc_esc_html($status); ?>"
@@ -163,6 +236,8 @@ $i18n = array(
             <button type="button" class="btn btn-submit btn-sm js-cat-add"><?php _e('Add category'); ?></button>
         </div>
 <?php } else { ?>
+        <p class="cat-intro"><?php _e('Sellers file each listing under one of these. Drag a row by its handle, or focus the handle and use the arrow keys, to change the order.'); ?></p>
+
         <?php osc_admin_tab_nav(array(
             array(
                 'label'  => __('All'),
@@ -213,7 +288,7 @@ $i18n = array(
             </div>
         <?php osc_admin_toolbar_close(); ?>
 
-        <p class="cat-filter-line" id="cat-filter-line" role="status" hidden></p>
+        <p class="cat-filter-line" id="cat-filter-line" hidden></p>
 
         <div class="table-contains-actions">
             <table class="table cat-table" aria-label="<?php echo osc_esc_html(__('Categories')); ?>">
@@ -235,6 +310,9 @@ $i18n = array(
 foreach ($rows as $row) {
     $id      = $row['id'];
     $name    = osc_esc_html($row['name']);
+    // Below the top level, the name and handle are described as "Inside {parent}": the shared words
+    // around the parent's own name button, so a row adds no text of its own.
+    $inside  = $row['depth'] > 1 ? 'cat-i1 cat-n-' . $row['parent'] . ' cat-i2' : '';
     $classes = 'cat-row' . ($row['enabled'] ? '' : ' is-disabled') . ($row['deep'] ? ' is-deep' : '');
     $meta    = array();
     if ($row['subs'] > 0) {
@@ -243,28 +321,31 @@ foreach ($rows as $row) {
     $meta[] = $row['listings'] > 0
         ? sprintf(_n('%d listing', '%d listings', $row['listings']), $row['listings'])
         : __('No listings');
-    $meta[] = $row['expiry'] > 0 ? sprintf(__('%d-day expiry'), $row['expiry']) : __('No expiry');
+    if ($row['expiry'] > 0) {
+        $meta[] = sprintf(__('%d-day expiry'), $row['expiry']);
+    }
     ?>
                     <tr id="cat-<?php echo $id; ?>" class="<?php echo $classes; ?>" data-id="<?php echo $id; ?>"
                         data-parent="<?php echo $row['parent']; ?>" data-depth="<?php echo $row['depth']; ?>"
                         data-height="<?php echo $row['height']; ?>" data-subs="<?php echo $row['subs']; ?>"
                         data-below="<?php echo $row['below']; ?>" data-listings="<?php echo $row['listings']; ?>"
-                        data-expiry="<?php echo $row['expiry']; ?>" data-enabled="<?php echo $row['enabled'] ? 1 : 0; ?>"
+                        data-expiry="<?php echo $row['expiry']; ?>" data-price="<?php echo $row['price'] ? 1 : 0; ?>" data-enabled="<?php echo $row['enabled'] ? 1 : 0; ?>"
                         <?php echo $row['canAddChild'] ? '' : 'data-no-child '; ?>style="--cat-depth:<?php echo $row['depth'] - 1; ?>"<?php echo $row['depth'] > 1 ? ' hidden' : ''; ?>>
                         <td class="col-bulkactions"><input type="checkbox" value="<?php echo $id; ?>" aria-labelledby="cat-n-<?php echo $id; ?>"></td>
                         <td class="col-status"><?php if ($row['enabled']) { ?><span class="visually-hidden"><?php _e('Enabled'); ?></span><?php } else { ?><span class="cat-off"><i class="bi bi-dash-circle" aria-hidden="true"></i><?php _e('Disabled'); ?></span><?php } ?></td>
                         <td class="col-name">
                             <div class="cat-name-line">
-                                <button type="button" class="cat-handle" aria-label="<?php echo osc_esc_html(__('Reorder')); ?>" aria-describedby="cat-n-<?php echo $id; ?> cat-key-help"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
+                                <button type="button" class="cat-handle" aria-labelledby="cat-reorder cat-n-<?php echo $id; ?>" aria-describedby="<?php echo $inside !== '' ? $inside . ' ' : ''; ?>cat-key-help"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
 <?php if ($row['subs'] > 0) { ?>
                                 <button type="button" class="cat-disclosure" aria-expanded="false" aria-label="<?php echo osc_esc_html(__('Show subcategories')); ?>" aria-describedby="cat-n-<?php echo $id; ?>"><i class="bi bi-chevron-right" aria-hidden="true"></i></button>
 <?php } else { ?>
                                 <span class="cat-disclosure-spacer"></span>
 <?php } ?>
-                                <button type="button" class="cat-name" id="cat-n-<?php echo $id; ?>" data-cat-act="edit" dir="auto"><?php echo $name; ?></button>
+                                <button type="button" class="cat-name" id="cat-n-<?php echo $id; ?>" data-cat-act="edit" dir="auto"<?php echo $inside !== '' ? ' aria-describedby="' . $inside . '"' : ''; ?>><?php echo $name; ?></button>
 <?php if ($row['deep']) { ?>
                                 <span class="cat-deep"><i class="bi bi-exclamation-triangle" aria-hidden="true"></i><span class="visually-hidden"><?php _e('Deeper than this theme shows'); ?></span></span>
 <?php } ?>
+                                <button type="button" class="cat-more" data-cat-act="more" aria-label="<?php echo osc_esc_html(__('Actions')); ?>" aria-describedby="cat-n-<?php echo $id; ?>" aria-haspopup="dialog"><i class="bi bi-three-dots" aria-hidden="true"></i></button>
                             </div>
                             <p class="cat-meta"><?php echo osc_esc_html(implode(' · ', $meta)); ?></p>
                             <div class="actions cat-actions">
@@ -327,17 +408,35 @@ echo preg_replace('/\s+/', ' ', preg_replace('/>\s+</', '><', (string)ob_get_cle
             <div class="osc-drawer-body cat-drawer-body" id="catDrawerBody"></div>
         </div>
 
-        <dialog class="osc-dialog" id="catConfirm" aria-labelledby="catConfirmTitle">
+        <dialog class="osc-dialog" id="catConfirm" aria-labelledby="catConfirmTitle" aria-describedby="catConfirmFacts">
             <div class="osc-dialog-body">
                 <p class="osc-dialog-title" id="catConfirmTitle"></p>
-                <p class="osc-dialog-text" id="catConfirmText"></p>
+                <ul class="osc-dialog-facts" id="catConfirmFacts"></ul>
+                <div class="cat-confirm-aside" id="catConfirmAside" hidden>
+                    <p></p>
+                    <button type="button" class="btn btn-dim btn-sm"></button>
+                </div>
             </div>
             <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
+                <button type="button" class="btn btn-dim btn-sm" id="catConfirmCancel" data-osc-dialog-close><?php _e('Cancel'); ?></button>
                 <button type="button" class="btn btn-submit btn-sm" id="catConfirmOk"></button>
             </div>
         </dialog>
 <?php if ($rows !== array()) { ?>
+
+        <dialog class="osc-dialog cat-sheet" id="catSheet" aria-labelledby="catSheetTitle">
+            <p class="cat-sheet-title" id="catSheetTitle" dir="auto"></p>
+            <ul class="cat-sheet-list">
+                <li><button type="button" data-cat-act="edit"><?php _e('Edit'); ?></button></li>
+                <li><button type="button" data-cat-act="addsub"><?php _e('Add subcategory'); ?></button></li>
+                <li><button type="button" data-cat-act="move"><?php _e('Move to…'); ?></button></li>
+                <li><button type="button" data-cat-act="toggle"><?php _e('Disable'); ?></button></li>
+                <li class="cat-sheet-sep" role="presentation"></li>
+                <li><button type="button" class="cat-sheet-danger" data-cat-act="delete"><?php _e('Delete'); ?></button></li>
+                <li class="cat-sheet-sep" role="presentation"></li>
+                <li><button type="button" class="cat-sheet-cancel" data-osc-dialog-close><?php _e('Cancel'); ?></button></li>
+            </ul>
+        </dialog>
 
         <dialog class="osc-dialog" id="catMove" aria-labelledby="catMoveTitle">
             <form method="dialog" id="catMoveForm">
@@ -364,15 +463,19 @@ echo preg_replace('/\s+/', ' ', preg_replace('/>\s+</', '><', (string)ob_get_cle
             <form method="dialog" id="catExpiryForm" novalidate>
                 <div class="osc-dialog-body">
                     <p class="osc-dialog-title" id="catExpiryTitle"><?php _e('Set expiry…'); ?></p>
-                    <?php CategoryForm::expiry_control(0, 'cat-bx', 'days'); ?>
-                    <div class="form-check mt-3">
-                        <input type="checkbox" class="form-check-input" id="cat-bx-sub" name="to_subcategories" value="1">
+                    <p class="cat-exp-now" id="catExpiryNow"></p>
+                    <?php CategoryForm::expiry_control(0, 'cat-bx', 'days', false); ?>
+                    <div class="form-check cat-bx-sub">
+                        <input type="checkbox" class="form-check-input" id="cat-bx-sub" name="to_subcategories" value="1" aria-describedby="cat-bx-sub-note">
                         <label class="form-check-label" for="cat-bx-sub" id="cat-bx-sub-label"></label>
+                        <p class="form-text" id="cat-bx-sub-note"></p>
                     </div>
+                    <?php CategoryForm::expiry_posted('cat-bx'); ?>
+                    <ul class="osc-dialog-facts" id="catExpiryFacts" hidden></ul>
                 </div>
                 <div class="osc-dialog-actions">
                     <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                    <button type="submit" class="btn btn-submit btn-sm"><?php _e('Set expiry…'); ?></button>
+                    <button type="submit" class="btn btn-submit btn-sm" id="catExpiryOk"><?php _e('Set expiry…'); ?></button>
                 </div>
             </form>
         </dialog>
@@ -388,6 +491,16 @@ echo preg_replace('/\s+/', ' ', preg_replace('/>\s+</', '><', (string)ob_get_cle
 <?php } ?>
 
         <p class="visually-hidden" id="cat-announce" aria-live="polite"></p>
+<?php
+// A translation that drops the placeholder falls back to the English words.
+$inside_words = preg_split('/%(?:1\$)?s/', __('Inside %s'), 2);
+if (count($inside_words) < 2) {
+    $inside_words = array('Inside', '');
+}
+?>
+        <span class="visually-hidden" id="cat-reorder"><?php _e('Reorder'); ?></span>
+        <span class="visually-hidden" id="cat-i1"><?php echo osc_esc_html(trim($inside_words[0])); ?></span>
+        <span class="visually-hidden" id="cat-i2"><?php echo osc_esc_html(trim($inside_words[1] ?? '')); ?></span>
         <p class="visually-hidden" id="cat-key-help"><?php _e('Use the arrow keys to move it: up or down to reorder, sideways to put it under the category above or move it out of its group.'); ?></p>
     </div>
 

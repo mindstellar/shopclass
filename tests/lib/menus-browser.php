@@ -242,6 +242,77 @@ function menus_browser_run(string $driverJs, ?array $items = null, array $opts =
 }
 
 /**
+ * Same as menus_browser_run() in real time through puppeteer-core, at a true phone width. The
+ * driver also gets window.oscPress(key) and window.oscTouch(steps), where steps is a list of
+ * [type, x, y] with type start, move or end, sent as real touch events. Returns null (skipped)
+ * when node or puppeteer-core is not on this machine.
+ *
+ * @param array<int,array<string,mixed>>|null $items nested items; the fixture menu when null
+ * @param array<string,mixed>                 $opts  dark, rtl, width, touch, editor
+ *
+ * @return array<string,mixed>|null
+ */
+function menus_browser_run_live(string $driverJs, ?array $items = null, array $opts = array()): ?array
+{
+    $chrome = categories_browser_chrome();
+    $pc     = (string) getenv('PUPPETEER_CORE');
+    if ($pc === '') {
+        $found = array_merge(array(ABS_PATH . 'node_modules/puppeteer-core'), glob((string) getenv('HOME') . '/.npm/_npx/*/node_modules/puppeteer-core') ?: array());
+        $found = array_values(array_filter($found, static fn (string $d): bool => is_file($d . '/lib/puppeteer/puppeteer-core.js')));
+        $pc    = (string) ($found[0] ?? '');
+    }
+    $node = trim((string) shell_exec('command -v node 2>/dev/null'));
+    if ($pc === '' || $node === '') {
+        if ((string) getenv('CI') !== '') {
+            check('node and puppeteer-core are available for the real-time run', false, 'run npm ci');
+        }
+        echo "  (skipped: no node or puppeteer-core for the real-time run)\n";
+
+        return null;
+    }
+    $dir = sys_get_temp_dir() . '/osc-menus-live-' . getmypid() . '-' . substr(md5($driverJs . microtime()), 0, 6);
+    @mkdir($dir, 0700, true);
+    file_put_contents($dir . '/page.html', menus_browser_page($items, $opts + array('driver' => $driverJs)));
+    file_put_contents($dir . '/run.mjs', 'const BLINK = ' . json_encode(trim(CATEGORIES_BROWSER_MOUSE)) . ";\n" . <<<'MJS'
+const [pc, chrome, page, width, touch] = process.argv.slice(2);
+const {default: puppeteer} = await import(pc + '/lib/puppeteer/puppeteer-core.js');
+const browser = await puppeteer.launch({executablePath: chrome, headless: true,
+    args: ['--no-sandbox', '--disable-gpu', '--allow-file-access-from-files', '--window-size=' + width + ',900', touch === '1' ? '' : BLINK].filter(Boolean)});
+try {
+    const tab = await browser.newPage();
+    await tab.setViewport({width: +width, height: 900, hasTouch: touch === '1', isMobile: touch === '1'});
+    const cdp = await tab.createCDPSession();
+    await tab.exposeFunction('oscPress', (key) => tab.keyboard.press(key));
+    await tab.exposeFunction('oscTouch', async (steps) => {
+        for (const [type, x, y] of steps) {
+            if (type === 'wait') {
+                await new Promise((done) => setTimeout(done, x));
+                continue;
+            }
+            await cdp.send('Input.dispatchTouchEvent', {
+                type: {start: 'touchStart', move: 'touchMove', end: 'touchEnd'}[type],
+                touchPoints: type === 'end' ? [] : [{x, y}],
+            });
+        }
+    });
+    await tab.goto('file://' + page);
+    await tab.waitForSelector('html[data-done="1"]', {timeout: 60000});
+    process.stdout.write(await tab.$eval('#osc-out', (el) => el.textContent));
+} finally {
+    await browser.close();
+}
+MJS);
+    $out = (string) shell_exec(escapeshellarg($node) . ' ' . escapeshellarg($dir . '/run.mjs') . ' '
+        . escapeshellarg($pc) . ' ' . escapeshellarg($chrome) . ' ' . escapeshellarg($dir . '/page.html')
+        . ' ' . (int) ($opts['width'] ?? 1440) . ' ' . (empty($opts['touch']) ? '0' : '1') . ' 2>&1');
+    shell_exec('rm -rf ' . escapeshellarg($dir));
+    $r = json_decode((string) base64_decode(trim($out), true), true);
+    check('the real-time run produced a reading', is_array($r) && !isset($r['error']), is_array($r) ? (string) ($r['error'] ?? '') : substr($out, 0, 400));
+
+    return is_array($r) ? $r : array();
+}
+
+/**
  * Takes a PNG of the Menus screen. $state names a state in categories-states.js to drive into
  * first ('' = as loaded). Returns false when Chrome made no file.
  *

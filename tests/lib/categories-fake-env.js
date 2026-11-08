@@ -3,7 +3,7 @@
  * logged in window.__calls as {action, method, url, query, body}; array fields such as ids[]
  * are logged as arrays under the bare name. window.__answers[action] is the reply: an object
  * (sent as JSON), a function of the call, or unset ({ok: true}). A reply with __status sets the
- * status; one with __fail makes fetch reject. category_edit_iframe answers from window.__drawers.
+ * status, __delay (ms) holds it back, and __fail makes fetch reject. category_expiry_preview answers {listings: 0, endNow: 0} unless set. category_edit_iframe answers from window.__drawers.
  */
 (function () {
     // Frames do not run reliably under Chrome's virtual time, so a frame is a 16 ms timer.
@@ -82,7 +82,7 @@
         var set = window.__answers[action];
         answer = typeof set === 'function' ? set(call) : set;
         if (answer === undefined) {
-            answer = {ok: true};
+            answer = action === 'category_expiry_preview' ? {listings: 0, endNow: 0} : {ok: true};
         }
         if (answer && answer.__fail) {
             return Promise.reject(new TypeError('Network error'));
@@ -91,6 +91,11 @@
         if (html !== null && window.__answers[action] === undefined) {
             return Promise.resolve(new Response(html, {status: status, headers: {'Content-Type': 'text/html'}}));
         }
-        return Promise.resolve(new Response(JSON.stringify(answer), {status: status, headers: {'Content-Type': 'application/json'}}));
+        var reply = new Response(JSON.stringify(answer), {status: status, headers: {'Content-Type': 'application/json'}});
+        return answer && answer.__delay ? new Promise(function (done) {
+            setTimeout(function () {
+                done(reply);
+            }, answer.__delay);
+        }) : Promise.resolve(reply);
     };
 }());

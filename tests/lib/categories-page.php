@@ -59,7 +59,7 @@ if (!function_exists('osc_current_admin_theme_path')) {
             }
             // The page head as the real header draws it: title, Add category and the help toggle.
             $page = $GLOBALS['categories_page_head'] ?? array();
-            echo '<main class="admin-main"><div id="content-head" class="row"><div class="col">';
+            echo '<main class="admin-main" style="padding-inline:.7rem"><div id="content-head" class="row"><div class="col">';
             osc_admin_page_header((string) ($page['section'] ?? ''), array(
                 'actions' => $page['actions'] ?? array(),
                 'help'    => isset($page['help']),
@@ -97,6 +97,10 @@ if (!class_exists('CategoryForm', false)) {
         public static function expiry_control(int $days, string $prefix, string $name = 'i_expiration_days', bool $posted = true): void
         {
             echo '<div class="cat-exp" data-cat-exp></div>';
+        }
+
+        public static function expiry_posted(string $prefix): void
+        {
         }
     }
 }

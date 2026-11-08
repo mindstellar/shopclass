@@ -26,7 +26,7 @@ require_once __DIR__ . '/lib/categories-browser.php';
 /**
  * Runs one driver body (the inside of an async function taking t) on the static page.
  *
- * @param array<string,mixed> $opts limit (levels), rtl, reduced (prefers-reduced-motion)
+ * @param array<string,mixed> $opts limit (levels), rtl, reduced (prefers-reduced-motion), width
  *
  * @return array<string,mixed>
  */
@@ -74,7 +74,7 @@ function tree_ui_run(string $body, array $opts = array()): array
     $out = (string) shell_exec(escapeshellarg($chrome)
         . ' --headless=new --disable-gpu --no-sandbox --disable-dev-shm-usage --allow-file-access-from-files'
         . CATEGORIES_BROWSER_MOUSE . (!empty($opts['reduced']) ? CATEGORIES_BROWSER_STILL : '')
-        . ' --window-size=1440,900 --user-data-dir=' . escapeshellarg($dir . '/profile')
+        . ' --window-size=' . (int) ($opts['width'] ?? 1440) . ',900 --user-data-dir=' . escapeshellarg($dir . '/profile')
         . ' --virtual-time-budget=30000 --dump-dom ' . escapeshellarg('file://' . $dir . '/page.html') . ' 2>/dev/null');
     shell_exec('rm -rf ' . escapeshellarg($dir));
 
@@ -337,6 +337,31 @@ pin('← is in and → is out in RTL', array(
 ), $r['moves'] ?? null);
 pin('the hint shows ← for in', '←', $r['hint'] ?? null);
 
+echo "The slot sits where a row's label would at each depth\n";
+$align = <<<'JS'
+var rtl = document.documentElement.dir === 'rtl';
+var sign = rtl ? -1 : 1;
+var inl = function (el) { var b = el.getBoundingClientRect(); return rtl ? b.right : b.left; };
+var g = t.drag(handle('Boats'));
+var x0 = g.pos().x;
+var names = ['Vehicles', 'Cars', 'Car Parts'];
+r.align = [];
+for (var d = 0; d < 4; d++) {
+    await g.to(x0 + sign * 24 * (d - 1), g.pos().y, 4);
+    await t.settle(250);
+    var box = slot().querySelector('.tree-slot-box');
+    var cs = getComputedStyle(box);
+    var text = inl(box) + sign * (parseFloat(cs.borderInlineStartWidth) + parseFloat(cs.paddingInlineStart));
+    var ref = d < 3 ? inl(row(names[d]).querySelector('.tree-name')) : inl(row('Car Parts').querySelector('.tree-name')) + sign * 24;
+    r.align.push([depth(), Math.abs(text - ref) <= 2]);
+}
+await g.escape();
+JS;
+foreach (array('LTR' => array(), 'RTL' => array('rtl' => true)) as $dir => $o) {
+    $r = tree_ui_run($align, $o + array('reduced' => true));
+    pin('the slot text starts at the label of a row at depth 0 to 3, ' . $dir, array(array('0', true), array('1', true), array('2', true), array('3', true)), $r['align'] ?? null);
+}
+
 echo "Toast\n";
 $r = tree_ui_run(<<<'JS'
 var n = 0;
@@ -361,7 +386,32 @@ osc.toast('Fourth');
 h.close();
 r.oldHandle = box.hidden;
 JS);
-pin('a toast shows with its labels', array(true, 'status', 'polite', 'First', 'Undo it', 'Close it', true), $r['first'] ?? null);
+$r2 = tree_ui_run(<<<'JS'
+var opener = handle('Jobs');
+opener.focus();
+osc.toast('Moved', {undo: function () {}});
+var box = t.$('.osc-toast');
+r.focusStays = document.activeElement === opener;
+t.$('.osc-toast-undo').focus();
+r.insideNow = box.contains(document.activeElement);
+box.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));
+await t.settle(400);
+r.escClosed = box.hidden;
+osc.toast('Again');
+document.body.focus();
+box.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape', bubbles: true, cancelable: true}));
+r.escOutside = box.hidden;
+JS);
+pin('Esc inside the toast closes it, focus stays put until then', array(true, true, true), array($r2['focusStays'] ?? null, $r2['insideNow'] ?? null, $r2['escClosed'] ?? null));
+$r3 = tree_ui_run(<<<'JS'
+osc.toast('A fairly long note that has to wrap on a phone screen without leaving it', {undo: function () {}});
+await t.settle(400);
+var b = t.$('.osc-toast').getBoundingClientRect();
+var root = document.documentElement;
+r.phone = [Math.round(b.left), Math.round(root.clientWidth - b.right), root.scrollWidth <= root.clientWidth];
+JS, array('width' => 390));
+pin('on a phone the toast is the screen minus a 16 px gutter each side, with no sideways scroll', array(16, 16, true), $r3['phone'] ?? null);
+pin('a toast shows with its labels and is no live region', array(true, null, null, 'First', 'Undo it', 'Close it', true), $r['first'] ?? null);
 pin('it does not take focus', true, $r['focus'] ?? null);
 pin('one toast at a time', 1, $r['one'] ?? null);
 pin('Undo runs the newest action once', 10, $r['n'] ?? null);

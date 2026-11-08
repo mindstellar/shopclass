@@ -37,6 +37,74 @@
             window.__answers.category_delete_preview = {categories: 1 + (+cars.dataset.below || 0), listings: +cars.dataset.listings || 0, queued: false};
             await t.click(t.act('Cars', 'delete'));
         },
+        noresults: async function (t) {
+            await t.type('#cat-q', 'zzq');
+        },
+        'confirm-disable': async function (t) {
+            await t.click(t.act('Vehicles', 'toggle'));
+        },
+        'confirm-delete': async function (t) {
+            var v = t.row('Vehicles');
+            window.__answers.category_delete_preview = {categories: 1 + (+v.dataset.below || 0), listings: +v.dataset.listings || 0, queued: false};
+            await t.click(t.act('Vehicles', 'delete'));
+        },
+        'confirm-bulk-delete': async function (t) {
+            var v = t.row('Vehicles');
+            await t.click(v.querySelector('.cat-disclosure'));
+            await t.tick(t.row('Cars'));
+            await t.tick(v);
+            window.__answers.category_delete_preview = {categories: 1 + (+v.dataset.below || 0), listings: +v.dataset.listings || 0, queued: false};
+            t.$('#cat-bulk').value = 'delete';
+            t.$('#cat-bulk-form').requestSubmit();
+            await t.settle(400);
+        },
+        keyboard: async function (t) {
+            await t.click(t.row('Vehicles').querySelector('.cat-disclosure'));
+            var h = t.row('Cars').querySelector('.cat-handle');
+            h.focus();
+            await t.key(h, 'down');
+            var moved = t.row('Cars').querySelector('.cat-handle');
+            if (moved) {
+                moved.focus();
+            }
+            await t.settle(300);
+        },
+        sheet: async function (t) {
+            await t.click(t.row('Vehicles').querySelector('.cat-more'));
+        },
+        expiry: async function (t) {
+            await t.tick(t.row('Vehicles'));
+            t.$('#cat-bulk').value = 'expiry';
+            t.$('#cat-bulk-form').requestSubmit();
+            await t.settle(400);
+        },
+        'expiry-existing': async function (t) {
+            window.__answers.category_expiry_preview = {listings: 30, endNow: 9};
+            await t.tick(t.row('Vehicles'));
+            t.$('#cat-bulk').value = 'expiry';
+            t.$('#cat-bulk-form').requestSubmit();
+            await t.settle(400);
+            t.$('#catExpiry input[name="cat-bx-choice"][value="30"]').click();
+            await t.settle();
+            var sub = t.$('#cat-bx-sub');
+            if (sub && !sub.checked) {
+                sub.click();
+            }
+            var redate = t.$('#catExpiry input[name="expiry_listings"][value="new"]');
+            if (redate) {
+                redate.click();
+            }
+            await t.settle(600);
+        },
+        'expiry-drawer': async function (t) {
+            window.__answers.category_expiry_preview = {listings: 30, endNow: 4};
+            await t.click(t.act('Vehicles', 'edit'));
+            await t.drawer();
+            t.$('input[name="cat-f-choice"][value="30"]').click();
+            await t.settle();
+            t.$('#cat-f-posted input[value="new"]').click();
+            await t.settle(600);
+        },
         'drawer-addsub-expiry': async function (t) {
             await t.click(t.act('Vehicles', 'addsub'));
             await t.drawer();
@@ -69,7 +137,7 @@
             await t.click(t.row('Tyres - Wheels').querySelector('.cat-disclosure'));
             var g = t.drag(t.row('Cars').querySelector('.cat-handle'));
             await g.to(g.pos().x, t.row('Winter tyres').getBoundingClientRect().bottom - 4, 8);
-            await g.by(100, 0, 6);
+            await g.by(window.innerWidth < 600 ? 48 : 100, 0, 6);
         },
         'drag-keyboard': async function (t) {
             await t.click(t.row('Vehicles').querySelector('.cat-disclosure'));

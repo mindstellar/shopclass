@@ -173,7 +173,7 @@ $kb  = strlen($out) / 1024;
 $gz = strlen((string) gzencode($out, 6)) / 1024;
 echo sprintf("  1500 rows: %d rows, %.0f ms, %.0f KB raw, %.0f KB gzipped\n", substr_count($out, '<tr id="cat-'), $ms, $kb, $gz);
 check('1500 rows render in under 150 ms', $ms < 150);
-// Six text actions per row put the raw size near 1.5 KB a row; gzip is what travels.
-check('1500 rows stay under 2.5 MB raw and 150 KB gzipped', $kb < 2500 && $gz < 150);
+// Six text actions and the phone's ⋯ per row put the raw size near 1.7 KB a row; gzip is what travels.
+check('1500 rows stay under 2.7 MB raw and 150 KB gzipped', $kb < 2700 && $gz < 150);
 
 exit(harness_result());

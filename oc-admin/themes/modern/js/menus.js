@@ -230,13 +230,22 @@
         }
     }
 
+    var warnChanged = false;
+
+    // What a move says: the new position, plus the hidden-items warning when the move changed it.
+    function moved(at) {
+        say(position(at) + (warnChanged && placeWarn && !placeWarn.hidden ? '. ' + placeWarn.textContent : ''));
+    }
+
     function showPlaceWarning() {
         if (!placeWarn || !state.place) {
             return;
         }
         var hidden = items.filter(function (item) { return item.depth >= state.place.depth; }).length;
+        var text = hidden === 0 ? '' : fmt(hidden === 1 ? t.hidden1 : t.hiddenN, hidden);
+        warnChanged = text !== placeWarn.textContent;
         placeWarn.hidden = hidden === 0;
-        placeWarn.textContent = hidden === 0 ? '' : fmt(hidden === 1 ? t.hidden1 : t.hiddenN, hidden);
+        placeWarn.textContent = text;
     }
 
     function render(focusIndex, focusAct) {
@@ -307,12 +316,18 @@
             }
             items.splice(i, 1);
             changed(Math.min(i, items.length - 1));
+            if (items.length === 0) {
+                var firstAdd = root.querySelector('[data-menu-add]:not(:disabled)');
+                if (firstAdd) {
+                    firstAdd.focus();
+                }
+            }
         } else if (act === 'indent' || act === 'outdent') {
             var target = FT.keyTarget(items, i, act === 'indent' ? 'in' : 'out', state.maxDepth);
             if (!target.refused) {
                 var to = FT.moveBlock(items, i, target.at, target.depth);
                 changed(to, act);
-                say(position(to));
+                moved(to);
             }
         } else if (act === 'edit') {
             open = open === items[i] ? null : items[i];
@@ -354,8 +369,8 @@
             hint: [t.hintMove, t.hintIn, t.hintOut],
             commit: function (move) {
                 var at = FT.moveBlock(items, move.from, move.at, move.depth);
-                changed(move.via === 'key' ? at : undefined);
-                say(position(at));
+                changed(at);
+                moved(at);
             },
             cancelled: function (reason, info) {
                 if (reason === 'refused-key' && info) {
@@ -364,8 +379,7 @@
                 } else if (reason === 'deep') {
                     say(fmt(t.tooDeep, state.maxDepth));
                 }
-            },
-            say: say
+            }
         }
     });
 

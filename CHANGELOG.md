@@ -91,6 +91,12 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Shoppers see the products they follow on the Alerts page, each with its product and a Stop button.
 - A theme names its buyer order page as `order_url` in `shopclass.json`, and order e-mails link to it.
 - A plugin installs or turns on only once the plugins it requires are on; a theme's "Install and activate all" gives a plugin a second try when its own requirement came later in the list.
+- **Categories** is a tree table with status tabs, search, bulk actions, **Add subcategory**, **Move to…** and Undo.
+- Deleting a category shows its real subcategory and listing counts, offers **Disable instead**, and the button states the cost.
+- **Set expiry…** can keep listings' end dates or give them new ones, and shows how many would end at once.
+- A theme can declare `osc_add_theme_support('category-depth', N)` to limit how deep categories nest; the admin and the API both enforce it.
+- Categories has a **⋯** actions sheet on phones.
+- `osc.sortable(el, {tree: {…}})`, `osc.flatTree`, `osc.toast(text, {undo, ms})` and `osc.announce(el, text)` are documented for plugin screens.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
@@ -101,6 +107,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
+- Categories and Menus: drag left or right to change nesting, or use the arrow keys on the handle.
+- Saving a category no longer re-dates its listings unless you choose new end dates.
+- Disabling a category now disables every subcategory below it, at any depth.
 - `Field::findByItem()` is deprecated; use `FieldQuery::forItem()`. It still returns hidden fields, so a theme or plugin that prints its values should switch. `Item::metaFields()` now leaves out hidden fields.
 - Plugins and themes no longer show a "Tested up to" warning. Only "Requires Shopclass" and "Requires PHP" are checked.
 - An admin screen's title, its buttons and its icon actions share one header row, and the top bar shows the path ("Settings › Comments"). The phone menu button matches the top bar.

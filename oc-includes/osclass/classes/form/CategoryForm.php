@@ -234,22 +234,36 @@ class CategoryForm extends Form
         echo '</div>';
         echo '<input type="number" min="0" max="999" name="' . osc_esc_html($name) . '" id="' . $p . '-days"'
             . ' class="form-control form-control-sm cat-exp-days" value="' . $days . '"'
-            . ' aria-label="' . osc_esc_html(__('Number of days')) . '"' . ($choice === 'other' ? '' : ' hidden') . '>';
+            . ' aria-label="' . osc_esc_html(__('Expiration (days)')) . '"' . ($choice === 'other' ? '' : ' hidden') . '>';
         echo '</div>';
 
         if ($posted) {
-            echo '<fieldset class="cat-exp-posted" id="' . $p . '-posted" hidden>';
-            echo '<legend>' . osc_esc_html(__('Listings already posted')) . '</legend>';
-            echo '<label class="cat-exp-opt"><input type="radio" name="expiry_listings" value="keep" checked>'
-                . '<span>' . osc_esc_html(__('Keep their end dates')) . '</span></label>';
-            echo '<p class="form-text">' . osc_esc_html(__('Only new and renewed listings use the new expiry.')) . '</p>';
-            echo '<label class="cat-exp-opt"><input type="radio" name="expiry_listings" value="new">'
-                . '<span data-cat-redate>' . osc_esc_html(__('Give them new end dates')) . '</span></label>';
-            echo '<p class="form-text" data-cat-redate-hint>'
-                . osc_esc_html(__('Each one ends after the new number of days, counted from when it was published.'))
-                . '</p>';
-            echo '</fieldset>';
+            self::expiry_posted($prefix);
         }
+    }
+
+    /**
+     * Echo the "Listings already posted" choice of an expiry control, hidden until the script
+     * shows it. expiry_control() prints it unless told not to, for a form that puts it elsewhere.
+     *
+     * @param string $prefix Id prefix, the same as the control's
+     *
+     * @return void
+     */
+    public static function expiry_posted(string $prefix): void
+    {
+        $p = osc_esc_html($prefix);
+        echo '<fieldset class="cat-exp-posted" id="' . $p . '-posted" hidden>';
+        echo '<legend>' . osc_esc_html(__('Listings already posted')) . '</legend>';
+        echo '<label class="cat-exp-opt"><input type="radio" name="expiry_listings" value="keep" checked>'
+            . '<span>' . osc_esc_html(__('Keep their end dates')) . '</span></label>';
+        echo '<p class="form-text">' . osc_esc_html(__('Only new and renewed listings use the new expiry.')) . '</p>';
+        echo '<label class="cat-exp-opt"><input type="radio" name="expiry_listings" value="new">'
+            . '<span data-cat-redate>' . osc_esc_html(__('Give them new end dates')) . '</span></label>';
+        echo '<p class="form-text" data-cat-redate-hint>'
+            . osc_esc_html(__('Each one ends after the new number of days, counted from when it was published.'))
+            . '</p>';
+        echo '</fieldset>';
     }
 
     /**

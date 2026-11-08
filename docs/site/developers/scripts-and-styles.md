@@ -217,6 +217,56 @@ document.querySelectorAll('.my-tree, .my-tree ul').forEach(function (ul) {
 });
 ```
 
+### Trees: `tree` mode
+
+A list of rows with a depth each, such as Categories and Menus, runs on the admin's own pointer
+and keyboard code, not SortableJS. Pass `tree` and `osc.sortable` returns a controller instead
+(`null` if `tree-drag.js` is not loaded):
+
+```js
+var drag = osc.sortable(tbodyOrList, {
+    handle: '.my-handle',            // default [data-tree-handle]
+    tree: {
+        rows: 'li.item',             // selector for one row
+        depth: function (row) { return +row.dataset.depth; },   // 0-based
+        maxLevels: 3,                // 0 or missing = no limit
+        label: function (parentRow) { return parentRow ? 'Inside ' + name(parentRow) : 'Top level'; },
+        tooDeep: 'Too deep',         // slot text when a drop would pass maxLevels
+        ghost: function (row, below) { return {name: name(row), more: below ? '+ ' + below : ''}; },
+        canMove: function () { return true; },          // false turns dragging and keys off
+        isCollapsed: function (row) { return false; },  // with open(row): hover opens a group
+        open: function (row) {},
+        indent: null,                // pixels per level, or null to measure
+        slotOffset: function () { return 0; },          // extra inline-start space, in pixels
+        keys: true,                  // arrow keys on the handle
+        hint: ['move up or down', 'put under the item above', 'move out'],
+        commit: function (move) {},  // move = {el, from, at, depth, parentEl, index, via}
+        cancelled: function (reason, info) {}
+    }
+});
+```
+
+`commit` runs after a drop or a key move and must reorder the rows itself; it may return a
+promise, which a following move waits for. Put the rows back yourself if saving fails. `via` is `'drag'` or `'key'`. The controller has
+`cancel()`, `refresh()`, `destroy()` and a read-only `dragging`.
+
+The rules for the list live in `osc.flatTree`, which works on a pre-order array of objects with a
+0-based `depth`: `blockEnd(items, i)`, `height(items, i)`, `range`, `parentAt`, `fits`,
+`clamp(items, maxLevels)`, `moveBlock(items, from, at, depth)`, `keyTarget`, `siblingIndex` and
+`position`. Use it to keep your data in step with the rows.
+
+## Toasts and announcements
+
+`osc.toast(text, {undo, ms})` shows one short note at the foot of the screen. A new toast replaces
+the old one. `undo` is a function; it adds an **Undo** button that runs it once. `ms` is how long
+it stays (default 7000). A toast never takes focus, stays while the pointer or focus is on it, and
+closes with **Esc** from inside. It returns `{close}`. Set the button texts once per screen with
+`osc.toast.labels({undo: 'Undo', close: 'Close'})`.
+
+The toast is not a live region, so it does not speak. Say the result with
+`osc.announce(el, text)` on a screen-reader-only element that has `role="status"`
+(`aria-live="polite"`). Calling it twice with the same text still speaks twice.
+
 ## Bootstrap's JavaScript
 
 The admin does not load Bootstrap's JavaScript. A plugin that still uses `data-bs-toggle`

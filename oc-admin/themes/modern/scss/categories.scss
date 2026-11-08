@@ -1093,6 +1093,35 @@
   }
 }
 
+.cat-intro {
+  color: var(--osc-ink-muted);
+  margin: 0 0 1rem;
+  max-inline-size: 46rem;
+}
+
+// Keys and the handle icon in the help panel.
+.cat-k {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: 4px;
+  box-shadow: none;
+  color: var(--osc-ink-emphasis);
+  display: inline-block;
+  font-family: inherit;
+  font-size: .8125rem;
+  min-inline-size: 1.4rem;
+  padding: 0 .3rem;
+  text-align: center;
+}
+
+.cat-help-grip {
+  vertical-align: -2px;
+}
+
+.cat-state .cat-state-hint {
+  color: var(--osc-ink-muted);
+}
+
 // ---- The tree table ---------------------------------------------------------
 // One line per category. The name column takes the spare width; the rest shrink to their content.
 .cat-table {
@@ -1195,6 +1224,10 @@
 .cat-row.is-context {
   .cat-name {
     color: var(--osc-ink-muted);
+  }
+
+  .cat-more {
+    display: none;
   }
 
   .cat-actions {
@@ -1363,6 +1396,12 @@
   }
 }
 
+// A Latin name in a right-to-left admin still lines up with its row, not with its own text.
+.cat-name-line:dir(rtl) > .cat-name,
+.cat-sheet:dir(rtl) > .cat-sheet-title {
+  text-align: right;
+}
+
 .cat-row[data-depth="1"] .cat-name {
   font-weight: 600;
 }
@@ -1391,6 +1430,90 @@
   font-size: $font-size-label;
   margin: 0;
   padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + var(--cat-handle) + var(--cat-chev) + .25rem);
+}
+
+// The phone's row menu button; wider screens have the text actions instead.
+.cat-more {
+  align-items: center;
+  background: none;
+  border: 0;
+  border-radius: 4px;
+  color: var(--osc-ink-muted);
+  display: none;
+  flex: 0 0 auto;
+  font-size: 1.15rem;
+  justify-content: center;
+  margin-inline-start: auto;
+
+  &:hover {
+    background-color: var(--osc-bench-sunk);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
+}
+
+// The sheet the phone's ⋯ opens: the row's name, its actions, Delete after a rule, Cancel.
+.cat-sheet {
+  inline-size: min(22rem, calc(100vw - 2rem));
+}
+
+.cat-sheet-title {
+  color: var(--osc-heading);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  margin: 0;
+  padding: 1rem 1.25rem .5rem;
+}
+
+.cat-sheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 .5rem .5rem;
+
+  button {
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    color: var(--osc-ink);
+    font: inherit;
+    inline-size: 100%;
+    min-block-size: 2.875rem;
+    padding: .5rem .75rem;
+    text-align: start;
+
+    &:hover:not(:disabled) {
+      background-color: var(--osc-bench-sunk);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: -2px;
+    }
+
+    &:disabled {
+      color: var(--osc-ink-muted);
+      cursor: not-allowed;
+      opacity: .6;
+    }
+  }
+
+  .cat-sheet-danger {
+    color: var(--osc-danger);
+  }
+
+  .cat-sheet-cancel {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.cat-sheet-sep {
+  background-color: var(--osc-rule);
+  block-size: 1px;
+  margin: .3rem .75rem;
 }
 
 // ---- Row actions -------------------------------------------------------------
@@ -1562,6 +1685,127 @@
   .cat-exp-posted {
     margin-block-end: 1rem;
   }
+
+  .cat-exp-now {
+    color: var(--osc-ink-muted);
+    font-size: $font-size-label;
+    margin: 0 0 .6rem;
+
+    strong {
+      color: var(--osc-ink);
+      font-variant-numeric: tabular-nums;
+      font-weight: 600;
+    }
+  }
+
+  .cat-bx-sub {
+    margin-block-end: 1rem;
+  }
+}
+
+// The live "N listings end today." line: a fact with the dialogs' warning mark.
+.categories-app .cat-exp-warn {
+  align-items: flex-start;
+  color: var(--osc-ink);
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  gap: .5rem;
+  margin-block-start: .6rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  > i {
+    color: var(--osc-danger);
+    flex: 0 0 1rem;
+    font-size: .95rem;
+    line-height: 1;
+    margin-block-start: .2rem;
+  }
+}
+
+// What a confirm costs, one fact per line: red for what is lost, green for what is safe.
+.osc-dialog-facts {
+  display: grid;
+  gap: .5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+
+  &[hidden] {
+    display: none;
+  }
+
+  li {
+    align-items: flex-start;
+    color: var(--osc-ink-muted);
+    display: flex;
+    gap: .6rem;
+    line-height: 1.45;
+
+    > i,
+    > .cat-fact-dot {
+      flex: 0 0 1rem;
+      margin-block-start: .2rem;
+    }
+
+    > i {
+      font-size: .95rem;
+      line-height: 1;
+    }
+
+    &.is-bad > i {
+      color: var(--osc-danger);
+    }
+
+    &.is-ok > i {
+      color: var(--osc-success);
+    }
+  }
+
+  .cat-fact-dot {
+    align-items: center;
+    block-size: 1rem;
+    display: inline-flex;
+    justify-content: center;
+
+    &::before {
+      background-color: var(--osc-ink-muted);
+      border-radius: 50%;
+      content: "";
+      block-size: .3rem;
+      inline-size: .3rem;
+    }
+  }
+}
+
+.cat-confirm-aside {
+  align-items: center;
+  background-color: var(--osc-bench-sunk);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  display: flex;
+  gap: .9rem;
+  justify-content: space-between;
+  margin-block-start: 1rem;
+  padding: .7rem .85rem;
+
+  &[hidden] {
+    display: none;
+  }
+
+  p {
+    color: var(--osc-ink-muted);
+    flex: 1 1 auto;
+    font-size: $font-size-label;
+    margin: 0;
+  }
+
+  .btn {
+    flex: 0 0 auto;
+  }
 }
 
 // The slide-over drawer (.cat-drawer) is the shared .osc-drawer in ui-patterns.scss.
@@ -1722,7 +1966,8 @@
   }
 }
 
-.cat-exp .cat-exp-days {
+.cat-exp .cat-exp-days,
+.iframe-category .cat-exp .cat-exp-days {
   inline-size: 7rem;
   margin-block-start: .55rem;
 }
@@ -1782,6 +2027,38 @@
 
   .cat-row.is-selected {
     outline: 2px solid Highlight;
+  }
+
+  // Tints and colour cues are dropped in this mode, so states fall back to system colours and lines.
+  .cat-table mark {
+    background-color: Mark;
+    color: MarkText;
+  }
+
+  .cat-row.is-disabled .cat-name,
+  .cat-row.is-context .cat-name,
+  .cat-off {
+    color: GrayText;
+  }
+
+  .cat-row.is-editing .cat-name,
+  .cat-row.is-drop-parent .cat-name {
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+  }
+
+  .cat-sheet-sep,
+  .cat-table .cat-actions .cat-actions-gap {
+    background-color: CanvasText;
+  }
+
+  .cat-table .cat-actions {
+    background-image: none;
+    background-color: Canvas;
+  }
+
+  .cat-handle[aria-disabled="true"] {
+    color: GrayText;
   }
 }
 
@@ -1865,8 +2142,16 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .cat-disclosure > i {
+  .cat-disclosure > i,
+  .cat-table .cat-actions,
+  .cat-handle {
     transition: none;
+  }
+
+  // The new row keeps a still tint for as long as the wash would have run.
+  .cat-row.is-flash > * {
+    animation: none;
+    box-shadow: inset 0 0 0 9999px var(--osc-bronze-tint);
   }
 }
 
@@ -1889,6 +2174,23 @@
     --cat-handle: 1.6rem;
     --cat-indent: 1.1rem;
     --cat-pad-x: .25rem;
+  }
+
+  // The toolbar reads search, bulk actions, then Expand all and Collapse all on a line of their own.
+  .cat-tree-tools {
+    flex: 1 1 100%;
+    order: 1;
+  }
+
+  .cat-sheet {
+    border-end-end-radius: 0;
+    border-end-start-radius: 0;
+    border-block-end-width: 0;
+    inline-size: 100vw;
+    margin-block-end: 0;
+    margin-inline: 0;
+    max-inline-size: 100vw;
+    padding-block-end: env(safe-area-inset-bottom);
   }
 
   .cat-search {
@@ -1938,6 +2240,7 @@
 
     > tbody > tr > .col-name {
       grid-column: 2;
+      grid-row: 1;
     }
 
     > tbody > tr > .col-subs,
@@ -1947,7 +2250,9 @@
     }
 
     > tbody > tr > .col-status {
+      border-block-end: var(--bs-border-width) solid var(--bs-border-color);
       grid-column: 2;
+      grid-row: 2;
       inline-size: auto;
       padding-block: 0 .65rem;
       padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + var(--cat-handle) + var(--cat-chev) + .3rem);
@@ -1961,19 +2266,21 @@
       display: block;
     }
 
-    .cat-actions {
-      ul {
-        gap: .25rem .9rem;
-      }
+    // The text actions give way to the ⋯ sheet; the shared table's own td > div.actions rule is matched in weight.
+    &.cat-table td > div.cat-actions {
+      display: none;
+    }
 
-      button {
-        padding-block: .3rem;
-      }
+    .cat-more {
+      display: inline-flex;
+      block-size: 2.875rem;
+      inline-size: 2.875rem;
+      margin-block: -.5rem;
     }
 
     // On a phone the handle stays at the row start, where a thumb finds it; the indent follows it.
     .cat-name-line {
-      flex-wrap: wrap;
+      flex-wrap: nowrap;
       padding-inline-start: 0;
     }
 

@@ -162,15 +162,15 @@ r.seq3 = seq(n);
 r.leafStill = off('Other Vehicles');
 JS, $demo);
 pin('Boats was off first', true, $r['boatsOff'] ?? null);
-pin('Disable shows a toast with Undo', array(true, true, array('Vehicles: Disabled', true)), $r['all'] ?? null);
+pin('Disable shows a toast with Undo', array(true, true, array('Disabled Vehicles and 10 subcategories.', true)), $r['all'] ?? null);
 pin('Undo enables Vehicles, then disables only the rows that were off', array('enable_category id=' . $i('Vehicles') . ' enabled=1', 'category_bulk do=disable ids=' . $i('Boats - Ships')), $r['seq'] ?? null);
 pin('Vehicles and its subcategories are on again; Boats stays off', array(false, false, true, false), $r['states'] ?? null);
 pin('the Disabled tab counts the rows still off', '9', $r['tab'] ?? null);
-pin('Enable shows Undo', array(false, array('Jobs: Enabled', true)), $r['enabled'] ?? null);
+pin('Enable shows Undo', array(false, array('Enabled Jobs and 21 subcategories.', true)), $r['enabled'] ?? null);
 pin('Undo of enable disables it again, one request', array('enable_category id=' . $i('Jobs') . ' enabled=0'), $r['seq2'] ?? null);
 pin('and the rows below are off with it', array(true, true), $r['jobs'] ?? null);
-pin('a leaf with no listings disables at once and offers Undo', array(true, array('Other Vehicles: Disabled', true)), $r['leaf'] ?? null);
-pin('a second action replaces the toast', array('Classes: Disabled', true), $r['replaced'] ?? null);
+pin('a leaf with no listings disables at once and offers Undo', array(true, array('Disabled Other Vehicles.', true)), $r['leaf'] ?? null);
+pin('a second action replaces the toast', array('Disabled Classes and 5 subcategories.', true), $r['replaced'] ?? null);
 pin('and Undo then undoes only the second', array('enable_category id=' . $i('Classes') . ' enabled=1'), $r['seq3'] ?? null);
 pin('the first change stays', true, $r['leafStill'] ?? null);
 
@@ -209,6 +209,17 @@ r.expBack = t.row('Vehicles').querySelector('.col-expiry').textContent;
 
 await t.tick(t.row('Vehicles'));
 await bulk('expiry');
+t.$('#cat-bx-sub').click();
+t.$('#catExpiry input[name="cat-bx-choice"][value="30"]').click();
+await t.settle();
+t.$('#catExpiryForm').requestSubmit();
+await t.settle(500);
+n = seq().length;
+await undo();
+r.seq3 = seq(n);
+
+await t.tick(t.row('Vehicles'));
+await bulk('expiry');
 t.$('#catExpiry input[name="cat-bx-choice"][value="30"]').click();
 await t.settle();
 t.$('#cat-bx-posted input[value="new"]').click();
@@ -223,6 +234,7 @@ pin('the order and both totals are back', array(true, true, true), $r['back'] ??
 pin('Set expiry with the end dates kept offers Undo', array('After 30 days', true), array(($r['exp'][0] ?? null), ($r['exp'][1][1] ?? null)));
 pin('Undo posts the old value for each group, end dates kept', array('category_bulk do=expiry days=60 expiry_listings=keep ids=' . $i('Vehicles')), $r['seq2'] ?? null);
 pin('the cell shows the old value again', 'After 60 days', $r['expBack'] ?? null);
+pin('Undo with subcategories sends the parent apart from its children, one request per level', array('category_bulk do=expiry days=60 expiry_listings=keep ids=' . $i('Vehicles'), 6), array($r['seq3'][0] ?? null, count($r['seq3'] ?? array())));
 pin('new end dates for posted listings offer no Undo', false, $r['fresh'][1] ?? null);
 
 harness_section('Undo a bulk disable and a bulk Move to…');

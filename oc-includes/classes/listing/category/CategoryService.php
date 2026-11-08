@@ -343,7 +343,34 @@ final class CategoryService
         $all      = $this->targets($tree, $tree->topMost($this->known($tree, $ids)), true);
         $listings = $all === [] ? 0 : ListingStore::countInCategories($all);
 
-        return ['categories' => count($all), 'listings' => $listings, 'queued' => $listings > CategoryJobs::INLINE_LIMIT];
+        return ['categories' => count($all), 'listings' => $listings, 'queued' => self::queues($listings)];
+    }
+
+    /**
+     * What setting $days on these categories would do to their listings: how many sit in the
+     * reach (everything below too when $toSubcategories) and how many live ones would end at
+     * once under new end dates. endNow is null over the inline limit.
+     *
+     * @param int[] $ids
+     *
+     * @return array{listings:int,endNow:int|null}
+     */
+    public function expiryPreview(array $ids, int $days, bool $toSubcategories): array
+    {
+        $tree    = $this->tree();
+        $targets = $this->targets($tree, $tree->topMost($this->known($tree, $ids)), $toSubcategories);
+        if ($targets === []) {
+            return ['listings' => 0, 'endNow' => 0];
+        }
+        $listings = ListingStore::countInCategories($targets);
+        if ($days <= 0) {
+            return ['listings' => $listings, 'endNow' => 0];
+        }
+        if (self::queues($listings)) {
+            return ['listings' => $listings, 'endNow' => null];
+        }
+
+        return ['listings' => $listings, 'endNow' => ListingStore::countEndingInCategories($targets, $days)];
     }
 
     /**
@@ -386,7 +413,7 @@ final class CategoryService
             return $out;
         }
 
-        $queue    = $action === 'delete' && ListingStore::countInCategories($this->targets($tree, $top, true)) > CategoryJobs::INLINE_LIMIT;
+        $queue    = $action === 'delete' && self::queues(ListingStore::countInCategories($this->targets($tree, $top, true)));
         $parent   = isset($args['parent']) && (int) $args['parent'] > 0 ? (int) $args['parent'] : null;
         $position = (int) ($args['position'] ?? 0);
         $error    = $action === 'delete' ? __('An error occurred while deleting') : __('An error occurred while updating');
@@ -487,7 +514,7 @@ final class CategoryService
         }
 
         $listings = ListingStore::countInCategories($targets);
-        if ($listings > CategoryJobs::INLINE_LIMIT) {
+        if (self::queues($listings)) {
             if (!CategoryJobs::requestExpiry($targets, $days)) {
                 throw new \RuntimeException('The new end dates could not be queued.');
             }
@@ -502,6 +529,14 @@ final class CategoryService
         }
 
         return [['categories' => count($targets), 'listings' => $listings, 'queued' => false], $targets];
+    }
+
+    /**
+     * Whether work over this many listings goes to a job instead of running now.
+     */
+    private static function queues(int $listings): bool
+    {
+        return $listings > CategoryJobs::INLINE_LIMIT;
     }
 
     /**

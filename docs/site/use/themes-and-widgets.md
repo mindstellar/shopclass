@@ -122,8 +122,13 @@ Admins only; moderators cannot edit menus.
   its feature is switched off. A link needs a label and an
   address starting with `http://`, `https://` or `/`. Category and page items use
   their own name unless you give them a label.
-- **Arrange.** Drag the handle, or focus it and use the arrow keys: up and down
-  move the item, right puts it under the item above, left moves it out. Items nest
+- **Arrange.** Drag the handle. A dashed slot shows where the item will land and
+  says **Inside** another item or **Top level**. Drag up or down to pick the place
+  and left or right to change the level: right puts it under the item above, left
+  moves it out. An item moves with the items under it. **Esc** cancels, and on a
+  phone you press and hold the handle first. With a keyboard, focus the handle:
+  up and down move the item, right puts it under the item above, left moves it
+  out (the arrows swap in right-to-left languages). Each move is announced. Items nest
   up to three levels, and a menu holds at most 200 items. A category you switch off,
   or a page you delete, drops out of the menu with the items under it.
 - **Labels in each language.** With more than one language, the pencil opens a

@@ -80,14 +80,6 @@ msgstr[1] ""
 msgid "%1$s (%2$d short)"
 msgstr ""
 
-#: oc-admin/themes/modern/categories/index.php
-msgid ""
-"%1$s Drag a row by its handle: up or down to reorder it, right to put it "
-"under the category above, left to move it out. On a phone, press and hold "
-"the handle first. With a keyboard, focus the handle and use the arrow keys. "
-"Or use %2$s."
-msgstr ""
-
 #: oc-admin/themes/modern/settings/locations/preview.php
 msgid "%1$s and %2$s stay as they are."
 msgstr ""
@@ -124,6 +116,15 @@ msgstr ""
 msgid "%1$s does not say it works with %2$s. It may still work; %3$s."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid ""
+"%1$s drag the %2$s handle up or down; while dragging, move it right to put "
+"it under the category above, or left to move it out. On a phone, press and "
+"hold the handle first. With a keyboard, focus the handle: %3$s move it, %4$s "
+"puts it under the category above, %5$s moves it out of its group. Or use "
+"%6$s."
+msgstr ""
+
 #: oc-includes/osclass/functions.php
 msgid "%1$s in %2$s"
 msgstr ""
@@ -138,6 +139,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "%1$s is already last in %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%1$s is inside %2$s, so it is counted once."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -239,10 +244,6 @@ msgstr ""
 
 #: oc-includes/classes/market/PluginDependencies.php
 msgid "%1$s version %2$s"
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid "%1$s · %2$s"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -375,8 +376,8 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "%d category shown."
-msgid_plural "%d categories shown."
+msgid "%d category matches “%s”."
+msgid_plural "%d categories match “%s”."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -428,6 +429,7 @@ msgid_plural "%d database updates are waiting."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/categories/index.php
 #: oc-includes/osclass/classes/form/CategoryForm.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d day"
@@ -526,6 +528,26 @@ msgid_plural "%d listings"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "%d listing ends today."
+msgid_plural "%d listings end today."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%d listing is deleted, along with any expired or unapproved ones."
+msgid_plural ""
+"%d listings are deleted, along with any expired or unapproved ones."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%d listing stops showing on your site, and sellers can't post here."
+msgid_plural ""
+"%d listings stop showing on your site, and sellers can't post here."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "%d mile"
 msgid_plural "%d miles"
@@ -541,6 +563,22 @@ msgstr[1] ""
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "%d more change"
 msgid_plural "%d more changes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid ""
+"%d of the selected is inside another selected category, so it is counted "
+"once."
+msgid_plural ""
+"%d of the selected are inside other selected categories, so each is counted "
+"once."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%d of them changes."
+msgid_plural "%d of them change."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -580,6 +618,12 @@ msgstr ""
 #: oc-includes/classes/admin/ui/Picker.php
 msgid "%d subcategory"
 msgid_plural "%d subcategories"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "%d subcategory differs from this one now."
+msgid_plural "%d subcategories differ from this one now."
 msgstr[0] ""
 msgstr[1] ""
 
@@ -1593,6 +1637,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/credits.php
 #: oc-admin/themes/modern/billing/packages.php
+#: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/messages/index.php
 #: oc-admin/themes/modern/parts/market.php
@@ -3811,6 +3856,10 @@ msgstr ""
 msgid "Check the host."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Check the spelling, or search for part of the name."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-database.php
 msgid "Check the table prefix."
 msgstr ""
@@ -4058,6 +4107,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/cache.php
 msgid "Clear the cache"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Clear the search and status filter to reorder."
 msgstr ""
 
 #: oc-includes/osclass/classes/form/ItemForm.php
@@ -5168,7 +5221,18 @@ msgstr ""
 msgid "Delete \"%s\"?"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Delete %1$s and %2$s"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Delete %d selected category?"
+msgid_plural "Delete %d selected categories?"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/appearance/widgets.php
+#: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "Delete %s"
 msgstr ""
@@ -5368,6 +5432,10 @@ msgstr ""
 msgid "Delete your account"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Deleted %s."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/index.php
 msgid "Deleted user"
 msgstr ""
@@ -5507,6 +5575,16 @@ msgid "Disable"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
+msgid "Disable %d selected category?"
+msgid_plural "Disable %d selected categories?"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Disable %s"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
 msgid "Disable %s?"
 msgstr ""
 
@@ -5522,6 +5600,10 @@ msgstr ""
 msgid "Disable (website)"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Disable instead"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/maintenance.php
 msgid "Disable maintenance mode"
 msgstr ""
@@ -5533,6 +5615,14 @@ msgstr ""
 #: oc-admin/themes/modern/settings/api.php
 #: oc-includes/classes/core/utility/SystemInfo.php
 msgid "Disabled"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Disabled %1$s and %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Disabled %s."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
@@ -5793,6 +5883,12 @@ msgstr ""
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Each one adjusts from 2 to 20 kg. Space saving and easy to change."
 msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Each one ends %d day after it was published."
+msgid_plural "Each one ends %d days after it was published."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/form/CategoryForm.php
 msgid ""
@@ -6074,6 +6170,14 @@ msgstr ""
 msgid "Enabled"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Enabled %1$s and %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Enabled %s."
+msgstr ""
+
 #: oc-admin/themes/modern/languages/index.php
 msgid "Enabled (oc-admin)"
 msgstr ""
@@ -6209,6 +6313,14 @@ msgstr ""
 msgid "Every browser and app this user is signed in on is signed out."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Every category is disabled, so sellers cannot post."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Every category is showing on your site."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/wallet.php
 msgid "Every change to this balance is written down here and never edited, "
 msgstr ""
@@ -6316,6 +6428,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "Expand all"
+msgstr ""
+
+#: oc-includes/osclass/classes/form/CategoryForm.php
+msgid "Expiration (days)"
 msgstr ""
 
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -7825,6 +7941,18 @@ msgstr ""
 msgid "It filtered on a condition added by a plugin or theme."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "It has no listings now. New listings get it from now on."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "It has no listings. Any expired or unapproved ones are deleted."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "It has no listings. Sellers can't post here while it is disabled."
+msgstr ""
+
 #: oc-includes/classes/search/AlertStore.php
 msgid "It held a value that could not be read safely."
 msgstr ""
@@ -7859,6 +7987,10 @@ msgstr ""
 
 #: oc-includes/classes/search/AlertStore.php
 msgid "It searched tables added by a plugin or theme."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "It stays hidden until %s is enabled."
 msgstr ""
 
 #: oc-includes/classes/backup/BackupService.php
@@ -7903,18 +8035,24 @@ msgstr ""
 msgid "Items removed per batch"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Its %d subcategory is deleted too."
+msgid_plural "Its %d subcategories are deleted too."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Its %d subcategory is disabled too."
+msgid_plural "Its %d subcategories are disabled too."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/classes/search/AlertStore.php
 msgid "Its location or user filter was in an unknown form."
 msgstr ""
 
 #: oc-includes/classes/search/AlertStore.php
 msgid "Its saved search could not be read."
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid ""
-"Its subcategories are disabled too. Nothing is deleted. You can enable it "
-"again at any time."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/media-picker.php
@@ -8666,6 +8804,25 @@ msgstr ""
 msgid "Listings already posted"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Listings already posted got new end dates."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Listings already posted got new end dates; %d listing ended today."
+msgid_plural ""
+"Listings already posted got new end dates; %d listings ended today."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Listings already posted keep their end dates."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Listings already posted no longer have end dates."
+msgstr ""
+
 #: oc-includes/classes/admin/ajax/CategoryAjax.php
 msgid "Listings are getting new end dates in the background."
 msgstr ""
@@ -8688,6 +8845,14 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php
 #: oc-includes/osclass/classes/form/CategoryForm.php
 msgid "Listings expire"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Listings in %1$s now expire after %2$s."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Listings in %s now never expire."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/iframe.php
@@ -9477,6 +9642,10 @@ msgstr ""
 msgid "Missing: remove it"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Mixed (%s)"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Mobile Phones"
 msgstr ""
@@ -10143,6 +10312,10 @@ msgid "No category matches that."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
+msgid "No category matches “%1$s” in %2$s"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
 msgid "No category matches “%s”"
 msgstr ""
 
@@ -10210,10 +10383,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/logs.php
 msgid "No entries match your filter."
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid "No expiry"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/security.php
@@ -10502,6 +10671,10 @@ msgstr ""
 msgid "None declared"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "None of them change."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 msgid "None yet"
 msgstr ""
@@ -10633,6 +10806,10 @@ msgstr ""
 msgid "Nothing here yet"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Nothing is deleted. You can enable it again at any time."
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 msgid ""
 "Nothing is sent to the payment provider. Refund the money there, this "
@@ -10734,6 +10911,10 @@ msgstr ""
 msgid "Now in %1$s, %2$d of %3$d."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Now: %s"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/documents.php
 #: oc-admin/themes/modern/billing/order.php
 msgid "Number"
@@ -10743,10 +10924,6 @@ msgstr ""
 msgid ""
 "Number of URLs per XML item sitemap file. Extra listings roll into "
 "additional "
-msgstr ""
-
-#: oc-includes/osclass/classes/form/CategoryForm.php
-msgid "Number of days"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/frm.php
@@ -12811,10 +12988,6 @@ msgstr ""
 msgid "Reorder field: use the arrow keys"
 msgstr ""
 
-#: oc-admin/themes/modern/categories/index.php
-msgid "Reordering is off while a filter is on."
-msgstr ""
-
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid "Repair"
 msgstr ""
@@ -13614,10 +13787,6 @@ msgstr ""
 msgid "Searches use the slower queries until a rebuild finishes."
 msgstr ""
 
-#: oc-admin/themes/modern/categories/index.php
-msgid "Searching for “%s”."
-msgstr ""
-
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Seasonal"
 msgstr ""
@@ -13890,6 +14059,12 @@ msgstr ""
 msgid "Seller name"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid ""
+"Sellers file each listing under one of these. Drag a row by its handle, or "
+"focus the handle and use the arrow keys, to change the order."
+msgstr ""
+
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid "Selling on this site"
 msgstr ""
@@ -14057,7 +14232,21 @@ msgid "Set a backups bucket"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
+msgid "Set expiry for %d category"
+msgid_plural "Set expiry for %d categories"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Set expiry for %s"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
 msgid "Set expiry…"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Set on %s"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
@@ -14452,20 +14641,24 @@ msgstr ""
 msgid "Showing %1$s–%2$s of %3$s"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Showing %d disabled category."
+msgid_plural "Showing %d disabled categories."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Showing %d enabled category."
+msgid_plural "Showing %d enabled categories."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hPagination.php
 msgid "Showing %s to %s of %s results"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hPagination.php
 msgid "Showing %s to %s of %s results (filtered from %s total results)"
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid "Showing disabled categories only."
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid "Showing enabled categories only."
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
@@ -16167,6 +16360,14 @@ msgstr ""
 msgid "The work they were going to do will never happen. This can't be undone."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "Their end dates are removed, so they stay up until taken down."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Their groups are shown in grey. Clear the search and filter to reorder."
+msgstr ""
+
 #: oc-includes/classes/core/install/ShopSetup.php
 #: oc-includes/classes/market/Installer.php
 msgid "Theme installed."
@@ -16272,6 +16473,14 @@ msgid ""
 "These stopped retrying. Fix the cause the reason names, then try them again."
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "They all match this one now."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "They have no listings now. New listings get it from now on."
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid ""
 "They still show on those listings, but you can only manage them once they "
@@ -16301,24 +16510,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php
 msgid "This admin signs in with a code from an authenticator app."
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid ""
-"This also deletes every listing in it, including expired and unapproved "
-"ones. This cannot be undone."
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid ""
-"This also deletes every listing in them, including expired and unapproved "
-"ones. This cannot be undone."
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid ""
-"This also deletes its subcategories and every listing in them, including "
-"expired and unapproved ones. This cannot be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/admins/sign_out_all.php
@@ -16370,6 +16561,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "This can take a moment on a large category."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "This can't be undone."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -16705,6 +16900,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
 msgid "This widget cannot be placed in that section."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "Those categories are already disabled."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/frm.php
@@ -18071,6 +18270,12 @@ msgstr ""
 msgid "Waiting to start"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid ""
+"Want to keep the listings? Disable instead. It hides everything and deletes "
+"nothing."
+msgstr ""
+
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid ""
 "Warm tone and easy to play, good for a beginner. A hard case is included."
@@ -18448,6 +18653,10 @@ msgstr ""
 msgid ""
 "With the Page builder, the page text is edited in the block editor after you "
 "save."
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "With their subcategories, that is %s."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hSearch.php
@@ -18911,6 +19120,12 @@ msgstr ""
 msgid "a removed listing"
 msgstr ""
 
+#: oc-admin/themes/modern/categories/index.php
+msgid "after %d day"
+msgid_plural "after %d days"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "all %d required are installed"
 msgstr ""
@@ -19220,6 +19435,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "never"
+msgstr ""
+
+#: oc-admin/themes/modern/categories/index.php
+msgid "never expire"
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php

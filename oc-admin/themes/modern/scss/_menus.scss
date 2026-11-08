@@ -276,6 +276,15 @@
 @include media-breakpoint-down(md) {
   .menu-items {
     --tree-indent: 1.25rem;
+
+    // Deep menus step in less per level so names keep room.
+    &:has(.menu-item[data-depth="3"]) {
+      --tree-indent: 1rem;
+    }
+
+    &:has(.menu-item[data-depth="5"]) {
+      --tree-indent: .75rem;
+    }
   }
 
   .menu-items .menu-item {

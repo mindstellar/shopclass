@@ -152,7 +152,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
                             <span class="form-card-cats" id="menu-saved-state"><?php echo osc_esc_html($meStatus); ?></span>
                         </div>
                         <span class="form-card-actions">
-                            <span class="form-card-status" id="menu-status" role="status" aria-live="polite"></span>
+                            <span class="form-card-status" id="menu-status"></span>
                         </span>
                     </div>
                     <?php if ($mePlace !== null) { ?>
@@ -161,7 +161,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
                             <p class="menu-help" id="menu-place-hint"><?php echo osc_esc_html($mePlace['hint']); ?></p>
                         <?php } ?>
                         <?php $meBeyond = MenuService::itemsBeyond((array) $menuEditor['items'], $mePlace['depth']); ?>
-                        <p class="menu-warn" id="menu-place-warn" role="status"<?php echo $meBeyond === 0 ? ' hidden' : ''; ?>><?php echo $meBeyond === 0 ? '' : osc_esc_html(sprintf($meBeyond === 1 ? $meState['i18n']['hidden1'] : $meState['i18n']['hiddenN'], $meBeyond)); ?></p>
+                        <p class="menu-warn" id="menu-place-warn"<?php echo $meBeyond === 0 ? ' hidden' : ''; ?>><?php echo $meBeyond === 0 ? '' : osc_esc_html(sprintf($meBeyond === 1 ? $meState['i18n']['hidden1'] : $meState['i18n']['hiddenN'], $meBeyond)); ?></p>
                     <?php } elseif (empty($menuEditor['places'])) { ?>
                         <p class="menu-help" id="menu-no-places"><?php _e('Your theme does not show saved menus by itself. Add the Menu widget to a section to show one.'); ?></p>
                     <?php } ?>

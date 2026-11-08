@@ -226,6 +226,13 @@ final class CategoryAjax extends AjaxHandler
         AjaxResponse::json(CategoryService::make()->deletePreview(self::ids()));
     }
 
+    /** How many listings a new expiry would reach, and how many would end at once. */
+    public function expiryPreview(): void
+    {
+        $days = max(0, Params::getParamInt('days'));
+        AjaxResponse::json(CategoryService::make()->expiryPreview(self::ids(), $days, Params::getParamBool('to_subcategories')));
+    }
+
     public function editPost(): void
     {
         $id                             = Params::getParam('id');

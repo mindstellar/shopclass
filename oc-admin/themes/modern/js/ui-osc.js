@@ -1282,8 +1282,9 @@ osc.sortable = (function () {
 })();
 
 // osc.toast(text, {undo, ms}) — one short note at the foot of the screen, with an optional Undo.
-// A new toast replaces the old one; Undo runs once. It never takes focus. Labels come from the
-// screen once: osc.toast.labels({undo, close}).
+// A new toast replaces the old one; Undo runs once. It never takes focus and is not a live region:
+// the screen speaks the result once through osc.announce. Esc closes it when focus is inside.
+// Labels come from the screen once: osc.toast.labels({undo, close}).
 osc.toast = (function () {
     var labels = {undo: 'Undo', close: 'Close'};
     var box = null;
@@ -1294,6 +1295,7 @@ osc.toast = (function () {
     var undo = null;
     var ms = 7000;
     var current = null;
+    var from = null;
 
     function still() {
         return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1322,8 +1324,6 @@ osc.toast = (function () {
     function build() {
         box = document.createElement('div');
         box.className = 'osc-toast is-leaving';
-        box.setAttribute('role', 'status');
-        box.setAttribute('aria-live', 'polite');
         box.hidden = true;
         var icon = document.createElement('i');
         icon.className = 'bi bi-check-circle-fill osc-toast-icon';
@@ -1349,7 +1349,23 @@ osc.toast = (function () {
         closeBtn.addEventListener('click', close);
         // A toast someone is reading or tabbing through stays until they leave it.
         box.addEventListener('mouseenter', function () { clearTimeout(timer); });
-        box.addEventListener('focusin', function () { clearTimeout(timer); });
+        box.addEventListener('focusin', function (e) {
+            clearTimeout(timer);
+            if (e.relatedTarget && !box.contains(e.relatedTarget)) {
+                from = e.relatedTarget;
+            }
+        });
+        box.addEventListener('keydown', function (e) {
+            if (e.key !== 'Escape') {
+                return;
+            }
+            e.preventDefault();
+            var back = from && from.isConnected ? from : null;
+            close();
+            if (back) {
+                back.focus();
+            }
+        });
         box.addEventListener('mouseleave', function () { if (current) { arm(); } });
         box.addEventListener('focusout', function () { if (current) { arm(); } });
     }
@@ -1359,7 +1375,7 @@ osc.toast = (function () {
         if (!box) {
             build();
         }
-        osc.announce(text, message);
+        text.textContent = message;
         undo = typeof opts.undo === 'function' ? opts.undo : null;
         undoBtn.hidden = !undo;
         undoBtn.textContent = labels.undo;

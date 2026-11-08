@@ -255,6 +255,23 @@ final class ListingStore extends Model
     }
 
     /**
+     * Live listings in these categories that would end at once with an end date $days after
+     * publishing. Premium listings never end, so they are left out.
+     *
+     * @param int[] $categoryIds
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function countEndingInCategories(array $categoryIds, int $days, ?int $now = null): int
+    {
+        $at = date('Y-m-d H:i:s', $now ?? time());
+
+        return ListingStatus::condition(self::table()->whereIn('fk_i_category_id', $categoryIds), [ListingStatus::ACTIVE], $now)
+            ->whereRaw('b_premium = 0 AND DATE_ADD(dt_pub_date, INTERVAL ? DAY) <= ?', [$days, $at])
+            ->count();
+    }
+
+    /**
      * Before these categories are switched off, note the listings in them that are off on their
      * own (a category that is still on), so switching the categories back on leaves them off.
      *

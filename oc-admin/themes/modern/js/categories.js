@@ -49,6 +49,7 @@
             move: app.dataset.moveUrl || '',
             bulk: app.dataset.bulkUrl || '',
             preview: app.dataset.previewUrl || '',
+            expiryPreview: app.dataset.expiryPreviewUrl || '',
             limit: parseInt(app.dataset.depthLimit, 10) || 0
         };
         let I18N = {};
@@ -69,6 +70,8 @@
         const search = document.getElementById('cat-q');
         const filterLine = document.getElementById('cat-filter-line');
         const announcer = document.getElementById('cat-announce');
+        const keyHelp = document.getElementById('cat-key-help');
+        const keyHelpText = keyHelp ? keyHelp.textContent : '';
         const selNote = app.querySelector('.cat-selnote');
         const selCount = app.querySelector('[data-cat-selcount]');
         const footSum = document.getElementById('cat-foot-sum');
@@ -143,6 +146,7 @@
                     below: +d.below || 0,
                     listings: +d.listings || 0,
                     expiry: +d.expiry || 0,
+                    price: d.price === '1',
                     enabled: d.enabled === '1',
                     el: tr,
                     nameEl: nameEl,
@@ -216,11 +220,6 @@
             return out;
         }
 
-        // What a delete or disable reaches: a row's listings are already its subtree total.
-        function subtreeCounts(node) {
-            return {subs: node.below, items: node.listings};
-        }
-
         // --- Row cells ----------------------------------------------------------------------
         function setNum(td, n, nil) {
             if (!td) {
@@ -233,8 +232,26 @@
             }
         }
 
+        // The phone's meta line: subcategories, listings, and the expiry when one is set.
+        function setMeta(node) {
+            const p = node.el.querySelector('.cat-meta');
+            if (!p) {
+                return;
+            }
+            const parts = [];
+            if (node.subs > 0) {
+                parts.push(plural('subcategoriesN', node.subs));
+            }
+            parts.push(node.listings > 0 ? plural('listingsN', node.listings) : I18N.noListings);
+            if (node.expiry > 0) {
+                parts.push(oscFill(I18N.expiryTag, [node.expiry]));
+            }
+            p.textContent = parts.join(' · ');
+        }
+
         function setExpiryCell(node) {
             node.el.dataset.expiry = node.expiry;
+            setMeta(node);
             const td = node.el.querySelector('.col-expiry');
             if (td) {
                 td.textContent = node.expiry > 0 ? plural('daysN', node.expiry) : I18N.never;
@@ -302,6 +319,21 @@
             node.nameEl.textContent = name;
         }
 
+        // Below the top level the name and handle are described as "Inside {parent}": shared words
+        // around the parent's name button, so a rename needs nothing here.
+        function setInside(node) {
+            const inside = node.parent ? 'cat-i1 cat-n-' + node.parent + ' cat-i2' : '';
+            if (inside) {
+                node.nameEl.setAttribute('aria-describedby', inside);
+            } else {
+                node.nameEl.removeAttribute('aria-describedby');
+            }
+            const handle = node.el.querySelector('.cat-handle');
+            if (handle) {
+                handle.setAttribute('aria-describedby', (inside ? inside + ' ' : '') + 'cat-key-help');
+            }
+        }
+
         // Recomputes heights and counts from the kids lists and writes changed ones to the rows.
         function syncRows() {
             for (let i = rows.length - 1; i >= 0; i--) {
@@ -338,6 +370,7 @@
                 }
                 if (+d.parent !== node.parent) {
                     d.parent = node.parent;
+                    setInside(node);
                 }
                 if (+d.height !== node.height) {
                     d.height = node.height;
@@ -349,10 +382,12 @@
                     d.subs = node.subs;
                     setNum(node.el.querySelector('.col-subs'), node.subs, true);
                     setDisclosure(node);
+                    setMeta(node);
                 }
                 if (+d.listings !== node.listings) {
                     d.listings = node.listings;
                     setNum(node.el.querySelector('.col-listings'), node.listings, false);
+                    setMeta(node);
                 }
             });
             totals();
@@ -550,6 +585,7 @@
         let frame = 0;
         let wasFiltering = false;
         let noResult = null;
+        let spokenFilter = '';
 
         function filtering() {
             return state.q !== '' || state.tab !== '';
@@ -598,9 +634,17 @@
             frame = window.requestAnimationFrame(runFilter);
         }
 
+        // Runs fn once the pending filter pass has shown or hidden the rows.
+        function afterFilter(fn) {
+            window.requestAnimationFrame(function () {
+                window.requestAnimationFrame(fn);
+            });
+        }
+
         function runFilter() {
             frame = 0;
             const t0 = performance.now();
+            const focusRow = document.activeElement && tbody ? document.activeElement.closest('tr.cat-row') : null;
             const f = filtering();
             const n = rows.length;
             let matches = 0;
@@ -663,17 +707,21 @@
                 app.querySelectorAll('[data-cat-act="expand-all"], [data-cat-act="collapse-all"]').forEach(function (b) {
                     b.disabled = f;
                 });
+                // Every handle is described by this line, so it gives the reason while they are off.
+                if (keyHelp) {
+                    keyHelp.textContent = f ? I18N.filterReorder : keyHelpText;
+                }
             }
             drawState(f, matches);
             drawFilterLine(f, matches);
             syncSel();
+            if (focusRow && focusRow.hidden) {
+                rescueFocus(byId.get(+focusRow.dataset.id));
+            }
             const ms = performance.now() - t0;
             app.dispatchEvent(new CustomEvent('cat:filtered', {detail: {shown: shown, matches: matches, ms: ms}}));
         }
 
-        function tabSentence() {
-            return state.tab ? (state.tab === 'on' ? I18N.filterOn : I18N.filterOff) : '';
-        }
 
         // The no-results row: Clear search and Add "…" for a search, one quiet line for a tab.
         function drawState(f, matches) {
@@ -686,42 +734,79 @@
                 return;
             }
             const td = tr.firstChild;
+            const tabName = state.tab === 'on' ? I18N.enabled : I18N.disabled;
             if (state.q) {
+                const title = state.tab ? oscFill(I18N.noMatchIn, [state.raw, tabName]) : oscFill(I18N.noMatch, [state.raw]);
                 td.replaceChildren(
-                    el('p', {}, [el('strong', {text: oscFill(I18N.noMatch, [state.raw])})]),
+                    el('p', {}, [el('strong', {text: title})]),
+                    el('p', {class: 'cat-state-hint', text: I18N.noMatchHint}),
                     el('div', {class: 'd-flex flex-wrap gap-2'}, [
                         el('button', {type: 'button', class: 'btn btn-dim btn-sm', 'data-cat-act': 'clear-search', text: I18N.clearSearch}),
                         el('button', {type: 'button', class: 'btn btn-dim btn-sm', 'data-cat-act': 'add-from-search', text: oscFill(I18N.addAs, [state.raw])})
                     ])
                 );
             } else {
-                td.replaceChildren(el('p', {text: state.tab === 'on' ? I18N.emptyOn : I18N.emptyOff}));
+                td.replaceChildren(
+                    el('p', {}, [el('strong', {text: state.tab === 'on' ? I18N.emptyOn : I18N.emptyOff})]),
+                    el('p', {class: 'cat-state-hint', text: state.tab === 'on' ? I18N.allDisabled : I18N.allShowing})
+                );
             }
         }
 
+        // The line is spoken only when the search or tab changed, so it never talks over the result of an action.
         function drawFilterLine(f, matches) {
             if (!filterLine) {
                 return;
             }
+            const key = f ? state.q + '|' + state.tab : '';
+            const speak = key !== spokenFilter;
+            spokenFilter = key;
             if (!f || matches === 0) {
                 filterLine.hidden = true;
-                if (f && state.q) {
+                if (f && state.q && speak) {
                     announce(oscFill(I18N.noMatch, [state.raw]));
                 }
                 return;
             }
-            const text = [
-                plural('filterShown', matches),
-                state.q ? oscFill(I18N.filterSearch, [state.raw]) : '',
-                tabSentence(),
-                I18N.filterNoReorder
-            ].filter(Boolean).join(' ');
+            const lead = state.q
+                ? oscFill(window.osc.plural(I18N.filterMatch, matches), [fmt(matches), state.raw])
+                : plural(state.tab === 'on' ? 'filterTabOn' : 'filterTabOff', matches);
+            const text = lead + ' ' + I18N.filterGrey;
             filterLine.replaceChildren(
                 el('span', {text: text}),
                 el('button', {type: 'button', class: 'btn-link', 'data-cat-act': 'show-all', text: I18N.showAll})
             );
             filterLine.hidden = false;
-            announce(text);
+            if (speak) {
+                announce(text);
+            }
+        }
+
+        // Focus on a row that has gone (deleted, or hidden by a filter) moves to the next shown
+        // row's name, or to the search box after the last row.
+        function nextShown(node, skip) {
+            const at = node ? rows.indexOf(node) : -1;
+            const ok = function (n) {
+                return n.shown && !n.el.hidden && n.el.isConnected && !(skip && skip.has(n.id));
+            };
+            if (at === -1) {
+                return null;
+            }
+            for (let i = at + 1; i < rows.length; i++) {
+                if (ok(rows[i])) {
+                    return rows[i];
+                }
+            }
+            return null;
+        }
+
+        function rescueFocus(node) {
+            const next = nextShown(node, null);
+            if (next) {
+                next.nameEl.focus();
+            } else if (search) {
+                search.focus();
+            }
         }
 
         function clearSearch(focus) {
@@ -820,12 +905,23 @@
             if (redate) {
                 redate.textContent = days === 0 ? I18N.redateNever : I18N.redateNew;
             }
+            const hint = posted.querySelector('[data-cat-redate-hint]');
+            if (hint) {
+                hint.dataset.plain = hint.dataset.plain || hint.textContent;
+                hint.textContent = days === 0 ? I18N.redateHintNever : (days > 0 ? plural('redateHintDays', days) : hint.dataset.plain);
+            }
         }
 
         function onExpiryInput(e) {
             const exp = e.target.closest('[data-cat-exp]');
             if (!exp) {
-                return false;
+                // Keep or new end dates: the live line follows the choice.
+                const posted = e.target.closest('.cat-exp-posted');
+                const owner = posted && posted.parentElement ? posted.parentElement.querySelector('[data-cat-exp]') : null;
+                if (owner) {
+                    refreshEndNow(owner);
+                }
+                return !!owner;
             }
             const field = exp.querySelector('.cat-exp-days');
             if (e.target.type === 'radio' && field) {
@@ -840,12 +936,14 @@
                 }
             }
             syncPosted(exp, exp.dataset.posted !== 'off');
+            refreshEndNow(exp);
             return true;
         }
 
         // --- Drawer -------------------------------------------------------------------------
         let drawerFor = null;
         let drawerSeq = 0;
+        let drawerOpener = null;
 
         const panel = drawer && typeof window.oscDrawer === 'function' ? window.oscDrawer({
             drawer: drawer,
@@ -903,7 +1001,8 @@
             drawerBody.replaceChildren(el('div', {class: 'cat-drawer-loading'}, [
                 el('i', {class: 'bi bi-arrow-repeat', 'aria-hidden': 'true'})
             ]));
-            panel.open(document.activeElement);
+            drawerOpener = opts.opener || document.activeElement;
+            panel.open(drawerOpener);
 
             const url = CFG.edit + '&id=' + (node ? node.id : 0) + (!node && parent ? '&parent_id=' + parent.id : '');
             request(url, undefined, true)
@@ -942,6 +1041,13 @@
                     hint.hidden = text === '';
                 }
             }
+            // The name and description labels come without a for, so they are tied to their fields here.
+            drawerBody.querySelectorAll('.form-controls > label:not([for])').forEach(function (label) {
+                const field = label.nextElementSibling;
+                if (field && field.id && field.matches('input, textarea, select')) {
+                    label.htmlFor = field.id;
+                }
+            });
             const exp = drawerBody.querySelector('[data-cat-exp]');
             if (exp) {
                 // A new category has no listings yet, so there is nothing to keep or re-date.
@@ -958,12 +1064,24 @@
             }
         }
 
+        // The note under "Also apply to its N subcategories" counts the subcategories set differently from the drawer now.
         function syncApplyNote() {
             const box = drawerBody.querySelector('#apply_changes_to_subcategories');
             const note = document.getElementById('cat-apply-note');
-            if (box && note) {
-                note.textContent = box.checked ? I18N.applyOn : I18N.applyOff;
+            if (!box || !note) {
+                return;
             }
+            const node = drawerFor && drawerFor.id ? byId.get(drawerFor.id) : null;
+            const exp = drawerBody.querySelector('[data-cat-exp]');
+            const priceBox = drawerBody.querySelector('#b_price_enabled');
+            const days = exp ? expiryDays(exp) : null;
+            const differ = node ? subtree(node).slice(1).filter(function (n) {
+                return n.expiry !== (days === null ? node.expiry : days) || (priceBox ? n.price !== priceBox.checked : false);
+            }).length : 0;
+            note.textContent = box.checked
+                ? I18N.applyOn + ' ' + (differ ? plural('applyChange', differ) : I18N.applyNoChange)
+                : I18N.applyOff + ' ' + (differ ? plural('applyDiffer', differ) : I18N.applyMatch);
+            box.setAttribute('aria-describedby', note.id);
         }
 
         function saveDrawer(form) {
@@ -1011,9 +1129,16 @@
                         return;
                     }
                     const node = target ? byId.get(target.id) : null;
+                    const opener = drawerOpener;
                     closeDrawer();
                     if (node) {
                         applySaved(node, res, data);
+                        if (res.moved) {
+                            // The move takes the row out of the page for a moment, and focus with it.
+                            afterFilter(function () {
+                                backTo(opener, node);
+                            });
+                        }
                     }
                     flash('ok', res.msg);
                 })
@@ -1030,13 +1155,15 @@
                 rename(node, String(res.text));
             }
             const days = parseInt(data.get('i_expiration_days'), 10);
-            if (!Number.isNaN(days)) {
-                const reach = data.get('apply_changes_to_subcategories') ? subtree(node) : [node];
-                reach.forEach(function (n) {
+            const reach = data.get('apply_changes_to_subcategories') ? subtree(node) : [node];
+            reach.forEach(function (n) {
+                n.price = !!data.get('b_price_enabled');
+                n.el.dataset.price = n.price ? '1' : '0';
+                if (!Number.isNaN(days)) {
                     n.expiry = days;
                     setExpiryCell(n);
-                });
-            }
+                }
+            });
             if (res.moved) {
                 relocate(node.id, +res.parent_id || 0, Infinity);
                 openTo(node);
@@ -1070,35 +1197,91 @@
         const moveDlg = document.getElementById('catMove');
         const expiryDlg = document.getElementById('catExpiry');
 
-        function countsText(subs, items) {
-            return subs > 0 ? oscFill(I18N.pair, [plural('subcategoriesN', subs), plural('listingsN', items)]) : plural('listingsN', items);
+        // "A, B and C" in the page language.
+        function listText(parts) {
+            try {
+                return new Intl.ListFormat(document.documentElement.lang || undefined, {style: 'long', type: 'conjunction'}).format(parts);
+            } catch {
+                return parts.join(', ');
+            }
         }
 
-        // Resolves true when the person confirms, false on Cancel, Esc or a click outside.
-        function ask(title, text, label, danger) {
+        // Puts focus back on the control a dialog came from, or on the row's name when that is gone or hidden.
+        function backTo(opener, node) {
+            const name = node && node.el && node.el.isConnected ? node.el.querySelector('.cat-name') : null;
+            if (opener && opener.isConnected && typeof opener.focus === 'function') {
+                opener.focus();
+            }
+            if (name && document.activeElement !== opener) {
+                name.focus();
+            }
+        }
+
+        const FACT_ICON = {bad: 'bi-exclamation-triangle', ok: 'bi-check-circle'};
+
+        // <li> rows for a dialog's facts: [kind, text], kind '' (a dot), 'bad' or 'ok'.
+        function factNodes(facts) {
+            return facts.map(function (f) {
+                const icon = FACT_ICON[f[0]];
+                return el('li', f[0] ? {class: 'is-' + f[0]} : {}, [
+                    icon ? el('i', {class: 'bi ' + icon, 'aria-hidden': 'true'}) : el('span', {class: 'cat-fact-dot', 'aria-hidden': 'true'}),
+                    el('span', {text: f[1]})
+                ]);
+            });
+        }
+
+        // o = {title, facts: [[kind, text]], ok, danger, aside: {text, label, run}|null, opener, node}.
+        // Resolves true when the person confirms, false on Cancel, Esc or a click outside. Cancel has focus first.
+        function ask(o) {
             return new Promise(function (resolve) {
                 if (!confirmDlg || typeof confirmDlg.showModal !== 'function') {
-                    resolve(window.confirm(title + '\n' + text));
+                    resolve(window.confirm([o.title].concat(o.facts.map(function (f) {
+                        return f[1];
+                    })).join('\n')));
                     return;
                 }
                 const ok = document.getElementById('catConfirmOk');
+                const cancel = document.getElementById('catConfirmCancel');
+                const asideBox = document.getElementById('catConfirmAside');
+                const asideBtn = asideBox.querySelector('button');
                 let done = false;
+                let jumped = false;
                 const finish = function (yes) {
                     if (!done) {
                         done = true;
                         ok.onclick = null;
+                        cancel.onclick = null;
+                        asideBtn.onclick = null;
                         resolve(yes);
+                        if (!jumped) {
+                            backTo(o.opener, o.node);
+                        }
                     }
                 };
-                document.getElementById('catConfirmTitle').textContent = title;
-                document.getElementById('catConfirmText').textContent = text;
-                ok.textContent = label;
-                ok.classList.toggle('btn-danger', !!danger);
-                ok.classList.toggle('btn-submit', !danger);
-                confirmDlg.classList.toggle('osc-dialog-danger', !!danger);
+                document.getElementById('catConfirmTitle').textContent = o.title;
+                document.getElementById('catConfirmFacts').replaceChildren(...factNodes(o.facts));
+                asideBox.hidden = !o.aside;
+                if (o.aside) {
+                    asideBox.querySelector('p').textContent = o.aside.text;
+                    asideBtn.textContent = o.aside.label;
+                    asideBtn.onclick = function () {
+                        jumped = true;
+                        confirmDlg.close();
+                        finish(false);
+                        o.aside.run();
+                    };
+                }
+                ok.textContent = o.ok;
+                ok.classList.toggle('btn-danger', !!o.danger);
+                ok.classList.toggle('btn-submit', !o.danger);
+                confirmDlg.classList.toggle('osc-dialog-danger', !!o.danger);
                 ok.onclick = function () {
                     confirmDlg.close();
                     finish(true);
+                };
+                cancel.onclick = function () {
+                    confirmDlg.close();
+                    finish(false);
                 };
                 confirmDlg.addEventListener('close', function onClose() {
                     // A late close event from the previous question must not cancel this one.
@@ -1108,7 +1291,90 @@
                     }
                 });
                 confirmDlg.showModal();
-                ok.focus();
+                cancel.focus();
+            });
+        }
+
+        const catsIn = function (nodes) {
+            return nodes.reduce(function (sum, n) {
+                return sum + 1 + n.below;
+            }, 0);
+        };
+
+        const listingsIn = function (nodes) {
+            return nodes.reduce(function (sum, n) {
+                return sum + n.listings;
+            }, 0);
+        };
+
+        // Selected rows a bulk question stands for: a selected row inside another is counted once.
+        function pickedCount(nodes, bulk) {
+            if (!bulk) {
+                return nodes.length;
+            }
+            const inside = new Set();
+            nodes.forEach(function (n) {
+                subtree(n).forEach(function (s) {
+                    inside.add(s.id);
+                });
+            });
+            let c = 0;
+            selected.forEach(function (id) {
+                c += inside.has(id) ? 1 : 0;
+            });
+            return Math.max(nodes.length, c);
+        }
+
+        function overlapNote(nodes, bulk) {
+            if (!bulk) {
+                return '';
+            }
+            const tops = new Set(nodes.map(function (n) {
+                return n.id;
+            }));
+            const inner = [];
+            selected.forEach(function (id) {
+                const n = byId.get(id);
+                const host = n && !tops.has(id) ? ancestors(n).find(function (a) {
+                    return tops.has(a.id);
+                }) : null;
+                if (host) {
+                    inner.push([n, host]);
+                }
+            });
+            if (!inner.length) {
+                return '';
+            }
+            return inner.length === 1 ? oscFill(I18N.overlapOne, [inner[0][0].name, inner[0][1].name]) : plural('overlapMany', inner.length);
+        }
+
+        // The question before a disable that reaches subcategories or listings; true at once when it reaches neither.
+        function confirmDisable(nodes, bulk, opener) {
+            const cats = catsIn(nodes);
+            const subs = cats - nodes.length;
+            const lst = listingsIn(nodes);
+            if (!subs && !lst) {
+                return Promise.resolve(true);
+            }
+            const picked = pickedCount(nodes, bulk);
+            const one = nodes.length === 1 && picked === 1;
+            const facts = [];
+            const inside = overlapNote(nodes, bulk);
+            if (inside) {
+                facts.push(['', inside]);
+            }
+            if (subs) {
+                facts.push(['', one ? plural('disableSubs', subs) : oscFill(I18N.withSubs, [plural('categoriesN', cats)])]);
+            }
+            facts.push(['', lst ? plural('disableListings', lst) : I18N.disableNoListings]);
+            facts.push(['ok', I18N.disableSafe]);
+            return ask({
+                title: one ? oscFill(I18N.disableTitle, [nodes[0].name]) : plural('disableSelTitle', picked),
+                facts: facts,
+                ok: cats > 1 ? oscFill(I18N.disableButton, [plural('categoriesN', cats)]) : I18N.disable,
+                danger: false,
+                opener: opener,
+                node: nodes[0]
             });
         }
 
@@ -1132,6 +1398,21 @@
             list.forEach(function (n) {
                 setEnabled(n, on);
             });
+            return list;
+        }
+
+        // "Disabled Vehicles and 7 subcategories." / "Enabled Cars. It stays hidden until Vehicles is enabled."
+        function stateSentence(node, on, cats) {
+            const subs = cats - 1;
+            let text;
+            if (on) {
+                text = subs > 0 ? oscFill(I18N.enabledSubs, [node.name, plural('subcategoriesN', subs)]) : oscFill(I18N.enabledOne, [node.name]);
+                const off = ancestors(node).find(function (a) {
+                    return !a.enabled;
+                });
+                return off ? text + ' ' + oscFill(I18N.stillHidden, [off.name]) : text;
+            }
+            return subs > 0 ? oscFill(I18N.disabledSubs, [node.name, plural('subcategoriesN', subs)]) : oscFill(I18N.disabledOne, [node.name]);
         }
 
         // A toast with Undo, spoken too. Without the toast layer the flash bar stands in.
@@ -1297,9 +1578,19 @@
                     return e.node;
                 }), want);
             }).then(function () {
-                openTo(order[0].node);
-                markLanded(order[0].node);
+                const node = order[0].node;
+                openTo(node);
+                markLanded(node);
                 notify(I18N.undone);
+                afterFilter(function () {
+                    const a = document.activeElement;
+                    if (!a || a === document.body || !a.isConnected || a.closest('.osc-toast')) {
+                        const h = node.el.querySelector('.cat-handle');
+                        if (h) {
+                            h.focus();
+                        }
+                    }
+                });
             }).catch(undoFailed);
         }
 
@@ -1318,7 +1609,7 @@
             openTo(node);
         }
 
-        function toggle(node) {
+        function toggle(node, opener) {
             const on = !node.enabled;
             const before = snapStates([node]);
             const run = function () {
@@ -1327,31 +1618,30 @@
                         flash('error', replyError(res));
                         return;
                     }
-                    applyEnabled(node, on, res);
+                    const reached = applyEnabled(node, on, res);
                     totals();
                     refilter();
-                    notify(oscFill(I18N.nameState, [node.name, on ? I18N.enabled : I18N.disabled]), function () {
+                    notify(stateSentence(node, on, reached.length), function () {
                         undoStates([node], before);
                     });
                 }).catch(function () {
                     flash('error', I18N.ajaxError);
                 });
             };
-            const c = subtreeCounts(node);
-            if (!on && (c.subs > 0 || c.items > 0)) {
-                ask(oscFill(I18N.disableTitle, [node.name]), countsText(c.subs, c.items) + '. ' + I18N.disableFacts,
-                    I18N.disable, false).then(function (yes) {
+            if (on) {
+                run();
+            } else {
+                confirmDisable([node], false, opener).then(function (yes) {
                     if (yes) {
                         run();
                     }
                 });
-            } else {
-                run();
             }
         }
 
         // Deleting asks the server what would go first, so the confirm names the real counts.
-        function confirmDelete(nodes) {
+        // o = {bulk, opener, instead}. Resolves the preview when the person confirms, else null.
+        function confirmDelete(nodes, o) {
             const ids = nodes.map(function (n) {
                 return n.id;
             });
@@ -1363,20 +1653,68 @@
                     flash('error', replyError(pv));
                     return null;
                 }
-                const title = oscFill(I18N.deleteConfirm, [nodes.length === 1 ? nodes[0].name : plural('categoriesN', nodes.length)]);
-                let facts = I18N.deleteFacts;
-                if (pv.categories <= nodes.length) {
-                    facts = nodes.length === 1 ? I18N.deleteFactsOne : I18N.deleteFactsMany;
+                const cats = pv.categories;
+                const subs = cats - nodes.length;
+                const lst = pv.listings;
+                const picked = pickedCount(nodes, o.bulk);
+                const one = nodes.length === 1 && picked === 1;
+                const facts = [];
+                const inside = overlapNote(nodes, o.bulk);
+                if (inside) {
+                    facts.push(['', inside]);
                 }
-                const text = [oscFill(I18N.pair, [plural('categoriesN', pv.categories), plural('listingsN', pv.listings)]) + '.',
-                    facts, pv.queued ? I18N.deleteQueued : ''].filter(Boolean).join(' ');
-                return ask(title, text, I18N.delete, true);
+                if (subs > 0) {
+                    facts.push(['bad', one ? plural('deleteSubs', subs) : oscFill(I18N.withSubs, [plural('categoriesN', cats)])]);
+                }
+                facts.push(lst ? ['bad', plural('deleteListings', lst)] : ['', I18N.deleteNoListings]);
+                facts.push(['', I18N.deleteForever]);
+                if (pv.queued) {
+                    facts.push(['', I18N.deleteQueued]);
+                }
+                const aside = lst > 0 && nodes.some(function (n) {
+                    return n.enabled;
+                }) ? {text: I18N.deleteAside, label: I18N.disableInstead, run: o.instead} : null;
+                return ask({
+                    title: one ? oscFill(I18N.deleteConfirm, [nodes[0].name]) : plural('deleteSelTitle', picked),
+                    facts: facts,
+                    ok: lst ? oscFill(I18N.deleteButtonBoth, [plural('categoriesN', cats), plural('listingsN', lst)]) : oscFill(I18N.deleteButton, [plural('categoriesN', cats)]),
+                    danger: true,
+                    aside: aside,
+                    opener: o.opener,
+                    node: nodes[0]
+                }).then(function (yes) {
+                    return yes ? pv : null;
+                });
             });
         }
 
-        function remove(node) {
-            confirmDelete([node]).then(function (yes) {
-                if (!yes) {
+        // "Deleted Vehicles, 7 subcategories and 30 listings." / "Deleted 8 categories and 30 listings."
+        function deletedSentence(only, cats, lst) {
+            const parts = only
+                ? [only.name].concat(cats > 1 ? [plural('subcategoriesN', cats - 1)] : [])
+                : [plural('categoriesN', cats)];
+            if (lst > 0) {
+                parts.push(plural('listingsN', lst));
+            }
+            return oscFill(I18N.deletedDone, [listText(parts)]);
+        }
+
+        // A delete leaves no row to focus, so the search box takes it rather than the page top.
+        function focusAfterDelete() {
+            if (search && (!document.activeElement || document.activeElement === document.body)) {
+                search.focus();
+            }
+        }
+
+        function remove(node, opener) {
+            confirmDelete([node], {
+                bulk: false,
+                opener: opener,
+                instead: function () {
+                    toggle(node, opener);
+                }
+            }).then(function (pv) {
+                if (!pv) {
                     return null;
                 }
                 return post(CFG.del, new URLSearchParams({id: String(node.id)})).then(function (res) {
@@ -1384,11 +1722,17 @@
                         flash('error', replyError(res));
                         return;
                     }
+                    const gone = new Set(subtree(node).map(function (n) {
+                        return n.id;
+                    }));
+                    const next = nextShown(node, gone);
                     removeBlock(node.id);
-                    if (res.queued) {
-                        flash('ok', I18N.deleteQueued);
+                    notify(res.queued ? I18N.deleteQueued : deletedSentence(node, pv.categories, pv.listings));
+                    if (next) {
+                        next.nameEl.focus();
+                    } else {
+                        focusAfterDelete();
                     }
-                    announce(I18N.delete + ': ' + node.name);
                 });
             }).catch(function () {
                 flash('error', I18N.ajaxError);
@@ -1402,6 +1746,7 @@
         const moveForm = document.getElementById('catMoveForm');
         let moving = [];
         let moveHere = '';
+        let moveOpener = null;
 
         function siblingsFor(parentId) {
             const parent = byId.get(parentId);
@@ -1426,11 +1771,12 @@
             movePos.value = String(Math.min(want, sibs.length));
         }
 
-        function openMove(nodes) {
+        function openMove(nodes, opener) {
             if (!moveDlg || typeof moveDlg.showModal !== 'function' || !nodes.length) {
                 return;
             }
             moving = nodes;
+            moveOpener = opener || document.activeElement;
             const first = nodes[0];
             const same = nodes.length === 1;
             const deep = fillParents(moveParent, nodes.map(function (n) {
@@ -1489,6 +1835,11 @@
                 moveDlg.close();
                 if (list.length > 1) {
                     clearSelection();
+                } else {
+                    const opener = moveOpener;
+                    afterFilter(function () {
+                        backTo(opener, list[0]);
+                    });
                 }
                 const moved = was.filter(function (e) {
                     return done.indexOf(e.node.id) !== -1;
@@ -1516,13 +1867,173 @@
             });
         }
 
+        // The live "N listings end today." line under "Give them new end dates". It asks the server
+        // 200 ms after the last change and stays hidden unless the answer is a number above zero.
+        let endTimer = 0;
+        let endSeq = 0;
+        let endSeen = null;
+        let bx = {tops: [], picked: [], items: 0};
+
+        function endLine(exp) {
+            const posted = exp.parentElement ? exp.parentElement.querySelector('.cat-exp-posted') : null;
+            if (!posted) {
+                return null;
+            }
+            let line = posted.querySelector('.cat-exp-warn');
+            if (!line) {
+                line = el('p', {class: 'cat-exp-warn form-text', hidden: ''}, [
+                    el('i', {class: 'bi bi-exclamation-triangle', 'aria-hidden': 'true'}),
+                    el('span')
+                ]);
+                const redate = posted.querySelector('input[value="new"]');
+                if (posted.id && redate) {
+                    line.id = posted.id + '-warn';
+                    redate.setAttribute('aria-describedby', line.id);
+                }
+                posted.append(line);
+            }
+            return line;
+        }
+
+        // Rows chosen one level at a time, so no row in a group is inside another and the server keeps all of them.
+        function layersOf(picked) {
+            const set = new Set(picked.map(function (n) {
+                return n.id;
+            }));
+            const out = [];
+            picked.forEach(function (n) {
+                const k = ancestors(n).filter(function (a) {
+                    return set.has(a.id);
+                }).length;
+                (out[k] = out[k] || []).push(n);
+            });
+            return out.filter(Boolean);
+        }
+
+        // What the expiry control in the dialog or the drawer would reach: groups of ids, and whether subcategories ride along.
+        function reachFor(exp) {
+            if (expiryDlg && expiryDlg.contains(exp)) {
+                const sub = document.getElementById('cat-bx-sub').checked;
+                return {sub: sub, groups: (sub ? [bx.tops] : layersOf(bx.picked)).map(function (g) {
+                    return g.map(function (n) {
+                        return n.id;
+                    });
+                })};
+            }
+            const box = drawerBody ? drawerBody.querySelector('#apply_changes_to_subcategories') : null;
+            return drawerFor && drawerFor.id ? {sub: !!(box && box.checked), groups: [[drawerFor.id]]} : null;
+        }
+
+        function refreshEndNow(exp) {
+            const line = endLine(exp);
+            if (!line) {
+                return;
+            }
+            window.clearTimeout(endTimer);
+            const seq = ++endSeq;
+            const posted = line.parentElement;
+            const pick = posted.querySelector('input[name="expiry_listings"]:checked');
+            const days = expiryDays(exp);
+            const reach = reachFor(exp);
+            line.hidden = true;
+            endSeen = null;
+            if (posted.hidden || !pick || pick.value !== 'new' || !days || days < 1 || !reach || !CFG.expiryPreview) {
+                return;
+            }
+            endTimer = window.setTimeout(function () {
+                Promise.all(reach.groups.map(function (ids) {
+                    return request(CFG.expiryPreview + '&days=' + days + ids.map(function (id) {
+                        return '&ids[]=' + id;
+                    }).join('') + (reach.sub ? '&to_subcategories=1' : ''));
+                })).then(function (answers) {
+                    if (seq !== endSeq) {
+                        return;
+                    }
+                    let sum = 0;
+                    for (const a of answers) {
+                        if (!a || typeof a.endNow !== 'number') {
+                            return;
+                        }
+                        sum += a.endNow;
+                    }
+                    endSeen = sum;
+                    line.lastChild.textContent = plural('endToday', sum);
+                    line.hidden = sum < 1;
+                }).catch(function () {
+                    // The line is a courtesy; without it the dialog still works.
+                });
+            }, 200);
+        }
+
+        // Rows the dialog will change: every selected row, and everything below the top ones when ticked.
+        function expiryTargets() {
+            const ids = new Set(bx.picked.map(function (n) {
+                return n.id;
+            }));
+            if (document.getElementById('cat-bx-sub').checked) {
+                bx.tops.forEach(function (n) {
+                    subtree(n).forEach(function (s) {
+                        ids.add(s.id);
+                    });
+                });
+            }
+            return rows.filter(function (n) {
+                return ids.has(n.id);
+            });
+        }
+
+        // The parts of the dialog that follow the choices: facts, the button's count, the live line.
+        function syncExpiryDialog() {
+            const targets = expiryTargets();
+            const facts = bx.items > 0 ? [] : [['', targets.length === 1 ? I18N.expiryNoListOne : I18N.expiryNoListMany]];
+            const list = document.getElementById('catExpiryFacts');
+            list.replaceChildren(...factNodes(facts));
+            list.hidden = !facts.length;
+            document.getElementById('catExpiryOk').textContent = oscFill(I18N.expirySet, [plural('categoriesN', targets.length)]);
+            const exp = expiryDlg.querySelector('[data-cat-exp]');
+            const days = exp ? expiryDays(exp) : null;
+            const subs = bx.tops.reduce(function (out, n) {
+                return out.concat(subtree(n).slice(1));
+            }, []);
+            const differ = days === null ? null : subs.filter(function (n) {
+                return n.expiry !== days;
+            }).length;
+            document.getElementById('cat-bx-sub-note').textContent = !document.getElementById('cat-bx-sub').checked
+                ? I18N.applyOff
+                : (differ === null ? I18N.applyOn : (differ ? plural('applyChange', differ) : I18N.applyNoChange));
+            if (exp) {
+                refreshEndNow(exp);
+            }
+        }
+
+        // "Now: after 60 days" / "Now: Mixed (45 days, 60 days)" for the chosen rows.
+        function expiryNowLine(picked) {
+            const vals = Array.from(new Set(picked.map(function (n) {
+                return n.expiry;
+            }))).sort(function (a, b) {
+                return (a || 1e9) - (b || 1e9);
+            });
+            const word = function (v) {
+                return v ? plural('expiryDays', v) : I18N.never;
+            };
+            const value = vals.length === 1
+                ? (vals[0] ? plural('expiryNowAfter', vals[0]) : I18N.expiryNowNever)
+                : oscFill(I18N.expiryMixed, [vals.slice(0, 3).map(word).join(', ') + (vals.length > 3 ? ', …' : '')]);
+            const parts = I18N.expiryNow.split('%s');
+            document.getElementById('catExpiryNow').replaceChildren(parts[0], el('strong', {text: value}), parts.slice(1).join(''));
+        }
+
         // Set expiry… for the selection: the drawer's expiry control, with the posted-listings
         // choice shown only when the selection holds listings.
         function openExpiry(nodes) {
             if (!expiryDlg || typeof expiryDlg.showModal !== 'function' || !nodes.length) {
                 return;
             }
-            moving = nodes;
+            const chosen = rows.filter(function (n) {
+                return selected.has(n.id);
+            });
+            const picked = chosen.length ? chosen : nodes;
+            bx = {tops: nodes, picked: picked, items: listingsIn(nodes)};
             const exp = expiryDlg.querySelector('[data-cat-exp]');
             const field = expiryDlg.querySelector('.cat-exp-days');
             const never = expiryDlg.querySelector('input[value="never"]');
@@ -1537,26 +2048,25 @@
             if (keep) {
                 keep.checked = true;
             }
-            const items = nodes.reduce(function (sum, n) {
-                return sum + n.listings;
-            }, 0);
             const below = nodes.reduce(function (sum, n) {
                 return sum + n.below;
             }, 0);
             if (exp) {
                 exp.dataset.saved = '-1';
-                exp.dataset.posted = items > 0 ? 'on' : 'off';
-                syncPosted(exp, items > 0);
+                exp.dataset.posted = bx.items > 0 ? 'on' : 'off';
+                syncPosted(exp, bx.items > 0);
             }
             const sub = document.getElementById('cat-bx-sub');
             sub.checked = false;
             sub.closest('.form-check').hidden = below === 0;
             document.getElementById('cat-bx-sub-label').textContent = plural('applyLabel', below);
+            document.getElementById('catExpiryTitle').textContent = picked.length === 1 ? oscFill(I18N.expiryFor, [picked[0].name]) : plural('expiryForMany', picked.length);
+            expiryNowLine(picked);
+            syncExpiryDialog();
             expiryDlg.showModal();
         }
 
         function submitExpiry(form) {
-            const list = moving.slice();
             const exp = form.querySelector('[data-cat-exp]');
             const field = form.querySelector('.cat-exp-days');
             const days = expiryDays(exp);
@@ -1568,30 +2078,37 @@
             const posted = form.querySelector('.cat-exp-posted');
             const keep = !posted || posted.hidden;
             const pick = form.querySelector('input[name="expiry_listings"]:checked');
+            const how = keep || !pick ? 'keep' : pick.value;
             const toSub = form.querySelector('#cat-bx-sub').checked;
-            const reach = [];
-            list.forEach(function (n) {
-                (toSub ? subtree(n) : [n]).forEach(function (r) {
-                    reach.push({node: r, days: r.expiry});
+            const targets = expiryTargets();
+            const reach = targets.map(function (n) {
+                return {node: n, days: n.expiry};
+            });
+            const ended = how === 'new' ? endSeen : null;
+            const tops = bx.tops;
+            const items = bx.items;
+            const submit = document.getElementById('catExpiryOk');
+            const groups = toSub ? [tops] : layersOf(bx.picked);
+            const reached = [];
+            submit.disabled = true;
+            groups.reduce(function (chain, group) {
+                return chain.then(function () {
+                    const body = new URLSearchParams();
+                    body.set('do', 'expiry');
+                    group.forEach(function (n) {
+                        body.append('ids[]', String(n.id));
+                    });
+                    body.set('days', String(days));
+                    body.set('expiry_listings', how);
+                    if (toSub) {
+                        body.set('to_subcategories', '1');
+                    }
+                    return must(CFG.bulk, body).then(function (res) {
+                        reached.push(...(res.done || []), ...(res.queued || []));
+                    });
                 });
-            });
-            const body = new URLSearchParams();
-            body.set('do', 'expiry');
-            list.forEach(function (n) {
-                body.append('ids[]', String(n.id));
-            });
-            body.set('days', String(days));
-            body.set('expiry_listings', keep || !pick ? 'keep' : pick.value);
-            if (toSub) {
-                body.set('to_subcategories', '1');
-            }
-            post(CFG.bulk, body).then(function (res) {
-                if (!res || res.error || !res.ok) {
-                    flash('error', replyError(res));
-                    return;
-                }
-                const ids = (res.done || []).concat(res.queued || []);
-                ids.forEach(function (id) {
+            }, Promise.resolve()).then(function () {
+                reached.forEach(function (id) {
                     const node = byId.get(+id);
                     if (node) {
                         (toSub ? subtree(node) : [node]).forEach(function (n) {
@@ -1601,25 +2118,47 @@
                     }
                 });
                 expiryDlg.close();
+                if (bulkSelect) {
+                    bulkSelect.focus();
+                }
                 clearSelection();
-                notify(res.message || '', body.get('expiry_listings') === 'keep' ? function () {
+                const who = targets.length === 1 ? targets[0].name : plural('categoriesN', targets.length);
+                let msg = days > 0 ? oscFill(I18N.expiryDoneAfter, [who, plural('expiryDays', days)]) : oscFill(I18N.expiryDoneNever, [who]);
+                if (items > 0 || how === 'new') {
+                    if (how !== 'new') {
+                        msg += ' ' + I18N.postedKeep;
+                    } else if (days === 0) {
+                        msg += ' ' + I18N.postedNone;
+                    } else {
+                        msg += ' ' + (ended ? plural('postedNewEnded', ended) : I18N.postedNew);
+                    }
+                }
+                notify(msg, how === 'keep' ? function () {
                     undoExpiry(reach);
                 } : null);
-            }).catch(function () {
-                flash('error', I18N.ajaxError);
+            }).catch(function (e) {
+                flash('error', e && e.reply ? e.reply : I18N.ajaxError);
+            }).then(function () {
+                submit.disabled = false;
             });
         }
 
-        // Undo of Set expiry (end dates kept): one request per old value.
+        // Undo of Set expiry (end dates kept): one request per old value and level, so the server keeps every row.
         function undoExpiry(reach) {
-            const groups = new Map();
+            const byDays = new Map();
             reach.forEach(function (r) {
-                if (!groups.has(r.days)) {
-                    groups.set(r.days, []);
+                if (!byDays.has(r.days)) {
+                    byDays.set(r.days, []);
                 }
-                groups.get(r.days).push(r.node);
+                byDays.get(r.days).push(r.node);
             });
-            return Array.from(groups).reduce(function (chain, g) {
+            const groups = [];
+            byDays.forEach(function (nodes, days) {
+                layersOf(nodes).forEach(function (layer) {
+                    groups.push([days, layer]);
+                });
+            });
+            return groups.reduce(function (chain, g) {
                 return chain.then(function () {
                     const body = new URLSearchParams();
                     body.set('do', 'expiry');
@@ -1642,7 +2181,7 @@
         // The bulk bar: only the top-most selected rows go to the server, the rest ride along.
         function runBulk(what) {
             const ids = topSelected();
-            const nodes = ids.map(function (id) {
+            let nodes = ids.map(function (id) {
                 return byId.get(id);
             });
             if (!nodes.length) {
@@ -1656,19 +2195,35 @@
                 openExpiry(nodes);
                 return;
             }
+            if (what === 'disable') {
+                nodes = nodes.filter(function (n) {
+                    return subtree(n).some(function (s) {
+                        return s.enabled;
+                    });
+                });
+                if (!nodes.length) {
+                    notify(I18N.alreadyOff);
+                    return;
+                }
+            }
             const before = snapStates(nodes);
-            const finish = function (res) {
+            const finish = function (res, pv) {
                 if (!res || res.error || !res.ok) {
                     flash('error', replyError(res));
                     return;
                 }
                 const bad = failedText(res);
                 const reached = (res.done || []).concat(res.queued || []);
+                let cats = 0;
+                let lst = 0;
+                const first = reached.length ? byId.get(+reached[0]) : null;
                 reached.forEach(function (id) {
                     const node = byId.get(+id);
                     if (!node) {
                         return;
                     }
+                    cats += 1 + node.below;
+                    lst += node.listings;
                     if (what === 'delete') {
                         removeBlock(node.id);
                     } else {
@@ -1680,45 +2235,47 @@
                 clearSelection();
                 totals();
                 refilter();
-                if (bad || what === 'delete') {
-                    flash(bad ? 'error' : 'ok', bad || res.message);
-                } else {
-                    notify(res.message || '', function () {
+                if (bad) {
+                    flash('error', bad);
+                } else if (what === 'delete') {
+                    const all = pv && reached.length === nodes.length;
+                    notify(res.queued && res.queued.length ? I18N.deleteQueued : deletedSentence(reached.length === 1 && first ? first : null, all ? pv.categories : cats, all ? pv.listings : lst));
+                    focusAfterDelete();
+                } else if (first) {
+                    const on = what === 'enable';
+                    notify(reached.length === 1 ? stateSentence(first, on, cats) : oscFill(on ? I18N.enabledOne : I18N.disabledOne, [plural('categoriesN', cats)]), function () {
                         undoStates(nodes, before);
                     });
                 }
             };
-            const run = function () {
+            const run = function (pv) {
                 const body = new URLSearchParams();
                 body.set('do', what);
-                ids.forEach(function (id) {
-                    body.append('ids[]', String(id));
+                nodes.forEach(function (n) {
+                    body.append('ids[]', String(n.id));
                 });
-                return post(CFG.bulk, body).then(finish).catch(function () {
+                return post(CFG.bulk, body).then(function (res) {
+                    finish(res, pv);
+                }).catch(function () {
                     flash('error', I18N.ajaxError);
                 });
             };
             if (what === 'delete') {
-                confirmDelete(nodes).then(function (yes) {
-                    return yes ? run() : null;
+                confirmDelete(nodes, {
+                    bulk: true,
+                    opener: bulkSelect,
+                    instead: function () {
+                        runBulk('disable');
+                    }
+                }).then(function (pv) {
+                    return pv ? run(pv) : null;
                 });
             } else if (what === 'disable') {
-                const subs = nodes.reduce(function (sum, n) {
-                    return sum + n.below;
-                }, 0);
-                const items = nodes.reduce(function (sum, n) {
-                    return sum + n.listings;
-                }, 0);
-                if (subs > 0 || items > 0) {
-                    ask(oscFill(I18N.disableTitle, [nodes.length === 1 ? nodes[0].name : plural('categoriesN', nodes.length)]),
-                        countsText(subs, items) + '. ' + I18N.disableFacts, I18N.disable, false).then(function (yes) {
-                        return yes ? run() : null;
-                    });
-                } else {
-                    run();
-                }
+                confirmDisable(nodes, true, bulkSelect).then(function (yes) {
+                    return yes ? run(null) : null;
+                });
             } else {
-                run();
+                run(null);
             }
         }
 
@@ -1752,8 +2309,17 @@
                 e.preventDefault();
                 submitExpiry(expiryForm);
             });
-            expiryForm.addEventListener('input', onExpiryInput);
-            expiryForm.addEventListener('change', onExpiryInput);
+            const onDialogInput = function (e) {
+                onExpiryInput(e);
+                syncExpiryDialog();
+            };
+            expiryForm.addEventListener('input', onDialogInput);
+            expiryForm.addEventListener('change', onDialogInput);
+            expiryDlg.addEventListener('close', function () {
+                if (bulkSelect) {
+                    bulkSelect.focus();
+                }
+            });
         }
 
         if (window.osc && typeof window.osc.toast === 'function' && window.osc.toast.labels) {
@@ -1776,17 +2342,23 @@
             });
         }
 
+        // The slot's box starts where the name of a row at its depth starts. The offset is that
+        // for a top-level row, less the slot's own side padding; each level adds one indent step.
         const slotOffset = function () {
-            const first = table.querySelector('tr.cat-row:not([hidden])');
-            let w = 0;
-            if (first && getComputedStyle(first).display === 'grid') {
-                // Phone: the handle leads the row and the indent follows it.
-                const handle = first.querySelector('.cat-handle');
-                w = first.cells[0].offsetWidth + (handle ? handle.offsetWidth : 0);
-            } else if (first) {
-                w = (first.cells[0] ? first.cells[0].offsetWidth : 0) + (first.cells[1] ? first.cells[1].offsetWidth : 0);
+            const first = table.querySelector('tr.cat-row[data-depth="1"]:not([hidden])') || table.querySelector('tr.cat-row:not([hidden])');
+            const name = first && first.querySelector('.cat-name');
+            if (!name) {
+                return 0;
             }
-            return w;
+            const range = document.createRange();
+            range.selectNodeContents(name);
+            const text = range.getClientRects()[0] || name.getBoundingClientRect();
+            const row = first.getBoundingClientRect();
+            const rtl = getComputedStyle(first).direction === 'rtl';
+            const pad = parseFloat(getComputedStyle(app).getPropertyValue('--cat-pad-x')) || 0;
+            const padPx = /rem$/.test(getComputedStyle(app).getPropertyValue('--cat-pad-x').trim())
+                ? pad * parseFloat(getComputedStyle(document.documentElement).fontSize) : pad;
+            return (rtl ? row.right - text.right : text.left - row.left) - padPx;
         };
 
         function moveSentence(node, m, oldParent) {
@@ -1829,8 +2401,8 @@
                 } else {
                     relocate(node.id, oldParent ? oldParent.id : 0, oldIndex);
                 }
+                // The flash bar is a live region of its own, so the error is not announced twice.
                 flash('error', text);
-                announce(text);
             };
             return post(CFG.move, new URLSearchParams({id: String(node.id), parent_id: String(newParent), position: String(m.index)}))
                 .then(function (res) {
@@ -1858,7 +2430,8 @@
             } else if (reason === 'deep') {
                 text = deep;
             } else if (reason === 'filtered') {
-                text = I18N.filterNoReorder;
+                notify(I18N.filterReorder);
+                return;
             } else if (reason === 'refused-key' && node) {
                 const where = place(byId.get(node.parent));
                 text = {
@@ -1914,17 +2487,52 @@
             })
             : null;
 
+        // --- Phone sheet --------------------------------------------------------------------
+        const sheet = document.getElementById('catSheet');
+        let sheetNode = null;
+        let sheetOpener = null;
+        let sheetRan = false;
+
+        function openSheet(node, opener) {
+            if (!sheet || typeof sheet.showModal !== 'function') {
+                return;
+            }
+            sheetNode = node;
+            sheetOpener = opener;
+            sheetRan = false;
+            document.getElementById('catSheetTitle').textContent = node.name;
+            sheet.querySelector('[data-cat-act="toggle"]').textContent = node.enabled ? I18N.disable : I18N.enable;
+            const add = sheet.querySelector('[data-cat-act="addsub"]');
+            const noChild = node.el.hasAttribute('data-no-child');
+            add.disabled = noChild;
+            add.title = noChild ? I18N.depthNote : '';
+            sheet.showModal();
+            sheet.querySelector('button:not(:disabled)').focus();
+        }
+
+        if (sheet) {
+            // Focus goes back to the ⋯ unless the chosen action has opened something of its own.
+            sheet.addEventListener('close', function () {
+                const opener = sheetOpener;
+                if (!sheetRan && opener && opener.isConnected) {
+                    opener.focus();
+                }
+                sheetNode = null;
+            });
+        }
+
         // --- Events -------------------------------------------------------------------------
         // Row actions by data-cat-act.
         const actions = {
-            edit: function (node) {
-                openDrawer({id: node.id});
+            more: openSheet,
+            edit: function (node, opener) {
+                openDrawer({id: node.id, opener: opener});
             },
-            addsub: function (node) {
-                openDrawer({parent: node.id});
+            addsub: function (node, opener) {
+                openDrawer({parent: node.id, opener: opener});
             },
-            move: function (node) {
-                openMove([node]);
+            move: function (node, opener) {
+                openMove([node], opener);
             },
             toggle: toggle,
             delete: remove
@@ -1940,6 +2548,13 @@
                 if (node) {
                     node.open = !node.open;
                     refilter();
+                }
+                return;
+            }
+            const grip = e.target.closest('.cat-handle');
+            if (grip && table && table.contains(grip)) {
+                if (grip.getAttribute('aria-disabled') === 'true') {
+                    notify(I18N.filterReorder);
                 }
                 return;
             }
@@ -1978,15 +2593,32 @@
                 openDrawer({name: state.raw});
                 return;
             }
-            const tr = btn.closest('tr.cat-row');
+            const inSheet = !!sheet && sheet.contains(btn);
+            const tr = inSheet ? (sheetNode && sheetNode.el) : btn.closest('tr.cat-row');
             const node = tr ? byId.get(+tr.dataset.id) : null;
             if (node && actions[act]) {
                 e.preventDefault();
-                actions[act](node, btn);
+                let opener = btn;
+                if (inSheet) {
+                    sheetRan = true;
+                    opener = sheetOpener;
+                    sheet.close();
+                }
+                actions[act](node, opener);
             }
         });
 
         if (table) {
+            // Row actions say which row they belong to once focus reaches them; set lazily, as a
+            // large tree would otherwise carry the same attributes thousands of times.
+            table.addEventListener('focusin', function (e) {
+                const acts = e.target.closest('.cat-actions');
+                const tr = acts ? acts.closest('tr.cat-row') : null;
+                if (tr && !acts.hasAttribute('role')) {
+                    acts.setAttribute('role', 'group');
+                    acts.setAttribute('aria-labelledby', 'cat-n-' + tr.dataset.id);
+                }
+            });
             table.addEventListener('change', function (e) {
                 if (!e.target.matches('.col-bulkactions input')) {
                     return;
@@ -2049,10 +2681,18 @@
                     closeDrawer();
                 }
             });
-            drawerBody.addEventListener('input', onExpiryInput);
+            drawerBody.addEventListener('input', function (e) {
+                onExpiryInput(e);
+                syncApplyNote();
+            });
             drawerBody.addEventListener('change', function (e) {
-                if (!onExpiryInput(e) && e.target.id === 'apply_changes_to_subcategories') {
-                    syncApplyNote();
+                const handled = onExpiryInput(e);
+                syncApplyNote();
+                if (!handled && e.target.id === 'apply_changes_to_subcategories') {
+                    const exp = drawerBody.querySelector('[data-cat-exp]');
+                    if (exp) {
+                        refreshEndNow(exp);
+                    }
                 }
             });
             drawerBody.addEventListener('submit', function (e) {

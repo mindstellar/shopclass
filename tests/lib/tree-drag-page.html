@@ -1,7 +1,7 @@
 <style>
-    #tree { --tree-indent: 24px; }
+    #tree { --tree-indent: 24px; --tree-slot-pad-start: calc(28px - 1px); }
     #tree .tree-name-line { display: flex; align-items: center; gap: .25rem; padding-inline-start: calc(var(--tree-d, 0) * var(--tree-indent)); }
-    #tree .tree-handle { border: 0; background: none; padding: .25rem; }
+    #tree .tree-handle { border: 0; background: none; padding: 0; inline-size: 24px; }
 </style>
 <div style="padding: 2rem; max-width: 60rem;">
     <table class="table">
@@ -54,6 +54,13 @@
             rows: 'tr.tree-row',
             depth: function (el) { return Number(el.dataset.depth); },
             indent: null,
+            slotOffset: function () {
+                var line = tbody.querySelector('tr.tree-row:not([hidden]) .tree-name-line');
+                var c = tbody.getBoundingClientRect();
+                var l = line.getBoundingClientRect();
+                var d = Number(line.closest('tr').dataset.depth) * 24;
+                return (document.documentElement.dir === 'rtl' ? c.right - l.right : l.left - c.left) - d;
+            },
             maxLevels: opts.limit || 0,
             canMove: function () { return !window.__filtered; },
             isCollapsed: function (el) { return el.dataset.open === '0' && kids(el).length > 0; },

@@ -176,6 +176,40 @@ $service = \mindstellar\category\CategoryService::make();
 pin('the preview is the service\'s numbers', $service->deletePreview([$a1, $a]), $r);
 pin('and counts the listing', 1, $r['listings'] ?? null);
 
+harness_section('expiry preview');
+$sub  = seed_category($admin, 'Alpha sub', $a1, $locale);
+$mk   = static function (int $cat, int $ageDays, array $set = []) use ($admin, $p, $user): int {
+    $id = seed_item($admin, $cat, $user, 'Aged');
+    $admin->query("UPDATE {$p}t_item SET dt_pub_date = DATE_SUB(NOW(), INTERVAL $ageDays DAY), dt_expiration = DATE_ADD(NOW(), INTERVAL 30 DAY)" . ($set ? ', ' . implode(', ', $set) : '') . " WHERE pk_i_id = $id");
+
+    return $id;
+};
+$mk($a1, 11);
+$mk($a1, 9);
+$mk($a1, 10 + 1, ['dt_expiration = DATE_SUB(NOW(), INTERVAL 1 DAY)']);
+$mk($a1, 12, ['b_active = 0']);
+$mk($a1, 12, ['b_enabled = 0']);
+$mk($a1, 12, ['b_spam = 1']);
+$mk($sub, 20);
+$r = $call('expiryPreview', ['ids' => [(string) $a1], 'days' => '10']);
+pin('counts the category only, and those ended by 10 days', [7, 1], [$r['listings'] ?? null, $r['endNow'] ?? null]);
+$r = $call('expiryPreview', ['ids' => [(string) $a1], 'days' => '10', 'to_subcategories' => '1']);
+pin('with subcategories the reach grows', [8, 2], [$r['listings'] ?? null, $r['endNow'] ?? null]);
+$r = $call('expiryPreview', ['ids' => [(string) $a1], 'days' => '0', 'to_subcategories' => '1']);
+pin('0 days never ends anything', [8, 0], [$r['listings'] ?? null, $r['endNow'] ?? null]);
+$r = $call('expiryPreview', ['ids' => [(string) $a1], 'days' => '9']);
+pin('a listing 9 days old ends at exactly 9', 2, $r['endNow'] ?? null);
+$r = $call('expiryPreview', ['ids' => [(string) $a1, (string) $sub], 'days' => '10', 'to_subcategories' => '1']);
+pin('an id inside another is counted once', [8, 2], [$r['listings'] ?? null, $r['endNow'] ?? null]);
+$r = $call('expiryPreview', ['ids' => ['99999'], 'days' => '10']);
+pin('unknown ids reach nothing', [0, 0], [$r['listings'] ?? null, $r['endNow'] ?? null]);
+$mk($a1, 15, ['b_premium = 1']);
+$r = $call('expiryPreview', ['ids' => [(string) $a1], 'days' => '10']);
+pin('a premium listing never ends', [8, 1], [$r['listings'] ?? null, $r['endNow'] ?? null]);
+$route = \mindstellar\admin\ajax\AjaxRegistry::route('category_expiry_preview');
+pin('it is a read: no CSRF token', false, $route['csrf'] ?? null);
+pin('...and admins only', false, \mindstellar\admin\ajax\AjaxRegistry::moderatorMay('category_expiry_preview'));
+
 harness_section('expiry choice');
 $before = $expiry($item);
 $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha one', 'i_expiration_days' => '5', 'b_price_enabled' => '1']);

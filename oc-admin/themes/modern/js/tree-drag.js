@@ -551,7 +551,7 @@ osc.treeDrag = (function () {
             if (cfg.slotOffset) {
                 slot.style.setProperty('--tree-slot-offset', cfg.slotOffset() + 'px');
             }
-            ['--tree-indent', '--tree-slot-pad', '--tree-slot-pad-x'].forEach(function (v) {
+            ['--tree-indent', '--tree-slot-pad', '--tree-slot-pad-x', '--tree-slot-pad-start'].forEach(function (v) {
                 var val = vars.getPropertyValue(v).trim();
                 if (val) {
                     slot.style.setProperty(v, val);

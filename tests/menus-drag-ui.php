@@ -47,6 +47,17 @@ function menus_ui_run(string $body, array $opts = array()): array
     return $r;
 }
 
+/**
+ * Wraps a driver body as a script file for menus_browser_run_live().
+ */
+function menus_ui_driver(string $body): string
+{
+    $file = tempnam(sys_get_temp_dir(), 'menus-drv');
+    file_put_contents($file, "window.menuDriver = async function (t) {\nvar r = {};\n" . $body . "\nreturn r;\n};\n");
+
+    return $file;
+}
+
 $start = array('Home:0', 'Vehicles:0', 'Cars:1', 'Car Parts:2', 'Pages:0', 'About:1', 'Sale:0');
 
 echo "A flat list\n";
@@ -195,5 +206,106 @@ r.after = [t.$('#menu-place-warn').hidden, t.$('#menu-place-warn').textContent];
 JS, array('editor' => array('place' => $place, 'places' => array('header' => $place))));
 pin('one item is deeper than the place shows', array(false, '1 item is deeper than your theme shows here and will not show.'), $r['before'] ?? null);
 pin('after un-nesting it the warning goes', array(true, ''), $r['after'] ?? null);
+
+echo "Screen reader: one announcement per move\n";
+$r = menus_ui_run(<<<'JS'
+r.log = [];
+t.$$('[role=status],[aria-live]').forEach(function (el) {
+    new MutationObserver(function () { if (el.textContent !== '') { r.log.push((el.id || el.className) + '=' + el.textContent); } })
+        .observe(el, {childList: true, characterData: true, subtree: true});
+});
+async function mark(fn) { var from = r.log.length; await fn(); await t.settle(300); return r.log.slice(from); }
+r.drag = await mark(async function () { var g = t.drag(t.grip('Car Parts')); await g.by(-30, 0, 4); await g.drop(); });
+r.focusDrag = document.activeElement.getAttribute('aria-label');
+r.key = await mark(function () { return t.key(t.grip('Pages'), 'right'); });
+r.btn = await mark(function () { t.$('[data-act="outdent"]', t.item('Cars')).click(); });
+r.names = [t.grip('Cars').getAttribute('aria-label'), t.$('[data-act="outdent"]', t.item('Cars')).getAttribute('aria-label'), t.$('[data-act="indent"]', t.item('Cars')).getAttribute('aria-label')];
+r.statusLive = [t.$('#menu-status').getAttribute('role'), t.$('#menu-status').getAttribute('aria-live')];
+JS);
+pin('a key move says its position once', array('menu-announce=Position 3 of 3, level 2'), $r['key'] ?? null);
+pin('an outdent button says its position once', array('menu-announce=Position 3 of 4, level 1'), $r['btn'] ?? null);
+pin('a pointer drag says its position once', array('menu-announce=Position 2 of 2, level 2'), $r['drag'] ?? null);
+check('focus stays on the moved item\'s handle after a drag', str_contains((string) ($r['focusDrag'] ?? ''), 'Car Parts'), (string) ($r['focusDrag'] ?? ''));
+pin('the handle and buttons name the item', array('Move Cars with the arrow keys', 'Move Cars out one level', 'Move Cars under the item above'), $r['names'] ?? null);
+pin('the Unsaved changes marker is not a live region', array(null, null), $r['statusLive'] ?? null);
+
+echo "Removing the last item\n";
+$r = menus_ui_run(<<<'JS'
+t.$('[data-act="remove"]', t.item('Sale')).click();
+await t.settle(200);
+r.afterLast = document.activeElement.getAttribute('aria-label');
+for (var n = 0; n < 6; n++) { t.$('[data-act="remove"]', t.$('li.menu-item')).click(); await t.settle(100); }
+r.afterAll = document.activeElement.getAttribute('data-menu-add');
+r.emptyShown = !t.$('#menu-empty').hidden;
+JS);
+check('removing the last row focuses the one before', str_contains((string) ($r['afterLast'] ?? ''), 'About'), (string) ($r['afterLast'] ?? ''));
+pin('removing every item leaves focus on an Add button', 'category', $r['afterAll'] ?? null);
+pin('and shows the empty line', true, $r['emptyShown'] ?? null);
+
+echo "Right to left: icons and guide lines\n";
+$r = menus_ui_run(<<<'JS'
+var bi = t.$('[data-act="outdent"] .bi', t.item('Cars'));
+r.flip = getComputedStyle(bi).transform;
+var before = getComputedStyle(t.item('Car Parts'), '::before');
+r.guide = [before.insetInlineStart, before.backgroundImage.indexOf('to left') > -1];
+var li = t.item('Car Parts').getBoundingClientRect(), row = t.item('Car Parts').querySelector('.field-chip-row').getBoundingClientRect();
+r.rowEdge = Math.round(li.right - row.right);
+r.opened = Math.round(t.item('Home').querySelector('.field-chip-row').getBoundingClientRect().right - row.right);
+JS, array('rtl' => true));
+pin('the outdent arrow is mirrored', 'matrix(-1, 0, 0, 1, 0, 0)', $r['flip'] ?? null);
+pin('guide lines start on the right', array('0px', true), $r['guide'] ?? null);
+check('a deeper row steps in from the right', ($r['opened'] ?? 0) > 20, (string) ($r['opened'] ?? ''));
+
+echo "Phone (390 wide, real time)\n";
+$long = array(
+    array('type' => 'link', 'ref' => 0, 'url' => '/a', 'label' => array('en_US' => 'A rather long first level menu label'), 'children' => array(
+        array('type' => 'link', 'ref' => 0, 'url' => '/b', 'label' => array('en_US' => 'A rather long second level menu label'), 'children' => array(
+            array('type' => 'link', 'ref' => 0, 'url' => '/c', 'label' => array('en_US' => 'A rather long third level menu label')),
+        )),
+    )),
+);
+$r = menus_browser_run_live(menus_ui_driver(<<<'JS'
+var de = document.documentElement;
+r.scroll = [de.scrollWidth, de.clientWidth];
+var deep = t.item('A rather long third level menu label');
+r.nameWidth = Math.round(deep.querySelector('.chip-name').getBoundingClientRect().width);
+r.touchSizes = t.$$('.chip-grip, .chip-btn', deep).map(function (b) { var q = b.getBoundingClientRect(); return Math.min(q.width, q.height) >= 40; });
+JS), $long, array('width' => 390, 'touch' => true));
+$r = $r ?? array();
+check('no sideways scroll at 390', ($r['scroll'][0] ?? 999) <= ($r['scroll'][1] ?? 0), json_encode($r['scroll'] ?? null));
+check('the deepest name keeps room (12 characters or more)', ($r['nameWidth'] ?? 0) >= 100, (string) ($r['nameWidth'] ?? ''));
+pin('handle and buttons are 40 px or more', array(true, true, true, true, true), $r['touchSizes'] ?? null);
+
+$r = menus_browser_run_live(menus_ui_driver(<<<'JS'
+var g = t.grip('Car Parts');
+g.scrollIntoView({block: 'center'});
+await t.settle(100);
+var q = g.getBoundingClientRect(), x = q.left + q.width / 2, y = q.top + q.height / 2;
+await window.oscTouch([['start', x, y], ['wait', 120, 0], ['move', x - 5, y, 0]]);
+r.early = t.shape().join(' ') + '|' + !!t.$('.tree-slot');
+await window.oscTouch([['end', 0, 0]]);
+await window.oscTouch([['start', x, y], ['wait', 320, 0], ['move', x - 10, y], ['move', x - 25, y], ['wait', 80, 0]]);
+r.mid = !!t.$('.tree-slot');
+await window.oscTouch([['end', 0, 0]]);
+await t.settle(200);
+r.after = t.shape().join(' ');
+JS), null, array('width' => 390, 'touch' => true));
+pin('a quick touch on the handle does not start a drag', 'Home:0 Vehicles:0 Cars:1 Car Parts:2 Pages:0 About:1 Sale:0|false', $r['early'] ?? null);
+pin('holding then dragging left shows the slot', true, $r['mid'] ?? null);
+pin('and dropping un-nests the item', 'Home:0 Vehicles:0 Cars:1 Car Parts:1 Pages:0 About:1 Sale:0', $r['after'] ?? null);
+
+echo "Dialog returns focus\n";
+$r = menus_ui_run(<<<'JS'
+var opener = t.$('.menu-delete');
+opener.focus();
+opener.click();
+await t.settle(200);
+r.open = !!t.$('#menuDeleteDialog[open]');
+t.$('#menuDeleteDialog [data-osc-dialog-close]').click();
+await t.settle(200);
+r.back = document.activeElement === opener;
+JS);
+pin('the confirm opens', true, $r['open'] ?? null);
+pin('closing it puts focus back on its button', true, $r['back'] ?? null);
 
 exit(harness_result());

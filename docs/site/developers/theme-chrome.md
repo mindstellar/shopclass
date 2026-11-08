@@ -129,6 +129,28 @@ Core reads these features:
 | Feature | Value | Effect |
 |---|---|---|
 | `comments` | `false` | Settings, Comments shows a note that the theme shows no comments. Unset or `true` shows nothing. |
+| `category-depth` | integer, 1 or more | How many levels of categories the theme shows. See below. |
+
+### Category depth
+
+```php
+osc_add_theme_support('category-depth', 2);
+```
+
+This says the theme shows two levels of categories: top-level ones and their children. It is the
+only limit. Without it, categories nest without limit.
+
+When it is declared:
+
+- The admin **Categories** screen refuses a drag, key move, **Move to…**, **Parent** choice or
+  **Add subcategory** that would go deeper, and shows **Too deep**.
+- The REST API refuses the same create and move requests. Core keeps a copy of the number in the
+  `category_depth` preference, refreshed whenever an admin page loads, because the API does not
+  load the theme.
+- Categories already deeper stay where they are and are marked; nothing is moved. They may move
+  sideways or up, never deeper.
+
+Declare the number your templates really show. Menus have their own `depth` per place (below).
 
 ## Declaring extra views
 

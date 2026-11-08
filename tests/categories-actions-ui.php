@@ -46,6 +46,8 @@ function actions_ui_run(string $body, array $tree, array $opts = array()): array
         . "window.__answers.category_bulk = function (call) { var ids = (call.body.ids || []).map(Number); return {ok: true, done: ids, failed: {}, queued: [], message: ids.length + ' done.'}; };\n"
         . "var calls = function (a) { return window.__calls.filter(function (c) { return c.action === a; }); };\n"
         . "var last = function (a) { return calls(a).pop() || {body: {}, query: {}}; };\n"
+        . "var facts = function () { return t.\$\$('#catConfirmFacts li').map(function (l) { return l.textContent; }).join(' '); };\n"
+        . "var toastText = function () { var b = t.\$('.osc-toast-text'); return b ? b.textContent : null; };\n"
         . "var ok = async function () { t.\$('#catConfirmOk').click(); await t.settle(400); };\n"
         . "var bulk = async function (what) { t.\$('#cat-bulk').value = what; t.\$('#cat-bulk-form').requestSubmit(); await t.settle(400); };\n"
         . $body . "\nreturn r;\n};\n";
@@ -72,7 +74,7 @@ r.offBefore = t.$$('tr.cat-row.is-disabled').length;
 await t.click(t.act('Vehicles', 'toggle'));
 r.open = t.$('#catConfirm').open;
 r.title = t.$('#catConfirmTitle').textContent;
-r.text = t.$('#catConfirmText').textContent;
+r.text = facts();
 r.vehListings = veh.dataset.listings;
 r.callsBefore = calls('enable_category').length;
 t.$('#catConfirm').close();
@@ -102,7 +104,9 @@ r.jobsOff = t.row('Jobs').classList.contains('is-disabled');
 JS, $demo);
 pin('Disable on a category with subcategories asks first', true, $r['open'] ?? null);
 pin('the question names the category', 'Disable Vehicles?', $r['title'] ?? null);
-check('it names the subcategories and listings', str_contains((string) ($r['text'] ?? ''), '10 subcategories · ' . ($r['vehListings'] ?? '?') . ' listings.'), (string) ($r['text'] ?? ''));
+check('it names the subcategories', str_contains((string) ($r['text'] ?? ''), 'Its 10 subcategories are disabled too.'), (string) ($r['text'] ?? ''));
+check('and the listings', str_contains((string) ($r['text'] ?? ''), ($r['vehListings'] ?? '?') . ' listings stop showing'), (string) ($r['text'] ?? ''));
+check('and says nothing is deleted', str_contains((string) ($r['text'] ?? ''), 'Nothing is deleted.'), (string) ($r['text'] ?? ''));
 pin('Cancel posts nothing', 0, $r['cancelled'] ?? null);
 pin('Confirm posts enable_category with enabled=0', array('POST', (string) $ids['Vehicles'], '0'), $r['post'] ?? null);
 pin('all 10 rows below grey out', 10, $r['belowOff'] ?? null);
@@ -125,7 +129,7 @@ var rows0 = t.$$('tr.cat-row').length;
 await t.click(t.act('Vehicles', 'delete'));
 r.open = t.$('#catConfirm').open;
 r.title = t.$('#catConfirmTitle').textContent;
-r.text = t.$('#catConfirmText').textContent;
+r.text = facts();
 r.okLabel = t.$('#catConfirmOk').textContent;
 r.preview = last('category_delete_preview').query.ids;
 r.deletedBefore = calls('delete_category').length;
@@ -139,9 +143,9 @@ r.all = [all0, t.tab('All').querySelector('.osc-count').textContent];
 window.__answers.delete_category = {ok: true, queued: true};
 window.__answers.category_delete_preview = {categories: 6, listings: 9000, queued: true};
 await t.click(t.act('Classes', 'delete'));
-r.queuedText = t.$('#catConfirmText').textContent;
+r.queuedText = facts();
 await ok();
-r.flash = window.__flash.slice();
+r.queuedToast = toastText();
 window.__answers.delete_category = {error: 'An error occurred while deleting'};
 await t.click(t.act('Jobs', 'delete'));
 await ok();
@@ -150,9 +154,9 @@ r.flash2 = window.__flash.length;
 JS, $demo);
 pin('Delete asks first', true, $r['open'] ?? null);
 pin('the question names the category', 'Delete Vehicles?', $r['title'] ?? null);
-check('it reports the real counts', str_contains((string) ($r['text'] ?? ''), '11 categories · 30 listings.'), (string) ($r['text'] ?? ''));
-check('it says expired and unapproved listings go too', str_contains((string) ($r['text'] ?? ''), 'including expired and unapproved ones'), (string) ($r['text'] ?? ''));
-pin('the button says Delete', 'Delete', $r['okLabel'] ?? null);
+check('it reports the real subcategory count', str_contains((string) ($r['text'] ?? ''), 'Its 10 subcategories are deleted too.'), (string) ($r['text'] ?? ''));
+check('it says expired and unapproved listings go too', str_contains((string) ($r['text'] ?? ''), '30 listings are deleted, along with any expired or unapproved ones.'), (string) ($r['text'] ?? ''));
+pin('the button states the cost', 'Delete 11 categories and 30 listings', $r['okLabel'] ?? null);
 pin('the preview asks for this category only', array((string) $ids['Vehicles']), $r['preview'] ?? null);
 pin('the preview comes first, the delete after', array('category_delete_preview', 'delete_category'), $r['order'] ?? null);
 pin('the delete posts the id', array('POST', (string) $ids['Vehicles']), $r['post'] ?? null);
@@ -161,9 +165,9 @@ pin('11 rows left the table', 11, $r['removed'] ?? null);
 check('the footer total dropped', ($r['foot'][0] ?? '') !== ($r['foot'][1] ?? ''), implode(' / ', $r['foot'] ?? array()));
 pin('the All tab count dropped by 11', (string) ((int) ($r['all'][0] ?? 0) - 11), $r['all'][1] ?? null);
 check('a big delete says it runs in the background', str_contains((string) ($r['queuedText'] ?? ''), 'Deleting in the background'), (string) ($r['queuedText'] ?? ''));
-pin('and the flash says so after', array(array('ok', 'Deleting in the background. This can take a moment.')), $r['flash'] ?? null);
+pin('and the toast says so after', 'Deleting in the background. This can take a moment.', $r['queuedToast'] ?? null);
 pin('a refused delete keeps the row', true, $r['stays'] ?? null);
-pin('and flashes the error', 2, $r['flash2'] ?? null);
+pin('and flashes the error', 1, $r['flash2'] ?? null);
 
 harness_section('Delete: cancel and a bad preview');
 $r = actions_ui_run(<<<'JS'
@@ -197,7 +201,7 @@ r.emptyOpen = t.$('#catConfirm').open;
 await t.click(t.row('Vehicles').querySelector('.cat-disclosure'));
 window.__answers.category_delete_preview = {categories: 1, listings: 19, queued: false};
 await t.click(t.act('Cars', 'delete'));
-r.leafText = t.$('#catConfirmText').textContent;
+r.leafText = facts();
 t.$('#catConfirm').close();
 await t.settle(400);
 r.posts2 = [calls('delete_category').length, calls('category_bulk').length];
@@ -211,7 +215,7 @@ pin('Vehicles and Jobs are still there', array(true, true), $r['stay'] ?? null);
 pin('a preview error opens no confirm', false, $r['errorOpen'] ?? null);
 pin('and flashes the error', array('error', 'Nope'), $r['errorFlash'] ?? null);
 pin('a preview with no counts opens no confirm', false, $r['emptyOpen'] ?? null);
-check('a category with no subcategories does not mention them', !str_contains((string) ($r['leafText'] ?? ''), 'subcategories') && str_contains((string) ($r['leafText'] ?? ''), '1 category · 19 listings.'), (string) ($r['leafText'] ?? ''));
+check('a category with no subcategories does not mention them', !str_contains((string) ($r['leafText'] ?? ''), 'subcategor') && str_contains((string) ($r['leafText'] ?? ''), '19 listings are deleted'), (string) ($r['leafText'] ?? ''));
 pin('still nothing was deleted', array(0, 0), $r['posts2'] ?? null);
 
 harness_section('Bulk bar');
@@ -223,6 +227,7 @@ r.sel = t.$('[data-cat-selcount]').textContent;
 await bulk('disable');
 r.open = t.$('#catConfirm').open;
 r.title = t.$('#catConfirmTitle').textContent;
+r.facts = facts();
 await ok();
 var c = last('category_bulk');
 r.post = [c.body.do, c.body.ids];
@@ -253,14 +258,15 @@ r.delGone = [!t.row('Trucks - Commercial Vehicles'), !t.row('Other Vehicles')];
 JS, $demo);
 pin('two ticked rows are selected', '2', $r['sel'] ?? null);
 pin('bulk Disable asks first', true, $r['open'] ?? null);
-pin('naming the one top-most category', 'Disable Vehicles?', $r['title'] ?? null);
+pin('counting both ticked rows', 'Disable 2 selected categories?', $r['title'] ?? null);
+check('and noting that Cars is counted once', str_contains((string) ($r['facts'] ?? ''), 'Cars is inside Vehicles, so it is counted once.'), (string) ($r['facts'] ?? ''));
 pin('Cars is inside Vehicles, so only Vehicles is posted', array('disable', array((string) $ids['Vehicles'])), $r['post'] ?? null);
 pin('Vehicles and its 10 below are off', 8 + 11, $r['off'] ?? null);
 pin('the selection clears', 0, $r['selAfter'] ?? null);
-pin('the toast is the server message', array(array('ok', '1 done.')), $r['flash'] ?? null);
+pin('the toast says what was disabled', array(array('ok', 'Disabled Vehicles and 10 subcategories.')), $r['flash'] ?? null);
 pin('failed ids are reported in the flash', array('error', 'Parent category is disabled, you can not enable that category'), $r['enableFlash'] ?? null);
 pin('and the row stays off', true, $r['enableOff'] ?? null);
-pin('bulk delete names the count', 'Delete 2 categories?', $r['delTitle'] ?? null);
+pin('bulk delete names the count', 'Delete 2 selected categories?', $r['delTitle'] ?? null);
 pin('and posts both ids', array('delete', 2), $r['delPost'] ?? null);
 pin('and removes both rows', array(true, true), $r['delGone'] ?? null);
 
