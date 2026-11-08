@@ -19210,10 +19210,6 @@ msgstr ""
 msgid "value too long"
 msgstr ""
 
-#: oc-admin/themes/modern/appearance/widgets.php
-msgid "widgets"
-msgstr ""
-
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "writable"
 msgstr ""

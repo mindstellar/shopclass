@@ -30,7 +30,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="appearance">
     </div>
 </div>
-</div> <!-- -->
+</div>
 <?php
 // Palette of available widget types, grouped by source. "Legacy" sorts last: the
 // raw-markup escape hatch should be reachable but never the obvious first pick.
@@ -86,7 +86,6 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
 <div class="widgets-builder">
     <div class="widgets-builder-grid">
 
-        <!-- LEFT: the theme's sections -->
         <div class="widgets-col">
             <div class="col-head">
                 <h3 class="col-title"><?php _e('Sections'); ?></h3>
@@ -111,13 +110,14 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                                     <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
                                     <?php _e('Your theme no longer has this section — these widgets are not shown on the site. Move them somewhere else, or delete them.'); ?>
                                 </span>
-                            <?php } else { ?>
-                                <span class="form-card-cats"><span class="widget-count"><?php
-                                    printf(osc_esc_html(_n('%d widget', '%d widgets', count($widgets))), count($widgets)); ?></span></span>
                             <?php } ?>
                         </div>
                         <span class="form-card-actions">
                             <span class="form-card-status" role="status" aria-live="polite"></span>
+                            <?php if (!$isOrphan) { ?>
+                                <span class="widget-count"><?php
+                                    printf(osc_esc_html(_n('%d widget', '%d widgets', count($widgets))), count($widgets)); ?></span>
+                            <?php } ?>
                         </span>
                     </div>
 
@@ -137,7 +137,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                                     <button type="button" class="chip-grip widget-drag-handle" draggable="true" tabindex="0"
                                             title="<?php echo osc_esc_html(__('Drag to reorder or move, or focus and use the arrow keys')); ?>"
                                             aria-label="<?php echo osc_esc_html(sprintf(__('Reorder %s'), $label)); ?>"><i class="bi bi-grip-vertical" aria-hidden="true"></i></button>
-                                    <span class="chip-name"><?php echo osc_esc_html($label); ?></span>
+                                    <span class="chip-name" title="<?php echo osc_esc_html($label); ?>"><?php echo osc_esc_html($label); ?></span>
                                     <span class="chip-type"><?php echo osc_esc_html($type !== null ? $type['label'] : __('Custom HTML')); ?></span>
                                     <span class="chip-actions">
                                         <?php if ($canHide) { ?>
@@ -150,7 +150,8 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                                         <button type="button" class="chip-btn js-widget-edit"
                                                 data-widget-id="<?php echo $wid; ?>"
                                                 data-location="<?php echo osc_esc_html($location); ?>"
-                                                title="<?php echo osc_esc_html(__('Edit widget')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
+                                                title="<?php echo osc_esc_html(__('Edit widget')); ?>"
+                                                aria-label="<?php echo osc_esc_html(__('Edit widget')); ?>"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>
                                         <button type="button" class="chip-btn chip-danger chip-btn-text"
                                                 onclick="return delete_dialog('<?php echo $wid; ?>');"
                                                 title="<?php echo osc_esc_html(__('Delete widget')); ?>"
@@ -162,15 +163,14 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                         <?php } ?>
                     </ul>
                     <?php if (!$isOrphan) { ?>
-                        <div class="form-empty js-widget-empty"<?php echo count($widgets) > 0 ? ' style="display:none"' : ''; ?>><?php
-                            _e('Drop a widget type here'); ?></div>
+                        <div class="form-empty js-widget-empty"<?php echo count($widgets) > 0 ? ' style="display:none"' : ''; ?>><i class="bi bi-plus-lg" aria-hidden="true"></i><span><?php
+                            _e('Drop a widget type here'); ?></span></div>
                     <?php } ?>
                     <div class="widget-reorder-error alert alert-danger py-1 px-2 small d-none" role="alert"></div>
                 </div>
             <?php } ?>
         </div>
 
-        <!-- RIGHT: available widget types, by source -->
         <div class="widgets-palette-col">
             <div class="col-head">
                 <h3 class="col-title"><?php _e('Available widgets'); ?></h3>
@@ -228,47 +228,6 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         return false;
     }
 </script>
-<style>
-    .widget-drag-cell {
-        width: 1%;
-        white-space: nowrap;
-        vertical-align: middle;
-    }
-
-    .widget-drag-handle {
-        display: inline-flex;
-        align-items: center;
-        cursor: grab;
-        padding: 0.25rem;
-        border-radius: 0.25rem;
-    }
-
-    .widget-drag-handle:focus-visible {
-        outline: 2px solid var(--bs-primary);
-        outline-offset: 1px;
-    }
-
-    .widget-order-buttons {
-        display: inline-flex;
-        flex-direction: column;
-        vertical-align: middle;
-        margin-left: 0.25rem;
-    }
-
-    .widget-order-buttons .btn {
-        line-height: 1;
-    }
-
-    .widget-row.widget-row-dragging {
-        opacity: 0.5;
-    }
-
-    .widget-row.is-hidden .chip-name,
-    .widget-row.is-hidden .chip-type {
-        text-decoration: line-through;
-        opacity: 0.55;
-    }
-</style>
 <script type="text/javascript">
 (function () {
     var ADMIN = '<?php echo osc_admin_base_url(true); ?>';
@@ -285,8 +244,16 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         hide:    '<?php echo osc_esc_js(__('Hide widget')); ?>',
         del:      '<?php echo osc_esc_js(__('Delete widget')); ?>',
         delShort: '<?php echo osc_esc_js(__('Delete')); ?>',
-        misfit:  '<?php echo osc_esc_js(__('This widget cannot be placed in that section.')); ?>'
+        misfit:  '<?php echo osc_esc_js(__('This widget cannot be placed in that section.')); ?>',
+        count:   '<?php echo osc_esc_js(_n('%d widget', '%d widgets', 2)); ?>',
+        reorder: '<?php echo osc_esc_js(__('Reorder %s')); ?>',
+        dragHint: '<?php echo osc_esc_js(__('Drag to reorder or move, or focus and use the arrow keys')); ?>',
+        edit:    '<?php echo osc_esc_js(__('Edit widget')); ?>',
+        delOne:  '<?php echo osc_esc_js(__('Delete %s')); ?>',
+        hideOne: '<?php echo osc_esc_js(__('Hide %s')); ?>',
+        showOne: '<?php echo osc_esc_js(__('Show %s')); ?>'
     };
+    var STILL = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     // data-locations is a space-separated list of sections a typed widget fits; absent means all.
     function fits(el, location) {
@@ -336,7 +303,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         if (badge) {
             badge.textContent = count === 1
                 ? '<?php echo osc_esc_js(__('1 widget')); ?>'
-                : count + ' <?php echo osc_esc_js(__('widgets')); ?>';
+                : TXT.count.replace('%d', count);
         }
     }
 
@@ -388,7 +355,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                     if (old.src) { sc.src = old.src; } else { sc.textContent = old.textContent; }
                     old.parentNode.replaceChild(sc, old);
                 });
-                slot.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                slot.scrollIntoView({ behavior: STILL ? 'auto' : 'smooth', block: 'nearest' });
                 var first = slot.querySelector('input:not([type=hidden]), select, textarea');
                 if (first) { first.focus({ preventScroll: true }); }
             });
@@ -420,14 +387,34 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                 + '  <span class="chip-name"></span>'
                 + '  <span class="chip-type"></span>'
                 + '  <span class="chip-actions">'
-                + '    <button type="button" class="chip-btn js-widget-toggle" data-widget-id="' + o.id + '" aria-pressed="false" title="' + TXT.hide + '" aria-label="' + TXT.hide + '"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>'
-                + '    <button type="button" class="chip-btn js-widget-edit" data-widget-id="' + o.id + '" data-location="' + (section.getAttribute('data-location') || '') + '"><i class="bi bi-pencil-fill"></i></button>'
-                + '    <button type="button" class="chip-btn chip-danger chip-btn-text" onclick="return delete_dialog(\'' + o.id + '\');" title="' + TXT.del + '"><i class="bi bi-trash" aria-hidden="true"></i><span>' + TXT.delShort + '</span></button>'
+                + '    <button type="button" class="chip-btn js-widget-toggle" aria-pressed="false"><i class="bi bi-eye-fill" aria-hidden="true"></i></button>'
+                + '    <button type="button" class="chip-btn js-widget-edit"><i class="bi bi-pencil-fill" aria-hidden="true"></i></button>'
+                + '    <button type="button" class="chip-btn chip-danger chip-btn-text"><i class="bi bi-trash" aria-hidden="true"></i><span></span></button>'
                 + '  </span>'
                 + '</div>'
                 + '<div class="field-chip-editor edit" hidden></div>';
-            li.querySelector('.chip-name').textContent = o.description;
-            li.querySelector('.chip-type').textContent = o.type_label || o.description;
+            var label = o.description;
+            var name = li.querySelector('.chip-name');
+            name.textContent = label;
+            name.title = label;
+            li.querySelector('.chip-type').textContent = o.type_label || label;
+            var grip = li.querySelector('.chip-grip');
+            grip.title = TXT.dragHint;
+            grip.setAttribute('aria-label', TXT.reorder.replace('%s', label));
+            var tgl = li.querySelector('.js-widget-toggle');
+            tgl.dataset.widgetId = o.id;
+            tgl.title = TXT.hide;
+            tgl.setAttribute('aria-label', TXT.hideOne.replace('%s', label));
+            var edt = li.querySelector('.js-widget-edit');
+            edt.dataset.widgetId = o.id;
+            edt.dataset.location = section.getAttribute('data-location') || '';
+            edt.title = TXT.edit;
+            edt.setAttribute('aria-label', TXT.edit);
+            var del = li.querySelector('.chip-danger');
+            del.title = TXT.del;
+            del.setAttribute('aria-label', TXT.delOne.replace('%s', label));
+            del.querySelector('span').textContent = TXT.delShort;
+            del.addEventListener('click', function () { delete_dialog(String(o.id)); });
             var ref = (typeof index === 'number') ? list.children[index] : null;
             list.insertBefore(li, ref || null);
             refreshSection(section);
@@ -517,7 +504,8 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                 trow.classList.toggle('is-hidden', hidden);
                 toggle.setAttribute('aria-pressed', hidden ? 'true' : 'false');
                 toggle.title = hidden ? TXT.show : TXT.hide;
-                toggle.setAttribute('aria-label', toggle.title);
+                var tname = trow.querySelector('.chip-name');
+                toggle.setAttribute('aria-label', (hidden ? TXT.showOne : TXT.hideOne).replace('%s', tname ? tname.textContent : ''));
                 var icon = toggle.querySelector('i');
                 if (icon) { icon.className = 'bi ' + (hidden ? 'bi-eye-slash-fill' : 'bi-eye-fill'); }
                 clearError(tsec);
@@ -607,7 +595,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
         var rows = list.querySelectorAll(':scope > .widget-row');
         var pos = Array.prototype.indexOf.call(rows, row) + 1;
         announce(TXT.moved.replace('%1$d', pos).replace('%2$d', rows.length)
-            .replace('%3$s', section.getAttribute('data-location')));
+            .replace('%3$s', section.getAttribute('data-label') || section.getAttribute('data-location')));
         persist(section);
     });
 

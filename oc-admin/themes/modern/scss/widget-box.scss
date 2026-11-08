@@ -127,22 +127,137 @@ div.widget-box-content-no-wrapp li a {
 .widgets-builder-grid {
   align-items: start;
   display: grid;
-  gap: 1.25rem;
+  gap: 1.5rem;
   grid-template-columns: minmax(0, 1fr) 22rem;
 
   @media (max-width: 900px) {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
+}
+
+// Hints, section notes and type badges stay at 12px or more, as on the Menus screen.
+.widgets-builder {
+  .col-hint,
+  .form-card-cats,
+  .chip-type {
+    font-size: .875rem;
+  }
+
+  .col-hint {
+    max-width: 75ch;
+  }
+
+  .form-card {
+    padding: .75rem .75rem .875rem;
+  }
+
+  .form-card-head {
+    align-items: flex-start;
+    margin-bottom: .625rem;
+  }
+
+  .form-card-heading {
+    padding-top: .1875rem;
+  }
+
+  .form-card-actions {
+    gap: .75rem;
+    min-height: 1.75rem;
+  }
+}
+
+.widget-count {
+  color: var(--osc-ink-muted);
+  font-size: .875rem;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .widget-list {
   display: flex;
   flex-direction: column;
-  gap: .4rem;
+  gap: .375rem;
   list-style: none;
   margin: 0;
   min-height: 2.5rem;
   padding: 0;
+}
+
+.widget-row {
+  .chip-grip {
+    align-self: stretch;
+    margin-block: -.4rem;
+    margin-inline-start: -.55rem;
+    padding-inline: .55rem .25rem;
+  }
+
+  .chip-grip:hover {
+    color: var(--osc-ink);
+  }
+
+  // Hidden on the site: struck through and greyed, and its eye button shows the slashed eye.
+  &.is-hidden {
+    .chip-name {
+      color: var(--osc-ink-muted);
+      text-decoration: line-through;
+    }
+
+    .chip-type {
+      text-decoration: line-through;
+    }
+  }
+}
+
+// An empty section: the drop hint sits inside the list's own drop area, as one row-high
+// slot, and steps aside as soon as a widget is dragged over it.
+.widget-list + .js-widget-empty {
+  align-items: center;
+  display: flex;
+  gap: .5rem;
+  justify-content: flex-start;
+  margin-top: -2.5rem;
+  min-height: 2.5rem;
+  padding: .4rem .75rem;
+  pointer-events: none;
+  text-align: start;
+}
+
+.widget-list:has(> li) + .js-widget-empty {
+  display: none !important;
+}
+
+// Drag states. The slot a widget will land in shows as a dashed teal outline; the
+// description of a type dragged in from the palette is dropped so the slot is row-high.
+.widgets-builder {
+  .chip-ghost {
+    background-color: var(--osc-bronze-tint);
+    border: 1px dashed var(--osc-bronze);
+    opacity: 1;
+
+    > * {
+      visibility: hidden;
+    }
+
+    .palette-type-desc,
+    .cf-add-menu {
+      display: none;
+    }
+  }
+
+  .is-drag-chosen {
+    cursor: grabbing;
+  }
+
+  .widget-list .widget-type {
+    .palette-type-desc,
+    .cf-add-menu {
+      display: none;
+    }
+  }
+}
+
+.widget-reorder-error {
+  margin: .5rem 0 0;
 }
 
 // A section the active theme no longer declares. Its widgets still exist and can
@@ -158,6 +273,10 @@ div.widget-box-content-no-wrapp li a {
 }
 
 .widget-section.is-collapsed {
+  .form-card-head {
+    margin-bottom: 0;
+  }
+
   .widget-list,
   .form-empty,
   .widget-reorder-error {
@@ -169,21 +288,27 @@ div.widget-box-content-no-wrapp li a {
   }
 }
 
+[dir="rtl"] .widget-section.is-collapsed .form-card-toggle .bi {
+  transform: rotate(90deg);
+}
+
 // ---- Palette of available types --------------------------------------------
 .palette-group + .palette-group {
-  margin-top: 1.25rem;
+  margin-top: 1.5rem;
 }
 
 .palette-group-title {
   color: var(--osc-ink-muted);
-  font-size: .75rem;
+  font-size: $font-size-label;
   font-weight: 600;
   letter-spacing: .04em;
-  margin: 0 0 .4rem;
+  margin: 0 0 .5rem;
   text-transform: uppercase;
 }
 
 .widget-type {
+  position: relative;
+
   .chip-name {
     white-space: normal;
   }
@@ -192,14 +317,46 @@ div.widget-box-content-no-wrapp li a {
   .chip-grip {
     cursor: grab;
   }
+
+  .cf-add-menu {
+    inset-inline: .5rem;
+    margin-top: 0;
+    position: absolute;
+    top: 100%;
+    z-index: 5;
+  }
 }
 
 .palette-type-desc {
   color: var(--osc-ink-muted);
   font-size: $font-size-label;
   line-height: 1.4;
-  margin: 0;
-  padding: 0 .55rem .5rem 2rem;
+  margin: -.125rem 0 0;
+  padding-block: 0 .55rem;
+  padding-inline: 2rem .75rem;
+}
+
+// Phones: the row keeps its name readable — Delete drops to its icon (it keeps its
+// accessible name), and the controls grow to a thumb-sized target.
+@media (max-width: 575.98px) {
+  .widget-row .chip-btn-text span {
+    @include visually-hidden;
+  }
+
+  .widget-row .chip-btn.chip-btn-text {
+    padding-inline: 0;
+    width: 2.25rem;
+  }
+}
+
+@media (pointer: coarse) {
+  .widgets-builder {
+    .chip-btn,
+    .form-card-toggle {
+      height: 2.25rem;
+      min-width: 2.25rem;
+    }
+  }
 }
 
 // osc_admin_panel_open(): a quiet block that groups fields beside a form. Not a dashboard
