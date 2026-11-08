@@ -419,7 +419,9 @@ final class SystemChecks
         }
         if (($env['htaccess_auth'] ?? null) === false) {
             $issues[] = self::issue('htaccess_no_authorization', 'warning', sprintf(
-                __('The .htaccess file does not pass the Authorization header to PHP, so the API cannot see keys sent in it. Add this line after "RewriteEngine On": %s'),
+                __('The %1$s file does not pass the Authorization header to PHP, so the API cannot see keys sent in it. Add this line after "%2$s": %3$s'),
+                '.htaccess',
+                'RewriteEngine On',
                 ServerRules::AUTHORIZATION
             ));
         }

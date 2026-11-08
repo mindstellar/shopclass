@@ -106,6 +106,12 @@ msgstr[1] ""
 msgid "%1$s credits held across %2$s accounts"
 msgstr ""
 
+#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
+msgid ""
+"%1$s does not read %2$s files. Add the block below to your site's %1$s "
+"server configuration, then reload %1$s."
+msgstr ""
+
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "%1$s does not say it works with %2$s. It may still work; %3$s."
 msgstr ""
@@ -946,32 +952,6 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
 msgid "43"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>config-sample.php</code> file exists"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid ""
-"<code>config-sample.php</code> file is required, you should re-download "
-"Shopclass."
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>config.php</code> file is writable"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>oc-content/downloads</code> folder is writable"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>oc-content/languages</code> folder is writable"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "<code>oc-content/uploads</code> folder is writable"
 msgstr ""
 
 #: oc-includes/classes/core/mail/CoreEmails.php
@@ -6523,18 +6503,6 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
 msgid "Floor area (m²)"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "Folder <code>oc-content/downloads</code> exists"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "Folder <code>oc-content/languages</code> folder exists"
-msgstr ""
-
-#: oc-includes/osclass/install-functions.php
-msgid "Folder <code>oc-content/uploads</code> exists"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
@@ -13741,11 +13709,7 @@ msgid "Server port"
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid "Server rules (.htaccess)"
-msgstr ""
-
-#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid "Server rules (nginx)"
+msgid "Server rules (%s)"
 msgstr ""
 
 #: oc-includes/classes/admin/form/MailServerSettingsScreen.php
@@ -14033,6 +13997,12 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "Shopclass needs MySQL 5.7.5 or newer, or MariaDB 10.2 or newer. "
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid ""
+"Shopclass needs the %s file. Download Shopclass again and upload all its "
+"files."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/billing.php
@@ -14961,6 +14931,12 @@ msgid ""
 "allowed "
 msgstr ""
 
+#: oc-includes/classes/admin/SystemChecks.php
+msgid ""
+"The %1$s file does not pass the Authorization header to PHP, so the API "
+"cannot see keys sent in it. Add this line after \"%2$s\": %3$s"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSettings.php
 msgid ""
 "The %1$s plugin has a settings page Shopclass cannot load, so it is left "
@@ -14990,7 +14966,15 @@ msgid "The %s file can't be written to"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
+msgid "The %s file exists"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
 msgid "The %s file is missing"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The %s file is writable"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -14998,7 +14982,15 @@ msgid "The %s folder can't be written to"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
+msgid "The %s folder exists"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
 msgid "The %s folder is missing"
+msgstr ""
+
+#: oc-includes/osclass/install-functions.php
+msgid "The %s folder is writable"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -15019,12 +15011,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "The %s payment plugin is not set up."
-msgstr ""
-
-#: oc-includes/classes/admin/SystemChecks.php
-msgid ""
-"The .htaccess file does not pass the Authorization header to PHP, so the API "
-"cannot see keys sent in it. Add this line after \"RewriteEngine On\": %s"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -17969,7 +17955,7 @@ msgid "What you bought"
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid "What your .htaccess file should look like"
+msgid "What your %s file should look like"
 msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
@@ -18297,7 +18283,7 @@ msgid "Your changes are live."
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid "Your current .htaccess file"
+msgid "Your current %s file"
 msgstr ""
 
 #: oc-includes/classes/admin/form/AdvancedSettingsScreen.php
@@ -18858,10 +18844,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "never ran"
-msgstr ""
-
-#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid "nginx does not read .htaccess files. Add the "
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php

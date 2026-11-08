@@ -117,9 +117,9 @@ function get_requirements()
         'problem'  => sprintf(__('The PHP %s extension is not turned on'), $name),
         'solution' => sprintf(__("In your hosting panel, open the PHP settings and turn on the %s extension. If you can't find it, ask your host."), $code(strtolower($name))),
     );
-    $folder    = static fn (string $name, string $existsLabel, string $writableLabel): array => array(
+    $folder    = static fn (string $name): array => array(
         'Folder <code>oc-content/' . $name . '</code> exists' => array(
-            'requirement' => $existsLabel,
+            'requirement' => sprintf(__('The %s folder exists'), $code('oc-content/' . $name)),
             'problem'     => sprintf(__('The %s folder is missing'), $code('oc-content/' . $name)),
             'fn'          => file_exists(ABS_PATH . 'oc-content/' . $name . '/'),
             'solution'    => sprintf(
@@ -129,7 +129,7 @@ function get_requirements()
             ),
         ),
         'Folder <code>oc-content/' . $name . '</code> is writable' => array(
-            'requirement' => $writableLabel,
+            'requirement' => sprintf(__('The %s folder is writable'), $code('oc-content/' . $name)),
             'problem'     => sprintf(__("The %s folder can't be written to"), $code('oc-content/' . $name)),
             'fn'          => is_writable(ABS_PATH . 'oc-content/' . $name . '/'),
             'solution'    => $chmod(ABS_PATH . 'oc-content/' . $name . '/', '755'),
@@ -162,9 +162,9 @@ function get_requirements()
             'fn'          => extension_loaded('zip'),
         ) + $extension('Zip'),
     )
-        + $folder('uploads', __('Folder <code>oc-content/uploads</code> exists'), __('<code>oc-content/uploads</code> folder is writable'))
-        + $folder('downloads', __('Folder <code>oc-content/downloads</code> exists'), __('<code>oc-content/downloads</code> folder is writable'))
-        + $folder('languages', __('Folder <code>oc-content/languages</code> folder exists'), __('<code>oc-content/languages</code> folder is writable'));
+        + $folder('uploads')
+        + $folder('downloads')
+        + $folder('languages');
 
     // Only when a database is already configured (config.php or environment); otherwise
     // there is nothing to connect to until step 2.
@@ -186,7 +186,7 @@ function get_requirements()
             $config_writable = true;
         }
         $array['File <code>config.php</code> is writable'] = array(
-            'requirement' => __('<code>config.php</code> file is writable'),
+            'requirement' => sprintf(__('The %s file is writable'), $code('config.php')),
             'problem'     => sprintf(__("The %s file can't be written to"), $code('config.php')),
             'fn'          => $config_writable,
             'solution'    => $chmod(ABS_PATH . 'config.php', '644'),
@@ -206,10 +206,10 @@ function get_requirements()
             $config_sample = true;
         }
         $array['File <code>config-sample.php</code> exists'] = array(
-            'requirement' => __('<code>config-sample.php</code> file exists'),
+            'requirement' => sprintf(__('The %s file exists'), $code('config-sample.php')),
             'problem'     => sprintf(__('The %s file is missing'), $code('config-sample.php')),
             'fn'          => $config_sample,
-            'solution'    => __('<code>config-sample.php</code> file is required, you should re-download Shopclass.')
+            'solution'    => sprintf(__('Shopclass needs the %s file. Download Shopclass again and upload all its files.'), $code('config-sample.php'))
         );
     }
 

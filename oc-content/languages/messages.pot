@@ -23,6 +23,12 @@ msgstr[1] ""
 msgid "%1$s and %2$d more"
 msgstr ""
 
+#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
+msgid ""
+"%1$s does not read %2$s files. Check that the server rules below are in your "
+"%1$s configuration, then reload %1$s."
+msgstr ""
+
 #: oc-includes/classes/listing/ListingValidator.php
 msgid "%1$s is longer than %2$d characters."
 msgstr ""
@@ -422,6 +428,12 @@ msgstr[1] ""
 
 #: oc-includes/classes/listing/ListingValidator.php
 msgid "Add at least one option row, or turn options off."
+msgstr ""
+
+#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
+msgid ""
+"Add the content below to the %s file. If you can't change the file, or the "
+"links stop working, turn off Friendly URLs."
 msgstr ""
 
 #: oc-includes/classes/listing/ListingService.php
@@ -1402,10 +1414,6 @@ msgid "Featured listings only"
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid "File <b>.htaccess</b> already exists and was not modified."
-msgstr ""
-
-#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
 msgid "File <b>.htaccess</b> couldn't be filled out with the right content."
 msgstr ""
 
@@ -1440,14 +1448,14 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
 msgid ""
-"Friendly URLs deactivated, but .htaccess file could not be deleted. Please, "
-"remove it manually"
+"Friendly URLs are off, but the %s file could not be deleted. Delete it "
+"yourself."
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
 msgid ""
-"Friendly URLs deactivated, but .htaccess file was modified outside Shopclass "
-"and was not deleted"
+"Friendly URLs are off. The %s file was changed outside Shopclass, so it was "
+"not deleted."
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
@@ -1502,13 +1510,6 @@ msgstr ""
 msgid ""
 "Here's the content you have to add to the <b>.htaccess</b> file. If you "
 "can't create the file, please deactivate the <em>Friendly URLs</em> option."
-msgstr ""
-
-#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid ""
-"Here's the content you have to add to the <b>.htaccess</b> file. If you "
-"can't modify the file or experience some problems with the URLs, please "
-"deactivate the <em>Friendly URLs</em> option."
 msgstr ""
 
 #: oc-includes/osclass/helpers/hBilling.php
@@ -3419,6 +3420,10 @@ msgstr ""
 msgid "That webhook endpoint is not in the list any more."
 msgstr ""
 
+#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
+msgid "The %s file already exists and was not changed."
+msgstr ""
+
 #: oc-includes/classes/core/routing/PageDispatcher.php
 msgid "The active theme has no cart page. Choose a shop theme to use the cart."
 msgstr ""
@@ -5273,12 +5278,6 @@ msgstr ""
 
 #: oc-includes/classes/listing/fields/FieldService.php
 msgid "names a category that does not exist"
-msgstr ""
-
-#: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid ""
-"nginx does not read .htaccess: check the server rules below are in your "
-"nginx configuration, then reload nginx."
 msgstr ""
 
 #: oc-includes/osclass/gui/item-comments-content.php

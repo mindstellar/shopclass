@@ -270,9 +270,9 @@ final class PermalinkSettingsScreen extends SettingsScreen
             case 5:
             case 6:
                 if (file_exists($file) && file_get_contents($file) !== $rules) {
-                    $msg = _m('File <b>.htaccess</b> already exists and was not modified.');
+                    $msg = sprintf(_m('The %s file already exists and was not changed.'), '<b>.htaccess</b>');
                     $msg .= ' ';
-                    $msg .= _m("Here's the content you have to add to the <b>.htaccess</b> file. If you can't modify the file or experience some problems with the URLs, please deactivate the <em>Friendly URLs</em> option.");
+                    $msg .= sprintf(_m("Add the content below to the %s file. If you can't change the file, or the links stop working, turn off Friendly URLs."), '<b>.htaccess</b>');
                     $msg .= '</p><pre>' . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8') . '</pre><p>';
                     osc_add_flash_warning_message($msg, 'admin');
                     break;
@@ -284,7 +284,7 @@ final class PermalinkSettingsScreen extends SettingsScreen
                 // sent back to, so point at them rather than repeating them into a flash.
                 $msg = _m('Permalinks structure updated');
                 $msg .= ' ';
-                $msg .= _m('nginx does not read .htaccess: check the server rules below are in your nginx configuration, then reload nginx.');
+                $msg .= sprintf(_m('%1$s does not read %2$s files. Check that the server rules below are in your %1$s configuration, then reload %1$s.'), 'nginx', '.htaccess');
                 osc_add_flash_ok_message($msg, 'admin');
                 break;
             default:
@@ -319,12 +319,12 @@ final class PermalinkSettingsScreen extends SettingsScreen
             osc_add_flash_ok_message(_m('Friendly URLs successfully deactivated'), 'admin');
         } elseif ($ours) {
             osc_add_flash_warning_message(
-                _m('Friendly URLs deactivated, but .htaccess file could not be deleted. Please, remove it manually'),
+                sprintf(_m('Friendly URLs are off, but the %s file could not be deleted. Delete it yourself.'), '.htaccess'),
                 'admin'
             );
         } else {
             osc_add_flash_warning_message(
-                _m('Friendly URLs deactivated, but .htaccess file was modified outside Shopclass and was not deleted'),
+                sprintf(_m('Friendly URLs are off. The %s file was changed outside Shopclass, so it was not deleted.'), '.htaccess'),
                 'admin'
             );
         }
@@ -349,11 +349,9 @@ final class PermalinkSettingsScreen extends SettingsScreen
         $rules = osc_server_rewrite_rules();
         echo '<div class="server-config">';
         if (osc_server_is_nginx()) {
-            osc_admin_form_section(__('Server rules (nginx)'), array('spaced' => true));
+            osc_admin_form_section(sprintf(__('Server rules (%s)'), 'nginx'), array('spaced' => true));
             echo '<p class="settings-lead">'
-                 . osc_esc_html(__('nginx does not read .htaccess files. Add the '
-                                   . 'block below to your site\'s nginx server configuration, then reload '
-                                   . 'nginx.'))
+                 . osc_esc_html(sprintf(__('%1$s does not read %2$s files. Add the block below to your site\'s %1$s server configuration, then reload %1$s.'), 'nginx', '.htaccess'))
                  . '</p><div class="server-config-grid"><div class="server-config-block"><pre>'
                  . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8')
                  . '</pre></div></div></div>';
@@ -363,15 +361,15 @@ final class PermalinkSettingsScreen extends SettingsScreen
 
         $file   = osc_base_path() . '.htaccess';
         $exists = file_exists($file);
-        osc_admin_form_section(__('Server rules (.htaccess)'), array('spaced' => true));
+        osc_admin_form_section(sprintf(__('Server rules (%s)'), '.htaccess'), array('spaced' => true));
         echo '<div class="server-config-grid">';
         if ($exists) {
             echo '<div class="server-config-block">';
-            osc_admin_section_heading(__('Your current .htaccess file'), 'subsection', '');
+            osc_admin_section_heading(sprintf(__('Your current %s file'), '.htaccess'), 'subsection', '');
             echo '<pre>' . \mindstellar\utility\Escape::htmlEntities((string)file_get_contents($file), ENT_COMPAT, 'UTF-8') . '</pre></div>';
         }
         echo '<div class="server-config-block">';
-        osc_admin_section_heading($exists ? __('What it should look like') : __('What your .htaccess file should look like'), 'subsection', '');
+        osc_admin_section_heading($exists ? __('What it should look like') : sprintf(__('What your %s file should look like'), '.htaccess'), 'subsection', '');
         echo '<pre>' . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8') . '</pre></div></div></div>';
     }
 
