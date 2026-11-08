@@ -15,17 +15,32 @@
 .menu-children {
   display: flex;
   flex-direction: column;
-  gap: .4rem;
+  gap: .375rem;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
-// Each level of nesting steps in. An empty list stays a drop target so a row can be nested into it.
+.menu-items {
+  margin-top: .75rem;
+}
+
+// Each level steps in, with a hairline guide down the side so depth reads at a glance. An empty
+// list stays a thin drop target so a row can be nested into it, and adds no gap of its own.
 .menu-children {
-  margin-inline-start: 1.75rem;
-  margin-top: .4rem;
-  min-height: .5rem;
+  border-inline-start: 1px solid var(--osc-rule);
+  margin-inline-start: .875rem;
+  padding-inline-start: .875rem;
+
+  &:not(:empty) {
+    margin-top: .375rem;
+  }
+
+  &:empty {
+    border-inline-start-color: transparent;
+    margin-bottom: -.375rem;
+    min-height: .375rem;
+  }
 }
 
 // The row's own box is its summary line; its child list sits below, outside that box.
@@ -39,9 +54,18 @@
     background-color: var(--osc-bench);
     border: 1px solid var(--osc-rule);
     border-radius: var(--bs-border-radius);
+    min-height: 2.625rem;
+    transition: background-color var(--osc-duration-fast) var(--osc-ease),
+                border-color var(--osc-duration-fast) var(--osc-ease),
+                box-shadow var(--osc-duration-fast) var(--osc-ease);
 
     &:hover {
+      background-color: var(--osc-bench-warm);
       border-color: var(--osc-rule-strong);
+    }
+
+    &:has(.chip-grip:focus-visible) {
+      border-color: var(--osc-bronze);
     }
   }
 
@@ -56,10 +80,28 @@
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
     border-color: var(--osc-bronze);
+
+    [data-act="edit"] {
+      background-color: var(--osc-bench);
+      color: var(--osc-bronze);
+    }
+  }
+
+  // A moved or newly added row lights up briefly where it landed.
+  &.is-settled > .field-chip-row {
+    animation: menu-settle 1.2s var(--osc-ease);
   }
 }
 
-.menu-item {
+@keyframes menu-settle {
+  0%,
+  30% {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+  }
+}
+
+.menu-items .menu-item {
   cursor: grab;
 
   input,
@@ -68,20 +110,58 @@
     cursor: text;
   }
 
+  // The handle stays quiet until the row is pointed at or focused.
+  .chip-grip {
+    align-self: stretch;
+    color: var(--osc-rule-strong);
+    margin-block: -.4rem;
+    margin-inline-start: -.55rem;
+    padding-inline: .55rem .25rem;
+    transition: color var(--osc-duration-fast) var(--osc-ease);
+  }
+
+  .field-chip-row:hover .chip-grip {
+    color: var(--osc-ink);
+  }
+
+  @media (hover: none) {
+    .chip-grip {
+      color: var(--osc-ink-muted);
+    }
+  }
+
+  .chip-name {
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  // Drag: the slot the row will land in is a dashed teal outline at the depth it will take.
   &.chip-ghost {
-    opacity: .6;
+    opacity: 1;
+
+    .field-chip-row,
+    .field-chip-row:hover {
+      background-color: var(--osc-bronze-tint);
+      border: 1px dashed var(--osc-bronze);
+      box-shadow: none;
+
+      > * {
+        visibility: hidden;
+      }
+    }
+
+    .field-chip-editor {
+      display: none;
+    }
+
+    .menu-children {
+      border-inline-start-color: transparent;
+    }
   }
 
-  &.sortable-chosen {
+  &.is-drag-chosen:not(.chip-ghost) > .field-chip-row {
+    box-shadow: var(--osc-shadow-overlay);
     cursor: grabbing;
-  }
-
-  &.is-drop-before {
-    box-shadow: 0 -2px 0 var(--osc-bronze);
-  }
-
-  &.is-drop-after {
-    box-shadow: 0 2px 0 var(--osc-bronze);
   }
 
   &.is-missing .chip-type {
@@ -106,6 +186,59 @@
     .input-text {
       max-width: 32rem;
     }
+  }
+}
+
+// Indent and outdent point the way the row moves.
+[dir="rtl"] .menu-item {
+  [data-act="indent"] .bi,
+  [data-act="outdent"] .bi {
+    transform: scaleX(-1);
+  }
+}
+
+// While a row is dragged nothing else reacts to the pointer.
+.menus-page.is-dragging {
+  .field-chip-row:hover {
+    background-color: var(--osc-bench);
+    border-color: var(--osc-rule);
+  }
+
+  .field-chip-row:hover .chip-grip {
+    color: var(--osc-rule-strong);
+  }
+}
+
+// An empty menu: a row-high slot where the first item will go, as on the Widgets screen.
+#menu-empty {
+  align-items: center;
+  display: flex;
+  gap: .5rem;
+  margin-top: 0;
+  min-height: 2.625rem;
+  padding: .4rem .75rem;
+  text-align: start;
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+// "Unsaved changes" carries a dot so it is seen from the Save button.
+#menu-status:not(:empty) {
+  align-items: center;
+  color: var(--osc-warning-deep);
+  display: inline-flex;
+  font-size: .875rem;
+  font-weight: 500;
+  gap: .375rem;
+
+  &::before {
+    background-color: var(--osc-warning);
+    border-radius: 50%;
+    content: "";
+    height: .5rem;
+    width: .5rem;
   }
 }
 
@@ -158,11 +291,15 @@
   }
 }
 
-// Phones: 44px targets, and the row wraps instead of pushing the page sideways.
+// Phones: 44px targets, a shallower step per level, and the row wraps instead of pushing the
+// page sideways.
 @include media-breakpoint-down(md) {
-  .menu-item {
-    margin-inline-start: calc(var(--menu-depth, 0) * 1rem);
+  .menu-children {
+    margin-inline-start: .5rem;
+    padding-inline-start: .5rem;
+  }
 
+  .menu-items .menu-item {
     .field-chip-row {
       align-items: center;
       display: grid;
@@ -172,6 +309,7 @@
 
     .chip-grip {
       grid-row: 1 / span 2;
+      margin-block: 0;
     }
 
     .chip-grip,
@@ -180,9 +318,19 @@
       min-width: 44px;
     }
 
+    .chip-name {
+      padding-top: .5rem;
+    }
+
+    .chip-type {
+      margin-top: .5rem;
+      align-self: start;
+    }
+
     .chip-actions {
       grid-column: 2 / -1;
       justify-self: start;
+      margin-inline-start: -.75rem;
     }
   }
 }
@@ -241,5 +389,11 @@
 
   &[hidden] {
     display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-items .menu-item.field-chip.is-settled > .field-chip-row {
+    animation: none;
   }
 }

@@ -176,6 +176,15 @@
         render(focusIndex, focusAct);
     }
 
+    // Light up the row that just moved or was added, so the eye finds where it went.
+    function settle(i) {
+        var row = list.querySelector('.menu-item[data-index="' + i + '"]');
+        if (row) {
+            row.classList.add('is-settled');
+            row.scrollIntoView({ block: 'nearest' });
+        }
+    }
+
     function moveBlock(from, to) {
         var end = blockEnd(from);
         var block = items.splice(from, end - from);
@@ -398,6 +407,7 @@
         }
         e.preventDefault();
         changed(to);
+        settle(to);
         if (announce) {
             announce.textContent = position(to);
         }
@@ -427,7 +437,9 @@
             return;
         }
         items = next;
-        changed(items.indexOf(evt.item._item));
+        var at = items.indexOf(evt.item._item);
+        changed(at);
+        settle(at);
     }
 
     // A drop may not push the dragged row and what is under it deeper than the screen allows.
@@ -456,7 +468,13 @@
                 filter: 'input, select, textarea, a, button:not(.chip-grip), .field-chip-editor',
                 ghostClass: 'chip-ghost',
                 onMove: allowed,
-                onEnd: dropped
+                onStart: function () {
+                    root.classList.add('is-dragging');
+                },
+                onEnd: function (evt) {
+                    root.classList.remove('is-dragging');
+                    dropped(evt);
+                }
             });
         });
     }
@@ -506,7 +524,7 @@
             }
             items.push(item);
             changed();
-            status.textContent = t.unsaved;
+            settle(items.length - 1);
         });
     });
 
