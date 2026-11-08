@@ -228,8 +228,69 @@ $offGroups = [];
 foreach ($off->settingsGroups() as $grp) {
     $offGroups[$grp['id']] = array_column($grp['entries'], 'id');
 }
-pin('with billing off the switch is in System and a billing page falls to Other',
-    [true, ['p-tax']], [in_array('settings_billing', $offGroups['settings_group_system'], true), $offGroups['settings_group_other']]);
+pin('with billing off the switch stays in System and a billing page goes under a Billing heading',
+    [true, ['p-tax'], 'Billing', false],
+    [in_array('settings_billing', $offGroups['settings_group_system'], true), $offGroups['settings_group_billing'] ?? null,
+     array_column($off->settingsGroups(), 'title', 'id')['settings_group_billing'] ?? null, isset($offGroups['settings_group_other'])]);
+$off->add_submenu('settings', 'Loose', 'https://example.test/x', 'p-loose', 'administrator');
+$offGroups = array_column($off->settingsGroups(), 'entries', 'id');
+pin('...and an ungrouped Settings page after it still goes to Other',
+    [['p-tax'], ['p-loose']], [array_column($offGroups['settings_group_billing'], 'id'), array_column($offGroups['settings_group_other'], 'id')]);
+pin('the Billing heading is left out while nothing is in it', false, in_array('settings_group_billing', array_column((function () {
+    $m = new AdminMenu();
+    $m->init();
+    return $m->settingsGroups();
+})(), 'id'), true));
+$GLOBALS['__stub_osc_billing_enabled'] = static fn () => true;
+
+harness_section('Plugin page section label');
+if (!function_exists('osc_apply_filter')) {
+    function osc_apply_filter($name, $value)
+    {
+        return isset($GLOBALS['__filters'][$name]) ? ($GLOBALS['__filters'][$name])($value) : $value;
+    }
+}
+$GLOBALS['__stub_osc_is_moderator'] = static fn () => false;
+$lbl = new AdminMenu();
+$lbl->init();
+$pluginUrl = static fn (string $route): string => 'https://example.test/oc-admin/index.php?page=plugins&action=renderplugin&route=' . $route;
+$lbl->add_submenu('users', 'Subscribers', $pluginUrl('subs'), 'p-subs', 'administrator');
+$lbl->add_submenu('billing', 'Shipping', $pluginUrl('ship'), 'p-ship', 'administrator');
+$lbl->add_submenu('languages', 'Translator', $pluginUrl('tr'), 'p-tr', 'administrator');
+$lbl->add_submenu('plugins', 'Tool', $pluginUrl('tool'), 'p-tool', 'administrator');
+$labelFor = static function (string $route) use ($lbl): string {
+    $_SERVER['QUERY_STRING'] = 'page=plugins&action=renderplugin&route=' . $route;
+    $_GET = ['page' => 'plugins', 'action' => 'renderplugin', 'route' => $route];
+    Params::init();
+    return $lbl->pluginSectionLabel();
+};
+pin('a plugin page says the section that holds it', ['Users', 'Billing', 'Languages', 'Plugins', 'Plugins'],
+    [$labelFor('subs'), $labelFor('ship'), $labelFor('tr'), $labelFor('tool'), $labelFor('nowhere')]);
+$GLOBALS['__filters']['custom_plugin_title'] = static fn ($v) => 'Translator';
+pin('custom_plugin_title still wins', 'Translator', $labelFor('subs'));
+unset($GLOBALS['__filters']['custom_plugin_title'], $_SERVER['QUERY_STRING']);
+$_GET = [];
+Params::init();
+
+harness_section('Unknown parent menu');
+$child = static function (bool $debug): string {
+    $log  = tempnam(sys_get_temp_dir(), 'menu');
+    $code = ($debug ? "define('OSC_DEBUG', true);" : '')
+        . "define('ABS_PATH', " . var_export(ABS_PATH, true) . ");"
+        . "require ABS_PATH . 'oc-includes/vendor/autoload.php';"
+        . "require ABS_PATH . 'oc-includes/classes/core/base/SharedInstance.php';"
+        . "require ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php';"
+        . "\$m = new AdminMenu(); \$m->add_menu('Users', 'u', 'users');"
+        . "\$m->add_submenu('users', 'Fine', 'f', 'p-fine'); \$m->add_submenu('nosuch', 'Lost', 'l', 'p-lost');";
+    exec(escapeshellarg(PHP_BINARY) . ' -d log_errors=1 -d error_log=' . escapeshellarg($log) . ' -r ' . escapeshellarg($code));
+    $out = (string) file_get_contents($log);
+    unlink($log);
+    return $out;
+};
+$logged = $child(true);
+pin('in debug one warning names the entry and its missing parent', [1, true, true, false],
+    [substr_count($logged, 'Admin menu:'), str_contains($logged, '"p-lost"'), str_contains($logged, '"nosuch"'), str_contains($logged, 'p-fine')]);
+pin('without debug nothing is logged', '', $child(false));
 pin('with billing off there is no Billing section', false, isset($off->get_array_menu()['billing']));
 
 harness_section('Sidebar icons');

@@ -414,6 +414,10 @@ class AdminMenu
                 $this->add_submenu('settings', $label, $b . $path, $id, 'administrator');
             }
         }
+        // While billing is off, pages placed in Billing land under this heading in Settings.
+        if (!osc_billing_enabled()) {
+            $this->add_submenu_divider('settings', __('Billing'), 'settings_group_billing', 'administrator');
+        }
 
         $this->add_menu(__('Languages'), $b . '?page=languages', 'languages', 'administrator', 'bi bi-translate');
         $this->add_submenu('languages', __('Manage languages'), $b . '?page=languages', 'languages_manage', 'administrator');
@@ -568,8 +572,11 @@ class AdminMenu
         // Billing is only a menu while billing is on; a page placed there otherwise goes to Settings.
         if ($menu_id === 'billing' && !isset($this->aMenu['billing'])) {
             $menu_id  = 'settings';
-            $group    = null;
+            $group    = 'settings_group_billing';
             $array[3] = $menu_id;
+        }
+        if (defined('OSC_DEBUG') && OSC_DEBUG && !self::isSection($this->aMenu[$menu_id] ?? null)) {
+            error_log(sprintf('Admin menu: entry "%s" was not shown, its parent menu "%s" does not exist.', $submenu_id, $menu_id));
         }
 
         $sub = $this->aMenu[$menu_id]['sub'] ?? array();
@@ -678,6 +685,19 @@ class AdminMenu
 
         $sMenu .= '</ul></div>' . PHP_EOL;
         echo $sMenu;
+    }
+
+    /**
+     * The section label above a plugin page's title: the sidebar section that holds the page,
+     * else "Plugins". The custom_plugin_title filter has the last word.
+     *
+     * @return string
+     */
+    public function pluginSectionLabel(): string
+    {
+        $section = $this->get_array_menu()[$this->currentIds()[0]] ?? null;
+
+        return osc_apply_filter('custom_plugin_title', self::isSection($section) ? $section[0] : __('Plugins'));
     }
 
     /**

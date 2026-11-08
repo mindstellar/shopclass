@@ -954,11 +954,8 @@ if (!function_exists('osc_settings_menu_init')) {
             if ($page['menu'] === '') {
                 continue;
             }
+            // While billing is off, add_submenu() moves a Billing page under its heading in Settings.
             $menu = $page['menu'];
-            // Billing has a menu only while it is switched on; the page then lives in Settings.
-            if ($menu === 'billing' && !isset(AdminMenu::getInstance()->get_array_menu()['billing'])) {
-                $menu = 'settings';
-            }
             osc_add_admin_submenu_page(
                 $menu,
                 $page['menu_title'],

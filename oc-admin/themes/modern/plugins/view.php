@@ -17,10 +17,7 @@ $file = __get('file');
 // A plugin screen on a route may have declared its title, help and header actions.
 $declared = osc_admin_plugin_page(Params::getParamString('route'));
 osc_admin_page(array_filter(array(
-    'section' => static fn () => osc_apply_filter(
-        'custom_plugin_title',
-        AdminMenu::getInstance()->currentIds()[0] === 'settings' ? __('Settings') : __('Plugins')
-    ),
+    'section' => static fn () => AdminMenu::getInstance()->pluginSectionLabel(),
     'title'   => $declared['title'] ?? __('Plugins'),
     'heading' => $declared['heading'] ?? $declared['title'] ?? null,
     'help'    => $declared['help'] ?? null,
