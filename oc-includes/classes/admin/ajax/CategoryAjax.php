@@ -15,6 +15,7 @@ namespace mindstellar\admin\ajax;
 
 use Category;
 use mindstellar\category\CategoryService;
+use mindstellar\category\CategoryStore;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
 use mindstellar\utility\AjaxResponse;
@@ -73,29 +74,54 @@ final class CategoryAjax extends AjaxHandler
 
     public function editIframe(): void
     {
-        if (Params::getParamInt('id') <= 0) {
-            // A new category: the same form, empty, saved by editPost() as a create.
+        $tree = CategoryStore::tree();
+        $id   = Params::getParamInt('id');
+        if ($id <= 0) {
+            // A new category: the same form, empty, saved by editPost() as a create. It starts from
+            // the parent's expiry and price setting.
+            $parentId = Params::getParamInt('parent_id');
+            $parentId = $parentId > 0 && $tree->exists($parentId) ? $parentId : 0;
+            $inherit  = $parentId > 0 ? Category::getInstance()->findByPrimaryKey($parentId) : false;
             $this->controller->_exportVariableToView(
                 'category',
-                array('pk_i_id' => '', 'fk_i_parent_id' => null, 'i_expiration_days' => 0, 'b_price_enabled' => 1, 'locale' => array())
+                array(
+                    'pk_i_id'           => '',
+                    'fk_i_parent_id'    => $parentId > 0 ? $parentId : null,
+                    'i_expiration_days' => is_array($inherit) ? (int) $inherit['i_expiration_days'] : 0,
+                    'b_price_enabled'   => is_array($inherit) ? (int) $inherit['b_price_enabled'] : 1,
+                    'locale'            => array(),
+                )
             );
             $this->controller->_exportVariableToView('has_subcategories', false);
+            $this->controller->_exportVariableToView('subcategory_count', 0);
+            $this->controller->_exportVariableToView('parent', $this->parentInfo($parentId));
             $this->controller->_exportVariableToView('languages', OSCLocale::getInstance()->listAllEnabled());
             $this->controller->doView('categories/iframe.php');
 
             return;
         }
-        $this->controller->_exportVariableToView(
-            'category',
-            Category::getInstance()->findByPrimaryKey(Params::getParamInt('id'), 'all')
-        );
-        if (count(Category::getInstance()->findSubcategories(Params::getParamInt('id'))) > 0) {
-            $this->controller->_exportVariableToView('has_subcategories', true);
-        } else {
-            $this->controller->_exportVariableToView('has_subcategories', false);
-        }
+        $category = Category::getInstance()->findByPrimaryKey($id, 'all');
+        $this->controller->_exportVariableToView('category', $category);
+        $this->controller->_exportVariableToView('has_subcategories', count($tree->children($id)) > 0);
+        $this->controller->_exportVariableToView('subcategory_count', max(0, count($tree->subtree($id)) - 1));
+        $this->controller->_exportVariableToView('parent', $this->parentInfo((int) $tree->parent($id)));
         $this->controller->_exportVariableToView('languages', OSCLocale::getInstance()->listAllEnabled());
         $this->controller->doView('categories/iframe.php');
+    }
+
+    /**
+     * The parent's id and name for the drawer, or null for the top level.
+     *
+     * @return array{id:int,name:string}|null
+     */
+    private function parentInfo(int $parentId): ?array
+    {
+        if ($parentId <= 0) {
+            return null;
+        }
+        $row = Category::getInstance()->findByPrimaryKey($parentId);
+
+        return array('id' => $parentId, 'name' => is_array($row) ? (string) ($row['s_name'] ?? '') : '');
     }
 
     public function enable(): void
@@ -228,7 +254,8 @@ final class CategoryAjax extends AjaxHandler
             }
         }
 
-        $l = osc_language();
+        $l     = osc_language();
+        $moved = false;
         if ((int) $id <= 0) {
             AjaxResponse::json($this->create($fields, $aFieldsDescription, $has_one_title === 1, Params::getParamInt('parent_id')));
 
@@ -236,14 +263,33 @@ final class CategoryAjax extends AjaxHandler
         }
         // The service fires edited_category with the outcome, saved or not.
         $editor = CategoryService::make();
-        // @phpstan-ignore equal.alwaysTrue (error is changed by the loop above)
-        if ($error == 0 || ($error == 1 && $has_one_title == 1)) {
+        $canSave = $error == 0 || $has_one_title == 1;
+        // A changed parent moves the category to the end of its new group, but only when the fields can be saved too.
+        if ($canSave && Params::getParamString('parent_id') !== '') {
+            $newParent = Params::getParamInt('parent_id');
+            if ($newParent !== (int) CategoryStore::tree()->parent((int) $id)) {
+                try {
+                    $editor->move((int) $id, $newParent > 0 ? $newParent : null, PHP_INT_MAX);
+                    $moved = true;
+                } catch (RefusedException $e) {
+                    AjaxResponse::json(array('error' => 3, 'msg' => $e->getMessage(), 'field' => '/parent_id'));
+
+                    return;
+                }
+            }
+        }
+        if ($canSave) {
             try {
                 if (!$editor->update((int) $id, $fields, $aFieldsDescription, $apply_changes_to_subcategories, (int) $error, $newDates)) {
                     $error = 2;
                 }
             } catch (InvalidException $e) {
-                AjaxResponse::json(array('error' => 3, 'msg' => $e->getMessage()));
+                AjaxResponse::json(array(
+                    'error'     => 3,
+                    'msg'       => $e->getMessage(),
+                    'parent_id' => (int) CategoryStore::tree()->parent((int) $id),
+                    'moved'     => $moved,
+                ));
 
                 return;
             }
@@ -263,7 +309,13 @@ final class CategoryAjax extends AjaxHandler
         } elseif ($error == 2) {
             $msg = __('An error occurred while updating');
         }
-        AjaxResponse::json(array('error' => $error, 'msg' => $msg, 'text' => $aFieldsDescription[$l]['s_name']));
+        AjaxResponse::json(array(
+            'error'     => $error,
+            'msg'       => $msg,
+            'text'      => $aFieldsDescription[$l]['s_name'],
+            'parent_id' => (int) CategoryStore::tree()->parent((int) $id),
+            'moved'     => $moved,
+        ));
     }
 
     /**

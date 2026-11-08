@@ -64,6 +64,32 @@ $call = static function (string $method, array $post): array {
 
     return json_decode((string) ob_get_clean(), true) ?? ['unparsed' => true];
 };
+/** Run editIframe() against a recording controller and return what it exported. */
+$iframe = static function (array $post): array {
+    foreach (['id', 'parent_id'] as $k) {
+        Params::setParam($k, null);
+    }
+    foreach ($post as $k => $v) {
+        Params::setParam($k, $v);
+    }
+    $view = new ArrayObject();
+    $stub = new class ($view) extends CAdminAjax {
+        public function __construct(public ArrayObject $view)
+        {
+        }
+        public function _exportVariableToView($key, $value)
+        {
+            $this->view[$key] = $value;
+        }
+        public function doView($file)
+        {
+            $this->view['_file'] = $file;
+        }
+    };
+    (new CategoryAjax($stub))->editIframe();
+
+    return $view->getArrayCopy();
+};
 $one    = static fn (string $sql) => $admin->query($sql)->fetch_row()[0] ?? null;
 $parent = static fn (int $id): ?int => ($v = $one("SELECT fk_i_parent_id FROM {$p}t_category WHERE pk_i_id = $id")) === null ? null : (int) $v;
 $on     = static fn (int $id): int => (int) $one("SELECT b_enabled FROM {$p}t_category WHERE pk_i_id = $id");
@@ -83,6 +109,41 @@ $offParent = seed_category($admin, 'Off', null, $locale, 0);
 $r = $call('editPost', ['id' => '', $locale . '#s_name' => 'Under off', 'i_expiration_days' => '0', 'b_price_enabled' => '1', 'parent_id' => (string) $offParent]);
 pin('under a disabled parent it answers an error, not a crash', [2, true], [$r['error'] ?? null, ($r['msg'] ?? '') !== '']);
 pin('...and adds nothing', 0, (int) $one("SELECT COUNT(*) FROM {$p}t_category WHERE fk_i_parent_id = $offParent"));
+
+harness_section('edit frame');
+$off2 = seed_category($admin, 'Gamma', null, $locale);
+$admin->query("UPDATE {$p}t_category SET i_expiration_days = 45, b_price_enabled = 0 WHERE pk_i_id = $off2");
+$v = $iframe(['id' => '', 'parent_id' => (string) $off2]);
+pin('a new category under a parent exports that parent', [$off2, 'Gamma'], [$v['parent']['id'] ?? null, $v['parent']['name'] ?? null]);
+pin('...and inherits its expiry and price setting', [45, 0, $off2], [$v['category']['i_expiration_days'], $v['category']['b_price_enabled'], $v['category']['fk_i_parent_id']]);
+$v = $iframe(['id' => '', 'parent_id' => '99999']);
+pin('a bad parent falls back to the top level', [null, null], [$v['parent'], $v['category']['fk_i_parent_id']]);
+$v = $iframe(['id' => '']);
+pin('a new category at the top has no parent and no subcategories', [null, 0], [$v['parent'], $v['subcategory_count']]);
+$deep = seed_category($admin, 'Deep', $a2, $locale);
+$v = $iframe(['id' => (string) $a]);
+pin('the subcategory count covers every level below', [true, 3], [$v['has_subcategories'], $v['subcategory_count']]);
+$v = $iframe(['id' => (string) $deep]);
+pin('an edited category exports its parent', [$a2, 'Alpha two', false, 0], [$v['parent']['id'], $v['parent']['name'], $v['has_subcategories'], $v['subcategory_count']]);
+
+harness_section('edit with a new parent');
+$leaf = seed_category($admin, 'Leaf', null, $locale);
+$hooks = 0;
+osc_add_hook('edited_category_order', static function () use (&$hooks): void {
+    $hooks++;
+});
+$post = static fn (int $id, string $name, string $parentId) => ['id' => (string) $id, $locale . '#s_name' => $name, 'i_expiration_days' => '0', 'b_price_enabled' => '1', 'parent_id' => $parentId];
+$r = $call('editPost', $post($leaf, 'Leaf moved', (string) $b));
+pin('a new parent moves the category and saves the name', [true, $b, $b, 'Leaf moved'], [$r['moved'] ?? null, $r['parent_id'] ?? null, $parent($leaf), $one("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $leaf")]);
+pin('...as the last in its new group', $leaf, (int) $one("SELECT pk_i_id FROM {$p}t_category WHERE fk_i_parent_id = $b ORDER BY i_position DESC LIMIT 1"));
+pin('...with one order hook', 1, $hooks);
+$r = $call('editPost', $post($leaf, 'Leaf again', (string) $b));
+pin('the same parent moves nothing', [false, 1], [$r['moved'] ?? null, $hooks]);
+$r = $call('editPost', $post($a, 'Alpha changed', (string) $deep));
+pin('a move into its own child is refused on the parent', [3, '/parent_id'], [$r['error'] ?? null, $r['field'] ?? null]);
+pin('...and nothing is saved', 'Alpha', $one("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $a"));
+$r = $call('editPost', $post($leaf, 'Leaf top', '0'));
+pin('parent 0 moves it to the top level', [true, null, 0], [$r['moved'] ?? null, $parent($leaf), $r['parent_id'] ?? null]);
 
 harness_section('move');
 $r = $call('move', ['id' => (string) $a1, 'parent_id' => (string) $b, 'position' => '0']);

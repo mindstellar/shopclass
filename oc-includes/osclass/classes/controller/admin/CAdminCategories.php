@@ -67,7 +67,14 @@ class CAdminCategories extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=categories');
                 break;
             default:                //
-                $this->_exportVariableToView('categories', $this->categoryManager->toTreeAll());
+                $tree   = $this->categoryManager->toTreeAll();
+                $status = Params::getParamString('status');
+                $this->_exportVariableToView('categories', $tree);
+                $this->_exportVariableToView(
+                    'category_table',
+                    new \mindstellar\admin\CategoryTable($tree, \mindstellar\category\CategoryService::make()->depthLimit())
+                );
+                $this->_exportVariableToView('category_status', in_array($status, array('on', 'off'), true) ? $status : '');
                 $this->doView('categories/index.php');
         }
     }

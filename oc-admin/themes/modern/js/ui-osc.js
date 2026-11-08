@@ -326,10 +326,10 @@ function oscCatcardsCascade(root, box) {
     }
 }
 
-// Fill a translated template the way the server's sprintf() reads it: %s, %1$s and %%.
+// Fill a translated template the way the server's sprintf() reads it: %s, %d, %1$s and %%.
 function oscFill(tpl, values) {
     var i = 0;
-    return String(tpl || '').replace(/%%|%(\d+\$)?s/g, function (m, pos) {
+    return String(tpl || '').replace(/%%|%(\d+\$)?[sd]/g, function (m, pos) {
         if (m === '%%') { return '%'; }
         var v = values[pos ? parseInt(pos, 10) - 1 : i++];
         return v === undefined ? '' : String(v);

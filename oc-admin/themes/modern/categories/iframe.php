@@ -15,10 +15,15 @@
 
 $category    = __get('category');
 $has_subcats = __get('has_subcategories');
+$below       = (int) __get('subcategory_count');
+$parent      = __get('parent');
+$parent      = is_array($parent) ? $parent : ['id' => 0, 'name' => ''];
+$parent_id   = (int) ($parent['id'] ?? 0);
+$self_id     = (int) ($category['pk_i_id'] ?? 0);
+$days        = (int) ($category['i_expiration_days'] ?? 0);
 $locales     = OSCLocale::getInstance()->listAllEnabled();
 ?>
 <div class="iframe-category">
-    <h3><?php echo empty($category['pk_i_id']) ? __('New category') : __('Edit category'); ?></h3>
     <form action="<?php echo osc_admin_base_url(true); ?>" method="post" data-cat-edit-form>
         <input type="hidden" name="page" value="ajax"/>
         <input type="hidden" name="action" value="edit_category_post"/>
@@ -29,18 +34,36 @@ $locales     = OSCLocale::getInstance()->listAllEnabled();
                     <?php CategoryForm::multilanguage_name_description($locales, $category); ?>
                 </div>
                 <div class="col-12">
+                    <label class="form-label" for="cat-parent"><?php _e('Parent'); ?></label>
+                    <select name="parent_id" id="cat-parent" class="form-select form-select-sm" data-cat-parent
+                            data-self="<?php echo $self_id; ?>" aria-describedby="cat-parent-hint">
+                        <option value="<?php echo $parent_id; ?>" selected><?php
+                            echo osc_esc_html($parent_id > 0 ? (string) $parent['name'] : __('Top level'));
+                        ?></option>
+                    </select>
+                    <p class="form-text" id="cat-parent-hint" data-below="<?php echo $below; ?>"></p>
+                </div>
+                <div class="col-12">
                     <div class="cat-edit-group">
-                        <label for="i_expiration_days"><?php _e('Expiration (days)'); ?></label>
-                        <div class="input micro">
-                            <?php CategoryForm::expiration_days_input_text($category); ?>
-                            <p class="help-inline"><?php _e('Zero means listings in this category never expire.'); ?></p>
-                            <label><?php CategoryForm::price_enabled_for_category($category); ?>
-                                <span><?php _e('Show the price field on listings in this category'); ?></span></label>
-                            <?php if ($has_subcats) { ?>
-                                <label><?php CategoryForm::apply_changes_to_subcategories($category); ?>
-                                    <span><?php _e('Apply the expiration and price changes to all subcategories'); ?></span></label>
-                            <?php } ?>
+                        <h3 class="cat-drawer-section"><?php _e('Listings in this category'); ?></h3>
+                        <div class="cat-field">
+                            <span class="form-label" id="cat-exp-label"><?php _e('Listings expire'); ?></span>
+                            <?php CategoryForm::expiry_control($days, 'cat-f'); ?>
                         </div>
+                        <label class="cat-check"><?php CategoryForm::price_enabled_for_category($category); ?>
+                            <span><?php _e('Show the price field on listings in this category'); ?></span></label>
+                        <?php if ($has_subcats || $below > 0) { ?>
+                            <div class="cat-apply" id="cat-apply-wrap">
+                                <label class="cat-check"><?php CategoryForm::apply_changes_to_subcategories($category); ?>
+                                    <span id="cat-apply-label"><?php
+                                        echo osc_esc_html(sprintf(
+                                            _n('Also apply to its %d subcategory', 'Also apply to its %d subcategories', $below),
+                                            $below
+                                        ));
+                                    ?></span></label>
+                                <p class="form-text" id="cat-apply-note"></p>
+                            </div>
+                        <?php } ?>
                     </div>
                 </div>
             </div>

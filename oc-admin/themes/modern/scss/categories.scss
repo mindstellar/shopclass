@@ -981,159 +981,253 @@
 // =============================================================================
 // Categories manager (categories/index.php, categories/iframe.php)
 // -----------------------------------------------------------------------------
-// A category tree the owner reorders by drag, edits in a slide-over drawer,
-// enables/disables (cascading), and deletes (cascading to listings — the one
-// dangerous act). Workshop Bench: white surface, bronze only for the primary
-// action and current selection, flat at rest, hierarchy carried by indentation
-// and hairlines. Driven by categories.js (vanilla; no jQuery).
+// A tree table on the shared .table: hairline rows, text row actions, status
+// tabs, bulk bar and search. Edited in a slide-over drawer. Driven by
+// categories.js (vanilla; no jQuery). Colour only through --osc-* tokens.
 // =============================================================================
 
 .categories-app {
-  --cat-indent: 1.75rem;
-  max-width: 62rem;
+  --cat-indent: 1.9rem;
 }
 
-// ---- Toolbar: filter + actions ---------------------------------------------
-.cat-toolbar {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .75rem;
-  margin-bottom: 1rem;
+// ---- Tabs, toolbar, filter line ---------------------------------------------
+.cat-tabs {
+  margin-block-end: 1rem;
 }
 
-.cat-toolbar-spacer {
-  flex: 1 1 auto;
-}
-
-// A quiet text button for the low-stakes bulk toggles (expand / collapse all).
-.cat-tool-btn {
-  background: transparent;
+// Text-link buttons written as a bare .btn-link (no .btn) still need the button reset. :where()
+// keeps it at one class, so the toolbar, filter line and footer rules below set size and spacing.
+.categories-app :where(button.btn-link:not(.btn)) {
+  background: none;
   border: 0;
-  border-radius: $border-radius;
-  color: var(--osc-ink-muted);
+  border-radius: 3px;
+  color: var(--osc-ink-emphasis);
   cursor: pointer;
-  font-size: $font-size-label;
-  font-weight: 500;
-  padding: .4rem .5rem;
-  white-space: nowrap;
+  font: inherit;
+  padding: 0;
+  text-decoration: none;
+  text-underline-offset: 3px;
 
-  &:hover,
-  &:focus-visible {
-    background-color: var(--osc-chrome-hover);
-    color: var(--osc-ink);
+  &:hover {
+    color: var(--osc-bronze);
+    text-decoration: underline;
   }
 
   &:focus-visible {
     outline: 2px solid var(--osc-bronze);
     outline-offset: 1px;
   }
-}
 
-// ---- The tree ---------------------------------------------------------------
-.cat-tree,
-.cat-children {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-// Children indent one step and hang a hairline connector so depth reads at a
-// glance without boxing every level.
-.cat-children {
-  margin-inline-start: calc(var(--cat-indent) / 2);
-  padding-inline-start: calc(var(--cat-indent) / 2);
-  position: relative;
-
-  &::before {
-    background-color: var(--osc-rule);
-    content: "";
-    inset-block: 0 1.25rem;
-    inset-inline-start: 0;
-    position: absolute;
-    width: 1px;
+  &:disabled {
+    color: var(--osc-ink-muted);
+    cursor: not-allowed;
+    opacity: .45;
+    text-decoration: none;
   }
 }
 
-.cat-node {
-  padding-top: .4rem;
+.categories-app .osc-toolbar {
+  margin-block-end: .75rem;
 }
 
-// A collapsed branch hides its children; the empty leaf list stays in the DOM
-// as a drop target so a category can be dragged in to become a subcategory.
-.cat-node.is-collapsed > .cat-children {
-  display: none;
-}
-
-.cat-row {
+.cat-selnote {
   align-items: center;
-  background-color: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
-  border-radius: $border-radius;
+  color: var(--osc-ink-emphasis);
   display: flex;
-  gap: .3rem;
-  min-height: 3rem;
-  padding: .35rem .6rem;
-  transition: border-color var(--osc-duration-fast) var(--osc-ease),
-              background-color var(--osc-duration-fast) var(--osc-ease);
+  font-size: $font-size-sm;
+  gap: .5rem;
+  margin: 0;
 
-  &:hover {
-    border-color: var(--osc-rule-strong);
+  strong {
+    color: var(--osc-ink);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .btn-link {
+    padding: 0;
   }
 }
 
-// Selected — the row whose editor is open in the drawer.
-.cat-node.is-editing > .cat-row {
-  background-color: var(--osc-bronze-tint);
-  border-color: var(--osc-bronze);
+.cat-tree-tools {
+  align-items: center;
+  display: flex;
+  gap: .35rem;
+
+  .btn-link {
+    font-size: $font-size-sm;
+    padding: .2rem .4rem;
+  }
+
+  .btn-link + .btn-link {
+    border-inline-start: 1px solid var(--osc-rule);
+    border-radius: 0;
+    padding-inline-start: .75rem;
+  }
 }
 
-// Disabled branch: recede the whole row to the sunk surface and mute the name,
-// so "off" reads instantly even before the Disabled pill is parsed.
-.cat-node.is-disabled > .cat-row {
-  background-color: var(--osc-bench-sunk);
+.cat-search {
+  margin-inline-start: auto;
 
+  input {
+    inline-size: 19rem;
+    max-inline-size: 100%;
+  }
+}
+
+.cat-filter-line {
+  align-items: center;
+  color: var(--osc-ink-emphasis);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: $font-size-sm;
+  gap: .6rem;
+  margin: -.25rem 0 .6rem;
+
+  .btn-link {
+    padding: 0;
+  }
+}
+
+// ---- The tree table ---------------------------------------------------------
+.cat-table {
+  --#{$prefix}table-cell-padding-x: .85rem;
+  --#{$prefix}table-cell-padding-y: .6rem;
+  margin-block-end: 0;
+
+  > tbody > tr > td {
+    vertical-align: top;
+  }
+
+  .col-status {
+    inline-size: 7.5rem;
+    white-space: nowrap;
+  }
+
+  .cat-num {
+    font-variant-numeric: tabular-nums;
+    inline-size: 8rem;
+    text-align: end;
+    white-space: nowrap;
+  }
+
+  .col-expiry {
+    inline-size: 9rem;
+    white-space: nowrap;
+  }
+
+  > tbody > tr > .col-status,
+  > tbody > tr > .cat-num,
+  > tbody > tr > .col-expiry {
+    color: var(--osc-ink-emphasis);
+    padding-block-start: .8rem;
+  }
+
+  .col-bulkactions input {
+    accent-color: var(--osc-bronze);
+    block-size: 1.05rem;
+    inline-size: 1.05rem;
+    margin-block-start: .3rem;
+  }
+
+  // Selected and being edited share the bronze wash; the checked box stays the signal.
+  > tbody > tr.is-selected > *,
+  > tbody > tr.is-editing > * {
+    --#{$prefix}table-bg-state: var(--osc-bronze-tint);
+  }
+}
+
+.cat-nil {
+  color: var(--osc-ink-muted);
+}
+
+// Disabled: a quiet marker with a shape and a word, and a muted name.
+.cat-off {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  display: inline-flex;
+  gap: .35rem;
+}
+
+.cat-row.is-disabled .cat-name {
+  color: var(--osc-ink-muted);
+}
+
+// Context rows: ancestors of a search or tab match, shown grey and without actions.
+.cat-row.is-context {
   .cat-name {
     color: var(--osc-ink-muted);
   }
+
+  .cat-actions {
+    display: none;
+  }
 }
 
-// The row being dragged.
-.cat-node.drag-ghost > .cat-row {
-  background-color: var(--osc-bronze-tint);
-  border-color: var(--osc-bronze);
-  border-style: dashed;
+.cat-table mark {
+  background-color: var(--osc-warning-tint);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--osc-warning-deep) 45%, transparent);
+  color: var(--osc-ink);
+  padding: 0 1px;
 }
 
-.cat-node.sortable-chosen > .cat-row {
-  border-color: var(--osc-bronze);
+// ---- Name cell: handle, indent, disclosure, name ----------------------------
+.cat-table .col-name {
+  position: relative;
 }
 
-// Drag handle: quiet at rest, bronze on row hover — a grip you reach for, not a
-// permanent fixture. Kept in the tab order out (drag is pointer-only; keyboard
-// reordering is not wired), but visible so the affordance is discoverable.
+.cat-name-line {
+  align-items: center;
+  display: flex;
+  gap: .15rem;
+  min-block-size: 1.9rem;
+}
+
+// The indent comes after the handle so the guide line can sit under the parent's chevron.
 .cat-handle {
   align-items: center;
   background: transparent;
   border: 0;
+  border-radius: $border-radius-sm;
   color: var(--osc-rule-strong);
   cursor: grab;
   display: inline-flex;
   flex: 0 0 auto;
-  font-size: 1.05rem;
+  block-size: 1.9rem;
+  inline-size: 1.6rem;
   justify-content: center;
-  padding: .25rem;
+  margin-inline-end: calc(var(--cat-depth, 0) * var(--cat-indent));
+  padding: 0;
+  touch-action: none;
+
+  &:hover {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-ink);
+  }
+
+  &:focus-visible {
+    color: var(--osc-bronze);
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: -2px;
+  }
 
   &:active {
     cursor: grabbing;
   }
+
+  &[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: .35;
+  }
 }
 
-.cat-row:hover .cat-handle {
-  color: var(--osc-ink-muted);
+.cat-disclosure,
+.cat-disclosure-spacer {
+  block-size: 1.9rem;
+  flex: 0 0 auto;
+  inline-size: 1.6rem;
 }
 
-// Disclosure triangle — only present on branches with children.
 .cat-disclosure {
   align-items: center;
   background: transparent;
@@ -1142,143 +1236,24 @@
   color: var(--osc-ink-muted);
   cursor: pointer;
   display: inline-flex;
-  flex: 0 0 auto;
-  height: 1.6rem;
   justify-content: center;
-  width: 1.6rem;
+  padding: 0;
 
   > i {
     transition: transform var(--osc-duration-fast) var(--osc-ease);
   }
 
-  &:hover,
-  &:focus-visible {
+  &[aria-expanded="true"] > i {
+    transform: rotate(90deg);
+  }
+
+  &:dir(rtl)[aria-expanded="false"] > i {
+    transform: scaleX(-1);
+  }
+
+  &:hover {
     background-color: var(--osc-chrome-hover);
     color: var(--osc-ink);
-  }
-
-  &:focus-visible {
-    outline: 2px solid var(--osc-bronze);
-    outline-offset: -1px;
-  }
-}
-
-.cat-node.is-collapsed > .cat-row .cat-disclosure > i {
-  transform: rotate(-90deg);
-}
-
-// A leaf keeps the disclosure's width so every name column lines up.
-.cat-disclosure-spacer {
-  flex: 0 0 auto;
-  height: 1.6rem;
-  width: 1.6rem;
-}
-
-.cat-main {
-  align-items: baseline;
-  column-gap: .6rem;
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: wrap;
-  min-width: 0;
-  row-gap: 0;
-}
-
-.cat-name {
-  color: var(--osc-ink);
-  font-size: 1rem;
-  font-weight: 500;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-// Quiet inline metadata: subcategory + listing counts. Tabular so the numbers
-// don't jitter as the tree filters.
-.cat-meta {
-  color: var(--osc-ink-muted);
-  display: flex;
-  flex: 0 0 auto;
-  font-size: $font-size-label;
-  font-variant-numeric: tabular-nums;
-  gap: .75rem;
-}
-
-.cat-meta-item {
-  align-items: center;
-  display: inline-flex;
-  gap: .25rem;
-  white-space: nowrap;
-
-  > i {
-    font-size: .875rem;
-  }
-}
-
-// ---- Status pill (text + shape + tint; never colour alone) ------------------
-.cat-status {
-  align-items: center;
-  border-radius: $border-radius-pill;
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: $font-size-label;
-  font-weight: 500;
-  gap: .3rem;
-  letter-spacing: .01em;
-  padding: .1rem .55rem;
-
-  &::before {
-    block-size: .5rem;
-    border-radius: 50%;
-    content: "";
-    inline-size: .5rem;
-  }
-}
-
-.cat-status-on {
-  background-color: var(--osc-success-tint);
-  color: var(--osc-success);
-
-  &::before {
-    background-color: var(--osc-success);
-  }
-}
-
-.cat-status-off {
-  background-color: var(--osc-bench-sunk);
-  color: var(--osc-ink-muted);
-
-  &::before {
-    background-color: var(--osc-rule-strong);
-  }
-}
-
-// ---- Row actions ------------------------------------------------------------
-.cat-actions {
-  display: inline-flex;
-  flex: 0 0 auto;
-  gap: .1rem;
-}
-
-.cat-action {
-  align-items: center;
-  background: transparent;
-  border: 0;
-  border-radius: $border-radius;
-  color: var(--osc-ink-muted);
-  cursor: pointer;
-  display: inline-flex;
-  height: 2rem;
-  justify-content: center;
-  transition: background-color var(--osc-duration-fast) var(--osc-ease),
-              color var(--osc-duration-fast) var(--osc-ease);
-  width: 2rem;
-
-  &:hover,
-  &:focus-visible {
-    background-color: var(--osc-chrome-hover);
-    color: var(--osc-bronze);
   }
 
   &:focus-visible {
@@ -1287,34 +1262,223 @@
   }
 }
 
-// Delete turns danger-red only when aimed at, so a column of them doesn't spend
-// the danger colour on every row.
-.cat-action-danger:hover,
-.cat-action-danger:focus-visible {
-  background-color: var(--osc-danger-tint);
-  color: var(--osc-danger);
+// A 1px guide under the parent's chevron ties a subcategory to its group.
+.cat-row:not([data-depth="1"]) .col-name::before {
+  background-color: var(--osc-rule);
+  content: "";
+  inline-size: 1px;
+  inset-block: 0;
+  inset-inline-start: calc(.85rem + (var(--cat-depth, 1) - 1) * var(--cat-indent) + 2.45rem);
+  position: absolute;
 }
 
-// A busy row (enable/disable in flight) dims and blocks further clicks.
+.cat-name {
+  background: none;
+  border: 0;
+  border-radius: 3px;
+  color: var(--osc-ink);
+  font-size: $font-size-base;
+  font-weight: 500;
+  line-height: 1.35;
+  min-inline-size: 0;
+  padding: .1rem .25rem;
+  text-align: start;
+
+  &:hover {
+    color: var(--osc-bronze);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+.cat-row[data-depth="1"] .cat-name {
+  font-weight: 600;
+}
+
+.cat-row.is-editing .cat-name {
+  color: var(--osc-bronze);
+}
+
+// A level the theme does not show.
+.cat-deep {
+  background-color: var(--osc-warning-tint);
+  border-radius: $border-radius-pill;
+  color: var(--osc-warning-deep);
+  flex: 0 0 auto;
+  font-size: $font-size-label;
+  margin-inline-start: .35rem;
+  padding: .05rem .5rem;
+  white-space: nowrap;
+}
+
+// Phone-only summary line ("7 subcategories · 30 listings").
+.cat-meta {
+  color: var(--osc-ink-muted);
+  display: none;
+  font-size: $font-size-label;
+  margin: 0;
+  padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
+}
+
+// ---- Row actions: text buttons under the name -------------------------------
+.cat-table .cat-actions {
+  padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
+
+  button {
+    background: none;
+    border: 0;
+    border-radius: 3px;
+    color: var(--osc-ink-muted);
+    font: inherit;
+    padding: .1rem 0;
+    white-space: nowrap;
+
+    &:hover:not(:disabled),
+    &:focus-visible {
+      color: var(--osc-bronze);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--osc-bronze);
+      outline-offset: 1px;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: .45;
+    }
+
+    &.row-action-danger:hover:not(:disabled),
+    &.row-action-danger:focus-visible {
+      color: var(--osc-danger);
+    }
+  }
+
+  // A hairline divider sets Delete apart from the rest.
+  .cat-actions-gap {
+    background-color: var(--osc-rule);
+    block-size: .95rem;
+    inline-size: 1px;
+    margin-inline: .25rem;
+  }
+}
+
+// In flight (enable/disable or a move being saved).
 .cat-row.is-busy {
   opacity: .55;
   pointer-events: none;
 }
 
-// ---- Empty state ------------------------------------------------------------
+// New row after Add: a brief wash that fades out.
+.cat-row.is-flash > * {
+  animation: cat-flash 1.6s var(--osc-ease);
+}
 
+@keyframes cat-flash {
+  0%,
+  35% {
+    box-shadow: inset 0 0 0 9999px var(--osc-bronze-tint);
+  }
 
+  100% {
+    box-shadow: inset 0 0 0 9999px transparent;
+  }
+}
+
+// Sibling drag.
+.cat-row.sortable-ghost > * {
+  --#{$prefix}table-bg-state: var(--osc-bronze-tint);
+}
+
+.cat-row.sortable-chosen .cat-handle {
+  color: var(--osc-bronze);
+}
+
+// ---- Search result states, empty, footer ------------------------------------
+.cat-state td {
+  color: var(--osc-ink-emphasis);
+  padding: 2rem 1rem;
+
+  p {
+    margin: 0 0 .75rem;
+  }
+}
+
+.cat-empty {
+  color: var(--osc-ink-muted);
+  padding: 2.5rem 1rem;
+
+  p {
+    margin-block-end: .75rem;
+  }
+}
+
+.cat-foot {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: $font-size-sm;
+  gap: 1rem;
+  margin-block-start: .75rem;
+
+  form {
+    margin-inline-start: auto;
+  }
+
+  .btn-link {
+    color: var(--osc-ink-muted);
+    padding: 0;
+  }
+}
+
+// ---- Dialogs (confirm, move, expiry) ----------------------------------------
+.categories-app dialog.osc-dialog {
+  .form-select,
+  .form-control:not(.cat-exp-days) {
+    inline-size: 100%;
+  }
+
+  .form-text {
+    color: var(--osc-ink-muted);
+    font-size: $font-size-label;
+    margin-block-start: .3rem;
+  }
+
+  .form-label,
+  label.d-block {
+    font-size: $font-size-label;
+    font-weight: 500;
+  }
+
+  .osc-dialog-text strong {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .cat-exp,
+  .cat-exp-posted {
+    margin-block-end: 1rem;
+  }
+}
 
 // The slide-over drawer (.cat-drawer) is the shared .osc-drawer in ui-patterns.scss.
+.cat-drawer-sub {
+  color: var(--osc-ink-muted);
+  font-size: $font-size-sm;
+  margin: .15rem 0 0;
+}
 
 // ---- Edit form inside the drawer -------------------------------------------
 // The markup comes from CategoryForm (field names are a hard contract); these
 // rules restyle it without touching those names.
 .iframe-category {
-  h3 {
-    display: none;   // the drawer header already names the category
-  }
-
   form {
     display: flex;
     flex-direction: column;
@@ -1338,6 +1502,7 @@
   }
 
   input[type="text"],
+  input[type="number"],
   textarea {
     background-color: var(--osc-bench);
     border: 1px solid var(--osc-rule-strong);
@@ -1360,27 +1525,30 @@
     resize: vertical;
   }
 
-  .help-inline {
+  .help-inline,
+  .form-text {
     color: var(--osc-ink-muted);
     font-size: $font-size-label;
     margin: .35rem 0 0;
   }
 }
 
-// The expiration + price block reads as one labelled group.
+// "Listings in this category": one flat section under a hairline, not a box.
+.cat-drawer-section {
+  border-block-start: 1px solid var(--osc-rule);
+  color: var(--osc-heading);
+  font-size: 1.07rem;
+  font-weight: 600;
+  margin: .25rem 0 0;
+  padding-block-start: 1rem;
+}
+
 .cat-edit-group {
-  background-color: var(--osc-bench-warm);
-  border: 1px solid var(--osc-rule);
-  border-radius: $border-radius;
-  padding: 1rem;
+  padding: 0;
 }
 
 .cat-edit-group .input.micro {
-  input[type="text"] {
-    max-width: 6rem;
-  }
-
-  // The price / apply-to-children checkboxes and their labels sit inline.
+  // The price / apply-to-subcategories checkboxes and their labels sit inline.
   label {
     align-items: center;
     color: var(--osc-ink);
@@ -1402,6 +1570,122 @@
       flex: 0 0 auto;
       inline-size: 1.05rem;
     }
+  }
+}
+
+#cat-apply-note {
+  padding-inline-start: 1.6rem;
+}
+
+// ---- Expiry control (drawer and Set expiry dialog) --------------------------
+.cat-exp-chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .4rem;
+}
+
+.cat-exp .cat-exp-chip {
+  align-items: center;
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: $border-radius;
+  color: var(--osc-ink);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 1rem;
+  font-weight: 400;
+  margin: 0;
+  min-block-size: 2.3rem;
+  padding: .35rem .75rem;
+  position: relative;
+
+  input {
+    cursor: pointer;
+    inset: 0;
+    margin: 0;
+    opacity: 0;
+    position: absolute;
+  }
+
+  &:hover {
+    background-color: var(--osc-bench-warm);
+  }
+
+  &:has(:checked) {
+    background-color: var(--osc-bronze-tint);
+    border-color: var(--osc-bronze);
+    box-shadow: inset 0 0 0 1px var(--osc-bronze);
+    color: var(--osc-bronze);
+    font-weight: 600;
+  }
+
+  &:has(:focus-visible) {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 2px;
+  }
+}
+
+.cat-exp .cat-exp-days {
+  inline-size: 7rem;
+  margin-block-start: .55rem;
+}
+
+// "Listings already posted": a radio pair, shown only once the expiry differs from the saved one.
+.cat-exp-posted {
+  border: 0;
+  margin: 1rem 0 0;
+  min-inline-size: 0;
+  padding: 0;
+
+  legend {
+    color: var(--osc-ink);
+    float: none;
+    font-size: $font-size-label;
+    font-weight: 500;
+    margin-block-end: .45rem;
+    padding: 0;
+    width: auto;
+  }
+
+  label {
+    align-items: flex-start;
+    cursor: pointer;
+    display: flex;
+    font-size: 1rem;
+    font-weight: 400;
+    gap: .55rem;
+    letter-spacing: 0;
+    margin: 0;
+
+    + label {
+      margin-block-start: .75rem;
+    }
+
+    input {
+      accent-color: var(--osc-bronze);
+      flex: 0 0 auto;
+      margin-block-start: .25rem;
+    }
+
+    small,
+    .form-text,
+    .help-inline {
+      color: var(--osc-ink-muted);
+      display: block;
+      font-size: $font-size-label;
+      margin: 0;
+    }
+  }
+}
+
+@media (forced-colors: active) {
+  .cat-exp .cat-exp-chip:has(:checked) {
+    outline: 2px solid Highlight;
+  }
+
+  .cat-row.is-selected {
+    outline: 2px solid Highlight;
   }
 }
 
@@ -1443,7 +1727,7 @@
     // Active locale tab (class toggled by categories.js).
     li.is-active a {
       background-color: var(--osc-bench);
-      box-shadow: 0 1px 2px rgba(0, 0, 0, .08);
+      box-shadow: 0 1px 2px color-mix(in srgb, var(--osc-ink) 12%, transparent);
       color: var(--osc-ink);
     }
 
@@ -1502,37 +1786,105 @@
   list-style: none;
 }
 
-// ---- Responsive -------------------------------------------------------------
+// ---- Phone ------------------------------------------------------------------
 @media (max-width: 34rem) {
   .categories-app {
     --cat-indent: 1.1rem;
   }
 
-  // The row becomes two lines: [handle · disclosure · name · actions] on top,
-  // the counts and status pill beneath, so nothing crowds at phone widths.
-  .cat-row {
-    flex-wrap: wrap;
-    row-gap: .3rem;
+  .cat-search {
+    flex: 1 1 100%;
+    margin-inline-start: 0;
+    order: -1;
+
+    input {
+      inline-size: 100%;
+    }
   }
 
-  // cat-main grows to fill line 1 (with the actions), which pushes the status
-  // pill onto line 2 — where it keeps its intrinsic pill width, not a full bar.
-  .cat-main {
-    flex: 1 1 45%;
-    order: 2;
+  // Number columns fold into the meta line; a disabled row keeps its marker under the name.
+  .cat-table {
+    thead {
+      display: none;
+    }
+
+    &,
+    > tbody {
+      display: block;
+    }
+
+    > tbody > tr:not([hidden]) {
+      display: grid;
+      grid-template-columns: 2.25rem minmax(0, 1fr);
+    }
+
+    > tbody > tr > td {
+      padding: .65rem .75rem .65rem .25rem;
+    }
+
+    > tbody > tr > .col-bulkactions {
+      grid-row: 1 / span 2;
+      inline-size: auto;
+      padding-inline: .75rem 0;
+    }
+
+    > tbody > tr:has(.cat-off) > .col-name {
+      border-block-end-width: 0;
+      padding-block-end: 0;
+    }
+
+    > tbody > tr > .col-name {
+      grid-column: 2;
+    }
+
+    > tbody > tr > .col-subs,
+    > tbody > tr > .col-listings,
+    > tbody > tr > .col-expiry {
+      display: none;
+    }
+
+    > tbody > tr > .col-status {
+      grid-column: 2;
+      inline-size: auto;
+      padding-block: 0 .65rem;
+      padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.9rem);
+
+      &:not(:has(.cat-off)) {
+        display: none;
+      }
+    }
+
+    .cat-meta {
+      display: block;
+      padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
+    }
+
+    .cat-actions {
+      padding-inline-start: calc(var(--cat-depth, 0) * var(--cat-indent) + 3.6rem);
+
+      ul {
+        gap: .25rem .9rem;
+      }
+
+      button {
+        padding-block: .3rem;
+      }
+    }
+
+    .cat-name-line {
+      flex-wrap: wrap;
+    }
+
+    .cat-name {
+      flex: 1 1 0;
+    }
+
+    .col-name::before {
+      inset-inline-start: calc(.25rem + (var(--cat-depth, 1) - 1) * var(--cat-indent) + 2.45rem);
+    }
   }
 
-  .cat-actions {
-    order: 3;
-  }
-
-  // Counts wrap under the name rather than crowding the row.
-  .cat-meta {
-    flex-basis: 100%;
-  }
-
-  .cat-status {
-    margin-inline-start: 2.1rem;
-    order: 4;
+  .cat-state {
+    display: block !important;
   }
 }

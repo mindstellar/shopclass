@@ -184,7 +184,7 @@ class CategoryForm extends Form
     }
 
     /**
-     * Echo the "apply to subcategories" checkbox, for root categories only.
+     * Echo the "apply to subcategories" checkbox, unticked. The caller decides when it shows.
      *
      * @param array<string,mixed>|null $category
      *
@@ -192,9 +192,63 @@ class CategoryForm extends Form
      */
     public static function apply_changes_to_subcategories($category = null)
     {
-        if ($category['fk_i_parent_id'] === null) {
-            $attributes['id']           = 'apply_changes_to_subcategories';
-            echo (new self())->checkbox('apply_changes_to_subcategories', 1, $attributes);
+        $attributes['id'] = 'apply_changes_to_subcategories';
+        echo (new self())->checkbox('apply_changes_to_subcategories', 1, $attributes);
+    }
+
+    /**
+     * Echo the expiry chips (Never, 30, 60, 90 days, Other) with the day count field, and
+     * optionally the "Listings already posted" choice, hidden until the script shows it.
+     *
+     * @param int    $days    Saved expiry in days, 0 = never
+     * @param string $prefix  Id prefix, also the radio group name stem
+     * @param string $name    Name of the day count field
+     * @param bool   $posted  Print the "Listings already posted" fieldset
+     *
+     * @return void
+     */
+    public static function expiry_control(
+        int $days,
+        string $prefix,
+        string $name = 'i_expiration_days',
+        bool $posted = true
+    ): void {
+        $days   = max(0, $days);
+        $choice = $days === 0 ? 'never' : (in_array($days, [30, 60, 90], true) ? (string) $days : 'other');
+        $chips  = [
+            'never' => __('Never'),
+            '30'    => sprintf(_n('%d day', '%d days', 30), 30),
+            '60'    => sprintf(_n('%d day', '%d days', 60), 60),
+            '90'    => sprintf(_n('%d day', '%d days', 90), 90),
+            'other' => __('Other…'),
+        ];
+        $p = osc_esc_html($prefix);
+
+        echo '<div class="cat-exp" data-cat-exp data-saved="' . $days . '">';
+        echo '<div class="cat-exp-chips" role="radiogroup" aria-label="' . osc_esc_html(__('Listings expire')) . '">';
+        foreach ($chips as $value => $label) {
+            $value = (string) $value;
+            echo '<label class="cat-exp-chip"><input type="radio" name="' . $p . '-choice" value="' . $value . '"'
+                . ($value === $choice ? ' checked' : '') . '>' . osc_esc_html($label) . '</label>';
+        }
+        echo '</div>';
+        echo '<input type="number" min="0" max="999" name="' . osc_esc_html($name) . '" id="' . $p . '-days"'
+            . ' class="form-control form-control-sm cat-exp-days" value="' . $days . '"'
+            . ' aria-label="' . osc_esc_html(__('Number of days')) . '"' . ($choice === 'other' ? '' : ' hidden') . '>';
+        echo '</div>';
+
+        if ($posted) {
+            echo '<fieldset class="cat-exp-posted" id="' . $p . '-posted" hidden>';
+            echo '<legend>' . osc_esc_html(__('Listings already posted')) . '</legend>';
+            echo '<label class="cat-exp-opt"><input type="radio" name="expiry_listings" value="keep" checked>'
+                . '<span>' . osc_esc_html(__('Keep their end dates')) . '</span></label>';
+            echo '<p class="form-text">' . osc_esc_html(__('Only new and renewed listings use the new expiry.')) . '</p>';
+            echo '<label class="cat-exp-opt"><input type="radio" name="expiry_listings" value="new">'
+                . '<span data-cat-redate>' . osc_esc_html(__('Give them new end dates')) . '</span></label>';
+            echo '<p class="form-text" data-cat-redate-hint>'
+                . osc_esc_html(__('Each one ends after the new number of days, counted from when it was published.'))
+                . '</p>';
+            echo '</fieldset>';
         }
     }
 
@@ -249,9 +303,12 @@ class CategoryForm extends Form
 
             // A new category gets its slug from the name it is saved with.
             if (isset($category['pk_i_id']) && $category['pk_i_id'] !== '') {
-                $contentTemp .= '<div class="form-controls"><label>' . __('Slug') . '</label><input id="'
-                    . $nameSlug . '" type="text" name="' . $nameSlug . '" value="'
-                    . osc_esc_html(urldecode($valueSlug)) . '" /></div>';
+                $contentTemp .= '<div class="form-controls"><label for="' . $nameSlug . '">' . __('Web address name')
+                    . '</label><input id="' . $nameSlug . '" type="text" name="' . $nameSlug . '" value="'
+                    . osc_esc_html(urldecode($valueSlug)) . '" aria-describedby="' . $nameSlug . '-hint" />'
+                    . '<p class="form-text" id="' . $nameSlug . '-hint">'
+                    . osc_esc_html(__('Part of this category\'s web address. Letters, numbers and dashes.'))
+                    . '</p></div>';
             }
 
             $contentTemp .= '<div class="form-controls"><label>' . __('Description') . '</label>';
