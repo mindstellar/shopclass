@@ -97,6 +97,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Sites update to 7.1 from 7.0.12; an older 7.0 site is offered 7.0.12 first.
 - Releases ship only `shopclass_v*.zip`; `osclass_v*.zip` is no longer built.
 - Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
+- `Category::updateByPrimaryKey()` no longer changes listing end dates when `i_expiration_days` is saved; use `CategoryService::setExpiry()`.
+- `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
 - `Field::findByItem()` is deprecated; use `FieldQuery::forItem()`. It still returns hidden fields, so a theme or plugin that prints its values should switch. `Item::metaFields()` now leaves out hidden fields.

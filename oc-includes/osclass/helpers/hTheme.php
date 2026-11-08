@@ -32,6 +32,9 @@ function osc_admin_render_theme_url($file = '')
  * nobody registers reads as unsupported and core falls back to what it did
  * before.
  *
+ * Known features include 'category-depth' (int >= 1): how many levels of categories the theme
+ * shows. Without it the category tree has no limit.
+ *
  * @param string $feature Slug, [a-z0-9_-]+, max 60 chars.
  * @param mixed  $args    Feature arguments, or true for a bare flag.
  */

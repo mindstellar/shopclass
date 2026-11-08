@@ -105,6 +105,7 @@ require_once __DIR__ . '/../lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php'; // osc_language
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocale.php';     // osc_current_user_locale
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hCache.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hHttpCache.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';
 require_once ABS_PATH . 'oc-includes/osclass/formatting.php';          // osc_sanitizeString (slug generation in insert/updateByPrimaryKey)
 

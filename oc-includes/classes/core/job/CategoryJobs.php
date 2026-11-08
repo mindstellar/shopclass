@@ -13,18 +13,21 @@ namespace mindstellar\job;
 
 use Category;
 use Item;
+use mindstellar\category\CategoryStore;
 use mindstellar\database\DbException;
 use mindstellar\listing\ListingStore;
 use Throwable;
 
 /**
- * Deleting a category, in batches, when it is too big to do in a request. A big category
- * is removed a batch at a time with nothing held open between runs; a small one is still
- * deleted inline, the same request the user clicked delete in.
+ * Deleting a category, and giving its listings new end dates, in batches when it is too big
+ * to do in a request. A small category is still done inline, in the request the user clicked in.
  */
 final class CategoryJobs
 {
     public const TYPE = 'category.delete';
+
+    /** Re-date the listings in a set of categories. */
+    public const EXPIRY = 'category.expiry';
 
     /** At or below this many listings in the tree, delete in the request as before. */
     public const INLINE_LIMIT = 500;
@@ -46,17 +49,25 @@ final class CategoryJobs
                 ? sprintf('%s (#%d)', $row['s_name'], $id)
                 : sprintf('#%d', $id);
         });
+
+        JobRegistry::register(self::EXPIRY, static fn (Job $job) => self::expiry($job));
+        JobRegistry::describe(self::EXPIRY, __('Give listings new end dates'), static function (array $p): string {
+            $ids = array_map('intval', (array) ($p['category_ids'] ?? array()));
+
+            return $ids === array() ? '' : '#' . implode(', #', $ids);
+        });
     }
 
     /**
      * Delete a category, choosing the way that fits its size.
      *
-     * @param int $categoryId
+     * @param int  $categoryId
+     * @param bool $queue      true queues it whatever its size
      *
      * @return string 'done' when it was deleted here, 'queued' when a job will finish it,
      *                'failed' when it could not be deleted
      */
-    public static function requestDelete(int $categoryId): string
+    public static function requestDelete(int $categoryId, bool $queue = false): string
     {
         if ($categoryId <= 0) {
             return 'failed';
@@ -67,7 +78,7 @@ final class CategoryJobs
             return 'failed';
         }
 
-        if (self::countItems($ids) <= self::INLINE_LIMIT) {
+        if (!$queue && self::countItems($ids) <= self::INLINE_LIMIT) {
             return Category::getInstance()->deleteByPrimaryKey($categoryId) === false ? 'failed' : 'done';
         }
 
@@ -78,6 +89,55 @@ final class CategoryJobs
         $id = osc_job_enqueue(self::TYPE, array('category_id' => $categoryId));
 
         return $id > 0 ? 'queued' : 'failed';
+    }
+
+    /**
+     * Queue new end dates for every listing in these categories (0 days = never end).
+     *
+     * @param int[] $categoryIds
+     * @param int   $days
+     *
+     * @return bool false when nothing could be queued
+     */
+    public static function requestExpiry(array $categoryIds, int $days): bool
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $categoryIds), static fn (int $id): bool => $id > 0)));
+        if ($ids === array() || $days < 0) {
+            return false;
+        }
+
+        return osc_job_enqueue(self::EXPIRY, array('category_ids' => $ids, 'days' => $days, 'after' => 0)) > 0;
+    }
+
+    /**
+     * Re-date the next batch of listings after the last id done, then ask to run again.
+     * Idempotent: a listing that already has its new date is left as it is.
+     *
+     * @param Job $job
+     *
+     * @return void
+     */
+    private static function expiry(Job $job): void
+    {
+        $ids   = array_values(array_filter(array_map('intval', (array) $job->get('category_ids', array())), static fn (int $id): bool => $id > 0));
+        $days  = (int) $job->get('days', 0);
+        $after = (int) $job->get('after', 0);
+        if ($ids === array() || $days < 0) {
+            return;
+        }
+
+        $rows = ListingStore::idsInCategories($ids, self::BATCH, $after);
+
+        $items = Item::getInstance();
+        foreach ($rows as $row) {
+            $after = (int) $row['pk_i_id'];
+            $items->updateExpirationDate($after, $days);
+        }
+
+        // A short batch was the last one.
+        if (count($rows) === self::BATCH) {
+            $job->repeat(array('category_ids' => $ids, 'days' => $days, 'after' => $after));
+        }
     }
 
     /**
@@ -141,28 +201,12 @@ final class CategoryJobs
      * @param int $categoryId
      *
      * @return array<int,int> empty when the category does not exist
+     * @throws DbException
      */
     public static function treeIds(int $categoryId): array
     {
-        $category = Category::getInstance()->findByPrimaryKey($categoryId);
-        if ($category === false || $category === null) {
-            return array();
-        }
-
-        $ids   = array();
-        $stack = array($categoryId);
-
-        while ($stack !== array()) {
-            $id    = (int) array_pop($stack);
-            $ids[] = $id;
-
-            foreach (Category::getInstance()->findSubcategories($id) as $child) {
-                $stack[] = (int) $child['pk_i_id'];
-            }
-        }
-
-        // Deepest last out of the walk above, so reverse to get deepest first.
-        return array_reverse($ids);
+        // A job runs long after the request that queued it, so read the tree fresh.
+        return CategoryStore::tree()->subtree($categoryId);
     }
 
     /**

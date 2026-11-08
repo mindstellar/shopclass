@@ -136,6 +136,51 @@ pin('and the root is last', $root, $ids[count($ids) - 1]);
 pin('a leaf is a tree of one', array($other), CategoryJobs::treeIds($other));
 pin('a category that is not there has no tree', array(), CategoryJobs::treeIds(999999));
 
+// The walk treeIds() did before it read the tree in one query: a stack of
+// findSubcategories() calls, reversed. The one-query walk must give the same order.
+$oldWalk = static function (int $id): array {
+    $ids   = array();
+    $stack = array($id);
+    while ($stack !== array()) {
+        $node  = (int) array_pop($stack);
+        $ids[] = $node;
+        foreach (Category::getInstance()->findSubcategories($node) as $child) {
+            $stack[] = (int) $child['pk_i_id'];
+        }
+    }
+
+    return array_reverse($ids);
+};
+
+$wide  = seed_category($admin, 'Wide');
+$wideA = seed_category($admin, 'Wide A', $wide);
+$wideB = seed_category($admin, 'Wide B', $wide);
+seed_category($admin, 'Wide A1', $wideA);
+seed_category($admin, 'Wide A2', $wideA);
+$wideB1 = seed_category($admin, 'Wide B1', $wideB);
+seed_category($admin, 'Wide B1x', $wideB1);
+pin('the order is the one the old walk gave', $oldWalk($wide), CategoryJobs::treeIds($wide));
+pin('...for a branch too', $oldWalk($wideB), CategoryJobs::treeIds($wideB));
+
+harness_section('One query, whatever the size');
+
+$sized   = seed_category($admin, 'Sized');
+$parents = array($sized);
+$grow    = static function (int $to) use ($admin, &$parents): void {
+    for ($made = count($parents); $made < $to; $made++) {
+        $parent    = $parents[intdiv($made - 1, 4)];
+        $parents[] = seed_category($admin, 'Sized ' . $made, $parent);
+    }
+};
+$grow(20);
+pin('the tree has 20 categories', 20, count(CategoryJobs::treeIds($sized)));
+$q20 = harness_query_count(static fn () => CategoryJobs::treeIds($sized));
+$grow(300);
+pin('the tree has 300 categories', 300, count(CategoryJobs::treeIds($sized)));
+$q300 = harness_query_count(static fn () => CategoryJobs::treeIds($sized));
+check('the walk ran some query (counter works)', $q20 > 0);
+pin('300 categories cost the same queries as 20', $q20, $q300);
+
 /* ---------------------------------------------------------------------------
  * Counting across the tree
  * ------------------------------------------------------------------------ */
@@ -165,6 +210,17 @@ seed_item($admin, $small, $user, 'Two');
 pin('a small category is deleted in the request', 'done', CategoryJobs::requestDelete($small));
 check('and it is gone', !$categoryExists($small));
 pin('with nothing queued', 0, $queue->count(JobQueue::STATUS_PENDING));
+
+$queued = seed_category($admin, 'Small but queued');
+seed_item($admin, $queued, $user, 'Three');
+pin('asked to queue, a small category is queued', 'queued', CategoryJobs::requestDelete($queued, true));
+pin('one job is pending for it', 1, $queue->count(JobQueue::STATUS_PENDING, CategoryJobs::TYPE));
+check('and the category is still there until the job runs', $categoryExists($queued));
+pin('but hidden', 0, $isEnabled($queued));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_job_queue');
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_item WHERE fk_i_category_id = ' . $queued);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_category_description WHERE fk_i_category_id = ' . $queued);
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_category WHERE pk_i_id = ' . $queued);
 
 pin('a category that is not there cannot be deleted', 'failed', CategoryJobs::requestDelete(999999));
 pin('nor can id zero', 'failed', CategoryJobs::requestDelete(0));
@@ -225,6 +281,10 @@ check('a sibling category survives', $categoryExists($other));
 pin('with its listing', 1, $countItems($other));
 
 $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_job_queue');
+
+osc_cache_flush();
+\mindstellar\category\CategoryStore::forget();
+(new \ReflectionProperty(Category::class, 'instance'))->setValue(null, null);
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

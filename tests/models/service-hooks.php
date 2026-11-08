@@ -192,7 +192,7 @@ $web = [
     // CAdminItems 'status', 'status_premium', 'status_spam'
     'listing' => static fn (int $adminId, string $action, int $id): bool => \mindstellar\moderation\ListingModeration::make()->apply($action, $id, $adminId, ''),
     // CAdminAjax 'edit_category_post'
-    'category' => static fn (int $id, string $name): bool => \mindstellar\category\CategoryService::make()->update($id, ['i_expiration_days' => 0, 'b_price_enabled' => 1], ['en_US' => ['s_name' => $name, 's_description' => '', 's_slug' => '']], false),
+    'category' => static fn (int $id, string $name): bool => \mindstellar\category\CategoryService::make()->update($id, ['b_price_enabled' => 1], ['en_US' => ['s_name' => $name, 's_description' => '', 's_slug' => '']], false),
     // CAdminSettingsCurrencies 'edit_post'
     'currency' => static fn (string $code, string $name): bool => \mindstellar\currency\CurrencyService::make()->update($code, $name, '€'),
     // CAdminSettingsCurrencies 'delete'
@@ -411,6 +411,26 @@ $webCategory = $record(static fn () => $web['category']($cars, 'Autos'));
 $apiCategory = $record(static fn () => $call('PATCH', 'admin/categories/' . $cars, ['translations' => ['en_US' => ['name' => 'Motors']]], $boss));
 pin('a category edit fires edited_category on both sides', [['slug', 'edited_category'], ['slug', 'edited_category']], [$webCategory, $apiCategory]);
 pin('the name is saved', 'Motors', $admin->query("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $cars")->fetch_row()[0]);
+if (!function_exists('osc_theme_supports')) {
+    function osc_theme_supports(string $feature)
+    {
+        return false;
+    }
+}
+$categoryArgs = [];
+foreach (['add_category', 'edited_category', 'edited_category_order'] as $hook) {
+    osc_add_hook($hook, static function (...$args) use (&$categoryArgs, $hook): void {
+        $categoryArgs[] = [$hook, $args];
+    });
+}
+$categories = \mindstellar\category\CategoryService::make();
+$vans       = $categories->create($cars, ['i_expiration_days' => 0, 'b_price_enabled' => 1], ['en_US' => ['s_name' => 'Vans', 's_description' => '']]);
+$categories->update($vans, ['i_expiration_days' => 10, 'b_price_enabled' => 1], ['en_US' => ['s_name' => 'Vans', 's_description' => '', 's_slug' => 'vans']], false, 0, false);
+$categories->move($vans, null, 0);
+pin('create, edit and move fire their hooks with the same arguments', [
+    ['add_category', [$vans]], ['edited_category', [$vans, 0]], ['edited_category_order', [0]],
+], $categoryArgs);
+$categories->delete($vans);
 $GLOBALS['osc_page_cache_purge'] = [];
 $web['currency']('EUR', 'Euros');
 $webPurge = $GLOBALS['osc_page_cache_purge'] ?? [];

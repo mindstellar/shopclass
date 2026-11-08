@@ -173,7 +173,7 @@ final class AdminRoutes
         return [
             'GET admin/categories'            => $read([$c, 'index'], 'Every category, enabled or not, with each language\'s texts', 'AdminCategoryList'),
             'GET admin/categories/{id}'       => $read([$c, 'show'], 'One category with each language\'s texts', 'AdminCategoryDocument', errors: [404]),
-            'POST admin/categories'           => $write([$c, 'create'], 'Add a category', body: 'AdminCategoryInput', response: 'AdminCategoryDocument', status: 201),
+            'POST admin/categories'           => $write([$c, 'create'], 'Add a category', body: 'AdminCategoryInput', response: 'AdminCategoryDocument', status: 201, errors: [422]),
             'PATCH admin/categories/{id}'     => $write([$c, 'update'], 'Edit a category; a new slug keeps the old one redirecting', body: 'AdminCategoryPatch', response: 'AdminCategoryDocument', errors: [404, 409]),
             'DELETE admin/categories/{id}'    => $delete,
             'GET admin/currencies/{code}'     => $read([$m, 'show'], 'One currency', 'CurrencyDocument', errors: [404]),

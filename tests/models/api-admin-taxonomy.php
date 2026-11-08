@@ -102,6 +102,27 @@ pin('switching it on again', ['1', '1'], [
     $admin->query("SELECT b_enabled FROM {$p}t_category WHERE pk_i_id = $cars")->fetch_row()[0],
     $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = $car")->fetch_row()[0],
 ]);
+$r     = $call('POST', 'admin/categories', ['parent_id' => $cars, 'translations' => ['en_US' => ['name' => 'Sedans']]], $boss);
+$sedan = (int) ($r->body()['data']['id'] ?? 0);
+pin('no declared depth: a third level is allowed', 201, $r->status());
+$call('PATCH', 'admin/categories/' . $cars, ['enabled' => false], $boss);
+pin('switching a level-2 category off takes its level-3 child with it', ['0', '0'], [
+    $admin->query("SELECT b_enabled FROM {$p}t_category WHERE pk_i_id = $sedan")->fetch_row()[0],
+    $admin->query("SELECT b_enabled FROM {$p}t_item WHERE pk_i_id = $car")->fetch_row()[0],
+]);
+$call('PATCH', 'admin/categories/' . $cars, ['enabled' => true], $boss);
+$ends = static fn (): string => (string) $admin->query("SELECT dt_expiration FROM {$p}t_item WHERE pk_i_id = $car")->fetch_row()[0];
+$call('PATCH', 'admin/categories/' . $cars, ['expiration_days' => 30], $boss);
+pin('PATCH expiration_days 30 gives the listings new end dates', true, $ends() !== '9999-12-31 23:59:59');
+$call('PATCH', 'admin/categories/' . $cars, ['expiration_days' => 0], $boss);
+pin('PATCH expiration_days 0 clears the listings\' end dates', '9999-12-31 23:59:59', $ends());
+$apiPath = ['page' => 'api'];
+osc_set_preference('category_depth', '2');
+osc_reset_preferences();
+pin('a third level over the stored limit is 422 on /parent_id', [422, '/parent_id'], $pointer($call('POST', 'admin/categories', ['parent_id' => $cars, 'translations' => ['en_US' => ['name' => 'Coupes']]], $boss, [], $apiPath)));
+pin('a second level is still allowed', 201, $call('POST', 'admin/categories', ['parent_id' => $vehicles, 'translations' => ['en_US' => ['name' => 'Bikes']]], $boss, [], $apiPath)->status());
+osc_delete_preference('category_depth');
+osc_reset_preferences();
 pin('DELETE: 204', 204, $call('DELETE', 'admin/categories/' . $vans, null, $boss)->status());
 pin('a deleted category is gone and answers 404 again', [0, 404], [
     (int) $admin->query("SELECT COUNT(*) FROM {$p}t_category WHERE pk_i_id = $vans")->fetch_row()[0], $call('DELETE', 'admin/categories/' . $vans, null, $boss)->status(),

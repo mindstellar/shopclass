@@ -300,6 +300,30 @@ msgid_plural "%d browsers"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "%d category deleted."
+msgid_plural "%d categories deleted."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "%d category disabled."
+msgid_plural "%d categories disabled."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "%d category enabled."
+msgid_plural "%d categories enabled."
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "%d category is being deleted in the background."
+msgid_plural "%d categories are being deleted in the background."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "%d category · not in a form"
 msgid_plural "%d categories · not in a form"
@@ -2242,6 +2266,7 @@ msgstr ""
 #: oc-includes/classes/admin/ajax/CategoryAjax.php
 #: oc-includes/classes/admin/ajax/FieldAjax.php
 #: oc-includes/classes/admin/ajax/FormBuilderAjax.php
+#: oc-includes/classes/listing/category/CategoryService.php
 msgid "An error occurred while deleting"
 msgstr ""
 
@@ -2260,6 +2285,7 @@ msgstr ""
 
 #: oc-includes/classes/admin/ajax/CategoryAjax.php
 #: oc-includes/classes/admin/ajax/FieldAjax.php
+#: oc-includes/classes/listing/category/CategoryService.php
 msgid "An error occurred while updating"
 msgstr ""
 
@@ -6207,6 +6233,14 @@ msgstr ""
 msgid "Expires after"
 msgstr ""
 
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "Expiry saved. Listings get new end dates."
+msgstr ""
+
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "Expiry saved. Listings keep their end dates."
+msgstr ""
+
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "Extensions"
 msgstr ""
@@ -6827,6 +6861,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/index.php
 msgid "Give it a name."
+msgstr ""
+
+#: oc-includes/classes/core/job/CategoryJobs.php
+msgid "Give listings new end dates"
 msgstr ""
 
 #: oc-includes/classes/admin/ajax/FieldAjax.php
@@ -8475,6 +8513,10 @@ msgid ""
 "matching stops."
 msgstr ""
 
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "Listings are getting new end dates in the background."
+msgstr ""
+
 #: oc-includes/osclass/functions.php
 msgid "Listings by %1$s on %2$s."
 msgstr ""
@@ -9423,6 +9465,10 @@ msgstr ""
 msgid "Moved to position %1$d of %2$d."
 msgstr ""
 
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "Moved."
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Moving & Delivery"
 msgstr ""
@@ -10196,6 +10242,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "No submissions in this view yet"
+msgstr ""
+
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+msgid "No such category."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
@@ -11196,6 +11246,7 @@ msgid "Parent categories"
 msgstr ""
 
 #: oc-includes/classes/admin/ajax/CategoryAjax.php
+#: oc-includes/classes/listing/category/CategoryService.php
 msgid "Parent category is disabled, you can not enable that category"
 msgstr ""
 
@@ -13772,7 +13823,6 @@ msgstr ""
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/parts/ui.php
-#: oc-admin/themes/modern/plugins/view.php
 #: oc-admin/themes/modern/settings/advanced.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/billing.php

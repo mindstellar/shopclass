@@ -132,6 +132,12 @@ function api_admin_env(): void
         {
         }
     }
+    if (!function_exists('osc_theme_supports')) {
+        function osc_theme_supports(string $feature)
+        {
+            return \mindstellar\theme\ThemeSupports::instance()->get($feature);
+        }
+    }
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hPlugins.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hKv.php';

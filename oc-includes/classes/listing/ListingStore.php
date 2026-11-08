@@ -14,6 +14,7 @@ namespace mindstellar\listing;
 
 use mindstellar\base\Model;
 use mindstellar\database\Db;
+use mindstellar\model\KeyValue;
 
 /**
  * Small t_item reads and writes for the listing services. The legacy Item model keeps
@@ -22,6 +23,9 @@ use mindstellar\database\Db;
 final class ListingStore extends Model
 {
     protected const TABLE = 't_item';
+
+    /** Key-value group of listings that were off on their own when their category was switched off. */
+    public const KEPT_OFF = 'category.kept_off';
 
     /**
      * One listing's columns, or null. With $lock the row is held (FOR UPDATE) until the
@@ -251,18 +255,70 @@ final class ListingStore extends Model
     }
 
     /**
-     * The first $limit listing ids in these categories, lowest first.
+     * Before these categories are switched off, note the listings in them that are off on their
+     * own (a category that is still on), so switching the categories back on leaves them off.
+     *
+     * @param int[] $categoryIds
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function rememberOffInCategories(array $categoryIds): void
+    {
+        $ids = array_values(array_map('intval', $categoryIds));
+        if ($ids === array()) {
+            return;
+        }
+        Db::execute(
+            'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . KeyValue::TABLE . ' (s_group, s_key, s_value, dt_created)'
+            . ' SELECT ?, CAST(i.pk_i_id AS CHAR), NULL, ? FROM ' . self::tableName() . ' i'
+            . ' JOIN ' . DB_TABLE_PREFIX . 't_category c ON c.pk_i_id = i.fk_i_category_id'
+            . ' WHERE c.b_enabled = 1 AND i.b_enabled = 0 AND i.fk_i_category_id IN (' . implode(',', array_fill(0, count($ids), '?')) . ')',
+            array_merge(array(self::KEPT_OFF, gmdate('Y-m-d H:i:s')), $ids)
+        );
+    }
+
+    /**
+     * Switch on the listings in these categories, except those rememberOffInCategories() noted,
+     * and forget the notes.
+     *
+     * @param int[] $categoryIds
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function enableInCategories(array $categoryIds): void
+    {
+        $ids = array_values(array_map('intval', $categoryIds));
+        if ($ids === array()) {
+            return;
+        }
+        $in = implode(',', array_fill(0, count($ids), '?'));
+        $kv = DB_TABLE_PREFIX . KeyValue::TABLE;
+        Db::execute(
+            'UPDATE ' . self::tableName() . ' i SET i.b_enabled = 1 WHERE i.b_enabled = 0 AND i.fk_i_category_id IN (' . $in . ')'
+            . ' AND NOT EXISTS (SELECT 1 FROM ' . $kv . ' k WHERE k.s_group = ? AND CAST(k.s_key AS UNSIGNED) = i.pk_i_id)',
+            array_merge($ids, array(self::KEPT_OFF))
+        );
+        Db::execute(
+            'DELETE k FROM ' . $kv . ' k JOIN ' . self::tableName() . ' i ON CAST(k.s_key AS UNSIGNED) = i.pk_i_id'
+            . ' WHERE k.s_group = ? AND i.fk_i_category_id IN (' . $in . ')',
+            array_merge(array(self::KEPT_OFF), $ids)
+        );
+    }
+
+    /**
+     * The first $limit listing ids above $after in these categories, lowest first.
      *
      * @param int[] $categoryIds
      *
      * @return array<int,array<string,mixed>> rows with pk_i_id
      * @throws \mindstellar\database\DbException
      */
-    public static function idsInCategories(array $categoryIds, int $limit): array
+    public static function idsInCategories(array $categoryIds, int $limit, int $after = 0): array
     {
         return self::table()
             ->select('pk_i_id')
             ->whereIn('fk_i_category_id', $categoryIds)
+            ->where('pk_i_id', '>', $after)
             ->orderBy('pk_i_id', 'ASC')
             ->limit($limit)
             ->get();

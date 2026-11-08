@@ -345,6 +345,7 @@ $region   = seed_region($admin, $country, 'Alpha');
 $city     = seed_city($admin, $region, 'Springfield', $country);
 $cat      = seed_category($admin, 'Motors', null, $locale);
 $sub      = seed_category($admin, 'Cars', $cat, $locale);
+(new ReflectionProperty('Category', 'instance'))->setValue(null, null);
 $user     = seed_user($admin);
 
 $A = seed_item($admin, $cat, $user, 'Item A');
@@ -890,8 +891,8 @@ osc_add_hook('item_expiration_updated', static function ($id, $date) use (&$expH
     $expHook = array('id' => $id, 'date' => $date);
 });
 pin('a falsy expiration_time returns false without touching the row', false, $model->updateExpirationDate($expItem, false));
-pin('a "0" expiration_time is falsy too and returns false', false, $model->updateExpirationDate($expItem, '0'));
 check('a rejected update fires no item_expiration_updated hook', $expHook === array());
+pin('a "0" expiration_time means the listing never ends', '9999-12-31 23:59:59', $model->updateExpirationDate($expItem, '0'));
 
 // Numeric string > 0: the DATE_ADD(dt_pub_date, INTERVAL n DAY) expression branch,
 // written UNescaped. Returns the freshly computed dt_expiration string.

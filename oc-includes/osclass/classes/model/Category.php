@@ -12,6 +12,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\category\CategoryService;
+use mindstellar\category\CategoryStore;
 use mindstellar\database\Db;
 use mindstellar\model\SlugHistory;
 
@@ -507,21 +509,29 @@ class Category extends DAO
     public function deleteByPrimaryKey($pk)
     {
         $this->slugsWritten = true;
-        $items   = Item::getInstance()->findByCategoryID((int)($pk));
-        $subcats = $this->findSubcategories((int)($pk));
-        if (count($subcats) > 0) {
-            foreach ($subcats as $s) {
-                $this->deleteByPrimaryKey((int)($s['pk_i_id']));
-            }
+        $pkInt   = (int)$pk;
+        $deleted = false;
+        // Deepest first, so each category goes after everything below it.
+        foreach (CategoryStore::tree()->subtree($pkInt) ?: array($pkInt) as $id) {
+            $deleted = $this->deleteOne($id);
         }
 
+        return $deleted;
+    }
+
+    /**
+     * Delete one category, its listings and what is linked to it, not its subcategories.
+     *
+     * @return int|false Rows removed from t_category, or false when the transaction failed
+     */
+    private function deleteOne(int $pkInt)
+    {
+        $items = Item::getInstance()->findByCategoryID($pkInt);
         if (count($items) > 0) {
             foreach ($items as $item) {
                 Item::getInstance()->deleteByPrimaryKey($item['pk_i_id']);
             }
         }
-
-        $pkInt = (int)($pk);
 
         osc_run_hook('delete_category', $pkInt);
 
@@ -592,37 +602,6 @@ class Category extends DAO
             $res = false;
         }
         if ($res >= 0) {
-            // update dt_expiration (table t_item) using category.i_expiration_days.
-            // Both branches discarded their result before this conversion, so a
-            // failure is swallowed rather than raised, keeping the rest running.
-            // Without i_expiration_days the expiry is not being saved, and listings keep theirs.
-            $expiry = $fields['i_expiration_days'] ?? null;
-            if ($expiry !== null && $expiry > 0) {
-                try {
-                    Db::execute(
-                        'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
-                        . ' LEFT JOIN ' . DB_TABLE_PREFIX . 't_category as b ON b.pk_i_id = a.fk_i_category_id'
-                        . ' SET a.dt_expiration = DATE_ADD(a.dt_pub_date, INTERVAL b.i_expiration_days DAY)'
-                        . ' WHERE a.fk_i_category_id = ?',
-                        array((int)$pk)
-                    );
-                } catch (\mindstellar\database\DbException $e) {
-                    // Discarded, as before.
-                }
-                // update dt_expiration (table t_item) using the max date value
-            } elseif ($expiry !== null && $expiry == 0) {
-                try {
-                    Db::execute(
-                        'UPDATE ' . DB_TABLE_PREFIX . 't_item as a'
-                        . " SET a.dt_expiration = '9999-12-31 23:59:59'"
-                        . ' WHERE a.fk_i_category_id = ?',
-                        array((int)$pk)
-                    );
-                } catch (\mindstellar\database\DbException $e) {
-                    // Discarded, as before.
-                }
-            }
-
             $affectedRows = $res;
 
             foreach ($aFieldsDescription as $k => $fieldsDescription) {
@@ -995,45 +974,24 @@ class Category extends DAO
     }
 
     /**
-     * Update categories' expiration
+     * Set a category's expiry days and re-date its listings (0 = never end). Kept for plugins;
+     * it calls CategoryService::setExpiry(), which queues a large re-date as a background job.
      *
      * @param int  $pk_i_id
      * @param int  $expiration
      * @param bool $updateSubcategories
      *
-     * @return int|false false on fail, int of num. of affected rows
+     * @return int|false false on fail, else how many categories were set
      */
     public function updateExpiration($pk_i_id, $expiration, $updateSubcategories = false)
     {
-        $itemManager = Item::getInstance();
-
         try {
-            $items = Db::table(DB_TABLE_PREFIX . 't_item')
-                ->select('pk_i_id')
-                ->where('fk_i_category_id', (int)$pk_i_id)
-                ->get();
-            $items = Db::stringifyRows($items);
-        } catch (\mindstellar\database\DbException $e) {
-            $items = array();
-        }
-        foreach ($items as $item) {
-            $itemManager->updateExpirationDate($item['pk_i_id'], $expiration);
-        }
-        try {
-            $result = Db::table($this->tableName)
-                ->where('pk_i_id', $pk_i_id)
-                ->update(array('i_expiration_days' => $expiration));
-        } catch (\mindstellar\database\DbException $e) {
-            $result = false;
-        }
-        if ($updateSubcategories) {
-            $subcategories = $this->findSubcategories($pk_i_id);
-            foreach ($subcategories as $c) {
-                $this->updateExpiration($c['pk_i_id'], $expiration, true);
-            }
+            $result = CategoryService::make()->setExpiry(array((int)$pk_i_id), (int)$expiration, true, (bool)$updateSubcategories);
+        } catch (\InvalidArgumentException | \RuntimeException $e) {
+            return false;
         }
 
-        return $result;
+        return $result['categories'];
     }
 
     /**
@@ -1047,21 +1005,16 @@ class Category extends DAO
      */
     public function updatePriceEnabled($pk_i_id, $enabled, $updateSubcategories = false)
     {
+        $id = (int)$pk_i_id;
         try {
-            $result = Db::table($this->tableName)
-                ->where('pk_i_id', $pk_i_id)
+            $ids = $updateSubcategories ? (CategoryStore::tree()->subtree($id) ?: array($id)) : array($id);
+
+            return Db::table($this->tableName)
+                ->whereIn('pk_i_id', $ids)
                 ->update(array('b_price_enabled' => $enabled));
         } catch (\mindstellar\database\DbException $e) {
-            $result = false;
+            return false;
         }
-        if ($updateSubcategories) {
-            $subcategories = $this->findSubcategories($pk_i_id);
-            foreach ($subcategories as $c) {
-                $this->updatePriceEnabled($c['pk_i_id'], $enabled, true);
-            }
-        }
-
-        return $result;
     }
 
     /**

@@ -1021,7 +1021,7 @@ class Item extends DAO
      * Update dt_expiration field, using $expiration_time
      *
      * @param int        $id
-     * @param int|string $expiration_time could be interget (number of days) or directly a date
+     * @param int|string $expiration_time days after the publish date (0 = never ends), or a date
      * @param bool       $do_stats
      *
      * @return string|false new date expiration, false if error occurs
@@ -1029,7 +1029,13 @@ class Item extends DAO
      */
     public function updateExpirationDate($id, $expiration_time, $do_stats = true)
     {
-        if (!$expiration_time) {
+        $days = is_int($expiration_time) || (is_string($expiration_time) && ctype_digit($expiration_time))
+            ? (int)$expiration_time
+            : null;
+        if ($days === null && (!is_string($expiration_time) || trim($expiration_time) === '')) {
+            return false;
+        }
+        if ($days !== null && $days < 0) {
             return false;
         }
 
@@ -1046,15 +1052,15 @@ class Item extends DAO
         if ($item !== null) {
             $item        = Db::stringifyRow($item);
             $counted_old = osc_item_is_counted($item);
-            if (ctype_digit($expiration_time)) {
-                if ($expiration_time > 0) {
+            if ($days !== null) {
+                if ($days > 0) {
                     // A DATE_ADD(...) expression must reach the column UNquoted:
                     // the table name is a fixed identifier and the interval days
                     // are (int)-cast, so the expression is written inline. The
                     // pk_i_id filter is bound.
                     $sql    = 'UPDATE ' . $this->getTableName()
                         . ' SET dt_expiration = DATE_ADD(' . $this->getTableName() . '.dt_pub_date, INTERVAL '
-                        . (int)$expiration_time . ' DAY) WHERE pk_i_id = ?';
+                        . $days . ' DAY) WHERE pk_i_id = ?';
                     $params = array($id);
                 } else {
                     $sql    = 'UPDATE ' . $this->getTableName() . ' SET dt_expiration = ? WHERE pk_i_id = ?';

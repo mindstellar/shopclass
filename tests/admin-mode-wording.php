@@ -142,6 +142,9 @@ foreach (array(
 
 harness_section('widget sections');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
+if (class_exists('mindstellar\\theme\\ThemeSupports')) {
+    \mindstellar\theme\ThemeSupports::instance()->add('widget_locations', array('footer' => array('label' => 'Footer', 'description' => 'Bottom of every page')));
+}
 if (!function_exists('osc_theme_supports')) {
     function osc_theme_supports($feature)
     {

@@ -90,7 +90,7 @@ final class AdminCategoriesController
             if (array_key_exists('expiration_days', $input)) {
                 $fields['i_expiration_days'] = (int) $input['expiration_days'];
             }
-            $edit = ['fields' => $fields, 'descriptions' => $this->descriptions($id, (array) ($input['translations'] ?? [])), 'toSubcategories' => (bool) ($input['apply_to_subcategories'] ?? false)];
+            $edit = ['fields' => $fields, 'descriptions' => $this->descriptions($id, (array) ($input['translations'] ?? [])), 'toSubcategories' => (bool) ($input['apply_to_subcategories'] ?? false), 'newDates' => true];
         }
         $outcome = $this->categories->adminEdit($id, $row, $edit, array_key_exists('enabled', $input) ? (bool) $input['enabled'] : null);
         if ($outcome === 'failed') {

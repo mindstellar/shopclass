@@ -194,7 +194,6 @@ class CategoryForm extends Form
     {
         if ($category['fk_i_parent_id'] === null) {
             $attributes['id']           = 'apply_changes_to_subcategories';
-            $attributes['checked'] = true;
             echo (new self())->checkbox('apply_changes_to_subcategories', 1, $attributes);
         }
     }

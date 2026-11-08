@@ -134,13 +134,70 @@ final class CategoryAjax extends AjaxHandler
     {
         try {
             $result = CategoryService::make()->delete(Params::getParamInt('id')) === 'queued'
-                ? array('ok' => __('The category is too large to delete at once. It has been hidden and is being emptied in the background.'))
-                : array('ok' => __('The categories have been deleted'));
+                ? array('ok' => __('The category is too large to delete at once. It has been hidden and is being emptied in the background.'), 'queued' => true)
+                : array('ok' => __('The categories have been deleted'), 'queued' => false);
         } catch (RefusedException | RuntimeException $e) {
             $result = array('error' => __('An error occurred while deleting'));
         }
 
         AjaxResponse::json($result);
+    }
+
+    /** Move a category under a parent (0 = top level) at a position among its siblings. */
+    public function move(): void
+    {
+        $parent = Params::getParamInt('parent_id');
+        try {
+            CategoryService::make()->move(Params::getParamInt('id'), $parent > 0 ? $parent : null, Params::getParamInt('position'));
+        } catch (RefusedException $e) {
+            AjaxResponse::json(self::refusal($e));
+
+            return;
+        } catch (RuntimeException $e) {
+            AjaxResponse::json(array('error' => __('An error occurred while updating')));
+
+            return;
+        }
+
+        AjaxResponse::json(array('ok' => true, 'message' => __('Moved.')));
+    }
+
+    /** Enable, disable, delete, move or set the expiry of several categories at once. */
+    public function bulk(): void
+    {
+        $ids = self::ids();
+        if ($ids === array()) {
+            AjaxResponse::json(array('error' => __('No such category.'), 'field' => '/ids'));
+
+            return;
+        }
+        $do   = Params::getParamString('do');
+        $args = array(
+            'parent'          => Params::getParamInt('parent_id'),
+            'position'        => Params::getParamInt('position'),
+            'days'            => Params::getParamInt('days'),
+            'newDates'        => Params::getParamString('expiry_listings') === 'new',
+            'toSubcategories' => Params::getParamBool('to_subcategories'),
+        );
+        try {
+            $result = CategoryService::make()->bulk($do, $ids, $args);
+        } catch (RefusedException $e) {
+            AjaxResponse::json(self::refusal($e));
+
+            return;
+        } catch (RuntimeException $e) {
+            AjaxResponse::json(array('error' => __('An error occurred while updating')));
+
+            return;
+        }
+
+        AjaxResponse::json(array('ok' => true) + $result + array('message' => self::bulkMessage($do, $result, $args['newDates'])));
+    }
+
+    /** What deleting these categories would remove. */
+    public function deletePreview(): void
+    {
+        AjaxResponse::json(CategoryService::make()->deletePreview(self::ids()));
     }
 
     public function editPost(): void
@@ -149,8 +206,8 @@ final class CategoryAjax extends AjaxHandler
         $fields['i_expiration_days']    =
             (Params::getParam('i_expiration_days') != '') ? Params::getParam('i_expiration_days') : 0;
         $fields['b_price_enabled']      = (Params::getParam('b_price_enabled') != '') ? 1 : 0;
-        $apply_changes_to_subcategories =
-            Params::getParam('apply_changes_to_subcategories') == 1 ? true : false;
+        $apply_changes_to_subcategories = Params::getParamInt('apply_changes_to_subcategories') === 1;
+        $newDates                       = Params::getParamString('expiry_listings') === 'new';
 
         $error         = 0;
         $has_one_title = 0;
@@ -173,7 +230,7 @@ final class CategoryAjax extends AjaxHandler
 
         $l = osc_language();
         if ((int) $id <= 0) {
-            AjaxResponse::json($this->create($fields, $aFieldsDescription, $has_one_title === 1));
+            AjaxResponse::json($this->create($fields, $aFieldsDescription, $has_one_title === 1, Params::getParamInt('parent_id')));
 
             return;
         }
@@ -182,7 +239,7 @@ final class CategoryAjax extends AjaxHandler
         // @phpstan-ignore equal.alwaysTrue (error is changed by the loop above)
         if ($error == 0 || ($error == 1 && $has_one_title == 1)) {
             try {
-                if (!$editor->update((int) $id, $fields, $aFieldsDescription, $apply_changes_to_subcategories, (int) $error)) {
+                if (!$editor->update((int) $id, $fields, $aFieldsDescription, $apply_changes_to_subcategories, (int) $error, $newDates)) {
                     $error = 2;
                 }
             } catch (InvalidException $e) {
@@ -210,15 +267,15 @@ final class CategoryAjax extends AjaxHandler
     }
 
     /**
-     * Create a root category from the drawer, with the names typed there. The slug comes
-     * from the name, so no placeholder row is ever written.
+     * Create a category from the drawer, under $parentId (0 = top level), with the names typed
+     * there. The slug comes from the name, so no placeholder row is ever written.
      *
      * @param array<string,mixed>               $fields
      * @param array<string,array<string,mixed>> $descriptions
      *
      * @return array<string,mixed>
      */
-    private function create(array $fields, array $descriptions, bool $hasTitle): array
+    private function create(array $fields, array $descriptions, bool $hasTitle, int $parentId = 0): array
     {
         if (!$hasTitle) {
             return array('error' => 1, 'msg' => __('Sorry, including at least a title is mandatory'));
@@ -229,19 +286,64 @@ final class CategoryAjax extends AjaxHandler
             unset($descriptions[$locale]['s_slug']);
         }
         try {
-            CategoryService::make()->create(
-                null,
+            $id = CategoryService::make()->create(
+                $parentId > 0 ? $parentId : null,
                 array('i_expiration_days' => (int) $fields['i_expiration_days'], 'b_price_enabled' => (int) $fields['b_price_enabled']),
                 $descriptions,
                 true,
-                true
+                $parentId <= 0
             );
-        } catch (InvalidException | RuntimeException $e) {
+        } catch (RefusedException $e) {
+            $refusal = self::refusal($e);
+
+            return array('error' => 2, 'msg' => $refusal['error']) + array_intersect_key($refusal, array('field' => 1));
+        } catch (RuntimeException $e) {
             return array('error' => 2, 'msg' => __('An error occurred while updating'));
         }
         $msg = __('A new category has been added');
         osc_add_flash_ok_message($msg, 'admin');
 
-        return array('error' => 0, 'msg' => $msg, 'created' => true);
+        return array('error' => 0, 'msg' => $msg, 'created' => true, 'id' => $id);
+    }
+
+    /**
+     * The posted category ids: whole numbers above 0 only.
+     *
+     * @return int[]
+     */
+    private static function ids(): array
+    {
+        return array_values(array_filter(array_map('intval', Params::getParamArray('ids')), static fn (int $id): bool => $id > 0));
+    }
+
+    /**
+     * @return array{error:string,field?:string}
+     */
+    private static function refusal(RefusedException $e): array
+    {
+        return $e instanceof InvalidException
+            ? array('error' => $e->getMessage(), 'field' => $e->pointer())
+            : array('error' => $e->getMessage());
+    }
+
+    /**
+     * @param array{done:int[],failed:array<int,string>,queued:int[]} $result
+     */
+    private static function bulkMessage(string $do, array $result, bool $newDates): string
+    {
+        $done   = count($result['done']);
+        $queued = count($result['queued']);
+
+        return match ($do) {
+            'enable'  => sprintf(_n('%d category enabled.', '%d categories enabled.', $done), $done),
+            'disable' => sprintf(_n('%d category disabled.', '%d categories disabled.', $done), $done),
+            'move'    => __('Moved.'),
+            'delete'  => $queued > 0
+                ? sprintf(_n('%d category is being deleted in the background.', '%d categories are being deleted in the background.', $queued), $queued)
+                : sprintf(_n('%d category deleted.', '%d categories deleted.', $done), $done),
+            default   => $queued > 0
+                ? __('Listings are getting new end dates in the background.')
+                : ($newDates ? __('Expiry saved. Listings get new end dates.') : __('Expiry saved. Listings keep their end dates.')),
+        };
     }
 }

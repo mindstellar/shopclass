@@ -271,6 +271,10 @@ msgstr ""
 msgid "<a href=\"%s\">Click here to sign-in</a>"
 msgstr ""
 
+#: oc-includes/classes/listing/category/CategoryService.php
+msgid "A category can't go inside its own subcategory."
+msgstr ""
+
 #: oc-includes/classes/billing/currency/CurrencyService.php
 msgid "A currency with this code already exists."
 msgstr ""
@@ -845,6 +849,12 @@ msgstr ""
 msgid "Choose how many of at least one item to ship"
 msgstr ""
 
+#: oc-includes/classes/listing/category/CategoryService.php
+msgid "Choose up to %d category at a time."
+msgid_plural "Choose up to %d categories at a time."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Choose…"
 msgstr ""
@@ -1301,6 +1311,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Enter a name for this package"
+msgstr ""
+
+#: oc-includes/classes/listing/category/CategoryService.php
+msgid "Enter a number of days, 0 or more."
 msgstr ""
 
 #: oc-includes/classes/user/AddressFormat.php
@@ -3905,6 +3919,7 @@ msgid "The report has been cleared"
 msgstr ""
 
 #: oc-includes/classes/core/exception/InvalidException.php
+#: oc-includes/classes/listing/category/CategoryService.php
 msgid "The request was refused."
 msgstr ""
 
@@ -4378,6 +4393,12 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 msgid "This theme has nothing to customise."
 msgstr ""
+
+#: oc-includes/classes/listing/category/CategoryService.php
+msgid "This theme shows %d level of categories."
+msgid_plural "This theme shows %d levels of categories."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/controller/CWebBilling.php
 msgid "This upgrade is not available right now"

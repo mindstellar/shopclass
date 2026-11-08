@@ -23,6 +23,130 @@ final class CategoryStore extends Model
 {
     protected const TABLE = 't_category';
 
+    /** @var array<int,?int>|null */
+    private static ?array $parentMap = null;
+
+    /**
+     * Every category's parent in one query (id => parent id, null for the top level),
+     * in sibling order. Kept for the rest of the request; any write here clears it.
+     *
+     * @return array<int,?int>
+     * @throws \mindstellar\database\DbException
+     */
+    public static function parentMap(): array
+    {
+        if (self::$parentMap === null) {
+            $map = array();
+            $rows = self::table()->select('pk_i_id', 'fk_i_parent_id')->orderBy('i_position')->orderBy('pk_i_id')->get();
+            foreach ($rows as $row) {
+                $map[(int) $row['pk_i_id']] = $row['fk_i_parent_id'] === null ? null : (int) $row['fk_i_parent_id'];
+            }
+            self::$parentMap = $map;
+        }
+
+        return self::$parentMap;
+    }
+
+    /**
+     * The tree read fresh from the database. Legacy model writes do not clear the remembered
+     * map, so every caller that needs the current tree uses this.
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function tree(): CategoryTree
+    {
+        self::forget();
+
+        return new CategoryTree(self::parentMap());
+    }
+
+    /**
+     * Drop the remembered tree.
+     */
+    public static function forget(): void
+    {
+        self::$parentMap = null;
+    }
+
+    /**
+     * @param int[] $ids
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function setEnabled(array $ids, bool $on): void
+    {
+        self::forget();
+        if ($ids !== array()) {
+            self::table()->whereIn('pk_i_id', array_map('intval', $ids))->update(array('b_enabled' => $on ? 1 : 0));
+        }
+    }
+
+    /**
+     * Sets the category rows only; listings are not touched.
+     *
+     * @param int[] $ids
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function setExpirationDays(array $ids, int $days): void
+    {
+        self::forget();
+        if ($ids !== array()) {
+            self::table()->whereIn('pk_i_id', array_map('intval', $ids))->update(array('i_expiration_days' => $days));
+        }
+    }
+
+    /**
+     * @throws \mindstellar\database\DbException
+     */
+    public static function setParent(int $id, ?int $parentId): void
+    {
+        self::forget();
+        self::table()->where('pk_i_id', $id)->update(array('fk_i_parent_id' => $parentId));
+    }
+
+    /**
+     * Number the given categories 0, 1, 2... in i_position, in one statement.
+     *
+     * @param int[] $orderedIds
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function reorder(array $orderedIds): void
+    {
+        self::forget();
+        $ids = array_values(array_map('intval', $orderedIds));
+        if ($ids === array()) {
+            return;
+        }
+
+        $case = '';
+        $bindings = array();
+        foreach ($ids as $position => $id) {
+            $case .= ' WHEN ? THEN ?';
+            $bindings[] = $id;
+            $bindings[] = $position;
+        }
+        $bindings = array_merge($bindings, $ids);
+
+        Db::execute(
+            'UPDATE ' . self::tableName() . ' SET i_position = CASE pk_i_id' . $case . ' END WHERE pk_i_id IN ('
+            . implode(',', array_fill(0, count($ids), '?')) . ')',
+            $bindings
+        );
+    }
+
+    /**
+     * Ids directly under $parentId (null = top level), in i_position then id order.
+     *
+     * @return int[]
+     * @throws \mindstellar\database\DbException
+     */
+    public static function siblings(?int $parentId): array
+    {
+        return array_keys(array_filter(self::parentMap(), static fn (?int $p): bool => $p === $parentId));
+    }
+
     /**
      * @throws \mindstellar\database\DbException
      */
@@ -64,6 +188,18 @@ final class CategoryStore extends Model
         $row = self::table()->select('b_enabled')->where('pk_i_id', $id)->first();
 
         return !empty($row['b_enabled']);
+    }
+
+    /**
+     * The enabled flag and listing count of a category, or null when it does not exist.
+     *
+     * @return array{b_enabled:mixed,i_num_items:mixed}|null
+     *
+     * @throws \mindstellar\database\DbException
+     */
+    public static function flagsAndCount(int $id): ?array
+    {
+        return self::table()->select('b_enabled', 'i_num_items')->where('pk_i_id', $id)->first();
     }
 
     /**

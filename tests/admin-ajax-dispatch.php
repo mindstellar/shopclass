@@ -120,13 +120,13 @@ $csrf = array(
     'field_categories_post', 'delete_field', 'add_field', 'add_group', 'group_post',
     'delete_group', 'form_set_fields', 'migrate_loose_fields', 'form_submission_status',
     'form_submission_delete', 'form_submissions_purge', 'enable_category', 'delete_category',
-    'edit_category_post', 'test_mail', 'test_mail_template', 'order_pages', 'market_refresh',
+    'edit_category_post', 'category_move', 'category_bulk', 'test_mail', 'test_mail_template', 'order_pages', 'market_refresh',
     'market_install', 'market_update', 'market_detail', 'upgrade', 'upgrade_db',
     'location_stats', 'backup_status', 'market_install_dependency',
 );
 $open = array(
     'regions', 'cities', 'location_catalog', 'userajax', 'date_format',
-    'media_list', 'runhook', 'category_edit_iframe', 'field_categories_iframe',
+    'media_list', 'runhook', 'category_edit_iframe', 'category_delete_preview', 'field_categories_iframe',
     'group_categories_iframe', 'custom', 'check_version', 'check_languages', 'check_themes',
     'check_plugins', 'country_slug', 'region_slug', 'city_slug', 'location_search',
     'location_record', 'error_permissions', 'settings_index',
@@ -134,7 +134,7 @@ $open = array(
 
 harness_section('every action still has a handler');
 $all = array_merge($csrf, $open);
-pin('52 actions, none added or lost', 52, count($all));
+pin('55 actions, none added or lost', 55, count($all));
 $registered = AjaxRegistry::actions();
 sort($registered);
 $expected = $all;

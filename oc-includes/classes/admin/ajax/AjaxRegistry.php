@@ -59,6 +59,9 @@ final class AjaxRegistry
         'enable_category'        => array(CategoryAjax::class, 'enable', true),
         'delete_category'        => array(CategoryAjax::class, 'delete', true),
         'edit_category_post'     => array(CategoryAjax::class, 'editPost', true),
+        'category_move'          => array(CategoryAjax::class, 'move', true),
+        'category_bulk'          => array(CategoryAjax::class, 'bulk', true),
+        'category_delete_preview' => array(CategoryAjax::class, 'deletePreview', false),
 
         'field_categories_iframe' => array(FieldAjax::class, 'editIframe', false),
         'field_categories_post'  => array(FieldAjax::class, 'editPost', true),
