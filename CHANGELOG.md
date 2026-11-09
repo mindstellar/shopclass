@@ -107,6 +107,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
+- A plugin page's heading names the sidebar section it sits in; with billing off, Billing pages sit under a Billing heading in Settings.
+- Widgets and Menus show a dashed drop slot while dragging, and empty sections show a quiet one-row slot.
+- Fields a plugin adds to the register, login, comment and contact forms sit above the captcha.
 - Categories and Menus: drag left or right to change nesting, or use the arrow keys on the handle.
 - Saving a category no longer re-dates its listings unless you choose new end dates.
 - Disabling a category now disables every subcategory below it, at any depth.
