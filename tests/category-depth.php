@@ -52,6 +52,11 @@ function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'ST
     return true;
 }
 
+function osc_themes_path()
+{
+    return $GLOBALS['themes_path'] ?? '/nonexistent/';
+}
+
 function osc_add_hook($hook, $callback, $priority = 5)
 {
     global $state;
@@ -141,5 +146,38 @@ foreach ($synced as $callback) {
     $callback();
 }
 pin('a theme declaring 3 stores 3', '3', $state['prefs']['category_depth'] ?? null);
+
+harness_section('a theme switch stores the new limit');
+$dir = sys_get_temp_dir() . '/cat-depth-' . getmypid();
+@mkdir($dir, 0700, true);
+file_put_contents($dir . '/child.php', "<?php\n// osc_add_theme_support('category-depth', 9);\nosc_add_theme_support( 'category-depth' , 2 );\n");
+file_put_contents($dir . '/parent.php', "<?php\nosc_add_theme_support('category-depth', 4);\n");
+file_put_contents($dir . '/runtime.php', "<?php\nosc_add_theme_support('category-depth', get_depth());\n");
+file_put_contents($dir . '/none.php', "<?php\nosc_add_theme_support('menus', 3);\n");
+pin('a literal is read, comments are not', 2, CategoryDepth::readFrom(array($dir . '/child.php', $dir . '/parent.php')));
+pin('the parent fills in when the child is silent', 4, CategoryDepth::readFrom(array($dir . '/none.php', $dir . '/parent.php')));
+pin('a value worked out at run time is not guessed', null, CategoryDepth::readFrom(array($dir . '/runtime.php')));
+pin('a missing file means no limit', null, CategoryDepth::readFrom(array($dir . '/gone.php')));
+foreach (array('kid' => "Parent Theme: base\n", 'base' => '') as $slug => $head) {
+    @mkdir($dir . '/' . $slug, 0700, true);
+    file_put_contents($dir . '/' . $slug . '/index.php', "<?php\n/*\nTheme Name: " . $slug . "\n" . $head . "*/\n");
+}
+file_put_contents($dir . '/base/functions.php', "<?php\nosc_add_theme_support('category-depth', 3);\n");
+$GLOBALS['themes_path'] = $dir . '/';
+$state['prefs']  = array('category_depth' => '');
+$state['writes'] = 0;
+CategoryDepth::activated('kid');
+pin('activating a child theme stores its parent\'s limit', '3', $state['prefs']['category_depth']);
+CategoryDepth::activated('kid');
+pin('...and writes once', 1, $state['writes']);
+CategoryDepth::activated('base');
+pin('switching to the same limit writes nothing', 1, $state['writes']);
+file_put_contents($dir . '/kid/functions.php', "<?php\n");
+file_put_contents($dir . '/base/functions.php', "<?php\n");
+CategoryDepth::activated('kid');
+pin('a theme with no limit clears it', ['', 2], [$state['prefs']['category_depth'], $state['writes']]);
+exec('rm -rf ' . escapeshellarg($dir));
+$code = harness_code_only((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/functions.php'));
+check('theme_activate runs CategoryDepth::activated on every request', preg_match("/^osc_add_hook\\('theme_activate', array\\(\\\\mindstellar\\\\category\\\\CategoryDepth::class, 'activated'\\)\\);$/m", $code) === 1);
 
 exit(harness_result());

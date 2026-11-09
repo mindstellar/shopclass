@@ -12,6 +12,8 @@ declare(strict_types=1);
 
 namespace mindstellar\category;
 
+use mindstellar\theme\ThemeFunctions;
+
 /**
  * How many levels of categories the active theme shows, from
  * osc_add_theme_support('category-depth', N). No declaration means no limit.
@@ -69,8 +71,47 @@ final class CategoryDepth
         if (\osc_is_api_request()) {
             return;
         }
-        $declared = self::valid(\osc_theme_supports('category-depth'));
-        $value    = $declared === null ? '' : (string)$declared;
+        self::store(self::valid(\osc_theme_supports('category-depth')));
+    }
+
+    /**
+     * A theme switch stores the new theme's limit at once, read from its functions.php, then its
+     * parent's, without running them. A limit worked out at run time is stored by the next admin page.
+     *
+     * @param mixed $theme
+     */
+    public static function activated($theme): void
+    {
+        $theme = (string)$theme;
+        $paths = array();
+        foreach (array($theme, $theme === '' ? '' : \WebThemes::getInstance()->parentOf($theme)) as $slug) {
+            if ($slug !== '') {
+                $paths[] = \osc_themes_path() . $slug . '/functions.php';
+            }
+        }
+        self::store(self::readFrom($paths));
+    }
+
+    /**
+     * The limit the first of these functions.php files declares as a literal, or null.
+     *
+     * @param string[] $paths
+     */
+    public static function readFrom(array $paths): ?int
+    {
+        foreach ($paths as $path) {
+            $declared = self::valid(ThemeFunctions::integerSupport($path, 'category-depth'));
+            if ($declared !== null) {
+                return $declared;
+            }
+        }
+
+        return null;
+    }
+
+    private static function store(?int $limit): void
+    {
+        $value = $limit === null ? '' : (string)$limit;
         if ((string)\osc_get_preference(self::PREFERENCE) !== $value) {
             \osc_set_preference(self::PREFERENCE, $value);
         }

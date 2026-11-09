@@ -164,6 +164,48 @@ final class ThemeFunctions
     }
 
     /**
+     * The whole number $path passes as a literal to osc_add_theme_support($feature, N); the last
+     * one wins. Null when the file has none, or works the value out at run time.
+     *
+     * @param string $path
+     * @param string $feature
+     *
+     * @return int|null
+     */
+    public static function integerSupport($path, $feature)
+    {
+        if (!is_string($path) || !is_file($path) || !is_readable($path)) {
+            return null;
+        }
+        $source = file_get_contents($path);
+        if ($source === false) {
+            return null;
+        }
+        $skip   = array(T_WHITESPACE, T_COMMENT, T_DOC_COMMENT);
+        $tokens = array_values(array_filter(@token_get_all($source), static function ($t) use ($skip) {
+            return !is_array($t) || !in_array($t[0], $skip, true);
+        }));
+        $found = null;
+        $count = count($tokens);
+        for ($i = 0; $i + 5 < $count; $i++) {
+            $t = $tokens[$i];
+            if (!is_array($t) || strtolower(ltrim($t[1], '\\')) !== 'osc_add_theme_support') {
+                continue;
+            }
+            $name = $tokens[$i + 2];
+            $num  = $tokens[$i + 4];
+            if ($tokens[$i + 1] === '(' && is_array($name) && $name[0] === T_CONSTANT_ENCAPSED_STRING
+                && trim($name[1], '\'"') === $feature && $tokens[$i + 3] === ','
+                && is_array($num) && $num[0] === T_LNUMBER && $tokens[$i + 5] === ')'
+            ) {
+                $found = (int) $num[1];
+            }
+        }
+
+        return $found;
+    }
+
+    /**
      * The function names that would make a fatal if $childPath and $parentPath both ran.
      *
      * Only a name the parent declares **unguarded** is reported: a guarded one is the

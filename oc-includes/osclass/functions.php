@@ -574,6 +574,7 @@ function _osc_admin_toolbar_init()
 // and we hook our function via
 osc_add_hook('init_admin', '_osc_admin_toolbar_init');
 
+osc_add_hook('theme_activate', array(\mindstellar\category\CategoryDepth::class, 'activated'));
 if (defined('OC_ADMIN') && OC_ADMIN) {
     osc_add_hook('after_init_web_theme', array(\mindstellar\category\CategoryDepth::class, 'sync'));
 }
