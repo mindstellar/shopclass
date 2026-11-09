@@ -782,7 +782,6 @@ if ($looseCount > 0) { ?>
     <div class="forms-builder">
         <div class="forms-builder-grid">
 
-            <!-- LEFT: forms -->
             <div class="forms-col">
                 <div class="col-head">
                     <h3 class="col-title"><?php _e('Forms'); ?></h3>
@@ -835,7 +834,6 @@ if ($looseCount > 0) { ?>
                 </div>
             </div>
 
-            <!-- RIGHT: field palette -->
             <div class="palette-col">
                 <div class="col-head">
                     <h3 class="col-title"><?php _e('Fields'); ?></h3>
@@ -860,13 +858,12 @@ if ($looseCount > 0) { ?>
         </div>
     </div>
 
-    <!-- Announces keyboard reordering to assistive tech. -->
     <div id="cf-live" class="visually-hidden" role="status" aria-live="polite"></div>
 
     <dialog id="addDialog" class="osc-dialog">
         <form id="addDialogForm" novalidate>
             <div class="osc-dialog-body">
-                <p class="osc-dialog-title"><i class="bi bi-plus-circle-fill" aria-hidden="true"></i> <span class="osc-dialog-title-text"></span></p>
+                <p class="osc-dialog-title"><span class="osc-dialog-title-text"></span></p>
                 <div class="mb-3">
                     <label class="form-label" for="addDialogName"><?php _e('Name'); ?></label>
                     <input type="text" class="form-control" id="addDialogName" maxlength="255" autocomplete="off">

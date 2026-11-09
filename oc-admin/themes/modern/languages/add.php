@@ -20,11 +20,11 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div class="appearance">
+<?php osc_admin_body_open(array('class' => 'appearance')); ?>
     <div id="upload-language">
         <div class="form-horizontal">
             <?php if (is_writable(osc_translations_path())) { ?>
-                <form class="separate-top" action="<?php echo osc_admin_base_url(true); ?>" method="post"
+                <form action="<?php echo osc_admin_base_url(true); ?>" method="post"
                       enctype="multipart/form-data">
                     <input type="hidden" name="action" value="add_post"/>
                     <input type="hidden" name="page" value="languages"/>
@@ -57,5 +57,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php } ?>
         </div>
     </div>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

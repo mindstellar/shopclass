@@ -4,7 +4,7 @@
                     </div>
                     <div class="clear"></div>
                 </div>
-            </div><!-- #content-page -->
+            </div>
             <footer id="footer-wrapper" class="row">
                 <div class="col">
                     <div id="footer">
@@ -12,8 +12,8 @@
                     </div>
                 </div>
             </footer>
-        </main><!-- #content-render -->
-    </div><!-- #content -->
+        </main>
+    </div>
     <?php osc_run_hook('admin_footer'); ?>
 <script>
     // Admin-shell controls. Placed at the end of the document so the sidebar and

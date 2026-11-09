@@ -91,8 +91,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
 
         <div id="market-tab-installed">
-    <!-- themes list -->
-    <div class="appearance">
+    <?php osc_admin_body_open(array('class' => 'appearance')); ?>
         <?php
         $csrf_token      = osc_csrf_token_url();
         $aThemesToUpdate = osc_update_check_state('themes')['to_update'];
@@ -235,7 +234,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         )); ?>
         <?php osc_package_list_close(); ?>
 
-        <?php osc_admin_page_head(__('Other themes'), array(), array('level' => 3, 'class' => 'separate-top')); ?>
+        <?php osc_admin_section(__('Other themes')); ?>
         <?php
         $otherThemes = array_filter($themes, static function ($theme) {
             return $theme !== osc_theme();
@@ -310,8 +309,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 ),
             )); ?>
         <?php endif; ?>
-    </div>
-    <!-- /themes list -->
+        <?php osc_admin_section_close(); ?>
+    <?php osc_admin_body_close(); ?>
         </div>
 
         <div id="market-tab-browse" hidden>

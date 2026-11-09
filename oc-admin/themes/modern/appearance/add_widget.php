@@ -90,6 +90,7 @@ foreach ($widgetTypes as $typeId => $typeSpec) {
 if (!$inline) {
     osc_admin_page(array(
         'section' => $title,
+        'heading' => $title,
         'title'   => __('Appearance'),
     ));
 }
@@ -130,8 +131,8 @@ if (!$inline) {
                     <input type="hidden" name="id" value="<?php echo Params::getParam('id', true); ?>"/>
                 <?php } ?>
                 <input type="hidden" name="location" value="<?php echo Params::getParam('location', true); ?>"/>
-                <fieldset>
-                    <div class="mb-3">
+                <fieldset class="osc-body">
+                    <div>
                         <label class="form-sublabel" for="widget_description"><?php _e('Description (for internal purposes only)'); ?></label>
                         <?php osc_admin_text(array(
                             'row'   => false,
@@ -140,7 +141,7 @@ if (!$inline) {
                             'value' => $edit ? $widget['s_description'] : '',
                         )); ?>
                     </div>
-                    <div class="mb-3">
+                    <div>
                         <label class="form-sublabel" for="widget_type_select"><?php _e('Widget type'); ?></label>
                         <?php
                         $widgetTypeOptions = array('' => __('Custom HTML (legacy)'));
@@ -158,7 +159,7 @@ if (!$inline) {
                         <p class="help-box" id="widget_type_description"></p>
                     </div>
                     <div class="alert alert-danger" role="alert" id="widget_type_danger" hidden></div>
-                    <div class="mb-3" id="widget-legacy-content"
+                    <div id="widget-legacy-content"
                         <?php echo ($currentTypeId !== '') ? 'hidden' : ''; ?>>
                         <label class="form-sublabel" for="body"><?php _e('HTML Code for the Widget'); ?></label>
                         <?php osc_admin_textarea(array(

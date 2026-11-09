@@ -1182,7 +1182,7 @@ pin(
     '<form action="https://example.test/oc-admin/index.php" method="post" name="admin_form">'
     . '<input type="hidden" name="page" value="admins"/>'
     . '<input type="hidden" name="action" value="add_post"/>'
-    . '<fieldset><div class="form-horizontal">'
+    . '<fieldset><div class="form-horizontal osc-stack"><section class="osc-section"><div class="osc-section-body">'
     . '<script/>'
     . '<div class="form-row"><div class="form-label"><label for="field-s_name">Name <em>(required)</em></label></div>'
     . '<div class="form-controls"><input type="text" id="field-s_name" name="s_name" class="input-text field-text"'
@@ -1206,7 +1206,7 @@ pin(
     . '<div class="form-controls"><input type="password" id="field-old_password" name="old_password"'
     . ' class="input-text field-text" value="" autocomplete="off" spellcheck="false" />'
     . '<div class="help-box">For security, type <b>your current password</b></div></div></div>'
-    . '<!--plugin-row-->'
+    . '<!--plugin-row--></div></section>'
     . '<div class="form-actions" data-osc-dirty-bar data-osc-dirty-one="1 unsaved change" data-osc-dirty-many="%d unsaved changes"><p class="form-actions-status" role="status" aria-live="polite"></p>'
     . '<button type="submit" class="btn btn-sm btn-submit">Add</button></div>'
     . '</div></fieldset></form>',

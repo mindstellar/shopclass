@@ -45,11 +45,9 @@ osc_admin_page(array(
 osc_current_admin_theme_path('parts/header.php');
 ?>
 <div id="general-setting">
-    <!-- settings form -->
     <div id="general-settings">
         <ul id="error_list"></ul>
         <?php osc_admin_settings_form($form['id'], $form); ?>
     </div>
-    <!-- /settings form -->
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -108,7 +108,7 @@ osc_current_admin_theme_path('parts/header.php');
                     <?php } ?>
                     </tbody>
                 </table>
-                <div id="table-row-actions"></div> <!-- used for table actions -->
+                <div id="table-row-actions"></div>
             </div>
         </form>
     </div>

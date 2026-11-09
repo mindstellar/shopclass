@@ -27,7 +27,8 @@ osc_admin_page(array(
         'attrs'   => array('data-osc-dialog-open' => '#cleanup-run-dialog'),
     )),
 ));
-osc_current_admin_theme_path('parts/header.php'); ?>
+osc_current_admin_theme_path('parts/header.php');
+osc_admin_body_open(); ?>
 
     <p class="text-muted">
         <?php if ($running) {
@@ -35,7 +36,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             echo ' ';
             _e('Cleanup is running in the background. Reload this page to see the counts go down.');
         } else { ?>
-            <i class="bi bi-clock-history" aria-hidden="true"></i>
             <?php if ($history !== array()) {
                 printf(__('Enabled rules run once a day. The last cleanup finished %s.'), osc_admin_when($history[0]['dt_date']));
             } else {
@@ -47,7 +47,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php $form = __get('cleanup_form');
     osc_admin_settings_form($form['id'], $form); ?>
 
-    <?php osc_admin_form_section(__('Recent cleanups'), array('spaced' => true)); ?>
+    <?php osc_admin_section(__('Recent cleanups')); ?>
     <?php if ($history === array()) { ?>
         <p class="text-muted"><?php _e('Nothing has been cleaned up yet.'); ?></p>
     <?php } else { ?>
@@ -70,6 +70,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </table>
         </div>
     <?php } ?>
+    <?php osc_admin_section_close(); ?>
+<?php osc_admin_body_close(); ?>
 
     <?php osc_admin_confirm_dialog(array(
             'id'      => 'cleanup-run-dialog',

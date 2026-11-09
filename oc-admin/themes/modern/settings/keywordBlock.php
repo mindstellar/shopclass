@@ -68,25 +68,24 @@ $scopeOptions = array(
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-    <div id="spam-filter-akismet">
-        <?php osc_admin_form_section(__('Akismet'), array(
-            'intro' => __('Akismet checks new comments and listings for spam. It needs a key from akismet.com.'),
-        )); ?>
+<?php osc_admin_body_open(); ?>
+    <?php osc_admin_section(__('Akismet'), array(
+        'id'    => 'spam-filter-akismet',
+        'intro' => __('Akismet checks new comments and listings for spam. It needs a key from akismet.com.'),
+    )); ?>
         <?php osc_admin_settings_form($akismet['id'], array('titles' => false) + $akismet); ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <div id="keyword-block-settings">
-        <?php osc_admin_form_section(__('Keyword blocklist'), array(
-            'spaced' => true,
-            'intro'  => __('Listings containing a blocked keyword are quarantined (flagged spam and hidden) as soon as they '
+    <?php osc_admin_section(__('Keyword blocklist'), array(
+        'id'    => 'keyword-block-settings',
+        'intro' => __('Listings containing a blocked keyword are quarantined (flagged spam and hidden) as soon as they '
                          . 'are posted or edited, and the matched keyword is recorded so you can see why. Enable the filter '
                          . 'below before it does anything.'),
-        )); ?>
+    )); ?>
         <?php osc_admin_settings_form($prefsForm['id'], $prefsForm); ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <div id="keyword-block-import" class="separate-top">
-        <?php osc_admin_form_section(__('Import keyword list')); ?>
+    <?php osc_admin_section(__('Import keyword list'), array('id' => 'keyword-block-import')); ?>
         <p><?php _e('Paste a comma-separated keyword list — useful for migrating an existing list from a theme or plugin. Wrap a keyword in asterisks (e.g. *viagra*) to import it as a substring match. Keywords already on file are skipped.'); ?></p>
         <?php osc_admin_form_open(array(
             'name'   => 'keyword_block_import_form',
@@ -110,9 +109,9 @@ $scopeOptions = array(
                 <?php osc_admin_form_close(array(
                     array('label' => __('Import'), 'type' => 'submit'),
                 )); ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <?php osc_admin_form_section(__('Blocked keywords'), array('spaced' => true)); ?>
+    <?php osc_admin_section(__('Blocked keywords')); ?>
     <div class="relative">
         <?php osc_admin_form_open(array(
             'id'         => 'datatablesForm',
@@ -152,10 +151,11 @@ $scopeOptions = array(
                     } ?>
                     </tbody>
                 </table>
-                <div id="table-row-actions"></div> <!-- used for table actions -->
+                <div id="table-row-actions"></div>
             </div>
         <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
     </div>
+    <?php osc_admin_section_close(); ?>
 <?php
 osc_admin_pagination($aData);
 ?>
@@ -169,4 +169,5 @@ osc_admin_pagination($aData);
         'confirm_id' => 'keyword-delete-submit',
     )); ?>
     <?php osc_admin_bulk_confirm_dialog(); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

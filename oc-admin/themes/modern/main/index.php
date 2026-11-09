@@ -50,6 +50,7 @@ if (!function_exists('addBodyClass')) {
 
 osc_admin_page(array(
     'section' => __('Dashboard'),
+    'heading' => __('Dashboard'),
     'title'   => __('Dashboard'),
 ));
 

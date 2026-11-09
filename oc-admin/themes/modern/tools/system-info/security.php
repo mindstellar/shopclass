@@ -27,10 +27,10 @@ $contexts = array(
     'restore_reauth' => __('Password check before a restore'),
 );
 ?>
-    <section class="sysinfo-group" id="signin-activity">
-        <?php osc_admin_form_section(__('Failed sign-ins right now'), array(
-            'spaced' => true,
-            'intro'  => sprintf(
+    <?php osc_admin_section(__('Failed sign-ins right now'), array(
+            'class' => 'sysinfo-group',
+            'id'    => 'signin-activity',
+            'intro' => sprintf(
                 __('Addresses and accounts with failures in the last %d minutes. Unblock one to let it try again at once.'),
                 osc_login_throttle_window()
             ),
@@ -101,4 +101,4 @@ $contexts = array(
                 <span class="sysinfo-bulk-note"><?php _e('Deletes every recorded failure, yours too.'); ?></span>
             </div>
         <?php } ?>
-    </section>
+    <?php osc_admin_section_close(); ?>

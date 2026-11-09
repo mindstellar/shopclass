@@ -104,7 +104,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="system-info" class="sysinfo">
+    <?php osc_admin_body_open(array('id' => 'system-info', 'class' => 'sysinfo')); ?>
         <?php osc_admin_tab_nav(array_map(static fn ($key, $label) => array(
             'label'  => $label,
             'url'    => SystemChecks::url($env, $key),
@@ -134,20 +134,23 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_admin_verdict($issues, $healthy); ?>
 
         <?php foreach (($report['groups'] ?? array()) as $group) { ?>
-            <section class="sysinfo-group"<?php echo isset($group['id']) ? ' id="' . osc_esc_html($group['id']) . '"' : ''; ?>>
-                <?php osc_admin_form_section($group['title'], isset($group['link']) ? array(
-                    'intro_html' => '<a href="' . osc_esc_html($group['link']['url']) . '">' . osc_esc_html($group['link']['label']) . '</a>',
-                ) : array()); ?>
+            <?php osc_admin_section($group['title'], array_filter(array(
+                'class'      => 'sysinfo-group',
+                'id'         => $group['id'] ?? null,
+                'intro_html' => isset($group['link'])
+                    ? '<a href="' . osc_esc_html($group['link']['url']) . '">' . osc_esc_html($group['link']['label']) . '</a>'
+                    : null,
+            ))); ?>
                 <?php osc_admin_panel_open('', array('class' => 'sysinfo-facts')); ?>
                 <?php osc_admin_definition($group['rows']); ?>
                 <?php osc_admin_panel_close(); ?>
-            </section>
+            <?php osc_admin_section_close(); ?>
         <?php } ?>
 
         <?php if ($tab !== 'overview') {
             require __DIR__ . '/system-info/' . $tab . '.php';
         } ?>
-    </div>
+    <?php osc_admin_body_close(); ?>
 
     <?php if (($env['pending'] ?? array()) !== array()) {
         osc_admin_confirm_dialog(array(

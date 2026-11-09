@@ -147,7 +147,7 @@ check('the report is read for the Overview and the Database tab only', (bool) pr
     "/if \\(\\\$tab === 'overview' \\|\\| \\\$tab === 'database'\\) \\{.*?StrictModeReadiness::report\\(DB_TABLE_PREFIX, \\\$env\\['now'\\], \\\$tab === 'database'\\)/s",
     $body('systemInfoPage')
 ));
-check('a fact group can carry the anchor See which points at', strpos($shell, "isset(\$group['id']) ? ' id=\"' . osc_esc_html(\$group['id']) . '\"' : ''") !== false);
+check('a fact group can carry the anchor See which points at', strpos($shell, "'id'         => \$group['id'] ?? null") !== false);
 check('the Database tab partial adds no verdict box or empty-state block for it', strpos($database, 'strict') === false && strpos($database, 'osc_admin_empty(') === false);
 
 harness_section('Admin address allow list');

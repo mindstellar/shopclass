@@ -31,11 +31,9 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="mail-setting">
-        <!-- settings form -->
         <div id="mail-settings">
             <p class="settings-lead"><?php _e('Friendly URLs use words instead of question marks and numbers.'); ?></p>
             <?php osc_admin_settings_form($form['id'], $form); ?>
         </div>
-        <!-- /settings form -->
     </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

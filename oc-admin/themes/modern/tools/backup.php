@@ -130,7 +130,8 @@ osc_admin_page(array(
     'help'    => __('Save a copy of your database and your files, and put one back. Backups you save on the server are kept in a folder closed to the web.'),
 ));
 
-osc_current_admin_theme_path('parts/header.php'); ?>
+osc_current_admin_theme_path('parts/header.php');
+osc_admin_body_open(); ?>
 
     <?php
     $issues = array();
@@ -257,7 +258,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
     <?php } ?>
 
-    <?php osc_admin_form_section(__('Make a backup'), array(
+    <?php osc_admin_section(__('Make a backup'), array(
         'intro' => __('Save a copy of your site. Do it before an update, and now and then anyway.'),
     )); ?>
     <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'backup_start', 'id' => 'backup-form')); ?>
@@ -317,9 +318,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'attrs'   => $locked ? array('disabled' => 'disabled') : array(),
         ),
     )); ?>
+    <?php osc_admin_section_close(); ?>
 
-    <?php osc_admin_form_section(__('Saved backups'), array(
-        'spaced'     => true,
+    <?php osc_admin_section(__('Saved backups'), array(
         'intro_html' => $list === array() ? '' : osc_esc_html($bucket !== null
             ? sprintf(__('Newest first. Kept: the last %1$d on the server and the last %1$d in the bucket.'), $keep)
             : sprintf(__('Newest first. Kept: the last %d on the server.'), $keep))
@@ -392,9 +393,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             ));
         } ?>
     <?php } ?>
+    <?php osc_admin_section_close(); ?>
 
-    <div id="restore">
-        <?php osc_admin_form_section(__('Restore from a file'), array('spaced' => true)); ?>
+    <?php osc_admin_section(__('Restore from a file'), array('id' => 'restore')); ?>
         <?php if ($noWeb) { ?>
             <p class="text-muted mb-0" id="backup-restore-off"><?php echo osc_esc_html($offLine); ?></p>
         <?php } else { ?>
@@ -425,7 +426,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             ),
         )); ?>
         <?php } ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
+<?php osc_admin_body_close(); ?>
 
     <?php if ($confirm !== null) {
         $manifest = $confirm['manifest'];

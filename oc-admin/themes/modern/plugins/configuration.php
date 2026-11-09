@@ -48,7 +48,6 @@ function customHead()
 osc_add_hook('admin_header', 'customHead', 10);
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <!-- plugin configuration -->
     <div class="plugin-configuration form-horizontal">
         <form id="plugin-frm" action="<?php echo osc_admin_base_url(true); ?>?page=plugins" method="post">
             <input type="hidden" name="action" value="configure_post"/>
@@ -68,5 +67,4 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </fieldset>
         </form>
     </div>
-    <!-- /theme files -->
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

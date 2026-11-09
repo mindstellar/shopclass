@@ -604,8 +604,7 @@ omits('the helper prints no widget-box class', $full . $plain . $section, 'widge
 
 harness_section('the panel has its own look');
 
-// .widget-box is for dashboard and stats widgets; the helper's .osc-panel is a quiet block
-// with a plain heading, so it must not pick up the widget's card and title-bar rules.
+// The panel shares one look (border, surface, heading size) with .widget-box and .card.
 $css = (string)@file_get_contents(ABS_PATH . 'oc-admin/themes/modern/css/main.css');
 check('main.css is built', $css !== '');
 $css = (string)preg_replace('~/\*.*?\*/~s', '', $css);
@@ -614,12 +613,11 @@ preg_match_all('~([^{};]+)\{~', $css, $m);
 foreach ($m[1] as $prelude) {
     $preludes[] = trim((string)preg_replace('~\s+~', ' ', $prelude));
 }
-$shared = array_filter($preludes, static fn (string $p): bool => str_contains($p, '.widget-box')
-    && preg_match('~(^|,\s*)\.osc-panel(-head|-body)?(\s|,|$|:)~', $p) === 1);
-check('no widget-box rule also styles the panel', $shared === array(), implode(' | ', $shared));
 $panel = '';
-if (preg_match('~(?:^|\})\s*\.osc-panel\s*\{([^}]*)\}~', $css, $pm) === 1) {
-    $panel = $pm[1];
+if (preg_match_all('~(?:^|\})\s*([^{}]*\.osc-panel\s*(?:,[^{}]*)?)\{([^}]*)\}~', $css, $pm, PREG_SET_ORDER) > 0) {
+    foreach ($pm as $hit) {
+        $panel .= $hit[2];
+    }
 }
 check('the panel has a hairline border from the rule token', str_contains($panel, 'var(--osc-rule)'), $panel);
 check('the panel is flat', !str_contains($panel, 'box-shadow'), $panel);

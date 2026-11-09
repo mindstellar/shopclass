@@ -802,7 +802,7 @@ pin(
     '<form action="https://example.test/oc-admin/index.php" method="post" name="register">'
     . '<input type="hidden" name="page" value="users"/>'
     . '<input type="hidden" name="action" value="create_ban_rule_post"/>'
-    . '<fieldset><div class="form-horizontal">'
+    . '<fieldset><div class="form-horizontal osc-stack"><section class="osc-section"><div class="osc-section-body">'
     . '<div class="form-row"><div class="form-label"><label for="field-s_name">Ban name / Reason</label></div>'
     . '<div class="form-controls"><input type="text" id="field-s_name" name="s_name" class="input-text field-text" value="" /></div></div>'
     . '<div class="form-row"><div class="form-label"><label for="field-s_ip">IP rule</label></div>'
@@ -811,7 +811,7 @@ pin(
     . '<div class="form-row"><div class="form-label"><label for="field-s_email">E-mail rule</label></div>'
     . '<div class="form-controls"><input type="text" id="field-s_email" name="s_email" class="input-text field-text" value="" />'
     . '<div class="help-box">(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)</div></div></div>'
-    . '<div class="form-actions" data-osc-dirty-bar data-osc-dirty-one="1 unsaved change" data-osc-dirty-many="%d unsaved changes"><p class="form-actions-status" role="status" aria-live="polite"></p>'
+    . '</div></section><div class="form-actions" data-osc-dirty-bar data-osc-dirty-one="1 unsaved change" data-osc-dirty-many="%d unsaved changes"><p class="form-actions-status" role="status" aria-live="polite"></p>'
     . '<button type="submit" class="btn btn-sm btn-submit">Add new ban rule</button></div>'
     . '</div></fieldset></form>',
     $form

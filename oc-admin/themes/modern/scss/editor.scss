@@ -549,17 +549,13 @@
   margin-inline-start: .35rem;
 }
 
-// The sticky save bar is the real .form-actions with the real dirty attributes; only its
-// offset from the block above differs from a settings page.
+// The sticky save bar is the real .form-actions with the real dirty attributes, styled like
+// every other save bar.
 // A sticky bar can only slide inside its own parent's box, and a wrapper the height of the
 // bar leaves it nowhere to slide. Taking the wrapper out of the box tree makes the form the
 // bar's containing block, which is what lets bottom: 0 hold it in view.
 .osc-editor-actions {
   display: contents;
-}
-
-.osc-editor-actions > .form-actions {
-  margin-block-start: 1.5rem;
 }
 
 #item-form {

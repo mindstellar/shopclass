@@ -43,10 +43,10 @@ $describe = static function (array $row): void {
     <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
 
     <?php if ($failed !== array()) { ?>
-        <section class="sysinfo-group" id="jobs-failed">
-            <?php osc_admin_form_section(__('Failed jobs'), array(
-                'spaced' => true,
-                'intro'  => __('These stopped retrying. Fix the cause the reason names, then try them again.'),
+        <?php osc_admin_section(__('Failed jobs'), array(
+                'class' => 'sysinfo-group',
+                'id'    => 'jobs-failed',
+                'intro' => __('These stopped retrying. Fix the cause the reason names, then try them again.'),
             )); ?>
             <div class="table-responsive">
                 <table class="table sysinfo-list">
@@ -99,13 +99,13 @@ $describe = static function (array $row): void {
                     'attrs'   => array('data-osc-dialog-open' => '#jobs-forget-dialog') + ($demo ? array('disabled' => 'disabled') : array()),
                 )); ?>
             </div>
-        </section>
+        <?php osc_admin_section_close(); ?>
     <?php } ?>
 
-    <section class="sysinfo-group" id="jobs-queue">
-        <?php osc_admin_form_section(__('Waiting and running'), array(
-            'spaced' => true,
-            'intro'  => __('Slow work, such as emptying a large category or moving photos to a bucket, waits here. Cron runs it on every tick.'),
+    <?php osc_admin_section(__('Waiting and running'), array(
+            'class' => 'sysinfo-group',
+            'id'    => 'jobs-queue',
+            'intro' => __('Slow work, such as emptying a large category or moving photos to a bucket, waits here. Cron runs it on every tick.'),
         )); ?>
         <?php if ($active === array()) { ?>
             <p class="text-muted"><?php _e('Nothing is waiting.'); ?></p>
@@ -145,11 +145,11 @@ $describe = static function (array $row): void {
                 'attrs' => array('form' => 'jobs-run-form') + ($demo ? array('disabled' => 'disabled') : array()),
             )); ?>
         </div>
-    </section>
+    <?php osc_admin_section_close(); ?>
 
-    <section class="sysinfo-group" id="jobs-history">
-        <?php osc_admin_form_section(__('Recent activity'), array(
-            'spaced'     => true,
+    <?php osc_admin_section(__('Recent activity'), array(
+            'class'      => 'sysinfo-group',
+            'id'         => 'jobs-history',
             'intro_html' => sprintf(
                 __('What background work did, newest first. The full history is in the <a href="%s">activity log</a>.'),
                 osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=logs&section=jobs')
@@ -179,7 +179,7 @@ $describe = static function (array $row): void {
                 </table>
             </div>
         <?php } ?>
-    </section>
+    <?php osc_admin_section_close(); ?>
 
     <?php if ($failed !== array()) {
         osc_admin_confirm_dialog(array(

@@ -1,7 +1,29 @@
+// The one panel look shared by .osc-panel, .widget-box and .card (the market cards keep
+// their own). Heads use the section heading size.
+%osc-panel-look {
+  background-color: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: 4px;
+  color: var(--osc-ink);
+}
+
+%osc-panel-head-title {
+  color: var(--osc-ink-emphasis);
+  font-size: 1.0625rem;
+  font-weight: 600;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.card:not([class*="market-"] .card) {
+  @extend %osc-panel-look;
+}
+
 // Flat at rest. A panel is still on the page when you stop interacting with it, so it
 // has no shadow — depth comes from the border and the surface tone beneath it.
 .widget-box{
   @extend .card;
+  @extend %osc-panel-look;
 }
 
 .widget-box-title select{
@@ -27,9 +49,8 @@
 .widget-box-title h3,
 .widget-box-title h4,
 .widget-box-title h5{
-  font-size: 1.125rem;
+  @extend %osc-panel-head-title;
   font-weight: normal;
-  margin: 0;
 }
 
 .widget-box-title .select-box{
@@ -362,10 +383,7 @@ div.widget-box-content-no-wrapp li a {
 // osc_admin_panel_open(): a quiet block that groups fields beside a form. Not a dashboard
 // widget, so no title bar: a plain heading on the white bench, a hairline border, flat.
 .osc-panel {
-  background-color: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
-  border-radius: 4px;
-  color: var(--osc-ink);
+  @extend %osc-panel-look;
   min-width: 0;
 }
 
@@ -377,11 +395,7 @@ div.widget-box-content-no-wrapp li a {
   padding: 0.875rem 1rem 0;
 
   h1, h2, h3, h4, h5 {
-    color: var(--osc-ink-emphasis);
-    font-size: 1.0625rem;
-    font-weight: 600;
-    line-height: 1.4;
-    margin: 0;
+    @extend %osc-panel-head-title;
     text-wrap: balance;
   }
 }

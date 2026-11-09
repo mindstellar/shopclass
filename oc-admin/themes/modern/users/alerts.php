@@ -138,7 +138,7 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
                     <?php } ?>
                     </tbody>
                 </table>
-                <div id="table-row-actions"></div> <!-- used for table actions -->
+                <div id="table-row-actions"></div>
             </div>
         </form>
     </div>

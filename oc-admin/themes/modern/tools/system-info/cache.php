@@ -16,10 +16,10 @@ $driver     = (string) ($env['cache_driver'] ?? 'default');
 $persistent = $driver !== 'default' && !empty($env['cache_supported']);
 $shared     = in_array($driver, array('memcached', 'memcache'), true);
 ?>
-    <section class="sysinfo-group" id="cache-clear">
-        <?php osc_admin_form_section(__('Clear the cache'), array(
-            'spaced' => true,
-            'intro'  => $persistent
+    <?php osc_admin_section(__('Clear the cache'), array(
+            'class' => 'sysinfo-group',
+            'id'    => 'cache-clear',
+            'intro' => $persistent
                 ? __('The cache only holds copies. Clearing it is safe: the site rebuilds what it needs on the next request.')
                 : __('This cache holds nothing between requests, so there is nothing to clear.'),
         )); ?>
@@ -36,7 +36,7 @@ $shared     = in_array($driver, array('memcached', 'memcache'), true);
                 'attrs' => $persistent && !\mindstellar\security\Demo::active() ? array() : array('disabled' => 'disabled'),
             )); ?>
         <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
-    </section>
+    <?php osc_admin_section_close(); ?>
 
     <?php if ($driver === 'default') { ?>
         <p class="text-muted sysinfo-aside"><?php printf(

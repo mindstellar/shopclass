@@ -33,9 +33,8 @@ osc_admin_page(array(
     'help'    => __('Put a banner on the site while you work, or take the public site down with HTTP 503. Signed-in admins always stay in.'),
 ));
 
-osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="backup-setting">
-    <div id="backup-settings">
+osc_current_admin_theme_path('parts/header.php');
+osc_admin_body_open(array('id' => 'backup-setting')); ?>
         <?php osc_admin_action_section(array(
     'intro'     => __('While maintenance mode is on, signed-in admins can still use the site. Everyone else either sees the banner below, or an HTTP 503 page if the public site is blocked.'),
     'body_html' => '<div class="' . ($maintenance ? 'callout-danger' : 'callout-success') . '">'
@@ -51,9 +50,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ),
 )); ?>
 
-        <?php osc_admin_form_section(__('Visitors'), array('spaced' => true)); ?>
+        <?php osc_admin_section(__('Visitors')); ?>
         <?php $form = __get('maintenance_form');
         osc_admin_settings_form($form['id'], $form); ?>
-    </div>
-</div>
+        <?php osc_admin_section_close(); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

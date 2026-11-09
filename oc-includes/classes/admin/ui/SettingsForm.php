@@ -69,25 +69,11 @@ final class SettingsForm
             'page'   => $route['page'] ?? null,
             'action' => $route['action'] ?? null,
             'fields' => array_diff_key($route, array('page' => true, 'action' => true)),
+            'stack'  => true,
         ));
 
         foreach ($page['groups'] as $index => $group) {
-            if ($group['title'] !== '' && ($opts['titles'] ?? true)) {
-                if ($index === 0 && $group['title'] === PageState::headerTitle()) {
-                    // The header's title row already shows it.
-                    echo '<span id="' . Form::anchor($group['title']) . '"></span>';
-                } elseif (PageState::titled()) {
-                    osc_admin_section_heading($group['title']);
-                } else {
-                    echo '<span id="' . Form::anchor($group['title']) . '"></span>';
-                    osc_admin_page_head($group['title']);
-                }
-            } elseif ($group['title'] !== '') {
-                echo '<span id="' . Form::anchor($group['title']) . '"></span>';
-            }
-            if ($group['intro'] !== '') {
-                echo '<p class="form-intro">' . osc_esc_html($group['intro']) . '</p>';
-            }
+            self::openGroup($group, $index, ($opts['titles'] ?? true) !== false);
 
             foreach ($group['fields'] as $field) {
                 self::field($field, $page, $values);
@@ -97,11 +83,46 @@ final class SettingsForm
             // HTML for the whole page: this appends to a declared group without owning the
             // page it sits on.
             osc_run_hook('settings_page_after_group', $page['id'], $group, $index);
+
+            osc_admin_section_close();
         }
 
         // Every declared page gets the dirty-tracking action row; a hand-written screen
         // opts in by passing 'dirty' to osc_admin_form_close().
         osc_admin_form_close($opts['actions'] ?? array(), array('dirty' => true));
+    }
+
+    /**
+     * Open a group's section. The section carries the group's anchor even when it draws no heading.
+     *
+     * @param array<string,mixed> $group
+     * @param int                 $index
+     * @param bool                $titled false when the form sits on a tab that already names it
+     *
+     * @return void
+     */
+    private static function openGroup(array $group, int $index, bool $titled): void
+    {
+        $title  = $group['title'];
+        $anchor = $title !== '' ? Form::anchor($title) : '';
+
+        // The header's title row already shows it.
+        if ($index === 0 && $title === PageState::headerTitle()) {
+            $titled = false;
+        }
+
+        if ($titled && $title !== '' && !PageState::titled()) {
+            // Nothing has drawn the page title yet, so this heading is the page title.
+            osc_admin_section('', array('id' => $anchor));
+            osc_admin_page_head($title);
+            if ($group['intro'] !== '') {
+                echo '<p class="form-intro osc-section-intro">' . osc_esc_html($group['intro']) . '</p>';
+            }
+
+            return;
+        }
+
+        osc_admin_section($titled ? $title : '', array('id' => $anchor, 'intro' => $group['intro']));
     }
 
     /**

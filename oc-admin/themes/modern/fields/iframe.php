@@ -62,7 +62,6 @@ $builderMode = Params::getParam('builder') == '1';
 // A field definition is shared: editing it changes every form that placed it.
 $formCount = (int)__get('form_count');
 ?>
-<!-- custom field frame -->
 <div id="edit-custom-field-frame" class="card custom-field-frame">
     <div class="form-horizontal">
         <form id="nedit_field_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
@@ -75,7 +74,6 @@ $formCount = (int)__get('form_count');
                 <div class="card-body">
                     <?php if ($formCount > 1) { ?>
                         <p class="cf-editor-note" role="note">
-                            <i class="bi bi-info-circle" aria-hidden="true"></i>
                             <?php printf(
                                 _n(
                                     'This field is used in %d form. Changes here apply to that form.',
@@ -293,7 +291,6 @@ _e('Tick to open links in new tab'); ?></label>
         </form>
     </div>
 </div>
-<!-- /custom field frame -->
 <script type="text/javascript">
     (function () {
         // Injected editor: the shared tab widget is wired on DOMContentLoaded, which has

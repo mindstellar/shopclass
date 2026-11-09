@@ -109,7 +109,6 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="locations-stats-setting">
-    <!-- settings form -->
     <div id="">
         <?php if ($worktodo > 0) { ?>
             <p>
@@ -131,6 +130,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </fieldset>
         </form>
     </div>
-    <!-- /settings form -->
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

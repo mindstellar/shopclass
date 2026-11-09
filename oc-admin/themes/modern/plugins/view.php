@@ -1,4 +1,6 @@
-<?php if (!defined('OC_ADMIN')) {
+<?php
+
+if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 /*
@@ -24,18 +26,15 @@ osc_admin_page(array_filter(array(
     'actions' => $declared['actions'] ?? array(),
 ), static fn ($value) => $value !== null && $value !== array()));
 
-osc_current_admin_theme_path('parts/header.php'); ?>
-    <!-- theme files -->
-    <div class="theme-files">
-        <?php
-        // Already resolved by the controller, which is the only thing that renders this
-        // view: an absolute path inside the plugins directory, or the view is not reached at
-        // all. Do not add a traversal check here -- a partial one is worse than none, and the
-        // resolution above is what the guarantee rests on.
-        if (is_string($file) && $file !== '' && is_file($file)) {
-            require_once $file;
-        }
-?>
-    </div>
-    <!-- /theme files -->
-<?php osc_current_admin_theme_path('parts/footer.php'); ?>
+osc_current_admin_theme_path('parts/header.php');
+// Plugin output stays in block flow: a gap stack would break floated columns and inline buttons.
+echo '<div class="theme-files">';
+// Already resolved by the controller, which is the only thing that renders this
+// view: an absolute path inside the plugins directory, or the view is not reached at
+// all. Do not add a traversal check here -- a partial one is worse than none, and the
+// resolution above is what the guarantee rests on.
+if (is_string($file) && $file !== '' && is_file($file)) {
+    require_once $file;
+}
+echo '</div>';
+osc_current_admin_theme_path('parts/footer.php');

@@ -58,4 +58,10 @@ check('the table is drawn', str_contains($html, 'Matching now'));
 check('it stacks on a phone', (bool) preg_match('~<table class="table osc-table-stack">~', $html));
 check('it carries no inline width', !str_contains($html, 'min-width'));
 check('each cell has its heading', substr_count($html, 'data-col-name="Matching now"') >= 7);
+
+harness_section('the tools templates');
+$tools = (string) shell_exec('grep -rln "spaced" ' . escapeshellarg(ABS_PATH . 'oc-admin/themes/modern/tools'));
+check('no tools template spaces a heading by hand', trim($tools) === '');
+check('the screen card is not spaced by hand', !str_contains($html, 'separate-top'));
+check('the lead line carries no icon', !str_contains((string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/tools/cleanup.php'), 'bi-clock-history'));
 exit(harness_result());

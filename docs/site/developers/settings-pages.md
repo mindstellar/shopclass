@@ -337,9 +337,30 @@ one.
 | `osc_admin_form_open()` · `osc_admin_form_close()` | The form element, the hidden route, the CSRF token, and the submit row. |
 | `osc_admin_form_section($title)` | A titled group of fields (a section heading). |
 | `osc_admin_section_heading($text, $level)` | A section (`'section'`) or sub-section (`'subsection'`) heading. |
+| `osc_admin_body_open($opts)` · `osc_admin_body_close()` | The screen's body, a stack spaced by gap. `'layout'` is `'stack'` (default), `'split'` or `'grid'`. |
+| `osc_admin_body_rail($opts)` | In a `'split'` body: ends the main column and starts the rail. |
+| `osc_admin_section($title, $opts)` · `osc_admin_section_close()` | A section with its heading, intro and content. `'card' => true` draws a panel, `'actions'` puts buttons in the head row. No icon option: headings carry none. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
 | `osc_admin_page_head($title, $actions, $opts)` | The screen title with its action buttons, for a screen that does not declare a `heading`. `'level' => 3` draws a section with buttons; the header draws its own title row with `'level' => 1`. |
 | `osc_admin_action_section()` | An intro, a status block, and buttons, no form. |
+
+### Body and sections
+
+Open one body per screen and make each block a direct child of it. The body's gap spaces
+them, so blocks need no margins of their own.
+
+```php
+osc_admin_body_open();
+osc_admin_section(__('Payments', 'my_plugin'), array('intro' => __('How buyers pay.', 'my_plugin')));
+// fields, tables, panels
+osc_admin_section_close();
+osc_admin_body_close();
+```
+
+Inside a body or section, the `'spaced'` option of `osc_admin_form_section()` and the
+`.separate-top` class do nothing: the gap replaces them. A plain form nested in a block keeps
+its usual row and heading spacing. A plugin or theme admin page is not a body by default, so
+call `osc_admin_body_open()` yourself to use one.
 
 ### Headings
 

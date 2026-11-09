@@ -1,0 +1,98 @@
+// Direct children of a gap container are spaced by the gap, so the margin rules of the older
+// screens are zeroed there; forms nested deeper keep them. Doubled targets beat later margin rules.
+$osc-stack-reset: '.render-title, .form-intro, .form-row, .settings-actions, .settings-action, .osc-panel, .widget-box';
+
+:is(.osc-body, .osc-section, .osc-section-head, .osc-section-body, .form-horizontal.osc-stack) > :is(#{$osc-stack-reset}):is(#{$osc-stack-reset}) {
+  margin-block: 0;
+}
+
+.osc-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-section-gap);
+  min-width: 0;
+
+  > :not(dialog) {
+    margin-block: 0;
+  }
+}
+
+.osc-body-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--osc-rail-width);
+  align-items: start;
+
+  > :first-child {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--osc-section-gap);
+  }
+
+  @media (max-width: 991.98px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.osc-body-rail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-section-gap);
+  min-width: 0;
+}
+
+.osc-body-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
+  align-items: start;
+}
+
+.osc-section {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  min-width: 0;
+}
+
+.osc-section-head {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: .5rem 1rem;
+
+  > .render-title {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.osc-section-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-inline-start: auto;
+}
+
+.osc-section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-field-gap);
+  min-width: 0;
+}
+
+.osc-section-card {
+  padding: 1rem 1.25rem;
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: var(--bs-border-radius);
+}
+
+.form-horizontal.osc-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-section-gap);
+
+  > .osc-section > .osc-section-body {
+    gap: var(--osc-field-gap);
+  }
+}

@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1287 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1292 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -105,7 +105,7 @@ Core defines 1287 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (47)
+### hAdminUi (52)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -113,6 +113,9 @@ Core defines 1287 helpers, 29 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_admin_action_button(array $action)` | One action, as a link or a button. |
 | `osc_admin_action_section(array $opts = array())` | A titled block of actions — the "do a thing" panel (connection test, queue, migration, cleanup, maintenance) that is not a label\|control form. Renders a heading, an optional intro, optional body content, and each action as a button with its own help line. |
+| `osc_admin_body_close()` | Close the body osc_admin_body_open() opened. |
+| `osc_admin_body_open(array $opts = array())` | Open a screen's body: blocks inside it are spaced by gap. End it with osc_admin_body_close(). |
+| `osc_admin_body_rail(array $opts = array())` | In a split body: end the main column and start the rail. Prints nothing in any other body. |
 | `osc_admin_captcha_settings_path()` | The menu path to the Captcha settings, built from the menu's own names. |
 | `osc_admin_category_picker(array $opts = array())` | The category chooser: a control showing the chosen path, and a searchable list of the whole tree behind it. |
 | `osc_admin_checkbox(array $opts)` | A checkbox with its label on one line and its hint underneath. |
@@ -138,7 +141,7 @@ Core defines 1287 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_form_open(array $opts = array())` | Open an admin form: the element, the hidden route fields it posts to, and the wrappers the row layout needs. |
 | `osc_admin_form_row_close()` | Close the row osc_admin_form_row_open() opened. |
 | `osc_admin_form_row_open($label = '', array $opts = array())` | One labelled row of a form. |
-| `osc_admin_form_section($title, array $opts = array())` | A titled group of fields within a screen, with an optional explanatory paragraph. |
+| `osc_admin_form_section($title, array $opts = array())` | A titled group of fields within a screen, with an optional explanatory paragraph. Prints only the heading and intro; new code uses osc_admin_section(), which wraps its content. |
 | `osc_admin_header_title()` | The page title the admin header drew in its title row, or null when it drew none. |
 | `osc_admin_location_picker(array $opts = array())` | Where a record is: the country select, the region and city inputs with their hidden ids, and the rest of the address behind a disclosure. |
 | `osc_admin_number(array $opts)` | A number, at number width. Keys: the shared set, plus 'min', 'max', 'step', 'prefix', 'suffix'. |
@@ -149,6 +152,8 @@ Core defines 1287 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_publish_panel(array $opts = array())` | The rail's status panel: what state the record is in, the facts about it, and the actions that change that state. |
 | `osc_admin_radio_group(array $opts)` | A choice list. Keys: the shared set, plus 'options', 'selected'. An option may be a string label or array('label' =&gt; …, 'custom_html' =&gt; …). |
 | `osc_admin_secret(array $opts)` | An API key or password. Keys: the shared set, plus 'reveal', 'masked'. |
+| `osc_admin_section(string $title, array $opts = array())` | Open a titled section of a screen; put its content next and end it with osc_admin_section_close(). Headings carry no icon. |
+| `osc_admin_section_close()` | Close the section osc_admin_section() opened. |
 | `osc_admin_section_heading($text, $level = 'section', $id = null)` | A heading inside an admin screen, on the one heading scale: the screen's title is an h2, a section an h3 and a sub-section of a section an h4. Use this rather than writing a heading tag, so every screen gets the same size and the levels stay in order. |
 | `osc_admin_select(array $opts)` | A dropdown. Keys: the shared set, plus 'options', 'selected', 'placeholder'. |
 | `osc_admin_settings_form($page, array $opts = array())` | The whole form of a declared page (osc_register_settings_page()): the element, the hidden route, every declared field with the value it should show, and the submit row. |

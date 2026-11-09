@@ -17,6 +17,11 @@ namespace mindstellar\admin\ui;
  */
 class Form
 {
+    /** @var list<string> Open bodies, innermost last: 'plain', 'main' or 'rail'. */
+    private static array $bodies = array();
+
+    private static int $sections = 0;
+
     /**
      * Open a form: the <form>, its hidden page/action/extra fields, and the horizontal
      * wrapper. Body of osc_admin_form_open().
@@ -58,7 +63,7 @@ class Form
         }
 
         if ($horizontal) {
-            echo '<fieldset><div class="form-horizontal">';
+            echo '<fieldset><div class="form-horizontal' . (!empty($opts['stack']) ? ' osc-stack' : '') . '">';
         }
     }
 
@@ -104,7 +109,7 @@ class Form
      * @param string      $text
      * @param string      $level  'section' or 'subsection'
      * @param string|null $id     the id to link to; null makes one from the text, '' leaves it off
-     * @param bool        $spaced air above it, as after a block of fields
+     * @param bool        $spaced ignored; a stack spaces its sections with gap
      *
      * @return void
      */
@@ -114,7 +119,7 @@ class Form
         $top   = PageState::headerTitle() !== null ? 2 : 3;
         $tag   = 'h' . ($level === 'subsection' ? $top + 1 : $top);
         $id    = $id ?? self::anchor($text);
-        $class = 'render-title ' . ($level === 'subsection' ? 'osc-subsection-title' : 'osc-section-title') . ($spaced ? ' separate-top' : '');
+        $class = 'render-title ' . ($level === 'subsection' ? 'osc-subsection-title' : 'osc-section-title');
         echo '<' . $tag . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '') . ' class="' . $class . '">'
             . osc_esc_html($text) . '</' . $tag . '>';
     }
@@ -130,18 +135,152 @@ class Form
     public static function section($title, array $opts = array())
     {
         $level = (int)($opts['level'] ?? 3) === 2 ? 2 : 3;
-        $class = 'render-title' . (!empty($opts['spaced']) ? ' separate-top' : '');
 
         if ($title !== '' && $level === 3) {
-            self::heading($title, 'section', null, !empty($opts['spaced']));
+            self::heading($title);
         } elseif ($title !== '') {
-            echo '<h2 id="' . self::anchor($title) . '" class="' . $class . '">' . osc_esc_html($title) . '</h2>';
+            echo '<h2 id="' . self::anchor($title) . '" class="render-title">' . osc_esc_html($title) . '</h2>';
         }
+        self::intro($opts, 'form-intro');
+    }
+
+    /**
+     * Print the intro paragraph of $opts, if it has one.
+     *
+     * @param array<string,mixed> $opts
+     * @param string              $class
+     */
+    private static function intro(array $opts, string $class): void
+    {
         if (!empty($opts['intro_html'])) {
-            echo '<p class="form-intro">' . $opts['intro_html'] . '</p>';
+            echo '<p class="' . $class . '">' . $opts['intro_html'] . '</p>';
         } elseif (!empty($opts['intro'])) {
-            echo '<p class="form-intro">' . osc_esc_html($opts['intro']) . '</p>';
+            echo '<p class="' . $class . '">' . osc_esc_html($opts['intro']) . '</p>';
         }
+    }
+
+    /**
+     * The id and extra attributes of a body or a section.
+     *
+     * @param array<string,mixed> $opts
+     * @param string              $id
+     */
+    private static function idAndAttrs(array $opts, string $id): string
+    {
+        return ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '')
+            . Field::attrsString($opts['attrs'] ?? array());
+    }
+
+    /**
+     * Open a screen's body. Body of osc_admin_body_open().
+     *
+     * @param array<string,mixed> $opts 'layout' => 'stack', 'split' (record and rail, as on a billing
+     *                                  order) or 'grid' (tiles, as on the dashboard); 'id', 'class', 'attrs'
+     *
+     * @since 7.1.0
+     */
+    public static function bodyOpen(array $opts = array()): void
+    {
+        $layout = $opts['layout'] ?? 'stack';
+        $class  = 'osc-body'
+            . ($layout === 'split' ? ' osc-body-split' : ($layout === 'grid' ? ' osc-body-grid' : ''))
+            . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+
+        echo '<div class="' . osc_esc_html($class) . '"' . self::idAndAttrs($opts, (string)($opts['id'] ?? '')) . '>';
+        if ($layout === 'split') {
+            echo '<div>';
+        }
+        self::$bodies[] = $layout === 'split' ? 'main' : 'plain';
+    }
+
+    /**
+     * End a split body's main column and start its rail. Body of osc_admin_body_rail().
+     *
+     * @param array<string,mixed> $opts 'id', 'class', 'attrs'
+     *
+     * @since 7.1.0
+     */
+    public static function bodyRail(array $opts = array()): void
+    {
+        $last = array_key_last(self::$bodies);
+        if ($last === null || self::$bodies[$last] !== 'main') {
+            return;
+        }
+        self::$bodies[$last] = 'rail';
+
+        $class = 'osc-body-rail' . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+        echo '</div><aside class="' . osc_esc_html($class) . '"' . self::idAndAttrs($opts, (string)($opts['id'] ?? '')) . '>';
+    }
+
+    /**
+     * Close the innermost open body. Body of osc_admin_body_close().
+     *
+     * @since 7.1.0
+     */
+    public static function bodyClose(): void
+    {
+        $state = array_pop(self::$bodies);
+        if ($state === null) {
+            return;
+        }
+        echo match ($state) {
+            'main'  => '</div></div>',
+            'rail'  => '</aside></div>',
+            default => '</div>',
+        };
+    }
+
+    /**
+     * Open a section: heading, head actions, intro, then its body. Body of osc_admin_section().
+     *
+     * @param string              $title empty for a section with no heading
+     * @param array<string,mixed> $opts  'intro'/'intro_html', 'actions', 'id', 'level' => 'section' or
+     *                                   'subsection', 'card', 'class', 'attrs'
+     *
+     * @since 7.1.0
+     */
+    public static function sectionOpen(string $title, array $opts = array()): void
+    {
+        $id    = (string)($opts['id'] ?? ($title !== '' ? self::anchor($title) : ''));
+        $class = 'osc-section'
+            . (!empty($opts['card']) ? ' osc-section-card' : '')
+            . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+
+        echo '<section class="' . osc_esc_html($class) . '"' . self::idAndAttrs($opts, $id) . '>';
+
+        $actions = $opts['actions'] ?? array();
+        if (!empty($actions)) {
+            echo '<div class="osc-section-head">';
+        }
+        if ($title !== '') {
+            // The section carries the id, so the heading must not repeat it.
+            self::heading($title, (string)($opts['level'] ?? 'section'), '');
+        }
+        if (!empty($actions)) {
+            echo '<span class="osc-section-actions">';
+            foreach ($actions as $action) {
+                osc_admin_action_button($action);
+            }
+            echo '</span></div>';
+        }
+        self::intro($opts, 'form-intro osc-section-intro');
+
+        echo '<div class="osc-section-body">';
+        self::$sections++;
+    }
+
+    /**
+     * Close the innermost open section. Body of osc_admin_section_close().
+     *
+     * @since 7.1.0
+     */
+    public static function sectionClose(): void
+    {
+        if (self::$sections === 0) {
+            return;
+        }
+        self::$sections--;
+        echo '</div></section>';
     }
 
     /**
@@ -166,7 +305,7 @@ class Form
      */
     public static function actionSection(array $opts = array())
     {
-        echo '<section class="settings-actions">';
+        echo '<section class="osc-section settings-actions">';
         self::section($opts['title'] ?? '', $opts);
 
         if (!empty($opts['body_html'])) {

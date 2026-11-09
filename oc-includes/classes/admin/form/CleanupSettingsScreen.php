@@ -114,8 +114,7 @@ final class CleanupSettingsScreen extends ToolsSettingsScreen
                 ->sanitize(self::positiveOr(Cleanup::DEFAULT_BATCH))
             ->custom('stats_open', static function (): void {
                 osc_admin_form_section(__('Listing statistics'), array(
-                    'spaced' => true,
-                    'intro'  => __('Counting views writes on every page view. Turn it off if you do not use it.'),
+                    'intro' => __('Counting views writes on every page view. Turn it off if you do not use it.'),
                 ));
                 osc_admin_form_row_open(__('View counting'));
             })

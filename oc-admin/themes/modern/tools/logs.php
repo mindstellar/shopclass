@@ -29,15 +29,15 @@ $direction  = Params::getParam('direction');
 $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
-osc_current_admin_theme_path('parts/header.php'); ?>
+osc_current_admin_theme_path('parts/header.php');
+osc_admin_body_open(); ?>
 
-    <div id="log-settings">
-        <?php osc_admin_form_section(__('Logging')); ?>
+    <?php osc_admin_section(__('Logging'), array('id' => 'log-settings')); ?>
         <?php $form = __get('log_form');
         osc_admin_settings_form($form['id'], $form); ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <?php osc_admin_form_section(__('Recent activity'), array('spaced' => true)); ?>
+    <?php osc_admin_section(__('Recent activity')); ?>
     <div class="relative">
         <div class="table-toolbar">
             <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
@@ -111,6 +111,8 @@ osc_admin_pagination($aData);
     <div class="form-actions">
         <button type="button" class="btn btn-danger btn-sm" data-osc-dialog-open="#logs-clear-dialog"><?php _e('Clear log'); ?></button>
     </div>
+    <?php osc_admin_section_close(); ?>
+<?php osc_admin_body_close(); ?>
 
     <?php osc_admin_confirm_dialog(array(
         'id'      => 'logs-clear-dialog',

@@ -341,6 +341,10 @@ $table-cell-vertical-align: middle;
   // The page shell's vertical rhythm: one gap spaces the shell rows, the title row and every
   // block the screen prints below it.
   --osc-shell-gap: 1.125rem;
+  // Gaps for the body and section stacks.
+  --osc-section-gap: 1.5rem;
+  --osc-field-gap: 1rem;
+  --osc-rail-width: 22rem;
 
   // 150–250ms. The owner is in a task, not watching choreography.
   --osc-ease:          cubic-bezier(.2, 0, 0, 1);

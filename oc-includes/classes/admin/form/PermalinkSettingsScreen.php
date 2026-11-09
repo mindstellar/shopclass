@@ -64,10 +64,11 @@ final class PermalinkSettingsScreen extends SettingsScreen
                      . (empty($spec['values'][self::MASTER]) ? ' hidden' : '') . '>'
                      . '<details class="rules-disclosure"><summary>'
                      . osc_esc_html(__('Advanced: customize URL structure')) . '</summary>';
+                osc_admin_body_open();
             })
                 ->set('row', false);
 
-        self::section($form, 'listings', __('Listings, pages &amp; categories'), false);
+        self::section($form, 'listings', __('Listings, pages &amp; categories'), true);
         self::path($form, 'rewrite_item_url', __('Listing URL'), sprintf(
             __('Accepted keywords: %s'),
             '{ITEM_ID},{ITEM_TITLE},{ITEM_CITY},{CATEGORIES}'
@@ -147,6 +148,8 @@ final class PermalinkSettingsScreen extends SettingsScreen
 
         $form
             ->custom('rules_close', static function () {
+                osc_admin_section_close();
+                osc_admin_body_close();
                 echo '</details></div>';
             })
                 ->set('row', false)
@@ -349,38 +352,68 @@ final class PermalinkSettingsScreen extends SettingsScreen
         $rules = osc_server_rewrite_rules();
         echo '<div class="server-config">';
         if (osc_server_is_nginx()) {
-            osc_admin_form_section(sprintf(__('Server rules (%s)'), 'nginx'), array('spaced' => true));
-            echo '<p class="settings-lead">'
-                 . osc_esc_html(sprintf(__('%1$s does not read %2$s files. Add the block below to your site\'s %1$s server configuration, then reload %1$s.'), 'nginx', '.htaccess'))
-                 . '</p><div class="server-config-grid"><div class="server-config-block"><pre>'
-                 . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8')
-                 . '</pre></div></div></div>';
+            osc_admin_section(sprintf(__('Server rules (%s)'), 'nginx'), array(
+                'intro' => sprintf(__('%1$s does not read %2$s files. Add the block below to your site\'s %1$s server configuration, then reload %1$s.'), 'nginx', '.htaccess'),
+            ));
+            echo '<div class="server-config-grid"><div class="server-config-block">';
+            self::rulesBlock($rules);
+            echo '</div></div>';
+            osc_admin_section_close();
+            echo '</div>';
 
             return;
         }
 
         $file   = osc_base_path() . '.htaccess';
         $exists = file_exists($file);
-        osc_admin_form_section(sprintf(__('Server rules (%s)'), '.htaccess'), array('spaced' => true));
+        osc_admin_section(sprintf(__('Server rules (%s)'), '.htaccess'));
         echo '<div class="server-config-grid">';
         if ($exists) {
-            echo '<div class="server-config-block">';
-            osc_admin_section_heading(sprintf(__('Your current %s file'), '.htaccess'), 'subsection', '');
-            echo '<pre>' . \mindstellar\utility\Escape::htmlEntities((string)file_get_contents($file), ENT_COMPAT, 'UTF-8') . '</pre></div>';
+            self::rulesSection(sprintf(__('Your current %s file'), '.htaccess'), (string)file_get_contents($file));
         }
-        echo '<div class="server-config-block">';
-        osc_admin_section_heading($exists ? __('What it should look like') : sprintf(__('What your %s file should look like'), '.htaccess'), 'subsection', '');
-        echo '<pre>' . \mindstellar\utility\Escape::htmlEntities($rules, ENT_COMPAT, 'UTF-8') . '</pre></div></div></div>';
+        self::rulesSection(
+            $exists ? __('What it should look like') : sprintf(__('What your %s file should look like'), '.htaccess'),
+            $rules
+        );
+        echo '</div>';
+        osc_admin_section_close();
+        echo '</div>';
     }
 
     /**
-     * A heading inside the disclosure. Drawn as the screen has always drawn it, which is a
-     * section rather than a second page head.
+     * One titled block of server rules.
+     *
+     * @param string $title
+     * @param string $text
+     *
+     * @return void
+     */
+    private static function rulesSection(string $title, string $text): void
+    {
+        osc_admin_section($title, array('level' => 'subsection', 'id' => '', 'class' => 'server-config-block'));
+        self::rulesBlock($text);
+        osc_admin_section_close();
+    }
+
+    /**
+     * Server rules as text to copy.
+     *
+     * @param string $text
+     *
+     * @return void
+     */
+    private static function rulesBlock(string $text): void
+    {
+        echo '<pre>' . \mindstellar\utility\Escape::htmlEntities($text, ENT_COMPAT, 'UTF-8') . '</pre>';
+    }
+
+    /**
+     * Start a section inside the disclosure, ending the one before it.
      *
      * @param \mindstellar\admin\ui\FormSpec $form
-     * @param string                         $id     suffix of the custom field it is drawn by
+     * @param string                         $id    suffix of the custom field it is drawn by
      * @param string                         $title
-     * @param bool                           $spaced
+     * @param bool                           $first true for the first section, which has none before it
      *
      * @return void
      */
@@ -388,11 +421,14 @@ final class PermalinkSettingsScreen extends SettingsScreen
         \mindstellar\admin\ui\FormSpec $form,
         string $id,
         string $title,
-        bool $spaced = true
+        bool $first = false
     ): void {
         $form
-            ->custom('section_' . $id, static function () use ($title, $spaced) {
-                osc_admin_form_section($title, $spaced ? array('spaced' => true) : array());
+            ->custom('section_' . $id, static function () use ($title, $first) {
+                if (!$first) {
+                    osc_admin_section_close();
+                }
+                osc_admin_section($title);
             })
             ->set('row', false);
     }

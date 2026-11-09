@@ -75,9 +75,8 @@ $groups = array(
 );
 ?>
     <?php if ($hasPending) { ?>
-        <div id="db-update">
-            <?php osc_admin_form_section(__('Database update'), array(
-                'spaced' => true,
+            <?php osc_admin_section(__('Database update'), array(
+                'id' => 'db-update',
                 'intro_html' => osc_esc_html(__('New Shopclass files are in place, but the database has not caught up yet. Run these updates to finish.'))
                 . ' <a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">'
                 . osc_esc_html(__('Take a backup first.')) . '</a>',
@@ -109,11 +108,11 @@ $groups = array(
                     'help'    => __('The same update the command line runs with db:upgrade. On a large site it can take a few minutes.'),
                 )),
             )); ?>
-        </div>
+            <?php osc_admin_section_close(); ?>
     <?php } ?>
 
     <?php if (is_array($repair)) { ?>
-        <?php osc_admin_form_section(__('Repair result'), array('spaced' => true)); ?>
+        <?php osc_admin_section(__('Repair result')); ?>
         <?php if ($repair['ran'] === array() && $repair['failed'] === array()) { ?>
             <p class="text-muted"><?php _e('Nothing needed repairing.'); ?></p>
         <?php } else { ?>
@@ -142,15 +141,18 @@ $groups = array(
                 </table>
             </div>
         <?php } ?>
+        <?php osc_admin_section_close(); ?>
     <?php } ?>
 
-    <div id="db-check">
+    <?php osc_admin_body_open(array('id' => 'db-check')); ?>
         <?php if ($error !== '') { ?>
-            <?php osc_admin_form_section(__('Check and repair'), array('spaced' => true)); ?>
+            <?php osc_admin_section(__('Check and repair')); ?>
             <?php osc_admin_verdict(array(array('tone' => 'danger', 'text' => sprintf(__('Could not read the schema: %s'), $error)))); ?>
+            <?php osc_admin_section_close(); ?>
         <?php } elseif ($findings === array()) { ?>
-            <?php osc_admin_form_section(__('Check and repair'), array('spaced' => true)); ?>
+            <?php osc_admin_section(__('Check and repair')); ?>
             <p class="text-muted mb-0"><?php _e('Everything matches. Nothing to repair.'); ?></p>
+            <?php osc_admin_section_close(); ?>
         <?php } else { ?>
             <?php foreach ($groups as $group) { ?>
                 <?php $rows = array_values(array_filter($findings, static function ($f) use ($group) {
@@ -159,7 +161,7 @@ $groups = array(
                 <?php if ($rows === array()) {
                     continue;
                 } ?>
-                <?php osc_admin_form_section($group['title'], array('intro' => $group['intro'], 'spaced' => true)); ?>
+                <?php osc_admin_section($group['title'], array('intro' => $group['intro'])); ?>
                 <div class="table-responsive">
                     <table class="table sysinfo-table-findings">
                         <thead>
@@ -201,14 +203,14 @@ $groups = array(
                         )),
                     )); ?>
                 <?php } ?>
+                <?php osc_admin_section_close(); ?>
             <?php } ?>
         <?php } ?>
-    </div>
+    <?php osc_admin_body_close(); ?>
 
     <?php if (isset($env['facet_ready'])) { ?>
         <?php $facet = DatabaseTools::facetStatus($env); ?>
-        <div id="db-facet">
-            <?php osc_admin_form_section(__('Listing filter index'), array('spaced' => true)); ?>
+            <?php osc_admin_section(__('Listing filter index'), array('id' => 'db-facet')); ?>
             <p class="text-muted"><?php echo osc_esc_html($facet['text']); ?></p>
             <?php if ($facet['note'] !== '') { ?>
                 <p class="text-muted small"><?php echo osc_esc_html($facet['note']); ?></p>
@@ -222,7 +224,7 @@ $groups = array(
                     'help'    => __('Searches keep working while it rebuilds.'),
                 )),
             )); ?>
-        </div>
+            <?php osc_admin_section_close(); ?>
         <?php osc_admin_confirm_dialog(array(
             'id'      => 'db-facet-dialog',
             'tone'    => 'plain',

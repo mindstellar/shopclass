@@ -123,6 +123,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
          'optionalFailed' => __('A recommended plugin could not be installed.'),
          'activateAnyway' => __('Activate the theme without it'),
      ))); ?>'>
+    <?php osc_admin_body_open(); ?>
     <p>
         <?php if ($isActiveTheme && $requiredOpen > 0) {
             _e('Your active theme needs a plugin that is missing or turned off. The parts that use it stay hidden until it is back.');
@@ -144,21 +145,23 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php endif; ?>
 
     <?php if ($deps['required'] !== array()) : ?>
-        <?php osc_admin_page_head(__('Required'), array(), array('level' => 3)); ?>
+        <?php osc_admin_section(__('Required')); ?>
         <?php osc_package_list_open('theme-deps-list'); ?>
         <?php foreach ($deps['required'] as $row) {
             $renderRow($row);
         } ?>
         <?php osc_package_list_close(); ?>
+        <?php osc_admin_section_close(); ?>
     <?php endif; ?>
 
     <?php if ($deps['recommended'] !== array()) : ?>
-        <?php osc_admin_page_head(__('Recommended'), array(), array('level' => 3, 'class' => 'separate-top')); ?>
+        <?php osc_admin_section(__('Recommended')); ?>
         <?php osc_package_list_open('theme-deps-list'); ?>
         <?php foreach ($deps['recommended'] as $row) {
             $renderRow($row);
         } ?>
         <?php osc_package_list_close(); ?>
+        <?php osc_admin_section_close(); ?>
     <?php endif; ?>
 
     <p class="theme-deps-status" role="status" aria-live="polite" data-dep-status-line></p>
@@ -182,6 +185,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     }
     $actions[] = array('label' => __('Back to Appearance'), 'variant' => 'secondary', 'url' => $backUrl);
     osc_admin_form_actions($actions);
+    osc_admin_body_close();
     ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

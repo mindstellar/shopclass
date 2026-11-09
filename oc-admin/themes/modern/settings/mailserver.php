@@ -118,7 +118,6 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="mail-setting">
-    <!-- settings form -->
     <div id="mail-settings">
         <ul id="error_list"></ul>
         <?php
@@ -135,6 +134,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ?>
         <div id="testMail_message" class="flashmessage" style="display:none"><p></p></div>
     </div>
-    <!-- /settings form -->
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

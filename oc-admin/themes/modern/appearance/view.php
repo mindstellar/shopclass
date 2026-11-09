@@ -1,4 +1,6 @@
-<?php if (!defined('OC_ADMIN')) {
+<?php
+
+if (!defined('OC_ADMIN')) {
     exit('Direct access is not allowed.');
 }
 /*
@@ -19,14 +21,11 @@ osc_admin_page(array(
     'title'   => __('Appearance'),
 ));
 
-osc_current_admin_theme_path('parts/header.php'); ?>
-    <!-- theme files -->
-    <div class="theme-files">
-        <?php
-        if ($file !== null) {
-            require_once $file;
-        }
-?>
-    </div>
-    <!-- /theme files -->
-<?php osc_current_admin_theme_path('parts/footer.php'); ?>
+osc_current_admin_theme_path('parts/header.php');
+// Theme page output stays in block flow: a gap stack would break floated columns and inline buttons.
+echo '<div class="theme-files">';
+if ($file !== null) {
+    require_once $file;
+}
+echo '</div>';
+osc_current_admin_theme_path('parts/footer.php');

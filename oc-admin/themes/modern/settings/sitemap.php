@@ -37,7 +37,7 @@ $freqOptions = array(
 );
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="sitemap-setting">
+<?php osc_admin_body_open(array('id' => 'sitemap-setting')); ?>
     <p>
         <?php printf(
             __('The sitemap index is served at %s and always reflects the current site content.'),
@@ -45,13 +45,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ); ?>
     </p>
 
-    <div id="sitemap-general-settings">
-        <?php osc_admin_form_section(__('Sitemap settings')); ?>
+    <?php osc_admin_section(__('Sitemap settings'), array('id' => 'sitemap-general-settings')); ?>
         <?php osc_admin_settings_form($forms['settings']['id'], $forms['settings']); ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <div id="sitemap-custom-urls" class="separate-top">
-        <?php osc_admin_form_section(__('Custom sitemap URLs')); ?>
+    <?php osc_admin_section(__('Custom sitemap URLs'), array('id' => 'sitemap-custom-urls')); ?>
         <p><?php _e('Add URLs the sitemap would not otherwise discover on its own, such as pages served by a plugin.'); ?></p>
         <?php osc_admin_form_open(array(
             'name'   => 'sitemap_url_form',
@@ -126,21 +124,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </tbody>
             </table>
         <?php } ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <div id="sitemap-robots" class="separate-top">
-        <?php osc_admin_form_section(__('robots.txt')); ?>
+    <?php osc_admin_section(__('robots.txt'), array('id' => 'sitemap-robots')); ?>
         <?php if (!$robots_writable) { ?>
             <div class="flashmessage flashmessage-error">
                 <?php _e('robots.txt is not writable by the web server. Fix the file or folder permissions before saving changes here.'); ?>
             </div>
         <?php } ?>
         <?php osc_admin_settings_form($forms['robots']['id'], $forms['robots']); ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
     <?php osc_admin_action_section(array(
         'title'   => __('Regenerate'),
-        'spaced'  => true,
         'intro'   => __('The sitemap is cached for a few hours after it is first requested. Use this if you need '
                         . 'search engines to see fresh content immediately.'),
         'actions' => array(
@@ -153,5 +149,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             ),
         ),
     )); ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

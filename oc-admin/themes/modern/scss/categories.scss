@@ -828,14 +828,14 @@
     }
   }
 
-  // Footer actions: left-aligned, side by side, flush with the editor's padding.
+  // Footer actions: end-aligned, side by side, flush with the editor's padding.
   .card-footer.form-actions,
   .form-actions {
     background: transparent;
     display: flex;
     flex-wrap: wrap;
     gap: .5rem;
-    justify-content: flex-start;
+    justify-content: flex-end;
     margin-block-start: 1rem;
     padding: 0;
   }
@@ -847,10 +847,6 @@
     input[type="checkbox"] {
       margin-inline-end: .35rem;
     }
-  }
-
-  .separate-top {
-    margin-block-start: 1rem;
   }
 }
 
@@ -2137,6 +2133,7 @@
   border-top: 1px solid var(--osc-rule);
   display: flex;
   gap: .6rem;
+  justify-content: flex-end;
   margin-top: .25rem;
   padding-top: 1.25rem;
 }

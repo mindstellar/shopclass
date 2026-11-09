@@ -216,8 +216,8 @@ osc_admin_page(array(
                     . 'the system will let you know so you can update and use the newest features.'),
 ));
 
-osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="upgrade-tool">
+osc_current_admin_theme_path('parts/header.php');
+osc_admin_body_open(array('class' => 'upgrade-tool')); ?>
         <p class="form-intro">
             <?php
             if ($selfUpdateOff) {
@@ -291,11 +291,14 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         ) . '</p>',
                         'confirm'   => sprintf(__('Upgrade to %s'), $remoteVersion),
                     )); ?>
-                    <section class="upgrade-tool-notes" id="upgrade-release-notes" hidden>
-                        <?php osc_admin_form_section(sprintf(__("What's new in %s"), $remoteVersion), array('spaced' => true)); ?>
-                    </section>
+                    <?php osc_admin_section(sprintf(__("What's new in %s"), $remoteVersion), array(
+                        'class' => 'upgrade-tool-notes',
+                        'id'    => 'upgrade-release-notes',
+                        'attrs' => array('hidden' => 'hidden'),
+                    ));
+                    osc_admin_section_close(); ?>
                 <?php } ?>
             </div>
         </div>
-    </div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

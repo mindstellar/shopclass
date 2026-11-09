@@ -7,29 +7,12 @@
     max-inline-size: 56rem;
   }
 
-  > .callout-block,
-  > .flashmessage {
-    margin-block-end: 1rem;
-  }
-
-  > .osc-verdict {
-    margin-block-end: 1.5rem;
-  }
-
   .card-title {
     color: var(--osc-ink);
     font-size: 1.0625rem;
     font-weight: 600;
     line-height: 1.4;
   }
-}
-
-.sysinfo-group + .sysinfo-group {
-  margin-block-start: 1.75rem;
-}
-
-.sysinfo-group > .render-title {
-  margin-block-end: .6rem;
 }
 
 .sysinfo-facts {
@@ -168,10 +151,6 @@
   border-block-start: 1px solid var(--osc-rule);
   margin-block-start: 1.75rem;
   padding-block-start: 1rem;
-
-  & + & {
-    margin-block-start: 1rem;
-  }
 
   > summary {
     color: var(--osc-bronze);

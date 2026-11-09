@@ -113,7 +113,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="api-settings">
+<?php osc_admin_body_open(array('id' => 'api-settings')); ?>
     <p><?php printf(__('The API is served at %s.'), '<code>' . osc_esc_html(osc_api_url()) . '</code>'); ?></p>
 
     <?php if (is_array($issued) && !empty($issued['token'])) { ?>
@@ -144,11 +144,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php osc_admin_settings_form($form['id'], $form); ?>
     </div>
 
-    <div id="api-keys" class="separate-top">
-        <?php osc_admin_form_section(__('Keys'), array(
-            'intro' => __('Admin keys act as you, with the scopes you give them. Public keys only read public data and are safe to put in an app or a web page.'),
-        ));
-        $offNote(); ?>
+    <?php osc_admin_section(__('Keys'), array(
+        'id'    => 'api-keys',
+        'intro' => __('Admin keys act as you, with the scopes you give them. Public keys only read public data and are safe to put in an app or a web page.'),
+    ));
+    $offNote(); ?>
         <?php
         // Live keys first; revoked and expired ones fold away below, so New key stays near.
         $liveKeys = array_values(array_filter($keys, static fn ($k) => $k['status'] === ApiKeyService::STATUS_ACTIVE));
@@ -224,10 +224,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 <?php $keyTable($oldKeys); ?>
             </details>
         <?php } ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <div id="api-key-new" class="separate-top">
-        <?php osc_admin_form_section(__('New key')); ?>
+    <?php osc_admin_section(__('New key'), array('id' => 'api-key-new')); ?>
         <?php osc_admin_form_open(array(
             'name'   => 'api_key_form',
             'page'   => 'settings',
@@ -294,13 +293,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_admin_form_close(array(
             array('label' => __('Create key'), 'type' => 'submit'),
         )); ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
-    <div id="api-webhooks" class="separate-top">
-        <?php osc_admin_form_section(__('Webhooks'), array(
-            'intro' => __('A webhook tells another system when something happens here, such as a new listing, by sending it a signed POST. A delivery that fails is tried again for about two hours; an endpoint that fails 8 times in a row is paused and you get an e-mail.'),
-        ));
-        $offNote(); ?>
+    <?php osc_admin_section(__('Webhooks'), array(
+        'id'    => 'api-webhooks',
+        'intro' => __('A webhook tells another system when something happens here, such as a new listing, by sending it a signed POST. A delivery that fails is tried again for about two hours; an endpoint that fails 8 times in a row is paused and you get an e-mail.'),
+    ));
+    $offNote(); ?>
         <?php if ($webhooks === array()) { ?>
             <p class="text-muted"><?php _e('No webhook endpoints yet.'); ?></p>
         <?php } else { ?>
@@ -375,11 +374,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </table>
             </div>
         <?php } ?>
-    </div>
+    <?php osc_admin_section_close(); ?>
 
     <?php if ($hookEditing !== null) { ?>
-        <div id="api-webhook-edit" class="separate-top">
-            <?php osc_admin_form_section(sprintf(__('Edit %s'), $hookEditing->url())); ?>
+        <?php osc_admin_section(sprintf(__('Edit %s'), $hookEditing->url()), array('id' => 'api-webhook-edit')); ?>
             <?php if ($hookEditing->paused()) { ?>
                 <div class="callout-warning callout-block api-webhook-paused">
                     <?php echo osc_esc_html(sprintf(__('Paused: %s. Switch it on again once the receiver works.'), (string) $hookEditing->pausedReason())); ?>
@@ -443,11 +441,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </tbody>
                 </table>
             <?php } ?>
-        </div>
+        <?php osc_admin_section_close(); ?>
     <?php } ?>
 
-    <div id="api-webhook-new" class="separate-top">
-        <?php osc_admin_form_section(__('New webhook endpoint')); ?>
+    <?php osc_admin_section(__('New webhook endpoint'), array('id' => 'api-webhook-new')); ?>
         <?php osc_admin_form_open(array(
             'name'   => 'api_webhook_form',
             'page'   => 'settings',
@@ -501,8 +498,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_admin_form_close(array(
             array('label' => __('Add endpoint'), 'type' => 'submit'),
         )); ?>
-    </div>
-</div>
+    <?php osc_admin_section_close(); ?>
+<?php osc_admin_body_close(); ?>
 <?php
 osc_admin_confirm_dialog(array(
     'id'        => 'api-rotate-dialog',

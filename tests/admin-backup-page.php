@@ -226,7 +226,7 @@ check('backups still start when restore is off', strpos($body('backupStart'), 'r
     && strpos($body('backupStart'), 'refuseRestoreOff') === false);
 check('the page hides the Restore… buttons', (bool) preg_match("/if \\(\\\$locked && !\\\$noWeb\\) \\{.*?\\} elseif \\(!\\\$noWeb\\) \\{\\s*osc_admin_action_button\\(array\\(\\s*'label' => __\\('Restore…'\\)/s", $view));
 check('...and the upload form, showing the off line instead', (bool) preg_match(
-    "/<\\?php if \\(\\\$noWeb\\) \\{ \\?>\\s*<p[^>]*><\\?php echo osc_esc_html\\(\\\$offLine\\); \\?><\\/p>\\s*<\\?php \\} else \\{ \\?>.*?backup_upload.*?<\\?php \\} \\?>\\s*<\\/div>/s",
+    "/<\\?php if \\(\\\$noWeb\\) \\{ \\?>\\s*<p[^>]*><\\?php echo osc_esc_html\\(\\\$offLine\\); \\?><\\/p>\\s*<\\?php \\} else \\{ \\?>.*?backup_upload.*?<\\?php \\} \\?>\\s*<\\?php osc_admin_section_close\\(\\); \\?>/s",
     $view
 ));
 check('...in the owner\'s words', strpos($view, "__('Restore is turned off on this site. Use the command line.')") !== false);

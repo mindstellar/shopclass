@@ -37,7 +37,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="spam-setting">
+<?php osc_admin_body_open(array('id' => 'spam-setting')); ?>
     <?php
     if ($tab === 'captcha') { ?>
         <p><?php printf(
@@ -68,11 +68,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php }
 
     if ($tab === 'limits') {
-        osc_admin_form_section(__('Search alerts'), array(
-            'spaced' => true,
-            'intro'  => __('Search alerts e-mail visitors about new listings that match a saved search. Requiring sign-in stops strangers subscribing other people.'),
+        osc_admin_section(__('Search alerts'), array(
+            'intro' => __('Search alerts e-mail visitors about new listings that match a saved search. Requiring sign-in stops strangers subscribing other people.'),
         ));
         osc_admin_settings_form($forms['alerts']['id'], array('titles' => false) + $forms['alerts']);
+        osc_admin_section_close();
     } ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -16,6 +16,7 @@
 
 osc_admin_page(array(
     'section' => static fn () => sprintf(__('Shopclass %s'), OSCLASS_VERSION),
+    'heading' => static fn () => sprintf(__('Shopclass %s'), OSCLASS_VERSION),
 ));
 
 $customPageTitle = static function ($string) {

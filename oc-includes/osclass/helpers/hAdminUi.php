@@ -244,6 +244,7 @@ if (!function_exists('osc_admin_form_open')) {
      *   'upload' => bool    multipart/form-data, for a form carrying a file field.
      *   'horizontal' => bool  Wrap in fieldset + .form-horizontal (default true). False for
      *                       a stacked form in a dialog or a panel.
+     *   'stack'  => bool    Space the sections inside .form-horizontal with gap.
      *   'csrf'   => bool    False marks the form `nocsrf`, which is only ever right for a
      *                       form that changes nothing.
      *
@@ -329,6 +330,7 @@ if (!function_exists('osc_admin_section_heading')) {
 if (!function_exists('osc_admin_form_section')) {
     /**
      * A titled group of fields within a screen, with an optional explanatory paragraph.
+     * Prints only the heading and intro; new code uses osc_admin_section(), which wraps its content.
      *
      * Sections were headings written by hand: 29 `<h3 class="render-title">` in the admin,
      * plus screens calling osc_admin_page_head() a second time for a section, which gives a
@@ -337,7 +339,7 @@ if (!function_exists('osc_admin_form_section')) {
      *
      * @param string $title
      * @param array  $opts 'intro' => paragraph under the heading, 'intro_html' for markup,
-     *                     'spaced' => true to separate it from the block above,
+     *                     'spaced' is accepted and ignored,
      *                     'level' => 2 to render the section as a page head instead.
      *
      * @return void
@@ -366,6 +368,84 @@ if (!function_exists('osc_admin_action_section')) {
     function osc_admin_action_section(array $opts = array())
     {
         \mindstellar\admin\ui\Form::actionSection($opts);
+    }
+}
+
+if (!function_exists('osc_admin_body_open')) {
+    /**
+     * Open a screen's body: blocks inside it are spaced by gap. End it with osc_admin_body_close().
+     *
+     * @param array $opts 'layout' => 'stack' (default), 'split' (a record and its rail, as on a
+     *                    billing order, see osc_admin_body_rail()) or 'grid' (tiles, as on the
+     *                    dashboard); 'id', 'class', 'attrs'
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_body_open(array $opts = array())
+    {
+        \mindstellar\admin\ui\Form::bodyOpen($opts);
+    }
+}
+
+if (!function_exists('osc_admin_body_rail')) {
+    /**
+     * In a split body: end the main column and start the rail. Prints nothing in any other body.
+     *
+     * @param array $opts 'id', 'class', 'attrs'
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_body_rail(array $opts = array())
+    {
+        \mindstellar\admin\ui\Form::bodyRail($opts);
+    }
+}
+
+if (!function_exists('osc_admin_body_close')) {
+    /**
+     * Close the body osc_admin_body_open() opened.
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_body_close()
+    {
+        \mindstellar\admin\ui\Form::bodyClose();
+    }
+}
+
+if (!function_exists('osc_admin_section')) {
+    /**
+     * Open a titled section of a screen; put its content next and end it with
+     * osc_admin_section_close(). Headings carry no icon.
+     *
+     * @param string $title Empty for a section with no heading
+     * @param array  $opts  'intro', 'intro_html', 'actions' (action specs, end of the head row,
+     *                      as on a builder column), 'id' (made from the title by default),
+     *                      'level' => 'section' (default) or 'subsection', 'card' => true for the
+     *                      panel look, as on a dashboard tile, 'class', 'attrs'
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_section(string $title, array $opts = array())
+    {
+        \mindstellar\admin\ui\Form::sectionOpen($title, $opts);
+    }
+}
+
+if (!function_exists('osc_admin_section_close')) {
+    /**
+     * Close the section osc_admin_section() opened.
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_section_close()
+    {
+        \mindstellar\admin\ui\Form::sectionClose();
     }
 }
 
@@ -857,7 +937,8 @@ if (!function_exists('osc_admin_form_actions')) {
      * changes" -- the case that covers most settings screens.
      *
      * @param array $actions Action specs; the first defaults to variant 'primary'
-     * @param array $opts    'dirty' => true for the unsaved-changes status bar
+     * @param array $opts    'dirty' => true for the unsaved-changes status bar,
+     *                       'sticky' => false to keep the row in place on a long form
      *
      * @return void
      */
@@ -873,7 +954,7 @@ if (!function_exists('osc_admin_form_actions')) {
               . ' data-osc-dirty-many="' . osc_esc_html(__('%d unsaved changes')) . '"'
             : '';
 
-        echo '<div class="form-actions"' . $dirty . '>';
+        echo '<div class="form-actions' . (($opts['sticky'] ?? true) ? '' : ' is-static') . '"' . $dirty . '>';
         if ($dirty !== '') {
             echo '<p class="form-actions-status" role="status" aria-live="polite"></p>';
         }

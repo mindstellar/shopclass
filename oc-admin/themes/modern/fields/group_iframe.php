@@ -22,7 +22,6 @@ $groupSlug = $group['s_slug'] ?? '';
 $groupMeta = (isset($group['s_meta']) && $group['s_meta'] !== '') ? json_decode($group['s_meta'], true) : array();
 $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
 ?>
-<!-- field group frame -->
 <div id="edit-field-group-frame" class="card custom-field-frame">
     <div class="form-horizontal">
         <form id="edit_group_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
@@ -71,7 +70,6 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
         </form>
     </div>
 </div>
-<!-- /field group frame -->
 <script type="text/javascript">
     (function () {
         if (typeof oscTreeview === 'function') {

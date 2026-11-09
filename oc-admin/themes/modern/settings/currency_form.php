@@ -167,11 +167,10 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     if ($typeForm === 'edit_post') {
                         $currencyActions[] = array(
                             'label'   => __('Cancel'),
-                            'variant' => 'red',
+                            'variant' => 'secondary',
                             'url'     => osc_admin_base_url(true) . '?page=settings&action=currencies',
                         );
                     }
                     osc_admin_form_close($currencyActions); ?>
     </div>
-    <!-- /settings form -->
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
