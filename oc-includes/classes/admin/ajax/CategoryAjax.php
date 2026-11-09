@@ -14,12 +14,12 @@ declare(strict_types=1);
 namespace mindstellar\admin\ajax;
 
 use Category;
+use mindstellar\category\CategoryQuery;
 use mindstellar\category\CategoryService;
 use mindstellar\category\CategoryStore;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\RefusedException;
 use mindstellar\utility\AjaxResponse;
-use mindstellar\utility\Utils;
 use OSCLocale;
 use Params;
 use RuntimeException;
@@ -29,47 +29,18 @@ use RuntimeException;
  */
 final class CategoryAjax extends AjaxHandler
 {
-    /** Save the order of the categories. */
+    /** Save the order of the categories: a list of {c: id, p: parent id or 'root'}. */
     public function order(): void
     {
-        $aIds  = json_decode(Params::getParamString('list'), true);
-        $order = array();
-        $error = 0;
-
-        $catManager  = Category::getInstance();
-        $aRecountCat = array();
-        foreach ($aIds as $cat) {
-            if (isset($cat['c'])) {
-                if (!isset($order[$cat['p']])) {
-                    $order[$cat['p']] = 0;
-                }
-
-                $res = $catManager->update(
-                    array(
-                        'fk_i_parent_id' => ($cat['p'] === 'root' ? null : $cat['p']),
-                        'i_position'     => $order[$cat['p']]
-                    ),
-                    array('pk_i_id' => $cat['c'])
-                );
-                if (is_bool($res) && !$res) {
-                    $error = 1;
-                } elseif ($res == 1) {
-                    $aRecountCat[] = $cat['c'];
-                }
-                ++$order[$cat['p']];
+        $rows = array();
+        foreach ((array) json_decode(Params::getParamString('list'), true) as $cat) {
+            if (is_array($cat) && isset($cat['c'])) {
+                $parent = ($cat['p'] ?? 'root') === 'root' ? 0 : (int) $cat['p'];
+                $rows[] = array((int) $cat['c'], $parent > 0 ? $parent : null);
             }
         }
 
-        // A move changes the totals of both the old and the new parents, so recount the tree.
-        if ($aRecountCat !== array()) {
-            Utils::updateAllCategoriesStats();
-        }
-
-        $result = self::orderResult($error);
-
-        osc_run_hook('edited_category_order', $error);
-
-        AjaxResponse::json($result);
+        AjaxResponse::json(self::orderResult(CategoryService::make()->arrange($rows) ? 0 : 1));
     }
 
     public function editIframe(): void
@@ -81,7 +52,7 @@ final class CategoryAjax extends AjaxHandler
             // the parent's expiry and price setting.
             $parentId = Params::getParamInt('parent_id');
             $parentId = $parentId > 0 && $tree->exists($parentId) ? $parentId : 0;
-            $inherit  = $parentId > 0 ? Category::getInstance()->findByPrimaryKey($parentId) : false;
+            $inherit  = $parentId > 0 ? ((new CategoryQuery())->rows($parentId)[0] ?? false) : false;
             $this->controller->_exportVariableToView(
                 'category',
                 array(
@@ -126,18 +97,18 @@ final class CategoryAjax extends AjaxHandler
 
     public function enable(): void
     {
-        $id       = (int) \mindstellar\utility\Sanitize::stripTags(Params::getParamString('id'));
-        $enabled  = (Params::getParam('enabled') != '') ? Params::getParam('enabled') : 0;
+        $id      = Params::getParamInt('id');
+        $enabled = (Params::getParam('enabled') != '') ? Params::getParam('enabled') : 0;
+        $tree    = CategoryStore::tree();
 
-        $aCategory = Category::getInstance()->findByPrimaryKey($id);
-
-        if ($aCategory == false) {
+        if (!$tree->exists($id)) {
             AjaxResponse::json(array('error' => sprintf(__('No category with id %d exists'), $id)));
 
             return;
         }
+        $aCategory = array('pk_i_id' => $id, 'fk_i_parent_id' => $tree->parent($id));
 
-        $affected = CategoryService::make()->setEnabled((int) $id, (bool) $enabled, $aCategory);
+        $affected = CategoryService::make()->setEnabled($id, (bool) $enabled, $aCategory);
         if ($affected === null) {
             AjaxResponse::json(array('error' => __('Parent category is disabled, you can not enable that category')));
 
@@ -235,93 +206,53 @@ final class CategoryAjax extends AjaxHandler
 
     public function editPost(): void
     {
-        $id                             = Params::getParam('id');
-        $fields['i_expiration_days']    =
-            (Params::getParam('i_expiration_days') != '') ? Params::getParam('i_expiration_days') : 0;
-        $fields['b_price_enabled']      = (Params::getParam('b_price_enabled') != '') ? 1 : 0;
-        $apply_changes_to_subcategories = Params::getParamInt('apply_changes_to_subcategories') === 1;
-        $newDates                       = Params::getParamString('expiry_listings') === 'new';
-
-        $error         = 0;
-        $has_one_title = 0;
-        $aFieldsDescription = array();
+        $id     = Params::getParamInt('id');
+        $fields = array(
+            'i_expiration_days' => Params::getParamString('i_expiration_days'),
+            'b_price_enabled'   => (Params::getParam('b_price_enabled') != '') ? 1 : 0,
+        );
+        $descriptions = array();
         foreach (Params::getParamsAsArray() as $k => $v) {
-            if (preg_match('|(.+?)#(.+)|', (string) $k, $m)) {
-                if ($m[2] === 's_name') {
-                    if ($v != '') {
-                        $has_one_title                    = 1;
-                        $aFieldsDescription[$m[1]][$m[2]] = $v;
-                    } else {
-                        $aFieldsDescription[$m[1]][$m[2]] = null;
-                        $error                            = 1;
-                    }
-                } else {
-                    $aFieldsDescription[$m[1]][$m[2]] = $v;
-                }
+            if (is_string($v) && preg_match('|(.+?)#(.+)|', (string) $k, $m)) {
+                $descriptions[$m[1]][$m[2]] = $v;
             }
         }
 
-        $l     = osc_language();
-        $moved = false;
-        if ((int) $id <= 0) {
-            AjaxResponse::json($this->create($fields, $aFieldsDescription, $has_one_title === 1, Params::getParamInt('parent_id')));
+        if ($id <= 0) {
+            AjaxResponse::json($this->create($fields, $descriptions, Params::getParamInt('parent_id')));
 
             return;
         }
-        // The service fires edited_category with the outcome, saved or not.
-        $editor = CategoryService::make();
-        $canSave = $error == 0 || $has_one_title == 1;
-        // A changed parent moves the category to the end of its new group, but only when the fields can be saved too.
-        if ($canSave && Params::getParamString('parent_id') !== '') {
-            $newParent = Params::getParamInt('parent_id');
-            if ($newParent !== (int) CategoryStore::tree()->parent((int) $id)) {
-                try {
-                    $editor->move((int) $id, $newParent > 0 ? $newParent : null, PHP_INT_MAX);
-                    $moved = true;
-                } catch (RefusedException $e) {
-                    AjaxResponse::json(array('error' => 3, 'msg' => $e->getMessage(), 'field' => '/parent_id'));
+        $before = (int) CategoryStore::tree()->parent($id);
+        try {
+            $saved = CategoryService::make()->save(
+                $id,
+                Params::getParamString('parent_id') !== '' ? Params::getParamInt('parent_id') : null,
+                $fields,
+                $descriptions,
+                Params::getParamInt('apply_changes_to_subcategories') === 1,
+                Params::getParamString('expiry_listings') === 'new'
+            );
+        } catch (RefusedException $e) {
+            $parent = (int) CategoryStore::tree()->parent($id);
+            AjaxResponse::json($e instanceof InvalidException && $e->pointer() !== '/parent_id'
+                ? array('error' => 3, 'msg' => $e->getMessage(), 'parent_id' => $parent, 'moved' => $parent !== $before)
+                : array('error' => 3, 'msg' => $e->getMessage(), 'field' => '/parent_id'));
 
-                    return;
-                }
-            }
-        }
-        if ($canSave) {
-            try {
-                if (!$editor->update((int) $id, $fields, $aFieldsDescription, $apply_changes_to_subcategories, (int) $error, $newDates)) {
-                    $error = 2;
-                }
-            } catch (InvalidException $e) {
-                AjaxResponse::json(array(
-                    'error'     => 3,
-                    'msg'       => $e->getMessage(),
-                    'parent_id' => (int) CategoryStore::tree()->parent((int) $id),
-                    'moved'     => $moved,
-                ));
-
-                return;
-            }
-        } else {
-            $editor->edited((int) $id, (int) $error);
+            return;
         }
 
-        if ($error == 0) {
-            $msg = __('Category updated correctly');
-        } elseif ($error == 1) {
-            if ($has_one_title == 1) {
-                $error = 4;
-                $msg   = __('Category updated correctly, but some titles are empty');
-            } else {
-                $msg = __('Sorry, including at least a title is mandatory');
-            }
-        } elseif ($error == 2) {
-            $msg = __('An error occurred while updating');
-        }
         AjaxResponse::json(array(
-            'error'     => $error,
-            'msg'       => $msg,
-            'text'      => $aFieldsDescription[$l]['s_name'],
-            'parent_id' => (int) CategoryStore::tree()->parent((int) $id),
-            'moved'     => $moved,
+            'error'     => $saved['outcome'],
+            'msg'       => match ($saved['outcome']) {
+                0       => __('Category updated correctly'),
+                1       => __('Sorry, including at least a title is mandatory'),
+                4       => __('Category updated correctly, but some titles are empty'),
+                default => __('An error occurred while updating'),
+            },
+            'text'      => ($descriptions[osc_language()]['s_name'] ?? '') !== '' ? $descriptions[osc_language()]['s_name'] : null,
+            'parent_id' => (int) CategoryStore::tree()->parent($id),
+            'moved'     => $saved['moved'],
         ));
     }
 
@@ -334,9 +265,9 @@ final class CategoryAjax extends AjaxHandler
      *
      * @return array<string,mixed>
      */
-    private function create(array $fields, array $descriptions, bool $hasTitle, int $parentId = 0): array
+    private function create(array $fields, array $descriptions, int $parentId = 0): array
     {
-        if (!$hasTitle) {
+        if (!CategoryService::titled($descriptions)) {
             return array('error' => 1, 'msg' => __('Sorry, including at least a title is mandatory'));
         }
         // A language left blank gets no row; the editor can fill it in later.

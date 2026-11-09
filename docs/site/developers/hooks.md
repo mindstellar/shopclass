@@ -328,7 +328,7 @@ Core fires 652 names. Generated from the source; do not edit by hand.
 | `category_suggestions` | filter | `null, $title, value` | `oc-includes/classes/search/SearchSuggestions.php` |
 | `delete_category` | action | `$pkInt` | `oc-includes/osclass/classes/model/Category.php` |
 | `edited_category` | action | `$id, $outcome` | `oc-includes/classes/listing/category/CategoryService.php` |
-| `edited_category_order` | action | `$error` | `oc-includes/classes/admin/ajax/CategoryAjax.php` |
+| `edited_category_order` | action | `value` | `oc-includes/classes/listing/category/CategoryService.php` |
 
 ### Comment (12)
 

@@ -218,6 +218,38 @@ pin('...and saves the days on the category', 5, (int) $one("SELECT i_expiration_
 $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha one', 'i_expiration_days' => '0', 'b_price_enabled' => '1', 'expiry_listings' => 'new']);
 pin('"new" re-dates the listing', '9999-12-31 23:59:59', $expiry($item));
 
+$call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha one', 'i_expiration_days' => '', 'b_price_enabled' => '1']);
+pin('empty days keep the category\'s expiry', 0, (int) $one("SELECT i_expiration_days FROM {$p}t_category WHERE pk_i_id = $a1"));
+$call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha one', 'i_expiration_days' => '7', 'b_price_enabled' => '1']);
+$call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha one', 'i_expiration_days' => '', 'b_price_enabled' => '1']);
+pin('...not reset them to 0', 7, (int) $one("SELECT i_expiration_days FROM {$p}t_category WHERE pk_i_id = $a1"));
+
+harness_section('names');
+$r = $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => '', 'b_price_enabled' => '1']);
+pin('no name at all saves nothing', [1, 'Alpha one'], [$r['error'] ?? null, $one("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $a1")]);
+$r = $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha uno', 'b_price_enabled' => '1']);
+pin('a name saves with code 0', [0, 'Alpha uno'], [$r['error'] ?? null, $r['text'] ?? null]);
+
+harness_section('order');
+$r1 = seed_category($admin, 'Root one', null, $locale);
+$r2 = seed_category($admin, 'Root two', null, $locale);
+$r3 = seed_category($admin, 'Root three', $r2, $locale);
+$hooks = 0;
+$roots = static fn (): array => array_map('intval', array_column($admin->query("SELECT pk_i_id FROM {$p}t_category WHERE fk_i_parent_id IS NULL ORDER BY i_position, pk_i_id")->fetch_all(), 0));
+$list  = array_map(static fn (int $id): array => ['c' => (string) $id, 'p' => 'root'], array_values(array_diff($roots(), [$r1, $r2])));
+$r = $call('order', ['list' => json_encode(array_merge([['c' => (string) $r2, 'p' => 'root'], ['c' => (string) $r3, 'p' => (string) $r2], ['c' => (string) $r1, 'p' => (string) $r3]], $list))]);
+pin('the order list moves and reorders', ['Order saved', $r2, $r3], [$r['ok'] ?? null, $roots()[0], $parent($r1)]);
+pin('...with one order hook', 1, $hooks);
+$r = $call('order', ['list' => json_encode([['c' => (string) $r2, 'p' => (string) $r1]])]);
+pin('a move inside itself is refused', [true, null], [isset($r['error']), $parent($r2)]);
+pin('...with one hook for the failed list', 2, $hooks);
+
+harness_section('enable');
+$r = $call('enable', ['id' => (string) $r2, 'enabled' => '0']);
+pin('a string id disables the subtree', [true, 0, 0], [isset($r['ok']), $on($r2), $on($r1)]);
+$r = $call('enable', ['id' => '99999', 'enabled' => '1']);
+pin('an unknown id answers an error', true, isset($r['error']));
+
 harness_section('delete');
 $r = $call('delete', ['id' => (string) $b]);
 pin('delete says whether it queued', false, $r['queued'] ?? null);

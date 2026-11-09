@@ -19,6 +19,7 @@ use mindstellar\database\Db;
 use mindstellar\exception\ConflictException;
 use mindstellar\exception\InvalidException;
 use mindstellar\exception\NotFoundException;
+use mindstellar\exception\RefusedException;
 use mindstellar\job\CategoryJobs;
 use mindstellar\listing\ListingCountStore;
 use mindstellar\listing\ListingStore;
@@ -138,6 +139,60 @@ final class CategoryService
     }
 
     /**
+     * Save an edit as the categories screen sends it. A blank name is stored empty, nothing is
+     * saved without at least one name, and a new parent moves the category last among its new
+     * siblings before the fields are written.
+     *
+     * @param int|null                                                 $parentId the new parent (0 = top level), null to leave it
+     * @param array{i_expiration_days?:int|string,b_price_enabled:int} $fields
+     * @param array<string,array<string,mixed>>                        $descriptions locale => s_name, s_description, s_slug
+     *
+     * @return array{outcome:int,moved:bool} outcome 0 saved, 1 not saved for want of a name, 2 the write failed, 4 saved with some names blank
+     * @throws RefusedException for a refused move (pointer /parent_id), a reserved slug or days that are not a whole number
+     */
+    public function save(int $id, ?int $parentId, array $fields, array $descriptions, bool $toSubcategories, bool $newDates = false): array
+    {
+        $blank = false;
+        foreach ($descriptions as $locale => $text) {
+            if (array_key_exists('s_name', $text) && (string) $text['s_name'] === '') {
+                $descriptions[$locale]['s_name'] = null;
+                $blank = true;
+            }
+        }
+        if ($blank && !self::titled($descriptions)) {
+            $this->edited($id, 1);
+
+            return ['outcome' => 1, 'moved' => false];
+        }
+        $moved = false;
+        if ($parentId !== null && $parentId !== (int) $this->tree()->parent($id)) {
+            $this->move($id, $parentId > 0 ? $parentId : null, PHP_INT_MAX);
+            $moved = true;
+        }
+        if (!$this->update($id, $fields, $descriptions, $toSubcategories, $blank ? 1 : 0, $newDates)) {
+            return ['outcome' => 2, 'moved' => $moved];
+        }
+
+        return ['outcome' => $blank ? 4 : 0, 'moved' => $moved];
+    }
+
+    /**
+     * Whether at least one language has a name.
+     *
+     * @param array<string,array<string,mixed>> $descriptions
+     */
+    public static function titled(array $descriptions): bool
+    {
+        foreach ($descriptions as $text) {
+            if ((string) ($text['s_name'] ?? '') !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * An admin's edit and on/off switch, all or none: the edit first, then the switch when it
      * changes the category.
      *
@@ -237,12 +292,46 @@ final class CategoryService
     }
 
     /**
-     * move() on a tree already read; returns the tree as it is after the move.
+     * Place categories in the order given, each under its parent (null = top level), as the
+     * drag-and-drop list sends the whole tree. Each placement passes move()'s checks, and
+     * `edited_category_order` fires once, with 1 when any placement failed.
+     *
+     * @param array<int,array{0:int,1:?int}> $rows id and parent, in order
+     *
+     * @return bool false when a placement was refused or failed
+     */
+    public function arrange(array $rows): bool
+    {
+        $tree = $this->tree();
+        $next = [];
+        $ok   = true;
+        foreach ($rows as [$id, $parentId]) {
+            $key        = (string) $parentId;
+            $position   = $next[$key] ?? 0;
+            $next[$key] = $position + 1;
+            if ($tree->exists($id) && $tree->parent($id) === $parentId && array_search($id, $tree->children($parentId), true) === $position) {
+                continue;
+            }
+            try {
+                $tree = $this->moveIn($tree, $id, $parentId, $position, false);
+            } catch (RefusedException | \RuntimeException $e) {
+                $ok = false;
+            }
+        }
+        osc_run_hook('edited_category_order', $ok ? 0 : 1);
+
+        return $ok;
+    }
+
+    /**
+     * move() on a tree already read; returns the tree as it is after the move. Without $hook the
+     * caller fires `edited_category_order` itself.
      *
      * @throws NotFoundException
      * @throws InvalidException
+     * @throws \mindstellar\database\DbException when a write failed
      */
-    private function moveIn(CategoryTree $tree, int $id, ?int $parentId, int $position): CategoryTree
+    private function moveIn(CategoryTree $tree, int $id, ?int $parentId, int $position, bool $hook = true): CategoryTree
     {
         if (!$tree->exists($id)) {
             throw new NotFoundException(_m('No such category.'));
@@ -289,11 +378,15 @@ final class CategoryService
                 }
             });
         } catch (\Throwable $e) {
-            osc_run_hook('edited_category_order', 1);
+            if ($hook) {
+                osc_run_hook('edited_category_order', 1);
+            }
             throw $e;
         }
         $this->flushCaches();
-        osc_run_hook('edited_category_order', 0);
+        if ($hook) {
+            osc_run_hook('edited_category_order', 0);
+        }
 
         // The same map with this category's parent changed and both groups in their new order.
         $map      = $tree->map();
