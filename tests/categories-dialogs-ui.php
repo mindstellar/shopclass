@@ -110,7 +110,7 @@ pin('three facts: subcategories, listings, no undo', array(
     array('', 'This can\'t be undone.'),
 ), $r['facts'] ?? null);
 pin('the red facts carry a warning icon', array('bi bi-exclamation-triangle', 'bi bi-exclamation-triangle'), $r['icons'] ?? null);
-pin('the button states the cost', 'Delete 8 categories and 30 listings', $r['ok'] ?? null);
+pin('the button counts the categories; the listings are in the facts', 'Delete 8 categories', $r['ok'] ?? null);
 pin('Cancel has focus, not the danger button', 'catConfirmCancel', $r['focus'] ?? null);
 pin('Disable instead is offered, with its sentence', array(true, 'Disable instead', 'Want to keep the listings? Disable instead. It hides everything and deletes nothing.'), $r['aside'] ?? null);
 pin('Cancel puts focus back on the Delete button', true, $r['back'] ?? null);
@@ -190,7 +190,7 @@ pin('Cars is noted as inside Vehicles, the total counts it once', array(
     '30 listings are deleted, along with any expired or unapproved ones.',
     'This can\'t be undone.',
 ), $r['facts'] ?? null);
-pin('the button counts 8 once', 'Delete 8 categories and 30 listings', $r['ok'] ?? null);
+pin('the button counts 8 once', 'Delete 8 categories', $r['ok'] ?? null);
 pin('only the top-most id is sent to the preview', array((string) $ids['Vehicles']), $r['preview'] ?? null);
 pin('Disable instead is offered', true, $r['aside'] ?? null);
 pin('Cancel is focused', 'catConfirmCancel', $r['focus'] ?? null);

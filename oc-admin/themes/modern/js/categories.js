@@ -64,6 +64,11 @@
             return oscFill(window.osc.plural(I18N[key], n), [fmt(n)]);
         }
 
+        // The same with numbered placeholders: values fill %1$s, %2$d... in order.
+        function pluralWith(key, n, values) {
+            return oscFill(window.osc.plural(I18N[key], n), values);
+        }
+
         const tbody = document.getElementById('cat-rows');
         const table = tbody ? tbody.closest('table') : null;
         const checkAll = document.getElementById('cat-check-all');
@@ -1364,14 +1369,14 @@
                 facts.push(['', inside]);
             }
             if (subs) {
-                facts.push(['', one ? plural('disableSubs', subs) : oscFill(I18N.withSubs, [plural('categoriesN', cats)])]);
+                facts.push(['', one ? plural('disableSubs', subs) : plural('withSubs', cats)]);
             }
             facts.push(['', lst ? plural('disableListings', lst) : I18N.disableNoListings]);
             facts.push(['ok', I18N.disableSafe]);
             return ask({
                 title: one ? oscFill(I18N.disableTitle, [nodes[0].name]) : plural('disableSelTitle', picked),
                 facts: facts,
-                ok: cats > 1 ? oscFill(I18N.disableButton, [plural('categoriesN', cats)]) : I18N.disable,
+                ok: cats > 1 ? plural('disableButton', cats) : I18N.disable,
                 danger: false,
                 opener: opener,
                 node: nodes[0]
@@ -1406,13 +1411,13 @@
             const subs = cats - 1;
             let text;
             if (on) {
-                text = subs > 0 ? oscFill(I18N.enabledSubs, [node.name, plural('subcategoriesN', subs)]) : oscFill(I18N.enabledOne, [node.name]);
+                text = subs > 0 ? pluralWith('enabledSubs', subs, [node.name, fmt(subs)]) : oscFill(I18N.enabledOne, [node.name]);
                 const off = ancestors(node).find(function (a) {
                     return !a.enabled;
                 });
                 return off ? text + ' ' + oscFill(I18N.stillHidden, [off.name]) : text;
             }
-            return subs > 0 ? oscFill(I18N.disabledSubs, [node.name, plural('subcategoriesN', subs)]) : oscFill(I18N.disabledOne, [node.name]);
+            return subs > 0 ? pluralWith('disabledSubs', subs, [node.name, fmt(subs)]) : oscFill(I18N.disabledOne, [node.name]);
         }
 
         // A toast with Undo, spoken too. Without the toast layer the flash bar stands in.
@@ -1664,7 +1669,7 @@
                     facts.push(['', inside]);
                 }
                 if (subs > 0) {
-                    facts.push(['bad', one ? plural('deleteSubs', subs) : oscFill(I18N.withSubs, [plural('categoriesN', cats)])]);
+                    facts.push(['bad', one ? plural('deleteSubs', subs) : plural('withSubs', cats)]);
                 }
                 facts.push(lst ? ['bad', plural('deleteListings', lst)] : ['', I18N.deleteNoListings]);
                 facts.push(['', I18N.deleteForever]);
@@ -1677,7 +1682,7 @@
                 return ask({
                     title: one ? oscFill(I18N.deleteConfirm, [nodes[0].name]) : plural('deleteSelTitle', picked),
                     facts: facts,
-                    ok: lst ? oscFill(I18N.deleteButtonBoth, [plural('categoriesN', cats), plural('listingsN', lst)]) : oscFill(I18N.deleteButton, [plural('categoriesN', cats)]),
+                    ok: plural('deleteButton', cats),
                     danger: true,
                     aside: aside,
                     opener: o.opener,

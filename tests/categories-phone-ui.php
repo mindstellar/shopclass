@@ -170,7 +170,7 @@ if ($r !== null) {
     pin('the sheet sits on the bottom edge, full width', array(true, true), $r['anchored'] ?? null);
     pin('every sheet button is at least 40 px tall', true, $r['touch'] ?? null);
     pin('Delete has its own colour', true, $r['delColor'] ?? null);
-    pin('Delete closes the sheet and asks the Delete confirm', array(false, true, 'Delete Vehicles?', 'Delete 8 categories and 30 listings'), $r['afterDelete'] ?? null);
+    pin('Delete closes the sheet and asks the Delete confirm', array(false, true, 'Delete Vehicles?', 'Delete 8 categories'), $r['afterDelete'] ?? null);
     pin('Cancel on the confirm returns focus to the ⋯', true, $r['focusAfterCancel'] ?? null);
     pin('Cancel on the sheet closes it and returns focus to the ⋯', array(false, true), $r['cancel'] ?? null);
     pin('Esc does the same', array(false, true), $r['esc'] ?? null);

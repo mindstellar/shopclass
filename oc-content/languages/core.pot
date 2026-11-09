@@ -5221,8 +5221,10 @@ msgid "Delete \"%s\"?"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "Delete %1$s and %2$s"
-msgstr ""
+msgid "Delete %d category"
+msgid_plural "Delete %d categories"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "Delete %d selected category?"
@@ -5231,7 +5233,6 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
-#: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/settings/locations/form.php
 msgid "Delete %s"
 msgstr ""
@@ -5574,14 +5575,16 @@ msgid "Disable"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "Disable %d selected category?"
-msgid_plural "Disable %d selected categories?"
+msgid "Disable %d category"
+msgid_plural "Disable %d categories"
 msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "Disable %s"
-msgstr ""
+msgid "Disable %d selected category?"
+msgid_plural "Disable %d selected categories?"
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "Disable %s?"
@@ -5617,8 +5620,10 @@ msgid "Disabled"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "Disabled %1$s and %2$s."
-msgstr ""
+msgid "Disabled %1$s and %2$d subcategory."
+msgid_plural "Disabled %1$s and %2$d subcategories."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "Disabled %s."
@@ -6170,8 +6175,10 @@ msgid "Enabled"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "Enabled %1$s and %2$s."
-msgstr ""
+msgid "Enabled %1$s and %2$d subcategory."
+msgid_plural "Enabled %1$s and %2$d subcategories."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/categories/index.php
 msgid "Enabled %s."
@@ -17079,8 +17086,10 @@ msgid "Toggle the %s submenu"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "Too deep. %s"
-msgstr ""
+msgid "Too deep. This theme shows %d level of categories."
+msgid_plural "Too deep. This theme shows %d levels of categories."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/classes/form/ItemForm.php
 msgid "Too many images. The limit is {limit}."
@@ -18652,8 +18661,10 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "With their subcategories, that is %s."
-msgstr ""
+msgid "With their subcategories, that is %d category."
+msgid_plural "With their subcategories, that is %d categories."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-includes/osclass/helpers/hSearch.php
 msgid "Within %s"
