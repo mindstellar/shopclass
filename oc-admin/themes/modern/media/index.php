@@ -332,98 +332,102 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
         <input type="hidden" name="page" value="media"/>
         <input type="hidden" name="action" value="bulk"/>
         <input type="hidden" name="type" value="<?php echo osc_esc_html($mediaType); ?>"/>
-        <div id="media-table" class="table-contains-actions">
-            <?php // The grid is the same table drawn as cards, so selection and actions work the same.?>
-            <table class="table<?php echo $mediaView === 'grid' ? ' media-grid' : ''; ?>" cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th class="col-bulkactions"><input id="check_all" type="checkbox" aria-label="<?php echo osc_esc_html(__('Select all')); ?>"/></th>
-                        <th class="media-col-preview"><?php _e('Preview'); ?></th>
-                        <th><?php _e('Used in'); ?></th>
-                        <th><?php _e('Type'); ?></th>
-                        <th><?php _e('Size'); ?></th>
-                        <th><?php _e('Uploaded'); ?></th>
-                        <th class="text-end"><?php _e('Actions'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($mediaRows as $row) {
-                    // Normalise to the shape osc_get_resource_url() reads (it applies the
-                    // storage-aware URL filters, so offloaded files resolve correctly).
-                    $res = array(
-                        'pk_i_id'        => $row['id'],
-                        's_base_name'    => $row['s_base_name'] ?? null,
-                        's_path'         => $row['s_path'],
-                        's_extension'    => $row['s_extension'],
-                        's_storage'      => $row['s_storage'],
-                        's_content_type' => $row['s_content_type'],
-                        's_owner_type'   => $row['owner_type'],
-                        'i_owner_id'     => $row['owner_id'],
-                    );
-                    $thumb      = osc_get_resource_url($res, 'thumbnail');
-                    $full       = osc_get_resource_url($res);
-                    $usage      = $usageMap[$row['src'] . ':' . (int) $row['id']] ?? null;
-                    $usageName  = $usage !== null
-                        ? ($usage['name'] !== '' ? $usage['name'] : '#' . (int) $usage['id'])
-                        : '';
-                    $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not used in a page');
-                    $typeLabel  = strtoupper((string) $row['s_extension']);
-                    $imageSize  = mediaImageSize($row);
-                    $uploaded   = !empty($row['dt']) ? osc_admin_date((string) $row['dt'], true) : '—';
-                    $deleteUrl  = osc_admin_base_url(true) . '?page=media&action=delete&src=' . urlencode($row['src'])
-                        . '&id=' . (int) $row['id'] . '&type=' . urlencode($mediaType) . '&' . osc_csrf_token_url();
-                    ?>
-                    <tr>
-                        <td class="col-bulkactions"><input type="checkbox" name="media[]" value="<?php echo osc_esc_html($row['src'] . ':' . (int) $row['id']); ?>" aria-label="<?php echo osc_esc_html(__('Select')); ?>"/></td>
-                        <td class="media-col-preview col-image" data-col-name="<?php echo osc_esc_html(__('Preview')); ?>">
-                            <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener"
-                               data-media-preview
-                               data-full="<?php echo osc_esc_html($full); ?>"
-                               <?php if ($row['src'] === 'item') { ?>data-sizes="<?php echo osc_esc_html((string) json_encode($mediaSizes($res))); ?>"<?php } ?>
-                               data-usage="<?php echo osc_esc_html($usageText); ?>"
-                               title="<?php echo osc_esc_html(__('Preview')); ?>">
-                                <img src="<?php echo osc_esc_html($thumb); ?>" loading="lazy"
-                                     alt="<?php echo osc_esc_html($usageText); ?>"/>
+        <?php
+        $tableRows = array();
+        foreach ($mediaRows as $row) {
+            // Normalise to the shape osc_get_resource_url() reads (it applies the
+            // storage-aware URL filters, so offloaded files resolve correctly).
+            $res = array(
+                'pk_i_id'        => $row['id'],
+                's_base_name'    => $row['s_base_name'] ?? null,
+                's_path'         => $row['s_path'],
+                's_extension'    => $row['s_extension'],
+                's_storage'      => $row['s_storage'],
+                's_content_type' => $row['s_content_type'],
+                's_owner_type'   => $row['owner_type'],
+                'i_owner_id'     => $row['owner_id'],
+            );
+            $thumb      = osc_get_resource_url($res, 'thumbnail');
+            $full       = osc_get_resource_url($res);
+            $usage      = $usageMap[$row['src'] . ':' . (int) $row['id']] ?? null;
+            $usageName  = $usage !== null
+                ? ($usage['name'] !== '' ? $usage['name'] : '#' . (int) $usage['id'])
+                : '';
+            $usageText  = $usage !== null ? $usage['label'] . ' — ' . $usageName : __('Not used in a page');
+            $imageSize  = mediaImageSize($row);
+            $uploaded   = !empty($row['dt']) ? osc_admin_date((string) $row['dt'], true) : '—';
+            $deleteUrl  = osc_admin_base_url(true) . '?page=media&action=delete&src=' . urlencode($row['src'])
+                . '&id=' . (int) $row['id'] . '&type=' . urlencode($mediaType) . '&' . osc_csrf_token_url();
+
+            $tableRows[] = array(
+                'bulkactions' => array('render' => static function () use ($row) { ?>
+                    <input type="checkbox" name="media[]" value="<?php echo osc_esc_html($row['src'] . ':' . (int) $row['id']); ?>" aria-label="<?php echo osc_esc_html(__('Select')); ?>"/>
+                <?php }),
+                'preview'     => array('render' => static function () use ($row, $res, $full, $thumb, $usageText, $mediaSizes) { ?>
+                    <a class="media-thumb" href="<?php echo osc_esc_html($full); ?>" target="_blank" rel="noopener"
+                       data-media-preview
+                       data-full="<?php echo osc_esc_html($full); ?>"
+                       <?php if ($row['src'] === 'item') { ?>data-sizes="<?php echo osc_esc_html((string) json_encode($mediaSizes($res))); ?>"<?php } ?>
+                       data-usage="<?php echo osc_esc_html($usageText); ?>"
+                       title="<?php echo osc_esc_html(__('Preview')); ?>">
+                        <img src="<?php echo osc_esc_html($thumb); ?>" loading="lazy"
+                             alt="<?php echo osc_esc_html($usageText); ?>"/>
+                    </a>
+                <?php }),
+                'used'        => array('render' => static function () use ($usage, $usageName) {
+                    if ($usage !== null) { ?>
+                        <span class="media-owner-tag media-owner-<?php echo osc_esc_html($usage['type']); ?>">
+                            <?php echo osc_esc_html($usage['label']); ?>
+                        </span>
+                        <?php if ($usage['url'] !== '') { ?>
+                            <a class="media-owner-link" href="<?php echo osc_esc_html($usage['url']); ?>">
+                                <?php echo osc_esc_html($usageName); ?>
                             </a>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Used in')); ?>">
-                            <?php if ($usage !== null) { ?>
-                                <span class="media-owner-tag media-owner-<?php echo osc_esc_html($usage['type']); ?>">
-                                    <?php echo osc_esc_html($usage['label']); ?>
-                                </span>
-                                <?php if ($usage['url'] !== '') { ?>
-                                    <a class="media-owner-link" href="<?php echo osc_esc_html($usage['url']); ?>">
-                                        <?php echo osc_esc_html($usageName); ?>
-                                    </a>
-                                <?php } else { ?>
-                                    <?php echo osc_esc_html($usageName); ?>
-                                <?php } ?>
-                            <?php } else { ?>
-                                <span class="media-owner-unattached"><?php _e('Not used in a page'); ?></span>
-                            <?php } ?>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Type')); ?>"><?php echo osc_esc_html($typeLabel); ?></td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Size')); ?>"><?php echo $imageSize !== '' ? osc_esc_html($imageSize) : '—'; ?></td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Uploaded')); ?>"><?php echo $uploaded === '—' ? '—' : $uploaded; ?></td>
-                        <td class="text-end media-row-actions" data-col-name="<?php echo osc_esc_html(__('Actions')); ?>">
-                            <a class="media-action-view" href="<?php echo osc_esc_html($full); ?>" target="_blank"
-                               rel="noopener" title="<?php echo osc_esc_html(__('View full image')); ?>"
-                               aria-label="<?php echo osc_esc_html(__('View full image')); ?>">
-                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
-                            </a>
-                            <a class="media-delete" href="<?php echo osc_esc_html($deleteUrl); ?>"
-                               data-src="<?php echo osc_esc_html((string) $row['src']); ?>"
-                               data-id="<?php echo (int) $row['id']; ?>"
-                               title="<?php echo osc_esc_html(__('Delete')); ?>"
-                               aria-label="<?php echo osc_esc_html(__('Delete')); ?>">
-                                <i class="bi bi-trash" aria-hidden="true"></i>
-                            </a>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+                        <?php } else { ?>
+                            <?php echo osc_esc_html($usageName); ?>
+                        <?php }
+                    } else { ?>
+                        <span class="media-owner-unattached"><?php _e('Not used in a page'); ?></span>
+                    <?php }
+                }),
+                'type'        => strtoupper((string) $row['s_extension']),
+                'size'        => $imageSize !== '' ? $imageSize : '—',
+                'uploaded'    => array('html' => $uploaded === '—' ? '—' : $uploaded),
+                'actions'     => array('render' => static function () use ($row, $full, $deleteUrl) { ?>
+                    <a class="media-action-view" href="<?php echo osc_esc_html($full); ?>" target="_blank"
+                       rel="noopener" title="<?php echo osc_esc_html(__('View full image')); ?>"
+                       aria-label="<?php echo osc_esc_html(__('View full image')); ?>">
+                        <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                    </a>
+                    <a class="media-delete" href="<?php echo osc_esc_html($deleteUrl); ?>"
+                       data-src="<?php echo osc_esc_html((string) $row['src']); ?>"
+                       data-id="<?php echo (int) $row['id']; ?>"
+                       title="<?php echo osc_esc_html(__('Delete')); ?>"
+                       aria-label="<?php echo osc_esc_html(__('Delete')); ?>">
+                        <i class="bi bi-trash" aria-hidden="true"></i>
+                    </a>
+                <?php }),
+            );
+        }
+        // The grid is the same table drawn as cards, so selection and actions work the same.
+        osc_admin_table(array(
+            'bulkactions' => array(
+                'label_html' => \mindstellar\admin\ui\Form::bulkHeader(),
+                'class'      => 'col-bulkactions',
+                'col_name'   => false,
+            ),
+            'preview'     => array('label' => __('Preview'), 'class' => 'media-col-preview', 'td_class' => 'col-image'),
+            'used'        => __('Used in'),
+            'type'        => __('Type'),
+            'size'        => __('Size'),
+            'uploaded'    => __('Uploaded'),
+            'actions'     => array('label' => __('Actions'), 'class' => 'text-end', 'td_class' => 'media-row-actions'),
+        ), $tableRows, array(
+            'wrap'    => 'actions',
+            'wrap_id' => 'media-table',
+            'class'   => $mediaView === 'grid' ? 'media-grid' : '',
+        ));
+        ?>
         </form>
         <?php osc_admin_bulk_confirm_dialog(); ?>
 

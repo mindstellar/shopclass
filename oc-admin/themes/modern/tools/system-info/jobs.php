@@ -48,41 +48,34 @@ $describe = static function (array $row): void {
                 'id'    => 'jobs-failed',
                 'intro' => __('These stopped retrying. Fix the cause the reason names, then try them again.'),
             )); ?>
-            <div class="table-responsive">
-                <table class="table sysinfo-list">
-                    <thead>
-                    <tr>
-                        <th><?php _e('Job'); ?></th>
-                        <th><?php _e('Reason'); ?></th>
-                        <th class="text-end"><?php _e('Tries'); ?></th>
-                        <th><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($failed as $row) { ?>
-                        <tr>
-                            <td class="sysinfo-list-main"><?php $describe($row); ?></td>
-                            <td class="sysinfo-list-reason"><?php echo osc_esc_html((string) ($row['s_last_error'] ?? '')); ?></td>
-                            <td class="text-end sysinfo-list-meta"><?php printf(
-                                osc_esc_html(_n('%d try', '%d tries', (int) $row['i_attempts'])),
-                                (int) $row['i_attempts']
-                            ); ?></td>
-                            <td class="text-end sysinfo-list-actions">
-                                <?php osc_admin_form_open(array(
-                                    'page'       => 'tools',
-                                    'action'     => 'jobs_retry',
-                                    'horizontal' => false,
-                                    'class'      => 'd-inline',
-                                    'fields'     => array('id' => (int) $row['pk_i_id']),
-                                )); ?>
-                                    <button type="submit" class="btn btn-sm btn-secondary"<?php echo $demo ? ' disabled' : ''; ?>><?php _e('Try again'); ?></button>
-                                <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            $failedRows = array();
+            foreach ($failed as $row) {
+                $failedRows[] = array(
+                    'job'     => array('render' => static function () use ($describe, $row) {
+                        $describe($row);
+                    }),
+                    'reason'  => (string) ($row['s_last_error'] ?? ''),
+                    'tries'   => sprintf(_n('%d try', '%d tries', (int) $row['i_attempts']), (int) $row['i_attempts']),
+                    'actions' => array('render' => static function () use ($row, $demo) {
+                        osc_admin_form_open(array(
+                            'page'       => 'tools',
+                            'action'     => 'jobs_retry',
+                            'horizontal' => false,
+                            'class'      => 'd-inline',
+                            'fields'     => array('id' => (int) $row['pk_i_id']),
+                        )); ?>
+                            <button type="submit" class="btn btn-sm btn-secondary"<?php echo $demo ? ' disabled' : ''; ?>><?php _e('Try again'); ?></button>
+                        <?php osc_admin_form_close(null, array('horizontal' => false));
+                    }),
+                );
+            }
+            osc_admin_table(array(
+                'job'     => array('label' => __('Job'), 'td_class' => 'sysinfo-list-main'),
+                'reason'  => array('label' => __('Reason'), 'td_class' => 'sysinfo-list-reason'),
+                'tries'   => array('label' => __('Tries'), 'class' => 'text-end', 'td_class' => 'sysinfo-list-meta'),
+                'actions' => array('label' => __('Actions'), 'hide_label' => true, 'td_class' => 'text-end sysinfo-list-actions', 'col_name' => false),
+            ), $failedRows, array('class' => 'sysinfo-list')); ?>
             <div class="sysinfo-bulk">
                 <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'jobs_retry', 'horizontal' => false, 'class' => 'd-inline')); ?>
                     <?php osc_admin_action_button(array(
@@ -110,32 +103,25 @@ $describe = static function (array $row): void {
         <?php if ($active === array()) { ?>
             <p class="text-muted"><?php _e('Nothing is waiting.'); ?></p>
         <?php } else { ?>
-            <div class="table-responsive">
-                <table class="table sysinfo-list">
-                    <thead>
-                    <tr>
-                        <th class="col-status"><?php _e('State'); ?></th>
-                        <th><?php _e('Job'); ?></th>
-                        <th class="text-end"><?php _e('Tries'); ?></th>
-                        <th><?php _e('Next run'); ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($active as $row) {
-                        $running = (string) $row['s_status'] === 'running'; ?>
-                        <tr>
-                            <td class="col-status sysinfo-list-meta"><?php echo osc_esc_html($running ? __('Running') : __('Waiting')); ?></td>
-                            <td class="sysinfo-list-main"><?php $describe($row); ?></td>
-                            <td class="text-end sysinfo-list-meta"><?php printf(
-                                osc_esc_html(_n('%d try', '%d tries', (int) $row['i_attempts'])),
-                                (int) $row['i_attempts']
-                            ); ?></td>
-                            <td class="sysinfo-list-meta"><?php echo $running ? '&mdash;' : osc_admin_when($row['dt_next_run'] ?? null); ?></td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            $activeRows = array();
+            foreach ($active as $row) {
+                $running = (string) $row['s_status'] === 'running';
+                $activeRows[] = array(
+                    'state' => $running ? __('Running') : __('Waiting'),
+                    'job'   => array('render' => static function () use ($describe, $row) {
+                        $describe($row);
+                    }),
+                    'tries' => sprintf(_n('%d try', '%d tries', (int) $row['i_attempts']), (int) $row['i_attempts']),
+                    'next'  => array('html' => $running ? '&mdash;' : osc_admin_when($row['dt_next_run'] ?? null)),
+                );
+            }
+            osc_admin_table(array(
+                'state' => array('label' => __('State'), 'class' => 'col-status', 'td_class' => 'sysinfo-list-meta'),
+                'job'   => array('label' => __('Job'), 'td_class' => 'sysinfo-list-main'),
+                'tries' => array('label' => __('Tries'), 'class' => 'text-end', 'td_class' => 'sysinfo-list-meta'),
+                'next'  => array('label' => __('Next run'), 'td_class' => 'sysinfo-list-meta'),
+            ), $activeRows, array('class' => 'sysinfo-list')); ?>
         <?php } ?>
         <div class="sysinfo-bulk">
             <?php osc_admin_action_button(array(
@@ -158,26 +144,20 @@ $describe = static function (array $row): void {
         <?php if ($history === array()) { ?>
             <p class="text-muted"><?php _e('No background work has run yet.'); ?></p>
         <?php } else { ?>
-            <div class="table-responsive">
-                <table class="table sysinfo-list">
-                    <thead>
-                    <tr>
-                        <th><?php _e('When'); ?></th>
-                        <th><?php _e('What'); ?></th>
-                        <th><?php _e('Details'); ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($history as $entry) { ?>
-                        <tr>
-                            <td class="sysinfo-list-main text-nowrap"><?php echo osc_admin_when($entry['dt_date']); ?></td>
-                            <td class="sysinfo-list-meta"><?php echo osc_esc_html($historyWords[$entry['s_action']] ?? ucfirst(str_replace('_', ' ', (string) $entry['s_action']))); ?></td>
-                            <td class="sysinfo-list-reason"><?php echo osc_esc_html((string) $entry['s_data']); ?></td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            $historyRows = array();
+            foreach ($history as $entry) {
+                $historyRows[] = array(
+                    'when'    => array('html' => osc_admin_when($entry['dt_date'])),
+                    'what'    => $historyWords[$entry['s_action']] ?? ucfirst(str_replace('_', ' ', (string) $entry['s_action'])),
+                    'details' => (string) $entry['s_data'],
+                );
+            }
+            osc_admin_table(array(
+                'when'    => array('label' => __('When'), 'td_class' => 'sysinfo-list-main text-nowrap'),
+                'what'    => array('label' => __('What'), 'td_class' => 'sysinfo-list-meta'),
+                'details' => array('label' => __('Details'), 'td_class' => 'sysinfo-list-reason'),
+            ), $historyRows, array('class' => 'sysinfo-list')); ?>
         <?php } ?>
     <?php osc_admin_section_close(); ?>
 

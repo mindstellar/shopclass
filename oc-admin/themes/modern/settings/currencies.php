@@ -34,8 +34,7 @@ $aCurrencies = __get('aCurrencies');
 $aData = array();
 foreach ($aCurrencies as $currency) {
     $row   = array();
-    $row[] = '<input type="checkbox" name="code[]" value="' . osc_esc_html($currency['pk_c_code']) . '"'
-        . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $currency['pk_c_code'])) . '" />';
+    $row[] = \mindstellar\admin\ui\Form::bulkCell('code[]', $currency['pk_c_code'], $currency['pk_c_code']);
 
     $options   = array();
     $options[] = '<a href="' . osc_admin_base_url(true) . '?page=settings&amp;action=currencies&amp;type=edit&amp;code='
@@ -75,38 +74,22 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     </option>
                 </select>
             <?php })); ?>
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                <tr>
-                    <th class="col-bulkactions"><input id="check_all" type="checkbox" aria-label="<?php echo osc_esc_html(__('Select all')); ?>"/></th>
-                    <th><?php _e('Code'); ?></th>
-                    <th><?php _e('Name'); ?></th>
-                    <th><?php _ex('Symbol', 'currency symbol'); ?></th>
-                    <th><?php _e('Decimals'); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($aData as $array) { ?>
-                    <tr>
-                        <?php foreach ($array as $key => $value) { ?>
-                            <td <?php if ($key == 0) {
-                                echo 'class="col-bulkactions"';
-                            } elseif ($key === 1) {
-                                echo 'data-col-name="'. osc_esc_html(__('Code')) .'"';
-                            } elseif ($key === 2) {
-                                echo 'data-col-name="'. osc_esc_html(__('Name')) .'"';
-                            } elseif ($key === 4) {
-                                echo 'data-col-name="'. osc_esc_html(__('Decimals')) .'"';
-                            } else {
-                                echo 'data-col-name="'. osc_esc_html(__('Currency symbol')) .'"';
-                            } ?>>
-                            <?php echo $value; ?>
-                            </td>
-                        <?php } ?>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
+            <?php
+            $keys = array('bulkactions', 'code', 'name', 'symbol', 'decimals');
+            osc_admin_table(array(
+                'bulkactions' => array(
+                    'label_html' => \mindstellar\admin\ui\Form::bulkHeader(),
+                    'class'      => 'col-bulkactions',
+                    'col_name'   => false,
+                ),
+                'code'        => __('Code'),
+                'name'        => __('Name'),
+                'symbol'      => array('label' => _x('Symbol', 'currency symbol'), 'col_name' => __('Currency symbol')),
+                'decimals'    => __('Decimals'),
+            ), array_map(static function ($row) use ($keys) {
+                return array_map(static fn ($html) => array('html' => $html), array_combine($keys, $row));
+            }, $aData), array('wrap' => 'actions'));
+            ?>
         <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
     </div>
     <?php osc_admin_confirm_dialog(array(

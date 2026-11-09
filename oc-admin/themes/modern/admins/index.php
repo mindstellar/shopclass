@@ -37,46 +37,29 @@ osc_current_admin_theme_path('parts/header.php');
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
         <input type="hidden" name="page" value="admins" />
         <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
-        <div class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th class="col-bulkactions"><input id="check_all" type="checkbox" aria-label="<?php echo osc_esc_html(__('Select all')); ?>" /></th>
-                        <th><?php _e('Username'); ?></th>
-                        <th><?php _e('Name'); ?></th>
-                        <th><?php _e('E-mail'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($aData['aaData']) > 0) {
-                        $colNames = array(1 => __('Username'), 2 => __('Name'), 3 => __('E-mail')); ?>
-                        <?php foreach ($aData['aaData'] as $array) { ?>
-                            <tr>
-                                <?php foreach ($array as $key => $value) { ?>
-                                    <td <?php echo $key === 0
-                                        ? 'class="col-bulkactions"'
-                                        : 'data-col-name="' . osc_esc_html($colNames[$key] ?? '') . '"'; ?>>
-                                        <?php echo $value; ?>
-                                    </td>
-                                <?php } ?>
-                            </tr>
-                        <?php } ?>
-                    <?php } else {
-                        osc_admin_table_empty(4, array(
-                            'icon'   => 'bi-person-badge',
-                            'title'  => __('No admins yet'),
-                            'text'   => __('Admins manage the whole panel; moderators only handle listings and stats.'),
-                            'action' => array(
-                                'label'   => __('Add admin'),
-                                'url'     => osc_admin_base_url(true) . '?page=admins&amp;action=add',
-                                'variant' => 'primary',
-                            ),
-                        ));
-                    } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+        <?php
+        $keys = array('bulkactions', 'username', 'name', 'mail');
+        osc_admin_data_table(array(
+            'aColumns' => array_combine($keys, array(
+                \mindstellar\admin\ui\Form::bulkHeader(),
+                __('Username'),
+                __('Name'),
+                __('E-mail'),
+            )),
+            'aRows'    => array_map(static fn ($row) => array_combine($keys, $row), $aData['aaData']),
+        ), array(
+            'empty' => array(
+                'icon'   => 'bi-person-badge',
+                'title'  => __('No admins yet'),
+                'text'   => __('Admins manage the whole panel; moderators only handle listings and stats.'),
+                'action' => array(
+                    'label'   => __('Add admin'),
+                    'url'     => osc_admin_base_url(true) . '?page=admins&amp;action=add',
+                    'variant' => 'primary',
+                ),
+            ),
+        ));
+        ?>
     </form>
 </div>
 <?php

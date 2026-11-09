@@ -265,7 +265,7 @@ harness_section('the edit form and the list show it');
 $r = drive(array(), array('type' => 'edit', 'code' => 'CHF'));
 pin('edit carries the stored 3', 3, (int) $r['currency']['i_decimals']);
 $r = drive();
-check('the list has a Decimals column', str_contains($r['drawn'], '<th>Decimals</th>'));
+check('the list has a Decimals column', str_contains($r['drawn'], '<th scope="col">Decimals</th>'));
 check('and the JPY row shows 0', (bool) preg_match('/data-col-name="Decimals"[^>]*>\s*0\s*</', $r['drawn']), $r['drawn']);
 
 exit(harness_result());

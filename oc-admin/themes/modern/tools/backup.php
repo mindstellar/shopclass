@@ -334,54 +334,50 @@ osc_admin_body_open(); ?>
     <?php if ($list === array()) { ?>
         <p class="text-muted mb-0" id="backup-list-empty"><?php _e('No saved backups yet. Downloads are not kept.'); ?></p>
     <?php } else { ?>
-        <div class="table-responsive">
-            <table class="table" id="backup-list">
-                <thead>
-                <tr>
-                    <th><?php _e('Date'); ?></th>
-                    <th><?php _e('What'); ?></th>
-                    <th><?php _e('Where'); ?></th>
-                    <th><?php _e('Size'); ?></th>
-                    <th><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                    <th><span class="visually-hidden"><?php _e('Delete'); ?></span></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($list as $i => $row) {
-                    $words = $describe($row); ?>
-                    <tr>
-                        <td class="backup-when"><?php echo osc_esc_html($words['when']); ?></td>
-                        <td class="backup-meta-cell backup-meta-first"><?php echo osc_esc_html($words['what']); ?>
-                            <?php if ($row['kind'] === 'safety') { ?>
-                                <span class="backup-sub"><?php _e('made before a restore'); ?></span>
-                            <?php } ?>
-                        </td>
-                        <td class="backup-meta-cell"><?php echo ($row['where'] ?? '') === 'bucket' ? osc_esc_html(__('Bucket')) : osc_esc_html(__('Server')); ?></td>
-                        <td class="backup-meta-cell"><?php echo osc_esc_html($words['size']); ?></td>
-                        <td>
-                            <div class="backup-actions">
-                                <?php
-                                $postButton('backup_download', __('Download'), $names($row));
-                                if ($locked && !$noWeb) {
-                                    osc_admin_action_button(array('label' => __('Restore…'), 'attrs' => array('disabled' => 'disabled')));
-                                } elseif (!$noWeb) {
-                                    osc_admin_action_button(array(
-                                        'label' => __('Restore…'),
-                                        'url'   => osc_admin_base_url(true) . '?page=tools&action=backup&confirm=' . rawurlencode($row['name'])
-                                            . (($row['where'] ?? '') === 'bucket' ? '&from=bucket' : ''),
-                                    ));
-                                } ?>
-                            </div>
-                        </td>
-                        <td class="backup-delete">
-                            <button type="button" class="btn btn-sm btn-link backup-delete-btn"
-                                    data-osc-dialog-open="#backup-delete-<?php echo (int) $i; ?>"<?php echo $demo ? ' disabled' : ''; ?>><?php _e('Delete'); ?></button>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+        <?php
+        $tableRows = array();
+        foreach ($list as $i => $row) {
+            $words = $describe($row);
+            $tableRows[] = array(
+                'when' => array('html' => osc_esc_html($words['when']), 'class' => 'backup-when'),
+                'what' => array('class' => 'backup-meta-cell backup-meta-first', 'render' => static function () use ($words, $row): void {
+                    echo osc_esc_html($words['what']);
+                    if ($row['kind'] === 'safety') { ?>
+                        <span class="backup-sub"><?php _e('made before a restore'); ?></span>
+                    <?php }
+                }),
+                'where' => array('html' => osc_esc_html(($row['where'] ?? '') === 'bucket' ? __('Bucket') : __('Server')), 'class' => 'backup-meta-cell'),
+                'size'  => array('html' => osc_esc_html($words['size']), 'class' => 'backup-meta-cell'),
+                'actions' => array('render' => static function () use ($row, $postButton, $names, $locked, $noWeb): void { ?>
+                    <div class="backup-actions">
+                        <?php
+                        $postButton('backup_download', __('Download'), $names($row));
+                        if ($locked && !$noWeb) {
+                            osc_admin_action_button(array('label' => __('Restore…'), 'attrs' => array('disabled' => 'disabled')));
+                        } elseif (!$noWeb) {
+                            osc_admin_action_button(array(
+                                'label' => __('Restore…'),
+                                'url'   => osc_admin_base_url(true) . '?page=tools&action=backup&confirm=' . rawurlencode($row['name'])
+                                    . (($row['where'] ?? '') === 'bucket' ? '&from=bucket' : ''),
+                            ));
+                        } ?>
+                    </div>
+                <?php }),
+                'delete' => array('class' => 'backup-delete', 'render' => static function () use ($i, $demo): void { ?>
+                    <button type="button" class="btn btn-sm btn-link backup-delete-btn"
+                            data-osc-dialog-open="#backup-delete-<?php echo (int) $i; ?>"<?php echo $demo ? ' disabled' : ''; ?>><?php _e('Delete'); ?></button>
+                <?php }),
+            );
+        }
+        osc_admin_table(array(
+            'when'    => array('label' => __('Date'), 'col_name' => false),
+            'what'    => array('label' => __('What'), 'col_name' => false),
+            'where'   => array('label' => __('Where'), 'col_name' => false),
+            'size'    => array('label' => __('Size'), 'col_name' => false),
+            'actions' => array('label' => __('Actions'), 'hide_label' => true, 'col_name' => false),
+            'delete'  => array('label' => __('Delete'), 'hide_label' => true, 'col_name' => false),
+        ), $tableRows, array('id' => 'backup-list'));
+        ?>
         <?php foreach ($list as $i => $row) {
             $words = $describe($row);
             osc_admin_confirm_dialog(array(

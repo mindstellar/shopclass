@@ -82,47 +82,37 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 )); ?>
 
         <?php if (!empty($custom_urls)) { ?>
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                <tr>
-                    <th><?php _e('URL'); ?></th>
-                    <th><?php _e('Frequency'); ?></th>
-                    <th><?php _e('Last modified'); ?></th>
-                    <th class="text-end"><?php _e('Remove'); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($custom_urls as $index => $custom) { ?>
-                    <tr>
-                        <td data-col-name="<?php echo osc_esc_html(__('URL')); ?>">
-                            <?php echo osc_esc_html($custom['url'] ?? ''); ?>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Frequency')); ?>">
-                            <?php echo osc_esc_html($custom['freq'] ?? ''); ?>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Last modified')); ?>">
-                            <?php echo osc_esc_html($custom['lastmod'] ?? ''); ?>
-                        </td>
-                        <td class="text-end">
-                            <?php
-                            osc_admin_form_open(array(
-                                'name'       => 'sitemap_url_remove_form',
-                                'page'   => 'settings',
-                                'action'     => 'sitemap_custom_url_remove',
-                                'fields'     => array('sitemap_url_index' => $index),
-                                'horizontal' => false,
-                            ));
-                            osc_admin_action_button(array(
-                                'label'   => __('Remove'),
-                                'type'    => 'submit',
-                                'variant' => 'dim',
-                            ));
-                            osc_admin_form_close(null, array('horizontal' => false)); ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
+            <?php
+            $tableRows = array();
+            foreach ($custom_urls as $index => $custom) {
+                $tableRows[] = array(
+                    'url'     => (string) ($custom['url'] ?? ''),
+                    'freq'    => (string) ($custom['freq'] ?? ''),
+                    'lastmod' => (string) ($custom['lastmod'] ?? ''),
+                    'remove'  => array('class' => 'text-end', 'render' => static function () use ($index): void {
+                        osc_admin_form_open(array(
+                            'name'       => 'sitemap_url_remove_form',
+                            'page'       => 'settings',
+                            'action'     => 'sitemap_custom_url_remove',
+                            'fields'     => array('sitemap_url_index' => $index),
+                            'horizontal' => false,
+                        ));
+                        osc_admin_action_button(array(
+                            'label'   => __('Remove'),
+                            'type'    => 'submit',
+                            'variant' => 'dim',
+                        ));
+                        osc_admin_form_close(null, array('horizontal' => false));
+                    }),
+                );
+            }
+            osc_admin_table(array(
+                'url'     => __('URL'),
+                'freq'    => __('Frequency'),
+                'lastmod' => __('Last modified'),
+                'remove'  => array('label' => __('Remove'), 'class' => 'text-end', 'col_name' => false),
+            ), $tableRows, array('wrap' => false, 'stack' => true));
+            ?>
         <?php } ?>
     <?php osc_admin_section_close(); ?>
 

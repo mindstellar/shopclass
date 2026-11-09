@@ -81,24 +81,15 @@ $groups = array(
                 . ' <a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup') . '">'
                 . osc_esc_html(__('Take a backup first.')) . '</a>',
             )); ?>
-            <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                    <tr>
-                        <th><?php _e('Update'); ?></th>
-                        <th><?php _e('File'); ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($pending as $migration) { ?>
-                        <tr>
-                            <td><?php echo osc_esc_html(DatabaseTools::title(MigrationRunner::coreDir(), (string) $migration)); ?></td>
-                            <td class="text-muted"><code><?php echo osc_esc_html((string) $migration); ?></code></td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            $pendingRows = array();
+            foreach ($pending as $migration) {
+                $pendingRows[] = array(
+                    'update' => DatabaseTools::title(MigrationRunner::coreDir(), (string) $migration),
+                    'file'   => array('html' => '<code>' . osc_esc_html((string) $migration) . '</code>', 'class' => 'text-muted'),
+                );
+            }
+            osc_admin_table(array('update' => __('Update'), 'file' => __('File')), $pendingRows); ?>
             <?php osc_admin_action_section(array(
                 'actions' => array(array(
                     'label'   => __('Run database update'),
@@ -116,30 +107,18 @@ $groups = array(
         <?php if ($repair['ran'] === array() && $repair['failed'] === array()) { ?>
             <p class="text-muted"><?php _e('Nothing needed repairing.'); ?></p>
         <?php } else { ?>
-            <div class="table-responsive">
-                <table class="table sysinfo-table-wide">
-                    <thead>
-                    <tr>
-                        <th class="col-status"><?php _e('Result'); ?></th>
-                        <th><?php _e('Change made'); ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($repair['failed'] as $query) { ?>
-                        <tr>
-                            <td class="col-status"><?php osc_admin_status('failed', __('Failed')); ?></td>
-                            <td><code><?php echo osc_esc_html(trim(preg_replace('/\s+/', ' ', (string) $query))); ?></code></td>
-                        </tr>
-                    <?php } ?>
-                    <?php foreach ($repair['ran'] as $query) { ?>
-                        <tr>
-                            <td class="col-status"><?php osc_admin_status('active', __('Done')); ?></td>
-                            <td><code><?php echo osc_esc_html(trim(preg_replace('/\s+/', ' ', (string) $query))); ?></code></td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            $repairRows = array();
+            foreach ($repair['failed'] as $query) {
+                $repairRows[] = array('result' => array('status' => array('failed', __('Failed'))), 'change' => array('html' => '<code>' . osc_esc_html(trim(preg_replace('/\s+/', ' ', (string) $query))) . '</code>'));
+            }
+            foreach ($repair['ran'] as $query) {
+                $repairRows[] = array('result' => array('status' => array('active', __('Done'))), 'change' => array('html' => '<code>' . osc_esc_html(trim(preg_replace('/\s+/', ' ', (string) $query))) . '</code>'));
+            }
+            osc_admin_table(array(
+                'result' => array('label' => __('Result'), 'class' => 'col-status'),
+                'change' => __('Change made'),
+            ), $repairRows, array('class' => 'sysinfo-table-wide')); ?>
         <?php } ?>
         <?php osc_admin_section_close(); ?>
     <?php } ?>
@@ -162,36 +141,26 @@ $groups = array(
                     continue;
                 } ?>
                 <?php osc_admin_section($group['title'], array('intro' => $group['intro'])); ?>
-                <div class="table-responsive">
-                    <table class="table sysinfo-table-findings">
-                        <thead>
-                        <tr>
-                            <th><?php _e('Table'); ?></th>
-                            <th><?php _e('What'); ?></th>
-                            <?php if ($group['show_expected']) { ?>
-                                <th><?php _e('Shopclass expects'); ?></th>
-                            <?php } ?>
-                            <th><?php _e('Your database has'); ?></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($rows as $f) { ?>
-                            <?php $isPrimary = $f['kind'] === SchemaDoctor::MISSING_INDEX && $f['name'] === 'PRIMARY'; ?>
-                            <tr>
-                                <td><code><?php echo osc_esc_html($f['table']); ?></code></td>
-                                <td><?php echo osc_esc_html($kindLabel($f));
-                                    if (!$isPrimary) { ?><br />
-                                    <code><?php echo osc_esc_html($f['name']); ?></code>
-                                <?php } ?></td>
-                                <?php if ($group['show_expected']) { ?>
-                                    <td class="text-muted"><?php echo osc_esc_html($f['declared']); ?></td>
-                                <?php } ?>
-                                <td class="text-muted"><?php echo osc_esc_html($foundText($f)); ?></td>
-                            </tr>
-                        <?php } ?>
-                        </tbody>
-                    </table>
-                </div>
+                <?php
+                $findingRows = array();
+                foreach ($rows as $f) {
+                    $isPrimary = $f['kind'] === SchemaDoctor::MISSING_INDEX && $f['name'] === 'PRIMARY';
+                    $findingRows[] = array(
+                        'table'    => array('html' => '<code>' . osc_esc_html($f['table']) . '</code>'),
+                        'what'     => array('html' => osc_esc_html($kindLabel($f)) . ($isPrimary ? '' : '<br /><code>' . osc_esc_html($f['name']) . '</code>')),
+                        'expected' => array('html' => osc_esc_html($f['declared']), 'class' => 'text-muted'),
+                        'found'    => array('html' => osc_esc_html($foundText($f)), 'class' => 'text-muted'),
+                    );
+                }
+                $findingCols = array(
+                    'table' => __('Table'),
+                    'what'  => __('What'),
+                );
+                if ($group['show_expected']) {
+                    $findingCols['expected'] = __('Shopclass expects');
+                }
+                $findingCols['found'] = __('Your database has');
+                osc_admin_table($findingCols, $findingRows, array('class' => 'sysinfo-table-findings')); ?>
                 <?php if (!empty($group['repair'])) { ?>
                     <?php osc_admin_action_section(array(
                         'actions' => array(array(

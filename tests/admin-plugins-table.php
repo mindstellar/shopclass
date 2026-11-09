@@ -23,11 +23,12 @@ $dt = file_get_contents(dirname(__DIR__) . '/oc-includes/osclass/classes/datatab
 check('a data table form with bulk actions', strpos($src, '<form id="datatablesForm"') !== false
     && strpos($src, "'bulk'     => array('options' => __get('bulk_options'), 'form' => 'datatablesForm')") !== false
     && strpos($src, 'osc_admin_bulk_confirm_dialog()') !== false);
-check('renders the table from the datatable columns', strpos($src, '<table class="table plugins-table"') !== false
-    && preg_match('/foreach \(\$columns as \$k => \$v\).*?<th class="col-/s', $src) === 1);
-check('one row per plugin, cells named for phones', preg_match('/foreach \(\$rows as \$key => \$row\).*?<tr id="pkg-.*?data-col-name=.*?<\/tr>/s', $src) === 1);
+check('renders the table from the datatable columns', substr_count($src, 'osc_admin_data_table($aData') === 1
+    && strpos($src, "'class'     => 'plugins-table'") !== false && strpos($src, '<thead') === false);
+check('one row per plugin, with its id, state class and detail data', strpos($src, "'plugin-' . ") !== false
+    && strpos($src, "'id'               => 'pkg-'") !== false && strpos($src, "'data-market-item' =>") !== false);
 check('status tabs and a search box', strpos($src, 'osc_admin_tab_nav($tabs)') !== false && strpos($src, "'name'        => 'sSearch'") !== false);
-check('row actions sit in the table', strpos($src, 'id="table-row-actions"') !== false && strpos($dt, '<div class="actions"><ul>') !== false);
+check('row actions sit in the table', strpos($src, 'osc_admin_data_table(') !== false && strpos($dt, '<div class="actions"><ul>') !== false);
 check('paged like the other tables', strpos($src, 'osc_admin_pagination($aData)') !== false);
 check('no longer a card list', strpos($src, 'osc_package_list_open') === false && strpos($src, 'osc_package_row(') === false);
 foreach (array('Settings', 'Website', 'Support', 'Uninstall', 'Delete files', 'Enable', 'Disable', 'Install', 'Details') as $word) {
@@ -36,7 +37,7 @@ foreach (array('Settings', 'Website', 'Support', 'Uninstall', 'Delete files', 'E
 foreach (array('uninstall_dialog(', 'delete_plugin(', 'osc_csrf_token_url()', 'data-market-open-detail') as $needle) {
     check("keeps $needle", strpos($dt, $needle) !== false);
 }
-check('the detail dialog still finds its row', strpos($src, 'data-market-item=') !== false);
+check('the detail dialog still finds its row', strpos($src, 'data-market-item') !== false);
 
 harness_section('Updates tab');
 check('renders a table inside the list wrapper', preg_match('/class="market-updates-list[^"]*">\s*<table class="table"/', $mkt) === 1);

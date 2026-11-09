@@ -301,46 +301,41 @@ if ($tab === 'profile') {
     if ($aux['alerts'] === array()) { ?>
         <p class="text-muted"><?php _e('This user has no alerts.'); ?></p>
     <?php } else { ?>
-        <div class="table-contains-actions">
-            <table class="table osc-table-stack user-alerts">
-                <thead>
-                <tr>
-                    <th class="col-status"><?php _e('Status'); ?></th>
-                    <th><?php _e('Search'); ?></th>
-                    <th class="text-end"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($aux['alerts'] as $alert) {
-                    $raw    = osc_get_raw_search((array) json_decode((string) $alert['s_search'], true));
-                    $search = array();
-                    if (!empty($raw['sPattern'])) {
-                        $search[] = sprintf(__('Words: %s'), $raw['sPattern']);
+        <?php
+        $tableRows = array();
+        foreach ($aux['alerts'] as $alert) {
+            $raw    = osc_get_raw_search((array) json_decode((string) $alert['s_search'], true));
+            $search = array();
+            if (!empty($raw['sPattern'])) {
+                $search[] = sprintf(__('Words: %s'), $raw['sPattern']);
+            }
+            if (!empty($raw['aCategories'])) {
+                $search[] = sprintf(__('Categories: %s'), implode(', ', (array) $raw['aCategories']));
+            }
+            $toggle = osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]=' . (int) $alert['pk_i_id']
+                . '&' . osc_csrf_token_url() . '&user_id=' . (int) $user['pk_i_id'] . '&status=' . ($alert['b_active'] == 1 ? '0' : '1');
+            $tableRows[] = array(
+                'status' => array('render' => static function () use ($raw, $alert): void {
+                    if (isset($raw['held'])) {
+                        osc_admin_status('spam', __('Needs attention'));
+                        echo ' ' . osc_esc_html(\mindstellar\search\AlertStore::reasonText((string) $raw['held']));
+                    } else {
+                        $alert['b_active'] == 1 ? osc_admin_status('active', __('On')) : osc_admin_status('inactive', __('Off'));
                     }
-                    if (!empty($raw['aCategories'])) {
-                        $search[] = sprintf(__('Categories: %s'), implode(', ', (array) $raw['aCategories']));
-                    }
-                    $toggle = osc_admin_base_url(true) . '?page=users&action=status_alerts&alert_id[]=' . (int) $alert['pk_i_id']
-                        . '&' . osc_csrf_token_url() . '&user_id=' . (int) $user['pk_i_id'] . '&status=' . ($alert['b_active'] == 1 ? '0' : '1'); ?>
-                    <tr>
-                        <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>">
-                            <?php if (isset($raw['held'])) {
-                                osc_admin_status('spam', __('Needs attention'));
-                                echo ' ' . osc_esc_html(\mindstellar\search\AlertStore::reasonText((string) $raw['held']));
-                            } else {
-                                $alert['b_active'] == 1 ? osc_admin_status('active', __('On')) : osc_admin_status('inactive', __('Off'));
-                            } ?>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Search')); ?>"><?php echo osc_esc_html($search !== array() ? implode(' · ', $search) : __('Every new listing')); ?></td>
-                        <td class="text-end">
-                            <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($toggle); ?>"><?php $alert['b_active'] == 1 ? _e('Turn off') : _e('Turn on'); ?></a>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="delete_alert('<?php echo (int) $alert['pk_i_id']; ?>');"><?php _e('Delete'); ?></button>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+                }),
+                'search'  => $search !== array() ? implode(' · ', $search) : __('Every new listing'),
+                'actions' => array('class' => 'text-end', 'render' => static function () use ($toggle, $alert): void { ?>
+                    <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($toggle); ?>"><?php $alert['b_active'] == 1 ? _e('Turn off') : _e('Turn on'); ?></a>
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="delete_alert('<?php echo (int) $alert['pk_i_id']; ?>');"><?php _e('Delete'); ?></button>
+                <?php }),
+            );
+        }
+        osc_admin_table(array(
+            'status'  => array('label' => __('Status'), 'class' => 'col-status'),
+            'search'  => __('Search'),
+            'actions' => array('label' => __('Actions'), 'hide_label' => true, 'class' => 'text-end', 'col_name' => false),
+        ), $tableRows, array('wrap' => 'actions', 'class' => 'user-alerts', 'stack' => true));
+        ?>
 
         <dialog id="dialog-alert-delete" class="osc-dialog osc-dialog-danger">
             <form method="post" action="<?php echo osc_admin_base_url(true); ?>">

@@ -362,6 +362,250 @@ class Form
     }
 
     /**
+     * The select-all checkbox for a table's header. Its id is what the check-all script looks for.
+     *
+     * @since 7.1.0
+     */
+    public static function bulkHeader(): string
+    {
+        return '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />';
+    }
+
+    /**
+     * One row's bulk-action checkbox.
+     *
+     * @param string              $name  Input name, e.g. 'id[]'
+     * @param mixed               $value Submitted value, usually the row id
+     * @param string|null         $label Row name used in the "Select %s" aria-label
+     * @param array<string,mixed> $attrs Extra attributes
+     *
+     * @since 7.1.0
+     */
+    public static function bulkCell(string $name, $value, ?string $label, array $attrs = array()): string
+    {
+        $html = '<input type="checkbox" name="' . osc_esc_html($name) . '" value="' . osc_esc_html((string) $value) . '"'
+            . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), (string) $label)) . '"';
+        foreach ($attrs as $attr => $val) {
+            $html .= ' ' . osc_esc_html((string) $attr) . '="' . osc_esc_html((string) $val) . '"';
+        }
+
+        return $html . ' />';
+    }
+
+    /**
+     * The status pill. $html prints as given, so a caller with a plain word escapes it first.
+     *
+     * @param string $state Lower-case state key, or '' for a pill with no state of its own
+     *
+     * @since 7.1.0
+     */
+    public static function statusBadge(string $state, string $html): string
+    {
+        return '<span class="osc-status' . ($state !== '' ? ' status-' . osc_esc_html($state) : '') . '">' . $html . '</span>';
+    }
+
+    /**
+     * A hand-built table. Body of osc_admin_table(), which documents the arguments.
+     *
+     * @param array<string,string|array<string,mixed>> $columns
+     * @param array<int,array<string,mixed>>           $rows
+     * @param array<string,mixed>                      $opts
+     *
+     * @since 7.1.0
+     */
+    public static function table(array $columns, array $rows, array $opts = array()): void
+    {
+        $wrap = $opts['wrap'] ?? 'responsive';
+        if ($wrap !== false) {
+            echo '<div' . Field::attrsString(array(
+                'class' => $wrap === 'actions' ? 'table-contains-actions' : 'table-responsive',
+                'id'    => ($opts['wrap_id'] ?? '') ?: null,
+            )) . '>';
+        }
+
+        $attrs = $opts['attrs'] ?? array();
+        echo '<table' . Field::attrsString(self::withClass(
+            array_filter(array('id' => $opts['id'] ?? null)) + $attrs,
+            'table',
+            $opts['class'] ?? '',
+            !empty($opts['stack']) ? 'osc-table-stack' : ''
+        )) . '>';
+
+        echo '<thead><tr>';
+        $cellAttrs = array();
+        foreach ($columns as $key => $column) {
+            $column  = is_array($column) ? $column : array('label' => (string)$column);
+            $numeric = !empty($column['numeric']) ? 'col-numeric' : '';
+            $name    = $column['col_name'] ?? ($column['label'] ?? '');
+
+            echo '<th' . Field::attrsString(array(
+                'scope' => 'col',
+                'class' => self::classList($numeric, $column['class'] ?? '', isset($column['sorted']) ? 'sorting_' . $column['sorted'] : ''),
+            )) . '>' . self::tableHead($column) . '</th>';
+
+            $cellAttrs[$key] = array(
+                'class' => array($numeric, $column['class'] ?? '', $column['td_class'] ?? ''),
+                'name'  => $name === false || $name === '' ? null : $name,
+            );
+        }
+        echo '</tr></thead><tbody>';
+
+        foreach ($rows as $row) {
+            $spec    = is_array($row['cells'] ?? null);
+            $cells   = $spec ? $row['cells'] : $row;
+            $trAttrs = $spec ? ($row['attrs'] ?? array()) : array();
+
+            echo '<tr' . Field::attrsString(self::withClass($trAttrs, $spec ? ($row['class'] ?? '') : '')) . '>';
+            foreach ($cellAttrs as $key => $attr) {
+                $cell = $cells[$key] ?? null;
+                echo '<td' . Field::attrsString(array(
+                    'class'         => self::classList(...array_merge($attr['class'], array(is_array($cell) ? ($cell['class'] ?? '') : ''))),
+                    'data-col-name' => $attr['name'],
+                )) . '>';
+                self::tableCell($cell);
+                echo '</td>';
+            }
+            echo '</tr>';
+        }
+
+        if ($rows === array() && is_array($opts['empty'] ?? null)) {
+            osc_admin_table_empty(count($columns), $opts['empty']);
+        }
+        echo '</tbody></table>';
+
+        if ($wrap === 'actions') {
+            echo '<div id="table-row-actions"></div>';
+        }
+        if ($wrap !== false) {
+            echo '</div>';
+        }
+    }
+
+    /**
+     * A table of DataTable output. Body of osc_admin_data_table(), which documents the options.
+     * Titles and cells print as given: DataTable builds them and plugin filters may add markup.
+     *
+     * @param array<string,mixed> $aData DataTable::getData() shape
+     * @param array<string,mixed> $opts
+     *
+     * @since 7.1.0
+     */
+    public static function dataTable(array $aData, array $opts = array()): void
+    {
+        $titles    = $aData['aColumns'] ?? array();
+        $sort      = is_scalar($opts['sort'] ?? null) ? (string)$opts['sort'] : '';
+        $sorted    = ($opts['direction'] ?? '') === 'desc' ? 'desc' : 'asc';
+
+        $columns = array();
+        foreach ($titles as $key => $title) {
+            $columns[$key] = array(
+                'label_html' => (string)$title,
+                'class'      => 'col-' . $key,
+                'sorted'     => $sort !== '' && (string)$key === $sort ? $sorted : null,
+                'col_name'   => osc_admin_col_name($titles, $key),
+            );
+        }
+
+        $rows = array();
+        foreach ($aData['aRows'] ?? array() as $key => $row) {
+            $class = isset($opts['row_class']) ? $opts['row_class']($key, $row) : '';
+            $class = is_array($class) ? implode(' ', $class) : (string)$class;
+            $state = preg_match('/(?:^|\s)status-(?!border(?:\s|$))([\w-]+)/', $class, $m) === 1 ? $m[1] : '';
+            $cells = array();
+            foreach (array_keys($columns) as $column) {
+                $cells[$column] = array('html' => self::dataTableCell((string)$column, $row[$column] ?? null, $key, $state, $opts));
+            }
+            $rows[] = array(
+                'cells' => $cells,
+                'class' => $class,
+                'attrs' => isset($opts['row_attrs']) ? $opts['row_attrs']($key, $row) : array(),
+            );
+        }
+
+        self::table($columns, $rows, array(
+            'wrap'    => 'actions',
+            'wrap_id' => $opts['wrap_id'] ?? '',
+            'class'   => $opts['class'] ?? '',
+            'stack'   => $opts['stack'] ?? !array_key_exists('bulkactions', $titles),
+            'empty'   => $opts['empty'] ?? null,
+        ));
+    }
+
+    /**
+     * One DataTable cell: the screen's own markup when its 'cell' callback gives any, else the
+     * value, with status as a badge here so the processing_row filters still see the plain word.
+     * The badge takes its state from the row's status-* class.
+     *
+     * @param mixed               $value
+     * @param int|string          $row
+     * @param array<string,mixed> $opts
+     */
+    private static function dataTableCell(string $column, $value, $row, string $state, array $opts): string
+    {
+        $html = isset($opts['cell']) ? $opts['cell']($column, $value, $row) : null;
+        if ($html !== null) {
+            return (string)$html;
+        }
+
+        return $column === 'status' && $value !== null
+            ? self::statusBadge($state, (string)$value)
+            : (string)$value;
+    }
+
+    /**
+     * The inside of a column's header cell.
+     *
+     * @param array<string,mixed> $column
+     */
+    private static function tableHead(array $column): string
+    {
+        if (isset($column['label_html'])) {
+            return (string)$column['label_html'];
+        }
+        $label = osc_esc_html((string)($column['label'] ?? ''));
+
+        return !empty($column['hide_label']) ? '<span class="visually-hidden">' . $label . '</span>' : $label;
+    }
+
+    /**
+     * Print one cell's content: a scalar escaped, or a trusted html, render or status cell.
+     *
+     * @param mixed $cell
+     */
+    private static function tableCell($cell): void
+    {
+        if (!is_array($cell)) {
+            echo osc_esc_html((string)$cell);
+        } elseif (isset($cell['html'])) {
+            echo $cell['html'];
+        } elseif (isset($cell['render'])) {
+            ($cell['render'])();
+        } elseif (isset($cell['status'])) {
+            osc_admin_status($cell['status'][0], $cell['status'][1]);
+        }
+    }
+
+    /**
+     * The attributes with the given classes and any 'class' they already hold joined into one.
+     *
+     * @param array<string,mixed> $attrs
+     *
+     * @return array<string,mixed>
+     */
+    private static function withClass(array $attrs, string ...$classes): array
+    {
+        return array('class' => self::classList(...array_merge($classes, array((string)($attrs['class'] ?? ''))))) + $attrs;
+    }
+
+    /**
+     * Join class names, skipping empty ones; null when none are left, which drops the attribute.
+     */
+    private static function classList(string ...$parts): ?string
+    {
+        return implode(' ', array_filter($parts)) ?: null;
+    }
+
+    /**
      * Open one labelled row. Body of osc_admin_form_row_open().
      *
      * @param string              $label

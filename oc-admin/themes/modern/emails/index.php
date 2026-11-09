@@ -25,37 +25,20 @@ osc_admin_page(array(
 $aData = __get('aEmails');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="email-templates" class="table-contains-actions">
-        <table class="table" cellpadding="0" cellspacing="0">
-            <thead>
-            <tr>
-                <th class="col-name"><?php _e('Name'); ?></th>
-                <th class="col-title"><?php _e('Subject'); ?></th>
-            </tr>
-            </thead>
-            <tbody>
-            <?php if (count($aData['aaData']) > 0) { ?>
-                <?php foreach ($aData['aaData'] as $array) { ?>
-                    <tr>
-                        <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>">
-                            <?php echo $array[0]; ?>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Subject')); ?>">
-                            <?php echo $array[1]; ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-            <?php } else { ?>
-                <?php osc_admin_table_empty(2, array(
-                    'icon'  => 'bi-envelope',
-                    'title' => __('No email templates'),
-                    'text'  => __('Email templates are registered by the core and by installed plugins.'),
-                )); ?>
-            <?php } ?>
-            </tbody>
-        </table>
-        <div id="table-row-actions"></div>
-    </div>
+    <?php
+    $keys = array('name', 'title');
+    osc_admin_data_table(array(
+        'aColumns' => array_combine($keys, array(__('Name'), __('Subject'))),
+        'aRows'    => array_map(static fn ($row) => array_combine($keys, array_slice($row, 0, 2)), $aData['aaData']),
+    ), array(
+        'wrap_id' => 'email-templates',
+        'empty'   => array(
+            'icon'  => 'bi-envelope',
+            'title' => __('No email templates'),
+            'text'  => __('Email templates are registered by the core and by installed plugins.'),
+        ),
+    ));
+    ?>
 <?php
 osc_admin_pagination($aData);
 ?>

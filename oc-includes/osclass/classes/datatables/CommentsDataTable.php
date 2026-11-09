@@ -94,7 +94,7 @@ class CommentsDataTable extends DataTable
     {
 
         $this->addColumn('status-border', '');
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('status', __('Status'));
         $this->addColumn('author', __('Author'));
         $this->addColumn('rating', __('Rating'));
@@ -205,11 +205,10 @@ class CommentsDataTable extends DataTable
                 $status               = $this->get_row_status($aRow);
                 if (empty($aRow['s_author_name'])) {
                     $user                  = User::getInstance()->findByPrimaryKey($aRow['fk_i_user_id']);
-                    $aRow['s_author_name'] = $user['s_email'];
+                    $aRow['s_author_name'] = $user['s_email'] ?? '';
                 }
                 $row['status-border'] = '';
-                $row['bulkactions']   = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
-                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_author_name'])) . '" />';
+                $row['bulkactions']   = $this->bulkCheckbox($aRow['pk_i_id'], $aRow['s_author_name']);
                 $row['status']        = $status['text'];
                 $row['author']  =
                     osc_esc_html($aRow['s_author_name']) . ' (<a target="_blank" href="' . osc_esc_html(osc_item_url()) . '">'
@@ -262,25 +261,7 @@ class CommentsDataTable extends DataTable
      */
     private function get_row_status($user)
     {
-
-        if ($user['b_enabled'] == 0) {
-            return array(
-                'class' => 'status-blocked',
-                'text'  => __('Blocked')
-            );
-        }
-
-        if ($user['b_active'] == 0) {
-            return array(
-                'class' => 'status-inactive',
-                'text'  => __('Inactive')
-            );
-        }
-
-        return array(
-            'class' => 'status-active',
-            'text'  => __('Active')
-        );
+        return $this->flagStatus($user);
     }
 
     /**

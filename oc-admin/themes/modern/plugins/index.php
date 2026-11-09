@@ -134,77 +134,69 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
         <input type="hidden" name="page" value="plugins"/>
         <input type="hidden" name="status" value="<?php echo osc_esc_html($status); ?>"/>
         <input type="hidden" name="sSearch" value="<?php echo osc_esc_html($search); ?>"/>
-        <div class="table-contains-actions">
-            <table class="table plugins-table" cellpadding="0" cellspacing="0">
-                <thead>
-                <tr>
-                    <?php foreach ($columns as $k => $v) {
-                        $sorted = $sort === $k ? ($direction === 'desc' ? ' sorting_desc' : ' sorting_asc') : '';
-                        echo '<th class="col-' . $k . $sorted . '">' . $v . '</th>';
-                    } ?>
-                </tr>
-                </thead>
-                <tbody>
-                <?php if (count($rows) > 0) { ?>
-                    <?php foreach ($rows as $key => $row) {
-                        $pkg    = $aRawRows[$key];
-                        $detail = array(
-                            'slug'              => $pkg['slug'],
-                            'name'              => $pkg['name'],
-                            'author'            => $pkg['author'],
-                            'version'           => $pkg['version'],
-                            'short_description' => $pkg['description'],
-                        );
-                        $rowId = preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $pkg['slug']);
-                        ?>
-                        <tr id="pkg-<?php echo osc_esc_html($rowId); ?>" class="plugin-<?php echo osc_esc_html($pkg['state']); ?>"
-                            data-market-item="<?php echo osc_esc_html(json_encode($detail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT)); ?>">
-                            <?php foreach ($row as $k => $v) { ?>
-                                <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
-                                if ($k === 'status') {
-                                    // The table hands over the plain state; the badges are the theme's.
-                                    osc_package_state($pkg['state']);
-                                    ob_start();
-                                    osc_package_mode_badge($pkg['modes']);
-                                    $badge = (string) ob_get_clean();
-                                    $note  = $pkg['update'] ? osc_esc_html(__('An update is ready for this plugin. Open the Updates tab to apply it.')) : '';
-                                    if ($note !== '' || $badge !== '') {
-                                        echo '<p class="osc-pkg-note osc-pkg-note--' . ($note !== '' ? 'update' : 'info') . '">' . $note . ' ' . $badge . '</p>';
-                                    }
-                                } else {
-                                    echo $v;
-                                }
-                                ?></td>
-                            <?php } ?>
-                        </tr>
-                    <?php } ?>
-                <?php } elseif ($status !== '' || $search !== '') {
-                    osc_admin_table_empty(count($columns), array(
-                        'icon'   => 'bi-search',
-                        'title'  => __('No plugins match'),
-                        'text'   => __('Try another status tab or search.'),
-                        'action' => array(
-                            'label'   => __('Show all plugins'),
-                            'url'     => osc_admin_base_url(true) . '?page=plugins',
-                            'variant' => 'secondary',
-                        ),
-                    ));
-                } else {
-                    osc_admin_table_empty(count($columns), array(
-                        'icon'   => 'bi-plug',
-                        'title'  => __('No plugins installed'),
-                        'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload its zip file.'),
-                        'action' => array(
-                            'label'   => __('Add plugin'),
-                            'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
-                            'variant' => 'primary',
-                        ),
-                    ));
-                } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+        <?php
+        osc_admin_data_table($aData, array(
+            'sort'      => $sort,
+            'direction' => $direction,
+            'class'     => 'plugins-table',
+            'row_class' => static fn ($key, $row) => 'plugin-' . $aRawRows[$key]['state'],
+            'row_attrs' => static function ($key, $row) use ($aRawRows) {
+                $pkg    = $aRawRows[$key];
+                $detail = array(
+                    'slug'              => $pkg['slug'],
+                    'name'              => $pkg['name'],
+                    'author'            => $pkg['author'],
+                    'version'           => $pkg['version'],
+                    'short_description' => $pkg['description'],
+                );
+
+                return array(
+                    'id'               => 'pkg-' . preg_replace('/[^A-Za-z0-9_-]+/', '-', (string) $pkg['slug']),
+                    'data-market-item' => json_encode($detail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
+                );
+            },
+            'cell'      => static function ($column, $value, $key) use ($aRawRows) {
+                if ($column !== 'status') {
+                    return null;
+                }
+                $pkg = $aRawRows[$key];
+                // The table hands over the plain state; the badges are the theme's.
+                ob_start();
+                osc_package_state($pkg['state']);
+                $state = (string) ob_get_clean();
+                ob_start();
+                osc_package_mode_badge($pkg['modes']);
+                $badge = (string) ob_get_clean();
+                $note  = $pkg['update'] ? osc_esc_html(__('An update is ready for this plugin. Open the Updates tab to apply it.')) : '';
+                if ($note !== '' || $badge !== '') {
+                    $state .= '<p class="osc-pkg-note osc-pkg-note--' . ($note !== '' ? 'update' : 'info') . '">' . $note . ' ' . $badge . '</p>';
+                }
+
+                return $state;
+            },
+            'empty'     => $status !== '' || $search !== ''
+                ? array(
+                    'icon'   => 'bi-search',
+                    'title'  => __('No plugins match'),
+                    'text'   => __('Try another status tab or search.'),
+                    'action' => array(
+                        'label'   => __('Show all plugins'),
+                        'url'     => osc_admin_base_url(true) . '?page=plugins',
+                        'variant' => 'secondary',
+                    ),
+                )
+                : array(
+                    'icon'   => 'bi-plug',
+                    'title'  => __('No plugins installed'),
+                    'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload its zip file.'),
+                    'action' => array(
+                        'label'   => __('Add plugin'),
+                        'url'     => osc_admin_base_url(true) . '?page=plugins&amp;action=add',
+                        'variant' => 'primary',
+                    ),
+                ),
+        ));
+        ?>
     </form>
     <?php osc_admin_pagination($aData); ?>
 </div>

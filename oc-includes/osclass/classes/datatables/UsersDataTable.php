@@ -91,7 +91,7 @@ class UsersDataTable extends DataTable
     {
 
         $this->addColumn('status-border', '');
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('status', __('Status'));
         $this->addColumn('email', __('E-mail'));
         $this->addColumn('username', __('Username'));
@@ -293,8 +293,7 @@ class UsersDataTable extends DataTable
 
                 $status               = $this->get_row_status($aRow);
                 $row['status-border'] = '';
-                $row['bulkactions']   = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
-                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_email'])) . '" /></div>';
+                $row['bulkactions']   = $this->bulkCheckbox($aRow['pk_i_id'], $aRow['s_email']);
                 $row['status']        = $status['text'];
                 $row['email']         =
                     '<a href="' . osc_admin_base_url(true) . '?page=items&userId=' . $aRow['pk_i_id'] . '&user='
@@ -331,25 +330,7 @@ class UsersDataTable extends DataTable
      */
     private function get_row_status($user)
     {
-
-        if ($user['b_enabled'] == 0) {
-            return array(
-                'class' => 'status-blocked',
-                'text'  => __('Blocked')
-            );
-        }
-
-        if ($user['b_active'] == 0) {
-            return array(
-                'class' => 'status-inactive',
-                'text'  => __('Inactive')
-            );
-        }
-
-        return array(
-            'class' => 'status-active',
-            'text'  => __('Active')
-        );
+        return $this->flagStatus($user);
     }
 
     /**

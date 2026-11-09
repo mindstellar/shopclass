@@ -115,56 +115,28 @@ $withFilters = __get('withFilters');
             )); ?>
         <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="users"/>
-            <div class="table-contains-actions">
-                <table class="table" cellpadding="0" cellspacing="0">
-                    <thead>
-                    <tr>
-                        <?php foreach ($columns as $k => $v) {
-                            if ($direction === 'desc') {
-                                echo '<th class="col-' . $k . ' ' . ($sort == $k ? ('sorting_desc') : '') . '">' . $v . '</th>';
-                            } else {
-                                echo '<th class="col-' . $k . ' ' . ($sort == $k ? ('sorting_asc') : '') . '">' . $v . '</th>';
-                            }
-                        } ?>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php if (count($rows) > 0) { ?>
-                        <?php foreach ($rows as $key => $row) { ?>
-                            <tr class="<?php echo implode(
-                                ' ',
-                                osc_apply_filter('datatable_user_class', array(), $aRawRows[$key], $row)
-                            ); ?>">
-                                <?php foreach ($row as $k => $v) { ?>
-                                    <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
-                                              // `users_processing_row` filter still hands plugins the plain word.?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
-                                            echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
-                                    ?></td>
-                                <?php } ?>
-                            </tr>
-                        <?php } ?>
-                    <?php } elseif ($withFilters) { ?>
-                        <?php osc_admin_table_empty(count($columns), array(
-                            'icon'  => 'bi-people',
-                            'title' => __('No results for this filter'),
-                        )); ?>
-                    <?php } else { ?>
-                        <?php osc_admin_table_empty(count($columns), array(
-                            'icon'   => 'bi-people',
-                            'title'  => __('No users yet'),
-                            'text'   => __('Registered users will appear here once they sign up or you add them.'),
-                            'action' => array(
-                                'label'   => __('Add'),
-                                'url'     => osc_admin_base_url(true) . '?page=users&action=create',
-                                'variant' => 'primary',
-                            ),
-                        )); ?>
-                    <?php } ?>
-                    </tbody>
-                </table>
-                <div id="table-row-actions"></div>
-            </div>
+            <?php
+            osc_admin_data_table($aData, array(
+                'sort'      => $sort,
+                'direction' => $direction,
+                'row_class' => static fn ($key, $row) => osc_apply_filter('datatable_user_class', array(), $aRawRows[$key], $row),
+                'empty'     => $withFilters
+                    ? array(
+                        'icon'  => 'bi-people',
+                        'title' => __('No results for this filter'),
+                    )
+                    : array(
+                        'icon'   => 'bi-people',
+                        'title'  => __('No users yet'),
+                        'text'   => __('Registered users will appear here once they sign up or you add them.'),
+                        'action' => array(
+                            'label'   => __('Add'),
+                            'url'     => osc_admin_base_url(true) . '?page=users&action=create',
+                            'variant' => 'primary',
+                        ),
+                    ),
+            ));
+            ?>
         </form>
     </div>
 <?php

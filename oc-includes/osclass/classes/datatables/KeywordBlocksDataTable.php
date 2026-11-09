@@ -62,7 +62,7 @@ class KeywordBlocksDataTable extends DataTable
      */
     private function addTableHeader()
     {
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('keyword', __('Keyword'));
         $this->addColumn('scope', __('Matches in'));
         $this->addColumn('substring', __('Match type'));
@@ -145,8 +145,7 @@ class KeywordBlocksDataTable extends DataTable
             $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
             $row                = array();
-            $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
-                . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_keyword'])) . '" /></div>';
+            $row['bulkactions'] = $this->bulkCheckbox($aRow['pk_i_id'], $aRow['s_keyword']);
             $row['keyword']     = osc_esc_html($aRow['s_keyword']) . $actions;
             $row['scope']       = osc_esc_html($this->scopeLabel($aRow['s_scope']));
             $row['substring']   = ((int)$aRow['b_substring'] === 1)

@@ -1694,9 +1694,8 @@ msgstr ""
 #: oc-admin/themes/modern/users/frm.php
 #: oc-admin/themes/modern/users/index.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+#: oc-includes/osclass/classes/datatables/DataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
-#: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Active"
 msgstr ""
 
@@ -3226,9 +3225,8 @@ msgstr ""
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+#: oc-includes/osclass/classes/datatables/DataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
-#: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Blocked"
 msgstr ""
 
@@ -7674,9 +7672,8 @@ msgstr ""
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
+#: oc-includes/osclass/classes/datatables/DataTable.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
-#: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Inactive"
 msgstr ""
 
@@ -13879,17 +13876,9 @@ msgstr ""
 msgid "Select"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations/list.php
+#: oc-includes/classes/admin/ui/Form.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
-#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
-#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
-#: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
-#: oc-includes/osclass/classes/datatables/MediaDataTable.php
-#: oc-includes/osclass/classes/datatables/PagesDataTable.php
-#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
-#: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Select %s"
 msgstr ""
 
@@ -13931,19 +13920,7 @@ msgstr ""
 msgid "Select a region..."
 msgstr ""
 
-#: oc-admin/themes/modern/admins/index.php
-#: oc-admin/themes/modern/languages/index.php
-#: oc-admin/themes/modern/media/index.php
-#: oc-admin/themes/modern/settings/currencies.php
-#: oc-includes/osclass/classes/datatables/AlertsDataTable.php
-#: oc-includes/osclass/classes/datatables/BanRulesDataTable.php
-#: oc-includes/osclass/classes/datatables/CommentsDataTable.php
-#: oc-includes/osclass/classes/datatables/ItemsDataTable.php
-#: oc-includes/osclass/classes/datatables/KeywordBlocksDataTable.php
-#: oc-includes/osclass/classes/datatables/MediaDataTable.php
-#: oc-includes/osclass/classes/datatables/PagesDataTable.php
-#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
-#: oc-includes/osclass/classes/datatables/UsersDataTable.php
+#: oc-includes/classes/admin/ui/Form.php
 msgid "Select all"
 msgstr ""
 

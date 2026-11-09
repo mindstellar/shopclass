@@ -89,37 +89,32 @@ osc_admin_page(array(
         }
         osc_admin_empty($empty);
     } else { ?>
-        <div class="table-responsive">
-            <table class="table billing-documents osc-table-stack">
-                <thead>
-                <tr>
-                    <th scope="col"><?php _e('Number'); ?></th>
-                    <th scope="col"><?php _e('Date'); ?></th>
-                    <th scope="col"><?php _ex('Order', 'purchase order'); ?></th>
-                    <th scope="col"><?php _e('Buyer'); ?></th>
-                    <th scope="col" class="col-numeric"><?php _e('Total'); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($documents as $doc) {
-                    $credit = $doc->isCreditNote();
-                    $buyer  = (array) ($doc->data['buyer'] ?? array()); ?>
-                    <tr>
-                        <td data-col-name="<?php echo osc_esc_html(__('Number')); ?>">
-                            <a href="<?php echo osc_esc_html(DocumentPage::adminUrl($doc)); ?>" target="_blank" rel="noopener"><?php echo osc_esc_html($doc->number); ?></a>
-                            <?php if ($credit) { ?><span class="text-muted">· <?php _e('Credit note'); ?></span><?php } ?>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($doc->date, true); ?></td>
-                        <td data-col-name="<?php echo osc_esc_html(_x('Order', 'purchase order')); ?>">
-                            <a class="billing-order-link" href="<?php echo osc_esc_html($base . '&action=order&id=' . $doc->orderId); ?>"><?php echo osc_esc_html('#' . $doc->orderId); ?></a>
-                        </td>
-                        <td data-col-name="<?php echo osc_esc_html(__('Buyer')); ?>"><?php echo osc_esc_html((string) ($buyer['name'] ?? '')); ?></td>
-                        <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(DocumentPage::sign($doc) . osc_admin_money($doc->total, $doc->currency)); ?></td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+        <?php
+        $tableRows = array();
+        foreach ($documents as $doc) {
+            $credit = $doc->isCreditNote();
+            $buyer  = (array) ($doc->data['buyer'] ?? array());
+            $tableRows[] = array(
+                'number' => array('render' => static function () use ($doc, $credit): void { ?>
+                    <a href="<?php echo osc_esc_html(DocumentPage::adminUrl($doc)); ?>" target="_blank" rel="noopener"><?php echo osc_esc_html($doc->number); ?></a>
+                    <?php if ($credit) { ?><span class="text-muted">· <?php _e('Credit note'); ?></span><?php }
+                }),
+                'date'  => array('html' => osc_admin_date($doc->date, true)),
+                'order' => array('render' => static function () use ($doc, $base): void { ?>
+                    <a class="billing-order-link" href="<?php echo osc_esc_html($base . '&action=order&id=' . $doc->orderId); ?>"><?php echo osc_esc_html('#' . $doc->orderId); ?></a>
+                <?php }),
+                'buyer' => (string) ($buyer['name'] ?? ''),
+                'total' => DocumentPage::sign($doc) . osc_admin_money($doc->total, $doc->currency),
+            );
+        }
+        osc_admin_table(array(
+            'number' => __('Number'),
+            'date'   => __('Date'),
+            'order'  => _x('Order', 'purchase order'),
+            'buyer'  => __('Buyer'),
+            'total'  => array('label' => __('Total'), 'numeric' => true),
+        ), $tableRows, array('class' => 'billing-documents', 'stack' => true));
+        ?>
     <?php } ?>
 
     <?php osc_admin_pager(array(

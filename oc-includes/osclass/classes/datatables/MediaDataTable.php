@@ -87,7 +87,7 @@ class MediaDataTable extends DataTable
             preg_replace('|&sort=([^&]*)|', '', osc_base_url() . Rewrite::getInstance()->get_raw_request_uri())
         );
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('file', __('File'));
         $this->addColumn('action', __('Action'));
         $this->addColumn(
@@ -153,8 +153,7 @@ class MediaDataTable extends DataTable
             foreach ($media as $aRow) {
                 $row = array();
 
-                $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
-                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), '#' . $aRow['pk_i_id'] . '.' . $aRow['s_extension'])) . '" />';
+                $row['bulkactions'] = $this->bulkCheckbox($aRow['pk_i_id'], '#' . $aRow['pk_i_id'] . '.' . $aRow['s_extension']);
                 $row['file']        = '<div id="media_list_pic"><img src="' . osc_apply_filter(
                     'resource_path',
                     osc_base_url() . $aRow['s_path'],

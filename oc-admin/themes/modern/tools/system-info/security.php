@@ -38,53 +38,42 @@ $contexts = array(
         <?php if ($rows === array()) { ?>
             <p class="text-muted"><?php _e('No failed sign-ins. Nobody is blocked.'); ?></p>
         <?php } else { ?>
-            <div class="table-responsive">
-                <table class="table sysinfo-list">
-                    <thead>
-                    <tr>
-                        <th><?php _e('IP address or account'); ?></th>
-                        <th class="text-end"><?php _e('Failures'); ?></th>
-                        <th><?php _e('Blocked until'); ?></th>
-                        <th><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($rows as $row) {
-                        $isIp   = $row['kind'] === 'ip';
-                        $fields = $isIp
-                            ? array('ip' => $row['ip'])
-                            : array('context' => $row['context'], 'account' => $row['account']); ?>
-                        <tr>
-                            <td class="sysinfo-list-main">
-                                <strong><?php echo osc_esc_html($isIp ? $row['ip'] : $row['account']); ?></strong>
-                                <span class="sysinfo-list-sub"><?php echo osc_esc_html($isIp
-                                    ? __('IP address')
-                                    : sprintf(__('Account, %s'), $contexts[$row['context']] ?? $row['context'])); ?></span>
-                            </td>
-                            <td class="text-end sysinfo-list-meta"><?php printf(
-                                osc_esc_html(_n('%d failure', '%d failures', (int) $row['failures'])),
-                                (int) $row['failures']
-                            ); ?></td>
-                            <td class="sysinfo-list-meta"><?php echo $row['blocked']
-                                ? osc_admin_when($row['until'])
-                                : osc_esc_html(__('not blocked')); ?></td>
-                            <td class="text-end sysinfo-list-actions">
-                                <?php osc_admin_form_open(array(
-                                    'page'       => 'settings',
-                                    'action'     => 'login_throttle_unblock',
-                                    'horizontal' => false,
-                                    'class'      => 'd-inline',
-                                    'fields'     => $fields,
-                                )); ?>
-                                    <button type="submit" class="btn btn-sm btn-secondary"<?php echo $demo ? ' disabled' : ''; ?>><?php
-                                        echo osc_esc_html($row['blocked'] ? __('Unblock') : __('Reset')); ?></button>
-                                <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            $throttleRows = array();
+            foreach ($rows as $row) {
+                $isIp   = $row['kind'] === 'ip';
+                $fields = $isIp
+                    ? array('ip' => $row['ip'])
+                    : array('context' => $row['context'], 'account' => $row['account']);
+                $throttleRows[] = array(
+                    'who'      => array('render' => static function () use ($row, $isIp, $contexts) { ?>
+                        <strong><?php echo osc_esc_html($isIp ? $row['ip'] : $row['account']); ?></strong>
+                        <span class="sysinfo-list-sub"><?php echo osc_esc_html($isIp
+                            ? __('IP address')
+                            : sprintf(__('Account, %s'), $contexts[$row['context']] ?? $row['context'])); ?></span>
+                    <?php }),
+                    'failures' => sprintf(_n('%d failure', '%d failures', (int) $row['failures']), (int) $row['failures']),
+                    'until'    => array('html' => $row['blocked'] ? osc_admin_when($row['until']) : osc_esc_html(__('not blocked'))),
+                    'actions'  => array('render' => static function () use ($row, $fields, $demo) {
+                        osc_admin_form_open(array(
+                            'page'       => 'settings',
+                            'action'     => 'login_throttle_unblock',
+                            'horizontal' => false,
+                            'class'      => 'd-inline',
+                            'fields'     => $fields,
+                        )); ?>
+                            <button type="submit" class="btn btn-sm btn-secondary"<?php echo $demo ? ' disabled' : ''; ?>><?php
+                                echo osc_esc_html($row['blocked'] ? __('Unblock') : __('Reset')); ?></button>
+                        <?php osc_admin_form_close(null, array('horizontal' => false));
+                    }),
+                );
+            }
+            osc_admin_table(array(
+                'who'      => array('label' => __('IP address or account'), 'td_class' => 'sysinfo-list-main'),
+                'failures' => array('label' => __('Failures'), 'class' => 'text-end', 'td_class' => 'sysinfo-list-meta'),
+                'until'    => array('label' => __('Blocked until'), 'td_class' => 'sysinfo-list-meta'),
+                'actions'  => array('label' => __('Actions'), 'hide_label' => true, 'td_class' => 'text-end sysinfo-list-actions', 'col_name' => false),
+            ), $throttleRows, array('class' => 'sysinfo-list')); ?>
             <?php osc_admin_pagination(array(
                 'aRows'                => $rows,
                 'iTotalDisplayRecords' => count($activity),

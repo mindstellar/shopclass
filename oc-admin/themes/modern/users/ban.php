@@ -71,44 +71,22 @@ $rows    = $aData['aRows'];
             <input type="hidden" name="page" value="users"/>
 
             <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
-            <div class="table-contains-actions">
-                <table class="table" cellpadding="0" cellspacing="0">
-                    <thead>
-                    <tr>
-                        <?php foreach ($columns as $k => $v) {
-                            if ($direction === 'desc') {
-                                echo '<th class="col-' . $k . ' ' . ($sort === $k ? ('sorting_desc') : '') . '">' . $v . '</th>';
-                            } else {
-                                echo '<th class="col-' . $k . ' ' . ($sort === $k ? ('sorting_asc') : '') . '">' . $v . '</th>';
-                            }
-                        } ?>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php if (count($rows) > 0) { ?>
-                        <?php foreach ($rows as $key => $row) { ?>
-                            <tr>
-                                <?php foreach ($row as $k => $v) { ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php echo $v; ?></td>
-                                <?php } ?>
-                            </tr>
-                        <?php } ?>
-                    <?php } else { ?>
-                        <?php osc_admin_table_empty(count($columns), array(
-                            'icon'   => 'bi-shield-slash',
-                            'title'  => __('No ban rules yet'),
-                            'text'   => __('Ban rules block registration, listings or comments matching an IP or e-mail pattern.'),
-                            'action' => array(
-                                'label'   => __('Add ban rule'),
-                                'url'     => osc_admin_base_url(true) . '?page=users&action=create_ban_rule',
-                                'variant' => 'primary',
-                            ),
-                        )); ?>
-                    <?php } ?>
-                    </tbody>
-                </table>
-                <div id="table-row-actions"></div>
-            </div>
+            <?php
+            osc_admin_data_table($aData, array(
+                'sort'      => $sort,
+                'direction' => $direction,
+                'empty'     => array(
+                    'icon'   => 'bi-shield-slash',
+                    'title'  => __('No ban rules yet'),
+                    'text'   => __('Ban rules block registration, listings or comments matching an IP or e-mail pattern.'),
+                    'action' => array(
+                        'label'   => __('Add ban rule'),
+                        'url'     => osc_admin_base_url(true) . '?page=users&action=create_ban_rule',
+                        'variant' => 'primary',
+                    ),
+                ),
+            ));
+            ?>
         </form>
     </div>
 <?php

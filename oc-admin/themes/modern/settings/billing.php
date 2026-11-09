@@ -74,46 +74,37 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
             ),
         ));
     } else { ?>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th scope="col" class="col-status"><?php _e('Status'); ?></th>
-                    <th scope="col"><?php _e('Payment method'); ?></th>
-                    <th scope="col"><?php _e('Currencies'); ?></th>
-                    <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($gateways as $gateway) {
-                    $ready = $gateway->isConfigured();
-                    $setup = osc_billing_gateway_setup_url($gateway); ?>
-                    <tr>
-                        <td class="col-status">
-                            <?php osc_admin_status(
-                                $ready ? 'active' : 'inactive',
-                                $ready ? __('Ready') : __('Needs setting up')
-                            ); ?>
-                        </td>
-                        <td>
-                            <strong><?php echo osc_esc_html($gateway->getName()); ?></strong>
-                            <div class="text-muted osc-mono"><?php echo osc_esc_html($gateway->getId()); ?></div>
-                        </td>
-                        <td><?php echo osc_esc_html(
-                            \mindstellar\billing\PaymentGatewayRegistry::anyCurrency($gateway)
-                                ? __('Any currency')
-                                : (implode(', ', $gateway->getSupportedCurrencies()) ?: __('None declared'))
-                        ); ?></td>
-                        <td class="text-end">
-                            <?php if ($setup !== '') { ?>
-                                <a href="<?php echo osc_esc_html($setup); ?>"><?php _e('Set up'); ?></a>
-                            <?php } ?>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+        <?php
+        $tableRows = array();
+        foreach ($gateways as $gateway) {
+            $ready = $gateway->isConfigured();
+            $setup = osc_billing_gateway_setup_url($gateway);
+            $tableRows[] = array(
+                'status' => array('status' => array(
+                    $ready ? 'active' : 'inactive',
+                    $ready ? __('Ready') : __('Needs setting up'),
+                )),
+                'name' => array('render' => static function () use ($gateway): void { ?>
+                    <strong><?php echo osc_esc_html($gateway->getName()); ?></strong>
+                    <div class="text-muted osc-mono"><?php echo osc_esc_html($gateway->getId()); ?></div>
+                <?php }),
+                'currencies' => \mindstellar\billing\PaymentGatewayRegistry::anyCurrency($gateway)
+                    ? __('Any currency')
+                    : (implode(', ', $gateway->getSupportedCurrencies()) ?: __('None declared')),
+                'setup' => array('class' => 'text-end', 'render' => static function () use ($setup): void {
+                    if ($setup !== '') { ?>
+                        <a href="<?php echo osc_esc_html($setup); ?>"><?php _e('Set up'); ?></a>
+                    <?php }
+                }),
+            );
+        }
+        osc_admin_table(array(
+            'status'     => array('label' => __('Status'), 'class' => 'col-status', 'col_name' => false),
+            'name'       => __('Payment method'),
+            'currencies' => __('Currencies'),
+            'setup'      => array('label' => __('Actions'), 'hide_label' => true, 'col_name' => false),
+        ), $tableRows, array('stack' => true));
+        ?>
     <?php } ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

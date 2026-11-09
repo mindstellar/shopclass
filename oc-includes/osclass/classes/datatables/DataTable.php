@@ -115,6 +115,50 @@ abstract class DataTable
     }
 
     /**
+     * The select-all checkbox for the bulkactions column header.
+     *
+     * @return string
+     */
+    protected function bulkHeader()
+    {
+        return \mindstellar\admin\ui\Form::bulkHeader();
+    }
+
+    /**
+     * One row's bulk-action checkbox. $attrs are extra attributes, e.g. active/blocked on listings.
+     *
+     * @param mixed                $value Submitted value, usually the row id
+     * @param string|null          $label Row name used in the "Select %s" aria-label
+     * @param string               $name  Input name
+     * @param array<string,mixed>  $attrs Extra attributes
+     *
+     * @return string
+     */
+    protected function bulkCheckbox($value, ?string $label, string $name = 'id[]', array $attrs = array()): string
+    {
+        return \mindstellar\admin\ui\Form::bulkCell($name, $value, $label, $attrs);
+    }
+
+    /**
+     * Blocked, inactive or active, from a row's b_enabled and b_active flags.
+     *
+     * @param array<string,mixed> $row
+     *
+     * @return array{class:string,text:string}
+     */
+    protected function flagStatus(array $row): array
+    {
+        if ($row['b_enabled'] == 0) {
+            return array('class' => 'status-blocked', 'text' => __('Blocked'));
+        }
+        if ($row['b_active'] == 0) {
+            return array('class' => 'status-inactive', 'text' => __('Inactive'));
+        }
+
+        return array('class' => 'status-active', 'text' => __('Active'));
+    }
+
+    /**
      * Appends one row to the table.
      *
      * @param array<string,mixed> $aRow

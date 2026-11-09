@@ -1110,8 +1110,57 @@ if (!function_exists('osc_admin_status')) {
      */
     function osc_admin_status($state, $word)
     {
-        echo '<span class="osc-status status-' . osc_esc_html($state) . '">'
-            . osc_esc_html($word) . '</span>';
+        echo \mindstellar\admin\ui\Form::statusBadge((string)$state, osc_esc_html($word));
+    }
+}
+
+if (!function_exists('osc_admin_table')) {
+    /**
+     * A hand-built admin table: header, rows, optional empty row and wrapper. Plain values are
+     * escaped; only 'label_html', 'html' and 'render' print as given.
+     *
+     * A cell is a scalar or null (escaped text), ['html' => markup], ['render' => callable that
+     * echoes] or ['status' => [$state, $word]]; any array form may add 'class'.
+     *
+     * @param array $columns key => plain label, or an array: 'label', 'label_html', 'hide_label',
+     *                       'numeric' (col-numeric), 'class' (th and td), 'td_class', 'sorted'
+     *                       => 'asc'|'desc' (marks the th),
+     *                       'col_name' (data-col-name; default the label, false for none)
+     * @param array $rows    each row: key => cell, or ['cells' => [key => cell], 'class', 'attrs']
+     * @param array $opts    'class', 'id', 'attrs' (on the table); 'wrap' => 'responsive'|'actions'|false
+     *                       (default 'responsive'; 'actions' adds #table-row-actions); 'wrap_id';
+     *                       'stack' => true (cards on a phone); 'empty' => what no rows shows:
+     *                       'title', 'text', 'icon' (bi-*), 'action' (a button spec)
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_table(array $columns, array $rows, array $opts = array()): void
+    {
+        \mindstellar\admin\ui\Form::table($columns, $rows, $opts);
+    }
+}
+
+if (!function_exists('osc_admin_data_table')) {
+    /**
+     * A list screen's table from DataTable output. Titles and cells print as DataTable built them;
+     * the wrapper always holds the empty #table-row-actions.
+     *
+     * Rows without a bulkactions column turn into cards on a phone unless 'stack' says otherwise.
+     *
+     * @param array $aData DataTable::getData() shape: 'aColumns' and 'aRows'
+     * @param array $opts  'sort', 'direction' (mark the sorted column); 'class'; 'wrap_id'; 'stack';
+     *                     'row_class' => fn($key, $row): array|string;
+     *                     'row_attrs' => fn($key, $row): array of <tr> attributes;
+     *                     'cell' => fn($column, $value, $key): ?string (markup, null for the default);
+     *                     'empty' => what no rows shows: 'title', 'text', 'icon' (bi-*), 'action' (a button spec)
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_data_table(array $aData, array $opts = array()): void
+    {
+        \mindstellar\admin\ui\Form::dataTable($aData, $opts);
     }
 }
 

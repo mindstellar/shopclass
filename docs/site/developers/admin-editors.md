@@ -417,6 +417,85 @@ The save side is yours. Read the posted names with `Params::getParamInt()` /
 `getParamString()`, check `osc_csrf_check()`, and build `$errors` for a re-render.
 `Params::getParam()` returns raw request data. It is not sanitisation.
 
+## Tables
+
+`osc_admin_table($columns, $rows, $opts)` draws a list from your own data: the header, the
+rows, the empty row and the phone layout.
+
+```php
+use mindstellar\admin\ui\Form;
+
+osc_admin_table(array(
+    'bulkactions' => array('label_html' => Form::bulkHeader(), 'class' => 'col-bulkactions', 'col_name' => false),
+    'status'      => array('label' => __('Status', 'my_plugin'), 'class' => 'col-status'),
+    'name'        => __('Name', 'my_plugin'),
+    'total'       => array('label' => __('Total', 'my_plugin'), 'numeric' => true),
+), array_map(static fn ($row) => array(
+    'bulkactions' => array('html' => Form::bulkCell('id[]', $row['id'], $row['name'])),
+    'status'      => array('status' => array($row['active'] ? 'active' : 'inactive', $row['word'])),
+    'name'        => $row['name'],
+    'total'       => $row['total'],
+), $rows), array(
+    'stack' => true,
+    'empty' => array('icon' => 'bi-inbox', 'title' => __('Nothing here yet', 'my_plugin')),
+));
+```
+
+Put the columns in this order: bulk checkbox, Status, name, other columns, actions. With no
+checkbox, Status comes first. A status cell is `osc_admin_status($state, $word)`, which is
+what the `status` cell form draws.
+
+| Column key | Does |
+|---|---|
+| `label` | Header text, escaped |
+| `label_html` | Header markup, printed as given |
+| `hide_label` | Keeps `label` for screen readers only |
+| `numeric` | Right-aligns the column (`col-numeric`) |
+| `class` | Class on the header and the cells |
+| `td_class` | Class on the cells only |
+| `sorted` | `asc` or `desc`, marks the header as sorted |
+| `col_name` | The phone card label. Defaults to the label, `false` for none |
+
+A row is `key => cell`, or `array('cells' => ..., 'class' => ..., 'attrs' => ...)` when the
+`<tr>` needs its own class or attributes.
+
+| A cell is | Prints |
+|---|---|
+| A scalar or null | The value, escaped |
+| `array('html' => $markup)` | The markup as given. Escape what goes into it |
+| `array('render' => $callable)` | Whatever the callable echoes |
+| `array('status' => array($state, $word))` | A status pill, word escaped |
+
+Any array form can add `class`.
+
+| `$opts` key | Does |
+|---|---|
+| `class`, `id`, `attrs` | On the `<table>` |
+| `wrap` | `responsive` (the default), `actions` (adds the `#table-row-actions` holder) or `false` |
+| `wrap_id` | An id for the wrapper |
+| `stack` | `true` turns rows into cards on a phone |
+| `empty` | What shows with no rows: `title`, `text`, `icon` (a `bi-*` name) and `action` (a button spec with `label` and `url`) |
+
+`osc_admin_data_table($aData, $opts)` draws a table from a `DataTable` subclass's
+`getData()`. Titles and cells print as the class built them, so escape them there.
+
+```php
+osc_admin_data_table($aData, array(
+    'sort'      => 'date',
+    'direction' => 'desc',
+    'row_class' => static fn ($key, $row) => $row['status'] === 'Blocked' ? 'status-blocked' : '',
+    'empty'     => array('title' => __('Nothing here yet', 'my_plugin')),
+));
+```
+
+| `$opts` key | Does |
+|---|---|
+| `sort`, `direction` | Mark the sorted column |
+| `class`, `wrap_id`, `stack`, `empty` | As above. A table with no `bulkactions` column stacks by default |
+| `row_class` | `fn ($key, $row)` returning a string or array of classes. A `status-*` class also colours the row's status pill |
+| `row_attrs` | `fn ($key, $row)` returning `<tr>` attributes |
+| `cell` | `fn ($column, $value, $key)` returning markup, or null for the default |
+
 ## Hooking core's editors
 
 A plugin that renders into the listing or page editor (on `item_form`, `item_edit`,
@@ -440,8 +519,9 @@ These are published and additive. Restyle them freely. They will not be renamed.
 `osc-disclosure-hint`, `osc-disclosure-body`, `osc-user-card`, `field-error`, and the
 `data-osc-tab-error` and `data-osc-tab-mine` attributes on a locale tab.
 
-On a list screen of your own, add `osc-table-stack` to the element around a table. On a phone
-each row then becomes a card, and each cell is labelled from its `data-col-name` attribute.
+On a list screen of your own, use [the table helpers](#tables). If you write the table by
+hand, add `osc-table-stack` to it. On a phone each row then becomes a card, and each cell is
+labelled from its `data-col-name` attribute.
 
 The rich-text field is the exception: it mounts a third-party editor, whose own markup is
 not a contract. Style it through `.osc-field` around it, not the editor's internals.

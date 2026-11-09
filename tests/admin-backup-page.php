@@ -265,7 +265,7 @@ check('a bucket delete comes after the token', strpos($delete, 'osc_csrf_check()
 check('...and deletes nothing here when no bucket is set', strpos($delete, "\$bucket === false ? BackupStore::site()->delete(\$name) : \$bucket !== null && BackupStore::site()->bucketDelete(\$bucket, \$name)") !== false);
 check('a bucket restore goes through the same password check, the one startRestore call', (bool) preg_match('/BackupService::startRestore\(\s*\$name,.*?\$fromBucket\s*\);/s', $restore));
 check('...and a refusal reopens the bucket dialog', strpos($restore, "(\$fromBucket ? '&from=bucket' : '')") !== false);
-check('the Where column says Bucket for a bucket backup', strpos($view, "=== 'bucket' ? osc_esc_html(__('Bucket')) : osc_esc_html(__('Server'))") !== false);
+check('the Where column says Bucket for a bucket backup', strpos($view, "=== 'bucket' ? __('Bucket') : __('Server')") !== false);
 check('the public photo bucket warning is part of the one verdict', (bool) preg_match("/\\\$issues\\[\\] = array\\(\\s*'tone'\\s*=> 'warning',\\s*'text'\\s*=> __\\('Your photo bucket is public\\./", $view)
     && substr_count($view, 'osc_admin_verdict(') === 1);
 

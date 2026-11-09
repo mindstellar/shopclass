@@ -51,24 +51,19 @@ osc_admin_body_open(); ?>
     <?php if ($history === array()) { ?>
         <p class="text-muted"><?php _e('Nothing has been cleaned up yet.'); ?></p>
     <?php } else { ?>
-        <div class="table-responsive">
-            <table class="table" style="min-width:30rem">
-                <thead>
-                <tr>
-                    <th><?php _e('When'); ?></th>
-                    <th><?php _e('Details'); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($history as $entry) { ?>
-                    <tr>
-                        <td class="text-nowrap"><?php echo osc_admin_when($entry['dt_date']); ?></td>
-                        <td><?php echo osc_esc_html((string) $entry['s_data']); ?></td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+        <?php
+        $tableRows = array();
+        foreach ($history as $entry) {
+            $tableRows[] = array(
+                'when'    => array('html' => osc_admin_when($entry['dt_date']), 'class' => 'text-nowrap'),
+                'details' => (string) $entry['s_data'],
+            );
+        }
+        osc_admin_table(array(
+            'when'    => __('When'),
+            'details' => __('Details'),
+        ), $tableRows, array('attrs' => array('style' => 'min-width:30rem')));
+        ?>
     <?php } ?>
     <?php osc_admin_section_close(); ?>
 <?php osc_admin_body_close(); ?>

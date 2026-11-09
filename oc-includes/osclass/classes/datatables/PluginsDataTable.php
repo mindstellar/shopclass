@@ -132,7 +132,7 @@ class PluginsDataTable extends DataTable
             return '<a href="' . osc_esc_html($base . '&sort=' . $id . '&direction=' . $next) . '">' . osc_esc_html($label) . '</a>';
         };
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('status', $sortLink('status', __('Status')));
         $this->addColumn('name', $sortLink('name', __('Name')));
         $this->addColumn('version', osc_esc_html(__('Version')));
@@ -186,8 +186,7 @@ class PluginsDataTable extends DataTable
         $actions .= '</ul></div>';
 
         return array(
-            'bulkactions' => '<input type="checkbox" name="plugin[]" value="' . osc_esc_html($pkg['file']) . '"'
-                . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $pkg['name'])) . '" />',
+            'bulkactions' => $this->bulkCheckbox($pkg['file'], $pkg['name'], 'plugin[]'),
             'status'      => osc_esc_html($pkg['state']),
             'name'        => '<strong class="plugin-name" dir="auto">' . osc_esc_html($pkg['name']) . '</strong>'
                 . self::shortDescription((string) $pkg['description']) . $actions,

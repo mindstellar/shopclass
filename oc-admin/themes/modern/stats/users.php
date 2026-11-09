@@ -209,33 +209,25 @@ osc_admin_page(array(
                 <div class="widget-box-title"><h3><?php _e('Latest users on the web'); ?></h3></div>
                 <div class="widget-box-content">
                     <?php if (count($latest_users) > 0) { ?>
-                        <table class="table" cellpadding="0" cellspacing="0">
-                            <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th><?php _e('E-Mail'); ?></th>
-                                <th><?php _e('Name'); ?></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($latest_users as $u) { ?>
-                                <tr>
-                                    <td>
-                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                        echo $u['pk_i_id']; ?>"><?php echo $u['pk_i_id']; ?></a>
-                                    </td>
-                                    <td>
-                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                        echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_email']); ?></a>
-                                    </td>
-                                    <td>
-                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=users&amp;action=edit&amp;id=<?php
-                                        echo $u['pk_i_id']; ?>"><?php echo osc_esc_html($u['s_name']); ?></a>
-                                    </td>
-                                </tr>
-                            <?php } ?>
-                            </tbody>
-                        </table>
+                        <?php
+                        $editUrl   = osc_admin_base_url(true) . '?page=users&amp;action=edit&amp;id=';
+                        $tableRows = array();
+                        foreach ($latest_users as $u) {
+                            $link = static fn ($text): array => array(
+                                'html' => '<a href="' . $editUrl . (int) $u['pk_i_id'] . '">' . osc_esc_html((string) $text) . '</a>',
+                            );
+                            $tableRows[] = array(
+                                'id'    => $link($u['pk_i_id']),
+                                'email' => $link($u['s_email']),
+                                'name'  => $link($u['s_name']),
+                            );
+                        }
+                        osc_admin_table(array(
+                            'id'    => 'ID',
+                            'email' => __('E-Mail'),
+                            'name'  => __('Name'),
+                        ), $tableRows, array('wrap' => false));
+                        ?>
                     <?php } else { ?>
                         <p><?php _e('There are no statistics yet'); ?></p>
                     <?php } ?>

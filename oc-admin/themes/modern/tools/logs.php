@@ -65,45 +65,26 @@ osc_admin_body_open(); ?>
                 </div>
             </form>
         </div>
-        <div class="table-contains-actions">
-            <table class="table osc-table-stack" cellpadding="0" cellspacing="0">
-                <thead>
-                <tr>
-                    <?php foreach ($columns as $k => $v) {
-                        $cls = $sort === $k ? ($direction === 'desc' ? 'sorting_desc' : 'sorting_asc') : '';
-                        echo '<th class="col-' . osc_esc_html($k) . ' ' . $cls . '">' . $v . '</th>';
-                    } ?>
-                </tr>
-                </thead>
-                <tbody>
-                <?php if (count($rows) > 0) { ?>
-                    <?php foreach ($rows as $row) { ?>
-                        <tr>
-                            <?php foreach ($row as $k => $v) { ?>
-                                <td class="col-<?php echo osc_esc_html($k); ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php echo $v; ?></td>
-                            <?php } ?>
-                        </tr>
-                    <?php } ?>
-                <?php } elseif ($hasFilter) {
-                    osc_admin_table_empty(count($columns), array(
-                        'icon'   => 'bi-search',
-                        'title'  => __('No entries match your filter.'),
-                        'action' => array(
-                            'label'   => __('Reset'),
-                            'url'     => osc_admin_base_url(true) . '?page=tools&amp;action=logs',
-                            'variant' => 'secondary',
-                        ),
-                    ));
-                } else {
-                    osc_admin_table_empty(count($columns), array(
-                        'icon'  => 'bi-clock-history',
-                        'title' => __('No activity has been logged yet.'),
-                    ));
-                } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+        <?php
+        osc_admin_data_table($aData, array(
+            'sort'      => $sort,
+            'direction' => $direction,
+            'empty'     => $hasFilter
+                ? array(
+                    'icon'   => 'bi-search',
+                    'title'  => __('No entries match your filter.'),
+                    'action' => array(
+                        'label'   => __('Reset'),
+                        'url'     => osc_admin_base_url(true) . '?page=tools&amp;action=logs',
+                        'variant' => 'secondary',
+                    ),
+                )
+                : array(
+                    'icon'  => 'bi-clock-history',
+                    'title' => __('No activity has been logged yet.'),
+                ),
+        ));
+        ?>
     </div>
 <?php
 osc_admin_pagination($aData);

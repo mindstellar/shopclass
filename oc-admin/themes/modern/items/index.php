@@ -185,70 +185,39 @@ if (osc_billing_pay_at_post() || $unpaidTab) {
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="items" />
         <input type="hidden" name="action" value="bulk_actions" />
-        <div class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <?php foreach ($columns as $k => $v) {
-                            if ($direction === 'desc') {
-                                echo '<th class="col-' . $k . ' ' . ($sort === $k ? ('sorting_desc') : '') . '">' . $v . '</th>';
-                            } else {
-                                echo '<th class="col-' . $k . ' ' . ($sort === $k ? ('sorting_asc') : '') . '">' . $v . '</th>';
-                            }
-                        } ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($rows) > 0) { ?>
-                        <?php foreach ($rows as $key => $row) { ?>
-                            <tr class="<?php echo implode(
-                                ' ',
-                                osc_apply_filter('datatable_listing_class', array(), $aRawRows[$key], $row)
-                            ); ?>">
-                                <?php foreach ($row as $k => $v) { ?>
-                                    <?php // Status is the one value that gets presentational markup — it becomes a badge
-                                        // (tint + icon + word). This wrap lives in the THEME, not in
-                                        // ItemsDataTable::get_row_status(), so $row['status'] stays the plain translated
-                                        // word for any plugin hooked on the `items_processing_row` filter.
-                                    ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
-                                                                                                                    echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
-                                    ?></td>
-                                <?php } ?>
-                            </tr>
-                        <?php } ?>
-                    <?php } elseif ($unpaidTab && $filterChips === array()) {
-                        osc_admin_table_empty(count($columns), array(
-                            'icon'  => 'bi-hourglass',
-                            'title' => __('Nothing is waiting for payment'),
-                            'text'  => __('A listing posted under pay-at-post waits here until its fee is paid.'),
-                        ));
-                    } elseif ($withFilters) {
-                        osc_admin_table_empty(count($columns), array(
-                            'icon'   => 'bi-filter',
-                            'title'  => osc_mode_text(__('No listings match these filters'), __('No products match these filters')),
-                            'text'   => __('Remove a filter above to widen the search.'),
-                            'action' => array(
-                                'label' => __('Reset filters'),
-                                'url'   => osc_admin_base_url(true) . '?page=items',
-                            ),
-                        ));
-                    } else {
-                        osc_admin_table_empty(count($columns), array(
-                            'icon'  => 'bi-card-list',
-                            'title' => __('No listings found'),
-                            'text'  => __('Listings published by your users appear here, and you can post one yourself.'),
-                            'action' => array(
-                                'label'   => osc_mode_text(__('Add listing'), __('Add product')),
-                                'url'     => osc_admin_base_url(true) . '?page=items&amp;action=post',
-                                'variant' => 'primary',
-                            ),
-                        ));
-                    } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+        <?php
+        osc_admin_data_table($aData, array(
+            'sort'      => $sort,
+            'direction' => $direction,
+            'row_class' => static fn ($key, $row) => osc_apply_filter('datatable_listing_class', array(), $aRawRows[$key], $row),
+            'empty'     => $unpaidTab && $filterChips === array()
+                ? array(
+                    'icon'  => 'bi-hourglass',
+                    'title' => __('Nothing is waiting for payment'),
+                    'text'  => __('A listing posted under pay-at-post waits here until its fee is paid.'),
+                )
+                : ($withFilters
+                    ? array(
+                        'icon'   => 'bi-filter',
+                        'title'  => osc_mode_text(__('No listings match these filters'), __('No products match these filters')),
+                        'text'   => __('Remove a filter above to widen the search.'),
+                        'action' => array(
+                            'label' => __('Reset filters'),
+                            'url'   => osc_admin_base_url(true) . '?page=items',
+                        ),
+                    )
+                    : array(
+                        'icon'   => 'bi-card-list',
+                        'title'  => __('No listings found'),
+                        'text'   => __('Listings published by your users appear here, and you can post one yourself.'),
+                        'action' => array(
+                            'label'   => osc_mode_text(__('Add listing'), __('Add product')),
+                            'url'     => osc_admin_base_url(true) . '?page=items&amp;action=post',
+                            'variant' => 'primary',
+                        ),
+                    )),
+        ));
+        ?>
     </form>
 </div>
 <?php

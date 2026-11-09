@@ -46,42 +46,35 @@ $base = osc_admin_base_url(true) . '?page=billing&action=credits';
                           . 'by a payment or by you.'),
         ));
     } else { ?>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th scope="col"><?php _e('User'); ?></th>
-                    <th scope="col"><?php _e('Email'); ?></th>
-                    <th scope="col" class="col-numeric"><?php _e('Balance'); ?></th>
-                    <th scope="col"><?php _e('Last change'); ?></th>
-                    <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($wallets as $wallet) {
-                    $balance   = (int)$wallet['i_balance'];
-                    $walletUrl = osc_admin_base_url(true) . '?page=billing&action=wallet&userId='
-                                 . (int)$wallet['fk_i_user_id']; ?>
-                    <tr>
-                        <td>
-                            <a href="<?php echo osc_esc_html($walletUrl); ?>">
-                                <?php echo osc_esc_html(\mindstellar\user\UserStore::displayName($wallet)); ?>
-                            </a>
-                        </td>
-                        <td class="text-muted"><?php echo osc_esc_html($wallet['s_email']); ?></td>
-                        <td class="col-numeric<?php echo $balance < 0 ? ' balance-negative' : ''; ?>">
-                            <?php echo number_format($balance); ?>
-                        </td>
-                        <td><?php echo osc_admin_date($wallet['dt_mod_date'], true); ?></td>
-                        <td class="text-end">
-                            <a class="btn btn-secondary btn-sm"
-                               href="<?php echo osc_esc_html($walletUrl); ?>"><?php _e('Open'); ?></a>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+        <?php
+        $tableRows = array();
+        foreach ($wallets as $wallet) {
+            $balance   = (int)$wallet['i_balance'];
+            $walletUrl = osc_admin_base_url(true) . '?page=billing&action=wallet&userId='
+                         . (int)$wallet['fk_i_user_id'];
+            $tableRows[] = array(
+                'user' => array('render' => static function () use ($walletUrl, $wallet): void { ?>
+                    <a href="<?php echo osc_esc_html($walletUrl); ?>">
+                        <?php echo osc_esc_html(\mindstellar\user\UserStore::displayName($wallet)); ?>
+                    </a>
+                <?php }),
+                'email'   => array('html' => osc_esc_html($wallet['s_email']), 'class' => 'text-muted'),
+                'balance' => array('html' => number_format($balance), 'class' => $balance < 0 ? 'balance-negative' : ''),
+                'changed' => array('html' => osc_admin_date($wallet['dt_mod_date'], true)),
+                'open'    => array('class' => 'text-end', 'render' => static function () use ($walletUrl): void { ?>
+                    <a class="btn btn-secondary btn-sm"
+                       href="<?php echo osc_esc_html($walletUrl); ?>"><?php _e('Open'); ?></a>
+                <?php }),
+            );
+        }
+        osc_admin_table(array(
+            'user'    => __('User'),
+            'email'   => __('Email'),
+            'balance' => array('label' => __('Balance'), 'numeric' => true),
+            'changed' => __('Last change'),
+            'open'    => array('label' => __('Actions'), 'hide_label' => true, 'col_name' => false),
+        ), $tableRows, array('stack' => true));
+        ?>
     <?php } ?>
 
     <?php osc_admin_pager(array(

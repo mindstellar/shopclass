@@ -138,36 +138,27 @@ osc_admin_page(array(
                 <div class="widget-box-title"><h3><?php _e('Latest comments on the web'); ?></h3></div>
                 <div class="widget-box-content">
                     <?php if (count($latest_comments) > 0) { ?>
-                        <table class="table" cellpadding="0" cellspacing="0">
-                            <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th class="col-title"><?php _e('Title'); ?></th>
-                                <th><?php _e('Author'); ?></th>
-                                <th><?php _e('Comment'); ?></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($latest_comments as $c) { ?>
-                                <tr>
-                                    <td>
-                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo $c['pk_i_id']; ?></a>
-                                    </td>
-                                    <td>
-                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_title']); ?></a>
-                                    </td>
-                                    <td>
-                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_author_name']
-                                                                                                                                                                               . ' - '
-                                                                                                                                                                               . $c['s_author_email']); ?></a>
-                                    </td>
-                                    <td>
-                                        <a href="<?php echo osc_admin_base_url(true); ?>?page=comments&amp;action=comment_edit&amp;id=<?php echo $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_body']); ?></a>
-                                    </td>
-                                </tr>
-                            <?php } ?>
-                            </tbody>
-                        </table>
+                        <?php
+                        $editUrl   = osc_admin_base_url(true) . '?page=comments&amp;action=comment_edit&amp;id=';
+                        $tableRows = array();
+                        foreach ($latest_comments as $c) {
+                            $link = static fn ($text): array => array(
+                                'html' => '<a href="' . $editUrl . (int) $c['pk_i_id'] . '">' . osc_esc_html((string) $text) . '</a>',
+                            );
+                            $tableRows[] = array(
+                                'id'      => $link($c['pk_i_id']),
+                                'title'   => $link($c['s_title']),
+                                'author'  => $link($c['s_author_name'] . ' - ' . $c['s_author_email']),
+                                'comment' => $link($c['s_body']),
+                            );
+                        }
+                        osc_admin_table(array(
+                            'id'      => 'ID',
+                            'title'   => array('label' => __('Title'), 'class' => 'col-title'),
+                            'author'  => __('Author'),
+                            'comment' => __('Comment'),
+                        ), $tableRows, array('wrap' => false));
+                        ?>
                     <?php } else { ?>
                         <p><?php _e("There are no statistics yet"); ?></p>
                     <?php } ?>

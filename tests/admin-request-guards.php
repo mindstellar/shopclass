@@ -25,6 +25,7 @@ require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 require_once __DIR__ . '/lib/stubs.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
 /** What a missing or wrong token ends in; the real check redirects and exits. */
 class CsrfRefused extends RuntimeException

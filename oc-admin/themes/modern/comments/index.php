@@ -73,46 +73,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
           data-dialog-open="false">
         <input type="hidden" name="page" value="comments"/>
         <input type="hidden" name="action" value="bulk_actions"/>
-        <div class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                <tr>
-                    <?php foreach ($columns as $k => $v) {
-                        if ($direction === 'desc') {
-                            echo '<th class="col-' . $k . ' ' . ($sort == $k ? ('sorting_desc') : '') . '">' . $v . '</th>';
-                        } else {
-                            echo '<th class="col-' . $k . ' ' . ($sort == $k ? ('sorting_asc') : '') . '">' . $v . '</th>';
-                        }
-                    } ?>
-                </tr>
-                </thead>
-                <tbody>
-                <?php if (count($rows) > 0) { ?>
-                    <?php foreach ($rows as $key => $row) { ?>
-                        <tr class="<?php echo implode(
-                            ' ',
-                            osc_apply_filter('datatable_comment_class', array(), $aRawRows[$key], $row)
-                        ); ?>">
-                            <?php foreach ($row as $k => $v) { ?>
-                                <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
-                                          // `comments_processing_row` filter still hands plugins the plain word.?>
-                                <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
-                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
-                                ?></td>
-                            <?php } ?>
-                        </tr>
-                    <?php } ?>
-                <?php } else {
-                    osc_admin_table_empty(count($columns), array(
-                        'icon'  => 'bi-chat-left-text',
-                        'title' => __('No comments to moderate'),
-                        'text'  => __('Comments visitors leave on listings appear here for approval.'),
-                    ));
-                } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+        <?php
+        osc_admin_data_table($aData, array(
+            'sort'      => $sort,
+            'direction' => $direction,
+            'row_class' => static fn ($key, $row) => osc_apply_filter('datatable_comment_class', array(), $aRawRows[$key], $row),
+            'empty'     => array(
+                'icon'  => 'bi-chat-left-text',
+                'title' => __('No comments to moderate'),
+                'text'  => __('Comments visitors leave on listings appear here for approval.'),
+            ),
+        ));
+        ?>
     </form>
 </div>
 <?php

@@ -35,50 +35,41 @@ osc_admin_page(array(
             'action' => array('label' => __('Add package'), 'url' => $base . '&action=package'),
         ));
     } else { ?>
-        <div class="table-responsive">
-            <table class="table">
-                <thead>
-                <tr>
-                    <th scope="col" class="col-status"><?php _e('Status'); ?></th>
-                    <th scope="col"><?php _e('Name'); ?></th>
-                    <th scope="col" class="col-numeric"><?php _e('Price'); ?></th>
-                    <th scope="col" class="col-numeric"><?php _e('Credits'); ?></th>
-                    <th scope="col"><?php _e('Actions'); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($packages as $package) {
-                    $editUrl = $base . '&action=package&id=' . $package['pk_i_id']; ?>
-                    <tr>
-                        <td class="col-status">
-                            <?php osc_admin_status(
-                                $package['b_enabled'] ? 'active' : 'inactive',
-                                $package['b_enabled'] ? __('Enabled') : __('Disabled')
-                            ); ?>
-                        </td>
-                        <td>
-                            <a href="<?php echo osc_esc_html($editUrl); ?>">
-                                <?php echo osc_esc_html($package['s_name']); ?>
-                            </a>
-                        </td>
-                        <td class="col-numeric">
-                            <?php echo osc_esc_html(osc_admin_money($package['i_amount'], $package['s_currency'])); ?>
-                        </td>
-                        <td class="col-numeric"><?php echo number_format((int) $package['i_credits']); ?></td>
-                        <td>
-                            <a class="btn btn-secondary btn-sm" href="<?php echo osc_esc_html($editUrl); ?>">
-                                <?php _e('Edit'); ?>
-                            </a>
-                            <button type="button" class="btn btn-danger btn-sm"
-                                    data-osc-dialog-open="#package-delete-<?php echo (int) $package['pk_i_id']; ?>">
-                                <?php _e('Delete'); ?>
-                            </button>
-                        </td>
-                    </tr>
-                <?php } ?>
-                </tbody>
-            </table>
-        </div>
+        <?php
+        $tableRows = array();
+        foreach ($packages as $package) {
+            $editUrl = $base . '&action=package&id=' . $package['pk_i_id'];
+            $tableRows[] = array(
+                'status' => array('status' => array(
+                    $package['b_enabled'] ? 'active' : 'inactive',
+                    $package['b_enabled'] ? __('Enabled') : __('Disabled'),
+                )),
+                'name' => array('render' => static function () use ($editUrl, $package): void { ?>
+                    <a href="<?php echo osc_esc_html($editUrl); ?>">
+                        <?php echo osc_esc_html($package['s_name']); ?>
+                    </a>
+                <?php }),
+                'price'   => osc_admin_money($package['i_amount'], $package['s_currency']),
+                'credits' => number_format((int) $package['i_credits']),
+                'actions' => array('render' => static function () use ($editUrl, $package): void { ?>
+                    <a class="btn btn-secondary btn-sm" href="<?php echo osc_esc_html($editUrl); ?>">
+                        <?php _e('Edit'); ?>
+                    </a>
+                    <button type="button" class="btn btn-danger btn-sm"
+                            data-osc-dialog-open="#package-delete-<?php echo (int) $package['pk_i_id']; ?>">
+                        <?php _e('Delete'); ?>
+                    </button>
+                <?php }),
+            );
+        }
+        osc_admin_table(array(
+            'status'  => array('label' => __('Status'), 'class' => 'col-status', 'col_name' => false),
+            'name'    => __('Name'),
+            'price'   => array('label' => __('Price'), 'numeric' => true),
+            'credits' => array('label' => __('Credits'), 'numeric' => true),
+            'actions' => __('Actions'),
+        ), $tableRows, array('stack' => true));
+        ?>
 
         <?php foreach ($packages as $package) {
             osc_admin_confirm_dialog(array(

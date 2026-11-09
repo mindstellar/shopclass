@@ -162,7 +162,7 @@ class ItemsDataTable extends DataTable
         );
 
         $this->addColumn('status-border', '');
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('status', __('Status'));
         $this->addColumn('image', __('Image'));
         $this->addColumn('title', __('Title'));
@@ -406,9 +406,7 @@ class ItemsDataTable extends DataTable
                 $status               = $this->get_row_status();
                 $row['status-border'] = '';
                 $row['bulkactions']   =
-                    '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
-                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_title'])) . '" active="' . $aRow['b_active']
-                    . '" blocked="' . $aRow['b_enabled'] . '"/>';
+                    $this->bulkCheckbox($aRow['pk_i_id'], $aRow['s_title'], 'id[]', array('active' => $aRow['b_active'], 'blocked' => $aRow['b_enabled']));
                 $row['status']        = $status['text'];
 
                 // A spam-quarantined listing has no user reports behind it (that is the
@@ -721,7 +719,7 @@ class ItemsDataTable extends DataTable
         $url_date       = $url_base . $arg_date;
         $url_expiration = $url_base . $arg_expiration;
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('title', __('Title'));
         $this->addColumn('user', __('User'));
         // Distinct, deduplicated reporters (one vote per person) and the recorded
@@ -816,9 +814,7 @@ class ItemsDataTable extends DataTable
 
                 // fill a row
                 $row['bulkactions'] =
-                    '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
-                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_title'])) . '" active="' . $aRow['b_active']
-                    . '" blocked="' . $aRow['b_enabled'] . '"/>';
+                    $this->bulkCheckbox($aRow['pk_i_id'], $aRow['s_title'], 'id[]', array('active' => $aRow['b_active'], 'blocked' => $aRow['b_enabled']));
                 $row['title']       = '<a href="' . osc_esc_html(osc_item_url()) . '" target="_blank">' . osc_esc_html($title) . '</a>' . $actions;
                 $row['user']        = osc_esc_html($aRow['s_user_name']);
                 $row['reporters']   = $this->reportersCell((int) $aRow['pk_i_id']);

@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1292 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1294 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -105,7 +105,7 @@ Core defines 1292 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (52)
+### hAdminUi (54)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -120,6 +120,7 @@ Core defines 1292 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_category_picker(array $opts = array())` | The category chooser: a control showing the chosen path, and a searchable list of the whole tree behind it. |
 | `osc_admin_checkbox(array $opts)` | A checkbox with its label on one line and its hint underneath. |
 | `osc_admin_count(int $count, string $id = '')` | A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather than "Pending (3)". Returns the markup, led by a space so the label and number never run together; a zero is drawn muted. |
+| `osc_admin_data_table(array $aData, array $opts = array())` | A list screen's table from DataTable output. Titles and cells print as DataTable built them; the wrapper always holds the empty #table-row-actions. |
 | `osc_admin_definition(array $rows)` | Label/value rows -- the read-only counterpart to a form. A row may set 'html' =&gt; true to pass markup through, which is why the default escapes. |
 | `osc_admin_disclosure_close()` | Close what osc_admin_disclosure_open() opened. |
 | `osc_admin_disclosure_open($title, array $opts = array())` | A collapsible group, for the settings a screen has to offer and nobody changes twice a year. A &lt;details&gt;, so it works with no JavaScript and is findable by the browser's own in-page search. |
@@ -158,6 +159,7 @@ Core defines 1292 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_select(array $opts)` | A dropdown. Keys: the shared set, plus 'options', 'selected', 'placeholder'. |
 | `osc_admin_settings_form($page, array $opts = array())` | The whole form of a declared page (osc_register_settings_page()): the element, the hidden route, every declared field with the value it should show, and the submit row. |
 | `osc_admin_status($state, $word)` | A status pill: a tint, a shape, and the word. An unmapped state still renders, in the neutral tint, so a plugin's own word degrades instead of vanishing. |
+| `osc_admin_table(array $columns, array $rows, array $opts = array())` | A hand-built admin table: header, rows, optional empty row and wrapper. Plain values are escaped; only 'label_html', 'html' and 'render' print as given. |
 | `osc_admin_text(array $opts)` | Single-line text. Keys: the shared set, plus 'placeholder', 'width', 'prefix', 'suffix'. |
 | `osc_admin_textarea(array $opts)` | Multi-line text. Keys: the shared set, plus 'rows', 'monospace'. |
 | `osc_admin_tree_picker(array $opts)` | A category checkbox tree with "Check all / Uncheck all" toggles, shared by every screen that assigns fields, groups or plugin config to categories. Each main category is a card; its subcategories fold below it. |

@@ -72,7 +72,7 @@ class BanRulesDataTable extends DataTable
     private function addTableHeader()
     {
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('name', __('Ban name / Reason'));
         $this->addColumn('ip', __('IP rule'));
         $this->addColumn('email', __('E-mail rule'));
@@ -154,8 +154,7 @@ class BanRulesDataTable extends DataTable
 
                 $actions = '<div class="actions">' . $auxOptions . '</div>' . PHP_EOL;
 
-                $row['bulkactions'] = '<input type="checkbox" name="id[]" value="' . $aRow['pk_i_id'] . '"'
-                    . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $aRow['s_name'])) . '" /></div>';
+                $row['bulkactions'] = $this->bulkCheckbox($aRow['pk_i_id'], $aRow['s_name']);
                 $row['name']        = osc_esc_html($aRow['s_name']) . $actions;
                 $row['ip']          = osc_esc_html($aRow['s_ip']);
                 $row['email']       = osc_esc_html($aRow['s_email']);

@@ -44,98 +44,93 @@ $banUrl = static function (string $email): string {
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_current_admin_theme_path('messages/tabs.php'); ?>
 <div class="relative">
-    <div class="table-contains-actions">
-        <?php if ($tab === 'held') { ?>
-        <table class="table" cellpadding="0" cellspacing="0">
-            <thead>
-                <tr>
-                    <th><?php _e('Date'); ?></th>
-                    <th><?php _e('Sender'); ?></th>
-                    <th><?php echo osc_mode_text(__('Listing'), __('Product')); ?></th>
-                    <th><?php _e('Message'); ?></th>
-                    <th><?php _e('Actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($rows as $row) {
-                    $body = (string) $row['s_body']; ?>
-                <tr>
-                    <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_esc_html(osc_format_date((string) $row['dt_created'], osc_admin_date_format())); ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Sender')); ?>">
-                        <?php echo $userLink($row['fk_i_sender_id'], (string) $row['sender_name']); ?>
-                        <?php if (!osc_is_moderator() && (string) $row['sender_email'] !== '') { ?>
-                            <br /><a href="<?php echo osc_esc_html($banUrl((string) $row['sender_email'])); ?>"><?php _e('Ban sender'); ?></a>
-                        <?php } ?>
-                    </td>
-                    <td data-col-name="<?php echo osc_esc_html(osc_mode_text(__('Listing'), __('Product'))); ?>"><?php echo $itemLink($row['item_id'], (string) $row['item_title']); ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Message')); ?>">
-                        <?php if (mb_strlen($body) > 600) { ?>
-                            <div style="white-space: pre-wrap;"><?php echo osc_esc_html(mb_substr($body, 0, 600)); ?>&hellip;</div>
-                            <details><summary><?php _e('Show all'); ?></summary><div style="white-space: pre-wrap;"><?php echo osc_esc_html($body); ?></div></details>
-                        <?php } else { ?>
-                            <div style="white-space: pre-wrap;"><?php echo osc_esc_html($body); ?></div>
-                        <?php } ?>
-                    </td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Actions')); ?>">
-                        <button type="button" class="btn btn-sm btn-submit" data-msg-dialog="releaseModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Release'); ?></button>
-                        <button type="button" class="btn btn-sm btn-dim" data-msg-dialog="removeModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Remove'); ?></button>
-                        <?php if (!empty($row['conversation']['pk_i_id'])) { ?>
-                            <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($base . '&action=thread&id=' . (int) $row['conversation']['pk_i_id']); ?>"><?php _e('View'); ?></a>
-                        <?php } ?>
-                    </td>
-                </tr>
-                <?php }
-                if ($rows === array()) {
-                    osc_admin_table_empty(5, array(
-                        'icon'  => 'bi-chat-dots',
-                        'title' => __('No held messages'),
-                        'text'  => __('Messages that the spam checks hold back show up here.'),
-                    ));
-                } ?>
-            </tbody>
-        </table>
-        <?php } else { ?>
-        <table class="table" cellpadding="0" cellspacing="0">
-            <thead>
-                <tr>
-                    <th><?php _e('Date'); ?></th>
-                    <th><?php echo osc_mode_text(__('Listing'), __('Product')); ?></th>
-                    <th><?php _e('Buyer'); ?></th>
-                    <th><?php _e('Seller'); ?></th>
-                    <th><?php _e('Reported by'); ?></th>
-                    <th><?php _e('Actions'); ?></th>
-                </tr>
-            </thead>
-            <tbody>
-                <?php foreach ($rows as $row) {
-                    $reason = (string) ($row['s_report_reason'] ?? ''); ?>
-                <tr>
-                    <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_esc_html(osc_format_date((string) $row['dt_last_message'], osc_admin_date_format())); ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(osc_mode_text(__('Listing'), __('Product'))); ?>"><?php echo $itemLink($row['item_id'], (string) $row['item_title']); ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Buyer')); ?>"><?php echo $userLink($row['fk_i_buyer_id'], (string) $row['buyer_name']); ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Seller')); ?>"><?php echo $userLink($row['fk_i_seller_id'], (string) $row['seller_name']); ?></td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Reported by')); ?>">
-                        <?php echo $userLink($row['fk_i_reporter_id'], (string) $row['reporter_name']); ?>
-                        <?php if ($reason !== '') { ?><br /><span class="osc-status"><?php echo osc_esc_html($reasons[$reason] ?? $reason); ?></span><?php } ?>
-                    </td>
-                    <td data-col-name="<?php echo osc_esc_html(__('Actions')); ?>">
-                        <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($base . '&action=thread&id=' . (int) $row['pk_i_id']); ?>"><?php _e('View'); ?></a>
-                        <button type="button" class="btn btn-sm btn-dim" data-msg-dialog="closeModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Close'); ?></button>
-                        <button type="button" class="btn btn-sm btn-submit" data-msg-dialog="clearModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Clear'); ?></button>
-                    </td>
-                </tr>
-                <?php }
-                if ($rows === array()) {
-                    osc_admin_table_empty(6, array(
-                        'icon'  => 'bi-flag',
-                        'title' => __('No reported conversations'),
-                        'text'  => __('Conversations that a user reports show up here.'),
-                    ));
-                } ?>
-            </tbody>
-        </table>
-        <?php } ?>
-    </div>
+    <?php
+    $listing  = osc_mode_text(__('Listing'), __('Product'));
+    $dateCell = static fn ($date) => osc_format_date((string) $date, osc_admin_date_format());
+    $tableRows = array();
+    if ($tab === 'held') {
+        foreach ($rows as $row) {
+            $body        = (string) $row['s_body'];
+            $tableRows[] = array(
+                'date'    => $dateCell($row['dt_created']),
+                'sender'  => array('render' => static function () use ($row, $userLink, $banUrl) {
+                    echo $userLink($row['fk_i_sender_id'], (string) $row['sender_name']);
+                    if (!osc_is_moderator() && (string) $row['sender_email'] !== '') {
+                        echo '<br /><a href="' . osc_esc_html($banUrl((string) $row['sender_email'])) . '">' . osc_esc_html(__('Ban sender')) . '</a>';
+                    }
+                }),
+                'item'    => array('html' => $itemLink($row['item_id'], (string) $row['item_title'])),
+                'message' => array('render' => static function () use ($body) {
+                    if (mb_strlen($body) > 600) { ?>
+                        <div style="white-space: pre-wrap;"><?php echo osc_esc_html(mb_substr($body, 0, 600)); ?>&hellip;</div>
+                        <details><summary><?php _e('Show all'); ?></summary><div style="white-space: pre-wrap;"><?php echo osc_esc_html($body); ?></div></details>
+                    <?php } else { ?>
+                        <div style="white-space: pre-wrap;"><?php echo osc_esc_html($body); ?></div>
+                    <?php }
+                }),
+                'actions' => array('render' => static function () use ($row, $base) { ?>
+                    <button type="button" class="btn btn-sm btn-submit" data-msg-dialog="releaseModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Release'); ?></button>
+                    <button type="button" class="btn btn-sm btn-dim" data-msg-dialog="removeModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Remove'); ?></button>
+                    <?php if (!empty($row['conversation']['pk_i_id'])) { ?>
+                        <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($base . '&action=thread&id=' . (int) $row['conversation']['pk_i_id']); ?>"><?php _e('View'); ?></a>
+                    <?php }
+                }),
+            );
+        }
+        osc_admin_table(array(
+            'date'    => __('Date'),
+            'sender'  => __('Sender'),
+            'item'    => $listing,
+            'message' => __('Message'),
+            'actions' => __('Actions'),
+        ), $tableRows, array(
+            'wrap'  => 'actions',
+            'stack' => true,
+            'empty' => array(
+                'icon'  => 'bi-chat-dots',
+                'title' => __('No held messages'),
+                'text'  => __('Messages that the spam checks hold back show up here.'),
+            ),
+        ));
+    } else {
+        foreach ($rows as $row) {
+            $reason      = (string) ($row['s_report_reason'] ?? '');
+            $tableRows[] = array(
+                'date'     => $dateCell($row['dt_last_message']),
+                'item'     => array('html' => $itemLink($row['item_id'], (string) $row['item_title'])),
+                'buyer'    => array('html' => $userLink($row['fk_i_buyer_id'], (string) $row['buyer_name'])),
+                'seller'   => array('html' => $userLink($row['fk_i_seller_id'], (string) $row['seller_name'])),
+                'reporter' => array('render' => static function () use ($row, $userLink, $reason, $reasons) {
+                    echo $userLink($row['fk_i_reporter_id'], (string) $row['reporter_name']);
+                    if ($reason !== '') {
+                        echo '<br /><span class="osc-status">' . osc_esc_html($reasons[$reason] ?? $reason) . '</span>';
+                    }
+                }),
+                'actions'  => array('render' => static function () use ($row, $base) { ?>
+                    <a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html($base . '&action=thread&id=' . (int) $row['pk_i_id']); ?>"><?php _e('View'); ?></a>
+                    <button type="button" class="btn btn-sm btn-dim" data-msg-dialog="closeModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Close'); ?></button>
+                    <button type="button" class="btn btn-sm btn-submit" data-msg-dialog="clearModal" data-id="<?php echo (int) $row['pk_i_id']; ?>"><?php _e('Clear'); ?></button>
+                <?php }),
+            );
+        }
+        osc_admin_table(array(
+            'date'     => __('Date'),
+            'item'     => $listing,
+            'buyer'    => __('Buyer'),
+            'seller'   => __('Seller'),
+            'reporter' => __('Reported by'),
+            'actions'  => __('Actions'),
+        ), $tableRows, array(
+            'wrap'  => 'actions',
+            'stack' => true,
+            'empty' => array(
+                'icon'  => 'bi-flag',
+                'title' => __('No reported conversations'),
+                'text'  => __('Conversations that a user reports show up here.'),
+            ),
+        ));
+    }
+    ?>
     <?php if ($older) { ?>
         <p><a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html((string) $older); ?>"><?php _e('Older'); ?></a></p>
     <?php } ?>

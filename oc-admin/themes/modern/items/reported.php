@@ -61,47 +61,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
         <input type="hidden" name="page" value="items" />
         <input type="hidden" name="action" value="bulk_actions" />
-        <div class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <?php foreach ($columns as $k => $v) {
-                            if ($direction === 'desc') {
-                                echo '<th class="col-' . $k . ' ' . ($sort === $k ? ('sorting_desc') : '') . '">' . $v . '</th>';
-                            } else {
-                                echo '<th class="col-' . $k . ' ' . ($sort === $k ? ('sorting_asc') : '') . '">' . $v . '</th>';
-                            }
-                        } ?>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($rows) > 0) { ?>
-                        <?php foreach ($rows as $key => $row) { ?>
-                            <tr>
-                                <?php foreach ($row as $k => $v) { ?>
-                                    <?php // Status becomes a badge. Wrapped here in the theme, not in the DataTable, so the
-                                          // `items_processing_row` filter still hands plugins the plain word.?>
-                                    <?php // A report count of 0 stays blank, so the reasons that matter stand out.
-                                    if (in_array($k, array('spam', 'bad', 'rep', 'exp', 'off'), true) && (int) $v === 0) {
-                                        $v = '';
-                                    } ?>
-                                    <td class="col-<?php echo $k; ?>" data-col-name="<?php echo osc_admin_col_name($columns, $k); ?>"><?php
-                                        echo $k === 'status' ? '<span class="osc-status">' . $v . '</span>' : $v;
-                                    ?></td>
-                                <?php } ?>
-                            </tr>
-                        <?php } ?>
-                    <?php } else {
-                        osc_admin_table_empty(count($columns), array(
-                            'icon'  => 'bi-flag',
-                            'title' => __('No reported listings'),
-                            'text'  => __('Listings reported by visitors for spam, being misclassified, duplicate, expired, or offensive content show up here.'),
-                        ));
-                    } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+        <?php
+        osc_admin_data_table($aData, array(
+            'sort'      => $sort,
+            'direction' => $direction,
+            'cell'      => static fn ($column, $value, $key) => in_array($column, array('spam', 'bad', 'rep', 'exp', 'off'), true) && (int) $value === 0 ? '' : null,
+            'empty'     => array(
+                'icon'  => 'bi-flag',
+                'title' => __('No reported listings'),
+                'text'  => __('Listings reported by visitors for spam, being misclassified, duplicate, expired, or offensive content show up here.'),
+            ),
+        ));
+        ?>
     </form>
 </div>
 <?php

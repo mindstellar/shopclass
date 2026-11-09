@@ -56,56 +56,31 @@ osc_current_admin_theme_path('parts/header.php');
     <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="languages" />
         <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
-        <div class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                    <tr>
-                        <th class="col-bulkactions"><input id="check_all" type="checkbox" aria-label="<?php echo osc_esc_html(__('Select all')); ?>" /></th>
-                        <th><?php _e('Name'); ?></th>
-                        <th class="col-short-name"><?php _e('Short name'); ?></th>
-                        <th class="col-description"><?php _e('Description'); ?></th>
-                        <th><?php _e('Enabled (website)'); ?></th>
-                        <th><?php _e('Enabled (oc-admin)'); ?></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (count($aData['aaData']) > 0) { ?>
-                        <?php foreach ($aData['aaData'] as $array) { ?>
-                            <tr>
-                                <?php foreach ($array as $key => $value) { ?>
-                                    <td <?php if ($key === 0) {
-                                        echo 'class="col-bulkactions"';
-                                    } elseif ($key === 1) {
-                                        echo 'data-col-name="' . __("Name") . '"';
-                                    } elseif ($key === 2) {
-                                        echo 'class="col-short-name" data-col-name="' . __("Short name") . '"';
-                                    } elseif ($key === 3) {
-                                        echo 'class="col-description" data-col-name="' . __("Description") . '"';
-                                    } elseif ($key === 4) {
-                                        echo 'class="col-enabled-website" data-col-name="' . __("Enabled (website)") . '"';
-                                    } elseif ($key === 5) {
-                                        echo 'class="col-enabled-backend" data-col-name="' . __("Enabled (oc-admin)") . '"';
-                                    } ?>>
-                                        <?php echo $value; ?></td>
-                                <?php } ?>
-                            </tr>
-                        <?php } ?>
-                    <?php } else { ?>
-                        <?php osc_admin_table_empty(6, array(
-                            'icon'   => 'bi-translate',
-                            'title'  => __('No languages yet'),
-                            'text'   => __('Import a language from the catalog or upload a package to add one.'),
-                            'action' => array(
-                                'label'   => __('Upload language'),
-                                'url'     => osc_admin_base_url(true) . '?page=languages&amp;action=add',
-                                'variant' => 'primary',
-                            ),
-                        )); ?>
-                    <?php } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+        <?php
+        $keys = array('bulkactions', 'name', 'short-name', 'description', 'enabled-website', 'enabled-backend');
+        osc_admin_data_table(array(
+            'aColumns' => array_combine($keys, array(
+                \mindstellar\admin\ui\Form::bulkHeader(),
+                __('Name'),
+                __('Short name'),
+                __('Description'),
+                __('Enabled (website)'),
+                __('Enabled (oc-admin)'),
+            )),
+            'aRows'    => array_map(static fn ($row) => array_combine($keys, $row), $aData['aaData']),
+        ), array(
+            'empty' => array(
+                'icon'   => 'bi-translate',
+                'title'  => __('No languages yet'),
+                'text'   => __('Import a language from the catalog or upload a package to add one.'),
+                'action' => array(
+                    'label'   => __('Upload language'),
+                    'url'     => osc_admin_base_url(true) . '?page=languages&amp;action=add',
+                    'variant' => 'primary',
+                ),
+            ),
+        ));
+        ?>
     </form>
 </div>
 

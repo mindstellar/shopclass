@@ -122,112 +122,111 @@ osc_current_admin_theme_path('parts/header.php');
             osc_admin_toolbar_close();
         } ?>
 
-        <div class="table-contains-actions">
-            <table class="table" cellpadding="0" cellspacing="0">
-                <thead>
-                <tr>
-                    <th class="col-status"><?php _e('Status'); ?></th>
-                    <th class="col-received"><?php _e('Received'); ?></th>
-                    <th class="col-submission"><?php _e('Submission'); ?></th>
-                    <th class="col-source"><?php _e('Source'); ?></th>
-                    <th class="col-ip"><?php _e('IP'); ?></th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php if ($currentFormId > 0 && count($submissions) > 0) {
-                    foreach ($submissions as $s) {
-                        $sid    = (int)$s['pk_i_id'];
-                        $status = (string)$s['s_status'];
-                        $ctx    = osc_form_context_display($s['s_context_type'], (int)$s['i_context_id']);
-                        // One-line preview, so a row keeps its height however many fields
-                        // the form grows to. The full set opens in the detail dialog.
-                        $preview = array();
-                        foreach ($s['values'] as $fieldId => $value) {
-                            $field = $fieldsById[(int)$fieldId] ?? null;
-                            $label = $field !== null ? $field['s_name'] : (__('Field') . ' #' . (int)$fieldId);
-                            // submission_value_display() already escapes; strip_tags only
-                            // removes the <br> it adds, so the text stays escaped.
-                            $plain = trim(preg_replace('/\s+/', ' ', \mindstellar\utility\Sanitize::stripTags(submission_value_display($field, $value))));
-                            if ($plain !== '') {
-                                $preview[] = osc_esc_html($label) . ': ' . $plain;
+        <?php
+        $subRows = array();
+        if ($currentFormId > 0) {
+            foreach ($submissions as $s) {
+                $sid    = (int)$s['pk_i_id'];
+                $status = (string)$s['s_status'];
+                $ctx    = osc_form_context_display($s['s_context_type'], (int)$s['i_context_id']);
+                // One-line preview, so a row keeps its height however many fields
+                // the form grows to. The full set opens in the detail dialog.
+                $preview = array();
+                foreach ($s['values'] as $fieldId => $value) {
+                    $field = $fieldsById[(int)$fieldId] ?? null;
+                    $label = $field !== null ? $field['s_name'] : (__('Field') . ' #' . (int)$fieldId);
+                    // submission_value_display() already escapes; strip_tags only
+                    // removes the <br> it adds, so the text stays escaped.
+                    $plain = trim(preg_replace('/\s+/', ' ', \mindstellar\utility\Sanitize::stripTags(submission_value_display($field, $value))));
+                    if ($plain !== '') {
+                        $preview[] = osc_esc_html($label) . ': ' . $plain;
+                    }
+                }
+                $subRows[] = array(
+                    'class' => 'status-' . $status,
+                    'attrs' => array('data-sub-id' => $sid),
+                    'cells' => array(
+                        'status'     => array('status' => array($status, $statusLabels[$status] ?? $status)),
+                        'received'   => array('render' => static function () use ($s, $sid, $status, $statusLabels) { ?>
+                            <strong><?php echo osc_esc_html(osc_format_date($s['dt_created'])); ?></strong>
+                            <div class="actions">
+                                <ul>
+                                    <li><a href="#" onclick="view_submission(<?php echo $sid; ?>); return false;"><?php _e('View'); ?></a></li>
+                                    <?php foreach ($statusLabels as $key => $label) {
+                                        if ($key === $status) {
+                                            continue;
+                                        } ?>
+                                        <li><a href="#" onclick="set_submission_status(<?php echo $sid; ?>, '<?php echo $key; ?>'); return false;"><?php
+                                            echo osc_esc_html(sprintf(__('Mark %s'), mb_strtolower($label))); ?></a></li>
+                                    <?php } ?>
+                                    <li><a href="#" class="row-action-danger" onclick="delete_dialog(<?php echo $sid; ?>); return false;"><?php
+                                        _e('Delete'); ?></a></li>
+                                </ul>
+                            </div>
+                        <?php }),
+                        'submission' => array('render' => static function () use ($s, $sid, $preview, $fieldsById) { ?>
+                            <a href="#" class="submission-preview" onclick="view_submission(<?php echo $sid; ?>); return false;"><?php
+                                echo $preview === array()
+                                    ? osc_esc_html(__('(no values)'))
+                                    : implode(' · ', $preview); ?></a>
+                            <template class="submission-detail">
+                                <dl class="submission-values">
+                                    <?php foreach ($s['values'] as $fieldId => $value) {
+                                        $field = $fieldsById[(int)$fieldId] ?? null;
+                                        $label = $field !== null ? $field['s_name'] : (__('Field') . ' #' . (int)$fieldId); ?>
+                                        <dt><?php echo osc_esc_html($label); ?></dt>
+                                        <dd><?php echo submission_value_display($field, $value); ?></dd>
+                                    <?php } ?>
+                                </dl>
+                            </template>
+                        <?php }),
+                        'source'     => array('render' => static function () use ($ctx) {
+                            if (!empty($ctx['url'])) {
+                                echo '<a href="' . osc_esc_html($ctx['url']) . '" target="_blank" rel="noopener">'
+                                    . osc_esc_html($ctx['label']) . '</a>';
+                            } else {
+                                echo osc_esc_html($ctx['label']);
                             }
-                        } ?>
-                        <tr class="status-<?php echo osc_esc_html($status); ?>" data-sub-id="<?php echo $sid; ?>">
-                            <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>">
-                                <span class="osc-status"><?php echo osc_esc_html($statusLabels[$status] ?? $status); ?></span>
-                            </td>
-                            <td class="col-received" data-col-name="<?php echo osc_esc_html(__('Received')); ?>">
-                                <strong><?php echo osc_esc_html(osc_format_date($s['dt_created'])); ?></strong>
-                                <div class="actions">
-                                    <ul>
-                                        <li><a href="#" onclick="view_submission(<?php echo $sid; ?>); return false;"><?php _e('View'); ?></a></li>
-                                        <?php foreach ($statusLabels as $key => $label) {
-                                            if ($key === $status) {
-                                                continue;
-                                            } ?>
-                                            <li><a href="#" onclick="set_submission_status(<?php echo $sid; ?>, '<?php echo $key; ?>'); return false;"><?php
-                                                echo osc_esc_html(sprintf(__('Mark %s'), mb_strtolower($label))); ?></a></li>
-                                        <?php } ?>
-                                        <li><a href="#" class="row-action-danger" onclick="delete_dialog(<?php echo $sid; ?>); return false;"><?php
-                                            _e('Delete'); ?></a></li>
-                                    </ul>
-                                </div>
-                            </td>
-                            <td class="col-submission" data-col-name="<?php echo osc_esc_html(__('Submission')); ?>">
-                                <a href="#" class="submission-preview" onclick="view_submission(<?php echo $sid; ?>); return false;"><?php
-                                    echo $preview === array()
-                                        ? osc_esc_html(__('(no values)'))
-                                        : implode(' · ', $preview); ?></a>
-                                <template class="submission-detail">
-                                    <dl class="submission-values">
-                                        <?php foreach ($s['values'] as $fieldId => $value) {
-                                            $field = $fieldsById[(int)$fieldId] ?? null;
-                                            $label = $field !== null ? $field['s_name'] : (__('Field') . ' #' . (int)$fieldId); ?>
-                                            <dt><?php echo osc_esc_html($label); ?></dt>
-                                            <dd><?php echo submission_value_display($field, $value); ?></dd>
-                                        <?php } ?>
-                                    </dl>
-                                </template>
-                            </td>
-                            <td class="col-source" data-col-name="<?php echo osc_esc_html(__('Source')); ?>">
-                                <?php if (!empty($ctx['url'])) {
-                                    echo '<a href="' . osc_esc_html($ctx['url']) . '" target="_blank" rel="noopener">'
-                                        . osc_esc_html($ctx['label']) . '</a>';
-                                } else {
-                                    echo osc_esc_html($ctx['label']);
-                                } ?>
-                            </td>
-                            <td class="col-ip" data-col-name="<?php echo osc_esc_html(__('IP')); ?>">
-                                <?php echo osc_esc_html($s['s_ip'] ?? ''); ?>
-                            </td>
-                        </tr>
-                    <?php }
-                    } elseif (count($forms) === 0) {
-                        osc_admin_table_empty(5, array(
-                            'icon'  => 'bi-file-earmark-text',
-                            'title' => __('No forms yet'),
-                            'text'  => __('Create a form and place it on a page to start collecting submissions.'),
-                            'action' => array(
-                                'label'   => __('Create a form'),
-                                'url'     => osc_admin_base_url(true) . '?page=fields',
-                                'variant' => 'primary',
-                            ),
-                        ));
-                    } elseif ($currentFormId > 0) {
-                        osc_admin_table_empty(5, array(
-                            'icon'  => 'bi-inbox',
-                            'title' => __('No submissions in this view yet'),
-                        ));
-                    } else {
-                        osc_admin_table_empty(5, array(
-                            'icon'  => 'bi-file-earmark-text',
-                            'title' => __('Pick a form to see its submissions'),
-                        ));
-                    } ?>
-                </tbody>
-            </table>
-            <div id="table-row-actions"></div>
-        </div>
+                        }),
+                        'ip'         => (string)($s['s_ip'] ?? ''),
+                    ),
+                );
+            }
+        }
+        if (count($forms) === 0) {
+            $subEmpty = array(
+                'icon'   => 'bi-file-earmark-text',
+                'title'  => __('No forms yet'),
+                'text'   => __('Create a form and place it on a page to start collecting submissions.'),
+                'action' => array(
+                    'label'   => __('Create a form'),
+                    'url'     => osc_admin_base_url(true) . '?page=fields',
+                    'variant' => 'primary',
+                ),
+            );
+        } elseif ($currentFormId > 0) {
+            $subEmpty = array(
+                'icon'  => 'bi-inbox',
+                'title' => __('No submissions in this view yet'),
+            );
+        } else {
+            $subEmpty = array(
+                'icon'  => 'bi-file-earmark-text',
+                'title' => __('Pick a form to see its submissions'),
+            );
+        }
+        osc_admin_table(array(
+            'status'     => array('label' => __('Status'), 'class' => 'col-status'),
+            'received'   => array('label' => __('Received'), 'class' => 'col-received'),
+            'submission' => array('label' => __('Submission'), 'class' => 'col-submission'),
+            'source'     => array('label' => __('Source'), 'class' => 'col-source'),
+            'ip'         => array('label' => __('IP'), 'class' => 'col-ip'),
+        ), $subRows, array(
+            'wrap'  => 'actions',
+            'stack' => true,
+            'empty' => $subEmpty,
+        ));
+        ?>
     </div>
     <?php osc_admin_pagination(array(
         'aRows'                => $submissions,

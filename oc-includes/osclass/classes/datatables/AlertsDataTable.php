@@ -84,7 +84,7 @@ class AlertsDataTable extends DataTable
     private function addTableHeader()
     {
 
-        $this->addColumn('bulkactions', '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all')) . '" />');
+        $this->addColumn('bulkactions', $this->bulkHeader());
         $this->addColumn('email', __('E-mail'));
         $this->addColumn('alert', __('Alert'));
         $this->addColumn('date', __('Date'));
@@ -135,7 +135,7 @@ class AlertsDataTable extends DataTable
                 $options = array();
                 // first column
                 $row['bulkactions'] =
-                    '<input type="checkbox" name="alert_id[]" value="' . $aRow['pk_i_id'] . '" /></div>';
+                    $this->bulkCheckbox($aRow['pk_i_id'], $aRow['s_email'], 'alert_id[]');
 
                 $options[] =
                     '<a onclick="return delete_alert(\'' . $aRow['pk_i_id'] . '\');" href="#">' . __('Delete') . '</a>';

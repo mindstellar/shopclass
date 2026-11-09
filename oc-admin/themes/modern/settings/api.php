@@ -153,65 +153,57 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         // Live keys first; revoked and expired ones fold away below, so New key stays near.
         $liveKeys = array_values(array_filter($keys, static fn ($k) => $k['status'] === ApiKeyService::STATUS_ACTIVE));
         $oldKeys  = array_values(array_filter($keys, static fn ($k) => $k['status'] !== ApiKeyService::STATUS_ACTIVE));
-        $keyTable = static function (array $rows) use ($statusWords, $kindWords, $adminId, $when) { ?>
-            <div class="table-contains-actions">
-                <table class="table api-keys-table osc-table-stack" cellpadding="0" cellspacing="0">
-                    <thead>
-                    <tr>
-                        <th class="col-status"><?php _e('Status'); ?></th>
-                        <th><?php _e('Name'); ?></th>
-                        <th><?php _e('Type'); ?></th>
-                        <th><?php _e('Scopes'); ?></th>
-                        <th><?php _e('Owner'); ?></th>
-                        <th><?php _e('Created'); ?></th>
-                        <th><?php _e('Last used'); ?></th>
-                        <th><?php _e('Expires'); ?></th>
-                        <th class="text-end"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($rows as $key) {
-                        [$state, $word] = $statusWords[$key['status']] ?? array('inactive', $key['status']);
-                        $active    = $key['status'] === ApiKeyService::STATUS_ACTIVE;
-                        $canRotate = $active && ($key['kind'] === 'public' || $key['owner_admin'] === $adminId); ?>
-                        <tr>
-                            <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Name')); ?>">
-                                <strong><?php echo osc_esc_html($key['name']); ?></strong>
-                                <div class="text-muted osc-mono api-key-prefix"><?php echo osc_esc_html($key['prefix']); ?>&hellip;</div>
-                            </td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Type')); ?>"><?php echo osc_esc_html($kindWords[$key['kind']] ?? $key['kind']); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Scopes')); ?>">
-                                <span class="api-key-scopes osc-mono"><?php echo osc_esc_html(implode(' ', $key['scopes'])); ?></span>
-                            </td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Owner')); ?>"><?php echo $key['owner'] !== '' ? osc_esc_html($key['owner']) : '<span class="text-muted">&mdash;</span>'; ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Created')); ?>"><?php echo $when($key['created']); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Last used')); ?>"><?php echo $key['last_used'] === null ? '<span class="text-muted">' . osc_esc_html(__('Never')) . '</span>' : $when($key['last_used']); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Expires')); ?>"><?php echo $key['expires'] === null ? '<span class="text-muted">' . osc_esc_html(__('Never')) . '</span>' : $when($key['expires']); ?></td>
-                            <td class="text-end">
-                                <?php if ($active) { ?>
-                                    <span class="api-key-actions">
-                                        <?php if ($canRotate) {
-                                            osc_admin_action_button(array(
-                                                'label'   => __('Rotate'),
-                                                'variant' => 'dim',
-                                                'attrs'   => array('data-osc-dialog-open' => '#api-rotate-dialog', 'data-api-key' => $key['id']),
-                                            ));
-                                        }
-                                        osc_admin_action_button(array(
-                                            'label'   => __('Revoke'),
-                                            'variant' => 'outline-danger',
-                                            'attrs'   => array('data-osc-dialog-open' => '#api-revoke-dialog', 'data-api-key' => $key['id']),
-                                        )); ?>
-                                    </span>
-                                <?php } ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
-        <?php };
+        $keyTable = static function (array $rows) use ($statusWords, $kindWords, $adminId, $when) {
+            $tableRows = array();
+            foreach ($rows as $key) {
+                [$state, $word] = $statusWords[$key['status']] ?? array('inactive', $key['status']);
+                $active    = $key['status'] === ApiKeyService::STATUS_ACTIVE;
+                $canRotate = $active && ($key['kind'] === 'public' || $key['owner_admin'] === $adminId);
+                $tableRows[] = array(
+                    'status'    => array('status' => array($state, $word)),
+                    'name'      => array('render' => static function () use ($key) { ?>
+                        <strong><?php echo osc_esc_html($key['name']); ?></strong>
+                        <div class="text-muted osc-mono api-key-prefix"><?php echo osc_esc_html($key['prefix']); ?>&hellip;</div>
+                    <?php }),
+                    'type'      => $kindWords[$key['kind']] ?? $key['kind'],
+                    'scopes'    => array('html' => '<span class="api-key-scopes osc-mono">' . osc_esc_html(implode(' ', $key['scopes'])) . '</span>'),
+                    'owner'     => array('html' => $key['owner'] !== '' ? osc_esc_html($key['owner']) : '<span class="text-muted">&mdash;</span>'),
+                    'created'   => array('html' => $when($key['created'])),
+                    'last_used' => array('html' => $key['last_used'] === null ? '<span class="text-muted">' . osc_esc_html(__('Never')) . '</span>' : $when($key['last_used'])),
+                    'expires'   => array('html' => $key['expires'] === null ? '<span class="text-muted">' . osc_esc_html(__('Never')) . '</span>' : $when($key['expires'])),
+                    'actions'   => array('render' => static function () use ($key, $active, $canRotate) {
+                        if (!$active) {
+                            return;
+                        } ?>
+                        <span class="api-key-actions">
+                            <?php if ($canRotate) {
+                                osc_admin_action_button(array(
+                                    'label'   => __('Rotate'),
+                                    'variant' => 'dim',
+                                    'attrs'   => array('data-osc-dialog-open' => '#api-rotate-dialog', 'data-api-key' => $key['id']),
+                                ));
+                            }
+                            osc_admin_action_button(array(
+                                'label'   => __('Revoke'),
+                                'variant' => 'outline-danger',
+                                'attrs'   => array('data-osc-dialog-open' => '#api-revoke-dialog', 'data-api-key' => $key['id']),
+                            )); ?>
+                        </span>
+                    <?php }, 'class' => 'text-end'),
+                );
+            }
+            osc_admin_table(array(
+                'status'    => array('label' => __('Status'), 'class' => 'col-status'),
+                'name'      => __('Name'),
+                'type'      => __('Type'),
+                'scopes'    => __('Scopes'),
+                'owner'     => __('Owner'),
+                'created'   => __('Created'),
+                'last_used' => __('Last used'),
+                'expires'   => __('Expires'),
+                'actions'   => array('label' => __('Actions'), 'hide_label' => true, 'class' => 'text-end', 'col_name' => false),
+            ), $tableRows, array('class' => 'api-keys-table', 'stack' => true, 'wrap' => 'actions'));
+        };
 
         if ($liveKeys === array()) { ?>
             <p class="text-muted"><?php $keys === array() ? _e('No keys yet.') : _e('No active keys.'); ?></p>
@@ -303,76 +295,68 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <?php if ($webhooks === array()) { ?>
             <p class="text-muted"><?php _e('No webhook endpoints yet.'); ?></p>
         <?php } else { ?>
-            <div class="table-contains-actions">
-                <table class="table api-webhooks-table osc-table-stack" cellpadding="0" cellspacing="0">
-                    <thead>
-                    <tr>
-                        <th class="col-status"><?php _e('Status'); ?></th>
-                        <th><?php _e('Address'); ?></th>
-                        <th><?php _e('Events'); ?></th>
-                        <th><?php _e('Last delivery'); ?></th>
-                        <th class="text-end"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($webhooks as $hook) {
-                        if (!$hook instanceof Endpoint) {
-                            continue;
-                        }
-                        [$state, $word] = $hookStates[$hook->status()]; ?>
-                        <tr>
-                            <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Address')); ?>">
-                                <strong class="osc-mono api-webhook-url"><?php echo osc_esc_html($hook->url()); ?></strong>
-                                <?php if ($hook->description() !== '') { ?>
-                                    <div class="text-muted"><?php echo osc_esc_html($hook->description()); ?></div>
-                                <?php } ?>
-                            </td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Events')); ?>">
-                                <span class="api-key-scopes osc-mono"><?php echo osc_esc_html(implode(' ', $hook->events())); ?></span>
-                            </td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Last delivery')); ?>">
-                                <?php if ($hook->lastAttempt() === null) { ?>
-                                    <span class="text-muted"><?php _e('Never'); ?></span>
-                                <?php } else { ?>
-                                    <span class="osc-mono"><?php echo osc_esc_html((string) $hook->lastStatus()); ?></span>
-                                    <div class="text-muted"><?php echo $when($hook->lastAttempt()); ?></div>
-                                <?php } ?>
-                                <?php if ($hook->failures() > 0) { ?>
-                                    <div class="text-muted"><?php echo osc_esc_html(sprintf(__('%d failed in a row'), $hook->failures())); ?></div>
-                                <?php } ?>
-                            </td>
-                            <td class="text-end">
-                                <span class="api-key-actions">
-                                    <?php
-                                    osc_admin_action_button(array('label' => __('Edit'), 'variant' => 'dim', 'url' => CAdminSettingsApi::webhookUrl($hook->id())));
-                                    $hookButton(array(
-                                        'action' => 'api_webhook_test',
-                                        'label'  => __('Send test'),
-                                        'fields' => array('webhook' => $hook->id()),
-                                    ));
-                                    $hookButton(array(
-                                        'action' => 'api_webhook_toggle',
-                                        'label'  => $hook->enabled() ? __('Switch off') : __('Switch on'),
-                                        'fields' => array('webhook' => $hook->id(), 'enabled' => $hook->enabled() ? '0' : '1'),
-                                    ));
-                                    osc_admin_action_button(array(
-                                        'label'   => __('Rotate secret'),
-                                        'variant' => 'dim',
-                                        'attrs'   => array('data-osc-dialog-open' => '#api-webhook-rotate-dialog', 'data-api-webhook' => $hook->id()),
-                                    ));
-                                    osc_admin_action_button(array(
-                                        'label'   => __('Delete'),
-                                        'variant' => 'outline-danger',
-                                        'attrs'   => array('data-osc-dialog-open' => '#api-webhook-delete-dialog', 'data-api-webhook' => $hook->id()),
-                                    )); ?>
-                                </span>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
-            </div>
+            <?php
+            $hookRows = array();
+            foreach ($webhooks as $hook) {
+                if (!$hook instanceof Endpoint) {
+                    continue;
+                }
+                [$state, $word] = $hookStates[$hook->status()];
+                $hookRows[] = array(
+                    'status' => array('status' => array($state, $word)),
+                    'address' => array('render' => static function () use ($hook) { ?>
+                        <strong class="osc-mono api-webhook-url"><?php echo osc_esc_html($hook->url()); ?></strong>
+                        <?php if ($hook->description() !== '') { ?>
+                            <div class="text-muted"><?php echo osc_esc_html($hook->description()); ?></div>
+                        <?php }
+                    }),
+                    'events' => array('html' => '<span class="api-key-scopes osc-mono">' . osc_esc_html(implode(' ', $hook->events())) . '</span>'),
+                    'last' => array('render' => static function () use ($hook, $when) {
+                        if ($hook->lastAttempt() === null) { ?>
+                            <span class="text-muted"><?php _e('Never'); ?></span>
+                        <?php } else { ?>
+                            <span class="osc-mono"><?php echo osc_esc_html((string) $hook->lastStatus()); ?></span>
+                            <div class="text-muted"><?php echo $when($hook->lastAttempt()); ?></div>
+                        <?php }
+                        if ($hook->failures() > 0) { ?>
+                            <div class="text-muted"><?php echo osc_esc_html(sprintf(__('%d failed in a row'), $hook->failures())); ?></div>
+                        <?php }
+                    }),
+                    'actions' => array('render' => static function () use ($hook, $hookButton) { ?>
+                        <span class="api-key-actions">
+                            <?php
+                            osc_admin_action_button(array('label' => __('Edit'), 'variant' => 'dim', 'url' => CAdminSettingsApi::webhookUrl($hook->id())));
+                            $hookButton(array(
+                                'action' => 'api_webhook_test',
+                                'label'  => __('Send test'),
+                                'fields' => array('webhook' => $hook->id()),
+                            ));
+                            $hookButton(array(
+                                'action' => 'api_webhook_toggle',
+                                'label'  => $hook->enabled() ? __('Switch off') : __('Switch on'),
+                                'fields' => array('webhook' => $hook->id(), 'enabled' => $hook->enabled() ? '0' : '1'),
+                            ));
+                            osc_admin_action_button(array(
+                                'label'   => __('Rotate secret'),
+                                'variant' => 'dim',
+                                'attrs'   => array('data-osc-dialog-open' => '#api-webhook-rotate-dialog', 'data-api-webhook' => $hook->id()),
+                            ));
+                            osc_admin_action_button(array(
+                                'label'   => __('Delete'),
+                                'variant' => 'outline-danger',
+                                'attrs'   => array('data-osc-dialog-open' => '#api-webhook-delete-dialog', 'data-api-webhook' => $hook->id()),
+                            )); ?>
+                        </span>
+                    <?php }, 'class' => 'text-end'),
+                );
+            }
+            osc_admin_table(array(
+                'status'  => array('label' => __('Status'), 'class' => 'col-status'),
+                'address' => __('Address'),
+                'events'  => __('Events'),
+                'last'    => __('Last delivery'),
+                'actions' => array('label' => __('Actions'), 'hide_label' => true, 'class' => 'text-end', 'col_name' => false),
+            ), $hookRows, array('class' => 'api-webhooks-table', 'stack' => true, 'wrap' => 'actions')); ?>
         <?php } ?>
     <?php osc_admin_section_close(); ?>
 
@@ -415,31 +399,27 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php if ($deliveries === array()) { ?>
                 <p class="text-muted"><?php _e('None. Deliveries that got an answer leave the queue.'); ?></p>
             <?php } else { ?>
-                <table class="table api-webhook-deliveries osc-table-stack" cellpadding="0" cellspacing="0">
-                    <thead>
-                    <tr>
-                        <th class="col-status"><?php _e('Status'); ?></th>
-                        <th><?php _e('Event'); ?></th>
-                        <th><?php _e('Message'); ?></th>
-                        <th><?php _e('Tries'); ?></th>
-                        <th><?php _e('Last error'); ?></th>
-                        <th><?php _e('Next try'); ?></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($deliveries as $delivery) {
-                        [$state, $word] = $jobStates[$delivery['status']] ?? array('inactive', $delivery['status']); ?>
-                        <tr>
-                            <td class="col-status" data-col-name="<?php echo osc_esc_html(__('Status')); ?>"><?php osc_admin_status($state, $word); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Event')); ?>"><code class="osc-mono"><?php echo osc_esc_html($delivery['type']); ?></code></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Message')); ?>"><span class="osc-mono api-key-prefix"><?php echo osc_esc_html($delivery['message_id']); ?></span></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Tries')); ?>"><?php echo (int) $delivery['attempts']; ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Last error')); ?>"><?php echo $delivery['last_error'] === null ? '<span class="text-muted">&mdash;</span>' : osc_esc_html($delivery['last_error']); ?></td>
-                            <td data-col-name="<?php echo osc_esc_html(__('Next try')); ?>"><?php echo $delivery['status'] === 'pending' ? $when($delivery['next_run']) : '<span class="text-muted">&mdash;</span>'; ?></td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
+                <?php
+                $deliveryRows = array();
+                foreach ($deliveries as $delivery) {
+                    [$state, $word] = $jobStates[$delivery['status']] ?? array('inactive', $delivery['status']);
+                    $deliveryRows[] = array(
+                        'status'  => array('status' => array($state, $word)),
+                        'event'   => array('html' => '<code class="osc-mono">' . osc_esc_html($delivery['type']) . '</code>'),
+                        'message' => array('html' => '<span class="osc-mono api-key-prefix">' . osc_esc_html($delivery['message_id']) . '</span>'),
+                        'tries'   => (string) (int) $delivery['attempts'],
+                        'error'   => array('html' => $delivery['last_error'] === null ? '<span class="text-muted">&mdash;</span>' : osc_esc_html($delivery['last_error'])),
+                        'next'    => array('html' => $delivery['status'] === 'pending' ? $when($delivery['next_run']) : '<span class="text-muted">&mdash;</span>'),
+                    );
+                }
+                osc_admin_table(array(
+                    'status'  => array('label' => __('Status'), 'class' => 'col-status'),
+                    'event'   => __('Event'),
+                    'message' => __('Message'),
+                    'tries'   => __('Tries'),
+                    'error'   => __('Last error'),
+                    'next'    => __('Next try'),
+                ), $deliveryRows, array('class' => 'api-webhook-deliveries', 'stack' => true, 'wrap' => false)); ?>
             <?php } ?>
         <?php osc_admin_section_close(); ?>
     <?php } ?>
