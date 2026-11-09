@@ -17,7 +17,6 @@ $persistent = $driver !== 'default' && !empty($env['cache_supported']);
 $shared     = in_array($driver, array('memcached', 'memcache'), true);
 ?>
     <?php osc_admin_section(__('Clear the cache'), array(
-            'class' => 'sysinfo-group',
             'id'    => 'cache-clear',
             'intro' => $persistent
                 ? __('The cache only holds copies. Clearing it is safe: the site rebuilds what it needs on the next request.')

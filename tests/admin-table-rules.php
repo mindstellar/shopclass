@@ -9,7 +9,7 @@
  */
 
 /**
- * Table rules for the admin templates: no hand-copied <thead> outside a short allow list, and
+ * Table rules for the admin templates: no hand-written table outside a short allow list, and
  * a Status column comes first (or second, after the bulk checkbox) in every helper-drawn table.
  *
  * Usage:  php tests/admin-table-rules.php
@@ -25,16 +25,11 @@ require_once __DIR__ . '/lib/harness.php';
 
 $root = ABS_PATH . 'oc-admin/themes/modern/';
 
-// Templates that may still carry their own <thead>, with the reason.
+// Templates that may still write their own table, with the reason.
 $allow = array(
-    'categories/index.php'           => 'tree table',
-    'items/frm.php'                  => 'variant editor',
-    'settings/locations/list.php'    => 'phase 4',
-    'settings/locations/data.php'    => 'phase 4',
-    'settings/locations/preview.php' => 'phase 4',
-    'billing/order.php'              => 'phase 4',
-    'billing/wallet.php'             => 'phase 4',
-    'parts/market.php'               => 'rows filled by JS',
+    'categories/index.php' => 'tree table',
+    'items/frm.php'        => 'variant editor',
+    'parts/market.php'     => 'rows filled by JS',
 );
 
 $files = array();
@@ -46,14 +41,14 @@ foreach ($it as $f) {
 }
 ksort($files);
 
-harness_section('no copied <thead>');
+harness_section('no hand-written tables');
 $stray = array();
 foreach ($files as $rel => $src) {
-    if (str_contains($src, '<thead') && !isset($allow[$rel])) {
+    if ((str_contains($src, '<table') || str_contains($src, '<thead')) && !isset($allow[$rel])) {
         $stray[] = $rel;
     }
 }
-check('no template outside the allow list has <thead', $stray === array(), implode(', ', $stray));
+check('no template outside the allow list has <table or <thead', $stray === array(), implode(', ', $stray));
 foreach ($allow as $rel => $why) {
     check('allow-list entry still exists and still needs it: ' . $rel . ' (' . $why . ')', isset($files[$rel]) && str_contains($files[$rel], '<thead'));
 }

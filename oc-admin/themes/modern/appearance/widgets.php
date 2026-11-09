@@ -26,11 +26,6 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="appearance-page">
-    <div class="appearance">
-    </div>
-</div>
-</div>
 <?php
 // Palette of available widget types, grouped by source. "Legacy" sorts last: the
 // raw-markup escape hatch should be reachable but never the obvious first pick.
@@ -80,17 +75,17 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
     $sections[$stored] = array('label' => sprintf(__('Unused: %s'), $stored), 'description' => '', 'orphan' => true);
 }
 ?>
+<?php osc_admin_body_open(array('id' => 'appearance-page', 'class' => 'appearance')); ?>
 <?php if ($locations === array()) { ?>
     <?php osc_admin_empty(array('title' => __('The current theme does not declare any widget sections.'))); ?>
 <?php } else { ?>
 <div class="widgets-builder">
     <div class="widgets-builder-grid">
 
-        <div class="widgets-col">
-            <div class="col-head">
-                <h3 class="col-title"><?php _e('Sections'); ?></h3>
-            </div>
-            <p class="col-hint"><?php _e('Each section is a place your theme renders widgets. Drag a type in from the right, and drag widgets to reorder them or move them between sections.'); ?></p>
+        <?php osc_admin_section(__('Sections'), array(
+            'class' => 'widgets-col',
+            'intro' => __('Each section is a place your theme renders widgets. Drag a type in from the right, and drag widgets to reorder them or move them between sections.'),
+        )); ?>
 
             <?php foreach ($sections as $location => $section) {
                 $isOrphan = $section['orphan'];
@@ -169,13 +164,12 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                     <div class="widget-reorder-error alert alert-danger py-1 px-2 small d-none" role="alert"></div>
                 </div>
             <?php } ?>
-        </div>
+        <?php osc_admin_section_close(); ?>
 
-        <div class="widgets-palette-col">
-            <div class="col-head">
-                <h3 class="col-title"><?php _e('Available widgets'); ?></h3>
-            </div>
-            <p class="col-hint"><?php _e('Drag a type into a section on the left to add it there. You can place the same type as many times as you like.'); ?></p>
+        <?php osc_admin_section(__('Available widgets'), array(
+            'class' => 'widgets-palette-col',
+            'intro' => __('Drag a type into a section on the left to add it there. You can place the same type as many times as you like.'),
+        )); ?>
 
             <?php foreach ($paletteTypes as $group => $types) { ?>
                 <div class="palette-group">
@@ -203,13 +197,12 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                     </ul>
                 </div>
             <?php } ?>
-        </div>
+        <?php osc_admin_section_close(); ?>
 
     </div>
 </div>
 <?php } ?>
-</div>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_admin_confirm_dialog(array(
     'id'         => 'deleteModal',
     'method'     => 'post',
@@ -614,8 +607,5 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
 })();
 </script>
 <div id="widgets-live" class="visually-hidden" role="status" aria-live="polite"></div>
-<div class="row">
-    <div class="col-12">
-        <div class="row-wrapper">
-            <?php osc_current_admin_theme_path('parts/media-picker.php'); ?>
-            <?php osc_current_admin_theme_path('parts/footer.php'); ?>
+<?php osc_current_admin_theme_path('parts/media-picker.php'); ?>
+<?php osc_current_admin_theme_path('parts/footer.php'); ?>

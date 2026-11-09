@@ -64,9 +64,7 @@ function customHead()
 osc_add_hook('admin_header', 'customHead', 10);
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="general-setting">
-    <div id="item-settings">
-        <?php osc_admin_settings_form($form['id'], $form); ?>
-    </div>
-</div>
+<?php osc_admin_body_open(array('id' => 'item-settings')); ?>
+    <?php osc_admin_settings_form($form['id'], $form); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -108,8 +108,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="locations-stats-setting">
-    <div id="">
+<?php osc_admin_body_open(array('id' => 'locations-stats-setting')); ?>
         <?php if ($worktodo > 0) { ?>
             <p>
                 <span id="percent">0</span> % <?php _e('Complete'); ?> <span class="spinner-border spinner-border-sm text-primary"></span>
@@ -129,6 +128,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </div>
             </fieldset>
         </form>
-    </div>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

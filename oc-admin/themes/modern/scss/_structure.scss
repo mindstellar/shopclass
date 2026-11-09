@@ -6,6 +6,11 @@ $osc-stack-reset: '.render-title, .form-intro, .form-row, .settings-actions, .se
   margin-block: 0;
 }
 
+// Empty until validation fails, and must not take a gap until then.
+:is(.osc-body, .osc-section-body) > #error_list:empty {
+  display: none;
+}
+
 .osc-body {
   display: flex;
   flex-direction: column;
@@ -78,6 +83,17 @@ $osc-stack-reset: '.render-title, .form-intro, .form-row, .settings-actions, .se
   flex-direction: column;
   gap: var(--osc-field-gap);
   min-width: 0;
+}
+
+// Opt-in with osc_admin_panel_open('stack'); a plain panel body stays block flow for plugins.
+.osc-panel-stack > .osc-panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-field-gap);
+
+  > :not(dialog) {
+    margin-block: 0;
+  }
 }
 
 .osc-section-card {

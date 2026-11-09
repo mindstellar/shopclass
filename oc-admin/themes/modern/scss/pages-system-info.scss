@@ -4,7 +4,7 @@
 .sysinfo {
   // One reading column; only the tab strip runs the full width.
   > :not(.osc-tabnav-scroll) {
-    max-inline-size: 56rem;
+    max-inline-size: var(--osc-read-width);
   }
 
   .card-title {
@@ -139,8 +139,6 @@
 }
 
 .sysinfo-aside {
-  margin-block-start: 1.75rem;
-
   code {
     overflow-wrap: anywhere;
   }
@@ -149,7 +147,6 @@
 // A quiet disclosure: the full extension list and the settings help.
 .sysinfo-details {
   border-block-start: 1px solid var(--osc-rule);
-  margin-block-start: 1.75rem;
   padding-block-start: 1rem;
 
   > summary {
@@ -393,9 +390,8 @@
 }
 
 // A titled group of help items (php.ini vs config.php).
-.sysinfo-help-group + .sysinfo-help-group {
+.sysinfo-help-group:not(:first-child) {
   border-block-start: 1px solid var(--osc-rule);
-  margin-block-start: 1.25rem;
   padding-block-start: 1.25rem;
 }
 

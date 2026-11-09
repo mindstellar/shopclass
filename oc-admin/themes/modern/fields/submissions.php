@@ -86,7 +86,7 @@ $base = osc_admin_base_url(true) . '?page=cfields&action=submissions';
 osc_current_admin_theme_path('parts/header.php');
 ?>
 
-    <div class="relative">
+    <?php osc_admin_body_open(array('class' => 'relative')); ?>
         <?php if (count($forms) > 0) {
             osc_admin_toolbar_open(); ?>
             <div class="osc-toolbar-group">
@@ -227,7 +227,7 @@ osc_current_admin_theme_path('parts/header.php');
             'empty' => $subEmpty,
         ));
         ?>
-    </div>
+    <?php osc_admin_body_close(); ?>
     <?php osc_admin_pagination(array(
         'aRows'                => $submissions,
         'iDisplayLength'       => $perPage,

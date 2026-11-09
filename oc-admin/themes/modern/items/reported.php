@@ -27,7 +27,7 @@ $rows      = $aData['aRows'];
 $sort      = Params::getParam('sort');
 $direction = Params::getParam('direction');
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div class="relative">
+<?php osc_admin_body_open(array('class' => 'relative')); ?>
     <?php // One row: bulk actions on the left, the filter reset and page size on the right.
     osc_admin_toolbar_open(array('align' => 'between')); ?>
     <?php osc_admin_bulk_actions(array('name' => 'bulk_actions', 'form' => 'datatablesForm', 'options_html' => static function ($form) { ?>
@@ -73,7 +73,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ));
         ?>
     </form>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php
 osc_admin_pagination($aData);
 ?>

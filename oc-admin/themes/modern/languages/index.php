@@ -52,7 +52,7 @@ $aData          = __get('aLanguages');
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-<div class="relative">
+<?php osc_admin_body_open(array('class' => 'relative')); ?>
     <form id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post" data-dialog-open="false">
         <input type="hidden" name="page" value="languages" />
         <?php osc_admin_bulk_actions(array('options' => __get('bulk_options'))); ?>
@@ -81,7 +81,7 @@ osc_current_admin_theme_path('parts/header.php');
         ));
         ?>
     </form>
-</div>
+<?php osc_admin_body_close(); ?>
 
 <?php osc_admin_pagination($aData); ?>
 <dialog id="languageModal" class="osc-dialog">
@@ -91,7 +91,7 @@ osc_current_admin_theme_path('parts/header.php');
         <div class="osc-dialog-body">
             <p class="osc-dialog-title"><?php _e('Import a language'); ?>:</p>
             <p class="osc-dialog-text"><?php _e("Import a language from our database. " . "Already imported languages aren't shown."); ?></p>
-            <div class="mb-3">
+            <div class="osc-field">
                 <label><?php _e('Import a language'); ?>:</label>
                 <select class="form-select-sm form-select" name="language" required>
                     <option value=""><?php _e('Select an option'); ?>

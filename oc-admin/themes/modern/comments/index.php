@@ -37,7 +37,7 @@ $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div class="relative">
+<?php osc_admin_body_open(array('class' => 'relative')); ?>
     <?php // "Hidden comments" was a lone button floating beside the table. It is a filter,
           // so it belongs in the filter bar with the search, not off on its own.?>
     <?php osc_admin_list_filter(array(
@@ -85,7 +85,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ));
         ?>
     </form>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php
 osc_admin_pagination($aData);
 ?>

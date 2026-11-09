@@ -147,7 +147,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="adminPageForm">
+<?php osc_admin_body_open(array('id' => 'adminPageForm')); ?>
     <?php
     // The mode class sets the initial view; the template select toggles it live (see the
     // mode script + .page-mode-* CSS). The title always shows; the text editor and the
@@ -279,8 +279,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ));
     echo '</div></div>';
 
-    // Plugin fields render full-width here, as they did before the rail existed.
+    // Plugin fields render full-width here. The div keeps plugin markup in block flow, out of the column's flex layout.
+    ob_start();
     osc_run_hook('page_meta');
+    $pageMetaHtml = (string)ob_get_clean();
+    if (trim($pageMetaHtml) !== '') {
+        echo '<div>' . $pageMetaHtml . '</div>';
+    }
 
     osc_admin_editor_rail(array('id' => 'right-side'));
 
@@ -370,8 +375,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     osc_admin_editor_close(array(
         array('label' => pageFrmText('btn_text'), 'type' => 'submit', 'variant' => 'primary'),
         array('label' => __('Back to pages'), 'url' => $pageBackUrl, 'variant' => 'dim'),
-    )); ?>
-</div>
+    ));
+    osc_admin_body_close(); ?>
 <script>
     // Live-switch the editor to match the chosen page template: a builder template
     // shows the widget canvas, anything else shows the text editor. Server-set

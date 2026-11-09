@@ -149,6 +149,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     });
 </script>
 <?php
+osc_admin_body_open(array('id' => 'user-form'));
 // Editing has two tabs, like a settings page: the profile form, and the user's alerts.
 $tab = $aux['edit'] && Params::getParamString('tab') === 'alerts' ? 'alerts' : 'profile';
 if ($aux['edit']) {
@@ -344,5 +345,6 @@ if ($tab === 'profile') {
             'fields'     => array('page' => 'users', 'action' => 'delete_alerts', 'alert_id[]' => '', 'user_id' => (int) $user['pk_i_id']),
         )); ?>
     <?php }
-} ?>
+}
+osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

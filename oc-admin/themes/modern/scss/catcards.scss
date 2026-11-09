@@ -285,11 +285,6 @@
   }
 }
 
-// The help above a category list explains its choices; the summary follows after a gap.
-.help-box + .osc-catcards-bar {
-  margin-block-start: .75rem;
-}
-
 // The modes summary is the page's answer to "where is this on?", so it reads as text, not a hint.
 [data-osc-catcards-summary] {
   color: var(--osc-ink);

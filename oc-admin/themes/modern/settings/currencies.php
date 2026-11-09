@@ -53,7 +53,7 @@ foreach ($aCurrencies as $currency) {
 }
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="relative">
+    <?php osc_admin_body_open(array('class' => 'relative')); ?>
         <?php osc_admin_form_open(array(
             'id'         => 'datatablesForm',
             'page'   => 'settings',
@@ -89,7 +89,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             }, $aData), array('wrap' => 'actions'));
             ?>
         <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
-    </div>
+    <?php osc_admin_body_close(); ?>
     <?php osc_admin_confirm_dialog(array(
         'id'         => 'deleteModal',
         'method'     => 'post',

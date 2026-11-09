@@ -61,9 +61,8 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="general-settings">
+<?php osc_admin_body_open(array('id' => 'general-settings')); ?>
         <?php osc_admin_settings_form($form['id'], $form); ?>
-
         <?php osc_admin_action_section(array(
     'title'   => __('Regenerate images'),
     'intro'   => __('You can regenerate different image dimensions. If you have changed the dimension of thumbnails, '
@@ -76,7 +75,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         ),
     ),
 )); ?>
-    </div>
+<?php osc_admin_body_close(); ?>
     <dialog id="dialog-watermark-warning" class="osc-dialog">
         <div class="osc-dialog-body">
             <p class="osc-dialog-title"><?php echo osc_esc_html(__('Recommendation')); ?></p>

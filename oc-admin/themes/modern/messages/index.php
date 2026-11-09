@@ -43,7 +43,7 @@ $banUrl = static function (string $email): string {
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_current_admin_theme_path('messages/tabs.php'); ?>
-<div class="relative">
+<?php osc_admin_body_open(array('class' => 'relative')); ?>
     <?php
     $listing  = osc_mode_text(__('Listing'), __('Product'));
     $dateCell = static fn ($date) => osc_format_date((string) $date, osc_admin_date_format());
@@ -133,7 +133,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php if ($older) { ?>
         <p><a class="btn btn-sm btn-dim" href="<?php echo osc_esc_html((string) $older); ?>"><?php _e('Older'); ?></a></p>
     <?php } ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php
 $dialogs = array(
     array('releaseModal', 'release_post', __('Release message'), __('The recipient will get this message and the new-message e-mail.'), __('Release'), false),

@@ -44,7 +44,6 @@ $describe = static function (array $row): void {
 
     <?php if ($failed !== array()) { ?>
         <?php osc_admin_section(__('Failed jobs'), array(
-                'class' => 'sysinfo-group',
                 'id'    => 'jobs-failed',
                 'intro' => __('These stopped retrying. Fix the cause the reason names, then try them again.'),
             )); ?>
@@ -96,7 +95,6 @@ $describe = static function (array $row): void {
     <?php } ?>
 
     <?php osc_admin_section(__('Waiting and running'), array(
-            'class' => 'sysinfo-group',
             'id'    => 'jobs-queue',
             'intro' => __('Slow work, such as emptying a large category or moving photos to a bucket, waits here. Cron runs it on every tick.'),
         )); ?>
@@ -134,7 +132,6 @@ $describe = static function (array $row): void {
     <?php osc_admin_section_close(); ?>
 
     <?php osc_admin_section(__('Recent activity'), array(
-            'class'      => 'sysinfo-group',
             'id'         => 'jobs-history',
             'intro_html' => sprintf(
                 __('What background work did, newest first. The full history is in the <a href="%s">activity log</a>.'),

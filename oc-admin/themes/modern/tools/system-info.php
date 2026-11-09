@@ -135,7 +135,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
         <?php foreach (($report['groups'] ?? array()) as $group) { ?>
             <?php osc_admin_section($group['title'], array_filter(array(
-                'class'      => 'sysinfo-group',
                 'id'         => $group['id'] ?? null,
                 'intro_html' => isset($group['link'])
                     ? '<a href="' . osc_esc_html($group['link']['url']) . '">' . osc_esc_html($group['link']['label']) . '</a>'

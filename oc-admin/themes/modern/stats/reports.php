@@ -120,21 +120,13 @@ osc_admin_page(array(
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="row g-3" id="stats-page">
-        <div class="col-12">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('Total number of reports'); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"></b>
+    <?php osc_admin_body_open(array('id' => 'stats-page')); ?>
+        <?php osc_admin_panel_open(__('Total number of reports')); ?>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($reports) == 0) {
                             _e('There are no statistics yet');
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        <?php osc_admin_panel_close(); ?>
+    <?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

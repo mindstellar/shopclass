@@ -345,6 +345,8 @@ $table-cell-vertical-align: middle;
   --osc-section-gap: 1.5rem;
   --osc-field-gap: 1rem;
   --osc-rail-width: 22rem;
+  // Widest a block of running text or a report column goes.
+  --osc-read-width: 56rem;
 
   // 150–250ms. The owner is in a task, not watching choreography.
   --osc-ease:          cubic-bezier(.2, 0, 0, 1);

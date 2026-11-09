@@ -129,7 +129,7 @@ foreach (array(
     'settings/index.php' => array('how lists of products are displayed'),
     'items/index.php'    => array('Manage all the products in your shop'),
     'items/frm.php'      => array('The product belongs to', 'Show the e-mail address on the product'),
-    'stats/items.php'    => array('new products have been added', 'Product views', 'Total number of product views'),
+    'stats/items.php'    => array('new products have been added', 'Product views'),
     'stats/users.php'    => array('%s products per user'),
     'stats/comments.php' => array('comments the products in your shop'),
     'stats/reports.php'  => array('products from your shop have been reported'),

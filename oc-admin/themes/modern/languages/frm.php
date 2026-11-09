@@ -36,7 +36,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 $aLocale = __get('aLocale');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="language-form" class="col-lg-6">
+<?php osc_admin_body_open(array('id' => 'language-form', 'class' => 'col-lg-6')); ?>
         <ul id="error_list"></ul>
         <?php osc_admin_form_open(array(
             'name'   => 'language_form',
@@ -79,5 +79,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     )); ?>
             <?php osc_admin_form_row_close(); ?>
         <?php osc_admin_form_close(); ?>
-    </div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

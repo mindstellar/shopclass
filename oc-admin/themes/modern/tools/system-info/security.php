@@ -28,7 +28,6 @@ $contexts = array(
 );
 ?>
     <?php osc_admin_section(__('Failed sign-ins right now'), array(
-            'class' => 'sysinfo-group',
             'id'    => 'signin-activity',
             'intro' => sprintf(
                 __('Addresses and accounts with failures in the last %d minutes. Unblock one to let it try again at once.'),

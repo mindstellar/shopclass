@@ -24,5 +24,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
+<?php osc_admin_body_open(array('id' => 'user-settings')); ?>
     <?php osc_admin_settings_form($form['id'], $form); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

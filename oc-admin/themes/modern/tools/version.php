@@ -28,8 +28,8 @@ unset($customPageTitle);
 
 osc_current_admin_theme_path('parts/header.php');
 ?>
-<div class="widget-box">
-    <div class="widget-box-content">
+<?php osc_admin_body_open(); ?>
+<?php osc_admin_panel_open(); ?>
 
         <?php
         $changelog = file_get_contents(ABS_PATH . '/CHANGELOG.md');
@@ -51,7 +51,7 @@ osc_current_admin_theme_path('parts/header.php');
         $changelog = implode("\n", $lines);
         echo $changelog;
         ?>
-    </div>
-</div>
+<?php osc_admin_panel_close(); ?>
+<?php osc_admin_body_close(); ?>
 <?php
 osc_current_admin_theme_path('parts/footer.php'); ?>

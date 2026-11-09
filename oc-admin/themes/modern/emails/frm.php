@@ -46,7 +46,7 @@ osc_admin_page(array(
     ),
 ));
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="adminEmailForm">
+<?php osc_admin_body_open(array('id' => 'adminEmailForm')); ?>
     <?php
     osc_admin_editor_open(array(
         'id'           => 'email-form',
@@ -147,8 +147,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     osc_admin_editor_close(array(
         array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'),
         array('label' => __('Back to email templates'), 'url' => $emailBackUrl, 'variant' => 'dim'),
-    )); ?>
-</div>
+    ));
+    osc_admin_body_close(); ?>
 <script>
     (function () {
         'use strict';

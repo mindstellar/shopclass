@@ -28,6 +28,10 @@ foreach ([
     'osc_admin_page'               => '$GLOBALS["pageArgs"] = func_get_arg(0);',
     'osc_current_admin_theme_path' => '',
     'osc_add_filter'               => '',
+    'osc_admin_body_open'          => 'echo "<div class=osc-body>";',
+    'osc_admin_body_close'         => 'echo "</div>";',
+    'osc_admin_panel_open'         => 'echo "<div class=osc-panel>";',
+    'osc_admin_panel_close'        => 'echo "</div>";',
     'osc_base_url'                 => 'return "https://example.test/";',
 ] as $fn => $body) {
     if (!function_exists($fn)) {
@@ -42,5 +46,6 @@ $html = ob_get_clean();
 harness_section('the version page');
 check('the page heading carries the version', is_callable($GLOBALS['pageArgs']['section'] ?? null) && str_contains(($GLOBALS['pageArgs']['section'])(), '9.9.9'));
 check('the changelog box adds no second heading with it', !str_contains($html, 'Shopclass 9.9.9'));
+check('the changelog sits in a body and a panel', str_contains($html, 'osc-body') && str_contains($html, 'osc-panel') && !str_contains($html, "class=\"widget-box"));
 check('the changelog is drawn', str_contains($html, '<h3>') || str_contains($html, '<h4>'));
 exit(harness_result());

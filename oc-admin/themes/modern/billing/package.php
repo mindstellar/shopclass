@@ -35,7 +35,7 @@ osc_admin_page(array(
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-
+<?php osc_admin_body_open(array('id' => 'package-form')); ?>
     <?php osc_admin_panel_open(); ?>
         <?php osc_admin_form_open(array(
             'page'   => 'billing',
@@ -106,4 +106,5 @@ osc_admin_page(array(
                 array('label' => $isEdit ? __('Save changes') : __('Add package'), 'type' => 'submit'),
             )); ?>
     <?php osc_admin_panel_close(); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

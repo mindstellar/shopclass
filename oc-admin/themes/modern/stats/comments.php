@@ -117,26 +117,15 @@ osc_admin_page(array(
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="row g-3" id="stats-page">
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('Comments'); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"></b>
+    <?php osc_admin_body_open(array('id' => 'stats-page', 'layout' => 'grid', 'class' => 'stats-grid')); ?>
+        <?php osc_admin_panel_open(__('Comments')); ?>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($comments) == 0) {
                             _e('There are no statistics yet');
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title"><h3><?php _e('Latest comments on the web'); ?></h3></div>
-                <div class="widget-box-content">
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('Latest comments on the web')); ?>
                     <?php if (count($latest_comments) > 0) { ?>
                         <?php
                         $editUrl   = osc_admin_base_url(true) . '?page=comments&amp;action=comment_edit&amp;id=';
@@ -163,8 +152,6 @@ osc_admin_page(array(
                         <p><?php _e("There are no statistics yet"); ?></p>
                     <?php } ?>
 
-                </div>
-            </div>
-        </div>
-    </div>
+        <?php osc_admin_panel_close(); ?>
+    <?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -4,7 +4,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
-  margin-bottom: 1rem;
 
   .form-sublabel {
     margin: 0;
@@ -244,8 +243,17 @@
 .menus-page {
   .form-card-cats,
   .col-hint,
+  .osc-section-intro,
   .chip-type {
     font-size: .875rem;
+  }
+
+  .widgets-col,
+  #menu-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--osc-field-gap);
+    min-width: 0;
   }
 }
 

@@ -123,7 +123,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
     return $depth;
 };
 ?>
-<div class="menus-page" id="menus-page">
+<?php osc_admin_body_open(array('id' => 'menus-page', 'class' => 'menus-page')); ?>
 
     <div class="widgets-builder-grid">
         <div class="widgets-col">
@@ -182,11 +182,10 @@ $meDepth = static function (array $cat) use ($meCats): int {
             </form>
         </div>
 
-        <aside class="widgets-palette-col menu-add" aria-labelledby="menu-add-title">
-            <div class="col-head">
-                <h3 class="col-title" id="menu-add-title"><?php _e('Add items'); ?></h3>
-            </div>
-            <p class="col-hint"><?php _e('New items go to the end of the menu. Drag them into place: up or down to move, left or right to change the nesting. The arrow keys on the handle do the same.'); ?></p>
+        <?php osc_admin_section(__('Add items'), array(
+            'class' => 'widgets-palette-col menu-add',
+            'intro' => __('New items go to the end of the menu. Drag them into place: up or down to move, left or right to change the nesting. The arrow keys on the handle do the same.'),
+        )); ?>
 
             <div class="form-card menu-add-card">
                 <label class="form-sublabel" for="menu-add-category"><?php _e('Category'); ?></label>
@@ -230,9 +229,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
                 <p class="menu-add-error" id="menu-add-error" role="alert" hidden></p>
             </div>
 
-            <div class="col-head">
-                <h3 class="col-title"><?php _e('New menu'); ?></h3>
-            </div>
+            <?php osc_admin_section(__('New menu'), array('level' => 'subsection')); ?>
             <form class="form-card menu-new" method="post" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>">
                 <input type="hidden" name="page" value="appearance" />
                 <input type="hidden" name="action" value="menu_save_post" />
@@ -247,7 +244,8 @@ $meDepth = static function (array $cat) use ($meCats): int {
                 </details>
                 <button type="submit" class="btn btn-dim btn-sm"><?php _e('Create menu'); ?></button>
             </form>
-        </aside>
+            <?php osc_admin_section_close(); ?>
+        <?php osc_admin_section_close(); ?>
     </div>
 
     <template id="menu-row">
@@ -267,7 +265,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
         </li>
     </template>
     <script type="application/json" id="menu-state"><?php echo $meJson; ?></script>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php
 osc_admin_confirm_dialog(array(
     'id'      => 'menuDeleteDialog',

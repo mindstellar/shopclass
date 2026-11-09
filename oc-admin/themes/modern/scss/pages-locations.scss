@@ -4,6 +4,36 @@
 // Colour through var(--osc-*) only; directions through logical properties.
 // =============================================================================
 
+// The regions and what they hold stack by gap; a region shown only while its tab is open keeps [hidden].
+.loc-list-region:not([hidden]),
+.loc-data-region:not([hidden]),
+.loc-list,
+.loc-data,
+.loc-bulk-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.loc-list {
+  gap: var(--osc-field-gap);
+
+  > * {
+    margin-block: 0;
+  }
+}
+
+.loc-data {
+  gap: var(--osc-section-gap);
+
+  > * {
+    margin-block: 0;
+  }
+}
+
+.loc-bulk-form {
+  gap: .6rem;
+}
+
 // ---- Path and head ----------------------------------------------------------
 .loc-head {
   align-items: center;
@@ -11,7 +41,6 @@
   flex-wrap: wrap;
   gap: .75rem 1rem;
   justify-content: space-between;
-  margin-block-end: 1rem;
 }
 
 .loc-path ol {
@@ -73,7 +102,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: .75rem 1.25rem;
-  margin-block-end: 1rem;
 }
 
 .loc-search {
@@ -176,7 +204,6 @@
   flex-wrap: wrap;
   gap: .5rem 1rem;
   justify-content: space-between;
-  margin-block-end: .6rem;
   min-block-size: 2.25rem;
 }
 
@@ -329,7 +356,6 @@
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule);
   border-radius: $border-radius-lg;
-  margin-block-end: 1.5rem;
   max-inline-size: 34rem;
 }
 
@@ -679,11 +705,6 @@ a.loc-hit-name {
   overflow-wrap: anywhere;
 }
 
-// ---- Tabs -------------------------------------------------------------------
-.loc-tabs {
-  margin-block-end: 1.25rem;
-}
-
 .loc-data-region {
   transition: opacity 150ms ease-out;
 
@@ -705,40 +726,6 @@ a.loc-hit-name {
 }
 
 // ---- Data tab: sections -------------------------------------------------------
-.loc-section + .loc-section {
-  border-block-start: 1px solid var(--osc-rule);
-  margin-block-start: 2rem;
-  padding-block-start: 1.75rem;
-}
-
-.loc-section-head {
-  align-items: flex-end;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .5rem 2rem;
-  justify-content: space-between;
-  margin-block-end: 1rem;
-}
-
-.loc-section-intro {
-  flex: 1 1 28rem;
-  max-inline-size: 44rem;
-}
-
-.loc-section-title {
-  color: var(--osc-ink);
-  font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.4;
-  margin: 0 0 .25rem;
-}
-
-.loc-section-text {
-  color: var(--osc-ink-muted);
-  margin: 0;
-  max-inline-size: 65ch;
-}
-
 .loc-release {
   align-items: baseline;
   color: var(--osc-ink-muted);
@@ -767,7 +754,6 @@ a.loc-hit-name {
   display: flex;
   flex-wrap: wrap;
   gap: .6rem 1rem;
-  margin-block-end: .75rem;
 
   .loc-search-box {
     flex: 0 1 18rem;
@@ -785,7 +771,7 @@ a.loc-hit-name {
   color: var(--osc-ink);
   display: flex;
   gap: .5rem;
-  margin: 0 0 .75rem;
+  margin: 0;
   padding: .6rem .75rem;
 
   &::before {
@@ -811,6 +797,11 @@ a.loc-hit-name {
   to {
     transform: rotate(360deg);
   }
+}
+
+// Shared forms the row buttons post through; they hold only hidden fields and must not take a gap.
+.loc-catalog-form {
+  display: none;
 }
 
 .loc-catalog-table {
@@ -927,20 +918,11 @@ a.loc-hit-name {
 }
 
 // ---- Data tab: listing counts ---------------------------------------------------
-.loc-recalc {
-  align-items: flex-start;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem 2rem;
-  justify-content: space-between;
-}
-
 .loc-recalc-form {
   flex: 0 0 auto;
 }
 
 .loc-recalc-progress {
-  margin-block-start: 1rem;
   max-inline-size: 32rem;
 
   &[hidden] {

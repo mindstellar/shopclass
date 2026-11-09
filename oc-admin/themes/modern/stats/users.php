@@ -158,56 +158,29 @@ osc_admin_page(array(
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="row g-3" id="stats-page">
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('New users'); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"></b>
+    <?php osc_admin_body_open(array('id' => 'stats-page', 'layout' => 'grid', 'class' => 'stats-grid')); ?>
+        <?php osc_admin_panel_open(__('New users')); ?>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($users) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('Users per country'); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"></b>
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('Users per country')); ?>
                     <div id="by_country" class="graph-placeholder" style="height:200px">
                         <?php if (count($users_by_country) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('Users per region'); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"></b>
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('Users per region')); ?>
                     <div id="by_region" class="graph-placeholder" style="height:200px">
                         <?php if (count($users_by_region) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title"><h3><?php _e('Latest users on the web'); ?></h3></div>
-                <div class="widget-box-content">
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('Latest users on the web')); ?>
                     <?php if (count($latest_users) > 0) { ?>
                         <?php
                         $editUrl   = osc_admin_base_url(true) . '?page=users&amp;action=edit&amp;id=';
@@ -231,19 +204,11 @@ osc_admin_page(array(
                     <?php } else { ?>
                         <p><?php _e('There are no statistics yet'); ?></p>
                     <?php } ?>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title"><h3><?php _e('Avg. items per user'); ?></h3></div>
-                <div class="widget-box-content">
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('Avg. items per user')); ?>
                     <div class="stats-detail">
                         <?php printf(osc_mode_text(__('%s listings per user'), __('%s products per user')), number_format($item, 2)); ?>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
+        <?php osc_admin_panel_close(); ?>
+    <?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

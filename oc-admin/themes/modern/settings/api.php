@@ -389,7 +389,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 array('label' => __('Save changes'), 'type' => 'submit'),
             )); ?>
 
-            <?php osc_admin_form_section(__('Deliveries waiting or given up')); ?>
+            <?php osc_admin_section(__('Deliveries waiting or given up'), array('level' => 'subsection')); ?>
             <?php if ($deliveries === array()) { ?>
                 <p class="text-muted"><?php _e('None. Deliveries that got an answer leave the queue.'); ?></p>
             <?php } else { ?>
@@ -415,6 +415,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     'next'    => __('Next try'),
                 ), $deliveryRows, array('class' => 'api-webhook-deliveries', 'stack' => true, 'wrap' => false)); ?>
             <?php } ?>
+            <?php osc_admin_section_close(); ?>
         <?php osc_admin_section_close(); ?>
     <?php } ?>
 

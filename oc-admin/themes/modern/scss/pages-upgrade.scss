@@ -65,7 +65,7 @@
   color: var(--osc-ink-muted);
   font-size: $font-size-label;
   letter-spacing: .01em;
-  margin: .1rem 0 0;
+  margin: 0;
 }
 
 .upgrade-report-list {
@@ -175,30 +175,11 @@
 // carrying the release label and a count, a tag/text list, and a footer link out to
 // the full notes. Colour goes through tokens so both themes follow.
 
-.whatsnew {
+.whatsnew .osc-section-body {
   background: var(--osc-bench);
   border: 1px solid var(--osc-rule);
   border-radius: 6px;
-  margin-block: 1.25rem 0;
   overflow: hidden;
-}
-
-.whatsnew-head {
-  align-items: center;
-  background: var(--osc-bench-warm);
-  border-block-end: 1px solid var(--osc-rule);
-  column-gap: 1rem;
-  display: flex;
-  justify-content: space-between;
-  padding: .85rem 1rem;
-}
-
-.whatsnew-heading {
-  color: var(--osc-ink);
-  font-size: 1.0625rem;
-  font-weight: 600;
-  line-height: 1.4;
-  margin: 0;
 }
 
 .whatsnew-sub {
@@ -328,12 +309,7 @@
 // System info.
 .upgrade-tool {
   #steps > * {
-    max-inline-size: 56rem;
-  }
-
-  .osc-verdict,
-  .upgrade-running {
-    margin-block-end: 1rem;
+    max-inline-size: var(--osc-read-width);
   }
 }
 

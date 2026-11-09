@@ -455,6 +455,10 @@ class Form
             !empty($opts['stack']) ? 'osc-table-stack' : ''
         )) . '>';
 
+        if ((string)($opts['caption'] ?? '') !== '') {
+            echo '<caption class="visually-hidden">' . osc_esc_html((string)$opts['caption']) . '</caption>';
+        }
+
         echo '<thead><tr>';
         $cellAttrs = array();
         foreach ($columns as $key => $column) {
@@ -480,15 +484,7 @@ class Form
             $trAttrs = $spec ? ($row['attrs'] ?? array()) : array();
 
             echo '<tr' . Field::attrsString(self::withClass($trAttrs, $spec ? ($row['class'] ?? '') : '')) . '>';
-            foreach ($cellAttrs as $key => $attr) {
-                $cell = $cells[$key] ?? null;
-                echo '<td' . Field::attrsString(array(
-                    'class'         => self::classList(...array_merge($attr['class'], array(is_array($cell) ? ($cell['class'] ?? '') : ''))),
-                    'data-col-name' => $attr['name'],
-                )) . '>';
-                self::tableCell($cell);
-                echo '</td>';
-            }
+            self::tableRowCells($cellAttrs, $cells);
             echo '</tr>';
         }
 
@@ -574,6 +570,41 @@ class Form
         return $column === 'status' && $value !== null
             ? self::statusBadge($state, (string)$value)
             : (string)$value;
+    }
+
+    /**
+     * Print one row's cells. A 'colspan' cell takes the place of the columns it covers, never
+     * running past the last column, so the row always fills the table.
+     *
+     * @param array<int|string,array<string,mixed>> $cellAttrs column key => class list and name
+     * @param array<int|string,mixed>               $cells
+     */
+    private static function tableRowCells(array $cellAttrs, array $cells): void
+    {
+        $total    = count($cellAttrs);
+        $position = 0;
+        $spanEnd  = 0;
+        foreach ($cellAttrs as $key => $attr) {
+            $position++;
+            if ($position <= $spanEnd) {
+                continue;
+            }
+
+            $cell    = $cells[$key] ?? null;
+            $spec    = is_array($cell) ? $cell : array();
+            $span    = min(max(1, (int)($spec['colspan'] ?? 1)), $total - $position + 1);
+            $spanEnd = $position + $span - 1;
+            $tag     = !empty($spec['th']) ? 'th' : 'td';
+
+            echo '<' . $tag . Field::attrsString(array(
+                'scope'         => $tag === 'th' ? 'row' : null,
+                'class'         => self::classList(...array_merge($attr['class'], array($spec['class'] ?? ''))),
+                'colspan'       => $span > 1 ? (string)$span : null,
+                'data-col-name' => $attr['name'],
+            )) . '>';
+            self::tableCell($cell);
+            echo '</' . $tag . '>';
+        }
     }
 
     /**

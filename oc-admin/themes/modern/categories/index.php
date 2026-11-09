@@ -60,9 +60,8 @@ osc_admin_page(array(
 ));
 
 $base = osc_admin_base_url(true);
-$ajax = static fn (string $action, bool $csrf = true): string => osc_esc_html(
-    $base . '?page=ajax&action=' . $action . ($csrf ? '&' . osc_csrf_token_url() : '')
-);
+$ajax = static fn (string $action, bool $csrf = true): string =>
+    $base . '?page=ajax&action=' . $action . ($csrf ? '&' . osc_csrf_token_url() : '');
 
 $plural = static fn (callable $form): array => \mindstellar\admin\AdminText::pluralForms($form);
 
@@ -217,18 +216,22 @@ $i18n = array(
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-    <div class="categories-app"
-         data-edit-url="<?php echo $ajax('category_edit_iframe', false); ?>"
-         data-enable-url="<?php echo $ajax('enable_category'); ?>"
-         data-delete-url="<?php echo $ajax('delete_category'); ?>"
-         data-move-url="<?php echo $ajax('category_move'); ?>"
-         data-bulk-url="<?php echo $ajax('category_bulk'); ?>"
-         data-preview-url="<?php echo $ajax('category_delete_preview', false); ?>"
-         data-expiry-preview-url="<?php echo $ajax('category_expiry_preview', false); ?>"
-         data-order-url="<?php echo $ajax('categories_order'); ?>"
-         data-depth-limit="<?php echo $limit === null ? '' : (int)$limit; ?>"
-         data-status="<?php echo osc_esc_html($status); ?>"
-         data-i18n='<?php echo osc_esc_html(json_encode($i18n, JSON_HEX_APOS | JSON_HEX_QUOT)); ?>'>
+<?php osc_admin_body_open(array(
+    'class' => 'categories-app',
+    'attrs' => array(
+        'data-edit-url'           => $ajax('category_edit_iframe', false),
+        'data-enable-url'         => $ajax('enable_category'),
+        'data-delete-url'         => $ajax('delete_category'),
+        'data-move-url'           => $ajax('category_move'),
+        'data-bulk-url'           => $ajax('category_bulk'),
+        'data-preview-url'        => $ajax('category_delete_preview', false),
+        'data-expiry-preview-url' => $ajax('category_expiry_preview', false),
+        'data-order-url'          => $ajax('categories_order'),
+        'data-depth-limit'        => $limit === null ? '' : (string)(int)$limit,
+        'data-status'             => $status,
+        'data-i18n'               => json_encode($i18n, JSON_HEX_APOS | JSON_HEX_QUOT),
+    ),
+)); ?>
 
 <?php if ($rows === array()) { ?>
         <div class="cat-empty">
@@ -502,6 +505,6 @@ if (count($inside_words) < 2) {
         <span class="visually-hidden" id="cat-i1"><?php echo osc_esc_html(trim($inside_words[0])); ?></span>
         <span class="visually-hidden" id="cat-i2"><?php echo osc_esc_html(trim($inside_words[1] ?? '')); ?></span>
         <p class="visually-hidden" id="cat-key-help"><?php _e('Use the arrow keys to move it: up or down to reorder, sideways to put it under the category above or move it out of its group.'); ?></p>
-    </div>
+<?php osc_admin_body_close(); ?>
 
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

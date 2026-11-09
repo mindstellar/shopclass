@@ -158,7 +158,6 @@ $hits = rules_grep($php, '/class=["\'][^"\']*\bosc-status(?![\w-])/', array(
     'classes/admin/ui/Form.php'   => 'statusBadge() builds it',
     'parts/package-ui.php'        => 'package state badge, one helper',
     'parts/market.php'            => 'market badges, one helper',
-    'billing/order.php'           => 'order screen, converted in phase 4',
 ));
 check('no raw osc-status outside the helpers', $hits === array(), implode(', ', $hits));
 $hits = rules_grep($js, '/osc-status/', array(
@@ -178,14 +177,12 @@ check('no builder-empty or osc-empty-icon', $hits === array(), implode(', ', $hi
 $hits = rules_grep($all, '/(?<![\w-])callout-block(?![\w-])/', array(
     'classes/admin/ui/Form.php' => 'Form::callout() builds it',
     'parts/ui.php'              => 'osc_admin_verdict() box',
-    'billing/order.php'         => 'order screen, converted in phase 4',
     'tools/upgrade.php'         => 'verdict box built by script',
 ));
 check('no hand-built callout-block', $hits === array(), implode(', ', $hits));
 $hits = rules_grep($all, '/(?<![\w-])callout-(?:danger|warning|info|success)(?![\w-])/', array(
     'classes/admin/ui/Form.php' => 'Form::callout() builds it',
     'parts/ui.php'              => 'osc_admin_verdict() box',
-    'billing/order.php'         => 'order screen, converted in phase 4',
     'tools/upgrade.php'         => 'verdict box built by script',
 ));
 check('no hand-built callout tone class', $hits === array(), implode(', ', $hits));

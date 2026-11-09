@@ -89,8 +89,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="storage-settings">
-
+<?php osc_admin_body_open(array('id' => 'storage-settings')); ?>
         <?php if ($betterS3Active) { ?>
             <div class="flashmessage flashmessage-error">
                 <?php _e('The <strong>Better S3</strong> plugin is currently active. Disable it before turning on '
@@ -180,8 +179,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'actions' => $migrationActions,
         ));
         ?>
-    </div>
-
+<?php osc_admin_body_close(); ?>
 <?php
 osc_admin_confirm_dialog(array(
     'id'      => 'storage-offload-dialog',

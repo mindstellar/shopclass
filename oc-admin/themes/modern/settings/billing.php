@@ -49,7 +49,7 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
 }
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="general-settings">
+<?php osc_admin_body_open(array('id' => 'general-settings')); ?>
     <?php
     osc_admin_tab_nav(array_map(static fn ($key, $label) => array(
         'label'  => $label,
@@ -105,5 +105,5 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
         ), $tableRows, array('stack' => true));
         ?>
     <?php } ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

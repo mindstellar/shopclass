@@ -50,6 +50,7 @@ Worth knowing before you port something:
 | Add a page of your own | [Routes](/docs/developers/routes/) |
 | Add admin screens | [Administrator menus](/docs/developers/admin-menus/) |
 | Add an admin settings page | [Settings pages](/docs/developers/settings-pages/) |
+| Lay out an admin screen | [Admin screens](/docs/developers/admin-screens/) |
 | Build an admin add/edit screen | [Admin editors](/docs/developers/admin-editors/) |
 | Take payments | [Payment gateways](/docs/developers/payment-gateways/) |
 | Call another service over HTTPS | [HTTP client](/docs/developers/http-client/) |

@@ -117,8 +117,7 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="mail-setting">
-    <div id="mail-settings">
+<?php osc_admin_body_open(array('id' => 'mail-settings')); ?>
         <ul id="error_list"></ul>
         <?php
         $form['actions'] = array(
@@ -133,6 +132,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_admin_settings_form($form['id'], $form);
         ?>
         <div id="testMail_message" class="flashmessage" style="display:none"><p></p></div>
-    </div>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

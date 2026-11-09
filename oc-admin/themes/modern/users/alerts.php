@@ -45,7 +45,7 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
             : '<a href="' . osc_esc_html($alertsUrl . '&held=1') . '">' . osc_esc_html(__('Show them')) . '</a>'
         ), array('html' => true)); ?>
     <?php } ?>
-    <div class="relative">
+    <?php osc_admin_body_open(array('class' => 'relative')); ?>
         <?php osc_admin_list_filter(array(
             'id'     => 'shortcut-filters',
             'page'   => 'users',
@@ -97,7 +97,7 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
             ));
             ?>
         </form>
-    </div>
+    <?php osc_admin_body_close(); ?>
 <?php
 osc_admin_pagination($aData);
 ?>

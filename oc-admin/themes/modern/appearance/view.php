@@ -16,8 +16,11 @@ if (!defined('OC_ADMIN')) {
  */
 $file = __get('file');
 
+$appearanceTitle = static fn () => osc_apply_filter('custom_appearance_title', __('Appearance'));
+
 osc_admin_page(array(
-    'section' => static fn () => osc_apply_filter('custom_appearance_title', __('Appearance')),
+    'section' => $appearanceTitle,
+    'heading' => $appearanceTitle,
     'title'   => __('Appearance'),
 ));
 

@@ -27,6 +27,7 @@ $perPage     = (int)__get('perPage');
 $base = osc_admin_base_url(true) . '?page=billing&action=credits';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
+<?php osc_admin_body_open(); ?>
 
     <?php osc_admin_toolbar_open(array('align' => 'end')); ?>
         <p class="billing-summary">
@@ -83,4 +84,5 @@ $base = osc_admin_base_url(true) . '?page=billing&action=credits';
         'base_url' => osc_admin_base_url(true) . '?page=billing',
         'params'   => array('action' => 'credits'),
     )); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -75,11 +75,16 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-<div class="market-app" data-type="plugin"
-     data-install-url="<?php echo osc_esc_html($marketInstallUrl); ?>"
-     data-update-url="<?php echo osc_esc_html($marketUpdateUrl); ?>"
-     data-refresh-url="<?php echo osc_esc_html($marketRefreshUrl); ?>"
-     data-i18n='<?php echo osc_esc_html(json_encode(osc_market_i18n('plugin'))); ?>'>
+<?php osc_admin_body_open(array(
+    'class' => 'market-app',
+    'attrs' => array(
+        'data-type'        => 'plugin',
+        'data-install-url' => $marketInstallUrl,
+        'data-update-url'  => $marketUpdateUrl,
+        'data-refresh-url' => $marketRefreshUrl,
+        'data-i18n'        => json_encode(osc_market_i18n('plugin')),
+    ),
+)); ?>
     <?php osc_admin_tab_nav(array(
         array('label' => __('Installed'), 'url' => '#market-tab-installed'),
         array('label' => __('Browse'), 'url' => '#market-tab-browse'),
@@ -205,7 +210,7 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
     </div>
 
     <?php osc_market_render_detail_dialog('plugin'); ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_admin_confirm_dialog(array(
     'id'         => 'pluginModal',
     'title'      => '',

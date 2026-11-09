@@ -1139,7 +1139,7 @@ check('the hash is nowhere in the page', strpos($html, (string)row($admin, $new)
 check('and the button says what it does', strpos($html, '>Save changes</button>') !== false, $html);
 check('the edit form offers a way out of it', strpos($html, 'javascript:history.go(-1)') !== false, $html);
 // The screen's own chrome, which the migration had to keep.
-check('the theme wrapper is still there', strpos($html, '<div class="settings-user">') !== false, $html);
+check('the theme wrapper is still there', strpos($html, '<div class="osc-body settings-user">') !== false, $html);
 check('so is the list the client-side validator writes into', strpos($html, '<ul id="error_list"></ul>') !== false, $html);
 check('and the client-side validator itself', strpos($html, 'oscValidateForm(') !== false, $html);
 check(

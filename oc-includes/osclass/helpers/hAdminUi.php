@@ -974,7 +974,9 @@ if (!function_exists('osc_admin_panel_open')) {
      * @param string $title Omit for a panel that needs no header
      * @param array  $opts  'subtitle', 'actions' (action specs in the header), 'class', 'id',
      *                      'attrs', 'hint' (string, or a list of strings or array('text', 'state')),
-     *                      'hint_state' => 'error', 'collapsible' (a <details>) and 'open'
+     *                      'hint_state' => 'error', 'collapsible' (a <details>) and 'open'.
+     *                      Since 7.1.0: 'stack' => true (the body becomes a gap column) and
+     *                      'count' => int (a badge after the title)
      *
      * @return void
      */
@@ -985,6 +987,7 @@ if (!function_exists('osc_admin_panel_open')) {
         $GLOBALS['osc_admin_panel_stack'][] = $tag;
 
         echo '<' . $tag . ' class="osc-panel'
+            . (!empty($opts['stack']) ? ' osc-panel-stack' : '')
             . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '"'
             . (!empty($opts['id']) ? ' id="' . osc_esc_html($opts['id']) . '"' : '')
             . osc_admin_field_attrs($opts['attrs'] ?? array())
@@ -992,7 +995,8 @@ if (!function_exists('osc_admin_panel_open')) {
 
         if ($title !== '' || $tag === 'details') {
             $head = $tag === 'details' ? 'summary' : 'div';
-            echo '<' . $head . ' class="osc-panel-head"><h3>' . osc_esc_html($title) . '</h3>';
+            echo '<' . $head . ' class="osc-panel-head"><h3>' . osc_esc_html($title)
+                . (isset($opts['count']) ? osc_admin_count((int)$opts['count']) : '') . '</h3>';
             $hints = $opts['hint'] ?? array();
             if (!is_array($hints)) {
                 $hints = array(array('text' => $hints, 'state' => $opts['hint_state'] ?? ''));
@@ -1138,7 +1142,9 @@ if (!function_exists('osc_admin_table')) {
      * escaped; only 'label_html', 'html' and 'render' print as given.
      *
      * A cell is a scalar or null (escaped text), ['html' => markup], ['render' => callable that
-     * echoes] or ['status' => [$state, $word]]; any array form may add 'class'.
+     * echoes] or ['status' => [$state, $word]]; any array form may add 'class'. Since 7.1.0 it
+     * may also add 'colspan' => n (the next n-1 columns are skipped for that row) and 'th' => true
+     * (a <th scope="row"> in place of the <td>).
      *
      * @param array $columns key => plain label, or an array: 'label', 'label_html', 'hide_label',
      *                       'numeric' (col-numeric), 'class' (th and td), 'td_class', 'sorted'
@@ -1148,7 +1154,8 @@ if (!function_exists('osc_admin_table')) {
      * @param array $opts    'class', 'id', 'attrs' (on the table); 'wrap' => 'responsive'|'actions'|false
      *                       (default 'responsive'; 'actions' adds #table-row-actions); 'wrap_id';
      *                       'stack' => true (cards on a phone); 'empty' => what no rows shows:
-     *                       'title', 'text', 'action' (a button spec)
+     *                       'title', 'text', 'action' (a button spec); 'caption' (escaped, for
+     *                       screen readers), since 7.1.0
      *
      * @return void
      * @since 7.1.0

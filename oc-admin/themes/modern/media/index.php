@@ -250,7 +250,7 @@ $mediaSizes = static function (array $res): array {
 $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __('Page'));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="media-library" class="col-12">
+<?php osc_admin_body_open(array('id' => 'media-library', 'class' => 'col-12')); ?>
     <?php
     // One line on what the library holds and where it is stored.
     $ownerWords = array('item' => __('listing photos'), 'user' => __('user photos'), 'page' => __('page images'), 'library' => __('library uploads'), 'setting' => __('settings images'));
@@ -440,7 +440,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
             'iPage'                => $mediaPage,
         ));
     } ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_admin_confirm_dialog(array(
     'id'      => 'media-delete-dialog',
     'method'  => 'post',

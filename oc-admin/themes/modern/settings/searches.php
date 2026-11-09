@@ -100,10 +100,8 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="general-setting">
-    <div id="general-settings">
-        <ul id="error_list"></ul>
-        <?php osc_admin_settings_form($form['id'], $form); ?>
-    </div>
-</div>
+<?php osc_admin_body_open(array('id' => 'general-settings')); ?>
+    <ul id="error_list"></ul>
+    <?php osc_admin_settings_form($form['id'], $form); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

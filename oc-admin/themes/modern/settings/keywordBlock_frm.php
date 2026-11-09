@@ -61,7 +61,7 @@ osc_add_filter('admin_title', 'customPageTitle');
 $aux = customFrmText();
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<div class="settings-user">
+<?php osc_admin_body_open(array('class' => 'settings-user')); ?>
     <ul id="error_list"></ul>
     <?php osc_admin_form_open(array(
         'name'   => 'keyword_block_form',
@@ -107,5 +107,5 @@ $aux = customFrmText();
                         'url'     => osc_admin_base_url(true) . '?page=settings&action=keyword_block',
                     ),
                 )); ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

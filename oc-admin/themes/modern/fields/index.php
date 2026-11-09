@@ -750,6 +750,7 @@ function customHead()
 osc_add_hook('admin_header', 'customHead', 10);
 
 osc_current_admin_theme_path('parts/header.php');
+osc_admin_body_open(array('id' => 'forms-page', 'class' => 'forms-page'));
 ?>
 
     <?php
@@ -782,14 +783,16 @@ if ($looseCount > 0) { ?>
     <div class="forms-builder">
         <div class="forms-builder-grid">
 
-            <div class="forms-col">
-                <div class="col-head">
-                    <h3 class="col-title"><?php _e('Forms'); ?></h3>
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-form-button">
-                        <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('New form'); ?>
-                    </button>
-                </div>
-                <p class="col-hint"><?php _e('A form is a set of fields shown together on the listing form, for the categories you choose.'); ?></p>
+            <?php osc_admin_section(__('Forms'), array(
+                'class'   => 'forms-col',
+                'intro'   => __('A form is a set of fields shown together on the listing form, for the categories you choose.'),
+                'actions' => array(array(
+                    'label'   => __('New form'),
+                    'icon'    => 'bi-plus-lg',
+                    'variant' => 'outline-primary',
+                    'attrs'   => array('id' => 'add-form-button'),
+                )),
+            )); ?>
                 <div id="forms-list">
                     <?php if (count($forms) === 0) { ?>
                         <?php osc_admin_empty(array(
@@ -833,18 +836,20 @@ if ($looseCount > 0) { ?>
                         </div>
                     <?php } ?>
                 </div>
-            </div>
+            <?php osc_admin_section_close(); ?>
 
-            <div class="palette-col">
-                <div class="col-head">
-                    <h3 class="col-title"><?php _e('Fields'); ?></h3>
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="add-field-button">
-                        <i class="bi bi-plus-lg" aria-hidden="true"></i> <?php _e('New field'); ?>
-                    </button>
-                </div>
-                <p class="col-hint"><?php echo count($forms) === 0
+            <?php osc_admin_section(__('Fields'), array(
+                'class'   => 'palette-col',
+                'intro'   => count($forms) === 0
                     ? __('Your reusable fields. Create a form first, then drag a field into it. The same field can be placed in several forms.')
-                    : __('Your reusable fields. Drag one into a form on the left, or use a form’s “Add field”. The same field can be placed in several forms.'); ?></p>
+                    : __('Your reusable fields. Drag one into a form on the left, or use a form’s “Add field”. The same field can be placed in several forms.'),
+                'actions' => array(array(
+                    'label'   => __('New field'),
+                    'icon'    => 'bi-plus-lg',
+                    'variant' => 'outline-primary',
+                    'attrs'   => array('id' => 'add-field-button'),
+                )),
+            )); ?>
                 <ul id="palette-list" class="palette-list">
                     <?php if (count($fields) === 0) { ?>
                         <?php osc_admin_empty(array(
@@ -858,12 +863,13 @@ if ($looseCount > 0) { ?>
                         cfields_render_chip($field, in_array($fid, $placedIds, true), $looseCats[$fid] ?? array());
                     } ?>
                 </ul>
-            </div>
+            <?php osc_admin_section_close(); ?>
 
         </div>
     </div>
 
     <div id="cf-live" class="visually-hidden" role="status" aria-live="polite"></div>
+    <?php osc_admin_body_close(); ?>
 
     <dialog id="addDialog" class="osc-dialog">
         <form id="addDialogForm" novalidate>

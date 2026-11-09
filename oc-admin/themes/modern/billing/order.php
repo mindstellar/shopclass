@@ -10,6 +10,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\ui\Form;
 use mindstellar\billing\DocumentPage;
 use mindstellar\billing\ListingCheckout;
 use mindstellar\billing\Order;
@@ -150,9 +151,8 @@ $reasonWords = array(
 $rows = array(
     array(
         'label' => __('Status'),
-        'value' => '<span class="osc-status status-' . osc_esc_html($order->getStatus()) . '">'
-                   . osc_esc_html($statusWord) . '</span>'
-                   . ($partly ? ' <span class="osc-status status-refunded">' . osc_esc_html(__('Partly refunded')) . '</span>' : ''),
+        'value' => Form::statusBadge($order->getStatus(), osc_esc_html($statusWord))
+                   . ($partly ? ' ' . Form::statusBadge('refunded', osc_esc_html(__('Partly refunded'))) : ''),
         'html'  => true,
     ),
     array('label' => __('Amount'), 'value' => osc_admin_money($order->getAmount(), $order->getCurrency())),
@@ -274,532 +274,458 @@ osc_admin_page(array(
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
-    <div class="billing-detail-grid">
-        <div>
-            <?php osc_admin_panel_open(_x('Order', 'purchase order'), array('class' => 'billing-detail-summary')); ?>
-                <?php osc_admin_definition($rows); ?>
+    <?php osc_admin_body_open(array('layout' => 'split', 'class' => 'billing-detail-grid')); ?>
+        <?php osc_admin_panel_open(_x('Order', 'purchase order'), array('class' => 'billing-detail-summary')); ?>
+            <?php osc_admin_definition($rows); ?>
+        <?php osc_admin_panel_close(); ?>
+
+        <?php if ($documents !== array()) { ?>
+            <?php osc_admin_panel_open(__('Documents')); ?>
+                <?php
+                $documentRows = array();
+                foreach ($documents as $doc) {
+                    $documentRows[] = array(
+                        'number' => array('html' => osc_esc_html($doc->number)
+                            . ($doc->isCreditNote() ? ' <span class="text-muted">· ' . osc_esc_html(__('Credit note')) . '</span>' : '')),
+                        'date'   => array('html' => osc_admin_date($doc->date, true)),
+                        'total'  => DocumentPage::sign($doc) . osc_admin_money($doc->total, $doc->currency),
+                        'view'   => array('html' => '<a href="' . osc_esc_html(DocumentPage::adminUrl($doc)) . '" target="_blank" rel="noopener">' . osc_esc_html(__('View')) . '</a>'),
+                    );
+                }
+                osc_admin_table(array(
+                    'number' => __('Number'),
+                    'date'   => __('Date'),
+                    'total'  => array('label' => __('Total'), 'numeric' => true),
+                    'view'   => array('label' => __('View'), 'hide_label' => true, 'col_name' => false),
+                ), $documentRows, array('class' => 'order-documents', 'stack' => true));
+                ?>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
+
+        <?php $publishFailed = $order->meta(OrderStore::PUBLISH_FAILED);
+        if ($listingId !== null && is_array($publishFailed)) {
+            $publishReason = ListingCheckout::failureReason((string) ($publishFailed['reason'] ?? ''));
+            $publishAt     = (string) ($publishFailed['at'] ?? '');
+            osc_admin_callout('warning', osc_esc_html(OrderStore::listingState($listingId) === 'live'
+                ? sprintf(__('Paid, but the listing could not be published (%1$s, %2$s). It was published later.'), $publishReason, $publishAt)
+                : sprintf(__('Paid, but the listing could not be published: %1$s (%2$s). The credits are in the buyer\'s wallet.'), $publishReason, $publishAt)), array('html' => true));
+        } ?>
+
+        <?php if ($isGoods) { ?>
+            <?php if ($short !== array()) {
+                $shortWords = array();
+                foreach ($lines as $line) {
+                    if (isset($short[$line['id']])) {
+                        $shortWords[] = sprintf(__('%1$s (%2$d short)'), $line['title'], (int) $short[$line['id']]);
+                    }
+                }
+                osc_admin_callout('warning', '<div>' . Form::statusBadge('failed', osc_esc_html(__('Oversold')))
+                    . ' ' . osc_esc_html(__('Stock ran out after this order was paid. Short:'))
+                    . ' ' . osc_esc_html(implode(', ', $shortWords)) . '</div>', array('html' => true));
+            } ?>
+            <?php osc_admin_panel_open(__('Items')); ?>
+                <?php
+                $itemColumns = array(
+                    'item' => __('Item'),
+                    'sku'  => __('SKU'),
+                    'qty'  => array('label' => __('Qty'), 'numeric' => true),
+                    'unit' => array('label' => __('Unit'), 'numeric' => true),
+                );
+                if ($lineTaxes !== array()) {
+                    $itemColumns['tax'] = array('label' => __('Tax'), 'numeric' => true);
+                }
+                $itemColumns['amount'] = array('label' => __('Amount'), 'numeric' => true);
+
+                $itemRows = array();
+                foreach ($lines as $line) {
+                    $isItem  = $line['kind'] === 'item';
+                    $options = array();
+                    foreach ((array) $line['options'] as $name => $value) {
+                        $options[] = $name . ': ' . $value;
+                    }
+                    $title    = osc_esc_html($line['title']);
+                    $itemCell = $isItem && $line['item_id'] !== null
+                        ? '<a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=items&action=item_edit&id=' . (int) $line['item_id']) . '">' . $title . '</a>'
+                        : $title;
+                    if ($options !== array()) {
+                        $itemCell .= '<div class="text-muted">' . osc_esc_html(implode(', ', $options)) . '</div>';
+                    }
+                    if (($lineTaxes[(int) $line['id']]['code'] ?? '') !== '') {
+                        $itemCell .= '<div class="text-muted">' . osc_esc_html($codeLabel . ' ' . $lineTaxes[(int) $line['id']]['code']) . '</div>';
+                    }
+                    $lt = $lineTaxes[(int) $line['id']] ?? null;
+                    $itemRows[] = array(
+                        'item'   => array('html' => $itemCell),
+                        'sku'    => (string) $line['sku'],
+                        'qty'    => $isItem ? (int) $line['qty'] : '',
+                        'unit'   => $isItem ? osc_admin_money($line['unit'], $order->getCurrency()) : '',
+                        'tax'    => $lt !== null ? $lt['rate_text'] . ' · ' . ($lt['included'] ? sprintf(__('%s incl.'), $lt['amount_text']) : $lt['amount_text']) : '',
+                        'amount' => $line['kind'] === 'tax' && ($line['meta']['included'] ?? false) === true
+                            ? sprintf(__('%s (included)'), osc_admin_money($line['unit'], $order->getCurrency()))
+                            : osc_admin_money($line['amount'], $order->getCurrency()),
+                    );
+                }
+                $itemRows[] = array(
+                    'item'   => array('html' => osc_esc_html(__('Total')), 'th' => true, 'colspan' => count($itemColumns) - 1),
+                    'amount' => array('html' => '<strong>' . osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())) . '</strong>'),
+                );
+                osc_admin_table($itemColumns, $itemRows);
+                ?>
             <?php osc_admin_panel_close(); ?>
 
-            <?php if ($documents !== array()) { ?>
-                <?php osc_admin_panel_open(__('Documents')); ?>
-                    <div class="table-responsive">
-                        <table class="table order-documents osc-table-stack">
-                            <thead>
-                            <tr>
-                                <th scope="col"><?php _e('Number'); ?></th>
-                                <th scope="col"><?php _e('Date'); ?></th>
-                                <th scope="col" class="col-numeric"><?php _e('Total'); ?></th>
-                                <th scope="col"><span class="visually-hidden"><?php _e('View'); ?></span></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($documents as $doc) {
-                                $credit = $doc->isCreditNote(); ?>
-                                <tr>
-                                    <td data-col-name="<?php echo osc_esc_html(__('Number')); ?>">
-                                        <?php echo osc_esc_html($doc->number); ?>
-                                        <?php if ($credit) { ?><span class="text-muted">· <?php _e('Credit note'); ?></span><?php } ?>
-                                    </td>
-                                    <td data-col-name="<?php echo osc_esc_html(__('Date')); ?>"><?php echo osc_admin_date($doc->date, true); ?></td>
-                                    <td class="col-numeric" data-col-name="<?php echo osc_esc_html(__('Total')); ?>"><?php echo osc_esc_html(DocumentPage::sign($doc) . osc_admin_money($doc->total, $doc->currency)); ?></td>
-                                    <td><a href="<?php echo osc_esc_html(DocumentPage::adminUrl($doc)); ?>" target="_blank" rel="noopener"><?php _e('View'); ?></a></td>
-                                </tr>
-                            <?php } ?>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
-
-            <?php $publishFailed = $order->meta(OrderStore::PUBLISH_FAILED);
-            if ($listingId !== null && is_array($publishFailed)) { ?>
-                <div class="callout-warning callout-block mb-3">
-                    <div>
-                        <?php if (OrderStore::listingState($listingId) === 'live') {
-                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published (%1$s, %2$s). It was published later.'), ListingCheckout::failureReason((string) ($publishFailed['reason'] ?? '')), (string) ($publishFailed['at'] ?? '')));
-                        } else {
-                            echo osc_esc_html(sprintf(__('Paid, but the listing could not be published: %1$s (%2$s). The credits are in the buyer\'s wallet.'), ListingCheckout::failureReason((string) ($publishFailed['reason'] ?? '')), (string) ($publishFailed['at'] ?? '')));
-                        } ?>
-                    </div>
-                </div>
-            <?php } ?>
-
-            <?php if ($isGoods) { ?>
-                <?php if ($short !== array()) { ?>
-                    <div class="callout-warning callout-block mb-3">
-                        <div>
-                            <span class="osc-status status-failed"><?php _e('Oversold'); ?></span>
-                            <?php _e('Stock ran out after this order was paid. Short:'); ?>
-                            <?php
-                            $shortWords = array();
-                            foreach ($lines as $line) {
-                                if (isset($short[$line['id']])) {
-                                    $shortWords[] = sprintf(__('%1$s (%2$d short)'), $line['title'], (int) $short[$line['id']]);
-                                }
-                            }
-                            echo osc_esc_html(implode(', ', $shortWords));
-                            ?>
-                        </div>
-                    </div>
-                <?php } ?>
-                <?php osc_admin_panel_open(__('Items')); ?>
-                    <div class="table-responsive">
-                        <table class="table">
-                            <thead>
-                            <tr>
-                                <th scope="col"><?php _e('Item'); ?></th>
-                                <th scope="col"><?php _e('SKU'); ?></th>
-                                <th scope="col" class="col-numeric"><?php _e('Qty'); ?></th>
-                                <th scope="col" class="col-numeric"><?php _e('Unit'); ?></th>
-                                <?php if ($lineTaxes !== array()) { ?>
-                                    <th scope="col" class="col-numeric"><?php _e('Tax'); ?></th>
-                                <?php } ?>
-                                <th scope="col" class="col-numeric"><?php _e('Amount'); ?></th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            <?php foreach ($lines as $line) {
-                                $isItem  = $line['kind'] === 'item';
-                                $options = array();
-                                foreach ((array) $line['options'] as $name => $value) {
-                                    $options[] = $name . ': ' . $value;
-                                } ?>
-                                <tr>
-                                    <td>
-                                        <?php if ($isItem && $line['item_id'] !== null) { ?>
-                                            <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=items&action=item_edit&id=' . (int) $line['item_id']); ?>"><?php echo osc_esc_html($line['title']); ?></a>
-                                        <?php } else { ?>
-                                            <?php echo osc_esc_html($line['title']); ?>
-                                        <?php } ?>
-                                        <?php if ($options !== array()) { ?>
-                                            <br><span class="text-muted"><?php echo osc_esc_html(implode(', ', $options)); ?></span>
-                                        <?php } ?>
-                                        <?php if (($lineTaxes[(int) $line['id']]['code'] ?? '') !== '') { ?>
-                                            <br><span class="text-muted"><?php echo osc_esc_html($codeLabel . ' ' . $lineTaxes[(int) $line['id']]['code']); ?></span>
-                                        <?php } ?>
-                                    </td>
-                                    <td><?php echo osc_esc_html((string) $line['sku']); ?></td>
-                                    <td class="col-numeric"><?php echo $isItem ? (int) $line['qty'] : ''; ?></td>
-                                    <td class="col-numeric"><?php echo $isItem ? osc_esc_html(osc_admin_money($line['unit'], $order->getCurrency())) : ''; ?></td>
-                                    <?php if ($lineTaxes !== array()) {
-                                        $lt = $lineTaxes[(int) $line['id']] ?? null; ?>
-                                        <td class="col-numeric"><?php if ($lt !== null) {
-                                            echo osc_esc_html($lt['rate_text'] . ' · ' . ($lt['included'] ? sprintf(__('%s incl.'), $lt['amount_text']) : $lt['amount_text']));
-                                        } ?></td>
-                                    <?php } ?>
-                                    <td class="col-numeric"><?php echo osc_esc_html($line['kind'] === 'tax' && ($line['meta']['included'] ?? false) === true
-                                        ? sprintf(__('%s (included)'), osc_admin_money($line['unit'], $order->getCurrency()))
-                                        : osc_admin_money($line['amount'], $order->getCurrency())); ?></td>
-                                </tr>
-                            <?php } ?>
-                            <tr>
-                                <th scope="row" colspan="<?php echo $lineTaxes !== array() ? 5 : 4; ?>"><?php _e('Total'); ?></th>
-                                <td class="col-numeric"><strong><?php echo osc_esc_html(osc_admin_money($order->getAmount(), $order->getCurrency())); ?></strong></td>
-                            </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                <?php osc_admin_panel_close(); ?>
-
-                <?php osc_admin_panel_open(__('Delivery address and buyer')); ?>
-                    <p class="mb-0">
-                        <?php echo implode('<br>', array_map('osc_esc_html', Receipts::addressLines($address))); ?>
-                    </p>
-                    <p class="panel-subtitle mt-3 mb-0">
-                        <?php $buyerName = trim((string) ($buyer['name'] ?? ''));
-                        $buyerParts = array();
-                        if ($buyerName !== '' && $buyerName !== trim((string) ($address['name'] ?? ''))) {
-                            $buyerParts[] = osc_esc_html($buyerName);
-                        }
-                        if (($buyer['email'] ?? '') !== '') {
-                            $buyerParts[] = '<a href="mailto:' . osc_esc_html(rawurlencode((string) $buyer['email'])) . '">' . osc_esc_html((string) $buyer['email']) . '</a>';
-                        }
-                        if (($buyer['phone'] ?? '') !== '') {
-                            $buyerParts[] = osc_esc_html((string) $buyer['phone']);
-                        }
-                        echo implode(' · ', $buyerParts); ?>
-                    </p>
-                    <?php if ($buyerFields !== array()) { ?>
-                        <p class="panel-subtitle mt-1 mb-0"><?php echo implode('<br>', array_map('osc_esc_html', $buyerFields)); ?></p>
-                    <?php } ?>
-                <?php osc_admin_panel_close(); ?>
-
-                <?php if ($shipments !== array()) { ?>
-                    <?php osc_admin_panel_open(__('Shipments')); ?>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                <tr>
-                                    <th scope="col"><?php _e('Parcel'); ?></th>
-                                    <th scope="col"><?php _e('Items'); ?></th>
-                                    <th scope="col"><?php _e('Tracking'); ?></th>
-                                    <th scope="col"><?php _e('Sent'); ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($shipments as $shipment) {
-                                    $n        = (int) ($shipment['n'] ?? 0);
-                                    $parcelUrl = Receipts::httpsUrl((string) ($shipment['url'] ?? ''));
-                                    $carrierWord = trim((string) ($shipment['carrier'] ?? '') . ' ' . (string) ($shipment['tracking'] ?? ''));
-                                    $words    = array();
-                                    foreach ((array) ($shipment['lines'] ?? array()) as $sent) {
-                                        $words[] = (int) ($sent['qty'] ?? 0) . ' × ' . ($lineTitles[(int) ($sent['line'] ?? 0)] ?? __('Item'));
-                                    } ?>
-                                    <tr>
-                                        <td>#<?php echo $n; ?></td>
-                                        <td><?php echo osc_esc_html(implode(', ', $words)); ?></td>
-                                        <td>
-                                            <?php if ($parcelUrl !== '') { ?>
-                                                <a href="<?php echo osc_esc_html($parcelUrl); ?>" target="_blank" rel="noopener noreferrer"><?php echo osc_esc_html($carrierWord !== '' ? $carrierWord : __('Track parcel')); ?></a>
-                                            <?php } else { ?>
-                                                <?php echo osc_esc_html($carrierWord); ?>
-                                            <?php } ?>
-                                        </td>
-                                        <td><?php echo osc_admin_date((string) ($shipment['at'] ?? ''), true); ?>
-                                            <br><span class="text-muted"><?php echo osc_esc_html($actorWord($shipment)); ?></span></td>
-                                    </tr>
-                                    <?php if (in_array($order->getStatus(), array(Order::STATUS_PROCESSING, Order::STATUS_SHIPPED), true)) { ?>
-                                    <tr>
-                                        <td colspan="4">
-                                            <details>
-                                                <summary><?php echo osc_esc_html(sprintf(__('Edit tracking of parcel %d'), $n)); ?></summary>
-                                                <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>" class="mt-3">
-                                                    <input type="hidden" name="page" value="billing"/>
-                                                    <input type="hidden" name="action" value="order_shipment_tracking"/>
-                                                    <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                                                    <input type="hidden" name="n" value="<?php echo $n; ?>"/>
-                                                    <?php $trackingFields('parcel' . $n, ($errors !== array() && (int) \Params::getParamInt('n') === $n ? $typed : array()) + array(
-                                                        'carrier'     => (string) ($shipment['carrier'] ?? ''),
-                                                        'tracking'    => (string) ($shipment['tracking'] ?? ''),
-                                                        'trackingUrl' => (string) ($shipment['url'] ?? ''),
-                                                    ), $errors !== array() && (int) \Params::getParamInt('n') === $n); ?>
-                                                    <button type="submit" class="btn btn-submit"><?php _e('Save tracking'); ?></button>
-                                                </form>
-                                            </details>
-                                        </td>
-                                    </tr>
-                                    <?php } ?>
-                                <?php } ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php osc_admin_panel_close(); ?>
-                <?php } ?>
-
-                <?php osc_admin_panel_open(__('History')); ?>
-                    <?php
-                    // Credit notes are the refunds; a part refund moves no status, so it is only here.
-                    $events = array();
-                    foreach (array_reverse($history) as $entry) {
-                        $events[] = array(
-                            'at'   => (string) ($entry['at'] ?? ''),
-                            'what' => sprintf(
-                                __('%1$s to %2$s'),
-                                $statusWords[$entry['from'] ?? ''] ?? (string) ($entry['from'] ?? ''),
-                                $statusWords[$entry['to'] ?? ''] ?? (string) ($entry['to'] ?? '')
-                            ),
-                            'by'   => $actorWord($entry),
-                        );
+            <?php osc_admin_panel_open(__('Delivery address and buyer'), array('stack' => true)); ?>
+                <p>
+                    <?php echo implode('<br>', array_map('osc_esc_html', Receipts::addressLines($address))); ?>
+                </p>
+                <p class="panel-subtitle">
+                    <?php $buyerName = trim((string) ($buyer['name'] ?? ''));
+                    $buyerParts = array();
+                    if ($buyerName !== '' && $buyerName !== trim((string) ($address['name'] ?? ''))) {
+                        $buyerParts[] = osc_esc_html($buyerName);
                     }
-                    foreach ($documents as $doc) {
-                        if ($doc->isCreditNote()) {
-                            $events[] = array(
-                                'at'   => $doc->date,
-                                'what' => sprintf(__('Refunded %1$s (%2$s)'), osc_admin_money($doc->total, $doc->currency), $doc->number),
-                                'by'   => '',
+                    if (($buyer['email'] ?? '') !== '') {
+                        $buyerParts[] = '<a href="mailto:' . osc_esc_html(rawurlencode((string) $buyer['email'])) . '">' . osc_esc_html((string) $buyer['email']) . '</a>';
+                    }
+                    if (($buyer['phone'] ?? '') !== '') {
+                        $buyerParts[] = osc_esc_html((string) $buyer['phone']);
+                    }
+                    echo implode(' · ', $buyerParts); ?>
+                </p>
+                <?php if ($buyerFields !== array()) { ?>
+                    <p class="panel-subtitle"><?php echo implode('<br>', array_map('osc_esc_html', $buyerFields)); ?></p>
+                <?php } ?>
+            <?php osc_admin_panel_close(); ?>
+
+            <?php if ($shipments !== array()) { ?>
+                <?php osc_admin_panel_open(__('Shipments')); ?>
+                    <?php
+                    $parcelEdit = static function (int $n, array $shipment) use ($actionUrl, $order, $errors, $typed, $trackingFields): void { ?>
+                        <details class="order-parcel-edit">
+                            <summary><?php echo osc_esc_html(sprintf(__('Edit tracking of parcel %d'), $n)); ?></summary>
+                            <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                                <input type="hidden" name="page" value="billing"/>
+                                <input type="hidden" name="action" value="order_shipment_tracking"/>
+                                <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                                <input type="hidden" name="n" value="<?php echo $n; ?>"/>
+                                <?php $trackingFields('parcel' . $n, ($errors !== array() && (int) \Params::getParamInt('n') === $n ? $typed : array()) + array(
+                                    'carrier'     => (string) ($shipment['carrier'] ?? ''),
+                                    'tracking'    => (string) ($shipment['tracking'] ?? ''),
+                                    'trackingUrl' => (string) ($shipment['url'] ?? ''),
+                                ), $errors !== array() && (int) \Params::getParamInt('n') === $n); ?>
+                                <button type="submit" class="btn btn-submit"><?php _e('Save tracking'); ?></button>
+                            </form>
+                        </details>
+                    <?php };
+                    $canEditParcels = in_array($order->getStatus(), array(Order::STATUS_PROCESSING, Order::STATUS_SHIPPED), true);
+                    $shipmentRows   = array();
+                    foreach ($shipments as $shipment) {
+                        $n           = (int) ($shipment['n'] ?? 0);
+                        $parcelUrl   = Receipts::httpsUrl((string) ($shipment['url'] ?? ''));
+                        $carrierWord = trim((string) ($shipment['carrier'] ?? '') . ' ' . (string) ($shipment['tracking'] ?? ''));
+                        $words       = array();
+                        foreach ((array) ($shipment['lines'] ?? array()) as $sent) {
+                            $words[] = (int) ($sent['qty'] ?? 0) . ' × ' . ($lineTitles[(int) ($sent['line'] ?? 0)] ?? __('Item'));
+                        }
+                        $shipmentRows[] = array(
+                            'parcel'   => '#' . $n,
+                            'items'    => implode(', ', $words),
+                            'tracking' => array('html' => $parcelUrl !== ''
+                                ? '<a href="' . osc_esc_html($parcelUrl) . '" target="_blank" rel="noopener noreferrer">' . osc_esc_html($carrierWord !== '' ? $carrierWord : __('Track parcel')) . '</a>'
+                                : osc_esc_html($carrierWord)),
+                            'sent'     => array('html' => osc_admin_date((string) ($shipment['at'] ?? ''), true)
+                                . '<div class="text-muted">' . osc_esc_html($actorWord($shipment)) . '</div>'),
+                        );
+                        if ($canEditParcels) {
+                            $shipmentRows[] = array(
+                                'parcel' => array('colspan' => 4, 'render' => static fn () => $parcelEdit($n, $shipment)),
                             );
                         }
                     }
-                    usort($events, static fn (array $a, array $b): int => strcmp($b['at'], $a['at']));
+                    osc_admin_table(array(
+                        'parcel'   => __('Parcel'),
+                        'items'    => __('Items'),
+                        'tracking' => __('Tracking'),
+                        'sent'     => __('Sent'),
+                    ), $shipmentRows);
                     ?>
-                    <?php if ($events === array()) { ?>
-                        <p class="panel-subtitle mb-0"><?php echo osc_esc_html($order->isPending() ? __('Nothing has changed yet.') : __('No history kept before 7.1')); ?></p>
-                    <?php } else { ?>
-                        <div class="table-responsive">
-                            <table class="table">
-                                <thead>
-                                <tr>
-                                    <th scope="col"><?php _e('Date'); ?></th>
-                                    <th scope="col"><?php _e('Change'); ?></th>
-                                    <th scope="col"><?php _e('By'); ?></th>
-                                </tr>
-                                </thead>
-                                <tbody>
-                                <?php foreach ($events as $event) { ?>
-                                    <tr>
-                                        <td><?php echo osc_admin_date($event['at'], true); ?></td>
-                                        <td><?php echo osc_esc_html($event['what']); ?></td>
-                                        <td><?php echo osc_esc_html($event['by']); ?></td>
-                                    </tr>
-                                <?php } ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    <?php } ?>
                 <?php osc_admin_panel_close(); ?>
-            <?php } else { ?>
-            <?php osc_admin_form_section(__('Credit movements')); ?>
             <?php } ?>
-            <?php if ($isGoods) {
-                // A goods order mints no credits, so there is no ledger to show.
-            } elseif (empty($entries)) {
+
+            <?php osc_admin_panel_open(__('History'), array('stack' => true)); ?>
+                <?php
+                // Credit notes are the refunds; a part refund moves no status, so it is only here.
+                $events = array();
+                foreach (array_reverse($history) as $entry) {
+                    $events[] = array(
+                        'at'   => (string) ($entry['at'] ?? ''),
+                        'what' => sprintf(
+                            __('%1$s to %2$s'),
+                            $statusWords[$entry['from'] ?? ''] ?? (string) ($entry['from'] ?? ''),
+                            $statusWords[$entry['to'] ?? ''] ?? (string) ($entry['to'] ?? '')
+                        ),
+                        'by'   => $actorWord($entry),
+                    );
+                }
+                foreach ($documents as $doc) {
+                    if ($doc->isCreditNote()) {
+                        $events[] = array(
+                            'at'   => $doc->date,
+                            'what' => sprintf(__('Refunded %1$s (%2$s)'), osc_admin_money($doc->total, $doc->currency), $doc->number),
+                            'by'   => '',
+                        );
+                    }
+                }
+                usort($events, static fn (array $a, array $b): int => strcmp($b['at'], $a['at']));
+                ?>
+                <?php if ($events === array()) { ?>
+                    <p class="panel-subtitle"><?php echo osc_esc_html($order->isPending() ? __('Nothing has changed yet.') : __('No history kept before 7.1')); ?></p>
+                <?php } else {
+                    osc_admin_table(array(
+                        'date'   => __('Date'),
+                        'change' => __('Change'),
+                        'by'     => __('By'),
+                    ), array_map(static fn (array $event): array => array(
+                        'date'   => array('html' => osc_admin_date($event['at'], true)),
+                        'change' => $event['what'],
+                        'by'     => $event['by'],
+                    ), $events));
+                } ?>
+            <?php osc_admin_panel_close(); ?>
+        <?php } else {
+            // Only a credits order has a ledger: a goods order mints no credits.
+            osc_admin_panel_open(__('Credit movements'));
+            if (empty($entries)) {
                 osc_admin_empty(array(
                     'title' => __('No credits moved yet'),
                     'text'  => __('Credits are added the moment this order is paid.'),
                 ));
-            } else { ?>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                        <tr>
-                            <th scope="col"><?php _e('What happened'); ?></th>
-                            <th scope="col" class="col-numeric"><?php _e('Change'); ?></th>
-                            <th scope="col" class="col-numeric"><?php _e('Balance after'); ?></th>
-                            <th scope="col"><?php _e('Date'); ?></th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($entries as $entry) {
-                            $amount = (int)$entry['i_amount']; ?>
-                            <tr>
-                                <td><?php echo osc_esc_html(
-                                    $reasonWords[$entry['s_reason']] ?? $entry['s_reason']
-                                ); ?></td>
-                                <td class="col-numeric">
-                                    <?php echo osc_esc_html(($amount > 0 ? '+' : '') . number_format($amount)); ?>
-                                </td>
-                                <td class="col-numeric"><?php echo number_format((int)$entry['i_balance_after']); ?></td>
-                                <td><?php echo osc_admin_date($entry['dt_date'], true); ?></td>
-                            </tr>
-                        <?php } ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php } ?>
-        </div>
+            } else {
+                osc_admin_table(array(
+                    'reason'  => __('What happened'),
+                    'change'  => array('label' => __('Change'), 'numeric' => true),
+                    'balance' => array('label' => __('Balance after'), 'numeric' => true),
+                    'date'    => __('Date'),
+                ), array_map(static function (array $entry) use ($reasonWords): array {
+                    $amount = (int)$entry['i_amount'];
 
-        <div>
-            <?php if ($carriers !== array()) {
-                echo '<datalist id="order-carriers">';
-                foreach ($carriers as $carrierName) {
-                    echo '<option value="' . osc_esc_html((string) $carrierName) . '"></option>';
-                }
-                echo '</datalist>';
-            } ?>
-            <?php if ($order->canProcess()) { ?>
-                <?php osc_admin_panel_open(__('Processing'), array('class' => 'billing-detail-next')); ?>
-                    <p class="panel-subtitle"><?php _e('Start processing when you begin to pick and pack this order.'); ?></p>
-                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
-                        <input type="hidden" name="page" value="billing"/>
-                        <input type="hidden" name="action" value="order_processing"/>
-                        <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <button type="submit" class="btn btn-submit"><?php _e('Start processing'); ?></button>
-                    </form>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
+                    return array(
+                        'reason'  => $reasonWords[$entry['s_reason']] ?? $entry['s_reason'],
+                        'change'  => ($amount > 0 ? '+' : '') . number_format($amount),
+                        'balance' => number_format((int)$entry['i_balance_after']),
+                        'date'    => array('html' => osc_admin_date($entry['dt_date'], true)),
+                    );
+                }, $entries));
+            }
+            osc_admin_panel_close();
+        } ?>
+        <?php osc_admin_body_rail(); ?>
+        <?php if ($carriers !== array()) {
+            echo '<datalist id="order-carriers">';
+            foreach ($carriers as $carrierName) {
+                echo '<option value="' . osc_esc_html((string) $carrierName) . '"></option>';
+            }
+            echo '</datalist>';
+        } ?>
+        <?php if ($order->canProcess()) { ?>
+            <?php osc_admin_panel_open(__('Processing'), array('class' => 'billing-detail-next')); ?>
+                <p class="panel-subtitle"><?php _e('Start processing when you begin to pick and pack this order.'); ?></p>
+                <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                    <input type="hidden" name="page" value="billing"/>
+                    <input type="hidden" name="action" value="order_processing"/>
+                    <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                    <button type="submit" class="btn btn-submit"><?php _e('Start processing'); ?></button>
+                </form>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
 
-            <?php if ($order->canShip()) { ?>
-                <?php osc_admin_panel_open($shipments === array() ? __('Ship this order') : __('Send another parcel'), array('class' => 'billing-detail-next')); ?>
-                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>"
-                          id="order-ship-form" data-osc-confirm-empty="#order-ship-dialog">
-                        <input type="hidden" name="page" value="billing"/>
-                        <input type="hidden" name="action" value="order_shipment"/>
-                        <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <?php if ($itemLines !== array()) { ?>
-                            <div class="table-responsive">
-                                <table class="table">
-                                    <thead>
-                                    <tr>
-                                        <th scope="col"><?php _e('Item'); ?></th>
-                                        <th scope="col" class="col-numeric"><?php _e('Sent'); ?></th>
-                                        <th scope="col" class="col-numeric"><?php _e('Send now'); ?></th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    <?php foreach ($itemLines as $line) {
-                                        $sentQty = (int) ($shippedQty[(int) $line['id']] ?? 0);
-                                        $open    = max(0, (int) $line['qty'] - $sentQty); ?>
-                                        <tr>
-                                            <td><?php echo osc_esc_html((string) $line['title']); ?></td>
-                                            <td class="col-numeric text-nowrap"><?php echo osc_esc_html(sprintf(__('%1$d of %2$d'), $sentQty, (int) $line['qty'])); ?></td>
-                                            <td class="col-numeric">
-                                                <input type="number" class="form-control" min="0" max="<?php echo $open; ?>"
-                                                       name="qty[<?php echo (int) $line['id']; ?>]" value="<?php echo $open; ?>"
-                                                       aria-label="<?php echo osc_esc_html(sprintf(__('Quantity of %s to send now'), (string) $line['title'])); ?>"<?php echo $open === 0 ? ' disabled' : ''; ?>/>
-                                            </td>
-                                        </tr>
-                                    <?php } ?>
-                                    </tbody>
-                                </table>
-                            </div>
-                        <?php } ?>
-                        <?php $trackingFields('ship', $typed, (int) \Params::getParamInt('n') === 0); ?>
-                        <button type="submit" class="btn btn-submit"><?php echo osc_esc_html($shipments === array() ? __('Mark shipped') : __('Send parcel')); ?></button>
-                    </form>
-                <?php osc_admin_panel_close(); ?>
+        <?php if ($order->canShip()) { ?>
+            <?php osc_admin_panel_open($shipments === array() ? __('Ship this order') : __('Send another parcel'), array('class' => 'billing-detail-next')); ?>
+                <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>"
+                      id="order-ship-form" data-osc-confirm-empty="#order-ship-dialog">
+                    <input type="hidden" name="page" value="billing"/>
+                    <input type="hidden" name="action" value="order_shipment"/>
+                    <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                    <?php if ($itemLines !== array()) {
+                        osc_admin_table(array(
+                            'item' => __('Item'),
+                            'sent' => array('label' => __('Sent'), 'numeric' => true, 'td_class' => 'text-nowrap'),
+                            'now'  => array('label' => __('Send now'), 'numeric' => true),
+                        ), array_map(static function (array $line) use ($shippedQty): array {
+                            $sentQty = (int) ($shippedQty[(int) $line['id']] ?? 0);
+                            $open    = max(0, (int) $line['qty'] - $sentQty);
 
-                <?php osc_admin_panel_open(__('Packed')); ?>
-                    <p class="panel-subtitle"><?php echo osc_esc_html($order->packed() !== null
-                        ? __('This order is marked packed. The buyer gets no mail about it.')
-                        : __('A label for staff while you pack. The buyer gets no mail, but the API shows when it was packed.')); ?></p>
-                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
-                        <input type="hidden" name="page" value="billing"/>
-                        <input type="hidden" name="action" value="order_packed"/>
-                        <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <input type="hidden" name="packed" value="<?php echo $order->packed() !== null ? 0 : 1; ?>"/>
-                        <button type="submit" class="btn btn-dim"><?php echo osc_esc_html($order->packed() !== null ? __('Clear packed mark') : __('Mark packed')); ?></button>
-                    </form>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
-
-            <?php if ($isGoods && $order->getStatus() === Order::STATUS_SHIPPED) { ?>
-                <?php osc_admin_panel_open(__('Delivery'), array('class' => 'billing-detail-next')); ?>
-                    <p class="panel-subtitle"><?php echo osc_esc_html($order->awaitsCash()
-                        ? __('Mark this delivered once the courier has collected the cash. That also marks it paid.')
-                        : __('Mark this delivered once the parcel has arrived.')); ?></p>
-                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
-                        <input type="hidden" name="page" value="billing"/>
-                        <input type="hidden" name="action" value="order_delivered"/>
-                        <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <button type="submit" class="btn btn-submit"><?php _e('Mark delivered'); ?></button>
-                    </form>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
-
-            <?php if ($isGoods && $order->getStatus() === Order::STATUS_SHIPPED && $shipments === array()) { ?>
-                <?php osc_admin_panel_open(__('Edit tracking')); ?>
-                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
-                        <input type="hidden" name="page" value="billing"/>
-                        <input type="hidden" name="action" value="order_tracking"/>
-                        <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <?php $trackingFields('track', $typed + array(
-                            'carrier'     => (string) ($fulfil['carrier'] ?? ''),
-                            'tracking'    => (string) ($fulfil['tracking'] ?? ''),
-                            'trackingUrl' => (string) ($fulfil['tracking_url'] ?? ''),
-                        )); ?>
-                        <button type="submit" class="btn btn-submit"><?php _e('Save tracking'); ?></button>
-                    </form>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
-
-            <?php if ($order->isPending()) { ?>
-                <?php osc_admin_panel_open(__('Settle this order')); ?>
-                    <p class="panel-subtitle">
-                        <?php if ($isGoods) {
-                            _e('Mark this paid when the money has arrived: a bank transfer, or cash on delivery.');
-                        } else {
-                            printf(
-                                osc_esc_html(__('Marking this paid adds %s credits to the account straight away. '
-                                                . 'Do it when the money has arrived but the payment method could not '
-                                                . 'tell us — a bank transfer, or a callback that never came through.')),
-                                number_format($order->getCredits())
+                            return array(
+                                'item' => (string) $line['title'],
+                                'sent' => sprintf(__('%1$d of %2$d'), $sentQty, (int) $line['qty']),
+                                'now'  => array('render' => static function () use ($line, $open): void {
+                                    echo '<input type="number" class="form-control" min="0" max="' . $open . '"'
+                                        . ' name="qty[' . (int) $line['id'] . ']" value="' . $open . '"'
+                                        . ' aria-label="' . osc_esc_html(sprintf(__('Quantity of %s to send now'), (string) $line['title'])) . '"'
+                                        . ($open === 0 ? ' disabled' : '') . '/>';
+                                }),
                             );
-                        } ?>
-                    </p>
-                    <?php if ($gatewayWarning !== '') { ?>
-                        <div class="callout-warning callout-block mb-3">
-                            <div>
-                                <?php echo osc_esc_html($gatewayWarning . ' ' . __('The payment may still come through '
-                                    . 'once it is back. Check the provider before you mark this paid by hand.')); ?>
-                                <a href="<?php echo osc_esc_html($pluginsUrl); ?>"><?php _e('Open Plugins'); ?></a>
-                            </div>
-                        </div>
-                    <?php } ?>
-                    <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
-                        <input type="hidden" name="page" value="billing"/>
-                        <input type="hidden" name="action" value="order_paid"/>
-                        <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
-                        <button type="submit" class="btn btn-submit"><?php _e('Mark as paid'); ?></button>
-                    </form>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
-
-            <?php if ($canCancel) { ?>
-                <?php osc_admin_panel_open(__('Cancel this order')); ?>
-                    <p class="panel-subtitle"><?php echo osc_esc_html($isGoods
-                        ? __('Close an order that will not be paid. Stock held for it goes back on sale.')
-                        : __('Close an order that will not be paid.')); ?></p>
-                    <button type="button" class="btn btn-dim" data-osc-dialog-open="#order-cancel-dialog"><?php _e('Cancel order'); ?></button>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
-
-            <?php osc_admin_panel_open(__('About this order')); ?>
-                <p class="panel-subtitle mb-0">
-                    <?php _e('An order records one attempt to pay. Shopclass stores what was bought and what '
-                             . 'happened to it; the payment plugin handles the money itself and never gives '
-                             . 'Shopclass the card details.'); ?>
-                </p>
+                        }, $itemLines));
+                    } ?>
+                    <?php $trackingFields('ship', $typed, (int) \Params::getParamInt('n') === 0); ?>
+                    <button type="submit" class="btn btn-submit"><?php echo osc_esc_html($shipments === array() ? __('Mark shipped') : __('Send parcel')); ?></button>
+                </form>
             <?php osc_admin_panel_close(); ?>
 
-            <?php /* Last in the column, and the only red on the screen. A refund is the one
-                     action here that takes something away, so it does not get to be the first
-                     thing an admin's eye lands on. */ ?>
-            <?php if ($canRefundPart) { ?>
-                <?php osc_admin_panel_open(__('Refund part')); ?>
-                    <p class="panel-subtitle">
-                        <?php echo osc_esc_html(sprintf(
-                            __('Refund an amount or some of the units. A credit note is made. Up to %s is left to refund.'),
-                            osc_admin_money($refundLeft, $order->getCurrency())
-                        )); ?>
-                    </p>
-                    <button type="button" class="btn btn-dim"
-                            data-osc-dialog-open="#order-refund-part-dialog"><?php _e('Refund part'); ?></button>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
+            <?php osc_admin_panel_open(__('Packed')); ?>
+                <p class="panel-subtitle"><?php echo osc_esc_html($order->packed() !== null
+                    ? __('This order is marked packed. The buyer gets no mail about it.')
+                    : __('A label for staff while you pack. The buyer gets no mail, but the API shows when it was packed.')); ?></p>
+                <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                    <input type="hidden" name="page" value="billing"/>
+                    <input type="hidden" name="action" value="order_packed"/>
+                    <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                    <input type="hidden" name="packed" value="<?php echo $order->packed() !== null ? 0 : 1; ?>"/>
+                    <button type="submit" class="btn btn-dim"><?php echo osc_esc_html($order->packed() !== null ? __('Clear packed mark') : __('Mark packed')); ?></button>
+                </form>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
 
-            <?php if ($order->isPaid()) { ?>
-                <?php osc_admin_panel_open(__('Refund')); ?>
-                    <?php if ($refundable) { ?>
+        <?php if ($isGoods && $order->getStatus() === Order::STATUS_SHIPPED) { ?>
+            <?php osc_admin_panel_open(__('Delivery'), array('class' => 'billing-detail-next')); ?>
+                <p class="panel-subtitle"><?php echo osc_esc_html($order->awaitsCash()
+                    ? __('Mark this delivered once the courier has collected the cash. That also marks it paid.')
+                    : __('Mark this delivered once the parcel has arrived.')); ?></p>
+                <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                    <input type="hidden" name="page" value="billing"/>
+                    <input type="hidden" name="action" value="order_delivered"/>
+                    <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                    <button type="submit" class="btn btn-submit"><?php _e('Mark delivered'); ?></button>
+                </form>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
+
+        <?php if ($isGoods && $order->getStatus() === Order::STATUS_SHIPPED && $shipments === array()) { ?>
+            <?php osc_admin_panel_open(__('Edit tracking')); ?>
+                <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                    <input type="hidden" name="page" value="billing"/>
+                    <input type="hidden" name="action" value="order_tracking"/>
+                    <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                    <?php $trackingFields('track', $typed + array(
+                        'carrier'     => (string) ($fulfil['carrier'] ?? ''),
+                        'tracking'    => (string) ($fulfil['tracking'] ?? ''),
+                        'trackingUrl' => (string) ($fulfil['tracking_url'] ?? ''),
+                    )); ?>
+                    <button type="submit" class="btn btn-submit"><?php _e('Save tracking'); ?></button>
+                </form>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
+
+        <?php if ($order->isPending()) { ?>
+            <?php osc_admin_panel_open(__('Settle this order'), array('stack' => true)); ?>
+                <p class="panel-subtitle">
+                    <?php if ($isGoods) {
+                        _e('Mark this paid when the money has arrived: a bank transfer, or cash on delivery.');
+                    } else {
+                        printf(
+                            osc_esc_html(__('Marking this paid adds %s credits to the account straight away. '
+                                            . 'Do it when the money has arrived but the payment method could not '
+                                            . 'tell us — a bank transfer, or a callback that never came through.')),
+                            number_format($order->getCredits())
+                        );
+                    } ?>
+                </p>
+                <?php if ($gatewayWarning !== '') {
+                    osc_admin_callout('warning', '<div>' . osc_esc_html($gatewayWarning . ' ' . __('The payment may still come through '
+                        . 'once it is back. Check the provider before you mark this paid by hand.'))
+                        . ' <a href="' . osc_esc_html($pluginsUrl) . '">' . osc_esc_html(__('Open Plugins')) . '</a></div>', array('html' => true));
+                } ?>
+                <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
+                    <input type="hidden" name="page" value="billing"/>
+                    <input type="hidden" name="action" value="order_paid"/>
+                    <input type="hidden" name="id" value="<?php echo (int)$order->getId(); ?>"/>
+                    <button type="submit" class="btn btn-submit"><?php _e('Mark as paid'); ?></button>
+                </form>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
+
+        <?php if ($canCancel) { ?>
+            <?php osc_admin_panel_open(__('Cancel this order')); ?>
+                <p class="panel-subtitle"><?php echo osc_esc_html($isGoods
+                    ? __('Close an order that will not be paid. Stock held for it goes back on sale.')
+                    : __('Close an order that will not be paid.')); ?></p>
+                <button type="button" class="btn btn-dim" data-osc-dialog-open="#order-cancel-dialog"><?php _e('Cancel order'); ?></button>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
+
+        <?php osc_admin_panel_open(__('About this order'), array('stack' => true)); ?>
+            <p class="panel-subtitle">
+                <?php _e('An order records one attempt to pay. Shopclass stores what was bought and what '
+                         . 'happened to it; the payment plugin handles the money itself and never gives '
+                         . 'Shopclass the card details.'); ?>
+            </p>
+        <?php osc_admin_panel_close(); ?>
+
+        <?php /* Last in the column, and the only red on the screen. A refund is the one
+                 action here that takes something away, so it does not get to be the first
+                 thing an admin's eye lands on. */ ?>
+        <?php if ($canRefundPart) { ?>
+            <?php osc_admin_panel_open(__('Refund part')); ?>
+                <p class="panel-subtitle">
+                    <?php echo osc_esc_html(sprintf(
+                        __('Refund an amount or some of the units. A credit note is made. Up to %s is left to refund.'),
+                        osc_admin_money($refundLeft, $order->getCurrency())
+                    )); ?>
+                </p>
+                <button type="button" class="btn btn-dim"
+                        data-osc-dialog-open="#order-refund-part-dialog"><?php _e('Refund part'); ?></button>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
+
+        <?php if ($order->isPaid()) { ?>
+            <?php osc_admin_panel_open(__('Refund'), array('stack' => true)); ?>
+                <?php if ($refundable) { ?>
+                    <p class="panel-subtitle">
+                        <?php printf(
+                            osc_esc_html($isGoods
+                                ? __('Refund this payment through %s. The buyer gets the money back.')
+                                : __('Refund this payment through %s. The buyer gets the money back '
+                                     . 'and the credits are taken back.')),
+                            osc_esc_html($gateway->getName())
+                        ); ?>
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
+                        <button type="button" class="btn btn-danger"
+                                data-osc-dialog-open="#order-refund-gateway-dialog"><?php _e('Refund'); ?></button>
+                        <button type="button" class="btn btn-dim"
+                                data-osc-dialog-open="#order-refund-dialog"><?php _e('Record a refund'); ?></button>
+                    </div>
+                    <p class="panel-subtitle">
+                        <?php _e('Already refunded at the provider? Record it instead, so nothing is sent twice.'); ?>
+                    </p>
+                <?php } else { ?>
+                    <?php if ($gatewayWarning !== '') {
+                        osc_admin_callout('warning', '<div>' . osc_esc_html($gatewayWarning . ' ' . __('This order cannot be refunded '
+                            . 'from here. Turn the plugin on, or refund it in the provider\'s dashboard '
+                            . 'and then use Record a refund.'))
+                            . ' <a href="' . osc_esc_html($pluginsUrl) . '">' . osc_esc_html(__('Open Plugins')) . '</a></div>', array('html' => true));
+                    } ?>
+                    <?php if ($refundSent) { ?>
                         <p class="panel-subtitle">
                             <?php printf(
-                                osc_esc_html($isGoods
-                                    ? __('Refund this payment through %s. The buyer gets the money back.')
-                                    : __('Refund this payment through %s. The buyer gets the money back '
-                                         . 'and the credits are taken back.')),
-                                osc_esc_html($gateway->getName())
+                                osc_esc_html(__('A refund was sent to the payment provider on %s, but it was not '
+                                                . 'recorded here. Check the provider\'s dashboard, then record it.')),
+                                osc_esc_html((string) $order->meta(OrderStore::REFUND_REQUESTED))
                             ); ?>
                         </p>
-                        <div class="d-flex flex-wrap gap-2">
-                            <button type="button" class="btn btn-danger"
-                                    data-osc-dialog-open="#order-refund-gateway-dialog"><?php _e('Refund'); ?></button>
-                            <button type="button" class="btn btn-dim"
-                                    data-osc-dialog-open="#order-refund-dialog"><?php _e('Record a refund'); ?></button>
-                        </div>
-                        <p class="panel-subtitle mt-3 mb-0">
-                            <?php _e('Already refunded at the provider? Record it instead, so nothing is sent twice.'); ?>
-                        </p>
-                    <?php } else { ?>
-                        <?php if ($gatewayWarning !== '') { ?>
-                            <div class="callout-warning callout-block mb-3">
-                                <div>
-                                    <?php echo osc_esc_html($gatewayWarning . ' ' . __('This order cannot be refunded '
-                                        . 'from here. Turn the plugin on, or refund it in the provider\'s dashboard '
-                                        . 'and then use Record a refund.')); ?>
-                                    <a href="<?php echo osc_esc_html($pluginsUrl); ?>"><?php _e('Open Plugins'); ?></a>
-                                </div>
-                            </div>
-                        <?php } ?>
-                        <?php if ($refundSent) { ?>
-                            <p class="panel-subtitle">
-                                <?php printf(
-                                    osc_esc_html(__('A refund was sent to the payment provider on %s, but it was not '
-                                                    . 'recorded here. Check the provider\'s dashboard, then record it.')),
-                                    osc_esc_html((string) $order->meta(OrderStore::REFUND_REQUESTED))
-                                ); ?>
-                            </p>
-                        <?php } ?>
-                        <p class="panel-subtitle">
-                            <?php _e('Record a refund you have already made through your payment provider. '
-                                     . 'Shopclass never asks the provider for the money back — it only writes down '
-                                     . 'that you did.'); ?>
-                        </p>
+                    <?php } ?>
+                    <p class="panel-subtitle">
+                        <?php _e('Record a refund you have already made through your payment provider. '
+                                 . 'Shopclass never asks the provider for the money back — it only writes down '
+                                 . 'that you did.'); ?>
+                    </p>
+                    <div class="d-flex flex-wrap gap-2">
                         <button type="button" class="btn btn-danger"
                                 data-osc-dialog-open="#order-refund-dialog"><?php _e('Record a refund'); ?></button>
-                    <?php } ?>
-                <?php osc_admin_panel_close(); ?>
-            <?php } ?>
-        </div>
-    </div>
+                    </div>
+                <?php } ?>
+            <?php osc_admin_panel_close(); ?>
+        <?php } ?>
+    <?php osc_admin_body_close(); ?>
 
     <?php if ($refundable) {
         osc_admin_confirm_dialog(array(
@@ -872,7 +798,7 @@ osc_admin_page(array(
                     'help'    => __('Off to only record a refund you have already made.'),
                 ));
             } else { ?>
-                <p class="panel-subtitle mb-0"><?php _e('Nothing is sent to the payment provider. Refund the money there, this records it.'); ?></p>
+                <p class="panel-subtitle"><?php _e('Nothing is sent to the payment provider. Refund the money there, this records it.'); ?></p>
             <?php } ?>
         </div>
         <?php

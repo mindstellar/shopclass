@@ -241,7 +241,7 @@ function upgradeReleaseNotes()
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 
-<div id="backup-settings">
+<?php osc_admin_body_open(array('id' => 'backup-settings')); ?>
     <div id="result">
         <div id="output" class="upgrade-running" style="display:none" role="status" aria-live="polite">
             <span class="spinner-border upgrade-running-spinner" aria-hidden="true"></span>
@@ -260,7 +260,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                href="<?php echo osc_admin_base_url(true); ?>?page=upgrade&confirm=true"><?php _e('Upgrade now'); ?></a>
         </div>
     </div>
-</div>
 <?php
 $release  = upgradeReleaseNotes();
 $whatsNew = $release['entries'];
@@ -275,18 +274,13 @@ if (!empty($whatsNew)) {
     $shown     = array_slice($whatsNew, 0, 10);
     $remaining = count($whatsNew) - count($shown);
     ?>
-    <section class="whatsnew" aria-labelledby="whatsnew-title">
-        <header class="whatsnew-head">
-            <div>
-                <h3 id="whatsnew-title" class="whatsnew-heading"><?php _e("What's new"); ?></h3>
-                <p class="whatsnew-sub">
-                    <?php printf(__('Highlights from %s'), osc_esc_html($release['label'])); ?>
-                </p>
-            </div>
-            <span class="whatsnew-count">
-                <?php printf(_n('%d change', '%d changes', count($whatsNew)), count($whatsNew)); ?>
-            </span>
-        </header>
+    <?php osc_admin_section(__("What's new"), array(
+        'id'         => 'whatsnew',
+        'class'      => 'whatsnew',
+        'intro_html' => '<span class="whatsnew-sub">' . sprintf(__('Highlights from %s'), osc_esc_html($release['label']))
+            . '</span> <span class="whatsnew-count">'
+            . sprintf(_n('%d change', '%d changes', count($whatsNew)), count($whatsNew)) . '</span>',
+    )); ?>
         <ul class="whatsnew-list">
             <?php foreach ($shown as $entry) {
                 $slug = strtolower(preg_replace('/[^a-z]/i', '', $entry['cat'])); ?>
@@ -308,6 +302,7 @@ if (!empty($whatsNew)) {
                 <span aria-hidden="true">↗</span>
             </a>
         </footer>
-    </section>
+    <?php osc_admin_section_close(); ?>
 <?php } ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

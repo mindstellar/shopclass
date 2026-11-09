@@ -28,8 +28,8 @@ osc_admin_page(array(
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-<div class="settings-user">
+<?php osc_admin_body_open(array('class' => 'settings-user')); ?>
     <ul id="error_list"></ul>
     <?php osc_admin_settings_form($form['id'], $form); ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

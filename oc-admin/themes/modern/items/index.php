@@ -117,7 +117,7 @@ if (osc_billing_pay_at_post() || $unpaidTab) {
     ));
 }
 ?>
-<div class="relative">
+<?php osc_admin_body_open(array('class' => 'relative')); ?>
     <?php osc_admin_list_filter(array(
             'page'     => 'items',
             'id'       => 'shortcut-filters',
@@ -216,7 +216,7 @@ if (osc_billing_pay_at_post() || $unpaidTab) {
         ));
         ?>
     </form>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php
 osc_admin_pagination($aData);
 ?>

@@ -48,7 +48,7 @@ function customHead()
 osc_add_hook('admin_header', 'customHead', 10);
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="plugin-configuration form-horizontal">
+<?php osc_admin_body_open(array('class' => 'plugin-configuration form-horizontal')); ?>
         <form id="plugin-frm" action="<?php echo osc_admin_base_url(true); ?>?page=plugins" method="post">
             <input type="hidden" name="action" value="configure_post"/>
             <input type="hidden" name="plugin" value="<?php echo $plugin_data['filename']; ?>"/>
@@ -66,5 +66,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 )); ?>
             </fieldset>
         </form>
-    </div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

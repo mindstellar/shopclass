@@ -525,14 +525,16 @@ if (!function_exists('osc_admin_toolbar_open')) {
      * panel beside it. The listing screens are built around that behaviour, so it stays
      * where it is — but new work gets a toolbar that is simply a row.
      *
-     * @param array<string,mixed> $opts 'align' => 'start'|'between'|'end' (default 'between')
+     * @param array<string,mixed> $opts 'align' => 'start'|'between'|'end' (default 'between');
+     *                                  'class', added to the toolbar, since 7.1.0
      *
      * @return void
      */
     function osc_admin_toolbar_open(array $opts = array())
     {
         $align = $opts['align'] ?? 'between';
-        echo '<div class="osc-toolbar osc-toolbar-' . osc_esc_html($align) . '">';
+        echo '<div class="osc-toolbar osc-toolbar-' . osc_esc_html($align)
+            . (!empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : '') . '">';
     }
 }
 

@@ -26,6 +26,8 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/classes/location/CountryCode.php';
 require_once ABS_PATH . 'oc-includes/classes/location/LocationAdminView.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Field.php';
+require_once ABS_PATH . 'oc-includes/classes/admin/ui/Form.php';
 
 use mindstellar\location\LocationAdminView;
 
@@ -224,6 +226,26 @@ function osc_run_hook($name, ...$args)
 function osc_apply_filter($name, $content, ...$args)
 {
     return isset($GLOBALS['filters'][$name]) ? $GLOBALS['filters'][$name]($content, ...$args) : $content;
+}
+function osc_admin_section(string $title, array $o = array())
+{
+    echo '<section class="' . osc_esc_html($o['class'] ?? '') . '"><h3>' . osc_esc_html($title) . '</h3><div>';
+}
+function osc_admin_section_close()
+{
+    echo '</div></section>';
+}
+function osc_admin_toolbar_open(array $o = array())
+{
+    echo '<div class="' . osc_esc_html($o['class'] ?? '') . '">';
+}
+function osc_admin_toolbar_close()
+{
+    echo '</div>';
+}
+function osc_admin_table(array $columns, array $rows, array $opts = array()): void
+{
+    \mindstellar\admin\ui\Form::table($columns, $rows, $opts);
 }
 function osc_admin_form_open(array $o)
 {

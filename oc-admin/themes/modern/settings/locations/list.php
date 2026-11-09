@@ -103,7 +103,7 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
     </div>
 
     <?php if ($showSearch) { ?>
-        <div class="loc-toolbar">
+        <?php osc_admin_toolbar_open(array('class' => 'loc-toolbar')); ?>
             <?php osc_admin_form_open(array(
                 'method'     => 'get',
                 'page'       => 'settings',
@@ -147,7 +147,7 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                     </ol>
                 </nav>
             <?php } ?>
-        </div>
+        <?php osc_admin_toolbar_close(); ?>
     <?php } ?>
 
     <div class="loc-body">
@@ -250,7 +250,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
         ));
     } else {
         $hasRows = $loc['rows'] !== array();
-        $colspan = $level === 'region' ? 6 : 5;
         osc_admin_form_open(array(
             'method'     => 'get',
             'page'       => 'settings',
@@ -275,102 +274,90 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                 <?php } ?>
             </div>
             <div class="loc-table-wrap">
-                <table class="table loc-table loc-table-<?php echo osc_esc_html($level); ?>">
-                    <thead>
-                    <tr>
-                        <th class="col-bulkactions">
-                            <?php if ($hasRows) { ?>
-                                <input id="check_all" type="checkbox"
-                                       aria-label="<?php echo osc_esc_html(__('Select all on this page')); ?>"/>
-                            <?php } ?>
-                        </th>
-                        <?php if ($level !== 'country') { ?>
-                            <th scope="col"><?php _e('Status'); ?></th>
-                        <?php } ?>
-                        <th scope="col"><?php _e('Name'); ?></th>
-                        <?php if ($level === 'country') { ?>
-                            <th scope="col" class="col-numeric"><?php _e('Regions'); ?></th>
-                        <?php } elseif ($level === 'region') { ?>
-                            <th scope="col" class="col-numeric"><?php _e('Cities'); ?></th>
-                        <?php } ?>
-                        <th scope="col" class="col-numeric"><?php echo osc_mode_text(__('Listings'), __('Products')); ?></th>
-                        <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php if (!$hasRows) {
-                        osc_admin_table_empty($colspan, array(
-                            'title'  => $level === 'city'
-                                ? sprintf(__('No cities in %s yet'), $parentName)
-                                : sprintf(__('No regions in %s yet'), $parentName),
-                            'action' => array(
-                                'label' => $addLabels[$level],
-                                'url'   => $url($view + array('form' => 'add')),
-                                'icon'  => 'bi-plus-lg',
-                                'attrs' => array('data-loc-form' => ''),
-                            ),
-                        ));
-                    } ?>
-                    <?php foreach ($loc['rows'] as $row) {
-                        $id   = $level === 'country' ? $row['code'] : $row['id'];
-                        $name = $row['name'];
-                        if ($level === 'country') {
-                            $drill = $url(array('country' => $row['code']));
-                            $meta  = $row['code'] . ($row['slug'] !== '' ? ' · ' . $row['slug'] : '');
-                        } elseif ($level === 'region') {
-                            $drill = $url(array('country' => $countryCode, 'region' => $row['id']));
-                            $meta  = $row['slug'];
-                        } else {
-                            $drill = null;
-                            $meta  = $row['slug'];
-                        }
-                        $edit    = '<a class="loc-edit" href="' . osc_esc_html($url($view + array('form' => 'edit', 'id' => $id)))
-                            . '" data-loc-form aria-label="' . osc_esc_html(sprintf(__('Edit %s'), $name)) . '">'
-                            . '<i class="bi bi-pencil" aria-hidden="true"></i>' . osc_esc_html(__('Edit')) . '</a>';
-                        $actions = osc_apply_filter('admin_locations_row_actions', array('edit' => $edit), $level, $row); ?>
-                        <tr>
-                            <td class="col-bulkactions">
-                                <input type="checkbox" name="id[]" value="<?php echo osc_esc_html($id); ?>"
-                                       aria-label="<?php echo osc_esc_html(sprintf(__('Select %s'), $name)); ?>"/>
-                            </td>
-                            <?php if ($level !== 'country') { ?>
-                                <td class="loc-col-status">
-                                    <?php $row['active']
-                                        ? osc_admin_status('active', __('Active'))
-                                        : osc_admin_status('inactive', __('Hidden')); ?>
-                                </td>
-                            <?php } ?>
-                            <td class="loc-col-name">
-                                <?php if ($drill !== null) { ?>
-                                    <a class="loc-name" href="<?php echo osc_esc_html($drill); ?>" data-loc-nav>
-                                        <?php echo osc_esc_html($name); ?><i class="bi bi-chevron-right loc-drill" aria-hidden="true"></i>
-                                    </a>
-                                <?php } else { ?>
-                                    <span class="loc-name"><?php echo osc_esc_html($name); ?></span>
-                                <?php } ?>
-                                <?php if ($meta !== '') { ?>
-                                    <span class="loc-slug osc-mono"><?php echo osc_esc_html($meta); ?></span>
-                                <?php } ?>
-                            </td>
-                            <?php if ($level === 'country') { ?>
-                                <td class="col-numeric loc-col-count" data-col-name="<?php echo osc_esc_html(__('Regions')); ?>">
-                                    <?php echo number_format((int) $row['regions']); ?>
-                                </td>
-                            <?php } elseif ($level === 'region') { ?>
-                                <td class="col-numeric loc-col-count" data-col-name="<?php echo osc_esc_html(__('Cities')); ?>">
-                                    <?php echo number_format((int) $row['cities']); ?>
-                                </td>
-                            <?php } ?>
-                            <td class="col-numeric loc-col-count" data-col-name="<?php echo osc_esc_html(osc_mode_text(__('Listings'), __('Products'))); ?>">
-                                <?php echo number_format((int) $row['listings']); ?>
-                            </td>
-                            <td class="loc-col-actions">
-                                <?php echo is_array($actions) ? implode('', $actions) : $edit; ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
+                <?php
+                $columns = array('bulk' => array(
+                    'label_html' => $hasRows
+                        ? '<input id="check_all" type="checkbox" aria-label="' . osc_esc_html(__('Select all on this page')) . '"/>'
+                        : '',
+                    'class'      => 'col-bulkactions',
+                    'col_name'   => false,
+                ));
+                if ($level !== 'country') {
+                    $columns['status'] = array('label' => __('Status'), 'td_class' => 'loc-col-status', 'col_name' => false);
+                }
+                $columns['name'] = array('label' => __('Name'), 'td_class' => 'loc-col-name', 'col_name' => false);
+                if ($level === 'country') {
+                    $columns['regions'] = array('label' => __('Regions'), 'numeric' => true, 'td_class' => 'loc-col-count');
+                } elseif ($level === 'region') {
+                    $columns['cities'] = array('label' => __('Cities'), 'numeric' => true, 'td_class' => 'loc-col-count');
+                }
+                $columns['listings'] = array('label' => osc_mode_text(__('Listings'), __('Products')), 'numeric' => true, 'td_class' => 'loc-col-count');
+                $columns['actions']  = array('label' => __('Actions'), 'hide_label' => true, 'td_class' => 'loc-col-actions', 'col_name' => false);
+
+                $tableRows = array();
+                foreach ($loc['rows'] as $row) {
+                    $id   = $level === 'country' ? $row['code'] : $row['id'];
+                    $name = $row['name'];
+                    if ($level === 'country') {
+                        $drill = $url(array('country' => $row['code']));
+                        $meta  = $row['code'] . ($row['slug'] !== '' ? ' · ' . $row['slug'] : '');
+                    } elseif ($level === 'region') {
+                        $drill = $url(array('country' => $countryCode, 'region' => $row['id']));
+                        $meta  = $row['slug'];
+                    } else {
+                        $drill = null;
+                        $meta  = $row['slug'];
+                    }
+                    $edit    = '<a class="loc-edit" href="' . osc_esc_html($url($view + array('form' => 'edit', 'id' => $id)))
+                        . '" data-loc-form aria-label="' . osc_esc_html(sprintf(__('Edit %s'), $name)) . '">'
+                        . '<i class="bi bi-pencil" aria-hidden="true"></i>' . osc_esc_html(__('Edit')) . '</a>';
+                    $actions = osc_apply_filter('admin_locations_row_actions', array('edit' => $edit), $level, $row);
+
+                    $cells = array(
+                        'bulk'     => array('html' => '<input type="checkbox" name="id[]" value="' . osc_esc_html($id) . '"'
+                            . ' aria-label="' . osc_esc_html(sprintf(__('Select %s'), $name)) . '"/>'),
+                        'name'     => array('render' => static function () use ($name, $drill, $meta): void {
+                            if ($drill !== null) { ?>
+                                <a class="loc-name" href="<?php echo osc_esc_html($drill); ?>" data-loc-nav>
+                                    <?php echo osc_esc_html($name); ?><i class="bi bi-chevron-right loc-drill" aria-hidden="true"></i>
+                                </a>
+                            <?php } else { ?>
+                                <span class="loc-name"><?php echo osc_esc_html($name); ?></span>
+                            <?php }
+                            if ($meta !== '') { ?>
+                                <span class="loc-slug osc-mono"><?php echo osc_esc_html($meta); ?></span>
+                            <?php }
+                        }),
+                        'listings' => number_format((int) $row['listings']),
+                        'actions'  => array('html' => is_array($actions) ? implode('', $actions) : $edit),
+                    );
+                    if ($level !== 'country') {
+                        $cells['status'] = array('status' => $row['active'] ? array('active', __('Active')) : array('inactive', __('Hidden')));
+                    }
+                    if ($level === 'country') {
+                        $cells['regions'] = number_format((int) $row['regions']);
+                    } elseif ($level === 'region') {
+                        $cells['cities'] = number_format((int) $row['cities']);
+                    }
+                    $tableRows[] = $cells;
+                }
+
+                osc_admin_table($columns, $tableRows, array(
+                    'class' => 'loc-table loc-table-' . $level,
+                    'wrap'  => false,
+                    'empty' => array(
+                        'title'  => $level === 'city'
+                            ? sprintf(__('No cities in %s yet'), $parentName)
+                            : sprintf(__('No regions in %s yet'), $parentName),
+                        'action' => array(
+                            'label' => $addLabels[$level],
+                            'url'   => $url($view + array('form' => 'add')),
+                            'icon'  => 'bi-plus-lg',
+                            'attrs' => array('data-loc-form' => ''),
+                        ),
+                    ),
+                ));
+                ?>
             </div>
         <?php osc_admin_form_close(null, array('horizontal' => false));
 

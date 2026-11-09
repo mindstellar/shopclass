@@ -59,28 +59,26 @@ echo osc_csrf_token_form(); ?>
             </p>
         <?php } else { ?>
             <div class="loc-table-wrap">
-                <table class="table loc-preview-table">
-                    <caption class="visually-hidden"><?php _e('Changes by level'); ?></caption>
-                    <thead>
-                    <tr>
-                        <th scope="col"><span class="visually-hidden"><?php _e('Level'); ?></span></th>
-                        <?php foreach ($columns as $label) { ?>
-                            <th scope="col" class="col-numeric"><?php echo osc_esc_html($label); ?></th>
-                        <?php } ?>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach (array('regions' => __('Regions'), 'cities' => __('Cities')) as $level => $label) { ?>
-                        <tr>
-                            <th scope="row"><?php echo osc_esc_html($label); ?></th>
-                            <?php foreach (array_keys($columns) as $key) {
-                                $n = (int) $levels[$level][$key]; ?>
-                                <td class="col-numeric<?php echo $n === 0 ? ' loc-preview-zero' : ''; ?>"><?php echo number_format($n); ?></td>
-                            <?php } ?>
-                        </tr>
-                    <?php } ?>
-                    </tbody>
-                </table>
+                <?php
+                $previewColumns = array('level' => array('label' => __('Level'), 'hide_label' => true, 'col_name' => false));
+                foreach ($columns as $key => $label) {
+                    $previewColumns[$key] = array('label' => $label, 'numeric' => true, 'col_name' => false);
+                }
+                $previewRows = array();
+                foreach (array('regions' => __('Regions'), 'cities' => __('Cities')) as $level => $label) {
+                    $cells = array('level' => array('th' => true, 'html' => osc_esc_html($label)));
+                    foreach (array_keys($columns) as $key) {
+                        $n           = (int) $levels[$level][$key];
+                        $cells[$key] = array('html' => number_format($n), 'class' => $n === 0 ? 'loc-preview-zero' : '');
+                    }
+                    $previewRows[] = $cells;
+                }
+                osc_admin_table($previewColumns, $previewRows, array(
+                    'class'   => 'loc-preview-table',
+                    'wrap'    => false,
+                    'caption' => __('Changes by level'),
+                ));
+                ?>
             </div>
             <ul class="loc-preview-notes">
                 <li>

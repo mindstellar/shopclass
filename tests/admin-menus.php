@@ -151,6 +151,10 @@ foreach (array(
     'osc_current_admin_theme_path'   => '',
     'osc_admin_page_head'            => '',
     'osc_admin_confirm_dialog'       => '',
+    'osc_admin_body_open'            => '',
+    'osc_admin_body_close'           => '',
+    'osc_admin_section'            => '',
+    'osc_admin_section_close'      => '',
 ) as $fn => $body) {
     if (!function_exists($fn)) {
         eval('function ' . $fn . '(...$args) { ' . $body . ' }');

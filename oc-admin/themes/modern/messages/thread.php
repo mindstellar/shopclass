@@ -34,6 +34,7 @@ osc_admin_page(array(
     ) : array(),
 ));
 osc_current_admin_theme_path('parts/header.php'); ?>
+<?php osc_admin_body_open(array('id' => 'message-thread')); ?>
 <p>
     <a href="<?php echo osc_esc_html($base . ($reported ? '&action=reported' : '')); ?>">&larr; <?php _e('Back to messages'); ?></a>
 </p>
@@ -71,6 +72,7 @@ osc_admin_table(array(
         'title' => __('No messages'),
     ),
 ));
+osc_admin_body_close();
 ?>
 <?php if ($reported) {
     foreach (array(

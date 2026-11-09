@@ -25,6 +25,7 @@ osc_admin_page(array(
 $aData = __get('aEmails');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
+<?php osc_admin_body_open(); ?>
     <?php
     $keys = array('name', 'title');
     osc_admin_data_table(array(
@@ -41,4 +42,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <?php
 osc_admin_pagination($aData);
 ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

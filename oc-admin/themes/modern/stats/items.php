@@ -193,66 +193,34 @@ osc_admin_page(array(
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="row g-3" id="stats-page">
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php echo osc_mode_text(__('New listing'), __('New products')); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"><?php echo osc_mode_text(__('Number of new listings'), __('Number of new products')); ?></b>
+    <?php osc_admin_body_open(array('id' => 'stats-page', 'layout' => 'grid', 'class' => 'stats-grid')); ?>
+        <?php osc_admin_panel_open(osc_mode_text(__('New listing'), __('New products'))); ?>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($items) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php echo osc_mode_text(__('Listings\' views'), __('Product views')); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"><?php echo osc_mode_text(__("Total number of listings' views"), __('Total number of product views')); ?></b>
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(osc_mode_text(__('Listings\' views'), __('Product views'))); ?>
                     <div id="placeholder_total" class="graph-placeholder" style="height:150px">
                         <?php if (count($reports) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('New alerts'); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"><?php _e('Number of new alerts'); ?></b>
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('New alerts')); ?>
                     <div id="placeholder_alerts" class="graph-placeholder" style="height:150px">
                         <?php if (count($alerts) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('New subscribers'); ?></h3>
-                </div>
-                <div class="widget-box-content">
-                    <b class="stats-title"><?php _e('Number of new subscribers'); ?></b>
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('New subscribers')); ?>
                     <div id="placeholder_subscribers" class="graph-placeholder" style="height:150px">
                         <?php if (count($subscribers) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
-                </div>
-            </div>
-        </div>
-    </div>
+        <?php osc_admin_panel_close(); ?>
+    <?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

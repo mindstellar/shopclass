@@ -11,7 +11,8 @@ Writing a settings page used to mean writing everything yourself: a view, a
 a flash message and a redirect. Every plugin wrote its own version, and each
 one was a place to get the CSRF check or the escaping wrong.
 
-Declare the page instead. Core owns all of it.
+Declare the page instead. Core owns all of it. For a screen you lay out yourself, see
+[Admin screens](/docs/developers/admin-screens/).
 
 ```php
 osc_register_settings_page('acme.delivery', array(

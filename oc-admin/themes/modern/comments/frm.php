@@ -50,7 +50,7 @@ osc_add_hook('admin_header', 'customHead', 10);
 $comment = __get('comment');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="language-form">
+<?php osc_admin_body_open(array('id' => 'language-form')); ?>
         <ul id="error_list"></ul>
         <?php osc_admin_form_open(array(
             'name'       => 'language_form',
@@ -101,5 +101,5 @@ $comment = __get('comment');
                 array('label' => __('Cancel'), 'url' => 'javascript:history.go(-1)', 'variant' => 'dim'),
                 array('label' => $btn_text, 'type' => 'submit', 'variant' => 'primary'),
             )); ?>
-    </div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -55,25 +55,21 @@ if ($data['release'] !== '') {
         </section>
     <?php } ?>
 
-    <section class="loc-section loc-catalog" aria-labelledby="loc-catalog-title">
-        <header class="loc-section-head">
-            <div class="loc-section-intro">
-                <h3 class="loc-section-title" id="loc-catalog-title"><?php _e('Countries from the catalog'); ?></h3>
-                <p class="loc-section-text">
-                    <?php _e('Install a country with its regions and cities, or bring one you have up to date. Importing never deletes a location that holds listings.'); ?>
-                </p>
-            </div>
-            <?php if ($data['reachable']) { ?>
-                <p class="loc-release">
-                    <?php if ($releaseText !== '') { ?>
-                        <span><?php echo $releaseText; ?></span>
-                    <?php } ?>
-                    <a href="<?php echo osc_esc_html($data['url'] . '&refresh=1'); ?>" data-loc-data-nav>
-                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><?php _e('Check for updates'); ?>
-                    </a>
-                </p>
-            <?php } ?>
-        </header>
+    <?php osc_admin_section(__('Countries from the catalog'), array(
+        'class' => 'loc-section loc-catalog',
+        'intro' => __('Install a country with its regions and cities, or bring one you have up to date. Importing never deletes a location that holds listings.'),
+        'attrs' => array('aria-label' => __('Countries from the catalog')),
+    )); ?>
+        <?php if ($data['reachable']) { ?>
+            <p class="loc-release">
+                <?php if ($releaseText !== '') { ?>
+                    <span><?php echo $releaseText; ?></span>
+                <?php } ?>
+                <a href="<?php echo osc_esc_html($data['url'] . '&refresh=1'); ?>" data-loc-data-nav>
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i><?php _e('Check for updates'); ?>
+                </a>
+            </p>
+        <?php } ?>
 
         <?php if (!$data['reachable']) { ?>
             <div class="loc-outage" role="status">
@@ -137,62 +133,68 @@ if ($data['release'] !== '') {
             <p class="loc-busy-note" data-loc-busy-note role="status" hidden></p>
 
             <div class="loc-table-wrap">
-                <table class="table loc-catalog-table">
-                    <thead>
-                    <tr>
-                        <th scope="col"><?php _e('Status'); ?></th>
-                        <th scope="col" class="loc-col-code"><?php _e('Code'); ?></th>
-                        <th scope="col"><?php _e('Country'); ?></th>
-                        <th scope="col" class="col-numeric loc-col-cities"><?php _e('Cities'); ?></th>
-                        <th scope="col"><span class="visually-hidden"><?php _e('Actions'); ?></span></th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <?php foreach ($rows as $row) {
-                        [$badge, $word] = $states[$row['state']];
-                        $shown          = LocationAdminView::catalogMatches($row, $data['find'], $data['show']); ?>
-                        <tr data-code="<?php echo osc_esc_html($row['code']); ?>"
-                            data-name="<?php echo osc_esc_html(mb_strtolower($row['name'])); ?>"
-                            data-state="<?php echo $row['state']; ?>"<?php echo $shown ? '' : ' hidden'; ?>>
-                            <td class="loc-col-status"><?php osc_admin_status($badge, $word); ?></td>
-                            <td class="loc-col-code osc-mono"><?php echo osc_esc_html($row['code']); ?></td>
-                            <td class="loc-col-country"><?php echo osc_esc_html($row['name']); ?></td>
-                            <td class="col-numeric loc-col-cities"><?php echo number_format($row['cities']); ?></td>
-                            <td class="loc-col-actions">
-                                <?php if ($row['state'] === 'update') { ?>
-                                    <button type="submit" class="loc-row-action" form="loc-preview-form" name="location"
-                                            value="<?php echo osc_esc_html($row['code']); ?>" data-loc-catalog-action
-                                            aria-label="<?php echo osc_esc_html(sprintf(__('Preview the update of %s'), $row['name'])); ?>">
-                                        <i class="bi bi-eye" aria-hidden="true"></i><?php _e('Preview'); ?>
-                                    </button>
-                                    <button type="submit" class="loc-row-action loc-row-action-main" form="loc-import-form" name="location"
-                                            value="<?php echo osc_esc_html($row['code']); ?>" data-loc-catalog-action
-                                            data-loc-busy="<?php echo osc_esc_html(__('Updating…')); ?>"
-                                            aria-label="<?php echo osc_esc_html(sprintf(__('Update %s'), $row['name'])); ?>">
-                                        <i class="bi bi-arrow-up-circle" aria-hidden="true"></i><?php _e('Update'); ?>
-                                    </button>
-                                <?php } elseif ($row['state'] === 'available') { ?>
-                                    <button type="submit" class="loc-row-action" form="loc-import-form" name="location"
-                                            value="<?php echo osc_esc_html($row['code']); ?>" data-loc-catalog-action
-                                            data-loc-busy="<?php echo osc_esc_html(__('Installing…')); ?>"
-                                            aria-label="<?php echo osc_esc_html(sprintf(__('Install %1$s (%2$s)'), $row['name'], $cities($row['cities']))); ?>">
-                                        <i class="bi bi-download" aria-hidden="true"></i><?php _e('Install'); ?>
-                                    </button>
-                                <?php } ?>
-                            </td>
-                        </tr>
-                    <?php } ?>
-                    <tr class="loc-catalog-empty" data-loc-catalog-empty<?php echo $visible === 0 ? '' : ' hidden'; ?>>
-                        <td colspan="5">
-                            <span data-loc-catalog-empty-text><?php echo osc_esc_html($data['find'] !== ''
-                                ? sprintf(__('No country matches “%s”'), $data['find'])
-                                : __('No country matches this filter')); ?></span>
-                            <a href="<?php echo osc_esc_html($data['url'] . '&show=all' . ($data['find'] !== '' ? '&find=' . rawurlencode($data['find']) : '')); ?>"
-                               data-loc-show-all><?php _e('Search all countries'); ?></a>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
+                <?php
+                $catalogActions = static function (array $row) use ($cities): void {
+                    if ($row['state'] === 'update') { ?>
+                        <button type="submit" class="loc-row-action" form="loc-preview-form" name="location"
+                                value="<?php echo osc_esc_html($row['code']); ?>" data-loc-catalog-action
+                                aria-label="<?php echo osc_esc_html(sprintf(__('Preview the update of %s'), $row['name'])); ?>">
+                            <i class="bi bi-eye" aria-hidden="true"></i><?php _e('Preview'); ?>
+                        </button>
+                        <button type="submit" class="loc-row-action loc-row-action-main" form="loc-import-form" name="location"
+                                value="<?php echo osc_esc_html($row['code']); ?>" data-loc-catalog-action
+                                data-loc-busy="<?php echo osc_esc_html(__('Updating…')); ?>"
+                                aria-label="<?php echo osc_esc_html(sprintf(__('Update %s'), $row['name'])); ?>">
+                            <i class="bi bi-arrow-up-circle" aria-hidden="true"></i><?php _e('Update'); ?>
+                        </button>
+                    <?php } elseif ($row['state'] === 'available') { ?>
+                        <button type="submit" class="loc-row-action" form="loc-import-form" name="location"
+                                value="<?php echo osc_esc_html($row['code']); ?>" data-loc-catalog-action
+                                data-loc-busy="<?php echo osc_esc_html(__('Installing…')); ?>"
+                                aria-label="<?php echo osc_esc_html(sprintf(__('Install %1$s (%2$s)'), $row['name'], $cities($row['cities']))); ?>">
+                            <i class="bi bi-download" aria-hidden="true"></i><?php _e('Install'); ?>
+                        </button>
+                    <?php }
+                };
+
+                $catalogRows = array();
+                foreach ($rows as $row) {
+                    $catalogRows[] = array(
+                        'attrs' => array(
+                            'data-code'  => $row['code'],
+                            'data-name'  => mb_strtolower($row['name']),
+                            'data-state' => $row['state'],
+                            'hidden'     => !LocationAdminView::catalogMatches($row, $data['find'], $data['show']),
+                        ),
+                        'cells' => array(
+                            'status'  => array('status' => $states[$row['state']], 'class' => 'loc-col-status'),
+                            'code'    => $row['code'],
+                            'country' => $row['name'],
+                            'cities'  => number_format($row['cities']),
+                            'actions' => array('render' => static fn () => $catalogActions($row)),
+                        ),
+                    );
+                }
+                $catalogRows[] = array(
+                    'class' => 'loc-catalog-empty',
+                    'attrs' => array('data-loc-catalog-empty' => true, 'hidden' => $visible !== 0),
+                    'cells' => array('status' => array('colspan' => 5, 'render' => static function () use ($data): void { ?>
+                        <span data-loc-catalog-empty-text><?php echo osc_esc_html($data['find'] !== ''
+                            ? sprintf(__('No country matches “%s”'), $data['find'])
+                            : __('No country matches this filter')); ?></span>
+                        <a href="<?php echo osc_esc_html($data['url'] . '&show=all' . ($data['find'] !== '' ? '&find=' . rawurlencode($data['find']) : '')); ?>"
+                           data-loc-show-all><?php _e('Search all countries'); ?></a>
+                    <?php })),
+                );
+
+                osc_admin_table(array(
+                    'status'  => array('label' => __('Status'), 'col_name' => false),
+                    'code'    => array('label' => __('Code'), 'class' => 'loc-col-code', 'td_class' => 'osc-mono', 'col_name' => false),
+                    'country' => array('label' => __('Country'), 'td_class' => 'loc-col-country', 'col_name' => false),
+                    'cities'  => array('label' => __('Cities'), 'numeric' => true, 'class' => 'loc-col-cities', 'col_name' => false),
+                    'actions' => array('label' => __('Actions'), 'hide_label' => true, 'td_class' => 'loc-col-actions', 'col_name' => false),
+                ), $catalogRows, array('class' => 'loc-catalog-table', 'wrap' => false));
+                ?>
             </div>
             <?php foreach (array('loc-import-form' => 'locations_import', 'loc-preview-form' => 'locations_preview') as $formId => $type) {
                 osc_admin_form_open(array(
@@ -206,26 +208,24 @@ if ($data['release'] !== '') {
                 osc_admin_form_close(null, array('horizontal' => false));
             } ?>
         <?php } ?>
-    </section>
+    <?php osc_admin_section_close(); ?>
 
-    <section class="loc-section loc-recalc" aria-labelledby="loc-recalc-title">
-        <div class="loc-section-intro">
-            <h3 class="loc-section-title" id="loc-recalc-title"><?php _e('Listing counts'); ?></h3>
-            <p class="loc-section-text">
-                <?php _e('The number of listings shown for each location can drift after an import or a bulk change. Recalculating counts them again; the site stays online meanwhile.'); ?>
+    <?php osc_admin_section(__('Listing counts'), array(
+        'class' => 'loc-section loc-recalc',
+        'intro' => __('The number of listings shown for each location can drift after an import or a bulk change. Recalculating counts them again; the site stays online meanwhile.'),
+        'attrs' => array('aria-label' => __('Listing counts')),
+    )); ?>
+        <div class="loc-recalc-progress" data-loc-recalc-progress<?php echo $recalc['pending'] > 0 ? '' : ' hidden'; ?>>
+            <progress max="<?php echo max(1, $recalc['total']); ?>" value="<?php echo $recalc['done']; ?>"
+                      aria-labelledby="loc-recalc-status"></progress>
+            <p class="loc-recalc-status" id="loc-recalc-status" aria-live="polite">
+                <?php echo osc_esc_html(sprintf(
+                    __('%1$s%% counted: %2$s of %3$s locations'),
+                    $recalc['percent'],
+                    number_format($recalc['done']),
+                    number_format($recalc['total'])
+                )); ?>
             </p>
-            <div class="loc-recalc-progress" data-loc-recalc-progress<?php echo $recalc['pending'] > 0 ? '' : ' hidden'; ?>>
-                <progress max="<?php echo max(1, $recalc['total']); ?>" value="<?php echo $recalc['done']; ?>"
-                          aria-labelledby="loc-recalc-status"></progress>
-                <p class="loc-recalc-status" id="loc-recalc-status" aria-live="polite">
-                    <?php echo osc_esc_html(sprintf(
-                        __('%1$s%% counted: %2$s of %3$s locations'),
-                        $recalc['percent'],
-                        number_format($recalc['done']),
-                        number_format($recalc['total'])
-                    )); ?>
-                </p>
-            </div>
         </div>
         <?php osc_admin_form_open(array(
             'page'       => 'tools',
@@ -239,5 +239,5 @@ if ($data['release'] !== '') {
                 <span><?php echo osc_esc_html($recalc['pending'] > 0 ? __('Continue counting') : __('Recalculate counts')); ?></span>
             </button>
         <?php osc_admin_form_close(null, array('horizontal' => false)); ?>
-    </section>
+    <?php osc_admin_section_close(); ?>
 </div>

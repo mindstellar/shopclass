@@ -175,7 +175,6 @@
 
 // ---- Field groups (reusable forms) -----------------------------------------
 .field-groups {
-  margin-bottom: 1.75rem;
   max-width: 62rem;
 }
 
@@ -336,7 +335,6 @@
   display: flex;
   gap: .75rem;
   justify-content: space-between;
-  margin-bottom: .5rem;
 
   // Keep the action button on one line; the narrow palette rail was letting
   // "New field" shrink and wrap to three lines.
@@ -344,6 +342,17 @@
     flex: 0 0 auto;
     white-space: nowrap;
   }
+}
+
+// The two panes sit side by side, so their intros reserve the same two lines.
+.forms-builder-grid .osc-section-intro {
+  min-height: 2.4em;
+}
+
+#forms-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--osc-field-gap);
 }
 
 .col-title {
@@ -356,7 +365,7 @@
 .col-hint {
   color: var(--osc-ink-muted);
   font-size: $font-size-label;
-  margin: 0 0 .75rem;
+  margin: 0;
   // Reserve two lines so the Forms and Fields lists start at the same height and
   // the two columns line up.
   min-height: 2.4em;
@@ -377,7 +386,6 @@
   background-color: var(--osc-bench);
   border: 1px solid var(--osc-rule);
   border-radius: $border-radius-lg;
-  margin-bottom: 1rem;
   padding: .75rem;
 }
 
@@ -992,10 +1000,6 @@
 }
 
 // ---- Tabs, toolbar, filter line ---------------------------------------------
-.cat-tabs {
-  margin-block-end: 1rem;
-}
-
 // Text-link buttons written as a bare .btn-link (no .btn) still need the button reset. :where()
 // keeps it at one class, so the toolbar, filter line and footer rules below set size and spacing.
 .categories-app :where(button.btn-link:not(.btn)) {
@@ -1025,10 +1029,6 @@
     opacity: .45;
     text-decoration: none;
   }
-}
-
-.categories-app .osc-toolbar {
-  margin-block-end: .75rem;
 }
 
 .cat-selnote {
@@ -1091,7 +1091,6 @@
 
 .cat-intro {
   color: var(--osc-ink-muted);
-  margin: 0 0 1rem;
   max-inline-size: 46rem;
 }
 
@@ -1642,7 +1641,6 @@
   flex-wrap: wrap;
   font-size: $font-size-sm;
   gap: 1rem;
-  margin-block-start: .75rem;
 
   form {
     margin-inline-start: auto;

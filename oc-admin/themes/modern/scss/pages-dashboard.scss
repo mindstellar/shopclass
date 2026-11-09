@@ -22,7 +22,6 @@
   // 190px min landed on THREE columns through the tablet band (~768–991px), orphaning the
   // fourth tile on its own row. Step 1 → 2×2 → 4 so the row is always evenly filled.
   grid-template-columns: 1fr;
-  margin-bottom: 1rem;
 
   @media (min-width: 576px) {
     grid-template-columns: repeat(2, 1fr);
@@ -112,7 +111,8 @@
 // Scroll shadows, not a plain cut: the cover layers are attached `local` so they ride
 // with the content and mask the shadow at each end, leaving the hint only while there
 // is more to scroll. A half-cut row then reads as more below, not as a broken panel.
-.dash-category-scroll {
+.dash-category-scroll,
+.dash-category-card > .osc-panel-body {
   max-height: 19rem;
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -124,10 +124,12 @@
 }
 
 // The card is the frame; the table inside it draws no second border.
-.dash-category-scroll .table {
+.dash-category-scroll .table,
+.dash-category-card .table {
   border: 0;
   margin: 0;
 
+  th,
   td {
     border-color: var(--osc-rule);
   }
@@ -180,4 +182,26 @@
   flex: 0 0 5.5rem;
   font-size: $font-size-sm;
   text-align: end;
+}
+
+// The three cards stretch to one height: 1 column, 2 from 768px (system status spans both), 3 from 992px.
+.osc-body.dash-cards {
+  align-items: stretch;
+  grid-template-columns: minmax(0, 1fr);
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > .dash-system-card {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (min-width: 992px) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+
+    > .dash-system-card {
+      grid-column: auto;
+    }
+  }
 }

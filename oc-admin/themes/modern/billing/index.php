@@ -58,6 +58,7 @@ osc_admin_page(array(
 ));
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
+<?php osc_admin_body_open(); ?>
 
     <?php if ((bool) __get('showDocuments')) {
         osc_admin_tab_nav(array(
@@ -206,4 +207,5 @@ osc_admin_page(array(
             'toShip'  => $toShip ? 1 : 0,
         )),
     )); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

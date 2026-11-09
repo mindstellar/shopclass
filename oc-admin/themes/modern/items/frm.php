@@ -302,7 +302,10 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="adminItemForm" data-osc-mode="<?php echo $itemShop ? 'shop' : 'classifieds'; ?>" data-osc-new="<?php echo $new_item ? '1' : '0'; ?>">
+<?php osc_admin_body_open(array(
+    'id'    => 'adminItemForm',
+    'attrs' => array('data-osc-mode' => $itemShop ? 'shop' : 'classifieds', 'data-osc-new' => $new_item ? '1' : '0'),
+)); ?>
     <?php
     // The surface the browser-side validator writes its refusals into. It is drawn only
     // when the server left it empty: a rejected save fills the same id from inside the
@@ -850,19 +853,19 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         echo '</div>';
     }
 
-    echo '<nav class="widget-box osc-toc" aria-labelledby="osc-toc-title">';
-    echo '<div class="widget-box-title"><h3 id="osc-toc-title">' . osc_esc_html(__('On this page')) . '</h3></div>';
-    echo '<ul class="widget-box-content">';
+    osc_admin_panel_open(__('On this page'), array('class' => 'osc-toc'));
+    echo '<nav aria-label="' . osc_esc_html(__('On this page')) . '"><ul>';
     foreach ($itemToc as $tocEntry) {
         echo '<li' . osc_admin_field_attrs($tocEntry['attrs']) . '><a href="#' . osc_esc_html($tocEntry['id']) . '">'
             . osc_esc_html($tocEntry['title'])
             . ($tocEntry['fix'] > 0 ? osc_admin_count($tocEntry['fix']) : '') . '</a></li>';
     }
     echo '</ul></nav>';
+    osc_admin_panel_close();
 
     osc_admin_editor_close(array(
         array('label' => customText('button'), 'type' => 'submit', 'variant' => 'primary'),
         array('label' => __('Cancel'), 'url' => $itemBackUrl, 'variant' => 'dim'),
-    )); ?>
-</div>
+    ));
+    osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

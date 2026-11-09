@@ -3667,6 +3667,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/menus.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/main/index.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-includes/classes/admin/ui/Picker.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
@@ -8618,7 +8619,6 @@ msgstr ""
 #: oc-admin/themes/modern/billing/order.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/items/frm.php
-#: oc-admin/themes/modern/main/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/messages/index.php
 msgid "Listing"
@@ -10942,22 +10942,6 @@ msgstr ""
 msgid "Number of moderated products"
 msgstr ""
 
-#: oc-admin/themes/modern/stats/items.php
-msgid "Number of new alerts"
-msgstr ""
-
-#: oc-admin/themes/modern/stats/items.php
-msgid "Number of new listings"
-msgstr ""
-
-#: oc-admin/themes/modern/stats/items.php
-msgid "Number of new products"
-msgstr ""
-
-#: oc-admin/themes/modern/stats/items.php
-msgid "Number of new subscribers"
-msgstr ""
-
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Nutrition & Supplements"
 msgstr ""
@@ -12232,7 +12216,6 @@ msgid "Processing"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
-#: oc-admin/themes/modern/main/index.php
 #: oc-admin/themes/modern/messages/index.php
 msgid "Product"
 msgstr ""
@@ -17092,14 +17075,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/document.php
 msgid "Total credited"
-msgstr ""
-
-#: oc-admin/themes/modern/stats/items.php
-msgid "Total number of listings' views"
-msgstr ""
-
-#: oc-admin/themes/modern/stats/items.php
-msgid "Total number of product views"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/reports.php

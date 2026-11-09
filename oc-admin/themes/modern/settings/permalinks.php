@@ -30,10 +30,8 @@ osc_admin_page(array(
 ));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="mail-setting">
-        <div id="mail-settings">
-            <p class="settings-lead"><?php _e('Friendly URLs use words instead of question marks and numbers.'); ?></p>
-            <?php osc_admin_settings_form($form['id'], $form); ?>
-        </div>
-    </div>
+<?php osc_admin_body_open(array('id' => 'mail-settings')); ?>
+    <p class="settings-lead"><?php _e('Friendly URLs use words instead of question marks and numbers.'); ?></p>
+    <?php osc_admin_settings_form($form['id'], $form); ?>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

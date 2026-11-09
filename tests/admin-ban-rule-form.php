@@ -779,7 +779,7 @@ check('and the button says what it does', strpos($html, '>Save changes</button>'
 // The screen's own chrome, which the migration had to keep: the wrapper the theme styles,
 // and the browser title the page contributes. Filters accumulate for the life of a
 // process, so what is read here is the newest prefix -- the screen that was drawn last.
-check('the theme wrapper is still there', strpos($html, '<div class="settings-user">') !== false, $html);
+check('the theme wrapper is still there', strpos($html, '<div class="osc-body settings-user">') !== false, $html);
 $title = osc_apply_filter('admin_title', 'Shopclass admin panel');
 check('the browser title is the screen\'s, ahead of the site\'s', strpos($title, 'Edit rule &raquo; ') === 0, $title);
 check(

@@ -156,7 +156,7 @@ function chartJs()
 osc_add_hook('admin_footer', 'chartJs', 10);
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<div id="dashboard">
+<?php osc_admin_body_open(array('id' => 'dashboard')); ?>
     <div class="dash-stats">
         <a class="dash-stat" href="<?php echo osc_admin_base_url(true); ?>?page=items">
             <span class="dash-stat-body">
@@ -183,15 +183,13 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             </span>
         </a>
     </div>
-    <div class="row g-3">
-        <?php if (is_array($toShip)) {
-            $toShipUrl = osc_admin_base_url(true) . '?page=billing&amp;toShip=1'; ?>
-        <div class="col-12">
-            <div class="widget-box" id="dash-to-ship">
-                <div class="widget-box-title">
-                    <h3><?php _e('To ship'); ?><?php echo $toShip['count'] > 0 ? osc_admin_count((int) $toShip['count']) : ''; ?></h3>
-                </div>
-                <div class="widget-box-content">
+    <?php if (is_array($toShip)) {
+        $toShipUrl  = osc_admin_base_url(true) . '?page=billing&amp;toShip=1';
+        $toShipOpts = array('id' => 'dash-to-ship', 'stack' => true);
+        if ($toShip['count'] > 0) {
+            $toShipOpts['count'] = (int) $toShip['count'];
+        }
+        osc_admin_panel_open(__('To ship'), $toShipOpts); ?>
                     <?php if ($toShip['orders'] === array()) { ?>
                         <?php osc_admin_empty(array('title' => __('Nothing to ship.'))); ?>
                     <?php } else { ?>
@@ -207,87 +205,44 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         </ul>
                         <a href="<?php echo $toShipUrl; ?>" class="btn btn-sm btn-dim"><?php _e('See all'); ?></a>
                     <?php } ?>
-                </div>
-            </div>
-        </div>
-        <?php } ?>
-        <div class="col-lg-4 col-md-6">
-            <div class="widget-box h-100">
-                <div class="widget-box-title">
-                    <h3><?php echo osc_mode_text(__('Listings by category'), __('Products by category')); ?></h3>
-                </div>
-                <div class="widget-box-content dash-category-scroll">
+    <?php osc_admin_panel_close();
+    } ?>
+    <?php osc_admin_body_open(array('layout' => 'grid', 'class' => 'dash-cards')); ?>
+        <?php osc_admin_panel_open(osc_mode_text(__('Listings by category'), __('Products by category')), array('class' => 'dash-category-card')); ?>
                     <?php
-                    $countEvent = 1;
-if (!empty($numItemsPerCategory)) { ?>
-                        <table class="table" cellpadding="0" cellspacing="0">
-                            <tbody>
-                                <?php
-            $even = false;
-    foreach ($numItemsPerCategory as $c) { ?>
-                                    <tr<?php if ($even == true) {
-                                        $even = false;
-                                        echo ' class="even"';
-                                    } else {
-                                        $even = true;
-                                    }
-        if ($countEvent == 1) {
-            echo ' class="table-first-row"';
-        } ?>>
-                                        <td><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;catId=<?php echo
-                                                                                     $c['pk_i_id']; ?>"><?php echo osc_esc_html($c['s_name']); ?></a>
-                                        </td>
-                                        <td><?php echo $c['i_num_items'] . '&nbsp;' . (($c['i_num_items'] == 1)
-                 ? osc_mode_text(__('Listing'), __('Product')) : osc_mode_text(__('Listings'), __('Products'))); ?></td>
-                                        </tr>
-                                        <?php foreach ($c['categories'] as $subc) { ?>
-                                            <tr<?php if ($even == true) {
-                                                $even = false;
-                                                echo ' class="even"';
-                                            } else {
-                                                $even = true;
-                                            } ?>>
-                                                <td class="children-cat"><a href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;catId=<?php echo $subc['pk_i_id']; ?>"><?php echo osc_esc_html($subc['s_name']); ?></a>
-                                                </td>
-                                                <td><?php echo $subc['i_num_items'] . ' ' . (($subc['i_num_items'] == 1)
-                                                     ? osc_mode_text(__('Listing'), __('Product')) : osc_mode_text(__('Listings'), __('Products'))); ?></td>
-                                                </tr>
-                                            <?php
-                                            $countEvent++;
-                                        }
-        ?>
-                                        <?php
-        $countEvent++;
+if (!empty($numItemsPerCategory)) {
+    $categoryRow = static function (array $category, string $class = ''): array {
+        $url = osc_admin_base_url(true) . '?page=items&amp;catId=' . (int)$category['pk_i_id'];
+
+        return array(
+            'name'  => array('html' => '<a href="' . $url . '">' . osc_esc_html($category['s_name']) . '</a>', 'class' => $class),
+            'count' => $category['i_num_items'],
+        );
+    };
+    $categoryRows = array();
+    foreach ($numItemsPerCategory as $c) {
+        $categoryRows[] = $categoryRow($c);
+        foreach ($c['categories'] as $subc) {
+            $categoryRows[] = $categoryRow($subc, 'children-cat');
+        }
     }
+    osc_admin_table(array(
+        'name'  => __('Category'),
+        'count' => array('label' => osc_mode_text(__('Listings'), __('Products')), 'numeric' => true),
+    ), $categoryRows, array('wrap' => false));
     ?>
-                            </tbody>
-                        </table>
                     <?php } else { ?>
                         <?php echo osc_mode_text(__("There aren't any uploaded listing yet"), __('There are no products yet')); ?>
                     <?php } ?>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-6">
-            <div class="widget-box">
-                <div class="widget-box-title">
-                    <h3><?php _e('Statistics'); ?></h3>
-                </div>
-                <div class="widget-box-content widget-box-content-stats">
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('Statistics'), array('class' => 'dash-stats-card')); ?>
                     <div id="widget-box-stats-listings" class="widget-box-stats">
                         <div id="placeholder-listing" class="graph-placeholder" height="120"></div>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=items" class="btn btn-sm btn-dim"><?php echo osc_mode_text(__('Listing statistics'), __('Product statistics')); ?></a>
                         <a href="<?php echo osc_admin_base_url(true); ?>?page=stats&amp;action=users" class="btn btn-sm btn-dim"><?php _e('User statistics'); ?></a>
                     </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-lg-4 col-md-12">
-            <div class="widget-box h-100">
-                <div class="widget-box-title">
-                    <h3><?php _e('System status'); ?></h3>
-                </div>
-                <div class="widget-box-content">
+        <?php osc_admin_panel_close(); ?>
+        <?php osc_admin_panel_open(__('System status'), array('class' => 'dash-system-card')); ?>
                     <?php
                     $freeDisk = function_exists('disk_free_space') ? @disk_free_space(osc_uploads_path()) : false;
 $rows = array(
@@ -306,10 +261,8 @@ $rows = array(
                             </li>
                         <?php } ?>
                     </ul>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+        <?php osc_admin_panel_close(); ?>
+    <?php osc_admin_body_close(); ?>
+<?php osc_admin_body_close(); ?>
 
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

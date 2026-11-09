@@ -895,6 +895,8 @@ harness_section('the page editor keeps the plugin hook inside the form');
 
 foreach (array('page-edit', 'page-add') as $screen) {
     pin_field($screen, 'plugin_meta_probe', 'text', 'from-a-plugin');
+    $probeParent = dom($screen)->query('//input[@name="plugin_meta_probe"]')->item(0)?->parentNode;
+    pin("$screen: page_meta output sits in a plain block div", array('div', ''), array($probeParent?->nodeName, $probeParent instanceof DOMElement ? $probeParent->getAttribute('class') : null));
 }
 
 harness_section('no field is disabled, on any screen');
@@ -963,7 +965,7 @@ foreach (array('item-add' => $classifiedsOrder, 'item-edit' => $classifiedsOrder
     pin("$screen: Publishing is titled so", 'Publishing', trim((string)dom($screen)->query('//*[@id="right-side"]//*[contains(@class,"osc-publish")]//h3')->item(0)?->textContent));
 
     $links = array();
-    foreach (dom($screen)->query('//nav[contains(@class,"osc-toc")]//a') as $node) {
+    foreach (dom($screen)->query('//*[contains(@class,"osc-toc")]//a') as $node) {
         $links[] = ltrim($node->getAttribute('href'), '#');
     }
     pin("$screen: the section list links every section drawn", $order, $links);

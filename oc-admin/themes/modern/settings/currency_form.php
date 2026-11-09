@@ -113,7 +113,7 @@ osc_add_filter('admin_title', 'customPageTitle');
 $aCurrency = View::getInstance()->_get('aCurrency');
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-    <div id="add-currency-settings">
+<?php osc_admin_body_open(array('id' => 'add-currency-settings')); ?>
         <ul id="error_list"></ul>
         <?php
         $currencyFields = array('type' => $typeForm);
@@ -172,5 +172,5 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         );
                     }
                     osc_admin_form_close($currencyActions); ?>
-    </div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

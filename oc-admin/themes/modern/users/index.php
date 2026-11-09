@@ -84,7 +84,7 @@ $rows        = $aData['aRows'];
 $withFilters = __get('withFilters');
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
-    <div class="relative">
+    <?php osc_admin_body_open(array('class' => 'relative')); ?>
         <?php osc_admin_list_filter(array(
                 'page'     => 'users',
                 'id'       => 'shortcut-filters',
@@ -136,7 +136,7 @@ $withFilters = __get('withFilters');
             ));
             ?>
         </form>
-    </div>
+    <?php osc_admin_body_close(); ?>
 <?php
 osc_admin_pagination($aData);
 ?>

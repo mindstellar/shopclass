@@ -5,7 +5,6 @@ table.table-small td {
 .settings-lead {
   color: var(--osc-ink-muted);
   max-width: 68ch;
-  margin-block: 6px 20px;
 }
 
 .rules-disclosure {
@@ -82,8 +81,6 @@ table.table-small td {
 
 // ---- Two-step sign-in (admins/two_factor.php) --------------------------------
 .two-factor {
-  margin-block-start: 24px;
-
   .help-box {
     color: var(--osc-ink-muted);
   }

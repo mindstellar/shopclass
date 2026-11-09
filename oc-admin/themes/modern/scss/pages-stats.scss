@@ -4,3 +4,12 @@
   min-height: 225px;
   overflow-x: auto;
 }
+
+// One column on a phone, two from 768px.
+.osc-body.stats-grid {
+  grid-template-columns: minmax(0, 1fr);
+
+  @media (min-width: 768px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -119,8 +119,7 @@ if (!$inline) {
     osc_add_hook('admin_header', 'customHead', 10);
     osc_current_admin_theme_path('parts/header.php');
 } ?>
-<div id="widgets-page">
-    <div class="widgets">
+<?php osc_admin_body_open(array('id' => 'widgets-page', 'class' => 'widgets')); ?>
         <div id="item-form">
             <ul id="error_list"></ul>
             <form name="widget_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
@@ -176,8 +175,7 @@ if (!$inline) {
                 </fieldset>
             </form>
         </div>
-    </div>
-</div>
+<?php osc_admin_body_close(); ?>
 <script>
     // This view is also loaded inline into the widgets screen, i.e. injected after
     // DOMContentLoaded has already fired — a plain listener would never run and the

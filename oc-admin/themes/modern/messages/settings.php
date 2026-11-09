@@ -21,7 +21,7 @@ osc_admin_page(array(
 
 osc_current_admin_theme_path('parts/header.php');
 osc_current_admin_theme_path('messages/tabs.php'); ?>
-<div id="message-settings">
+<?php osc_admin_body_open(array('id' => 'message-settings')); ?>
     <?php osc_admin_settings_form($form['id'], array('titles' => false) + $form); ?>
-</div>
+<?php osc_admin_body_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
