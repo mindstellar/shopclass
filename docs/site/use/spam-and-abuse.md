@@ -9,11 +9,12 @@ A classifieds site with an open publish form is found by bots within days of
 going live. ShopClass ships several defences; none of them is on by default,
 because each one costs a real visitor something.
 
-**Settings → Spam and bots** holds most of them.
+**Settings → Security** holds most of them, in four tabs: **Sign-in**, **Captcha**,
+**Spam filter** (Akismet and the keyword blocklist) and **Limits**.
 
 ## CAPTCHA
 
-Pick one provider and fill in its two keys. The admin validates them as you save
+**Settings → Security → Captcha.** Pick one provider and fill in its two keys. The admin validates them as you save
 and tells you plainly: *This key is valid*, or *The key you entered is invalid.
 Please double-check it*. That way you find out immediately rather than when a
 visitor cannot post.
@@ -43,7 +44,7 @@ repository or a support post.
 Repeated failed logins are throttled per IP and per account, so a password
 guesser is slowed to uselessness without locking out a real user who mistyped.
 
-The settings are in **Settings → Spam and bots → Sign-in protection**:
+The settings are in **Settings → Security → Sign-in**:
 
 | Setting | Default |
 |---|---|
@@ -117,7 +118,7 @@ Changing the password does the same for that account.
 
 ## The keyword blocklist
 
-**Settings → Keyword blocklist** rejects listings containing words you choose.
+**Settings → Security → Spam filter** rejects listings containing words you choose.
 
 Each keyword can be matched against:
 
@@ -134,7 +135,7 @@ catch real listings: blocking "free" on a marketplace blocks "free delivery".
 
 ## Akismet
 
-An Akismet API key enables comment and listing spam checking through the same
+**Settings → Security → Spam filter.** An Akismet API key enables comment and listing spam checking through the same
 service WordPress uses. It is worth having on a site with open comments, and
 redundant on a site where comments are closed or moderated.
 
@@ -156,7 +157,7 @@ the same way.
 address from the whole site for good: sign-in, posting and messages. Only a
 signed-in admin can use it; anyone else is asked to sign in first.
 
-**Settings → Spam and bots → Messages:**
+**Listings → Messages → Settings:**
 
 - **Links allowed in a message.** Default 1, counted in the message. A message
   with more is refused and the sender is told why. 0 allows none. Names may not
@@ -167,19 +168,19 @@ signed-in admin can use it; anyone else is asked to sign in first.
 - **Report link.** Mail a member receives ends with *Report the sender*. The
   member confirms on a page, and the sender's address cannot send messages for
   the set number of days (default 30). Sign-in and posting still work. Each link
-  works once. The rule shows under **Settings → Security → Ban rules** as *Messages only, until
+  works once. The rule shows under **Users → Ban rules** as *Messages only, until
   …*, where you can delete it early.
 
 Each form also has an hourly limit per IP address. The ban list applies to all
 of them, and to e-mail fields on your own forms.
 
-**Settings → Spam and bots → Limits** sets those hourly limits: guest comments
+**Settings → Security → Limits** sets those hourly limits: guest comments
 (20), guest photo uploads (100), form submissions (10), contact the site (5),
 contact a seller (15), contact a user (15), send to a friend (5) and search alert
 sign-ups (10). 0 means no limit. Developers can still change them with the
 `action_throttle_limit` filter.
 
-**Settings → Spam and bots → Search alerts** sets how many saved searches one user may keep (default 20, 0 means no limit).
+The same tab sets how many saved searches one user may keep (default 20, 0 means no limit).
 
 ## On-site messages
 
@@ -213,7 +214,7 @@ The settings that do the most, and are easiest to forget:
   and the cost falls to almost nothing once your regulars are established.
 - **Users → Settings → Users need to validate their account.** The same idea,
   for registration.
-- **Settings → Security → Ban rules.** Block a returning abuser's address, domain or IP
+- **Users → Ban rules.** Block a returning abuser's address, domain or IP
   pattern.
 
 ## A defence worth having

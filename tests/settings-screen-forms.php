@@ -1153,12 +1153,53 @@ pin('the throttle switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'log
 check('and none of it landed in the osclass section', pref($admin, 'login_throttle_window') === null);
 pin('the save reports itself once', array('ok:Sign-in protection settings have been updated'), flashed($run));
 
-$run = drive('CAdminSettingsSpamnBots', 'akismet_post', array('akismetKey' => '  abc123  '));
+$run = drive('CAdminSettingsKeywordBlock', 'akismet_post', array('akismetKey' => '  abc123  '));
 pin('an Akismet key is trimmed', array('abc123', 'STRING'), pref($admin, 'akismetKey'));
 pin('and a key that was set says so', array('ok:Your Akismet key has been updated'), flashed($run));
-$run = drive('CAdminSettingsSpamnBots', 'akismet_post', array('akismetKey' => ''));
+pin('and the save goes back to Spam filter', array('https://example.test/oc-admin/index.php?page=settings&action=keyword_block'), $run['redirects']);
+$run = drive('CAdminSettingsKeywordBlock', 'akismet_post', array('akismetKey' => ''));
 pin('a cleared one says the other thing', array('info:Your Akismet key has been cleared'), flashed($run));
 pin('and the preference is empty', array('', 'STRING'), pref($admin, 'akismetKey'));
+
+harness_section('Settings › Security: old tab links open the new places');
+foreach (array(
+    'akismet'  => 'https://example.test/oc-admin/index.php?page=settings&action=keyword_block',
+    'alerts'   => 'https://example.test/oc-admin/index.php?page=settings&action=spamNbots&tab=limits#s-search-alerts',
+    'messages' => 'https://example.test/oc-admin/index.php?page=messages&action=settings',
+) as $oldTab => $to) {
+    $run = drive('CAdminSettingsSpamnBots', 'spamNbots', array('tab' => $oldTab));
+    pin("tab=$oldTab goes to its new place", array(array($to), ''), array($run['redirects'], $run['drawn']));
+}
+foreach (array('signin' => 'field-login_throttle_window', 'captcha' => 'field-captchaProvider', 'limits' => 'field-throttle_send_friend') as $newTab => $field) {
+    $run = drive('CAdminSettingsSpamnBots', 'spamNbots', array('tab' => $newTab));
+    check("tab=$newTab draws its own form", $run['redirects'] === array() && strpos($run['drawn'], $field) !== false);
+}
+$run = drive('CAdminSettingsSpamnBots', 'spamNbots');
+check('no tab opens Sign-in, with the link to two-step sign-in', strpos($run['drawn'], 'field-login_throttle_window') !== false
+    && strpos($run['drawn'], 'page=admins&amp;action=edit#two-factor') !== false);
+$run = drive('CAdminSettingsSpamnBots', 'spamNbots', array('tab' => 'limits'));
+check('Limits also holds the search alert rules', strpos($run['drawn'], 'field-alerts_max_per_user') !== false
+    && strpos($run['drawn'], 'id="s-search-alerts"') !== false);
+check('the screen draws no tab row of its own; the Security group row is the only one', strpos($run['drawn'], 'tab=akismet') === false
+    && strpos($run['drawn'], 'tab=messages') === false);
+foreach (array('recaptcha_post' => 'settings_captcha', 'limits_post' => 'settings_limits', 'alerts_post' => 'settings_limits',
+    'login_throttle_post' => 'settings_spambots', 'akismet_post' => 'settings_keyword_block') as $postAction => $entry) {
+    $_GET                    = array();
+    $_POST                   = array('page' => 'settings', 'action' => $postAction);
+    $_SERVER['QUERY_STRING'] = '';
+    Params::init();
+    $sidebar = new AdminMenu();
+    $sidebar->init();
+    pin("a refused $postAction keeps its Security tab lit", array('settings', $entry), $sidebar->currentIds());
+}
+
+// Source scan: the list screen needs the paging cookie this harness does not set up.
+$spamFilterView = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/settings/keywordBlock.php');
+$spamFilterCtl  = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php', 'drawList');
+check('Spam filter draws the Akismet form above the keyword blocklist (source scan)',
+    strpos($spamFilterCtl, "SpamSettingsScreen::formVars(") !== false && strpos($spamFilterCtl, "['akismet']") !== false
+    && strpos($spamFilterView, "osc_admin_settings_form(\$akismet['id']") !== false
+    && strpos($spamFilterView, "osc_admin_settings_form(\$akismet['id']") < strpos($spamFilterView, "osc_admin_settings_form(\$prefsForm['id']"));
 
 $run = drive('CAdminSettingsSpamnBots', 'recaptcha_post', array(
     'recaptchaVersion'   => '2',
@@ -2560,6 +2601,27 @@ foreach (osc_settings_pages() as $pageId => $page) {
     check("$pageId draws its headings on the scale", heading_scale_problems($html) === array(), implode('; ', heading_scale_problems($html)));
 }
 check('the core settings forms were rendered', $rendered >= 20, (string)$rendered);
+
+harness_section('Find a setting points at the new Security places');
+$found = array();
+AdminMenu::getInstance()->init();
+foreach (\mindstellar\admin\SettingsSearch::build() as $row) {
+    $found[$row[1]] ??= array($row[2], strtok($row[3], '#'));
+}
+$adminUrl = 'https://example.test/oc-admin/index.php';
+$want = array(
+    'Akismet API Key'            => array('Settings › Security › Spam filter › Akismet', $adminUrl . '?page=settings&action=keyword_block'),
+    'Captcha provider'           => array('Settings › Security › Captcha', $adminUrl . '?page=settings&action=spamNbots&tab=captcha'),
+    'Failures per IP address'    => array('Settings › Security › Sign-in', $adminUrl . '?page=settings&action=spamNbots'),
+    'Contact a seller'           => array('Settings › Security › Limits', $adminUrl . '?page=settings&action=spamNbots&tab=limits'),
+    'Saved searches per user'    => array('Settings › Security › Limits › Search alerts', $adminUrl . '?page=settings&action=spamNbots&tab=limits'),
+    'Links allowed in a message' => array('Listings › Messages › Settings', $adminUrl . '?page=messages&action=settings'),
+    'Ban rules'                  => array('Users', $adminUrl . '?page=users&action=ban'),
+);
+$got = array_intersect_key($found, $want);
+ksort($want);
+ksort($got);
+pin('each moved setting is found where it now lives', $want, $got);
 
 $screens = array_merge(
     glob(ABS_PATH . 'oc-admin/themes/modern/settings/*.php') ?: array(),

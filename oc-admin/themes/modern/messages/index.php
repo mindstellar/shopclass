@@ -20,7 +20,6 @@ osc_admin_page(array(
 $tab    = (string) __get('tab');
 $rows   = (array) __get('rows');
 $older  = __get('older');
-$counts = (array) __get('counts');
 $base   = osc_admin_base_url(true) . '?page=messages';
 
 $reasons = array(
@@ -43,10 +42,7 @@ $banUrl = static function (string $email): string {
 };
 
 osc_current_admin_theme_path('parts/header.php'); ?>
-<?php osc_admin_tab_nav(array(
-    array('label' => __('Held'), 'url' => $base, 'active' => $tab === 'held', 'count' => (int) ($counts['held'] ?? 0)),
-    array('label' => __('Reported'), 'url' => $base . '&action=reported', 'active' => $tab === 'reported', 'count' => (int) ($counts['reported'] ?? 0)),
-)); ?>
+<?php osc_current_admin_theme_path('messages/tabs.php'); ?>
 <div class="relative">
     <div class="table-contains-actions">
         <?php if ($tab === 'held') { ?>

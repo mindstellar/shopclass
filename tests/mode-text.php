@@ -45,5 +45,5 @@ $GLOBALS['testMode'] = 'shop';
 check('shop wording in shop mode', osc_mode_text('Manage listings', 'Manage products') === 'Manage products');
 
 harness_section('captcha help path');
-check('built from the menu names', osc_admin_captcha_settings_path() === 'Settings › Spam and bots › Captcha');
+check('built from the menu names', osc_admin_captcha_settings_path() === 'Settings › Security › Captcha');
 exit(harness_result());

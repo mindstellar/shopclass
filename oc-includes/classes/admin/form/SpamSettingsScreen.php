@@ -14,10 +14,9 @@ namespace mindstellar\admin\form;
 use mindstellar\security\ActionThrottle;
 
 /**
- * The spam-and-bots screen, which is four independent forms rather than one: the Akismet
- * key, the captcha provider and its keys, the search-alert rule, and the sign-in rate
- * limit. Each saves on its own and says its own thing afterwards, so each is its own
- * declaration; only the sign-in limit stores anywhere but the core preference section.
+ * The forms of Settings › Security, plus the message rules shown under Listings › Messages.
+ * Each saves on its own and says its own thing afterwards, so each is its own declaration;
+ * only the sign-in limit stores anywhere but the core preference section.
  *
  * None of the keys is masked, deliberately: clearing one is how a provider is switched off,
  * so a blank submission has to mean "clear it" and not "leave it alone".
@@ -285,7 +284,7 @@ final class SpamSettingsScreen
             ->number(
                 'message_report_days',
                 __('A report blocks the sender for'),
-                __('The sender cannot send messages for this long. Sign-in and posting still work. You can lift it under Settings → Security → Ban rules.')
+                __('The sender cannot send messages for this long. Sign-in and posting still work. You can lift it under Users → Ban rules.')
             )
                 ->clampMin(1)
                 ->suffix(__('days'))
@@ -333,6 +332,23 @@ final class SpamSettingsScreen
         $page->register();
 
         return self::PAGE_LIMITS;
+    }
+
+    /**
+     * What Akismet says about the stored key: 1 valid, 2 invalid, 3 no key at all. A request
+     * to their service when a key is set, so only a screen that shows the answer asks.
+     *
+     * @return int
+     */
+    public static function akismetStatus(): int
+    {
+        $key = osc_akismet_key();
+        if ($key == '') {
+            return 3;
+        }
+        require_once osc_lib_path() . 'Akismet.class.php';
+
+        return (new \Akismet(osc_base_url(), $key))->isKeyValid() ? 1 : 2;
     }
 
     /**

@@ -13,6 +13,8 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\form\CoreSettings;
+use mindstellar\admin\form\SpamSettingsScreen;
 use mindstellar\auth\Actor;
 use mindstellar\container\Container;
 use mindstellar\exception\ForbiddenException;
@@ -23,7 +25,8 @@ use mindstellar\moderation\MessageModeration;
 use mindstellar\security\Demo;
 
 /**
- * Admin review of held messages and reported conversations (`?page=messages`).
+ * Admin review of held messages and reported conversations (`?page=messages`), and the
+ * message rules on its Settings tab.
  */
 class CAdminMessages extends AdminSecBaseModel
 {
@@ -34,13 +37,16 @@ class CAdminMessages extends AdminSecBaseModel
 
     /** Each action and the method that answers it; any other action shows the held tab. */
     private const ACTIONS = array(
-        ''             => 'held',
-        'reported'     => 'reported',
-        'thread'       => 'thread',
-        'release_post' => 'releasePost',
-        'remove_post'  => 'removePost',
-        'close_post'   => 'closePost',
-        'clear_post'   => 'clearPost',
+        ''              => 'held',
+        'reported'      => 'reported',
+        'thread'        => 'thread',
+        'release_post'  => 'releasePost',
+        'remove_post'   => 'removePost',
+        'close_post'    => 'closePost',
+        'clear_post'    => 'clearPost',
+        'settings'      => 'settings',
+        'settings_post' => 'settingsPost',
+        'messages_post' => 'settingsPost',
     );
 
     /**
@@ -51,6 +57,13 @@ class CAdminMessages extends AdminSecBaseModel
     public function doModel()
     {
         parent::doModel();
+
+        if (osc_is_moderator() && in_array($this->action, array('settings', 'settings_post', 'messages_post'), true)) {
+            osc_add_flash_error_message(_m("You don't have enough permissions"), 'admin');
+            $this->redirectTo(osc_admin_base_url());
+
+            return;
+        }
 
         $method = $this->actionMethod('held');
         if ($method !== null) {
@@ -170,6 +183,53 @@ class CAdminMessages extends AdminSecBaseModel
         $this->act(function (MessageModeration $m, Actor $admin) use ($id): void {
             $m->clearReport($id, $admin);
         }, _m('The report has been cleared'), 'reported');
+    }
+
+    /**
+     * The message rules: links allowed, longest message, the report link and its block.
+     */
+    private function settings(): void
+    {
+        $this->drawSettings();
+    }
+
+    /**
+     * Save the message rules.
+     */
+    private function settingsPost(): void
+    {
+        osc_csrf_check();
+        $result = CoreSettings::attempt(SpamSettingsScreen::registerMessages());
+        if ($result['errors'] !== array()) {
+            $this->drawSettings($result['values']);
+
+            return;
+        }
+        osc_add_flash_ok_message(_m('Message settings have been updated'), 'admin');
+        $this->redirectTo($this->url('settings'));
+    }
+
+    /**
+     * @param array<string,mixed>|null $values what a refused save was sent
+     */
+    private function drawSettings(?array $values = null): void
+    {
+        $form = CoreSettings::vars(
+            SpamSettingsScreen::registerMessages(),
+            'settings_post',
+            $values,
+            array(
+                'name'    => 'settings_form',
+                'actions' => array(
+                    array('label' => __('Save changes'), 'type' => 'submit', 'attrs' => array('id' => 'submit_messages')),
+                ),
+            )
+        );
+        $form['route']['page'] = 'messages';
+        $this->_exportVariableToView('tab', 'settings');
+        $this->_exportVariableToView('messages_form', $form);
+        $this->_exportVariableToView('counts', $this->moderation()->counts());
+        $this->doView('messages/settings.php');
     }
 
     /**

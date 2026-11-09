@@ -62,7 +62,7 @@ before you invite anyone.  See [mail server](/docs/configure/mail-server/).
 
 ## 6. Spam defences
 
-**Settings → Spam and bots.**
+**Settings → Security.**
 
 Turn on a CAPTCHA (Turnstile or reCAPTCHA) before the site is public. Bots
 find an open publish form within days of a site going live. See

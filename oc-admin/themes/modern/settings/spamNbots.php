@@ -14,42 +14,31 @@
  */
 
 /**
- * The chrome around the six declared spam-and-bots forms, one per tab. Each form -- its route, its
- * fields, their values and the submit row -- is core's, drawn from the declaration the
- * controller saves through.
+ * The Sign-in, Captcha and Limits tabs of Settings › Security. The tab row is the Security
+ * group's; each form -- its route, its fields, their values and the submit row -- is core's,
+ * drawn from the declaration the controller saves through.
  */
 
 $forms = __get('spam_forms');
 
-osc_admin_page(array(
-    'section' => __('Settings'),
-    'heading' => __('Spam and bots'),
-    'title'   => __('Spam and bots'),
-    'help'    => __('Keep spammers from publishing on your site by configuring reCAPTCHA and Akismet. '
-                    . 'Be careful: in order to use these services, you must register on their sites first and follow their instructions.'),
-));
-
-// One form per tab, so the screen has one Save button at a time. The controller checks the tab.
+// Tab => heading, form, help.
 $tabs = array(
-    'akismet'  => array(__('Akismet'), 'akismet', __('Akismet checks new comments and listings for spam. It needs a key from akismet.com.')),
-    'captcha'  => array(__('Captcha'), 'captcha', ''),
-    'alerts'   => array(__('Search alerts'), 'alerts', __('Search alerts e-mail visitors about new listings that match a saved search. Requiring sign-in stops strangers subscribing other people.')),
-    'messages' => array(__('Messages'), 'messages', __('Limits for the forms that send e-mail: contact, contact the seller, contact a user and share a listing.')),
-    'limits'   => array(__('Limits'), 'limits', __('How many times one visitor address may use each public form or upload in an hour.')),
-    'signin'   => array(__('Sign-in protection'), 'login_throttle', __('After too many failed sign-ins on the site or the admin panel, the address or account is blocked for a while.')),
+    'signin'  => array(__('Sign-in protection'), 'login_throttle', __('After too many failed sign-ins on the site or the admin panel, the address or account is blocked for a while.')),
+    'captcha' => array(__('Captcha'), 'captcha', ''),
+    'limits'  => array(__('Limits'), 'limits', __('How many times one visitor address may use each public form or upload in an hour.')),
 );
 $tab = (string) __get('spam_tab');
-[, $form, $help] = $tabs[$tab];
+[$heading, $form, $help] = $tabs[$tab];
+
+osc_admin_page(array(
+    'section' => __('Settings'),
+    'heading' => $heading,
+    'title'   => $heading,
+));
 
 osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="spam-setting">
     <?php
-    osc_admin_tab_nav(array_map(static fn ($key, $spec) => array(
-        'label'  => $spec[0],
-        'url'    => osc_admin_base_url(true) . '?page=settings&action=spamNbots&tab=' . $key,
-        'active' => $key === $tab,
-    ), array_keys($tabs), $tabs));
-
     if ($tab === 'captcha') { ?>
         <p><?php printf(
             __('Stops bots on the public forms. <a href="%1$s" target="_blank">Get a reCAPTCHA key</a> or '
@@ -72,6 +61,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             __('See who is blocked right now, and unblock them, under <a href="%s">Tools > System info > Security</a>.'),
             osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=system-info&tab=security#signin-activity')
         ); ?></p>
-    <?php } ?>
+        <p class="text-muted"><?php printf(
+            __('Two-step sign-in for admins is turned on per account, on <a href="%s">your profile</a>.'),
+            osc_esc_html(osc_admin_base_url(true) . '?page=admins&action=edit#two-factor')
+        ); ?></p>
+    <?php }
+
+    if ($tab === 'limits') {
+        osc_admin_form_section(__('Search alerts'), array(
+            'spaced' => true,
+            'intro'  => __('Search alerts e-mail visitors about new listings that match a saved search. Requiring sign-in stops strangers subscribing other people.'),
+        ));
+        osc_admin_settings_form($forms['alerts']['id'], array('titles' => false) + $forms['alerts']);
+    } ?>
 </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

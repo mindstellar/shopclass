@@ -158,7 +158,7 @@ pin('Settings groups and tabs, in order', [
     'settings_group_general'  => ['General', 'Permalinks', 'Languages', 'Sitemap'],
     'settings_group_content'  => ['Comments', 'Latest searches'],
     'settings_group_email'    => ['Email templates', 'Mail server'],
-    'settings_group_security' => ['Spam and bots', 'Keyword blocklist', 'Ban rules'],
+    'settings_group_security' => ['Sign-in', 'Captcha', 'Spam filter', 'Limits'],
     'settings_group_system'   => ['Storage', 'API', 'Advanced'],
 ], $map);
 
@@ -170,7 +170,7 @@ pin('Listings, Users, Media and Billing keep their own Settings entry, last', [
     array_slice($subIds('items'), -1), array_slice($subIds('users'), -1),
     array_slice($subIds('media'), -1), array_slice($subIds('billing'), -1),
 ]);
-pin('Ban rules is no longer in Users', false, in_array('users_ban', $subIds('users'), true));
+pin('Ban rules is in Users, before its Settings entry', ['users_ban', 'users_settings'], array_slice($subIds('users'), -2));
 
 $basesReal = ['https://example.test/oc-admin/index.php?', 'https://example.test/oc-admin/'];
 foreach ([
@@ -179,8 +179,16 @@ foreach ([
     'page=settings&action=media'           => ['media', 'media_settings'],
     'page=settings&action=billing'         => ['billing', 'billing_settings'],
     'page=settings&action=billing&tab=pricing' => ['billing', 'billing_settings'],
-    'page=users&action=ban'                => ['settings', 'users_ban'],
-    'page=users&action=ban_edit&id=3'      => ['settings', 'users_ban'],
+    'page=users&action=ban'                => ['users', 'users_ban'],
+    'page=users&action=edit_ban_rule&id=3' => ['users', 'users_ban'],
+    'page=users&action=create_ban_rule'    => ['users', 'users_ban'],
+    'page=settings&action=spamNbots'       => ['settings', 'settings_spambots'],
+    'page=settings&action=spamNbots&tab=signin' => ['settings', 'settings_spambots'],
+    'page=settings&action=spamNbots&tab=captcha' => ['settings', 'settings_captcha'],
+    'page=settings&action=spamNbots&tab=limits' => ['settings', 'settings_limits'],
+    'page=settings&action=keyword_block'   => ['settings', 'settings_keyword_block'],
+    'page=settings&action=keyword_block_edit&id=2' => ['settings', 'settings_keyword_block'],
+    'page=messages&action=settings'        => ['items', 'items_messages'],
 ] as $query => $want) {
     pin("$query lights " . implode(' > ', $want), $want, AdminMenu::current($full, $query, 'x', false, $basesReal));
 }
@@ -209,8 +217,9 @@ pin('Billing: core first, plugin lists by weight, plugin settings pages, then Se
 pin('a plugin page in Users goes before its Settings entry', ['p-subs', 'users_settings'], array_slice(array_map(static fn ($e) => $e[2], array_values($real->get_array_menu()['users']['sub'])), -2));
 pin('an unknown group goes to Other', ['p-lost'], $after['settings_group_other']);
 pin('a long group id places into Email', true, in_array('p-mail', $after['settings_group_email'], true));
-pin('the tab row of Security holds the three screens', ['Spam and bots', 'Keyword blocklist', 'Ban rules'],
-    array_column($real->settingsGroupTabs('users_ban'), 'label'));
+pin('the tab row of Security holds its four tabs, Captcha current', [['Sign-in', 'Captcha', 'Spam filter', 'Limits'], [false, true, false, false]],
+    [array_column($real->settingsGroupTabs('settings_captcha'), 'label'), array_column($real->settingsGroupTabs('settings_captcha'), 'active')]);
+pin('Ban rules draws no Settings tab row', [], $real->settingsGroupTabs('users_ban'));
 
 $GLOBALS['__stub_osc_billing_enabled'] = static fn () => false;
 $off = new AdminMenu();

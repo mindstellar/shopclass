@@ -107,6 +107,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
+- Settings → Security has one tab row: Sign-in, Captcha, Spam filter (Akismet and keywords) and Limits; Ban rules moved to Users and message rules to Listings → Messages → Settings. Old links still work.
 - A plugin page's heading names the sidebar section it sits in; with billing off, Billing pages sit under a Billing heading in Settings.
 - Widgets and Menus show a dashed drop slot while dragging, and empty sections show a quiet one-row slot.
 - Fields a plugin adds to the register, login, comment and contact forms sit above the captcha.

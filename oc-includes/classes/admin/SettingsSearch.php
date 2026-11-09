@@ -64,12 +64,12 @@ final class SettingsSearch
         'core.settings_storage'        => array('settings_storage', '', null),
         'core.settings_mailserver'     => array('settings_mailserver', '', null),
         'core.settings_keyword_block'  => array('settings_keyword_block', '', null),
-        'core.settings_akismet'        => array('settings_spambots', '&tab=akismet', 'Akismet'),
-        'core.settings_captcha'        => array('settings_spambots', '&tab=captcha', 'Captcha'),
-        'core.settings_alerts'         => array('settings_spambots', '&tab=alerts', 'Search alerts'),
-        'core.settings_login_throttle' => array('settings_spambots', '&tab=signin', 'Sign-in protection'),
-        'core.settings_messages'       => array('settings_spambots', '&tab=messages', 'Messages'),
-        'core.settings_limits'         => array('settings_spambots', '&tab=limits', 'Limits'),
+        'core.settings_akismet'        => array('settings_keyword_block', '', 'Akismet'),
+        'core.settings_captcha'        => array('settings_captcha', '', null),
+        'core.settings_alerts'         => array('settings_limits', '', 'Search alerts'),
+        'core.settings_login_throttle' => array('settings_spambots', '', null),
+        'core.settings_messages'       => array('items_messages', '&action=settings', 'Settings'),
+        'core.settings_limits'         => array('settings_limits', '', null),
         'core.settings_billing'        => array('billing_settings', '&tab=switch', 'Billing'),
         'core.settings_billing_pricing' => array('billing_settings', '&tab=pricing', 'Pricing'),
         'core.settings_billing_offline' => array('billing_settings', '&tab=offline', 'Bank transfer'),
@@ -95,8 +95,10 @@ final class SettingsSearch
         'settings_storage'       => 'files s3 bucket cloud disk upload',
         'settings_emails_manage' => 'template message notification subject',
         'settings_mailserver'    => 'smtp sender from host port password ssl tls authentication',
-        'settings_spambots'      => 'captcha recaptcha turnstile akismet honeypot throttle sign-in login',
-        'settings_keyword_block' => 'banned words filter profanity',
+        'settings_spambots'      => 'throttle sign-in login password brute force two-step 2fa',
+        'settings_captcha'       => 'captcha recaptcha turnstile honeypot bots',
+        'settings_keyword_block' => 'spam akismet banned words keyword blocklist filter profanity',
+        'settings_limits'        => 'throttle rate limit hourly flood search alerts saved searches',
         'users_ban'              => 'block ip address email ban user',
         'settings_billing'       => 'payment currency price tax invoice paypal stripe credits packages checkout',
         'billing_settings'       => 'payment currency price tax invoice paypal stripe credits packages checkout',
@@ -105,13 +107,19 @@ final class SettingsSearch
     );
 
     /**
+     * Screens outside Settings that hold settings or used to sit there: entry id => whether
+     * the screen is listed as a page of its own. Ban rules is, the Messages list is not.
+     */
+    private const OTHER_SCREENS = array('users_ban' => true, 'items_messages' => false);
+
+    /**
      * Sections of hand-written core screens, which no declared form lists: entry id => titles.
      * Each links to the heading of the same name (see Form::anchor()).
      */
     private const SECTIONS = array(
         'settings_api'           => array('Keys', 'New key', 'Webhooks', 'New webhook endpoint'),
         'settings_sitemap'       => array('Sitemap settings', 'Custom sitemap URLs'),
-        'settings_keyword_block' => array('Moderation', 'Import keyword list', 'Blocked keywords'),
+        'settings_keyword_block' => array('Keyword blocklist', 'Import keyword list', 'Blocked keywords'),
         'settings_permalinks'    => array('Server rules (nginx)', 'Server rules (.htaccess)'),
         'settings_storage'       => array('Connection test', 'Storage queue', 'Migration'),
     );
@@ -167,6 +175,18 @@ final class SettingsSearch
             }
             $entries[$id] = array('path' => $path, 'url' => $where['url']);
             $rows[]       = array(self::TYPE_PAGE, $label, $parent, $where['url'], self::WORDS[$id] ?? '');
+        }
+
+        foreach ($menu->get_array_menu() as $section) {
+            foreach ((array) ($section['sub'] ?? array()) as $id => $entry) {
+                if (!isset(self::OTHER_SCREENS[$id]) || !is_array($entry) || !isset($section[0])) {
+                    continue;
+                }
+                $entries[$id] = array('path' => $section[0] . ' › ' . $entry[0], 'url' => $entry[1]);
+                if (self::OTHER_SCREENS[$id]) {
+                    $rows[] = array(self::TYPE_PAGE, $entry[0], $section[0], $entry[1], self::WORDS[$id] ?? '');
+                }
+            }
         }
 
         // With billing off, its switch sits in Settings under this other id.

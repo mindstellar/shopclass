@@ -204,7 +204,7 @@ Whichever proxy you use, trust the narrowest set of peers that can actually
 reach your server. A header anyone can send is worse than no header at all,
 because it lets an attacker forge a different IP on every login attempt.
 
-Tune the limits in **Settings → Spam and bots**.
+Tune the limits in **Settings → Security → Sign-in**.
 
 ## Bots and abuse
 

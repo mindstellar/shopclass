@@ -56,10 +56,8 @@ class CAdminSettings
                 $do = new CAdminSettingsPermalinks();
                 break;
             case ('spamNbots'):
-            case ('akismet_post'):
             case ('recaptcha_post'):
             case ('alerts_post'):
-            case ('messages_post'):
             case ('limits_post'):
             case ('login_throttle_post'):
             case ('login_throttle_reset'):
@@ -82,7 +80,12 @@ class CAdminSettings
             case ('keyword_block_delete'):
             case ('keyword_block_import_post'):
             case ('keyword_block_prefs_post'):
+            case ('akismet_post'):
                 $do = new CAdminSettingsKeywordBlock();
+                break;
+            // The message rules moved to Listings › Messages; a form posting the old action still saves there.
+            case ('messages_post'):
+                $do = new CAdminMessages();
                 break;
             case ('currencies'):
                 $do = new CAdminSettingsCurrencies();

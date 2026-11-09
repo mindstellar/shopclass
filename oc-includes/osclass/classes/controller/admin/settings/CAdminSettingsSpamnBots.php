@@ -24,8 +24,15 @@ use mindstellar\admin\form\SpamSettingsScreen;
  */
 class CAdminSettingsSpamnBots extends AdminSecBaseModel
 {
-    /** The screen's tabs, one form each. */
-    private const TABS = array('akismet', 'captcha', 'alerts', 'messages', 'limits', 'signin');
+    /** The Settings › Security tabs drawn here; Spam filter is the keyword blocklist screen. */
+    private const TABS = array('signin', 'captcha', 'limits');
+
+    /** Tabs this screen used to have, and where each one lives now. */
+    private const MOVED_TABS = array(
+        'akismet'  => '?page=settings&action=keyword_block',
+        'alerts'   => '?page=settings&action=spamNbots&tab=limits#s-search-alerts',
+        'messages' => '?page=messages&action=settings',
+    );
 
     /**
      * Boots the admin controller and fires the init_admin_settings_spam hook.
@@ -38,7 +45,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
 
     //Business Layer...
     /**
-     * Draws the spam and bots screen, or saves one of its forms (Akismet, captcha, alerts, login throttle).
+     * Draws the Sign-in, Captcha and Limits tabs, or saves one of their forms.
      *
      * @return void
      */
@@ -46,27 +53,12 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
     {
         switch ($this->action) {
             case ('spamNbots'):
-                // calling the spam and bots view
-                $this->drawForms();
-                break;
-            case ('akismet_post'):
-                // updating the Akismet key
-                osc_csrf_check();
-
-                $result = CoreSettings::attempt(SpamSettingsScreen::registerAkismet());
-                if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_AKISMET, $result['values'], 'akismet');
+                $moved = self::MOVED_TABS[Params::getParamString('tab')] ?? null;
+                if ($moved !== null) {
+                    $this->redirectTo(osc_admin_base_url(true) . $moved);
                     break;
                 }
-
-                if ($result['updated'] === 0) {
-                    osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
-                } elseif ($result['values']['akismetKey'] === '') {
-                    osc_add_flash_info_message(_m('Your Akismet key has been cleared'), 'admin');
-                } else {
-                    osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
-                }
-                $this->redirectTo(self::tabUrl('akismet'));
+                $this->drawForms();
                 break;
             case ('recaptcha_post'):
                 // updating the captcha provider and its keys
@@ -91,12 +83,12 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
 
                 $result = CoreSettings::attempt(SpamSettingsScreen::registerAlerts());
                 if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_ALERTS, $result['values'], 'alerts');
+                    $this->drawForms(SpamSettingsScreen::PAGE_ALERTS, $result['values'], 'limits');
                     break;
                 }
 
                 osc_add_flash_ok_message(_m('Search alert settings have been updated'), 'admin');
-                $this->redirectTo(self::tabUrl('alerts'));
+                $this->redirectTo(self::tabUrl('limits') . '#s-search-alerts');
                 break;
             case ('login_throttle_post'):
                 // updating the sign-in rate limit
@@ -110,18 +102,6 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
 
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
                 $this->redirectTo(self::tabUrl('signin'));
-                break;
-            case ('messages_post'):
-                osc_csrf_check();
-
-                $result = CoreSettings::attempt(SpamSettingsScreen::registerMessages());
-                if ($result['errors'] !== array()) {
-                    $this->drawForms(SpamSettingsScreen::PAGE_MESSAGES, $result['values'], 'messages');
-                    break;
-                }
-
-                osc_add_flash_ok_message(_m('Message settings have been updated'), 'admin');
-                $this->redirectTo(self::tabUrl('messages'));
                 break;
             case ('limits_post'):
                 osc_csrf_check();
@@ -191,8 +171,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
     }
 
     /**
-     * Draw the screen: five independent forms, at most one of which is being handed back
-     * what was typed into it.
+     * Draw one tab, its forms handed back what was typed into a refused one.
      *
      * @param string     $rejected the page id of the form that was refused, if any
      * @param array|null $values   that form's submitted values
@@ -206,15 +185,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
             $tab = Params::getParamString('tab');
         }
         $this->_exportVariableToView('spam_tab', in_array($tab, self::TABS, true) ? $tab : self::TABS[0]);
-        // Whether the stored key is one Akismet recognises. A request to their service, so
-        // it is made only for the screen that shows the answer.
-        $akismetKey    = osc_akismet_key();
-        $akismetStatus = 3;
-        if ($akismetKey != '') {
-            require_once(osc_lib_path() . 'Akismet.class.php');
-            $akismet       = new Akismet(osc_base_url(), $akismetKey);
-            $akismetStatus = $akismet->isKeyValid() ? 1 : 2;
-        }
+        $akismetStatus = SpamSettingsScreen::akismetStatus();
 
         // Exported under the name it has always had as well: a replaced admin theme's own
         // view reads it, and View::_get() answers '' for a key nobody exported -- which

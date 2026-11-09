@@ -1166,7 +1166,7 @@ if (!function_exists('osc_admin_captcha_settings_path')) {
      */
     function osc_admin_captcha_settings_path(): string
     {
-        return implode(' › ', array(__('Settings'), __('Spam and bots'), __('Captcha')));
+        return implode(' › ', array(__('Settings'), __('Security'), __('Captcha')));
     }
 }
 

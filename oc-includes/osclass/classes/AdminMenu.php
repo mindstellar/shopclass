@@ -42,6 +42,15 @@ class AdminMenu
 
     private const BAND_STARTS = array('items', 'appearance', 'settings');
 
+    /** The Settings › Security tab each of its saves belongs to, for a refused save drawn from a POST. */
+    private const SECURITY_POSTS = array(
+        'login_throttle_post'      => '&action=spamNbots&tab=signin',
+        'recaptcha_post'           => '&action=spamNbots&tab=captcha',
+        'akismet_post'             => '&action=keyword_block',
+        'limits_post'              => '&action=spamNbots&tab=limits',
+        'alerts_post'              => '&action=spamNbots&tab=limits',
+    );
+
     private $aMenu;
 
     /** Submenu keys per section as core left them, before anyone else registered. */
@@ -153,6 +162,19 @@ class AdminMenu
             osc_admin_base_url(true) . '?page=admins',
             'users_administrators_manage',
             'administrator'
+        );
+        $this->add_submenu(
+            'users',
+            __('Ban rules'),
+            osc_admin_base_url(true) . '?page=users&action=ban',
+            'users_ban',
+            'administrator',
+            null,
+            null,
+            array(
+                osc_admin_base_url(true) . '?page=users&action=create_ban_rule',
+                osc_admin_base_url(true) . '?page=users&action=edit_ban_rule',
+            )
         );
         $this->add_submenu(
             'users',
@@ -373,9 +395,10 @@ class AdminMenu
                 array(__('Mail server'), '?page=settings&action=mailserver', 'settings_mailserver'),
             )),
             'security' => array(__('Security'), array(
-                array(__('Spam and bots'), '?page=settings&action=spamNbots', 'settings_spambots'),
-                array(__('Keyword blocklist'), '?page=settings&action=keyword_block', 'settings_keyword_block'),
-                array(__('Ban rules'), '?page=users&action=ban', 'users_ban'),
+                array(__('Sign-in'), '?page=settings&action=spamNbots', 'settings_spambots'),
+                array(__('Captcha'), '?page=settings&action=spamNbots&tab=captcha', 'settings_captcha'),
+                array(__('Spam filter'), '?page=settings&action=keyword_block', 'settings_keyword_block'),
+                array(__('Limits'), '?page=settings&action=spamNbots&tab=limits', 'settings_limits'),
             )),
             'system'   => array(__('System'), array(
                 array(__('Storage'), '?page=settings&action=storage', 'settings_storage'),
@@ -696,6 +719,10 @@ class AdminMenu
             // A refused menu save redraws the menu editor: light Menus, not Manage themes.
             if ($actual_page === 'appearance' && Params::getParam('action') === 'menu_save_post') {
                 $actual_url .= '&action=menus';
+            }
+            // A refused Security save redraws its own tab: light that tab, not General.
+            if ($actual_page === 'settings') {
+                $actual_url .= self::SECURITY_POSTS[(string) Params::getParam('action')] ?? '';
             }
         }
 

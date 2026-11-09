@@ -145,7 +145,7 @@ account, enable or disable one, edit its details, or add a user yourself.
 
 ### Ban rules
 
-**Settings → Security → Ban rules** blocks registrations and posts matching a pattern: an
+**Users → Ban rules** blocks registrations and posts matching a pattern: an
 e-mail domain, an address, an IP range. This is how you stop a returning
 abuser without watching for them. Rules marked *Messages only* come from a
 member's report and only stop contact mail; see

@@ -2210,7 +2210,7 @@ msgstr ""
 msgid "Ajax error, try again."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
+#: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 msgid "Akismet"
 msgstr ""
@@ -2219,7 +2219,7 @@ msgstr ""
 msgid "Akismet API Key"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
+#: oc-admin/themes/modern/settings/keywordBlock.php
 msgid ""
 "Akismet checks new comments and listings for spam. It needs a key from "
 "akismet.com."
@@ -3578,6 +3578,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
+#: oc-includes/osclass/classes/AdminMenu.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Captcha"
 msgstr ""
@@ -3729,7 +3730,7 @@ msgid "Change advanced configuration of your Shopclass. "
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
-msgid "Change it in Settings > Spam and bots"
+msgid "Change it in Settings > Security"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -7207,7 +7208,7 @@ msgstr ""
 msgid "Heavy duty bench with a lower shelf. Easy to clean and very stable."
 msgstr ""
 
-#: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/messages/tabs.php
 #: oc-admin/themes/modern/messages/thread.php
 msgid "Held"
 msgstr ""
@@ -8152,12 +8153,6 @@ msgstr ""
 msgid "Keep records for"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
-msgid ""
-"Keep spammers from publishing on your site by configuring reCAPTCHA and "
-"Akismet. "
-msgstr ""
-
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
 msgid "Keep the original format"
 msgstr ""
@@ -8222,7 +8217,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-includes/classes/admin/form/KeywordBlockSettingsScreen.php
-#: oc-includes/osclass/classes/AdminMenu.php
 msgid "Keyword blocklist"
 msgstr ""
 
@@ -8563,10 +8557,11 @@ msgstr ""
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/classes/admin/SystemChecks.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
+#: oc-includes/osclass/classes/AdminMenu.php
 msgid "Limits"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
+#: oc-admin/themes/modern/messages/settings.php
 msgid ""
 "Limits for the forms that send e-mail: contact, contact the seller, contact "
 "a user and share a listing."
@@ -8773,6 +8768,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/settings.php
 #: oc-admin/themes/modern/main/index.php
 #: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/messages/settings.php
 #: oc-admin/themes/modern/messages/thread.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations.php
@@ -9555,8 +9551,8 @@ msgid "Message: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/messages/settings.php
 #: oc-admin/themes/modern/messages/thread.php
-#: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -9668,7 +9664,6 @@ msgid "Moderated comments: this field must only contain numeric characters"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
-#: oc-admin/themes/modern/settings/keywordBlock.php
 msgid "Moderation"
 msgstr ""
 
@@ -12287,6 +12282,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/settings.php
 #: oc-admin/themes/modern/main/index.php
 #: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/messages/settings.php
 #: oc-admin/themes/modern/messages/thread.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/locations.php
@@ -13049,7 +13045,7 @@ msgstr ""
 msgid "Report threshold"
 msgstr ""
 
-#: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/messages/tabs.php
 msgid "Reported"
 msgstr ""
 
@@ -13465,6 +13461,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/mailserver.php
 #: oc-includes/classes/admin/form/SitemapSettingsScreen.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Save changes"
 msgstr ""
@@ -13814,6 +13811,7 @@ msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/AdminMenu.php
+#: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Security"
 msgstr ""
 
@@ -14274,6 +14272,7 @@ msgstr ""
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/media/index.php
+#: oc-admin/themes/modern/messages/tabs.php
 #: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/settings/advanced.php
@@ -14715,6 +14714,10 @@ msgstr ""
 msgid "Sign this user out everywhere?"
 msgstr ""
 
+#: oc-includes/osclass/classes/AdminMenu.php
+msgid "Sign-in"
+msgstr ""
+
 #: oc-includes/osclass/functions.php
 msgid "Sign-in details"
 msgstr ""
@@ -14967,10 +14970,9 @@ msgstr ""
 msgid "Spam"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/spamNbots.php
+#: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-includes/osclass/classes/AdminMenu.php
-#: oc-includes/osclass/helpers/hAdminUi.php
-msgid "Spam and bots"
+msgid "Spam filter"
 msgstr ""
 
 #: oc-includes/osclass/classes/Cleanup.php
@@ -16186,7 +16188,7 @@ msgstr ""
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 msgid ""
 "The sender cannot send messages for this long. Sign-in and posting still "
-"work. You can lift it under Settings → Security → Ban rules."
+"work. You can lift it under Users → Ban rules."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -17338,6 +17340,12 @@ msgstr ""
 msgid "Two batteries, a charger and a set of bits. Hardly used."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/keywordBlock.php
+msgid ""
+"Two checks on what visitors post: Akismet, and your own list of blocked "
+"keywords."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid ""
 "Two files hold these settings. PHP's own limits live in %1$s%2$s; "
@@ -17362,6 +17370,12 @@ msgstr ""
 #: oc-admin/themes/modern/admins/two_factor.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLogin.php
 msgid "Two-step sign-in"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/spamNbots.php
+msgid ""
+"Two-step sign-in for admins is turned on per account, on <a href=\"%s\">your "
+"profile</a>."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/documents.php

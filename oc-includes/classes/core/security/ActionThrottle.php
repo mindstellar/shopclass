@@ -23,7 +23,7 @@ class ActionThrottle
     /** Least number of seconds an event is kept; a longer window keeps it that long. */
     private const KEEP = 86400;
 
-    /** Hourly limit per address for each public action; the admin can change them under Spam and bots. */
+    /** Hourly limit per address for each public action; the admin can change them under Settings › Security › Limits. */
     public const DEFAULT_LIMITS = array(
         'comment_post'    => 20,
         'ajax_upload'     => 100,

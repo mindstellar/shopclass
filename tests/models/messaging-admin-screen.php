@@ -87,6 +87,7 @@ if (!function_exists('osc_current_admin_theme_path')) {
         require ABS_PATH . 'oc-admin/themes/modern/' . $file;
     }
 }
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 
@@ -203,6 +204,27 @@ check('closing a thread that is not reported flashes an error', strpos($r['flash
 harness_section('empty tabs');
 $r = drive('');
 check('Held says so when empty', strpos($r['html'], 'No held messages') !== false);
+
+harness_section('Settings tab');
+$r = drive('settings');
+check('it draws the message rules', $r['threw'] === null && strpos($r['html'], 'field-message_max_links') !== false
+    && strpos($r['html'], 'field-message_report_days') !== false, (string) $r['threw']);
+check('the form saves on this page', strpos($r['html'], 'name="page" value="messages"') !== false && strpos($r['html'], 'value="settings_post"') !== false);
+check('the tab row has Settings, current', strpos($r['html'], 'page=messages&amp;action=settings" class="is-active"') !== false);
+check('the report help points at Users, Ban rules', strpos($r['html'], 'Users → Ban rules') !== false && strpos($r['html'], 'Security → Ban rules') === false);
+$r = drive('settings_post', array('message_max_links' => '3', 'message_max_length' => '100', 'message_report_link' => '1', 'message_report_days' => '5'));
+pin('a save stores the rules, says so and comes back here',
+    array('3', '5', array('ok:Message settings have been updated'), array('https://example.test/oc-admin/index.php?page=messages&action=settings')),
+    array((string) $col("SELECT s_value FROM {$p}t_preference WHERE s_name = 'message_max_links'"), (string) $col("SELECT s_value FROM {$p}t_preference WHERE s_name = 'message_report_days'"), $r['flashes'], $r['redirects']));
+$r = drive('messages_post', array('message_max_links' => '2', 'message_max_length' => '100', 'message_report_link' => '1', 'message_report_days' => '5'));
+pin('the old messages_post action still saves', array('2', array('https://example.test/oc-admin/index.php?page=messages&action=settings')),
+    array((string) $col("SELECT s_value FROM {$p}t_preference WHERE s_name = 'message_max_links'"), $r['redirects']));
+$GLOBALS['stubs']['osc_is_moderator'] = static fn () => true;
+$r = drive('settings');
+pin('a moderator is sent away from Settings', array('', array('https://example.test/oc-admin/')), array($r['html'], $r['redirects']));
+$r = drive('');
+check('and sees no Settings tab', strpos($r['html'], 'action=settings') === false);
+$GLOBALS['stubs']['osc_is_moderator'] = static fn () => false;
 
 harness_section('demo site');
 define('DEMO', true);

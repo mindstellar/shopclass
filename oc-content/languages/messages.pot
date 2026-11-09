@@ -614,7 +614,7 @@ msgstr ""
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid ""
 "Ban %s from this site for good? They will not be able to sign in, post or "
-"send messages. You can undo this under Settings → Security → Ban rules."
+"send messages. You can undo this under Users → Ban rules."
 msgstr ""
 
 #: oc-includes/classes/billing/gateway/OfflineGateway.php
@@ -1821,7 +1821,7 @@ msgstr ""
 msgid "Message sent"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
 msgid "Message settings have been updated"
 msgstr ""
 
@@ -4868,6 +4868,7 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/AdminSecBaseModel.php
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+#: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
@@ -4961,11 +4962,11 @@ msgstr ""
 msgid "You've shared too many listings recently. Please try again later."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "Your Akismet key has been cleared"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsSpamnBots.php
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "Your Akismet key has been updated"
 msgstr ""
 

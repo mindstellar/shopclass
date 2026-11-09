@@ -12,11 +12,9 @@
 
 osc_admin_page(array(
     'section' => __('Settings'),
-    'heading' => __('Keyword blocklist'),
-    'title'   => __('Keyword blocklist'),
-    'help'    => __('Listings containing a blocked keyword are quarantined (flagged spam and hidden) as soon as they '
-                    . 'are posted or edited, and the matched keyword is recorded so you can see why. Enable the filter '
-                    . 'below before it does anything.'),
+    'heading' => __('Spam filter'),
+    'title'   => __('Spam filter'),
+    'help'    => __('Two checks on what visitors post: Akismet, and your own list of blocked keywords.'),
     'actions' => array(
         array(
             'icon'  => 'bi-plus-circle-fill',
@@ -55,6 +53,7 @@ $aRawRows  = __get('aRawRows');
 $sort      = Params::getParam('sort');
 $direction = Params::getParam('direction');
 $prefsForm = __get('moderation_form');
+$akismet   = __get('akismet_form');
 
 $columns = $aData['aColumns'];
 $rows    = $aData['aRows'];
@@ -69,8 +68,20 @@ $scopeOptions = array(
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
+    <div id="spam-filter-akismet">
+        <?php osc_admin_form_section(__('Akismet'), array(
+            'intro' => __('Akismet checks new comments and listings for spam. It needs a key from akismet.com.'),
+        )); ?>
+        <?php osc_admin_settings_form($akismet['id'], array('titles' => false) + $akismet); ?>
+    </div>
+
     <div id="keyword-block-settings">
-        <?php osc_admin_form_section(__('Moderation')); ?>
+        <?php osc_admin_form_section(__('Keyword blocklist'), array(
+            'spaced' => true,
+            'intro'  => __('Listings containing a blocked keyword are quarantined (flagged spam and hidden) as soon as they '
+                         . 'are posted or edited, and the matched keyword is recorded so you can see why. Enable the filter '
+                         . 'below before it does anything.'),
+        )); ?>
         <?php osc_admin_settings_form($prefsForm['id'], $prefsForm); ?>
     </div>
 

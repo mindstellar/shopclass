@@ -16,15 +16,15 @@ if (!defined('ABS_PATH')) {
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\CoreSettings;
 use mindstellar\admin\form\KeywordBlockSettingsScreen;
+use mindstellar\admin\form\SpamSettingsScreen;
 use mindstellar\admin\ListPaging;
 use mindstellar\database\DbException;
 use mindstellar\moderation\KeywordBlockStore;
 
 /**
- * Admin screens for the keyword blocklist (t_keyword_block, KeywordBlock,
- * ItemSpamFilter): list/add/edit/delete, a comma-list importer, and the four
- * `moderation`-section preferences that turn enforcement on. Modelled on the
- * ban-rule admin (CAdminUsers ban_rule_* actions).
+ * Settings › Security › Spam filter: the Akismet key, then the keyword blocklist
+ * (t_keyword_block, KeywordBlock, ItemSpamFilter) with list/add/edit/delete, a comma-list
+ * importer, and the `moderation`-section preferences that turn enforcement on.
  *
  * Class CAdminSettingsKeywordBlock
  */
@@ -44,7 +44,7 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
 
     //Business Layer...
     /**
-     * Routes the keyword blocklist actions: the list, add/edit/delete, the comma-list import and the enforcement preferences.
+     * Routes the Spam filter actions: the Akismet key, the list, add/edit/delete, the comma-list import and the enforcement preferences.
      *
      * @return void
      */
@@ -52,48 +52,23 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
     {
         switch ($this->action) {
             case ('keyword_block'):
-                // set default iDisplayLength
-                ListPaging::rememberedLength();
-                $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+                $this->drawList();
+                break;
+            case ('akismet_post'):
+                osc_csrf_check();
 
-                if (Params::getParam('sort') == '') {
-                    Params::setParam('sort', 'date');
-                }
-                if (Params::getParam('direction') == '') {
-                    Params::setParam('direction', 'desc');
-                }
-
-                $page = ListPaging::page();
-
-                $params = Params::getParamsAsArray();
-
-                $keywordBlocksDataTable = new KeywordBlocksDataTable();
-                $keywordBlocksDataTable->table($params);
-                $aData = $keywordBlocksDataTable->getData();
-
-                $pastEnd = ListPaging::pastEnd($aData, (int) $page);
-                if ($pastEnd !== null) {
-                    $this->redirectTo($pastEnd);
+                $result = CoreSettings::attempt(SpamSettingsScreen::registerAkismet());
+                if ($result['errors'] !== array()) {
+                    $this->drawList($result['values']);
+                    break;
                 }
 
-                $this->_exportVariableToView('aData', $aData);
-                $this->_exportVariableToView('aRawRows', $keywordBlocksDataTable->rawRows());
-                // Exported under the name it has always had as well: a replaced admin theme's
-                // own view reads it, and View::_get() answers '' for a key nobody exported --
-                // so every switch would draw unticked and the next save would clear them.
-                $this->_exportVariableToView('moderation_prefs', $this->moderationPrefs());
-                $this->_exportVariableToView('moderation_form', KeywordBlockSettingsScreen::formVars());
-
-                $bulk_options = BulkAction::options(
-                    array(
-                        'keyword_block_delete' => __('Delete')
-                    ),
-                    __('Are you sure you want to %s the selected keywords?')
-                );
-                $bulk_options = osc_apply_filter('keyword_block_bulk_filter', $bulk_options);
-                $this->_exportVariableToView('bulk_options', $bulk_options);
-
-                $this->doView('settings/keywordBlock.php');
+                if ($result['updated'] !== 0 && $result['values']['akismetKey'] === '') {
+                    osc_add_flash_info_message(_m('Your Akismet key has been cleared'), 'admin');
+                } else {
+                    osc_add_flash_ok_message(_m('Your Akismet key has been updated'), 'admin');
+                }
+                $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 break;
             case ('keyword_block_add'):
                 $this->_exportVariableToView('keyword', null);
@@ -162,6 +137,66 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
                 $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');
                 break;
         }
+    }
+
+    /**
+     * The Spam filter screen: the Akismet key, the blocklist switches, the importer and the list.
+     *
+     * @param array<string,mixed>|null $akismetValues what a refused Akismet save was sent
+     *
+     * @return void
+     */
+    private function drawList(?array $akismetValues = null)
+    {
+        ListPaging::rememberedLength();
+        $this->_exportVariableToView('iDisplayLength', Params::getParam('iDisplayLength'));
+
+        if (Params::getParam('sort') == '') {
+            Params::setParam('sort', 'date');
+        }
+        if (Params::getParam('direction') == '') {
+            Params::setParam('direction', 'desc');
+        }
+
+        $page = ListPaging::page();
+
+        $params = Params::getParamsAsArray();
+
+        $keywordBlocksDataTable = new KeywordBlocksDataTable();
+        $keywordBlocksDataTable->table($params);
+        $aData = $keywordBlocksDataTable->getData();
+
+        $pastEnd = ListPaging::pastEnd($aData, (int) $page);
+        if ($pastEnd !== null) {
+            $this->redirectTo($pastEnd);
+        }
+
+        $this->_exportVariableToView('aData', $aData);
+        $this->_exportVariableToView('aRawRows', $keywordBlocksDataTable->rawRows());
+        // Exported under the name it has always had as well: a replaced admin theme's
+        // own view reads it, and View::_get() answers '' for a key nobody exported --
+        // so every switch would draw unticked and the next save would clear them.
+        $this->_exportVariableToView('moderation_prefs', $this->moderationPrefs());
+        $this->_exportVariableToView('moderation_form', KeywordBlockSettingsScreen::formVars());
+
+        $akismetStatus = SpamSettingsScreen::akismetStatus();
+        $this->_exportVariableToView('akismet_status', $akismetStatus);
+        $this->_exportVariableToView('akismet_form', SpamSettingsScreen::formVars(
+            $akismetStatus,
+            $akismetValues === null ? '' : SpamSettingsScreen::PAGE_AKISMET,
+            $akismetValues
+        )['akismet']);
+
+        $bulk_options = BulkAction::options(
+            array(
+                'keyword_block_delete' => __('Delete')
+            ),
+            __('Are you sure you want to %s the selected keywords?')
+        );
+        $bulk_options = osc_apply_filter('keyword_block_bulk_filter', $bulk_options);
+        $this->_exportVariableToView('bulk_options', $bulk_options);
+
+        $this->doView('settings/keywordBlock.php');
     }
 
     /**

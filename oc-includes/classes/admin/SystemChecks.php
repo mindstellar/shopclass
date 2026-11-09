@@ -1052,7 +1052,7 @@ final class SystemChecks
 
         return array(
             array('title' => __('Sign-in protection'), 'rows' => $signin, 'link' => array(
-                'label' => __('Change it in Settings > Spam and bots'),
+                'label' => __('Change it in Settings > Security'),
                 'url'   => self::spamSettingsUrl($env),
             )),
             array('title' => __('Admins'), 'rows' => $admins),
