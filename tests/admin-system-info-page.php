@@ -65,7 +65,6 @@ check('the shell draws one verdict and no status pill', substr_count($shell, 'os
     && strpos($shell, 'osc_admin_status(') === false && strpos($server, 'osc_admin_status(') === false);
 foreach (array('jobs' => $jobs, 'security' => $security, 'cache' => $cache) as $name => $src) {
     check("the $name tab has no verdict box or status pill of its own", strpos($src, 'osc_admin_verdict(') === false && strpos($src, 'osc_admin_status(') === false);
-    check("...and no big empty-state block", strpos($src, 'osc_admin_empty(') === false);
 }
 check('the masonry grid is gone from the page', strpos($shell, 'sysinfo-grid') === false && strpos($server, 'sysinfo-grid') === false);
 check('oscsi_row() stays defined for plugins', strpos($shell, "if (!function_exists('oscsi_row'))") !== false);
@@ -148,7 +147,7 @@ check('the report is read for the Overview and the Database tab only', (bool) pr
     $body('systemInfoPage')
 ));
 check('a fact group can carry the anchor See which points at', strpos($shell, "'id'         => \$group['id'] ?? null") !== false);
-check('the Database tab partial adds no verdict box or empty-state block for it', strpos($database, 'strict') === false && strpos($database, 'osc_admin_empty(') === false);
+check('the Database tab partial adds no verdict box for it', strpos($database, 'strict') === false);
 
 harness_section('Admin address allow list');
 

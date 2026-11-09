@@ -54,8 +54,6 @@ foreach ($aCurrencies as $currency) {
 
 osc_current_admin_theme_path('parts/header.php'); ?>
     <div class="relative">
-        <div id="currencies-toolbar" class="table-toolbar">
-        </div>
         <?php osc_admin_form_open(array(
             'id'         => 'datatablesForm',
             'page'   => 'settings',

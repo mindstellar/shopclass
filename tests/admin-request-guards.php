@@ -76,6 +76,10 @@ function osc_admin_count($count, string $id = ''): string
     return '<span class="osc-count">' . (int)$count . '</span>';
 }
 
+function osc_admin_confirm_dialog(array $opts)
+{
+}
+
 function osc_asset_url_versioned($url)
 {
     return $url;

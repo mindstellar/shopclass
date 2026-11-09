@@ -133,7 +133,7 @@ foreach ($multilangForms as $rel) {
     $src = (string) file_get_contents(__DIR__ . '/../' . $rel);
     check(basename($rel) . ' has no Bootstrap tab toggle', strpos($src, 'data-bs-toggle="tab"') === false);
     check(basename($rel) . ' has no nav-tabs strip', strpos($src, 'nav nav-tabs') === false);
-    check(basename($rel) . ' wires the shared tab widget', strpos($src, 'osc-tab') !== false);
+    check(basename($rel) . ' wires the shared tab widget', strpos($src, 'localeStrip(') !== false);
 }
 
 /* 4. The one render-time extension point on a declared settings page. It has to stay a

@@ -77,7 +77,6 @@ osc_current_admin_theme_path('parts/header.php');
                 'sort'      => $sort,
                 'direction' => $direction,
                 'empty'     => array(
-                    'icon'   => 'bi-file-earmark-text',
                     'title'  => __('No pages yet'),
                     'text'   => __('Static pages like "About Us" or "Info" live here.'),
                     'action' => array(

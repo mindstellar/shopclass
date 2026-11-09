@@ -27,8 +27,6 @@ $theme = ABS_PATH . 'oc-admin/themes/modern';
 
 // Icons allowed inside a matched element: [file suffix => substring of the element that marks it].
 $allow = array(
-    array('main/index.php', 'dash-stat-icon'),
-    array('main/index.php', 'dash-system-row'),
     array('settings/locations/form.php', 'bi-exclamation-triangle-fill'),
 );
 

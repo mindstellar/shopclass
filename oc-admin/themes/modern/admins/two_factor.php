@@ -46,7 +46,7 @@ $codeBox = static function (string $label, string $help = '') {
 
     <?php if (is_array($codes) && $codes !== array()) { ?>
         <div class="two-factor-backup">
-            <div class="callout-warning callout-block"><?php _e('Save these backup codes now. Each one signs you in once if you lose your phone. They are not shown again.'); ?></div>
+            <?php osc_admin_callout('warning', __('Save these backup codes now. Each one signs you in once if you lose your phone. They are not shown again.')); ?>
             <ol class="two-factor-codes" id="two-factor-codes">
                 <?php foreach ($codes as $backup) { ?>
                     <li><code class="osc-mono"><?php echo osc_esc_html($backup); ?></code></li>

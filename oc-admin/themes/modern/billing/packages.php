@@ -29,7 +29,6 @@ osc_admin_page(array(
 
     <?php if (empty($packages)) {
         osc_admin_empty(array(
-            'icon'   => 'bi-box-seam',
             'title'  => __('No packages yet'),
             'text'   => __('A package is what a buyer picks at checkout. Add one to start selling credits.'),
             'action' => array('label' => __('Add package'), 'url' => $base . '&action=package'),

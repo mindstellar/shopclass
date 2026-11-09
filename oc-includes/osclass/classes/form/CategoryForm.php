@@ -337,10 +337,7 @@ class CategoryForm extends Form
             );
             $content[]   = $contentTemp;
         }
-        echo '<div class="ui-osc-tabs osc-tab">';
-        echo '<ul>' . implode('', $tabs) . '</ul>';
-        echo implode('', $content);
-        echo '</div>';
+        echo \mindstellar\admin\ui\Field::localeStrip($tabs, array('panels' => implode('', $content)));
     }
 }
 

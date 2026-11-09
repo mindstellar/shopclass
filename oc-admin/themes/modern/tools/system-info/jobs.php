@@ -101,7 +101,7 @@ $describe = static function (array $row): void {
             'intro' => __('Slow work, such as emptying a large category or moving photos to a bucket, waits here. Cron runs it on every tick.'),
         )); ?>
         <?php if ($active === array()) { ?>
-            <p class="text-muted"><?php _e('Nothing is waiting.'); ?></p>
+            <?php osc_admin_empty(array('title' => __('Nothing is waiting.'))); ?>
         <?php } else { ?>
             <?php
             $activeRows = array();
@@ -142,7 +142,7 @@ $describe = static function (array $row): void {
             ),
         )); ?>
         <?php if ($history === array()) { ?>
-            <p class="text-muted"><?php _e('No background work has run yet.'); ?></p>
+            <?php osc_admin_empty(array('title' => __('No background work has run yet.'))); ?>
         <?php } else { ?>
             <?php
             $historyRows = array();

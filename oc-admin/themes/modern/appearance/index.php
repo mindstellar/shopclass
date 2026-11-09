@@ -80,15 +80,11 @@ osc_current_admin_theme_path('parts/header.php'); ?>
          data-update-url="<?php echo osc_esc_html($marketUpdateUrl); ?>"
          data-refresh-url="<?php echo osc_esc_html($marketRefreshUrl); ?>"
          data-i18n='<?php echo osc_esc_html(json_encode(osc_market_i18n('theme'))); ?>'>
-        <div class="osc-tab">
-            <ul>
-                <li><a href="#market-tab-installed"><?php _e('Themes'); ?></a></li>
-                <li><a href="#market-tab-browse"><?php _e('Browse'); ?></a></li>
-                <li><a href="#market-tab-updates"><?php _e('Updates'); ?>
-                        <?php echo osc_admin_count(count($aMarketUpdates), 'market-updates-count'); ?>
-                    </a></li>
-            </ul>
-        </div>
+        <?php osc_admin_tab_nav(array(
+            array('label' => __('Themes'), 'url' => '#market-tab-installed'),
+            array('label' => __('Browse'), 'url' => '#market-tab-browse'),
+            array('label' => __('Updates'), 'url' => '#market-tab-updates', 'count' => count($aMarketUpdates), 'count_id' => 'market-updates-count'),
+        ), '', array('panels' => true)); ?>
 
         <div id="market-tab-installed">
     <?php osc_admin_body_open(array('class' => 'appearance')); ?>
@@ -167,20 +163,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $missingPlugins = empty($themeNeeds['required']) ? array()
             : \mindstellar\market\PluginDependencies::forSite()->missingRequired($themeNeeds);
         if ($missingPlugins !== array()) : ?>
-            <div class="callout-warning callout-block">
-                <span>
-                    <?php echo osc_esc_html(sprintf(
-                        _n(
-                            'Your theme needs a plugin that is missing or off: %s.',
-                            'Your theme needs plugins that are missing or off: %s.',
-                            count($missingPlugins)
-                        ),
-                        implode(', ', array_column($missingPlugins, 'name'))
-                    )); ?>
-                    <a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=appearance&action=dependencies&theme='
-                        . urlencode(osc_theme())); ?>"><?php _e('Fix it'); ?></a>
-                </span>
-            </div>
+            <?php osc_admin_callout('warning', sprintf(
+                _n(
+                    'Your theme needs a plugin that is missing or off: %s.',
+                    'Your theme needs plugins that are missing or off: %s.',
+                    count($missingPlugins)
+                ),
+                osc_esc_html(implode(', ', array_column($missingPlugins, 'name')))
+            ) . ' <a href="' . osc_esc_html(osc_admin_base_url(true) . '?page=appearance&action=dependencies&theme='
+                . urlencode(osc_theme())) . '">' . osc_esc_html(__('Fix it')) . '</a>', array('html' => true)); ?>
         <?php endif; ?>
         <?php osc_package_list_open('osc-pkg-list--themes'); ?>
         <?php osc_package_row(array(
@@ -299,7 +290,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             <?php osc_package_list_close(); ?>
         <?php else : ?>
             <?php osc_admin_empty(array(
-                'icon'  => 'bi-palette',
                 'title' => __('No other themes installed'),
                 'text'  => __('Find one in Browse, or upload its zip file.'),
                 'action' => array(

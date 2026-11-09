@@ -49,7 +49,7 @@ osc_admin_body_open(); ?>
 
     <?php osc_admin_section(__('Recent cleanups')); ?>
     <?php if ($history === array()) { ?>
-        <p class="text-muted"><?php _e('Nothing has been cleaned up yet.'); ?></p>
+        <?php osc_admin_empty(array('title' => __('Nothing has been cleaned up yet.'))); ?>
     <?php } else { ?>
         <?php
         $tableRows = array();

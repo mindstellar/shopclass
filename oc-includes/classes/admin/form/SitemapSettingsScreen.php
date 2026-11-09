@@ -202,7 +202,7 @@ final class SitemapSettingsScreen
                     'name'    => 'sitemap_robots_form',
                     'actions' => array(
                         array(
-                            'label' => __('Save robots.txt'),
+                            'label' => __('Save changes'),
                             'type'  => 'submit',
                             'attrs' => self::robotsWritable() ? array() : array('disabled' => 'disabled'),
                         ),

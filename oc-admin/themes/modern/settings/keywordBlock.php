@@ -125,7 +125,6 @@ $scopeOptions = array(
                 'sort'      => $sort,
                 'direction' => $direction,
                 'empty'     => array(
-                    'icon'  => 'bi-chat-left-text',
                     'title' => __('No blocked keywords yet'),
                     'text'  => __('Add a keyword above, or import a list, to start quarantining matching listings.'),
                 ),

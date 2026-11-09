@@ -600,13 +600,13 @@ final class BillingSettingsScreen
     public static function formVars(string $rejected = '', ?array $values = null): array
     {
         $forms = array(
-            'switch'   => array(self::registerSwitch(), 'billing_post', __('Save settings')),
-            'pricing'  => array(self::registerPricing(), 'billing_pricing_post', __('Save pricing')),
-            'offline'  => array(self::registerOffline(), 'billing_offline_post', __('Save bank transfer settings')),
-            'upgrades' => array(self::registerUpgrades(), 'billing_upgrades_post', __('Save upgrade settings')),
-            'limits'   => array(self::registerLimits(), 'billing_limits_post', __('Save limits')),
-            'receipts' => array(self::registerReceipts(), 'billing_receipts_post', __('Save receipt settings')),
-            'shop'     => array(self::registerShop(), 'billing_shop_post', __('Save shop settings')),
+            'switch'   => array(self::registerSwitch(), 'billing_post', __('Save changes')),
+            'pricing'  => array(self::registerPricing(), 'billing_pricing_post', __('Save changes')),
+            'offline'  => array(self::registerOffline(), 'billing_offline_post', __('Save changes')),
+            'upgrades' => array(self::registerUpgrades(), 'billing_upgrades_post', __('Save changes')),
+            'limits'   => array(self::registerLimits(), 'billing_limits_post', __('Save changes')),
+            'receipts' => array(self::registerReceipts(), 'billing_receipts_post', __('Save changes')),
+            'shop'     => array(self::registerShop(), 'billing_shop_post', __('Save changes')),
         );
 
         $vars = array();

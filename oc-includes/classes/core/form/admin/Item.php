@@ -97,18 +97,16 @@ class Item extends FormInputs
     public function printMultiLangTab()
     {
         if (count($this->userLocales) > 1) {
-            echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
-            echo '<ul>';
+            $tabs = array();
             foreach ($this->userLocales as $locale) {
-                echo \mindstellar\admin\ui\Field::localeTab(
+                $tabs[] = \mindstellar\admin\ui\Field::localeTab(
                     $locale['pk_c_code'],
                     $locale['s_name'],
                     $locale['pk_c_code'],
                     $this->openLocaleCode()
                 );
             }
-            echo '</ul>';
-            echo '</div>';
+            echo \mindstellar\admin\ui\Field::localeStrip($tabs, array('id' => 'language-tab', 'class' => 'ui-osc-tabs osc-tab mt-3'));
         }
     }
 

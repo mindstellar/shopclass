@@ -251,6 +251,19 @@ The status panel is one shape of rail panel. For any other shape,
 you fill yourself: fields, a definition list via `osc_admin_definition($rows)`, a pill via
 `osc_admin_status($state, $word)`, whatever the record needs.
 
+## Callouts
+
+`osc_admin_callout($tone, $text, $opts)` prints a warning or note box. The tone is `danger`,
+`warning`, `info` or `success`. The text is escaped unless `html` is true.
+
+| `$opts` key | Does |
+|---|---|
+| `html` | Prints `$text` as markup. Escape what goes into it |
+| `id`, `class`, `role` | On the box |
+| `attrs` | More attributes, as `name => value` |
+| `block` | `true` (the default) draws a full-width box, `false` an inline note |
+| `tag` | `div` (the default) or `span`, for a note inside a line of text |
+
 ## Errors
 
 `osc_admin_editor_open()`'s `errors` map does two jobs at once. It draws the summary at the
@@ -437,13 +450,14 @@ osc_admin_table(array(
     'total'       => $row['total'],
 ), $rows), array(
     'stack' => true,
-    'empty' => array('icon' => 'bi-inbox', 'title' => __('Nothing here yet', 'my_plugin')),
+    'empty' => array('title' => __('Nothing here yet', 'my_plugin')),
 ));
 ```
 
 Put the columns in this order: bulk checkbox, Status, name, other columns, actions. With no
-checkbox, Status comes first. A status cell is `osc_admin_status($state, $word)`, which is
-what the `status` cell form draws.
+checkbox, Status comes first. A status cell is `osc_admin_status($state, $word, $title)`, which
+is what the `status` cell form draws. The optional `$title` is a tooltip. `osc_admin_count()`
+takes one too.
 
 | Column key | Does |
 |---|---|
@@ -474,7 +488,7 @@ Any array form can add `class`.
 | `wrap` | `responsive` (the default), `actions` (adds the `#table-row-actions` holder) or `false` |
 | `wrap_id` | An id for the wrapper |
 | `stack` | `true` turns rows into cards on a phone |
-| `empty` | What shows with no rows: `title`, `text`, `icon` (a `bi-*` name) and `action` (a button spec with `label` and `url`) |
+| `empty` | What shows with no rows: `title`, `text` and `action` (a button spec with `label` and `url`). Empty states carry no icon |
 
 `osc_admin_data_table($aData, $opts)` draws a table from a `DataTable` subclass's
 `getData()`. Titles and cells print as the class built them, so escape them there.

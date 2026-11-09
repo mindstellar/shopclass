@@ -227,14 +227,13 @@ class UserForm extends Form
     {
         $locales = \mindstellar\admin\ui\Field::siteFirst($locales);
         $open    = \mindstellar\admin\ui\Field::openLocaleOf($locales);
-        echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
+        $tabs = array();
         if (count($locales) > 1) {
-            echo '<ul>';
             foreach ($locales as $locale) {
-                echo \mindstellar\admin\ui\Field::localeTab($locale['pk_c_code'], $locale['s_name'], $locale['pk_c_code'], $open);
+                $tabs[] = \mindstellar\admin\ui\Field::localeTab($locale['pk_c_code'], $locale['s_name'], $locale['pk_c_code'], $open);
             }
-            echo '</ul>';
         }
+        ob_start();
         foreach ($locales as $locale) {
             $hidden = ($locale['pk_c_code'] === $open) ? '' : ' hidden';
             echo '<div id="' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
@@ -259,7 +258,7 @@ class UserForm extends Form
             }
             echo '</div>';
         }
-        echo '</div>';
+        echo \mindstellar\admin\ui\Field::localeStrip($tabs, array('id' => 'language-tab', 'class' => 'ui-osc-tabs osc-tab mt-3', 'panels' => ob_get_clean()));
 
     }
 

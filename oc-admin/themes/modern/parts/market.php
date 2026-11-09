@@ -314,39 +314,29 @@ function osc_market_render_meta_notices($meta, $type)
 
     if (!empty($meta['disabled'])) {
         ?>
-        <div class="callout-warning callout-block">
-            <?php echo osc_esc_html(\mindstellar\security\Demo::active()
-                ? __('This is a demo site, so nothing can be installed or updated here.')
-                : __('In-app updates are disabled on this deployment. Install and update by deploying a new image or file set; this screen is read-only.')); ?>
-        </div>
+        <?php osc_admin_callout('warning', \mindstellar\security\Demo::active()
+            ? __('This is a demo site, so nothing can be installed or updated here.')
+            : __('In-app updates are disabled on this deployment. Install and update by deploying a new image or file set; this screen is read-only.')); ?>
         <?php
     }
 
     if (empty($meta['writable'])) {
         ?>
-        <div class="callout-warning callout-block">
-            <?php echo osc_esc_html(sprintf(__("The %s folder isn't writable, so nothing can be installed from here. Make it writable and reload this page."), $noun)); ?>
-        </div>
+        <?php osc_admin_callout('warning', sprintf(__("The %s folder isn't writable, so nothing can be installed from here. Make it writable and reload this page."), $noun)); ?>
         <?php
     }
 
     if (!empty($meta['error'])) {
         ?>
-        <div class="callout-danger callout-block">
-            <?php
-            if (!empty($meta['catalog_available'])) {
-                echo osc_esc_html(sprintf(__('Could not refresh the catalog: %s. Showing the last successful results.'), $meta['error']));
-            } else {
-                echo osc_esc_html(sprintf(__('Could not reach the catalog: %s.'), $meta['error']));
-            }
-            ?>
-        </div>
+        <?php
+        osc_admin_callout('danger', !empty($meta['catalog_available'])
+            ? sprintf(__('Could not refresh the catalog: %s. Showing the last successful results.'), $meta['error'])
+            : sprintf(__('Could not reach the catalog: %s.'), $meta['error']));
+        ?>
         <?php
     } elseif (empty($meta['catalog_available'])) {
         ?>
-        <div class="callout-info callout-block">
-            <?php echo osc_esc_html(sprintf(__("You haven't checked for %s yet. Check now to browse what's available."), $noun)); ?>
-        </div>
+        <?php osc_admin_callout('info', sprintf(__("You haven't checked for %s yet. Check now to browse what's available."), $noun)); ?>
         <?php
     }
 }
@@ -427,7 +417,6 @@ function osc_market_render_browse($rows, $meta, $type)
     <?php if (empty($rows)) : ?>
         <?php if (!empty($meta['catalog_available'])) : ?>
             <?php osc_admin_empty(array(
-                'icon'  => $type === 'theme' ? 'bi-palette' : 'bi-plug',
                 'title' => $type === 'theme'
                     ? __('Every published theme is already installed')
                     : __('Every published plugin is already installed'),
@@ -437,7 +426,6 @@ function osc_market_render_browse($rows, $meta, $type)
             )); ?>
         <?php else : ?>
             <?php osc_admin_empty(array(
-                'icon'  => 'bi-cloud-arrow-down',
                 'title' => __('Nothing to browse yet'),
                 'text'  => $type === 'theme'
                     ? __('Check now to fetch the list of themes you can install.')
@@ -533,7 +521,6 @@ function osc_market_render_updates($rows, $meta, $type)
     </div>
     <?php if (empty($rows)) : ?>
         <?php osc_admin_empty(array(
-            'icon'  => 'bi-check-circle',
             'title' => $type === 'theme'
                 ? __('Every installed theme is up to date')
                 : __('Every installed plugin is up to date'),
@@ -592,7 +579,7 @@ function osc_market_render_updates($rows, $meta, $type)
 }
 
 /**
- * The detail dialog skeleton -- a native <dialog>, populated client-side by market.js.
+ * The detail dialog skeleton -- a native dialog element, populated client-side by market.js.
  * One per page; the Browse and Updates grids share it. Opening it does two things:
  * market.js first clones the identity fields it already has from the clicked card's
  * data-market-item JSON (name, author, short description, compat, tags) so the dialog

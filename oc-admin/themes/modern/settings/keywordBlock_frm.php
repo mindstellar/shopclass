@@ -26,12 +26,12 @@ function customFrmText()
         $return['edit']       = true;
         $return['title']      = __('Edit keyword');
         $return['action_frm'] = 'keyword_block_edit_post';
-        $return['btn_text']   = __('Update keyword');
+        $return['btn_text']   = __('Save changes');
     } else {
         $return['edit']       = false;
         $return['title']      = __('Add new keyword');
         $return['action_frm'] = 'keyword_block_add_post';
-        $return['btn_text']   = __('Add new keyword');
+        $return['btn_text']   = __('Add keyword');
     }
 
     return $return;

@@ -145,7 +145,7 @@ final class MediaSettingsScreen extends SettingsScreen
                     'help_html',
                     ($imagick
                         ? ''
-                        : '<span class="callout-danger">' . osc_esc_html(__('ImageMagick library is not loaded')) . '</span> ')
+                        : \mindstellar\admin\ui\Form::callout('danger', __('ImageMagick library is not loaded'), array('block' => false, 'tag' => 'span')) . ' ')
                     . osc_esc_html(__('Faster and lighter than GD.'))
                 )
                 // A checkbox ignores a sanitiser, so the switch is held off here instead: a
@@ -161,10 +161,10 @@ final class MediaSettingsScreen extends SettingsScreen
                     'label'       => __('Text'),
                     'id'          => 'watermark_text',
                     'disabled'    => !$freeType,
-                    'custom_html' => $freeType ? '' : '<span class="callout-danger">' . sprintf(
+                    'custom_html' => $freeType ? '' : \mindstellar\admin\ui\Form::callout('danger', sprintf(
                         __('Freetype library is required. How to <a target="_blank" rel="noopener" href="%s">install/configure</a>'),
                         'https://www.php.net/manual/en/image.installation.php'
-                    ) . '</span>',
+                    ), array('block' => false, 'html' => true, 'tag' => 'span')),
                 ),
                 'image' => array('label' => __('Image'), 'id' => 'watermark_image'),
             ))
@@ -309,9 +309,11 @@ final class MediaSettingsScreen extends SettingsScreen
             return '';
         }
 
-        return '<span class="callout-warning">'
-               . osc_esc_html(sprintf(__('Maximum size PHP configuration allows: %d KB'), $limitKb))
-               . '</span>';
+        return \mindstellar\admin\ui\Form::callout(
+            'warning',
+            sprintf(__('Maximum size PHP configuration allows: %d KB'), $limitKb),
+            array('block' => false, 'tag' => 'span')
+        );
     }
 
     /**

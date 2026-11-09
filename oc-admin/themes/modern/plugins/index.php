@@ -80,15 +80,11 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
      data-update-url="<?php echo osc_esc_html($marketUpdateUrl); ?>"
      data-refresh-url="<?php echo osc_esc_html($marketRefreshUrl); ?>"
      data-i18n='<?php echo osc_esc_html(json_encode(osc_market_i18n('plugin'))); ?>'>
-    <div class="osc-tab">
-        <ul>
-            <li><a href="#market-tab-installed"><?php _e('Installed'); ?></a></li>
-            <li><a href="#market-tab-browse"><?php _e('Browse'); ?></a></li>
-            <li><a href="#market-tab-updates"><?php _e('Updates'); ?>
-                    <?php echo osc_admin_count(count($aMarketUpdates), 'market-updates-count'); ?>
-                </a></li>
-        </ul>
-    </div>
+    <?php osc_admin_tab_nav(array(
+        array('label' => __('Installed'), 'url' => '#market-tab-installed'),
+        array('label' => __('Browse'), 'url' => '#market-tab-browse'),
+        array('label' => __('Updates'), 'url' => '#market-tab-updates', 'count' => count($aMarketUpdates), 'count_id' => 'market-updates-count'),
+    ), '', array('panels' => true)); ?>
 
     <div id="market-tab-installed">
 <?php if (Params::getParam('error') != '') { ?>
@@ -176,7 +172,6 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
             },
             'empty'     => $status !== '' || $search !== ''
                 ? array(
-                    'icon'   => 'bi-search',
                     'title'  => __('No plugins match'),
                     'text'   => __('Try another status tab or search.'),
                     'action' => array(
@@ -186,7 +181,6 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
                     ),
                 )
                 : array(
-                    'icon'   => 'bi-plug',
                     'title'  => __('No plugins installed'),
                     'text'   => __('Plugins extend what the panel and your site can do. Install one from Browse, or upload its zip file.'),
                     'action' => array(
@@ -212,21 +206,14 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
 
     <?php osc_market_render_detail_dialog('plugin'); ?>
 </div>
-<dialog id="pluginModal" class="osc-dialog osc-dialog-danger">
-    <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-        <input type="hidden" name="page" value="plugins"/>
-        <input type="hidden" name="action" value=""/>
-        <input type="hidden" name="plugin" value=""/>
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"></p>
-            <p class="osc-dialog-text"></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="pluginModalSubmit" class="btn btn-danger btn-sm" type="submit"></button>
-        </div>
-    </form>
-</dialog>
+<?php osc_admin_confirm_dialog(array(
+    'id'         => 'pluginModal',
+    'title'      => '',
+    'text_slot'  => true,
+    'confirm'    => '',
+    'confirm_id' => 'pluginModalSubmit',
+    'fields'     => array('page' => 'plugins', 'action' => '', 'plugin' => ''),
+)); ?>
 <script type="text/javascript">
     document.addEventListener('DOMContentLoaded', function () {
         oscTooltip(document.querySelectorAll('.plugin-tooltip'), '<?php echo osc_esc_js(__('Problems with this plugin? Ask for support.')); ?>', {

@@ -416,9 +416,11 @@ class ItemsDataTable extends DataTable
                 if ($aRow['b_spam']) {
                     $modLog = ItemModerationLog::getInstance()->latestForItem((int) $aRow['pk_i_id']);
                     if ($modLog !== null) {
-                        $moderationBadge = ' <span class="badge bg-warning text-dark" title="'
-                            . osc_esc_html(osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format()))
-                            . '">' . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
+                        $moderationBadge = ' ' . \mindstellar\admin\ui\Form::statusBadge(
+                            'spam',
+                            osc_esc_html($this->moderationReasonLabel($modLog)),
+                            osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format())
+                        );
                     }
                 }
                 $itemUrl    = osc_esc_html(osc_item_url());
@@ -860,8 +862,7 @@ class ItemsDataTable extends DataTable
             $parts[] = osc_esc_html($reason) . ': ' . (int) $reasonCount;
         }
 
-        return '<span class="badge bg-secondary" title="' . osc_esc_html(implode(', ', $parts)) . '">'
-            . (int) $count . '</span>';
+        return trim(osc_admin_count((int) $count, '', implode(', ', $parts)));
     }
 
     /**
@@ -879,9 +880,11 @@ class ItemsDataTable extends DataTable
             return '';
         }
 
-        return '<span class="badge bg-warning text-dark" title="'
-            . osc_esc_html(osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format())) . '">'
-            . osc_esc_html($this->moderationReasonLabel($modLog)) . '</span>';
+        return \mindstellar\admin\ui\Form::statusBadge(
+            'spam',
+            osc_esc_html($this->moderationReasonLabel($modLog)),
+            osc_format_date($modLog['dt_date'], osc_date_format() . ' ' . osc_time_format())
+        );
     }
 
     /**

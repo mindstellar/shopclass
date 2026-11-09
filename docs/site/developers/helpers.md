@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1294 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1295 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -105,7 +105,7 @@ Core defines 1294 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminUi (54)
+### hAdminUi (55)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -116,10 +116,11 @@ Core defines 1294 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_body_close()` | Close the body osc_admin_body_open() opened. |
 | `osc_admin_body_open(array $opts = array())` | Open a screen's body: blocks inside it are spaced by gap. End it with osc_admin_body_close(). |
 | `osc_admin_body_rail(array $opts = array())` | In a split body: end the main column and start the rail. Prints nothing in any other body. |
+| `osc_admin_callout(string $tone, string $text, array $opts = array())` | A warning or note box. $text is escaped unless 'html' is true. |
 | `osc_admin_captcha_settings_path()` | The menu path to the Captcha settings, built from the menu's own names. |
 | `osc_admin_category_picker(array $opts = array())` | The category chooser: a control showing the chosen path, and a searchable list of the whole tree behind it. |
 | `osc_admin_checkbox(array $opts)` | A checkbox with its label on one line and its hint underneath. |
-| `osc_admin_count(int $count, string $id = '')` | A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather than "Pending (3)". Returns the markup, led by a space so the label and number never run together; a zero is drawn muted. |
+| `osc_admin_count(int $count, string $id = '', string $title = '')` | A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather than "Pending (3)". Returns the markup, led by a space so the label and number never run together; a zero is drawn muted. |
 | `osc_admin_data_table(array $aData, array $opts = array())` | A list screen's table from DataTable output. Titles and cells print as DataTable built them; the wrapper always holds the empty #table-row-actions. |
 | `osc_admin_definition(array $rows)` | Label/value rows -- the read-only counterpart to a form. A row may set 'html' =&gt; true to pass markup through, which is why the default escapes. |
 | `osc_admin_disclosure_close()` | Close what osc_admin_disclosure_open() opened. |
@@ -158,7 +159,7 @@ Core defines 1294 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_section_heading($text, $level = 'section', $id = null)` | A heading inside an admin screen, on the one heading scale: the screen's title is an h2, a section an h3 and a sub-section of a section an h4. Use this rather than writing a heading tag, so every screen gets the same size and the levels stay in order. |
 | `osc_admin_select(array $opts)` | A dropdown. Keys: the shared set, plus 'options', 'selected', 'placeholder'. |
 | `osc_admin_settings_form($page, array $opts = array())` | The whole form of a declared page (osc_register_settings_page()): the element, the hidden route, every declared field with the value it should show, and the submit row. |
-| `osc_admin_status($state, $word)` | A status pill: a tint, a shape, and the word. An unmapped state still renders, in the neutral tint, so a plugin's own word degrades instead of vanishing. |
+| `osc_admin_status($state, $word, string $title = '')` | A status pill: a tint, a shape, and the word. An unmapped state still renders, in the neutral tint, so a plugin's own word degrades instead of vanishing. |
 | `osc_admin_table(array $columns, array $rows, array $opts = array())` | A hand-built admin table: header, rows, optional empty row and wrapper. Plain values are escaped; only 'label_html', 'html' and 'render' print as given. |
 | `osc_admin_text(array $opts)` | Single-line text. Keys: the shared set, plus 'placeholder', 'width', 'prefix', 'suffix'. |
 | `osc_admin_textarea(array $opts)` | Multi-line text. Keys: the shared set, plus 'rows', 'monospace'. |

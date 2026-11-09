@@ -33,7 +33,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ), array(
         'wrap_id' => 'email-templates',
         'empty'   => array(
-            'icon'  => 'bi-envelope',
             'title' => __('No email templates'),
             'text'  => __('Email templates are registered by the core and by installed plugins.'),
         ),

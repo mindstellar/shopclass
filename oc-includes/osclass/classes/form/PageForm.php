@@ -115,13 +115,11 @@ class PageForm extends Form
         $locales = \mindstellar\admin\ui\Field::siteLocales();
         if (count($locales) > 1) {
             $open = \mindstellar\admin\ui\Field::openLocaleOf($locales);
-            echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
-            echo '<ul>';
+            $tabs = array();
             foreach ($locales as $locale) {
-                echo \mindstellar\admin\ui\Field::localeTab($locale['pk_c_code'], $locale['s_name'], $locale['pk_c_code'], $open);
+                $tabs[] = \mindstellar\admin\ui\Field::localeTab($locale['pk_c_code'], $locale['s_name'], $locale['pk_c_code'], $open);
             }
-            echo '</ul>';
-            echo '</div>';
+            echo \mindstellar\admin\ui\Field::localeStrip($tabs, array('id' => 'language-tab', 'class' => 'ui-osc-tabs osc-tab mt-3'));
         }
     }
 

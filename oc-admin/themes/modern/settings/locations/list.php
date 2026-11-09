@@ -153,7 +153,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
     <div class="loc-body">
     <?php if (!$loc['found']) {
         osc_admin_empty(array(
-            'icon'   => 'bi-geo-alt',
             'title'  => $loc['missing']['level'] === 'region' ? __('Region not found') : __('Country not found'),
             'text'   => $loc['missing']['level'] === 'region'
                 ? sprintf(__('No region has the id %s. It may have been deleted.'), $loc['missing']['id'])
@@ -173,7 +172,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
         <div class="loc-results">
             <?php if ($hitCount === 0) {
                 osc_admin_empty(array(
-                    'icon'   => 'bi-search',
                     'title'  => sprintf(__('Nothing named “%s” anywhere'), $q),
                     'text'   => __('Names are matched from their first letters.'),
                     'action' => array(
@@ -227,7 +225,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
         </div>
     <?php } elseif ($level === 'country' && $loc['levelTotal'] === 0) {
         osc_admin_empty(array(
-            'icon'   => 'bi-globe2',
             'title'  => __('No locations yet'),
             'text'   => __('Install a country from the catalog, or add one by hand.'),
             'action' => array(
@@ -240,7 +237,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
         ));
     } elseif ($loc['rows'] === array() && $q !== '') {
         osc_admin_empty(array(
-            'icon'   => 'bi-search',
             'title'  => $level === 'country'
                 ? sprintf(__('No country named “%s”'), $q)
                 : sprintf(__('Nothing named “%1$s” in %2$s'), $q, $parentName),
@@ -304,7 +300,6 @@ $showSearch = $loc['found'] && ($loc['levelTotal'] > 0 || $scope === 'all');
                     <tbody>
                     <?php if (!$hasRows) {
                         osc_admin_table_empty($colspan, array(
-                            'icon'   => 'bi-geo-alt',
                             'title'  => $level === 'city'
                                 ? sprintf(__('No cities in %s yet'), $parentName)
                                 : sprintf(__('No regions in %s yet'), $parentName),

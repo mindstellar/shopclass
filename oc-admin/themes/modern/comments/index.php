@@ -79,7 +79,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'direction' => $direction,
             'row_class' => static fn ($key, $row) => osc_apply_filter('datatable_comment_class', array(), $aRawRows[$key], $row),
             'empty'     => array(
-                'icon'  => 'bi-chat-left-text',
                 'title' => __('No comments to moderate'),
                 'text'  => __('Comments visitors leave on listings appear here for approval.'),
             ),

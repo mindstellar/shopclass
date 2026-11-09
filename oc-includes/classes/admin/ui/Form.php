@@ -396,12 +396,36 @@ class Form
      * The status pill. $html prints as given, so a caller with a plain word escapes it first.
      *
      * @param string $state Lower-case state key, or '' for a pill with no state of its own
+     * @param string $title Optional tooltip
      *
      * @since 7.1.0
      */
-    public static function statusBadge(string $state, string $html): string
+    public static function statusBadge(string $state, string $html, string $title = ''): string
     {
-        return '<span class="osc-status' . ($state !== '' ? ' status-' . osc_esc_html($state) : '') . '">' . $html . '</span>';
+        return '<span class="osc-status' . ($state !== '' ? ' status-' . osc_esc_html($state) : '') . '"'
+            . ($title !== '' ? ' title="' . osc_esc_html($title) . '"' : '') . '>' . $html . '</span>';
+    }
+
+    /**
+     * A warning or note box. Body of osc_admin_callout(), which documents the arguments.
+     *
+     * @param array<string,mixed> $opts
+     *
+     * @since 7.1.0
+     */
+    public static function callout(string $tone, string $text, array $opts = array()): string
+    {
+        $class = 'callout-' . $tone
+            . (($opts['block'] ?? true) ? ' callout-block' : '')
+            . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
+
+        $tag = ($opts['tag'] ?? 'div') === 'span' ? 'span' : 'div';
+
+        return '<' . $tag . Field::attrsString(array(
+            'class' => $class,
+            'id'    => ($opts['id'] ?? '') ?: null,
+            'role'  => ($opts['role'] ?? '') ?: null,
+        ) + (array)($opts['attrs'] ?? array())) . '>' . (!empty($opts['html']) ? $text : osc_esc_html($text)) . '</' . $tag . '>';
     }
 
     /**

@@ -292,17 +292,20 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
     }
 
     echo '<div class="osc-toolbar-group">'; ?>
-    <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>" class="media-search" nocsrf>
-        <input type="hidden" name="page" value="media"/>
-        <input type="hidden" name="type" value="<?php echo osc_esc_html($mediaType); ?>"/>
-        <?php if ($mediaView === 'grid') { ?><input type="hidden" name="view" value="grid"/><?php } ?>
-        <div class="input-group input-group-sm">
-            <input type="search" name="q" class="form-control" value="<?php echo osc_esc_html($mediaSearch); ?>"
-                   placeholder="<?php echo osc_esc_html(__('File, listing or user')); ?>" aria-label="<?php echo osc_esc_html(__('Search media')); ?>"/>
-            <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Search')); ?>"><i class="bi bi-search" aria-hidden="true"></i></button>
-        </div>
-    </form>
-    <?php
+    <?php osc_admin_list_filter(array(
+        'class'  => 'media-search',
+        'page'   => 'media',
+        'hidden' => array('type' => $mediaType) + ($mediaView === 'grid' ? array('view' => 'grid') : array()),
+        'submit' => __('Search'),
+        'fields' => array(
+            array(
+                'name'        => 'q',
+                'value'       => $mediaSearch,
+                'placeholder' => __('File, listing or user'),
+                'label'       => __('Search media'),
+            ),
+        ),
+    ));
     osc_admin_link_group(array(
         array('label' => __('List'), 'url' => $mediaUrl(array('view' => 'list')), 'active' => $mediaView === 'list'),
         array('label' => __('Grid'), 'url' => $mediaUrl(array('view' => 'grid')), 'active' => $mediaView === 'grid'),
@@ -318,7 +321,6 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
 
     if (count($mediaRows) === 0) {
         osc_admin_empty(array(
-            'icon'  => 'bi-images',
             'title' => $mediaSearch !== '' ? __('No files match your search') : ($mediaType === 'all' ? __('No media yet') : __('No media of this type')),
             'text'  => $mediaSearch !== '' ? __('Try another word, or clear the search.') : ($mediaType === 'all'
                 ? __('Every image uploaded across listings, users and pages collects here. '

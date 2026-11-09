@@ -118,9 +118,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php if (is_array($issued) && !empty($issued['token'])) { ?>
         <div class="api-key-issued" id="api-key-issued">
-            <div class="callout-warning callout-block">
-                <?php echo osc_esc_html(sprintf(__('Your new key "%s". Copy it now and keep it somewhere safe: it is not shown again.'), (string) ($issued['name'] ?? ''))); ?>
-            </div>
+            <?php osc_admin_callout('warning', sprintf(__('Your new key "%s". Copy it now and keep it somewhere safe: it is not shown again.'), (string) ($issued['name'] ?? ''))); ?>
             <div class="api-key-token">
                 <code class="osc-mono" id="api-key-token"><?php echo osc_esc_html((string) $issued['token']); ?></code>
                 <button type="button" class="btn btn-dim btn-sm" data-api-copy="api-key-token"><?php _e('Copy'); ?></button>
@@ -130,9 +128,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php if (is_array($hookSecret) && !empty($hookSecret['secret'])) { ?>
         <div class="api-key-issued" id="api-webhook-secret">
-            <div class="callout-warning callout-block">
-                <?php echo osc_esc_html(sprintf(__('The signing secret of %s. Copy it now and keep it somewhere safe: it is not shown again.'), (string) ($hookSecret['url'] ?? ''))); ?>
-            </div>
+            <?php osc_admin_callout('warning', sprintf(__('The signing secret of %s. Copy it now and keep it somewhere safe: it is not shown again.'), (string) ($hookSecret['url'] ?? ''))); ?>
             <div class="api-key-token">
                 <code class="osc-mono" id="api-webhook-secret-value"><?php echo osc_esc_html((string) $hookSecret['secret']); ?></code>
                 <button type="button" class="btn btn-dim btn-sm" data-api-copy="api-webhook-secret-value"><?php _e('Copy'); ?></button>
@@ -206,7 +202,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         };
 
         if ($liveKeys === array()) { ?>
-            <p class="text-muted"><?php $keys === array() ? _e('No keys yet.') : _e('No active keys.'); ?></p>
+            <?php osc_admin_empty(array('title' => $keys === array() ? __('No keys yet.') : __('No active keys.'))); ?>
         <?php } else {
             $keyTable($liveKeys);
         }
@@ -293,7 +289,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     ));
     $offNote(); ?>
         <?php if ($webhooks === array()) { ?>
-            <p class="text-muted"><?php _e('No webhook endpoints yet.'); ?></p>
+            <?php osc_admin_empty(array('title' => __('No webhook endpoints yet.'))); ?>
         <?php } else { ?>
             <?php
             $hookRows = array();
@@ -363,9 +359,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     <?php if ($hookEditing !== null) { ?>
         <?php osc_admin_section(sprintf(__('Edit %s'), $hookEditing->url()), array('id' => 'api-webhook-edit')); ?>
             <?php if ($hookEditing->paused()) { ?>
-                <div class="callout-warning callout-block api-webhook-paused">
-                    <?php echo osc_esc_html(sprintf(__('Paused: %s. Switch it on again once the receiver works.'), (string) $hookEditing->pausedReason())); ?>
-                </div>
+                <?php osc_admin_callout('warning', sprintf(__('Paused: %s. Switch it on again once the receiver works.'), (string) $hookEditing->pausedReason()), array('class' => 'api-webhook-paused')); ?>
             <?php } ?>
             <?php osc_admin_form_open(array(
                 'name'   => 'api_webhook_edit_form',
@@ -392,7 +386,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             $eventBoxes('api-webhook-edit-events', $hookEditing->events());
             osc_admin_form_row_close();
             osc_admin_form_close(array(
-                array('label' => __('Save endpoint'), 'type' => 'submit'),
+                array('label' => __('Save changes'), 'type' => 'submit'),
             )); ?>
 
             <?php osc_admin_form_section(__('Deliveries waiting or given up')); ?>

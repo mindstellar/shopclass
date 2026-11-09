@@ -89,19 +89,18 @@ osc_current_admin_theme_path('parts/header.php'); ?>
              'offerButton'   => __('Import %s instead'),
              'offerInstalled' => __('%s is already installed. Update it from the Data tab.'),
          ), JSON_HEX_APOS | JSON_HEX_QUOT)); ?>'>
-        <nav class="loc-tabs" aria-label="<?php echo osc_esc_html(__('Location views')); ?>">
-            <ul class="osc-tabnav">
-                <?php foreach (array('browse' => __('Browse'), 'data' => __('Data')) as $tabKey => $tabLabel) {
-                    $current = $locationTab === $tabKey; ?>
-                    <li>
-                        <a href="<?php echo osc_esc_html($locations['base'] . ($tabKey === 'data' ? '&tab=data' : '')); ?>"
-                           data-loc-tab="<?php echo $tabKey; ?>"<?php echo $current ? ' class="is-active" aria-current="page"' : ''; ?>>
-                            <?php echo osc_esc_html($tabLabel); ?>
-                        </a>
-                    </li>
-                <?php } ?>
-            </ul>
-        </nav>
+        <?php
+        $locationTabLinks = array();
+        foreach (array('browse' => __('Browse'), 'data' => __('Data')) as $tabKey => $tabLabel) {
+            $locationTabLinks[] = array(
+                'label'  => $tabLabel,
+                'url'    => $locations['base'] . ($tabKey === 'data' ? '&tab=data' : ''),
+                'active' => $locationTab === $tabKey,
+                'attrs'  => array('data-loc-tab' => $tabKey),
+            );
+        }
+        osc_admin_tab_nav($locationTabLinks, '', array('nav_class' => 'loc-tabs', 'aria_label' => __('Location views')));
+        ?>
         <?php if (is_array($locationForm) && !$inDrawer) { ?>
             <section class="loc-inline-form" aria-label="<?php echo osc_esc_html(__('Location form')); ?>">
                 <?php osc_current_admin_theme_path('settings/locations/form.php'); ?>

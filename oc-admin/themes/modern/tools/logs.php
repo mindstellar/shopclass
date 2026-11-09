@@ -39,39 +39,29 @@ osc_admin_body_open(); ?>
 
     <?php osc_admin_section(__('Recent activity')); ?>
     <div class="relative">
-        <div class="table-toolbar">
-            <form method="get" action="<?php echo osc_admin_base_url(true); ?>">
-                <input type="hidden" name="page" value="tools"/>
-                <input type="hidden" name="action" value="logs"/>
-                <div class="input-group input-group-sm">
-                    <?php if ($hasFilter) { ?>
-                        <a class="btn btn-dim"
-                           href="<?php echo osc_admin_base_url(true); ?>?page=tools&amp;action=logs"><?php _e('Reset'); ?></a>
-                    <?php } ?>
-                    <select name="section" class="form-select form-select-sm" aria-label="<?php _e('Section'); ?>">
-                        <option value=""><?php _e('All sections'); ?></option>
-                        <?php foreach ($sections as $s) { ?>
-                            <option value="<?php echo osc_esc_html($s); ?>" <?php echo($curSection === $s ? 'selected="selected"' : ''); ?>>
-                                <?php echo osc_esc_html($s); ?>
-                            </option>
-                        <?php } ?>
-                    </select>
-                    <input type="text" name="q" class="form-control"
-                           placeholder="<?php echo osc_esc_html(__('details, action or IP')); ?>"
-                           value="<?php echo osc_esc_html($curQuery); ?>"/>
-                    <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>">
-                        <i class="bi bi-search"></i>
-                    </button>
-                </div>
-            </form>
-        </div>
+        <?php osc_admin_list_filter(array(
+            'page'   => 'tools',
+            'hidden' => array('action' => 'logs'),
+            'active' => $hasFilter,
+            'reset'  => osc_admin_base_url(true) . '?page=tools&action=logs',
+            'fields' => array(
+                array(
+                    'type'        => 'select',
+                    'name'        => 'section',
+                    'label'       => __('Section'),
+                    'value'       => $curSection,
+                    'placeholder' => __('All sections'),
+                    'options'     => array_combine($sections, $sections),
+                ),
+                array('name' => 'q', 'value' => $curQuery, 'placeholder' => __('details, action or IP')),
+            ),
+        )); ?>
         <?php
         osc_admin_data_table($aData, array(
             'sort'      => $sort,
             'direction' => $direction,
             'empty'     => $hasFilter
                 ? array(
-                    'icon'   => 'bi-search',
                     'title'  => __('No entries match your filter.'),
                     'action' => array(
                         'label'   => __('Reset'),
@@ -80,7 +70,6 @@ osc_admin_body_open(); ?>
                     ),
                 )
                 : array(
-                    'icon'  => 'bi-clock-history',
                     'title' => __('No activity has been logged yet.'),
                 ),
         ));

@@ -168,7 +168,7 @@ $meDepth = static function (array $cat) use ($meCats): int {
                     <p class="visually-hidden" id="menu-announce" role="status" aria-live="polite"></p>
                     <p class="visually-hidden" id="menu-grip-help"><?php _e('Up and down arrows move the item. Right arrow puts it under the item above, left arrow moves it out.'); ?></p>
                     <ol class="menu-items" id="menu-items" aria-label="<?php echo osc_esc_html(sprintf(__('Items in %s'), $meName)); ?>"></ol>
-                    <p class="form-empty" id="menu-empty" hidden><i class="bi bi-plus-lg" aria-hidden="true"></i><span><?php _e('No items yet. Add some under Add items.'); ?></span></p>
+                    <p class="form-empty" id="menu-empty" hidden><span><?php _e('No items yet. Add some under Add items.'); ?></span></p>
                 </div>
 
                 <div class="menu-actions">

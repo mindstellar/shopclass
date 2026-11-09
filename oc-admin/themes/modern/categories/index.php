@@ -409,20 +409,19 @@ echo preg_replace('/\s+/', ' ', preg_replace('/>\s+</', '><', (string)ob_get_cle
             <div class="osc-drawer-body cat-drawer-body" id="catDrawerBody"></div>
         </div>
 
-        <dialog class="osc-dialog" id="catConfirm" aria-labelledby="catConfirmTitle" aria-describedby="catConfirmFacts">
-            <div class="osc-dialog-body">
-                <p class="osc-dialog-title" id="catConfirmTitle"></p>
-                <ul class="osc-dialog-facts" id="catConfirmFacts"></ul>
-                <div class="cat-confirm-aside" id="catConfirmAside" hidden>
-                    <p></p>
-                    <button type="button" class="btn btn-dim btn-sm"></button>
-                </div>
-            </div>
-            <div class="osc-dialog-actions">
-                <button type="button" class="btn btn-dim btn-sm" id="catConfirmCancel" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                <button type="button" class="btn btn-submit btn-sm" id="catConfirmOk"></button>
-            </div>
-        </dialog>
+        <?php osc_admin_confirm_dialog(array(
+            'id'         => 'catConfirm',
+            'form'       => false,
+            'tone'       => 'neutral',
+            'attrs'      => array('aria-labelledby' => 'catConfirmTitle', 'aria-describedby' => 'catConfirmFacts'),
+            'title_id'   => 'catConfirmTitle',
+            'cancel_id'  => 'catConfirmCancel',
+            'confirm_id' => 'catConfirmOk',
+            'confirm'    => '',
+            'body_html'  => '<ul class="osc-dialog-facts" id="catConfirmFacts"></ul>'
+                . '<div class="cat-confirm-aside" id="catConfirmAside" hidden><p></p>'
+                . '<button type="button" class="btn btn-dim btn-sm"></button></div>',
+        )); ?>
 <?php if ($rows !== array()) { ?>
 
         <dialog class="osc-dialog cat-sheet" id="catSheet" aria-labelledby="catSheetTitle">

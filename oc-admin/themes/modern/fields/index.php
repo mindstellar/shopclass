@@ -792,9 +792,10 @@ if ($looseCount > 0) { ?>
                 <p class="col-hint"><?php _e('A form is a set of fields shown together on the listing form, for the categories you choose.'); ?></p>
                 <div id="forms-list">
                     <?php if (count($forms) === 0) { ?>
-                        <div id="forms-empty" class="builder-empty">
-                            <?php _e('No forms yet. Create one, then drag fields into it from the palette.'); ?>
-                        </div>
+                        <?php osc_admin_empty(array(
+                            'id'    => 'forms-empty',
+                            'title' => __('No forms yet. Create one, then drag fields into it from the palette.'),
+                        )); ?>
                     <?php } ?>
                     <?php foreach ($forms as $form) {
                         $fid = (int)$form['pk_i_id']; ?>
@@ -846,7 +847,11 @@ if ($looseCount > 0) { ?>
                     : __('Your reusable fields. Drag one into a form on the left, or use a form’s “Add field”. The same field can be placed in several forms.'); ?></p>
                 <ul id="palette-list" class="palette-list">
                     <?php if (count($fields) === 0) { ?>
-                        <li id="palette-empty" class="builder-empty"><?php _e('No fields yet. Create one to get started.'); ?></li>
+                        <?php osc_admin_empty(array(
+                            'id'    => 'palette-empty',
+                            'tag'   => 'li',
+                            'title' => __('No fields yet. Create one to get started.'),
+                        )); ?>
                     <?php } ?>
                     <?php foreach ($fields as $field) {
                         $fid = (int)$field['pk_i_id'];
@@ -884,26 +889,25 @@ if ($looseCount > 0) { ?>
             </div>
         </form>
     </dialog>
-    <dialog id="deleteModal" class="osc-dialog osc-dialog-danger" data-field-id="">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php echo __('Delete field'); ?></p>
-            <p class="osc-dialog-text"><?php _e('This deletes the field definition and removes it from every form. Continue?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="deleteSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
-        </div>
-    </dialog>
-    <dialog id="deleteGroupModal" class="osc-dialog osc-dialog-danger" data-group-id="">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php echo __('Delete form'); ?></p>
-            <p class="osc-dialog-text"><?php _e('Deleting the form keeps its fields (they return to the palette) but removes the form and its category assignment. Continue?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="deleteGroupSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
-        </div>
-    </dialog>
+    <?php
+    osc_admin_confirm_dialog(array(
+        'id'         => 'deleteModal',
+        'form'       => false,
+        'attrs'      => array('data-field-id' => ''),
+        'title'      => __('Delete field'),
+        'text'       => __('This deletes the field definition and removes it from every form. Continue?'),
+        'confirm'    => __('Delete'),
+        'confirm_id' => 'deleteSubmit',
+    ));
+    osc_admin_confirm_dialog(array(
+        'id'         => 'deleteGroupModal',
+        'form'       => false,
+        'attrs'      => array('data-group-id' => ''),
+        'title'      => __('Delete form'),
+        'text'       => __('Deleting the form keeps its fields (they return to the palette) but removes the form and its category assignment. Continue?'),
+        'confirm'    => __('Delete'),
+        'confirm_id' => 'deleteGroupSubmit',
+    )); ?>
     <script>
         document.getElementById('deleteSubmit').onclick = function () {
             var modal = document.getElementById('deleteModal');

@@ -137,11 +137,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
     </p>
 
     <?php if ($blocked) : ?>
-        <div class="callout-warning callout-block">
-            <span><?php echo osc_esc_html(\mindstellar\security\Demo::active()
-                ? \mindstellar\security\Demo::message()
-                : __('Package installs are disabled on this deployment. Install the plugins by hand, then come back.')); ?></span>
-        </div>
+        <?php osc_admin_callout('warning', \mindstellar\security\Demo::active()
+            ? \mindstellar\security\Demo::message()
+            : __('Package installs are disabled on this deployment. Install the plugins by hand, then come back.')); ?>
     <?php endif; ?>
 
     <?php if ($deps['required'] !== array()) : ?>

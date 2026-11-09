@@ -121,7 +121,6 @@ osc_admin_page(array(
 
     <?php if (empty($orders)) {
         osc_admin_empty(array(
-            'icon'  => 'bi-receipt',
             'title' => $isFiltered ? __('No orders match this filter') : __('No orders yet'),
             'text'  => $isFiltered
                 ? (($filters['q'] ?? '') !== '' ? __('Try a different search.') : __('Try a different status or payment method.'))

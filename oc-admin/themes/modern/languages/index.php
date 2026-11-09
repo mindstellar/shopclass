@@ -70,7 +70,6 @@ osc_current_admin_theme_path('parts/header.php');
             'aRows'    => array_map(static fn ($row) => array_combine($keys, $row), $aData['aaData']),
         ), array(
             'empty' => array(
-                'icon'   => 'bi-translate',
                 'title'  => __('No languages yet'),
                 'text'   => __('Import a language from the catalog or upload a package to add one.'),
                 'action' => array(

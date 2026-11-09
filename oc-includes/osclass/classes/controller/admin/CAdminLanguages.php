@@ -639,8 +639,14 @@ class CAdminLanguages extends AdminSecBaseModel
             $row[] = osc_esc_html($l['s_name']) . $badge . $actions;
             $row[] = osc_esc_html($l['s_short_name']);
             $row[] = osc_esc_html($l['s_description']);
-            $row[] = ($l['b_enabled'] ? __('Yes') : __('No'));
-            $row[] = ($l['b_enabled_bo'] ? __('Yes') : __('No'));
+            $row[] = \mindstellar\admin\ui\Form::statusBadge(
+                $l['b_enabled'] ? 'active' : 'inactive',
+                osc_esc_html($l['b_enabled'] ? __('Yes') : __('No'))
+            );
+            $row[] = \mindstellar\admin\ui\Form::statusBadge(
+                $l['b_enabled_bo'] ? 'active' : 'inactive',
+                osc_esc_html($l['b_enabled_bo'] ? __('Yes') : __('No'))
+            );
 
             $aData[] = $row;
         }

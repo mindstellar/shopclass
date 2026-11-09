@@ -199,7 +199,7 @@ check('an uploaded file reaches a restore only through backup_restore', strpos($
 check('the dialog has a password field', strpos($view, "'name'     => 'password'") !== false && strpos($view, "'type'     => 'secret'") !== false);
 check('...and a code field when 2FA is on', (bool) preg_match("/if \\(\\\$twoStep\\) \\{.*?'name'     => 'code'/s", $view));
 check('the page learns whether 2FA is on', strpos($body('backupPage'), 'AdminTwoFactor::enabled($me)') !== false);
-check('a refusal is shown inside the dialog', strpos($view, 'osc_esc_html($reauth)') !== false);
+check('a refusal is shown inside the dialog', strpos($view, "Form::callout('danger', $reauth") !== false);
 
 harness_section('OSC_DISABLE_WEB_RESTORE');
 

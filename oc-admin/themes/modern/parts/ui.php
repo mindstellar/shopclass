@@ -325,22 +325,54 @@ if (!function_exists('osc_admin_settings_group_tabs')) {
 if (!function_exists('osc_admin_tab_nav')) {
     /**
      * A row of page tabs, each a link with one current; it scrolls sideways on a phone.
-     * Each link: label, url, active (bool), and optionally count, drawn as a badge.
+     * Each link: label, url, active (bool), and optionally count, drawn as a badge,
+     * count_id (id of that badge), attrs (name => value on the <a>).
+     *
+     * $opts: nav_class (added to the nav), aria_label (on the nav), panels (true draws
+     * the in-page tabs oscInitTabs() wires: url is '#panel-id', $class goes on the
+     * .osc-tab wrapper, the first or 'active' link opens, nav_class and aria_label are unused).
      *
      * @param array<int,array<string,mixed>> $links
      * @param string                         $class an extra class on the list
+     * @param array<string,mixed>            $opts  since 7.1.0
      *
      * @return void
      */
-    function osc_admin_tab_nav(array $links, $class = '')
+    function osc_admin_tab_nav(array $links, $class = '', array $opts = array())
     {
-        echo '<nav class="osc-tabnav-scroll"><ul class="osc-tabnav' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '">';
+        $panels = !empty($opts['panels']);
+        $extra  = $class !== '' ? ' ' . osc_esc_html($class) : '';
+
+        if ($panels) {
+            ob_start();
+        } else {
+            $navClass = (string)($opts['nav_class'] ?? '');
+            echo '<nav class="osc-tabnav-scroll' . ($navClass !== '' ? ' ' . osc_esc_html($navClass) : '') . '"'
+                . (!empty($opts['aria_label']) ? ' aria-label="' . osc_esc_html((string)$opts['aria_label']) . '"' : '')
+                . '><ul class="osc-tabnav' . $extra . '">';
+        }
+
         foreach ($links as $link) {
             $active = !empty($link['active']);
-            echo '<li><a href="' . osc_esc_html($link['url'] ?? '#') . '"' . ($active ? ' class="is-active" aria-current="page"' : '') . '>'
+            $attrs  = $link['attrs'] ?? array();
+            if ($active && !$panels) {
+                $attrs = array(
+                    'class'        => trim('is-active ' . ($attrs['class'] ?? '')),
+                    'aria-current' => 'page',
+                ) + $attrs;
+            }
+            echo '<li' . ($active && $panels ? ' class="ui-tabs-active"' : '') . '><a href="' . osc_esc_html($link['url'] ?? '#') . '"'
+                . \mindstellar\admin\ui\Field::attrsString($attrs) . '>'
                 . osc_esc_html($link['label'] ?? '')
-                . (isset($link['count']) ? osc_admin_count((int)$link['count']) : '') . '</a></li>';
+                . (isset($link['count']) ? osc_admin_count((int)$link['count'], (string)($link['count_id'] ?? '')) : '') . '</a></li>';
         }
+
+        if ($panels) {
+            echo \mindstellar\admin\ui\Field::localeStrip(array((string)ob_get_clean()), array('class' => 'ui-osc-tabs osc-tab' . $extra));
+
+            return;
+        }
+
         echo '</ul></nav>';
     }
 }
@@ -382,24 +414,25 @@ if (!function_exists('osc_admin_link_group')) {
 
 if (!function_exists('osc_admin_empty')) {
     /**
-     * The state a screen is in before it has been used.
+     * The state a screen is in before it has been used: one quiet line, and the action that
+     * fills it when there is one.
      *
-     * An empty screen is the one place an admin is most likely to conclude the feature is
-     * broken, so this says what the screen is for and offers the action that fills it --
-     * never a bare "no results".
-     *
-     * Keys: icon (bootstrap-icon name), title, text, action (a single action spec).
+     * Keys: title, text, action (a single action spec); id, class and
+     * tag ('div' or 'li') since 7.1.0. icon is still accepted and is ignored.
      *
      * @param array<string,mixed> $opts
      *
      * @return void
      */
     function osc_admin_empty(array $opts)
-    { ?>
-        <div class="osc-empty">
-            <?php if (!empty($opts['icon'])) { ?>
-                <i class="bi <?php echo osc_esc_html($opts['icon']); ?> osc-empty-icon" aria-hidden="true"></i>
-            <?php } ?>
+    {
+        $tag   = ($opts['tag'] ?? 'div') === 'li' ? 'li' : 'div';
+        $class = trim('osc-empty ' . (string)($opts['class'] ?? ''));
+        $attrs = array(
+            'id'     => ($opts['id'] ?? '') ?: null,
+            'class'  => $class,
+        ); ?>
+        <<?php echo $tag . \mindstellar\admin\ui\Field::attrsString($attrs); ?>>
             <p class="osc-empty-title"><?php echo osc_esc_html($opts['title'] ?? ''); ?></p>
             <?php if (!empty($opts['text'])) { ?>
                 <p class="osc-empty-text"><?php echo osc_esc_html($opts['text']); ?></p>
@@ -407,7 +440,7 @@ if (!function_exists('osc_admin_empty')) {
             <?php if (!empty($opts['action'])) { ?>
                 <div class="osc-empty-action"><?php osc_admin_action_button($opts['action']); ?></div>
             <?php } ?>
-        </div>
+        </<?php echo $tag; ?>>
         <?php
     }
 }
@@ -594,10 +627,7 @@ if (!function_exists('osc_admin_table_empty')) {
     function osc_admin_table_empty($colspan, array $opts = array())
     {
         echo '<tr class="osc-table-empty-row"><td colspan="' . (int) $colspan . '">';
-        osc_admin_empty($opts + array(
-            'icon'  => 'bi-inbox',
-            'title' => __('Nothing here yet'),
-        ));
+        osc_admin_empty($opts + array('title' => __('Nothing here yet')));
         echo '</td></tr>';
     }
 }
@@ -692,7 +722,7 @@ if (!function_exists('osc_admin_list_filter')) {
      *
      * Keys: 'page' (the screen's page parameter), 'fields', 'hidden' => name => value,
      *       'advanced' => a dialog selector, 'active' => bool, 'reset' => url,
-     *       'id' => form id, 'submit' => the find button's title.
+     *       'id' => form id, 'submit' => the find button's title, 'class' => extra form class.
      *
      * A field is one of:
      *   search  name, value, placeholder, id
@@ -700,6 +730,7 @@ if (!function_exists('osc_admin_list_filter')) {
      *   switch  name, value, id, options (value => array(label, name, id, placeholder))
      *           -- one select choosing which of its own inputs is in play
      *   hidden  name, value, id
+     *   date    name, value, label (shown beside the input), id
      *
      * @param array<string,mixed> $opts
      *
@@ -719,7 +750,7 @@ if (!function_exists('osc_admin_list_filter')) {
             echo '<div class="osc-toolbar-group">';
         } ?>
         <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>"
-              class="osc-filter nocsrf"<?php echo isset($opts['id'])
+              class="osc-filter nocsrf<?php echo !empty($opts['class']) ? ' ' . osc_esc_html($opts['class']) : ''; ?>"<?php echo isset($opts['id'])
                   ? ' id="' . osc_esc_html($opts['id']) . '"' : ''; ?>>
             <?php if (isset($opts['page'])) { ?>
                 <input type="hidden" name="page" value="<?php echo osc_esc_html($opts['page']); ?>"/>
@@ -782,6 +813,17 @@ if (!function_exists('osc_admin_list_filter_field')) {
             <input type="hidden" id="<?php echo osc_esc_html($id); ?>"
                    name="<?php echo osc_esc_html($name); ?>"
                    value="<?php echo osc_esc_html($value); ?>"/>
+            <?php
+            return;
+        }
+
+        if ($type === 'date') { ?>
+            <span class="osc-filter-field">
+                <label for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($field['label'] ?? $name); ?></label>
+                <input type="date" id="<?php echo osc_esc_html($id); ?>"
+                       name="<?php echo osc_esc_html($name); ?>" class="form-control form-control-sm"
+                       value="<?php echo osc_esc_html($value); ?>"/>
+            </span>
             <?php
             return;
         }
@@ -925,9 +967,13 @@ if (!function_exists('osc_admin_confirm_dialog')) {
      * would put two identical pairs of hidden inputs in the same form.
      *
      * Keys: id, title, text, confirm (label), confirm_id, method ('get'|'post'), url,
-     * fields (name => value hidden inputs), body_html (extra markup inside the form),
+     * fields (name => value hidden inputs), body_html (extra markup, printed as given),
      * confirm_form (the id of a form on the page that the confirm button submits instead,
      * for a form the dialog cannot hold, such as a file upload).
+     *
+     * Since 7.1.0: form (false for a dialog a script drives: no <form>, the confirm button is
+     * type="button", and url, method and fields are unused), attrs (on the <dialog>), title_id,
+     * cancel (its label), cancel_id, text_slot (an empty text line for a script to fill).
      *
      * `text` is escaped, exactly as osc_admin_empty()'s `text` is. Pass `text_html` for
      * the rare sentence that needs a <strong>.
@@ -938,17 +984,20 @@ if (!function_exists('osc_admin_confirm_dialog')) {
      */
     function osc_admin_confirm_dialog(array $opts)
     {
-        $danger = ($opts['tone'] ?? 'danger') === 'danger'; ?>
+        $danger = ($opts['tone'] ?? 'danger') === 'danger';
+        $form   = ($opts['form'] ?? true) !== false; ?>
         <dialog id="<?php echo osc_esc_html($opts['id'] ?? 'confirmDialog'); ?>"
-                class="osc-dialog<?php echo $danger ? ' osc-dialog-danger' : ''; ?>">
+                class="osc-dialog<?php echo $danger ? ' osc-dialog-danger' : ''; ?>"<?php echo \mindstellar\admin\ui\Field::attrsString($opts['attrs'] ?? array()); ?>>
+            <?php if ($form) { ?>
             <form method="<?php echo osc_esc_html($opts['method'] ?? 'post'); ?>"
                   action="<?php echo osc_esc_html($opts['url'] ?? osc_admin_base_url(true)); ?>">
                 <?php foreach (($opts['fields'] ?? array()) as $name => $value) { ?>
                     <input type="hidden" name="<?php echo osc_esc_html($name); ?>"
                            value="<?php echo osc_esc_html($value); ?>" />
                 <?php } ?>
+            <?php } ?>
                 <div class="osc-dialog-body">
-                    <p class="osc-dialog-title">
+                    <p class="osc-dialog-title"<?php echo !empty($opts['title_id']) ? ' id="' . osc_esc_html($opts['title_id']) . '"' : ''; ?>>
                         <?php if ($danger) { ?>
                             <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
                         <?php } ?>
@@ -959,21 +1008,25 @@ if (!function_exists('osc_admin_confirm_dialog')) {
                             echo !empty($opts['text_html'])
                                 ? $opts['text_html']
                                 : osc_esc_html((string) $opts['text']); ?></p>
+                    <?php } elseif (!empty($opts['text_slot'])) { ?>
+                        <p class="osc-dialog-text"></p>
                     <?php }
                     if (!empty($opts['body_html'])) {
                         echo $opts['body_html'];
                     } ?>
                 </div>
                 <div class="osc-dialog-actions">
-                    <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                    <button type="submit"
+                    <button type="button" class="btn btn-dim btn-sm"<?php echo !empty($opts['cancel_id']) ? ' id="' . osc_esc_html($opts['cancel_id']) . '"' : ''; ?> data-osc-dialog-close><?php echo osc_esc_html($opts['cancel'] ?? __('Cancel')); ?></button>
+                    <button type="<?php echo $form ? 'submit' : 'button'; ?>"
                             <?php if (!empty($opts['confirm_id'])) { ?>id="<?php echo osc_esc_html($opts['confirm_id']); ?>"<?php } ?>
                             <?php if (!empty($opts['confirm_form'])) { ?>form="<?php echo osc_esc_html($opts['confirm_form']); ?>"<?php } ?>
                             class="btn btn-<?php echo $danger ? 'danger' : 'submit'; ?> btn-sm">
                         <?php echo osc_esc_html($opts['confirm'] ?? __('Delete')); ?>
                     </button>
                 </div>
+            <?php if ($form) { ?>
             </form>
+            <?php } ?>
         </dialog>
         <?php
     }

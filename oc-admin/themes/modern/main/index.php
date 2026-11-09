@@ -159,28 +159,24 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <div id="dashboard">
     <div class="dash-stats">
         <a class="dash-stat" href="<?php echo osc_admin_base_url(true); ?>?page=items">
-            <span class="dash-stat-icon dash-stat-icon-bronze"><i class="bi bi-card-list" aria-hidden="true"></i></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-value"><?php echo number_format((int) $numItems); ?></span>
                 <span class="dash-stat-label"><?php echo osc_mode_text(__('Listings'), __('Products')); ?></span>
             </span>
         </a>
         <a class="dash-stat" href="<?php echo osc_admin_base_url(true); ?>?page=users">
-            <span class="dash-stat-icon dash-stat-icon-info"><i class="bi bi-people" aria-hidden="true"></i></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-value"><?php echo number_format((int) $numUsers); ?></span>
                 <span class="dash-stat-label"><?php _e('Users'); ?></span>
             </span>
         </a>
         <a class="dash-stat<?php echo $numPendingComments > 0 ? ' dash-stat-flag' : ''; ?>" href="<?php echo osc_admin_base_url(true); ?>?page=comments">
-            <span class="dash-stat-icon <?php echo $numPendingComments > 0 ? 'dash-stat-icon-warning' : 'dash-stat-icon-muted'; ?>"><i class="bi bi-chat-left-dots" aria-hidden="true"></i></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-value"><?php echo number_format($numPendingComments); ?></span>
                 <span class="dash-stat-label"><?php _e('Comments to moderate'); ?></span>
             </span>
         </a>
         <a class="dash-stat<?php echo $numReportedItems > 0 ? ' dash-stat-flag' : ''; ?>" href="<?php echo osc_admin_base_url(true); ?>?page=items&amp;action=items_reported&amp;sort=spam">
-            <span class="dash-stat-icon <?php echo $numReportedItems > 0 ? 'dash-stat-icon-danger' : 'dash-stat-icon-muted'; ?>"><i class="bi bi-flag" aria-hidden="true"></i></span>
             <span class="dash-stat-body">
                 <span class="dash-stat-value"><?php echo number_format($numReportedItems); ?></span>
                 <span class="dash-stat-label"><?php echo osc_mode_text(__('Reported listings'), __('Reported products')); ?></span>
@@ -197,7 +193,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 </div>
                 <div class="widget-box-content">
                     <?php if ($toShip['orders'] === array()) { ?>
-                        <p class="text-muted mb-0"><?php _e('Nothing to ship.'); ?></p>
+                        <?php osc_admin_empty(array('title' => __('Nothing to ship.'))); ?>
                     <?php } else { ?>
                         <ul class="dash-system">
                             <?php foreach ($toShip['orders'] as ['order' => $order, 'buyer' => $buyer]) { ?>
@@ -295,19 +291,18 @@ if (!empty($numItemsPerCategory)) { ?>
                     <?php
                     $freeDisk = function_exists('disk_free_space') ? @disk_free_space(osc_uploads_path()) : false;
 $rows = array(
-    array('bi-box-seam', __('Shopclass version'), OSCLASS_VERSION),
-    array('bi-filetype-php', __('PHP version'), PHP_VERSION),
-    array('bi-hdd', __('Free disk space'), is_numeric($freeDisk) && $freeDisk > 0 ? \mindstellar\utility\Formatting::bytes((int) $freeDisk) : '—'),
-    array('bi-cloud-arrow-up', __('Max upload size'), ini_get('upload_max_filesize') ?: '—'),
-    array('bi-database', __('Memory limit'), ini_get('memory_limit') ?: '—'),
+    array(__('Shopclass version'), OSCLASS_VERSION),
+    array(__('PHP version'), PHP_VERSION),
+    array(__('Free disk space'), is_numeric($freeDisk) && $freeDisk > 0 ? \mindstellar\utility\Formatting::bytes((int) $freeDisk) : '—'),
+    array(__('Max upload size'), ini_get('upload_max_filesize') ?: '—'),
+    array(__('Memory limit'), ini_get('memory_limit') ?: '—'),
 );
 ?>
                     <ul class="dash-system">
                         <?php foreach ($rows as $r) { ?>
                             <li class="dash-system-row">
-                                <i class="bi <?php echo $r[0]; ?>" aria-hidden="true"></i>
-                                <span class="dash-system-label"><?php echo osc_esc_html($r[1]); ?></span>
-                                <span class="dash-system-value"><?php echo osc_esc_html($r[2]); ?></span>
+                                <span class="dash-system-label"><?php echo osc_esc_html($r[0]); ?></span>
+                                <span class="dash-system-value"><?php echo osc_esc_html($r[1]); ?></span>
                             </li>
                         <?php } ?>
                     </ul>

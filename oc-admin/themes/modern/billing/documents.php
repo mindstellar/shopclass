@@ -45,29 +45,26 @@ osc_admin_page(array(
     )); ?>
 
     <?php osc_admin_toolbar_open(); ?>
-        <form method="get" action="<?php echo osc_esc_html(osc_admin_base_url(true)); ?>" class="osc-filter nocsrf">
-            <input type="hidden" name="page" value="billing"/>
-            <input type="hidden" name="action" value="documents"/>
-            <label class="visually-hidden" for="fType"><?php _e('Type'); ?></label>
-            <select id="fType" name="type" class="form-select form-select-sm">
-                <option value=""><?php _e('Invoices and credit notes'); ?></option>
-                <?php foreach ($typeWords as $value => $word) { ?>
-                    <option value="<?php echo osc_esc_html($value); ?>"<?php echo $filters['type'] === $value ? ' selected' : ''; ?>><?php echo osc_esc_html($word); ?></option>
-                <?php } ?>
-            </select>
-            <span class="osc-filter-field">
-                <label for="fFrom"><?php _e('From'); ?></label>
-                <input type="date" id="fFrom" name="from" class="form-control form-control-sm" value="<?php echo osc_esc_html($filters['from']); ?>"/>
-            </span>
-            <span class="osc-filter-field">
-                <label for="fTo"><?php _e('To'); ?></label>
-                <input type="date" id="fTo" name="to" class="form-control form-control-sm" value="<?php echo osc_esc_html($filters['to']); ?>"/>
-            </span>
-            <button type="submit" class="btn btn-sm btn-primary" title="<?php echo osc_esc_html(__('Filter')); ?>"><i class="bi bi-search"></i></button>
-            <?php if ($isFiltered) { ?>
-                <a class="btn btn-sm btn-dim osc-filter-reset" href="<?php echo osc_esc_html($base . '&action=documents'); ?>"><?php _e('Reset'); ?></a>
-            <?php } ?>
-        </form>
+        <?php osc_admin_list_filter(array(
+            'page'   => 'billing',
+            'hidden' => array('action' => 'documents'),
+            'active' => $isFiltered,
+            'reset'  => $base . '&action=documents',
+            'submit' => __('Filter'),
+            'fields' => array(
+                array(
+                    'type'        => 'select',
+                    'name'        => 'type',
+                    'id'          => 'fType',
+                    'label'       => __('Type'),
+                    'value'       => (string) $filters['type'],
+                    'placeholder' => __('Invoices and credit notes'),
+                    'options'     => $typeWords,
+                ),
+                array('type' => 'date', 'name' => 'from', 'id' => 'fFrom', 'label' => __('From'), 'value' => (string) $filters['from']),
+                array('type' => 'date', 'name' => 'to', 'id' => 'fTo', 'label' => __('To'), 'value' => (string) $filters['to']),
+            ),
+        )); ?>
         <p class="billing-summary">
             <?php printf(
                 osc_esc_html(_n('%s document', '%s documents', $total)),
@@ -78,7 +75,6 @@ osc_admin_page(array(
 
     <?php if (empty($documents)) {
         $empty = array(
-            'icon'  => 'bi-receipt',
             'title' => $isFiltered ? __('No documents match this filter') : __('No invoices yet'),
             'text'  => $isFiltered
                 ? __('Try a different type or dates.')

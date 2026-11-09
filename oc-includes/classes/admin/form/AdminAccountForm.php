@@ -138,10 +138,6 @@ final class AdminAccountForm
         }
 
         $form
-            ->custom('password_separator', static function () {
-                echo '<hr/>';
-            })
-                ->set('row', false)
             ->secret('old_password', __('Your current password'))
                 ->width('text')
                 ->set('help_html', __('For security, type <b>your current password</b>'))
@@ -194,7 +190,7 @@ final class AdminAccountForm
             );
         }
         $actions[] = array(
-            'label'   => $edit ? __('Save') : __('Add'),
+            'label'   => $edit ? __('Save changes') : __('Add admin'),
             'type'    => 'submit',
             'variant' => 'primary',
         );

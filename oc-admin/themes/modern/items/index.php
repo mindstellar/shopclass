@@ -192,13 +192,11 @@ if (osc_billing_pay_at_post() || $unpaidTab) {
             'row_class' => static fn ($key, $row) => osc_apply_filter('datatable_listing_class', array(), $aRawRows[$key], $row),
             'empty'     => $unpaidTab && $filterChips === array()
                 ? array(
-                    'icon'  => 'bi-hourglass',
                     'title' => __('Nothing is waiting for payment'),
                     'text'  => __('A listing posted under pay-at-post waits here until its fee is paid.'),
                 )
                 : ($withFilters
                     ? array(
-                        'icon'   => 'bi-filter',
                         'title'  => osc_mode_text(__('No listings match these filters'), __('No products match these filters')),
                         'text'   => __('Remove a filter above to widen the search.'),
                         'action' => array(
@@ -207,7 +205,6 @@ if (osc_billing_pay_at_post() || $unpaidTab) {
                         ),
                     )
                     : array(
-                        'icon'   => 'bi-card-list',
                         'title'  => __('No listings found'),
                         'text'   => __('Listings published by your users appear here, and you can post one yourself.'),
                         'action' => array(

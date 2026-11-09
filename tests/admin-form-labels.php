@@ -102,7 +102,7 @@ require_once ABS_PATH . 'oc-includes/classes/admin/ui/Field.php';
 pin('a locale tab item is presentational', true, str_contains(\mindstellar\admin\ui\Field::localeTab('p', 'L', 'en_US'), 'role="presentation"'));
 
 $logs = (string) file_get_contents(ABS_PATH . $theme . 'tools/logs.php');
-pin('the logs section select is named', true, (bool) preg_match('/<select name="section"[^>]*aria-label=/', $logs));
+pin('the logs section select is named', true, (bool) preg_match("/'name'\s*=>\s*'section',\s*'label'/", $logs));
 
 $api = (string) file_get_contents(ABS_PATH . $theme . 'settings/api.php');
 pin('the key expiry field names its control', true, (bool) preg_match("/'name'\s*=>\s*'key_expires',\s*'id'\s*=>\s*'key_expires'/", $api));

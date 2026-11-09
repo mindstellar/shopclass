@@ -60,6 +60,11 @@
   }
 }
 
+.dash-stat-flag {
+  background-color: var(--osc-warning-tint);
+  border-color: var(--osc-rule-strong);
+}
+
 .dash-stat-icon {
   align-items: center;
   border-radius: $border-radius;

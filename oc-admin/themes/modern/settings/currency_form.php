@@ -91,7 +91,7 @@ function customText($return = 'title')
             break;
         case ('edit_post'):
             $text['title']  = __('Edit currency');
-            $text['button'] = __('Update currency');
+            $text['button'] = __('Save changes');
             break;
     }
 

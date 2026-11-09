@@ -63,7 +63,7 @@ final class MailServerSettingsScreen extends SettingsScreen
             ))
                 ->set(
                     'help_html',
-                    $sslWarning === '' ? '' : '<span class="callout-warning">' . $sslWarning . '</span>'
+                    $sslWarning === '' ? '' : \mindstellar\admin\ui\Form::callout('warning', $sslWarning, array('block' => false, 'html' => true, 'tag' => 'span'))
                 )
             ->checkbox('mailserver_auth', __('SMTP authentication enabled'))
                 ->rowLabel(__('SMTP'))

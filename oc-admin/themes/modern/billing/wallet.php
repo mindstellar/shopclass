@@ -51,7 +51,6 @@ osc_admin_page(array(
             <?php osc_admin_form_section(__('History')); ?>
             <?php if (empty($entries)) {
                 osc_admin_empty(array(
-                    'icon'  => 'bi-clock-history',
                     'title' => __('Nothing has moved yet'),
                     'text'  => __('Every change to this balance is written down here and never edited, '
                                   . 'so this is the record to check if the balance is ever questioned.'),

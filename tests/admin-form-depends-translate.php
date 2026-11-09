@@ -806,7 +806,7 @@ pin(
 );
 
 $html = render_settings_page('multi');
-emits('the tab strip is the shared widget, not a private one', $html, '<div class="osc-tab">');
+emits('the tab strip is the shared widget, not a private one', $html, '<div class="ui-osc-tabs osc-tab">');
 emits('one tab per locale: the first', $html, '>English <span class="visually-hidden">');
 emits('and the second', $html, '>Español</a>');
 emits('one control per locale: the first', $html, 'name="s_titleen_US"');

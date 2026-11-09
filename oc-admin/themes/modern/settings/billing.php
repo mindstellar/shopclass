@@ -63,7 +63,6 @@ if ($tab === 'shop' && osc_is_shop_mode()) {
         osc_admin_settings_form($forms[$tab]['id'], array('titles' => count($groups) > 1) + $forms[$tab]);
     } elseif (empty($gateways)) {
         osc_admin_empty(array(
-            'icon'   => 'bi-credit-card',
             'title'  => __('No payment methods installed'),
             'text'   => __('Shopclass never handles card details itself. To take payments, install a '
                            . 'payment plugin — it adds itself here once activated.'),

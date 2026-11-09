@@ -68,7 +68,6 @@ osc_admin_table(array(
     'wrap'  => 'actions',
     'stack' => true,
     'empty' => array(
-        'icon'  => 'bi-chat-dots',
         'title' => __('No messages'),
     ),
 ));

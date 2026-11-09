@@ -105,7 +105,7 @@ $groups = array(
     <?php if (is_array($repair)) { ?>
         <?php osc_admin_section(__('Repair result')); ?>
         <?php if ($repair['ran'] === array() && $repair['failed'] === array()) { ?>
-            <p class="text-muted"><?php _e('Nothing needed repairing.'); ?></p>
+            <?php osc_admin_empty(array('title' => __('Nothing needed repairing.'))); ?>
         <?php } else { ?>
             <?php
             $repairRows = array();
@@ -130,7 +130,7 @@ $groups = array(
             <?php osc_admin_section_close(); ?>
         <?php } elseif ($findings === array()) { ?>
             <?php osc_admin_section(__('Check and repair')); ?>
-            <p class="text-muted mb-0"><?php _e('Everything matches. Nothing to repair.'); ?></p>
+            <?php osc_admin_empty(array('title' => __('Everything matches. Nothing to repair.'))); ?>
             <?php osc_admin_section_close(); ?>
         <?php } else { ?>
             <?php foreach ($groups as $group) { ?>

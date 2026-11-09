@@ -36,7 +36,7 @@ $contexts = array(
             ),
         )); ?>
         <?php if ($rows === array()) { ?>
-            <p class="text-muted"><?php _e('No failed sign-ins. Nobody is blocked.'); ?></p>
+            <?php osc_admin_empty(array('title' => __('No failed sign-ins. Nobody is blocked.'))); ?>
         <?php } else { ?>
             <?php
             $throttleRows = array();

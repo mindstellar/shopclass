@@ -97,7 +97,7 @@ final class BanRuleForm
             'values'  => $values,
             'actions' => array(
                 array(
-                    'label'   => $edit ? __('Update rule') : __('Add new ban rule'),
+                    'label'   => $edit ? __('Save changes') : __('Add ban rule'),
                     'type'    => 'submit',
                     'variant' => 'primary',
                 ),

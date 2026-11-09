@@ -37,9 +37,11 @@ osc_current_admin_theme_path('parts/header.php');
 osc_admin_body_open(array('id' => 'backup-setting')); ?>
         <?php osc_admin_action_section(array(
     'intro'     => __('While maintenance mode is on, signed-in admins can still use the site. Everyone else either sees the banner below, or an HTTP 503 page if the public site is blocked.'),
-    'body_html' => '<div class="' . ($maintenance ? 'callout-danger' : 'callout-success') . '">'
-        . sprintf(__('Maintenance mode is: <strong>%s</strong>'), ($maintenance ? __('ON') : __('OFF')))
-        . '</div>',
+    'body_html' => \mindstellar\admin\ui\Form::callout(
+        $maintenance ? 'danger' : 'success',
+        sprintf(__('Maintenance mode is: <strong>%s</strong>'), ($maintenance ? __('ON') : __('OFF'))),
+        array('html' => true, 'block' => false)
+    ),
     'actions'   => array(
         array(
             'label'   => $maintenance ? __('Disable maintenance mode') : __('Enable maintenance mode'),

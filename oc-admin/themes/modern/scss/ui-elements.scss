@@ -563,4 +563,10 @@ ul.showing-results {
   .osc-empty-text {
     unicode-bidi: plaintext;
   }
+
+  // plaintext makes `start` follow the words, so an untranslated line would sit on the left.
+  .osc-empty-title,
+  .osc-empty-text {
+    text-align: right;
+  }
 }

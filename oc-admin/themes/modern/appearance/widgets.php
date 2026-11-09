@@ -81,7 +81,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
 }
 ?>
 <?php if ($locations === array()) { ?>
-    <div class="builder-empty"><?php _e('The current theme does not declare any widget sections.'); ?></div>
+    <?php osc_admin_empty(array('title' => __('The current theme does not declare any widget sections.'))); ?>
 <?php } else { ?>
 <div class="widgets-builder">
     <div class="widgets-builder-grid">
@@ -163,7 +163,7 @@ foreach (Widget::getInstance()->distinctLocations() as $stored) {
                         <?php } ?>
                     </ul>
                     <?php if (!$isOrphan) { ?>
-                        <div class="form-empty js-widget-empty"<?php echo count($widgets) > 0 ? ' style="display:none"' : ''; ?>><i class="bi bi-plus-lg" aria-hidden="true"></i><span><?php
+                        <div class="form-empty js-widget-empty"<?php echo count($widgets) > 0 ? ' style="display:none"' : ''; ?>><span><?php
                             _e('Drop a widget type here'); ?></span></div>
                     <?php } ?>
                     <div class="widget-reorder-error alert alert-danger py-1 px-2 small d-none" role="alert"></div>

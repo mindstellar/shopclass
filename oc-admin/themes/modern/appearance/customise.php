@@ -326,29 +326,31 @@ $currentWidgetConfig = array();
     <?php require __DIR__ . '/parts/widget-fields.php'; ?>
 </template>
 
-<dialog id="cz-discard-dialog" class="osc-dialog osc-dialog-danger" aria-labelledby="cz-discard-title">
-    <div class="osc-dialog-body">
-        <p class="osc-dialog-title" id="cz-discard-title"><?php _e('Discard your changes?'); ?></p>
-        <p><?php _e('Your draft is thrown away and the editor goes back to what is live on the site.'); ?></p>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Keep editing'); ?></button>
-        <button type="button" class="btn btn-red btn-sm" id="cz-discard-confirm"><?php _e('Discard'); ?></button>
-    </div>
-</dialog>
-
-<dialog id="cz-stale-dialog" class="osc-dialog osc-dialog-danger" aria-labelledby="cz-stale-title">
-    <div class="osc-dialog-body">
-        <p class="osc-dialog-title" id="cz-stale-title"><?php _e('Replace changes made elsewhere?'); ?></p>
-        <p><?php echo osc_esc_html($czPageMode
-            ? __('The blocks on this page were changed elsewhere after your draft began. Publishing replaces those changes with your draft.')
-            : __('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes with your draft.')); ?></p>
-    </div>
-    <div class="osc-dialog-actions">
-        <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Keep editing'); ?></button>
-        <button type="button" class="btn btn-red btn-sm" id="cz-stale-confirm"><?php _e('Publish anyway'); ?></button>
-    </div>
-</dialog>
+<?php
+osc_admin_confirm_dialog(array(
+    'id'         => 'cz-discard-dialog',
+    'form'       => false,
+    'attrs'      => array('aria-labelledby' => 'cz-discard-title'),
+    'title_id'   => 'cz-discard-title',
+    'title'      => __('Discard your changes?'),
+    'text'       => __('Your draft is thrown away and the editor goes back to what is live on the site.'),
+    'cancel'     => __('Keep editing'),
+    'confirm'    => __('Discard'),
+    'confirm_id' => 'cz-discard-confirm',
+));
+osc_admin_confirm_dialog(array(
+    'id'         => 'cz-stale-dialog',
+    'form'       => false,
+    'attrs'      => array('aria-labelledby' => 'cz-stale-title'),
+    'title_id'   => 'cz-stale-title',
+    'title'      => __('Replace changes made elsewhere?'),
+    'text'       => $czPageMode
+        ? __('The blocks on this page were changed elsewhere after your draft began. Publishing replaces those changes with your draft.')
+        : __('These sections were changed elsewhere, such as on the Widgets screen, after your draft began. Publishing replaces those changes with your draft.'),
+    'cancel'     => __('Keep editing'),
+    'confirm'    => __('Publish anyway'),
+    'confirm_id' => 'cz-stale-confirm',
+)); ?>
 
 <dialog id="cz-expand" class="osc-dialog osc-dialog-wide cz-expand" aria-labelledby="cz-expand-title">
     <div class="osc-dialog-body">

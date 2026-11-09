@@ -170,14 +170,17 @@ osc_current_admin_theme_path('parts/header.php');
                                     ? osc_esc_html(__('(no values)'))
                                     : implode(' · ', $preview); ?></a>
                             <template class="submission-detail">
-                                <dl class="submission-values">
-                                    <?php foreach ($s['values'] as $fieldId => $value) {
-                                        $field = $fieldsById[(int)$fieldId] ?? null;
-                                        $label = $field !== null ? $field['s_name'] : (__('Field') . ' #' . (int)$fieldId); ?>
-                                        <dt><?php echo osc_esc_html($label); ?></dt>
-                                        <dd><?php echo submission_value_display($field, $value); ?></dd>
-                                    <?php } ?>
-                                </dl>
+                                <?php
+                                $detailRows = array();
+                                foreach ($s['values'] as $fieldId => $value) {
+                                    $field = $fieldsById[(int)$fieldId] ?? null;
+                                    $detailRows[] = array(
+                                        'label' => $field !== null ? $field['s_name'] : (__('Field') . ' #' . (int)$fieldId),
+                                        'value' => submission_value_display($field, $value),
+                                        'html'  => true,
+                                    );
+                                }
+                                osc_admin_definition($detailRows); ?>
                             </template>
                         <?php }),
                         'source'     => array('render' => static function () use ($ctx) {
@@ -195,7 +198,6 @@ osc_current_admin_theme_path('parts/header.php');
         }
         if (count($forms) === 0) {
             $subEmpty = array(
-                'icon'   => 'bi-file-earmark-text',
                 'title'  => __('No forms yet'),
                 'text'   => __('Create a form and place it on a page to start collecting submissions.'),
                 'action' => array(
@@ -206,12 +208,10 @@ osc_current_admin_theme_path('parts/header.php');
             );
         } elseif ($currentFormId > 0) {
             $subEmpty = array(
-                'icon'  => 'bi-inbox',
                 'title' => __('No submissions in this view yet'),
             );
         } else {
             $subEmpty = array(
-                'icon'  => 'bi-file-earmark-text',
                 'title' => __('Pick a form to see its submissions'),
             );
         }
@@ -244,26 +244,25 @@ osc_current_admin_theme_path('parts/header.php');
             <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Close'); ?></button>
         </div>
     </dialog>
-    <dialog id="deleteSubModal" class="osc-dialog osc-dialog-danger" data-sub-id="">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php echo __('Delete submission'); ?></p>
-            <p class="osc-dialog-text"><?php _e('This permanently deletes the submission. Continue?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="deleteSubSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete'); ?></button>
-        </div>
-    </dialog>
-    <dialog id="purgeSubModal" class="osc-dialog osc-dialog-danger" data-form-id="">
-        <div class="osc-dialog-body">
-            <p class="osc-dialog-title"><i class="bi bi-exclamation-triangle-fill"></i> <?php echo __('Delete all submissions'); ?></p>
-            <p class="osc-dialog-text"><?php _e('This permanently deletes every submission for this form. Continue?'); ?></p>
-        </div>
-        <div class="osc-dialog-actions">
-            <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-            <button id="purgeSubSubmit" type="button" class="btn btn-danger btn-sm"><?php echo __('Delete all'); ?></button>
-        </div>
-    </dialog>
+    <?php
+    osc_admin_confirm_dialog(array(
+        'id'         => 'deleteSubModal',
+        'form'       => false,
+        'attrs'      => array('data-sub-id' => ''),
+        'title'      => __('Delete submission'),
+        'text'       => __('This permanently deletes the submission. Continue?'),
+        'confirm'    => __('Delete'),
+        'confirm_id' => 'deleteSubSubmit',
+    ));
+    osc_admin_confirm_dialog(array(
+        'id'         => 'purgeSubModal',
+        'form'       => false,
+        'attrs'      => array('data-form-id' => ''),
+        'title'      => __('Delete all submissions'),
+        'text'       => __('This permanently deletes every submission for this form. Continue?'),
+        'confirm'    => __('Delete all'),
+        'confirm_id' => 'purgeSubSubmit',
+    )); ?>
     <script>
         var BASE = '<?php echo osc_admin_base_url(true); ?>';
         var CSRF = '<?php echo osc_csrf_token_url(); ?>';

@@ -36,13 +36,13 @@ function customFrmText()
         $return['edit']       = true;
         $return['title']      = __('Edit user');
         $return['action_frm'] = 'edit_post';
-        $return['btn_text']   = __('Update user');
+        $return['btn_text']   = __('Save changes');
         $return['alerts']     = Alerts::getInstance()->findByUser($user['pk_i_id'], true);
     } else {
         $return['edit']       = false;
         $return['title']      = __('Add new user');
         $return['action_frm'] = 'create_post';
-        $return['btn_text']   = __('Add new user');
+        $return['btn_text']   = __('Add user');
         $return['alerts']     = array();
     }
 
@@ -99,7 +99,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <?php if ($aux['edit'] && count($aux['alerts']) > 0) { ?>
     <script type="text/javascript">
         function delete_alert(id) {
-            document.getElementById("alert_id").value = id;
+            document.querySelector('#dialog-alert-delete input[name="alert_id[]"]').value = id;
             document.getElementById("dialog-alert-delete").showModal();
         }
     </script>
@@ -176,24 +176,21 @@ if ($tab === 'profile') {
         <input type="hidden" name="b_enabled" value="<?php echo (int) $user['b_enabled']; ?>"/>
         <input type="hidden" name="b_active" value="<?php echo (int) $user['b_active']; ?>"/>
         <?php osc_admin_form_section(__('Account')); ?>
-        <?php osc_admin_form_row_open(__('Status')); ?>
-            <div class="user-editor-status">
-                <?php !empty($user['b_active']) ? osc_admin_status('active', __('Active')) : osc_admin_status('inactive', __('Inactive')); ?>
-                <?php !empty($user['b_enabled']) ? osc_admin_status('active', __('Can sign in')) : osc_admin_status('blocked', __('Blocked')); ?>
-            </div>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Registered')); ?>
-            <div class="user-editor-text"><?php echo osc_admin_date((string) $user['dt_reg_date']); ?></div>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Last seen')); ?>
-            <div class="user-editor-text"><?php echo !empty($user['dt_access_date'])
-                ? osc_admin_date((string) $user['dt_access_date']) . ' ' . osc_esc_html(sprintf(__('from %s'), (string) $user['s_access_ip']))
-                : osc_esc_html(__('Never')); ?></div>
-        <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_row_open(__('Listings')); ?>
-            <div class="user-editor-text"><a href="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=items&userId=' . (int) $user['pk_i_id']); ?>"><?php
-                echo osc_esc_html(sprintf(_n('%d listing', '%d listings', (int) $user['i_items']), (int) $user['i_items'])); ?></a></div>
-        <?php osc_admin_form_row_close(); ?>
+        <?php
+        $lastSeen = !empty($user['dt_access_date'])
+            ? osc_admin_date((string) $user['dt_access_date']) . ' ' . osc_esc_html(sprintf(__('from %s'), (string) $user['s_access_ip']))
+            : osc_esc_html(__('Never'));
+        osc_admin_definition(array(
+            array('label' => __('Status'), 'html' => true, 'value' => '<div class="user-editor-status">'
+                . \mindstellar\admin\ui\Form::statusBadge(!empty($user['b_active']) ? 'active' : 'inactive', osc_esc_html(!empty($user['b_active']) ? __('Active') : __('Inactive')))
+                . \mindstellar\admin\ui\Form::statusBadge(!empty($user['b_enabled']) ? 'active' : 'blocked', osc_esc_html(!empty($user['b_enabled']) ? __('Can sign in') : __('Blocked')))
+                . '</div>'),
+            array('label' => __('Registered'), 'html' => true, 'value' => osc_admin_date((string) $user['dt_reg_date'])),
+            array('label' => __('Last seen'), 'html' => true, 'value' => $lastSeen),
+            array('label' => __('Listings'), 'html' => true, 'value' => '<a href="'
+                . osc_esc_html(osc_admin_base_url(true) . '?page=items&userId=' . (int) $user['pk_i_id']) . '">'
+                . osc_esc_html(sprintf(_n('%d listing', '%d listings', (int) $user['i_items']), (int) $user['i_items'])) . '</a>'),
+        )); ?>
         <?php osc_admin_form_row_open(__('Actions')); ?>
             <div class="user-editor-actions">
                 <?php foreach ($userMoves['routine'] ?? array() as $move) {
@@ -337,25 +334,15 @@ if ($tab === 'profile') {
         ), $tableRows, array('wrap' => 'actions', 'class' => 'user-alerts', 'stack' => true));
         ?>
 
-        <dialog id="dialog-alert-delete" class="osc-dialog osc-dialog-danger">
-            <form method="post" action="<?php echo osc_admin_base_url(true); ?>">
-                <input type="hidden" name="page" value="users"/>
-                <input type="hidden" name="action" value="delete_alerts"/>
-                <input type="hidden" id="alert_id" name="alert_id[]" value=""/>
-                <input type="hidden" name="user_id" value="<?php echo (int) $user['pk_i_id']; ?>"/>
-                <div class="osc-dialog-body">
-                    <p class="osc-dialog-title">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                        <?php _e('Delete alert'); ?>
-                    </p>
-                    <p class="osc-dialog-text"><?php _e('Are you sure you want to delete this alert?'); ?></p>
-                </div>
-                <div class="osc-dialog-actions">
-                    <button type="button" class="btn btn-dim btn-sm" data-osc-dialog-close><?php _e('Cancel'); ?></button>
-                    <button id="alert-delete-submit" type="submit" class="btn btn-danger btn-sm"><?php _e('Delete'); ?></button>
-                </div>
-            </form>
-        </dialog>
+        <?php osc_admin_confirm_dialog(array(
+            'id'         => 'dialog-alert-delete',
+            'title'      => __('Delete alert'),
+            'text'       => __('Are you sure you want to delete this alert?'),
+            'confirm'    => __('Delete'),
+            'confirm_id' => 'alert-delete-submit',
+            'url'        => osc_admin_base_url(true),
+            'fields'     => array('page' => 'users', 'action' => 'delete_alerts', 'alert_id[]' => '', 'user_id' => (int) $user['pk_i_id']),
+        )); ?>
     <?php }
 } ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

@@ -172,9 +172,7 @@ osc_admin_body_open(); ?>
     <?php if ($live) {
         $words   = BackupService::progress($state);
         $restore = $state['kind'] === 'restore'; ?>
-        <div class="callout-<?php echo $restore ? 'warning' : 'info'; ?> callout-block backup-callout" id="backup-run"
-             data-status-url="<?php echo osc_esc_html($poll); ?>"
-             data-done-url="<?php echo osc_esc_html(osc_admin_base_url(true) . '?page=tools&action=backup'); ?>">
+        <?php ob_start(); ?>
             <div class="backup-callout-body backup-callout-stack">
                 <p class="backup-callout-title"><?php echo osc_esc_html($words['title']); ?></p>
                 <?php if ($restore) { ?>
@@ -193,14 +191,22 @@ osc_admin_body_open(); ?>
                 )); ?>
                 <p class="backup-callout-note"><?php _e('This keeps going while the page is open. With cron set up it also carries on if you close it.'); ?></p>
             </div>
-        </div>
+        <?php osc_admin_callout($restore ? 'warning' : 'info', (string) ob_get_clean(), array(
+            'html'  => true,
+            'id'    => 'backup-run',
+            'class' => 'backup-callout',
+            'attrs' => array(
+                'data-status-url' => $poll,
+                'data-done-url'   => osc_admin_base_url(true) . '?page=tools&action=backup',
+            ),
+        )); ?>
         <?php if (!$restore) {
             osc_admin_form_open(array('page' => 'tools', 'action' => 'backup_cancel', 'id' => 'backup-cancel-form', 'horizontal' => false));
             osc_admin_form_close(null, array('horizontal' => false));
         } ?>
     <?php } elseif ($status === 'failed') {
         $failure = BackupService::failure($state); ?>
-        <div class="callout-danger callout-block backup-callout" role="alert">
+        <?php ob_start(); ?>
             <div class="backup-callout-body">
                 <div class="backup-callout-text">
                     <p class="backup-callout-title"><?php echo osc_esc_html(array_shift($failure['lines'])); ?></p>
@@ -220,9 +226,9 @@ osc_admin_body_open(); ?>
                     } ?>
                 </div>
             </div>
-        </div>
+        <?php osc_admin_callout('danger', (string) ob_get_clean(), array('html' => true, 'class' => 'backup-callout', 'role' => 'alert')); ?>
     <?php } elseif ($status === 'done' && ($state['where'] ?? '') === 'download') { ?>
-        <div class="callout-success callout-block backup-callout">
+        <?php ob_start(); ?>
             <div class="backup-callout-body">
                 <div class="backup-callout-text">
                     <p class="backup-callout-title"><?php printf(
@@ -240,10 +246,10 @@ osc_admin_body_open(); ?>
                     <?php $postButton('backup_download', __('Download now'), array('name' => $state['name']), 'primary'); ?>
                 </div>
             </div>
-        </div>
+        <?php osc_admin_callout('success', (string) ob_get_clean(), array('html' => true, 'class' => 'backup-callout')); ?>
     <?php } elseif ($notice !== null) {
         $lines = array_values(array_filter($notice['lines'])); ?>
-        <div class="callout-<?php echo $notice['tone'] === 'success' ? 'success' : 'info'; ?> callout-block backup-callout" role="status">
+        <?php ob_start(); ?>
             <div class="backup-callout-body">
                 <div class="backup-callout-text">
                     <p class="backup-callout-title"><?php echo osc_esc_html(array_shift($lines)); ?></p>
@@ -255,7 +261,7 @@ osc_admin_body_open(); ?>
                     <?php $postButton('backup_dismiss', __('Dismiss')); ?>
                 </div>
             </div>
-        </div>
+        <?php osc_admin_callout($notice['tone'] === 'success' ? 'success' : 'info', (string) ob_get_clean(), array('html' => true, 'class' => 'backup-callout', 'role' => 'status')); ?>
     <?php } ?>
 
     <?php osc_admin_section(__('Make a backup'), array(
@@ -300,9 +306,7 @@ osc_admin_body_open(); ?>
         ?>
         <?php if ($offload) { ?>
             <?php osc_admin_form_row_open(''); ?>
-                <div class="callout-info callout-block" id="backup-bucket-note">
-                    <?php _e('Photos live in your S3 bucket and are not copied. They stay there. Turn on versioning in the bucket to keep old copies.'); ?>
-                </div>
+                <?php osc_admin_callout('info', __('Photos live in your S3 bucket and are not copied. They stay there. Turn on versioning in the bucket to keep old copies.'), array('id' => 'backup-bucket-note')); ?>
             <?php osc_admin_form_row_close(); ?>
         <?php } ?>
         <?php if ($locked) { ?>
@@ -332,7 +336,7 @@ osc_admin_body_open(); ?>
             : __('The bucket could not be read, so backups saved there are not listed. Check the connection in Settings > Storage.')); ?></p>
     <?php } ?>
     <?php if ($list === array()) { ?>
-        <p class="text-muted mb-0" id="backup-list-empty"><?php _e('No saved backups yet. Downloads are not kept.'); ?></p>
+        <?php osc_admin_empty(array('id' => 'backup-list-empty', 'title' => __('No saved backups yet. Downloads are not kept.'))); ?>
     <?php } else { ?>
         <?php
         $tableRows = array();
@@ -397,9 +401,7 @@ osc_admin_body_open(); ?>
         <?php } else { ?>
         <?php osc_admin_form_open(array('page' => 'tools', 'action' => 'backup_upload', 'id' => 'backup-upload-form', 'upload' => true)); ?>
             <?php osc_admin_form_row_open(''); ?>
-                <div class="callout-danger callout-block">
-                    <?php _e("Restoring replaces what is on the site now. It cannot be undone. A safety copy of today's database is saved first."); ?>
-                </div>
+                <?php osc_admin_callout('danger', __("Restoring replaces what is on the site now. It cannot be undone. A safety copy of today's database is saved first.")); ?>
             <?php osc_admin_form_row_close(); ?>
             <?php osc_admin_field(array(
                 'type'     => 'file',
@@ -478,7 +480,7 @@ osc_admin_body_open(); ?>
         $passwordField = (string) ob_get_clean();
         $body .= '<div class="backup-reauth">';
         if ($reauth !== '') {
-            $body .= '<div class="callout-danger callout-block" role="alert">' . osc_esc_html($reauth) . '</div>';
+            $body .= \mindstellar\admin\ui\Form::callout('danger', $reauth, array('role' => 'alert'));
         }
         $body .= '<div class="backup-reauth-field"><label class="form-label" for="backup-reauth-password">' . osc_esc_html(__('Your password')) . '</label>' . $passwordField . '</div>';
         if ($twoStep) {

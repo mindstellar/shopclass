@@ -46,7 +46,7 @@ function customText($return = 'title')
         $text['button']   = osc_mode_text(__('Add listing'), __('Add product'));
     } else {
         $text['subtitle'] = osc_mode_text(__('Edit listing'), __('Edit product'));
-        $text['button']   = osc_mode_text(__('Update listing'), __('Update product'));
+        $text['button']   = __('Save changes');
     }
 
     return $text[$return];

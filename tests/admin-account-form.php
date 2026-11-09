@@ -447,13 +447,13 @@ foreach (array($addId, $editId, $selfId) as $pageId) {
 pin(
     'the add form declares no confirmation box, and demands a password',
     array('form_js', 's_name', 's_username', 's_email', 'b_moderator', 's_password',
-        'password_separator', 'old_password', 'profile_hook'),
+        'old_password', 'profile_hook'),
     array_keys(SettingsPageRegistry::getInstance()->fields($addId))
 );
 pin(
     'the edit form adds one, and does not demand a password',
     array('form_js', 's_name', 's_username', 's_email', 'b_moderator', 's_password', 's_password2',
-        'password_separator', 'old_password', 'profile_hook'),
+        'old_password', 'profile_hook'),
     array_keys(SettingsPageRegistry::getInstance()->fields($editId))
 );
 // Not a layout decision: a field the page does not declare is a column the store cannot
@@ -461,7 +461,7 @@ pin(
 pin(
     'and your own account has no account type on it at all',
     array('form_js', 's_name', 's_username', 's_email', 's_password', 's_password2',
-        'password_separator', 'old_password', 'profile_hook'),
+        'old_password', 'profile_hook'),
     array_keys(SettingsPageRegistry::getInstance()->fields($selfId))
 );
 pin(
@@ -1136,7 +1136,7 @@ pin('the new-password box is drawn empty', '', control_value($html, 's_password'
 pin('the confirmation box too', '', control_value($html, 's_password2'));
 pin('and the current-password box', '', control_value($html, 'old_password'));
 check('the hash is nowhere in the page', strpos($html, (string)row($admin, $new)['s_password']) === false);
-check('and the button says what it does', strpos($html, '>Save</button>') !== false, $html);
+check('and the button says what it does', strpos($html, '>Save changes</button>') !== false, $html);
 check('the edit form offers a way out of it', strpos($html, 'javascript:history.go(-1)') !== false, $html);
 // The screen's own chrome, which the migration had to keep.
 check('the theme wrapper is still there', strpos($html, '<div class="settings-user">') !== false, $html);
@@ -1201,14 +1201,13 @@ pin(
     . '<div class="form-row"><div class="form-label"><label for="field-s_password">New password</label></div>'
     . '<div class="form-controls"><input type="password" id="field-s_password" name="s_password"'
     . ' class="input-text field-text" value="" autocomplete="off" spellcheck="false" required /></div></div>'
-    . '<hr/>'
     . '<div class="form-row"><div class="form-label"><label for="field-old_password">Your current password</label></div>'
     . '<div class="form-controls"><input type="password" id="field-old_password" name="old_password"'
     . ' class="input-text field-text" value="" autocomplete="off" spellcheck="false" />'
     . '<div class="help-box">For security, type <b>your current password</b></div></div></div>'
     . '<!--plugin-row--></div></section>'
     . '<div class="form-actions" data-osc-dirty-bar data-osc-dirty-one="1 unsaved change" data-osc-dirty-many="%d unsaved changes"><p class="form-actions-status" role="status" aria-live="polite"></p>'
-    . '<button type="submit" class="btn btn-sm btn-submit">Add</button></div>'
+    . '<button type="submit" class="btn btn-sm btn-submit">Add admin</button></div>'
     . '</div></fieldset></form>',
     $form
 );

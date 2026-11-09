@@ -775,7 +775,7 @@ pin('for this rule', (string)$new, hidden($html, 'id'));
 pin('showing the stored name', 'Rewritten', control_value($html, 's_name'));
 pin('the stored IP rule', '172.16.*.*', control_value($html, 's_ip'));
 pin('the stored address rule', '*@badsite.com', control_value($html, 's_email'));
-check('and the button says what it does', strpos($html, '>Update rule</button>') !== false, $html);
+check('and the button says what it does', strpos($html, '>Save changes</button>') !== false, $html);
 // The screen's own chrome, which the migration had to keep: the wrapper the theme styles,
 // and the browser title the page contributes. Filters accumulate for the life of a
 // process, so what is read here is the newest prefix -- the screen that was drawn last.
@@ -812,14 +812,14 @@ pin(
     . '<div class="form-controls"><input type="text" id="field-s_email" name="s_email" class="input-text field-text" value="" />'
     . '<div class="help-box">(e.g. *@badsite.com, *@subdomain.badsite.com, *@*badsite.com)</div></div></div>'
     . '</div></section><div class="form-actions" data-osc-dirty-bar data-osc-dirty-one="1 unsaved change" data-osc-dirty-many="%d unsaved changes"><p class="form-actions-status" role="status" aria-live="polite"></p>'
-    . '<button type="submit" class="btn btn-sm btn-submit">Add new ban rule</button></div>'
+    . '<button type="submit" class="btn btn-sm btn-submit">Add ban rule</button></div>'
     . '</div></fieldset></form>',
     $form
 );
 pin('the add form posts to the add action', 'create_ban_rule_post', hidden($html, 'action'));
 pin('carries no row key at all', null, hidden($html, 'id'));
 pin('and its fields are empty', '', control_value($html, 's_name'));
-check('its button says what it does', strpos($html, '>Add new ban rule</button>') !== false, $html);
+check('its button says what it does', strpos($html, '>Add ban rule</button>') !== false, $html);
 $title = osc_apply_filter('admin_title', 'Shopclass admin panel');
 check(
     'and the browser title follows the screen, rather than being fixed',

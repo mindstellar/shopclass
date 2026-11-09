@@ -62,7 +62,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     'selected'   => $selected,
                 )); ?>
                 <?php osc_admin_form_actions(array(
-                    array('label' => __('Update'), 'type' => 'submit', 'attrs' => array('id' => 'plugin-configuration-submit')),
+                    array('label' => __('Save changes'), 'type' => 'submit', 'attrs' => array('id' => 'plugin-configuration-submit')),
                 )); ?>
             </fieldset>
         </form>

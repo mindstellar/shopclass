@@ -170,8 +170,8 @@ class AlertsDataTable extends DataTable
 
                 $pieces     = array();
                 if ($held !== null) {
-                    $pieces[] = '<span class="osc-status status-spam">' . osc_esc_html(__('Needs attention'))
-                        . '</span> '
+                    $pieces[] = \mindstellar\admin\ui\Form::statusBadge('spam', osc_esc_html(__('Needs attention')))
+                        . ' '
                         . osc_esc_html(\mindstellar\search\AlertStore::reasonText($held)) . ' '
                         . osc_esc_html(__('It no longer sends email. Ask the user to save the search again.'));
                 } else {

@@ -59,7 +59,7 @@ function pageFrmText($return = 'title')
         $text['title']      = __('Edit page');
         $text['action_frm'] = 'edit_post';
         // Blocks save on their own; this button saves the page's title, text and settings.
-        $text['btn_text']   = __('Save page');
+        $text['btn_text']   = __('Save changes');
     } else {
         $text['edit']       = false;
         $text['title']      = __('Add page');

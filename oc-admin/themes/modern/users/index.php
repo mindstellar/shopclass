@@ -122,11 +122,9 @@ $withFilters = __get('withFilters');
                 'row_class' => static fn ($key, $row) => osc_apply_filter('datatable_user_class', array(), $aRawRows[$key], $row),
                 'empty'     => $withFilters
                     ? array(
-                        'icon'  => 'bi-people',
                         'title' => __('No results for this filter'),
                     )
                     : array(
-                        'icon'   => 'bi-people',
                         'title'  => __('No users yet'),
                         'text'   => __('Registered users will appear here once they sign up or you add them.'),
                         'action' => array(

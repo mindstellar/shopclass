@@ -476,12 +476,12 @@ class Field
 
         echo '<div class="field-translate">';
         if ($strip) {
-            echo '<div class="osc-tab"><ul>';
+            $tabItems = array();
             foreach ($locales as $code => $localeName) {
                 // A locale whose control was rejected says so on its tab, so the error is
                 // findable without opening every one of them.
-                $error = self::errorFor($spec, $code);
-                echo self::localeTab(
+                $error      = self::errorFor($spec, $code);
+                $tabItems[] = self::localeTab(
                     self::localePanelId($id, $code),
                     $localeName,
                     (string)$code,
@@ -489,7 +489,7 @@ class Field
                     $error === '' ? '' : ' data-osc-tab-error title="' . osc_esc_html($error) . '"'
                 );
             }
-            echo '</ul></div>';
+            echo self::localeStrip($tabItems);
         }
 
         foreach ($locales as $code => $localeName) {
@@ -668,6 +668,24 @@ class Field
 
         return '<li role="presentation"' . ($opens ? ' class="ui-tabs-active ui-state-active"' : '') . $attrs . '>'
             . '<a href="#' . osc_esc_html($panel) . '">' . osc_esc_html($label) . $marker . '</a></li>';
+    }
+
+    /**
+     * The tab strip around localeTab() items: the one wrapper every language switcher shares.
+     *
+     * @param array<int,string>   $tabs localeTab() strings; none prints no list
+     * @param array<string,mixed> $opts 'id', 'class' (default "ui-osc-tabs osc-tab"),
+     *                                  'panels' (markup inside the wrapper, after the list)
+     *
+     * @since 7.1.0
+     */
+    public static function localeStrip(array $tabs, array $opts = array()): string
+    {
+        return '<div' . self::attrsString(array(
+            'id'    => ($opts['id'] ?? '') ?: null,
+            'class' => $opts['class'] ?? 'ui-osc-tabs osc-tab',
+        )) . '>' . ($tabs !== array() ? '<ul>' . implode('', $tabs) . '</ul>' : '')
+            . ($opts['panels'] ?? '') . '</div>';
     }
 
     /**

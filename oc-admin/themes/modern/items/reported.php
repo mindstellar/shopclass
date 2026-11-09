@@ -67,7 +67,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'direction' => $direction,
             'cell'      => static fn ($column, $value, $key) => in_array($column, array('spam', 'bad', 'rep', 'exp', 'off'), true) && (int) $value === 0 ? '' : null,
             'empty'     => array(
-                'icon'  => 'bi-flag',
                 'title' => __('No reported listings'),
                 'text'  => __('Listings reported by visitors for spam, being misclassified, duplicate, expired, or offensive content show up here.'),
             ),

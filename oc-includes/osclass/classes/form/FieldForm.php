@@ -960,24 +960,23 @@ class FieldForm extends Form
         $locales       = \mindstellar\admin\ui\Field::siteLocales();
         $currentLocale = \mindstellar\admin\ui\Field::openLocaleOf($locales);
 
-        echo '<div id="language-tab" class="ui-osc-tabs osc-tab mt-3">';
-        echo '<ul>';
+        $tabs = array();
         foreach ($locales as $locale) {
-            echo \mindstellar\admin\ui\Field::localeTab(
+            $tabs[] = \mindstellar\admin\ui\Field::localeTab(
                 'meta_' . $locale['pk_c_code'],
                 $locale['s_name'],
                 $locale['pk_c_code'],
                 $currentLocale
             );
         }
-        echo '</ul>';
+        ob_start();
         foreach ($locales as $locale) {
             $hidden = ($locale['pk_c_code'] === $currentLocale) ? '' : ' hidden';
             echo '<div id="meta_' . osc_esc_html($locale['pk_c_code']) . '" role="tabpanel"' . $hidden . '>';
             self::getInstance()->printFieldTitle($locale, $field);
             echo '</div>';
         }
-        echo '</div>';
+        echo \mindstellar\admin\ui\Field::localeStrip($tabs, array('id' => 'language-tab', 'class' => 'ui-osc-tabs osc-tab mt-3', 'panels' => ob_get_clean()));
     }
 
     /**

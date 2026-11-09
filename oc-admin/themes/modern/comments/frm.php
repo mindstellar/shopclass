@@ -20,12 +20,12 @@ if (isset($comment['pk_i_id'])) {
     //editing...
     $title      = __('Edit comment');
     $action_frm = 'comment_edit_post';
-    $btn_text   = __('Update comment');
+    $btn_text   = __('Save changes');
 } else {
     //adding...
     $title      = __('Add comment');
     $action_frm = 'add_comment_post';
-    $btn_text   = __('Add');
+    $btn_text   = __('Add comment');
 }
 
 osc_admin_page(array(
@@ -52,12 +52,12 @@ $comment = __get('comment');
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <div id="language-form">
         <ul id="error_list"></ul>
-        <form name="language_form" action="<?php echo osc_admin_base_url(true); ?>" method="post">
-            <input type="hidden" name="action" value="<?php echo $action_frm; ?>"/>
-            <input type="hidden" name="page" value="comments"/>
-            <input type="hidden" name="id"
-                   value="<?php echo (isset($comment['pk_i_id'])) ? $comment['pk_i_id'] : '' ?>"/>
-            <div class="form-horizontal">
+        <?php osc_admin_form_open(array(
+            'name'       => 'language_form',
+            'page'       => 'comments',
+            'action'     => $action_frm,
+            'fields'     => array('id' => isset($comment['pk_i_id']) ? $comment['pk_i_id'] : ''),
+        )); ?>
                 <?php osc_admin_form_row_open(__('Title'), array('for' => 'title')); ?>
                         <?php CommentForm::title_input_text($comment); ?>
                 <?php osc_admin_form_row_close(); ?>
@@ -73,31 +73,33 @@ $comment = __get('comment');
                         <?php CommentForm::email_input_text($comment); ?>
                 <?php osc_admin_form_row_close(); ?>
                 <?php osc_admin_form_row_open(_x('Visible', 'comment is shown on the site')); ?>
-                        <div class="form-label-checkbox">
-                            <?php echo($comment['b_active'] ? __('Active') : __('Inactive')); ?> ( <a
-                                    href="<?php echo osc_admin_base_url(true); ?>?page=comments&action=status&id=<?php echo
-                                    $comment['pk_i_id']; ?>&value=<?php echo(($comment['b_active'] == 1)
-                                        ? 'INACTIVE' : 'ACTIVE'); ?>"><?php echo(($comment['b_active'] == 1)
-                                    ? __('Deactivate') : __('Activate')); ?></a> )
-                        </div>
+                    <div class="form-label-checkbox">
+                        <?php osc_admin_status($comment['b_active'] ? 'active' : 'inactive', $comment['b_active'] ? __('Active') : __('Inactive'));
+                        osc_admin_action_button(array(
+                            'label' => $comment['b_active'] == 1 ? __('Deactivate') : __('Activate'),
+                            'url'   => osc_admin_base_url(true) . '?page=comments&action=status&id=' . $comment['pk_i_id']
+                                . '&value=' . ($comment['b_active'] == 1 ? 'INACTIVE' : 'ACTIVE'),
+                            'variant' => 'dim',
+                        )); ?>
+                    </div>
                 <?php osc_admin_form_row_close(); ?>
                 <?php osc_admin_form_row_open(__('Moderation')); ?>
-                        <div class="form-label-checkbox">
-                            <?php echo($comment['b_enabled'] ? __('Unblocked') : __('Blocked')); ?> ( <a
-                                    href="<?php echo osc_admin_base_url(true); ?>?page=comments&action=status&id=<?php echo
-                                    $comment['pk_i_id']; ?>&value=<?php echo(($comment['b_enabled'] == 1)
-                                        ? 'DISABLE' : 'ENABLE'); ?>"><?php echo(($comment['b_enabled'] == 1)
-                                    ? __('Block') : __('Unblock')); ?></a> )
-                        </div>
+                    <div class="form-label-checkbox">
+                        <?php osc_admin_status($comment['b_enabled'] ? 'active' : 'blocked', $comment['b_enabled'] ? __('Unblocked') : __('Blocked'));
+                        osc_admin_action_button(array(
+                            'label' => $comment['b_enabled'] == 1 ? __('Block') : __('Unblock'),
+                            'url'   => osc_admin_base_url(true) . '?page=comments&action=status&id=' . $comment['pk_i_id']
+                                . '&value=' . ($comment['b_enabled'] == 1 ? 'DISABLE' : 'ENABLE'),
+                            'variant' => 'dim',
+                        )); ?>
+                    </div>
                 <?php osc_admin_form_row_close(); ?>
                 <?php osc_admin_form_row_open(__('Comment'), array('for' => 'body', 'controls_class' => 'input-description-wide')); ?>
                         <?php CommentForm::body_input_textarea($comment); ?>
                 <?php osc_admin_form_row_close(); ?>
-            </div>
-            <?php osc_admin_form_actions(array(
+            <?php osc_admin_form_close(array(
                 array('label' => __('Cancel'), 'url' => 'javascript:history.go(-1)', 'variant' => 'dim'),
                 array('label' => $btn_text, 'type' => 'submit', 'variant' => 'primary'),
             )); ?>
-        </form>
     </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

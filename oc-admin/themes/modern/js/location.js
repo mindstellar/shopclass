@@ -437,7 +437,6 @@
             if (total === 0) {
                 const clear = listUrl({ country: form.elements.country ? form.elements.country.value : '', region: form.elements.region ? form.elements.region.value : '' });
                 results.append(el('div', { class: 'osc-empty' }, [
-                    el('i', { class: 'bi bi-search osc-empty-icon', 'aria-hidden': 'true' }),
                     el('p', { class: 'osc-empty-title', text: format(i18n.nothingTitle, q) }),
                     el('p', { class: 'osc-empty-text', text: i18n.nothingText }),
                     el('div', { class: 'osc-empty-action' }, [

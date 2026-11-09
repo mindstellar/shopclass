@@ -87,7 +87,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'wrap'  => 'actions',
             'stack' => true,
             'empty' => array(
-                'icon'  => 'bi-chat-dots',
                 'title' => __('No held messages'),
                 'text'  => __('Messages that the spam checks hold back show up here.'),
             ),
@@ -103,7 +102,8 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 'reporter' => array('render' => static function () use ($row, $userLink, $reason, $reasons) {
                     echo $userLink($row['fk_i_reporter_id'], (string) $row['reporter_name']);
                     if ($reason !== '') {
-                        echo '<br /><span class="osc-status">' . osc_esc_html($reasons[$reason] ?? $reason) . '</span>';
+                        echo '<br />';
+                        osc_admin_status('', $reasons[$reason] ?? $reason);
                     }
                 }),
                 'actions'  => array('render' => static function () use ($row, $base) { ?>
@@ -124,7 +124,6 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'wrap'  => 'actions',
             'stack' => true,
             'empty' => array(
-                'icon'  => 'bi-flag',
                 'title' => __('No reported conversations'),
                 'text'  => __('Conversations that a user reports show up here.'),
             ),

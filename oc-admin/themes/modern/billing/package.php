@@ -37,12 +37,11 @@ osc_admin_page(array(
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php osc_admin_panel_open(); ?>
-        <form method="post" action="<?php echo osc_esc_html($actionUrl); ?>">
-            <input type="hidden" name="page" value="billing"/>
-            <input type="hidden" name="action" value="package_post"/>
-            <?php if ($isEdit) { ?>
-                <input type="hidden" name="id" value="<?php echo (int) $package['pk_i_id']; ?>"/>
-            <?php } ?>
+        <?php osc_admin_form_open(array(
+            'page'   => 'billing',
+            'action' => 'package_post',
+            'fields' => $isEdit ? array('id' => (int) $package['pk_i_id']) : array(),
+        )); ?>
 
             <?php
             osc_admin_text(array(
@@ -103,9 +102,8 @@ osc_admin_page(array(
                 'checked'   => $enabled,
             )); ?>
 
-            <?php osc_admin_form_actions(array(
-                array('label' => $isEdit ? __('Save package') : __('Add package'), 'type' => 'submit'),
+            <?php osc_admin_form_close(array(
+                array('label' => $isEdit ? __('Save changes') : __('Add package'), 'type' => 'submit'),
             )); ?>
-        </form>
     <?php osc_admin_panel_close(); ?>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

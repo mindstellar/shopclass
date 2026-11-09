@@ -1105,12 +1105,30 @@ if (!function_exists('osc_admin_status')) {
      *
      * @param string $state Lower-case state key, e.g. 'paid'
      * @param string $word  The visible word, already translated
+     * @param string $title Optional tooltip, since 7.1.0
      *
      * @return void
      */
-    function osc_admin_status($state, $word)
+    function osc_admin_status($state, $word, string $title = '')
     {
-        echo \mindstellar\admin\ui\Form::statusBadge((string)$state, osc_esc_html($word));
+        echo \mindstellar\admin\ui\Form::statusBadge((string)$state, osc_esc_html($word), $title);
+    }
+}
+
+if (!function_exists('osc_admin_callout')) {
+    /**
+     * A warning or note box. $text is escaped unless 'html' is true.
+     *
+     * @param string              $tone danger, warning, info or success
+     * @param string              $text
+     * @param array<string,mixed> $opts 'html', 'id', 'class', 'role', 'attrs' (more attributes), 'tag' (div or span), 'block' (default true; false for an inline callout)
+     *
+     * @return void
+     * @since 7.1.0
+     */
+    function osc_admin_callout(string $tone, string $text, array $opts = array()): void
+    {
+        echo \mindstellar\admin\ui\Form::callout($tone, $text, $opts);
     }
 }
 
@@ -1130,7 +1148,7 @@ if (!function_exists('osc_admin_table')) {
      * @param array $opts    'class', 'id', 'attrs' (on the table); 'wrap' => 'responsive'|'actions'|false
      *                       (default 'responsive'; 'actions' adds #table-row-actions); 'wrap_id';
      *                       'stack' => true (cards on a phone); 'empty' => what no rows shows:
-     *                       'title', 'text', 'icon' (bi-*), 'action' (a button spec)
+     *                       'title', 'text', 'action' (a button spec)
      *
      * @return void
      * @since 7.1.0
@@ -1153,7 +1171,7 @@ if (!function_exists('osc_admin_data_table')) {
      *                     'row_class' => fn($key, $row): array|string;
      *                     'row_attrs' => fn($key, $row): array of <tr> attributes;
      *                     'cell' => fn($column, $value, $key): ?string (markup, null for the default);
-     *                     'empty' => what no rows shows: 'title', 'text', 'icon' (bi-*), 'action' (a button spec)
+     *                     'empty' => what no rows shows: 'title', 'text', 'action' (a button spec)
      *
      * @return void
      * @since 7.1.0
@@ -1172,16 +1190,18 @@ if (!function_exists('osc_admin_count')) {
      *
      * @param int    $count
      * @param string $id    Optional id, for a script that updates the number
+     * @param string $title Optional tooltip, since 7.1.0
      *
      * @return string
      * @since 7.0.0
      */
-    function osc_admin_count(int $count, string $id = ''): string
+    function osc_admin_count(int $count, string $id = '', string $title = ''): string
     {
         $sep = function_exists('osc_locale_thousands_sep') ? (string)osc_locale_thousands_sep() : ',';
 
         return ' <span class="osc-count' . ($count === 0 ? ' is-zero' : '') . '"'
-            . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '') . '>'
+            . ($id !== '' ? ' id="' . osc_esc_html($id) . '"' : '')
+            . ($title !== '' ? ' title="' . osc_esc_html($title) . '"' : '') . '>'
             . osc_esc_html(number_format($count, 0, '.', $sep)) . '</span>';
     }
 }

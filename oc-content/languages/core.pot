@@ -1714,13 +1714,11 @@ msgid "Activity log"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
-#: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/fields/index.php
 #: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/settings/currencies.php
 #: oc-admin/themes/modern/settings/currency_form.php
 #: oc-admin/themes/modern/users/index.php
-#: oc-includes/classes/admin/form/AdminAccountForm.php
 msgid "Add"
 msgstr ""
 
@@ -1774,6 +1772,7 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-admin/themes/modern/users/ban.php
+#: oc-includes/classes/admin/form/BanRuleForm.php
 msgid "Add ban rule"
 msgstr ""
 
@@ -1843,6 +1842,7 @@ msgid "Add items"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php
+#: oc-admin/themes/modern/settings/keywordBlock_frm.php
 msgid "Add keyword"
 msgstr ""
 
@@ -1953,6 +1953,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-site-type.php
 msgid "Add to your shop"
+msgstr ""
+
+#: oc-admin/themes/modern/users/frm.php
+msgid "Add user"
 msgstr ""
 
 #: oc-admin/themes/modern/admins/index.php
@@ -3508,17 +3512,14 @@ msgstr ""
 #: oc-admin/themes/modern/fields/group_iframe.php
 #: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/fields/index.php
-#: oc-admin/themes/modern/fields/submissions.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/parts/ui.php
-#: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/currency_form.php
 #: oc-admin/themes/modern/settings/keywordBlock_frm.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/media.php
 #: oc-admin/themes/modern/tools/backup.php
-#: oc-admin/themes/modern/users/frm.php
 #: oc-includes/classes/admin/form/AdminAccountForm.php
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
@@ -6703,8 +6704,6 @@ msgid "Filters"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/ui.php
-#: oc-admin/themes/modern/tools/logs.php
-#: oc-admin/themes/modern/users/alerts.php
 msgid "Find"
 msgstr ""
 
@@ -13145,7 +13144,6 @@ msgstr ""
 msgid "Resend the activation to"
 msgstr ""
 
-#: oc-admin/themes/modern/billing/documents.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/tools/logs.php
 #: oc-admin/themes/modern/tools/system-info/security.php
@@ -13422,10 +13420,6 @@ msgstr ""
 msgid "Saturday morning market in the park"
 msgstr ""
 
-#: oc-includes/classes/admin/form/AdminAccountForm.php
-msgid "Save"
-msgstr ""
-
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
 "Save a copy of your database and your files, and put one back. Backups you "
@@ -13445,30 +13439,30 @@ msgstr ""
 msgid "Save as WebP"
 msgstr ""
 
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Save bank transfer settings"
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/add_widget.php
+#: oc-admin/themes/modern/billing/package.php
 #: oc-admin/themes/modern/categories/iframe.php
+#: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/fields/group_iframe.php
 #: oc-admin/themes/modern/fields/iframe.php
+#: oc-admin/themes/modern/items/frm.php
+#: oc-admin/themes/modern/pages/frm.php
+#: oc-admin/themes/modern/plugins/configuration.php
+#: oc-admin/themes/modern/settings/api.php
+#: oc-admin/themes/modern/settings/currency_form.php
+#: oc-admin/themes/modern/settings/keywordBlock_frm.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/mailserver.php
+#: oc-admin/themes/modern/users/frm.php
+#: oc-includes/classes/admin/form/AdminAccountForm.php
+#: oc-includes/classes/admin/form/BanRuleForm.php
+#: oc-includes/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/classes/admin/form/SitemapSettingsScreen.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 #: oc-includes/osclass/classes/controller/admin/CAdminMessages.php
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "Save changes"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/api.php
-msgid "Save endpoint"
-msgstr ""
-
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Save limits"
 msgstr ""
 
 #: oc-includes/classes/listing/ListingCounters.php
@@ -13481,34 +13475,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Save on the server"
-msgstr ""
-
-#: oc-admin/themes/modern/billing/package.php
-msgid "Save package"
-msgstr ""
-
-#: oc-admin/themes/modern/pages/frm.php
-msgid "Save page"
-msgstr ""
-
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Save pricing"
-msgstr ""
-
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Save receipt settings"
-msgstr ""
-
-#: oc-includes/classes/admin/form/SitemapSettingsScreen.php
-msgid "Save robots.txt"
-msgstr ""
-
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Save settings"
-msgstr ""
-
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Save shop settings"
 msgstr ""
 
 #: oc-includes/classes/admin/form/LatestSearchSettingsScreen.php
@@ -13537,10 +13503,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Save tracking"
-msgstr ""
-
-#: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid "Save upgrade settings"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/mailserver.php
@@ -17563,7 +17525,6 @@ msgstr ""
 msgid "Up to eight hours of play time and a pocket charging case."
 msgstr ""
 
-#: oc-admin/themes/modern/plugins/configuration.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-admin/themes/modern/tools/system-info/database.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -17588,14 +17549,6 @@ msgstr ""
 msgid "Update channel"
 msgstr ""
 
-#: oc-admin/themes/modern/comments/frm.php
-msgid "Update comment"
-msgstr ""
-
-#: oc-admin/themes/modern/settings/currency_form.php
-msgid "Update currency"
-msgstr ""
-
 #: oc-includes/osclass/classes/datatables/UsersDataTable.php
 msgid "Update date"
 msgstr ""
@@ -17605,21 +17558,9 @@ msgid ""
 "Update failed: %s. The previous version is back in place, so nothing changed."
 msgstr ""
 
-#: oc-admin/themes/modern/settings/keywordBlock_frm.php
-msgid "Update keyword"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "Update listing"
-msgstr ""
-
 #: oc-includes/osclass/classes/Breadcrumb.php
 #: oc-includes/osclass/functions.php
 msgid "Update my profile"
-msgstr ""
-
-#: oc-admin/themes/modern/items/frm.php
-msgid "Update product"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/package-ui.php
@@ -17627,16 +17568,8 @@ msgstr ""
 msgid "Update ready"
 msgstr ""
 
-#: oc-includes/classes/admin/form/BanRuleForm.php
-msgid "Update rule"
-msgstr ""
-
 #: oc-admin/themes/modern/parts/market.php
 msgid "Update to %s"
-msgstr ""
-
-#: oc-admin/themes/modern/users/frm.php
-msgid "Update user"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php

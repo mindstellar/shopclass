@@ -70,17 +70,15 @@
 }
 
 // ---- Empty state ------------------------------------------------------------
-// The screen before it has been used. This is where an admin is most likely to
-// decide a feature is broken, so it names the screen's purpose and offers the
-// action that fills it. Deliberately not an illustration.
+// The screen before it has been used: one quiet line in the flow of the page, and
+// the action that fills it. Not a box, not an illustration.
 .osc-empty {
-  align-items: center;
-  background-color: var(--osc-bench-sunk);
-  border-radius: $border-radius;
+  align-items: flex-start;
   display: flex;
   flex-direction: column;
-  padding: 2.5rem 1.5rem;
-  text-align: center;
+  gap: .5rem;
+  padding-block: .5rem;
+  text-align: start;
 }
 
 .osc-empty-icon {
@@ -92,33 +90,30 @@
 
 .osc-empty-title {
   color: var(--osc-ink);
-  font-size: 1.0625rem; // Title
-  font-weight: 600;
+  font-weight: 500;
   margin: 0;
+
+  // A line alone is a note, not a heading over a description.
+  &:only-child {
+    color: var(--osc-ink-muted);
+    font-weight: 400;
+  }
 }
 
 .osc-empty-text {
   color: var(--osc-ink-muted);
-  margin: .35rem 0 0;
+  margin: 0;
   max-width: 52ch;
 }
 
-.osc-empty-action {
-  margin-block-start: 1rem;
-}
-
 // An empty state standing in for the rows of a table that has already drawn its
-// header. The cell contributes nothing of its own — no padding, no zebra tint, no
-// hover — so what shows through is the empty state and the table frame around it.
+// header. The cell adds no zebra tint or hover, and the line keeps the table's own
+// side padding so it starts where a row would.
 .osc-table-empty-row {
   background-color: transparent !important;
 
   > td {
-    padding: 0 !important;
-  }
-
-  .osc-empty {
-    border-radius: 0;
+    padding-block: 0 !important;
   }
 }
 

@@ -33,45 +33,27 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php if ($heldCount > 0 || $heldOnly) { ?>
-        <div class="callout-warning callout-block">
-            <span>
-                <?php echo osc_esc_html(sprintf(
-                    _n(
-                        '%d alert needs attention: it could not be converted when Shopclass was upgraded, so it no longer sends email.',
-                        '%d alerts need attention: they could not be converted when Shopclass was upgraded, so they no longer send email.',
-                        $heldCount
-                    ),
-                    $heldCount
-                )); ?>
-                <?php if ($heldOnly) { ?>
-                    <a href="<?php echo osc_esc_html($alertsUrl); ?>"><?php _e('Show all alerts'); ?></a>
-                <?php } else { ?>
-                    <a href="<?php echo osc_esc_html($alertsUrl . '&held=1'); ?>"><?php _e('Show them'); ?></a>
-                <?php } ?>
-            </span>
-        </div>
+        <?php osc_admin_callout('warning', osc_esc_html(sprintf(
+            _n(
+                '%d alert needs attention: it could not be converted when Shopclass was upgraded, so it no longer sends email.',
+                '%d alerts need attention: they could not be converted when Shopclass was upgraded, so they no longer send email.',
+                $heldCount
+            ),
+            $heldCount
+        )) . ' ' . ($heldOnly
+            ? '<a href="' . osc_esc_html($alertsUrl) . '">' . osc_esc_html(__('Show all alerts')) . '</a>'
+            : '<a href="' . osc_esc_html($alertsUrl . '&held=1') . '">' . osc_esc_html(__('Show them')) . '</a>'
+        ), array('html' => true)); ?>
     <?php } ?>
     <div class="relative">
-        <div id="users-toolbar" class="table-toolbar">
-            <div class="float-right">
-                <form method="get" action="<?php echo osc_admin_base_url(true); ?>" id="shortcut-filters"
-                      class="inline">
-                    <input type="hidden" name="page" value="users"/>
-                    <input type="hidden" name="action" value="alerts"/>
-                    <?php if ($heldOnly) { ?>
-                        <input type="hidden" name="held" value="1"/>
-                    <?php } ?>
-                    <div class="btn-group btn-group-sm">
-                        <input
-                                id="fPattern" type="text" name="sSearch"
-                                value="<?php echo osc_esc_html(Params::getParamString('sSearch')); ?>"
-                                class="input-text input-actions"/>
-                        <button type="submit" class="btn btn-primary" title="<?php echo osc_esc_html(__('Find')); ?>"><i
-                                    class="bi bi-search"></i></button>
-                    </div>
-                </form>
-            </div>
-        </div>
+        <?php osc_admin_list_filter(array(
+            'id'     => 'shortcut-filters',
+            'page'   => 'users',
+            'hidden' => array_merge(array('action' => 'alerts'), $heldOnly ? array('held' => '1') : array()),
+            'fields' => array(
+                array('name' => 'sSearch', 'id' => 'fPattern', 'value' => Params::getParamString('sSearch')),
+            ),
+        )); ?>
         <form class="" id="datatablesForm" action="<?php echo osc_admin_base_url(true); ?>" method="post">
             <input type="hidden" name="page" value="users"/>
             <input type="hidden" name="action" id="action" value="status_alerts"/>
@@ -106,11 +88,9 @@ $alertsUrl = osc_admin_base_url(true) . '?page=users&action=alerts';
                 'direction' => $direction,
                 'empty'     => Params::getParam('sSearch') !== '' || $heldOnly
                     ? array(
-                        'icon'  => 'bi-bell',
                         'title' => __('No results for this filter'),
                     )
                     : array(
-                        'icon'  => 'bi-bell',
                         'title' => __('No alerts yet'),
                         'text'  => __('Alerts notify a user by email when a new listing matches their saved search.'),
                     ),

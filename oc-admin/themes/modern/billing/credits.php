@@ -40,7 +40,6 @@ $base = osc_admin_base_url(true) . '?page=billing&action=credits';
 
     <?php if (empty($wallets)) {
         osc_admin_empty(array(
-            'icon'  => 'bi-wallet2',
             'title' => __('Nobody holds credits yet'),
             'text'  => __('An account appears here the first time credits are added to it, whether '
                           . 'by a payment or by you.'),

@@ -49,7 +49,6 @@ osc_current_admin_theme_path('parts/header.php');
             'aRows'    => array_map(static fn ($row) => array_combine($keys, $row), $aData['aaData']),
         ), array(
             'empty' => array(
-                'icon'   => 'bi-person-badge',
                 'title'  => __('No admins yet'),
                 'text'   => __('Admins manage the whole panel; moderators only handle listings and stats.'),
                 'action' => array(

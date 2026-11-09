@@ -76,7 +76,6 @@ $rows    = $aData['aRows'];
                 'sort'      => $sort,
                 'direction' => $direction,
                 'empty'     => array(
-                    'icon'   => 'bi-shield-slash',
                     'title'  => __('No ban rules yet'),
                     'text'   => __('Ban rules block registration, listings or comments matching an IP or e-mail pattern.'),
                     'action' => array(

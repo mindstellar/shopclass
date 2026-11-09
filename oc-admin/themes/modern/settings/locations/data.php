@@ -95,7 +95,6 @@ if ($data['release'] !== '') {
             </div>
         <?php } elseif ($rows === array()) {
             osc_admin_empty(array(
-                'icon'  => 'bi-globe2',
                 'title' => __('The catalog lists no countries right now'),
                 'text'  => __('Check again later, or add a country by hand.'),
             ));

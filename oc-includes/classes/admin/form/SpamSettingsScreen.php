@@ -57,15 +57,15 @@ final class SpamSettingsScreen
             return self::PAGE_AKISMET;
         }
 
-        $alertType = 'error';
+        $alertType = 'danger';
         $alertMsg  = '';
         switch ($status) {
             case 1:
-                $alertType = 'ok';
+                $alertType = 'success';
                 $alertMsg  = __('This key is valid');
                 break;
             case 2:
-                $alertType = 'error';
+                $alertType = 'danger';
                 $alertMsg  = __('The key you entered is invalid. Please double-check it');
                 break;
             case 3:
@@ -84,7 +84,7 @@ final class SpamSettingsScreen
                     'help_html',
                     $alertMsg === ''
                         ? ''
-                        : '<span class="callout-' . osc_esc_html($alertType) . '">' . $alertMsg . '</span>'
+                        : \mindstellar\admin\ui\Form::callout($alertType, $alertMsg, array('block' => false, 'html' => true, 'tag' => 'span'))
                 )
             ->register();
 
@@ -109,13 +109,13 @@ final class SpamSettingsScreen
         // out from the help text.
         $warning = '';
         if (osc_captcha_provider() === 'none' && ($provider === 'turnstile' || $provider === 'recaptcha')) {
-            $warning = '<span class="callout-warning">' . osc_esc_html(sprintf(
+            $warning = \mindstellar\admin\ui\Form::callout('warning', sprintf(
                 __('Captcha is currently off: you forced a provider but its keys are empty. '
                    . 'Enter the %s below to turn captcha on.'),
                 $provider === 'turnstile'
                     ? __('Turnstile site key and Turnstile secret key')
                     : __('reCAPTCHA site key and reCAPTCHA secret key')
-            )) . '</span>';
+            ), array('block' => false, 'tag' => 'span'));
         }
 
         CoreSettings::page(self::PAGE_CAPTCHA, __('Captcha'))

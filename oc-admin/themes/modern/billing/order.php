@@ -544,7 +544,6 @@ osc_admin_page(array(
                 // A goods order mints no credits, so there is no ledger to show.
             } elseif (empty($entries)) {
                 osc_admin_empty(array(
-                    'icon'  => 'bi-arrow-left-right',
                     'title' => __('No credits moved yet'),
                     'text'  => __('Credits are added the moment this order is paid.'),
                 ));
