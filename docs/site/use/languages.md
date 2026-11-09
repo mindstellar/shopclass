@@ -8,7 +8,7 @@ sidebar:
 ShopClass is multilingual throughout: categories, static pages, custom
 fields and e-mail templates all carry a value per active language.
 
-**Languages** in the sidebar.
+**Settings → Languages.**
 
 ## Adding a language
 
@@ -34,7 +34,7 @@ visitors, or to give your team an admin language your visitors don't have.
 The site default language is set in **Settings → General**. It is what visitors
 see before they choose, and what content falls back to.
 
-**Languages** marks the **Site default** and the **Admin default**.
+**Settings › Languages** marks the **Site default** and the **Admin default**.
 Use **Make site default** or **Make admin default** on a language's row to
 change them. The admin default is the language the admin login offers first.
 

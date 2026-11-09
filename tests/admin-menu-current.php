@@ -155,7 +155,7 @@ foreach ($real->settingsGroups() as $grp) {
     $map[$grp['id']] = array_column($grp['entries'], 'title');
 }
 pin('Settings groups and tabs, in order', [
-    'settings_group_general'  => ['General', 'Permalinks', 'Sitemap'],
+    'settings_group_general'  => ['General', 'Permalinks', 'Languages', 'Sitemap'],
     'settings_group_content'  => ['Comments', 'Latest searches'],
     'settings_group_email'    => ['Email templates', 'Mail server'],
     'settings_group_security' => ['Spam and bots', 'Keyword blocklist', 'Ban rules'],
@@ -171,11 +171,6 @@ pin('Listings, Users, Media and Billing keep their own Settings entry, last', [
     array_slice($subIds('media'), -1), array_slice($subIds('billing'), -1),
 ]);
 pin('Ban rules is no longer in Users', false, in_array('users_ban', $subIds('users'), true));
-$order = array_keys($full);
-pin('Languages is its own section, between Settings and Tools', [array_search('settings', $order, true) + 1, array_search('tools', $order, true) - 1],
-    [array_search('languages', $order, true), array_search('languages', $order, true)]);
-pin('...with Manage languages first', ['languages_manage', 'languages_add'], $subIds('languages'));
-pin('...and Find a setting still finds it', ['Languages', 'Manage languages'], $real->settingsLocations()['languages_manage']['path'] ?? null);
 
 $basesReal = ['https://example.test/oc-admin/index.php?', 'https://example.test/oc-admin/'];
 foreach ([
@@ -186,9 +181,6 @@ foreach ([
     'page=settings&action=billing&tab=pricing' => ['billing', 'billing_settings'],
     'page=users&action=ban'                => ['settings', 'users_ban'],
     'page=users&action=ban_edit&id=3'      => ['settings', 'users_ban'],
-    'page=languages'                       => ['languages', 'languages_manage'],
-    'page=languages&action=edit&id=en_US'  => ['languages', 'languages_manage'],
-    'page=languages&action=add'            => ['languages', 'languages_add'],
 ] as $query => $want) {
     pin("$query lights " . implode(' > ', $want), $want, AdminMenu::current($full, $query, 'x', false, $basesReal));
 }
@@ -256,7 +248,7 @@ $lbl->init();
 $pluginUrl = static fn (string $route): string => 'https://example.test/oc-admin/index.php?page=plugins&action=renderplugin&route=' . $route;
 $lbl->add_submenu('users', 'Subscribers', $pluginUrl('subs'), 'p-subs', 'administrator');
 $lbl->add_submenu('billing', 'Shipping', $pluginUrl('ship'), 'p-ship', 'administrator');
-$lbl->add_submenu('languages', 'Translator', $pluginUrl('tr'), 'p-tr', 'administrator');
+$lbl->add_submenu('settings', 'Translator', $pluginUrl('tr'), 'p-tr', 'administrator');
 $lbl->add_submenu('plugins', 'Tool', $pluginUrl('tool'), 'p-tool', 'administrator');
 $labelFor = static function (string $route) use ($lbl): string {
     $_SERVER['QUERY_STRING'] = 'page=plugins&action=renderplugin&route=' . $route;
@@ -264,7 +256,7 @@ $labelFor = static function (string $route) use ($lbl): string {
     Params::init();
     return $lbl->pluginSectionLabel();
 };
-pin('a plugin page says the section that holds it', ['Users', 'Billing', 'Languages', 'Plugins', 'Plugins'],
+pin('a plugin page says the section that holds it', ['Users', 'Billing', 'Settings', 'Plugins', 'Plugins'],
     [$labelFor('subs'), $labelFor('ship'), $labelFor('tr'), $labelFor('tool'), $labelFor('nowhere')]);
 $GLOBALS['__filters']['custom_plugin_title'] = static fn ($v) => 'Translator';
 pin('custom_plugin_title still wins', 'Translator', $labelFor('subs'));

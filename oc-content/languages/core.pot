@@ -1848,7 +1848,6 @@ msgid "Add keyword"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/add.php
-#: oc-includes/osclass/classes/AdminMenu.php
 msgid "Add language"
 msgstr ""
 
@@ -8288,8 +8287,6 @@ msgstr ""
 msgid "Language updates"
 msgstr ""
 
-#: oc-admin/themes/modern/languages/add.php
-#: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Languages"
@@ -9253,10 +9250,6 @@ msgstr ""
 #: oc-admin/themes/modern/fields/index.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Manage forms"
-msgstr ""
-
-#: oc-includes/osclass/classes/AdminMenu.php
-msgid "Manage languages"
 msgstr ""
 
 #: oc-admin/themes/modern/items/index.php
@@ -14270,6 +14263,9 @@ msgstr ""
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/emails/index.php
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/languages/add.php
+#: oc-admin/themes/modern/languages/frm.php
+#: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/parts/ui.php

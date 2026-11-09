@@ -85,7 +85,7 @@ final class SettingsSearch
     private const WORDS = array(
         'settings_general'       => 'site name title description contact email timezone date format pagination',
         'settings_permalinks'    => 'friendly urls slug seo rewrite',
-        'languages_manage'       => 'translation locale',
+        'settings_language'      => 'translation locale',
         'settings_sitemap'       => 'xml search engine google robots',
         'items_settings'         => 'listing expiry moderation validate images price currency required',
         'settings_comments'      => 'reviews moderate comment',
