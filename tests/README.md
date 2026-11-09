@@ -121,6 +121,15 @@ Tests for the admin and public form screens added in the UI polish work:
 | `models/public-form-flows.php` | public forms keep what was typed and always answer |
 | `admin-ui-single-copy.php` | page heads and panels come from the one copy in hAdminUi.php |
 
+## Browser tests
+
+The `*-ui.php` tests and `categories-drag-perf.php` drive a real browser.
+
+- They need Chrome or Chromium (`CHROME` picks one), and `npm ci` for `puppeteer-core`.
+  `test_browser()` and `test_puppeteer()` in `lib/harness.php` find them.
+- Locally a missing browser skips the test. With `CI` set, it fails instead.
+- Timing tests are listed in `RUN_ALONE` in `run-unit.php`. They run last, one at a time.
+
 ## Pinned lists
 
 These tests compare the code with a list kept in `tests/fixtures/`. When you change a

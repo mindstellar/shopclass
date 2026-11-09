@@ -156,7 +156,7 @@ pin('Delete asks first', true, $r['open'] ?? null);
 pin('the question names the category', 'Delete Vehicles?', $r['title'] ?? null);
 check('it reports the real subcategory count', str_contains((string) ($r['text'] ?? ''), 'Its 10 subcategories are deleted too.'), (string) ($r['text'] ?? ''));
 check('it says expired and unapproved listings go too', str_contains((string) ($r['text'] ?? ''), '30 listings are deleted, along with any expired or unapproved ones.'), (string) ($r['text'] ?? ''));
-pin('the button states the cost', 'Delete 11 categories and 30 listings', $r['okLabel'] ?? null);
+pin('the button counts the categories', 'Delete 11 categories', $r['okLabel'] ?? null);
 pin('the preview asks for this category only', array((string) $ids['Vehicles']), $r['preview'] ?? null);
 pin('the preview comes first, the delete after', array('category_delete_preview', 'delete_category'), $r['order'] ?? null);
 pin('the delete posts the id', array('POST', (string) $ids['Vehicles']), $r['post'] ?? null);
@@ -326,6 +326,18 @@ pin('Cars is last under Real estate and shown', array(true, '2', 'Shops for Rent
 pin('Vehicles loses 19 listings and Real estate gains 19', array((string) ((int) $re[0] - 19), (string) ((int) $re[1] + 19), '10'), $r['after'] ?? null);
 pin('the cells show it', array((string) ((int) $re[0] - 19), (string) ((int) $re[1] + 19)), $r['cells'] ?? null);
 pin('the toast says where it went', array(array('ok', 'Moved Cars to Real estate, 10 of 10.')), $r['flash'] ?? null);
+
+harness_section('Move to… with a theme depth limit');
+$r = actions_ui_run(<<<'JS'
+await t.click(t.row('Vehicles').querySelector('.cat-disclosure'));
+await t.click(t.act('Cars', 'move'));
+var sel = t.$('#cat-move-parent');
+var opt = function (n) { return sel.querySelector('option[value="' + t.row(n).dataset.id + '"]'); };
+r.offered = [opt('Real estate').disabled, sel.querySelector('option[value="0"]').disabled];
+r.tooDeep = [opt('Motorcycles').disabled, opt('Motorcycles').textContent.indexOf('(too deep)') !== -1];
+JS, $demo, array('limit' => 2));
+pin('a parent that keeps it within 2 levels can be picked', array(false, false), $r['offered'] ?? null);
+pin('a parent that would make a third level cannot, and says why', array(true, true), $r['tooDeep'] ?? null);
 
 harness_section('Set expiry…');
 $r = actions_ui_run(<<<'JS'

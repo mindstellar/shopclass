@@ -673,4 +673,23 @@ if (!function_exists('test_browser')) {
     }
 }
 
+if (!function_exists('test_puppeteer')) {
+    /**
+     * The puppeteer-core folder that npm ci installs (a devDependency), or PUPPETEER_CORE when
+     * set. Empty when it or node is missing.
+     */
+    function test_puppeteer(): string
+    {
+        $pc = (string) getenv('PUPPETEER_CORE');
+        if ($pc === '') {
+            $pc = ABS_PATH . 'node_modules/puppeteer-core';
+        }
+        if (!is_file($pc . '/lib/puppeteer/puppeteer-core.js') || !function_exists('shell_exec')) {
+            return '';
+        }
+
+        return trim((string) shell_exec('command -v node 2>/dev/null')) === '' ? '' : $pc;
+    }
+}
+
 /* file end: ./tests/lib/harness.php */

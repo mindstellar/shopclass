@@ -44,14 +44,8 @@ require_once __DIR__ . '/lib/categories-browser.php';
 function phone_ui_run(string $body, array $tree, array $opts = array(), int $width = 390): ?array
 {
     $chrome = categories_browser_chrome();
-    $pc = (string) getenv('PUPPETEER_CORE');
+    $pc = test_puppeteer();
     if ($pc === '') {
-        $found = array_merge(array(ABS_PATH . 'node_modules/puppeteer-core'), glob((string) getenv('HOME') . '/.npm/_npx/*/node_modules/puppeteer-core') ?: array());
-        $found = array_values(array_filter($found, static fn (string $d): bool => is_file($d . '/lib/puppeteer/puppeteer-core.js')));
-        $pc = (string) ($found[0] ?? '');
-    }
-    $node = trim((string) shell_exec('command -v node 2>/dev/null'));
-    if ($pc === '' || $node === '' || !is_file($pc . '/lib/puppeteer/puppeteer-core.js')) {
         if ((string) getenv('CI') !== '') {
             check('node and puppeteer-core are available for the phone run', false, 'run npm ci');
         }
@@ -87,7 +81,7 @@ try {
     await browser.close();
 }
 MJS);
-    $out = (string) shell_exec(escapeshellarg($node) . ' ' . escapeshellarg($dir . '/run.mjs') . ' '
+    $out = (string) shell_exec('node ' . escapeshellarg($dir . '/run.mjs') . ' '
         . escapeshellarg($pc) . ' ' . escapeshellarg($chrome) . ' ' . escapeshellarg($dir . '/page.html') . ' ' . $width . ' 2>&1');
     shell_exec('rm -rf ' . escapeshellarg($dir));
     $r = json_decode((string) base64_decode(trim($out), true), true);

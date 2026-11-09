@@ -27,8 +27,9 @@ if (!function_exists('osc_esc_html')) {
 class_exists('CategoryForm');
 require_once __DIR__ . '/lib/categories-browser.php';
 
-$puppeteer = ABS_PATH . 'node_modules/puppeteer-core/lib/puppeteer/puppeteer-core.js';
-if (!is_file($puppeteer)) {
+$pc = test_puppeteer();
+$puppeteer = $pc . '/lib/puppeteer/puppeteer-core.js';
+if ($pc === '') {
     echo "SKIP puppeteer-core is not installed (npm ci)\n";
     exit(0);
 }
