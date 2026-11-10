@@ -1,0 +1,382 @@
+// The admin notices: bell, panel and bottom sheet in the top bar, plus the Notices screen's
+// message cell and status states. The script is js/notices.js.
+.osc-notice-bell {
+  position: relative;
+}
+
+.admin-topbar .osc-notice-bell {
+  .circle {
+    align-items: center;
+    block-size: 1.15rem;
+    display: inline-flex;
+    float: none;
+    font-size: .72rem;
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    justify-content: center;
+    line-height: 1;
+    margin: 0;
+    min-inline-size: 1.15rem;
+    padding: 0 .28rem;
+  }
+
+  .admin-topbar-btn[aria-expanded="true"] {
+    background-color: var(--osc-chrome-hover);
+    color: var(--osc-bronze);
+  }
+}
+
+.osc-notice-panel {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius-lg;
+  box-shadow: var(--osc-shadow-overlay);
+  color: var(--osc-ink);
+  display: flex;
+  flex-direction: column;
+  inline-size: 27rem;
+  inset-block-start: calc(100% + .4rem);
+  inset-inline-end: -.25rem;
+  max-block-size: min(40rem, calc(100vh - 5rem));
+  max-inline-size: calc(100vw - 1.5rem);
+  opacity: 0;
+  position: absolute;
+  transform: translateY(-.25rem);
+  transition: opacity var(--osc-duration-fast) var(--osc-ease),
+              transform var(--osc-duration-fast) var(--osc-ease),
+              visibility 0s linear var(--osc-duration-fast);
+  visibility: hidden;
+  z-index: 1060;
+
+  &.is-open {
+    opacity: 1;
+    transform: none;
+    transition: opacity var(--osc-duration-fast) var(--osc-ease),
+                transform var(--osc-duration-fast) var(--osc-ease),
+                visibility 0s;
+    visibility: visible;
+  }
+
+  a:focus-visible,
+  button:focus-visible {
+    border-radius: 2px;
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 2px;
+  }
+}
+
+.osc-notice-head {
+  align-items: center;
+  border-block-end: 1px solid var(--osc-rule);
+  display: flex;
+  gap: .5rem;
+  justify-content: space-between;
+  padding: .7rem .9rem;
+
+  h2 {
+    color: var(--bs-heading-color);
+    font-size: 1.0625rem;
+    font-weight: 600;
+    line-height: 1.4;
+    margin: 0;
+  }
+}
+
+.osc-notice-close {
+  background: transparent;
+  border: 0;
+  color: var(--osc-ink-muted);
+  display: none;
+}
+
+.osc-notice-body {
+  flex: 1;
+  min-block-size: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-color: var(--osc-rule-strong) transparent;
+  scrollbar-width: thin;
+}
+
+.osc-notice-group {
+  h3 {
+    align-items: center;
+    background: var(--osc-bench-warm);
+    border-block-end: 1px solid var(--osc-rule);
+    color: var(--osc-ink-emphasis);
+    display: flex;
+    font-size: .8125rem;
+    font-weight: 600;
+    gap: .4rem;
+    inset-block-start: 0;
+    letter-spacing: .01em;
+    line-height: 1.5;
+    margin: 0;
+    padding: .35rem .9rem;
+    position: sticky;
+    z-index: 1;
+  }
+
+  + .osc-notice-group h3 {
+    border-block-start: 1px solid var(--osc-rule);
+  }
+
+  ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  li:last-child .osc-notice-row {
+    border-block-end: 0;
+  }
+}
+
+.osc-notice-n {
+  color: var(--osc-ink-muted);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.osc-notice-row {
+  border-block-end: 1px solid var(--osc-rule);
+  display: grid;
+  gap: .3rem .65rem;
+  grid-template-columns: 1rem minmax(0, 1fr);
+  padding: .7rem .9rem;
+  transition: opacity var(--osc-duration-base) var(--osc-ease),
+              block-size var(--osc-duration-base) var(--osc-ease),
+              padding var(--osc-duration-base) var(--osc-ease);
+
+  &.osc-notice-leaving {
+    opacity: 0;
+    overflow: hidden;
+    padding-block: 0;
+  }
+}
+
+tr.osc-notice-leaving {
+  opacity: 0;
+  transition: opacity var(--osc-duration-base) var(--osc-ease);
+}
+
+.osc-notice-mark {
+  font-size: 1rem;
+  line-height: 1.45;
+
+  .is-action > & { color: var(--osc-danger); }
+  .is-headsup > & { color: var(--osc-warning-deep); }
+  .is-hidden > & { color: var(--osc-ink-muted); }
+}
+
+.osc-notice-text {
+  line-height: 1.45;
+  margin: 0;
+
+  .is-hidden > & {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.osc-notice-links {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: .875rem;
+  gap: .15rem .9rem;
+  grid-column: 2;
+
+  a {
+    font-weight: 500;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.osc-notice-btn {
+  background: transparent;
+  border: 0;
+  border-radius: 2px;
+  color: var(--osc-ink-muted);
+  cursor: pointer;
+  font-size: .8125rem;
+  font-weight: 500;
+  padding: 0;
+
+  &:hover {
+    color: var(--osc-bronze);
+  }
+}
+
+.osc-notice-when {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+}
+
+.osc-notice-empty {
+  color: var(--osc-ink-muted);
+  margin: 0;
+  padding: 1.1rem .9rem;
+}
+
+.osc-notice-foot {
+  align-items: center;
+  background: var(--osc-bench-warm);
+  border-block-start: 1px solid var(--osc-rule);
+  border-end-end-radius: $border-radius-lg;
+  border-end-start-radius: $border-radius-lg;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: .875rem;
+  gap: .5rem 1rem;
+  justify-content: space-between;
+  padding: .55rem .9rem;
+}
+
+.osc-notice-hidden-count {
+  align-items: center;
+  color: var(--osc-ink-muted);
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  gap: .5rem;
+}
+
+.osc-notice-all {
+  font-weight: 500;
+  margin-inline-start: auto;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.osc-notice-backdrop {
+  background: var(--bs-black);
+  inset: 0;
+  opacity: 0;
+  position: fixed;
+  transition: opacity var(--osc-duration-base) var(--osc-ease),
+              visibility 0s linear var(--osc-duration-base);
+  visibility: hidden;
+  z-index: 1059;
+}
+
+body.osc-notice-sheet-open {
+  overflow: hidden;
+}
+
+@media (max-width: 575.98px) {
+  .osc-notice-backdrop.is-open {
+    opacity: .5;
+    transition: opacity var(--osc-duration-base) var(--osc-ease), visibility 0s;
+    visibility: visible;
+  }
+
+  .admin-topbar .osc-notice-bell .admin-topbar-btn {
+    min-block-size: 44px;
+    min-inline-size: 40px;
+  }
+
+  .osc-notice-panel {
+    border-block-end: 0;
+    border-inline: 0;
+    border-radius: $border-radius-lg $border-radius-lg 0 0;
+    box-shadow: var(--osc-shadow-modal);
+    inline-size: 100%;
+    inset-block: auto 0;
+    inset-inline: 0;
+    max-block-size: 85vh;
+    max-inline-size: none;
+    opacity: 1;
+    padding-block-end: env(safe-area-inset-bottom);
+    position: fixed;
+    transform: translateY(100%);
+    transition: transform var(--osc-duration-base) var(--osc-ease),
+                visibility 0s linear var(--osc-duration-base);
+
+    &.is-open {
+      transition: transform var(--osc-duration-base) var(--osc-ease), visibility 0s;
+    }
+  }
+
+  .osc-notice-close {
+    align-items: center;
+    block-size: 44px;
+    display: inline-flex;
+    inline-size: 44px;
+    justify-content: center;
+    margin: -.5rem;
+  }
+
+  .osc-notice-row {
+    padding-block: .8rem;
+  }
+
+  .osc-notice-links {
+    gap: .15rem 1.25rem;
+
+    a,
+    .osc-notice-btn {
+      align-items: center;
+      display: inline-flex;
+      font-size: .875rem;
+      min-block-size: 44px;
+    }
+  }
+
+  .osc-notice-foot {
+    padding-block: .35rem;
+
+    a,
+    .osc-notice-btn {
+      align-items: center;
+      display: inline-flex;
+      min-block-size: 44px;
+    }
+  }
+}
+
+.osc-notice-msg {
+  display: flex;
+  flex-direction: column;
+  gap: .1rem;
+
+  b {
+    font-size: 1rem;
+    font-weight: 500;
+    line-height: 1.4;
+  }
+
+  span {
+    color: var(--osc-ink-muted);
+  }
+}
+
+// The Notices screen's status pills, on the shared .osc-status badge.
+.osc-status {
+  &.status-notice-action {
+    background-color: var(--osc-danger-tint);
+    color: var(--osc-danger-deep);
+
+    &::before { content: "\f336"; }
+  }
+
+  &.status-notice-headsup {
+    background-color: var(--osc-warning-tint);
+    color: var(--osc-warning-deep);
+
+    &::before { content: "\f33a"; }
+  }
+
+  &.status-notice-hidden {
+    background-color: var(--osc-bench-sunk);
+    color: var(--osc-ink-muted);
+
+    &::before { content: "\f340"; }
+  }
+}

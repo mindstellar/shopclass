@@ -68,3 +68,81 @@
     }
   }
 }
+
+// A notice dot beside a sidebar label. A filled red dot needs action; an amber ring is a
+// heads-up, so shape carries it as well as colour. The label's link text holds the name.
+.osc-dot {
+  block-size: .625rem;
+  border-radius: 50%;
+  flex: none;
+  inline-size: .625rem;
+  margin-inline-start: auto;
+
+  &[hidden] {
+    display: none;
+  }
+
+  &.is-action {
+    background-color: var(--osc-danger);
+  }
+
+  &.is-headsup {
+    background-color: transparent;
+    box-shadow: inset 0 0 0 2px var(--osc-warning-deep);
+  }
+}
+
+.sidebar-submenu .osc-dot {
+  block-size: .5rem;
+  inline-size: .5rem;
+}
+
+// On the icon-only rail the dot sits on the icon's corner, like a count.
+[data-osc-sidebar="collapsed"] .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link a .osc-dot {
+  inset-block-start: -.2rem;
+  inset-inline-end: -.35rem;
+  margin: 0;
+  outline: 2px solid var(--osc-sidebar-surface);
+  position: absolute;
+}
+
+// Notices screen: status words with their shape, and the message cell.
+.osc-status {
+  &.status-notice-action::before {
+    content: "\f336"; // octagon with a mark
+  }
+
+  &.status-notice-headsup::before {
+    content: "\f33a"; // triangle with a mark
+  }
+
+  &.status-notice-hidden::before {
+    content: "\f340"; // eye with a slash
+  }
+
+  &.status-notice-action {
+    background-color: var(--osc-danger-tint);
+    color: var(--osc-danger-deep);
+  }
+
+  &.status-notice-headsup {
+    background-color: var(--osc-warning-tint);
+    color: var(--osc-warning-deep);
+  }
+}
+
+.osc-notice-msg {
+  display: grid;
+  gap: .15rem;
+
+  > span {
+    color: var(--osc-ink-muted);
+  }
+}
+
+.osc-notices-table .osc-notice-links {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+}

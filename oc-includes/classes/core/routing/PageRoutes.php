@@ -92,6 +92,7 @@ final class PageRoutes
             'stats'      => 'CAdminStats',
             'cfields'    => 'CAdminCFields',
             'upgrade'    => 'CAdminUpgrade',
+            'notices'    => 'CAdminNotices',
         );
     }
 }

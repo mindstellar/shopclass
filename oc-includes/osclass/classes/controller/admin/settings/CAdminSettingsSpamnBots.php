@@ -100,6 +100,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
                     break;
                 }
 
+                \mindstellar\admin\AdminNoticeFeed::forget();
                 osc_add_flash_ok_message(_m('Sign-in protection settings have been updated'), 'admin');
                 $this->redirectTo(self::tabUrl('signin'));
                 break;

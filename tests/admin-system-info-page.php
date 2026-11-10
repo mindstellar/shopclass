@@ -50,6 +50,13 @@ $body = static function (string $name) use ($controller): string {
     return '';
 };
 
+/** A method of SystemEnvironment, where the checks' input is read. */
+$envBody = static function (string $name): string {
+    $source = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/admin/SystemEnvironment.php');
+
+    return preg_match('/(?:public|private) static function ' . preg_quote($name, '/') . '\(.*?\n    \}\n/s', $source, $m) ? $m[0] : '';
+};
+
 harness_section('Tabs');
 
 pin('the page has six tabs', array('overview', 'database', 'server', 'jobs', 'security', 'cache'), SystemChecks::TABS);
@@ -152,7 +159,7 @@ check('the Database tab partial adds no verdict box for it', strpos($database, '
 harness_section('Admin address allow list');
 
 check('the Security tab is told how many entries OSC_ADMIN_IP_ALLOW has, or null when it is off', strpos(
-    $body('systemEnvironment'),
+    $envBody('read'),
     "'admin_ip_allow'   => (\$allow = \\mindstellar\\security\\AdminIpAllowlist::fromConfig()) === null ? null : \$allow->count(),"
 ) !== false);
 
@@ -173,7 +180,7 @@ check('the Jobs tab posts run, retry and forget', strpos($jobs, "'action' => 'jo
     && strpos($jobs, "'action' => 'jobs_forget'") !== false);
 check('...and throwing away asks first', strpos($jobs, "'data-osc-dialog-open' => '#jobs-forget-dialog'") !== false && strpos($jobs, "'id'      => 'jobs-forget-dialog'") !== false);
 check('the Cache tab posts cache_clear', strpos($cache, "'action' => 'cache_clear'") !== false);
-check('the cache probe trusts the write, not only the read', strpos($body('cacheAnswers'), '$cache->set($key, $value, 60) === false') !== false);
+check('the cache probe trusts the write, not only the read', strpos($envBody('cacheAnswers'), '$cache->set($key, $value, 60) === false') !== false);
 
 $spamBody = static function (string $name) use ($spamCtl): string {
     return preg_match("/case \\('" . preg_quote($name, '/') . "'\\):(.*?)(?=\\n\\s*case \\(|\\n        \\}\\n)/s", $spamCtl, $m) ? $m[1] : '';

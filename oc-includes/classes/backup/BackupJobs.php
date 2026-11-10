@@ -10,6 +10,8 @@
 
 namespace mindstellar\backup;
 
+use mindstellar\admin\AdminNoticeFeed;
+use mindstellar\admin\AdminNotices;
 use mindstellar\admin\DatabaseTools;
 use mindstellar\database\Connection;
 use mindstellar\database\DbException;
@@ -39,7 +41,7 @@ final class BackupJobs
     /** Safety copies kept. */
     public const SAFETY_KEEP = 2;
 
-    /** @var array<string,callable> side effects a test replaces: saved, upload, restored, log, requeue */
+    /** @var array<string,callable> side effects a test replaces: saved, failed, upload, restored, log, requeue */
     private static $effects = array();
 
     /**
@@ -518,7 +520,9 @@ final class BackupJobs
         $state['finished']    = time();
         $store->saveState($state);
         if (!$e->cancelled) {
-            self::effect('log', (($p['kind'] ?? '') === 'restore' ? __('Restore failed') : __('Backup failed')) . ': ' . $e->getMessage());
+            $restore = ($p['kind'] ?? '') === 'restore';
+            self::effect('log', ($restore ? __('Restore failed') : __('Backup failed')) . ': ' . $e->getMessage());
+            self::effect('failed', array('restore' => $restore, 'message' => $e->getMessage()));
         } else {
             self::effect('log', __('Backup cancelled'));
         }
@@ -544,6 +548,18 @@ final class BackupJobs
                 return true;
             case 'saved':
                 return self::saved($arg);
+            case 'failed':
+                AdminNotices::getInstance()->raise('error', $arg['restore'] ? __('Restore failed') : __('Backup failed'), array(
+                    'id'         => $arg['restore'] ? 'restore_failed' : 'backup_failed',
+                    'detail'     => $arg['message'],
+                    'link'       => '?page=tools&action=backup',
+                    'link_label' => __('Backup'),
+                    'menu'       => 'tools',
+                    'submenu'    => 'tools_backup',
+                    'source'     => __('Backup'),
+                ));
+
+                return true;
             case 'upload':
                 return osc_job_enqueue(self::UPLOAD, $arg, array('unique_key' => self::UPLOAD)) > 0;
             case 'restored':
@@ -551,6 +567,7 @@ final class BackupJobs
                 JobWorker::log('backup', 0, $when !== '' ? sprintf(__('Restore finished from the backup of %s'), $when) : __('Restore finished'));
                 osc_job_enqueue(self::PRUNE, array(), array('unique_key' => 'prune'));
                 osc_purge_page_cache('restore');
+                AdminNotices::getInstance()->clear('restore_failed');
 
                 return true;
             case 'requeue':
@@ -579,6 +596,10 @@ final class BackupJobs
             $where
         );
         JobWorker::log('backup', 0, $line);
+        if (($p['kind'] ?? 'backup') === 'backup') {
+            AdminNotices::getInstance()->clear('backup_failed');
+            AdminNoticeFeed::forget();
+        }
         if (in_array($p['where'], array('server', 'bucket'), true) && ($p['kind'] ?? 'backup') === 'backup') {
             osc_set_preference('backup_last', (string) json_encode(array(
                 'date'  => date('c', (int) $p['started']),

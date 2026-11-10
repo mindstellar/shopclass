@@ -15,6 +15,16 @@
  * No database.  Usage:  php tests/cron-schedule.php
  */
 
+namespace mindstellar\admin {
+    /** The bell's cache is not under test here. */
+    final class AdminNoticeFeed
+    {
+        public static function cronRan(): void
+        {
+        }
+    }
+}
+
 namespace mindstellar\security {
     class RateLimit
     {

@@ -1693,9 +1693,9 @@ osc_add_hook('user_menu_filter', static function (array $options): array {
 const OSC_PAY_TEST_COOKIE = 'osc_pay_test_hidden';
 
 /**
- * One notice naming every payment method still in test mode, for the dashboard, the billing
- * screens and those methods' own settings pages. Empty anywhere else, when none is in test
- * mode, or when the admin hid it for this set of methods. Plugins add themselves through the
+ * One notice naming every payment method still in test mode, on those methods' own settings
+ * pages. Empty anywhere else, when none is in test mode, or when the admin hid it for this set
+ * of methods. The bell lists each method on every admin page. Plugins add themselves through the
  * PaymentTestModes event or the `admin_payment_test_modes` filter.
  *
  * @param array<string,mixed> $query  the request's page, action and id
@@ -1713,7 +1713,7 @@ function osc_admin_payment_test_notice(array $query, string $hidden = ''): strin
         return '';
     }
 
-    $here = in_array($page, array('', 'main', 'billing'), true) || ($page === 'settings' && $action === 'billing');
+    $here = false;
     foreach ($modes as $url) {
         parse_str((string) parse_url($url, PHP_URL_QUERY), $own);
         if ($own !== array() && $page === ($own['page'] ?? null) && $action === ($own['action'] ?? '')

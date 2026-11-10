@@ -76,6 +76,7 @@ Name your group after your plugin slug, such as `acme`. Do not use a name core u
 | `alerts_sent` | How many alert e-mails went out, one key per day. |
 | `cron` | When the hourly, daily and weekly schedules last ran and next run. |
 | `email_change` | A pending e-mail change, one key per user. It expires after 7 days. |
+| `admin_notice` | The admin bell: stored notices, when each started, each admin's hides and the cached system checks. Use [`osc_add_admin_notice()`](/docs/developers/admin-notices/), not this group. |
 | `plugin_categories` | The categories each plugin is limited to, one key per plugin. |
 | `upload.…` | Photos uploaded before their listing is saved: one group per form or API user, expiring after 2 hours. Every group that starts with `upload.` is reserved. |
 

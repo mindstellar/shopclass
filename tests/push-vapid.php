@@ -299,7 +299,7 @@ namespace {
     }
     pin('System info checks HTTPS with the same rule as osc_push_enabled()', 1, preg_match(
         "/'https'\\s*=>\\s*\\\\mindstellar\\\\push\\\\WebPushSender::secureSite\\(/",
-        (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminTools.php')
+        (string) file_get_contents(ABS_PATH . 'oc-includes/classes/admin/SystemEnvironment.php')
     ));
 
     harness_section('browser id and family');

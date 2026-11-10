@@ -104,6 +104,7 @@ $adminPages = array(
     'stats'      => 'CAdminStats',
     'cfields'    => 'CAdminCFields',
     'upgrade'    => 'CAdminUpgrade',
+    'notices'    => 'CAdminNotices',
 );
 foreach ($adminPages as $page => $target) {
     // CWebAjax and CAdminAjax both define IS_AJAX when loaded; a request only ever loads one.

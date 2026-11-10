@@ -205,6 +205,87 @@ final class SystemChecks
     }
 
     /**
+     * The issues the notice bell lists: each check's own lines, ranked. Sign-in blocks are
+     * the protection working, and the database scans stay on System info.
+     *
+     * @param array<string,mixed> $env
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function noticeIssues(array $env): array
+    {
+        $issues = array_merge(
+            self::databaseIssues($env, false),
+            self::serverIssues($env, false),
+            self::backupIssues($env),
+            self::jobsIssues($env, false),
+            self::securityIssues($env, false),
+            self::cacheIssues($env)
+        );
+        $issues = array_values(array_filter($issues, static function ($issue) {
+            return $issue['id'] !== 'signin_blocked';
+        }));
+
+        return self::rank($issues);
+    }
+
+    /**
+     * Only the environment keys noticeIssues() reads, small enough to cache. `now` and `me`
+     * are left out: the feed sets them at render.
+     *
+     * @param array<string,mixed> $env
+     *
+     * @return array<string,mixed>
+     */
+    public static function noticeEnv(array $env): array
+    {
+        $keys = array(
+            'admin_url', 'db_server', 'extensions', 'imagick', 'gd', 'uploads_writable', 'read_only',
+            'self_update_off', 'file_owner', 'php_user', 'memory', 'upload', 'post', 'photos', 'max_files',
+            'secret_mail_blocked', 'opcache', 'debug', 'free_disk', 'htaccess_auth', 'reserved_slugs',
+            'live', 'push', 'maintenance', 'backup_last', 'proxy', 'backup_probe', 'config_writable',
+            'cache_driver', 'cache_supported', 'cache_working', 'cron_last', 'me',
+        );
+        $out = array();
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $env)) {
+                $out[$key] = $env[$key];
+            }
+        }
+        $jobs = (array) ($env['jobs'] ?? array());
+        $out['jobs'] = array_intersect_key($jobs, array_flip(array('error', 'stuck', 'overdue', 'orphans')));
+        $throttle = (array) ($env['throttle'] ?? array());
+        $out['throttle'] = array_intersect_key($throttle, array_flip(array('enabled', 'blocked')));
+        $out['admins'] = array_map(static function ($a) {
+            return array(
+                'id'         => $a['id'] ?? 0,
+                'username'   => $a['username'] ?? '',
+                'two_factor' => $a['two_factor'] ?? false,
+            );
+        }, array_values((array) ($env['admins'] ?? array())));
+
+        return $out;
+    }
+
+    /**
+     * An issue's first sentence and the rest. A text with no sentence end, or with nothing
+     * after it, stays whole.
+     *
+     * @param string $text
+     *
+     * @return array{0:string,1:string}
+     */
+    public static function splitSentence(string $text): array
+    {
+        $text = trim($text);
+        if (preg_match('/^(.+?[.!?\x{3002}\x{FF01}\x{FF1F}])(?:\s+(.+))?$/su', $text, $m) !== 1 || ($m[2] ?? '') === '') {
+            return array($text, '');
+        }
+
+        return array($m[1], $m[2]);
+    }
+
+    /**
      * The URL of a System info tab, with an optional fragment.
      *
      * @param array<string,mixed> $env

@@ -5,6 +5,5 @@ oc-includes/osclass/classes/controller/CWebLogin.php::loginPost
 oc-includes/osclass/classes/controller/admin/CAdminEmails.php::doModel
 oc-includes/osclass/classes/controller/admin/CAdminLanguages.php::languages
 oc-includes/osclass/classes/controller/admin/CAdminSettings.php::doModel
-oc-includes/osclass/classes/controller/admin/CAdminTools.php::systemEnvironment
 oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCurrencies.php::doModel
 oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsStorage.php::doModel

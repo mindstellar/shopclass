@@ -68,6 +68,7 @@ final class Boot
         'osclass/helpers/hSettings.php',
         'osclass/helpers/hForms.php',
         'osclass/helpers/hBilling.php',
+        'osclass/helpers/hAdminNotices.php',
         'osclass/compatibility.php',
     ];
 

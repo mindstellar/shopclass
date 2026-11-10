@@ -22,6 +22,7 @@ final class AjaxRegistry
     /** The actions a moderator may reach; any other answers error_permissions. */
     public const MODERATOR_ACTIONS = array(
         'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload', 'media_list',
+        'notice_hide', 'notice_show',
     );
 
     /** action => [handler class, method, CSRF token required] */
@@ -40,6 +41,9 @@ final class AjaxRegistry
 
         'runhook'                => array(PluginAjax::class, 'runHook', false),
         'custom'                 => array(PluginAjax::class, 'custom', false),
+
+        'notice_hide'            => array(NoticeAjax::class, 'hide', true),
+        'notice_show'            => array(NoticeAjax::class, 'show', true),
 
         'media_list'             => array(MediaAjax::class, 'mediaList', false),
         'resource_upload'        => array(MediaAjax::class, 'resourceUpload', true),

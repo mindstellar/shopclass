@@ -486,6 +486,13 @@ $note = OrderStore::find($order->getId())->meta(OrderStore::PUBLISH_FAILED);
 pin('a paid order whose listing cannot go live: still held', null, $row($held)['dt_first_pub_date']);
 pin('and the order says why', 'insufficient_credits', $note['reason'] ?? null);
 pin('the pay step reads it as paid, not published', 'failed', ListingCheckout::state($held, $uid)['step']);
+$noticeKey = 'order_publish:' . $order->getId();
+$raised    = (new \mindstellar\model\KeyValue())->get('admin_notice', 'n:' . $noticeKey);
+$raised    = $raised === null ? null : json_decode((string) $raised['value'], true);
+pin('the admin bell gets one error for it', ['error', 'billing_orders', '?page=billing&action=order&id=' . $order->getId()], [$raised['type'] ?? null, $raised['submenu'] ?? null, $raised['link'] ?? null]);
+Wallet::credit($uid, 50, Wallet::REASON_GRANT);
+pin('published later: it goes live', true, ListingCheckout::publish($held, Actor::user($uid))['published']);
+pin('...and the bell notice is gone', null, (new \mindstellar\model\KeyValue())->get('admin_notice', 'n:' . $noticeKey));
 
 [$uid, , $held] = $seller(0);
 $order = ListingCheckout::startOrder($held, $uid, $pkg, 'lcgw')['order'];
@@ -493,6 +500,7 @@ Billing::markPaid($order);
 Billing::markPaid($order);
 ListingCheckout::onOrderPaid(new \mindstellar\billing\event\OrderPaid($order->getId(), $uid, 5));
 pin('a replay on a live listing writes no note', null, OrderStore::find($order->getId())->meta(OrderStore::PUBLISH_FAILED));
+pin('...and raises no bell notice', null, (new \mindstellar\model\KeyValue())->get('admin_notice', 'n:order_publish:' . $order->getId()));
 pin('the pay step reads it as published', 'published', ListingCheckout::state($held, $uid)['step']);
 
 harness_section('Pay step: where a paid listing landed');

@@ -480,6 +480,48 @@ class AdminMenu
      * The count badge beside a menu title: nothing at zero. The admin theme's own
      * osc_admin_count() is used when it is loaded, else the core one.
      */
+    /** @var array<string,array{group:string,count:int,action:int}>|null */
+    private ?array $noticeMarks = null;
+
+    /**
+     * The dot beside a section or sub-item that has notices, with its spoken name for the link text.
+     * A dot with only hidden notices is printed hidden, so Show again can light it.
+     *
+     * @param string[] $keys mark keys: 'tools', or 'tools/tools_backup'
+     */
+    private function noticeDot(array $keys): string
+    {
+        if ($this->noticeMarks === null) {
+            try {
+                $this->noticeMarks = osc_admin_notices()->marks();
+            } catch (\Throwable $e) {
+                $this->noticeMarks = array();
+            }
+        }
+        $mark = null;
+        foreach ($keys as $key) {
+            $found = $this->noticeMarks[$key] ?? null;
+            if ($found === null) {
+                continue;
+            }
+            $mark = $mark === null ? $found + array('key' => $key) : array(
+                'group'  => ($mark['action'] + $found['action']) > 0 ? 'action' : (($mark['count'] + $found['count']) > 0 ? 'headsup' : ''),
+                'count'  => $mark['count'] + $found['count'],
+                'action' => $mark['action'] + $found['action'],
+                'key'    => $mark['key'],
+            );
+        }
+        if ($mark === null) {
+            return '';
+        }
+        $name = osc_admin_notice_name($mark['count'], $mark['action']);
+        $key  = osc_esc_html($mark['key']);
+
+        return ' <span class="osc-dot' . ($mark['group'] !== '' ? ' is-' . $mark['group'] : '') . '" data-osc-mark="' . $key . '"'
+            . ($mark['group'] === '' ? ' hidden' : ' title="' . osc_esc_html($name) . '"') . '></span>'
+            . '<span class="visually-hidden" data-osc-mark-name="' . $key . '">' . ($name !== '' ? osc_esc_html(', ' . $name) : '') . '</span>';
+    }
+
     private static function countBadge(int $count): string
     {
         if ($count <= 0) {
@@ -899,7 +941,9 @@ class AdminMenu
             $str       .= '<li><a class="nav-link py-1 ' . ($isCurrent ? 'sub-active' : '')
                           . '" id="' . $group['id'] . '" href="' . $group['entries'][0]['url'] . '"'
                           . ($isCurrent ? ' aria-current="page"' : '') . '>'
-                          . $group['title'] . '</a></li>' . PHP_EOL;
+                          . $group['title']
+                          . $this->noticeDot(array_map(static fn ($e) => $parentMenuId . '/' . $e['id'], $group['entries']))
+                          . '</a></li>' . PHP_EOL;
         }
 
         return $str . '</ul>';
@@ -1106,7 +1150,7 @@ class AdminMenu
             // one tree tell a screen reader the user is in two places at once.
             $ariaSection = ($isCurrent && empty($value['sub'])) ? ' aria-current="page"' : '';
             $str .= '<a class="h6" href="' . $value[1] . '"' . $ariaSection . '>';
-            $str .= $menuTag . ' ' . $value[0] . self::countBadge($value['count'] ?? 0) . '</a>';
+            $str .= $menuTag . ' ' . $value[0] . self::countBadge($value['count'] ?? 0) . $this->noticeDot(array($menuId)) . '</a>';
 
             if (isset($value['sub']) && !empty($value['sub'])) {
                 $isOpen = ($activeMenu === $menuId);
@@ -1192,6 +1236,7 @@ class AdminMenu
                               . '" id="' . $arrSubMenu[2] . '" href="' . $arrSubMenu[1] . '"'
                               . ($isCurrent ? ' aria-current="page"' : '') . '>'
                               . $arrSubMenu[0] . self::countBadge($arrSubMenu['count'] ?? 0)
+                              . $this->noticeDot(array($parentMenuId . '/' . $arrSubMenu[2]))
                               . '</a></li>' . PHP_EOL;
             }
         }

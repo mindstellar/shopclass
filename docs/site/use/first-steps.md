@@ -118,6 +118,8 @@ php oc-cli.php doctor
 writability, whether cron has actually run recently, and the cache. It exits
 non-zero if anything fails.
 
+Keep an eye on the bell in the top bar too. It lists site problems as they appear. See [notices](/docs/use/notices/).
+
 Then post a listing yourself, from a logged-out browser, exactly as a visitor
 would. It is the fastest way to find the thing you forgot.
 

@@ -442,6 +442,80 @@ check('on + last ok: no send-failed issue', $issue('server', $env(array('push' =
 check('on + never pushed: no send-failed issue', $issue('server', $env(array('push' => array('switch' => true, 'https' => true, 'last' => null))), 'push_send_failed') === null);
 check('off + a stale failure: no issue at all', $issue('server', $env(array('push' => array('switch' => false, 'https' => false, 'last' => $pushFail))), 'push_send_failed') === null);
 
+harness_section('Notice bell input');
+
+$firing = $env(array(
+    'db_server'           => '5.5.1-MySQL',
+    'extensions'          => array('json'),
+    'imagick'             => false,
+    'gd'                  => false,
+    'uploads_writable'    => false,
+    'read_only'           => array('core', 'plugins'),
+    'php_user'            => 'www',
+    'file_owner'          => 'deploy',
+    'memory'              => 64 * 1024 * 1024,
+    'upload'              => 40 * 1024 * 1024,
+    'post'                => 8 * 1024 * 1024,
+    'photos'              => 30,
+    'max_files'           => 5,
+    'secret_mail_blocked' => true,
+    'opcache'             => false,
+    'debug'               => true,
+    'free_disk'           => 1024,
+    'htaccess_auth'       => false,
+    'reserved_slugs'      => array('pages' => array('api'), 'categories' => array()),
+    'live'                => array('mode' => 'nchan', 'last' => array('ok' => false)),
+    'push'                => array('switch' => true, 'https' => false, 'last' => array('ok' => false)),
+    'maintenance'         => 'locked',
+    'cron_last'           => $now - 3 * 86400,
+    'backup_last'         => null,
+    'backup_probe'        => true,
+    'proxy'               => array('header' => 'X-Forwarded-For', 'proxy' => '10.0.0.1'),
+    'config_writable'     => true,
+    'cache_driver'        => 'redis',
+    'cache_supported'     => false,
+    'jobs'                => array('pending' => 1, 'running' => 0, 'error' => 2, 'oldest' => null, 'due' => 0, 'due_since' => null, 'stuck' => 0, 'overdue' => null, 'orphans' => array('gone_type'), 'extra' => 'x'),
+    'throttle'            => array('enabled' => false, 'window' => 15, 'max_ip' => 20, 'max_account' => 10, 'captcha' => false, 'blocked' => 3),
+    'signins'             => array(array('ip' => '1.2.3.4', 'blocked' => true)),
+    'cache_stats'         => array('hits' => 1),
+    'admins'              => array(
+        array('id' => 1, 'name' => 'Owner', 'username' => 'owner', 'moderator' => false, 'two_factor' => false, 'email' => 'o@example.com'),
+        array('id' => 2, 'name' => 'Mod', 'username' => 'mod', 'moderator' => true, 'two_factor' => true),
+    ),
+));
+$fullIds = array_column(SystemChecks::noticeIssues($firing), 'id');
+$slimIds = array_column(SystemChecks::noticeIssues(array('now' => $now) + SystemChecks::noticeEnv($firing)), 'id');
+check('the fixture fires many checks', count($fullIds) >= 25);
+pin('the trimmed env gives the same ids as the full one', $fullIds, $slimIds);
+check('signin_blocked is not a notice', !in_array('signin_blocked', $fullIds, true));
+check('db_pending and the other scan lines are not notices', array_diff(array('db_pending', 'db_repairable', 'db_closer_look', 'db_unreadable'), $fullIds) === array('db_pending', 'db_repairable', 'db_closer_look', 'db_unreadable'));
+pin('a healthy env gives none', array(), SystemChecks::noticeIssues($env()));
+pin('a healthy trimmed env gives none', array(), SystemChecks::noticeIssues(array('now' => $now) + SystemChecks::noticeEnv($env())));
+pin('the lines come red first', 'danger', SystemChecks::noticeIssues($firing)[0]['tone']);
+$slim = SystemChecks::noticeEnv($firing);
+check('the trimmed env drops signins, cache stats and the other jobs keys', !isset($slim['signins'], $slim['cache_stats'], $slim['jobs']['extra'], $slim['throttle']['window']));
+pin('admins keep id, username and two_factor only', array('id', 'username', 'two_factor'), array_keys($slim['admins'][0]));
+pin('the blocked count stays', 3, $slim['throttle']['blocked']);
+$withDb = $env(array('pending' => array('x'), 'findings_error' => 'boom'));
+check('findings and pending do not reach the notice env', !isset(SystemChecks::noticeEnv($withDb)['pending'], SystemChecks::noticeEnv($withDb)['findings_error']));
+
+harness_section('First sentence');
+
+pin('two sentences', array('A one.', 'Then two.'), SystemChecks::splitSentence('A one. Then two.'));
+pin('one sentence stays whole', array('Only one.', ''), SystemChecks::splitSentence('Only one.'));
+pin('no full stop stays whole', array('No stop', ''), SystemChecks::splitSentence('No stop'));
+pin('a question mark splits', array('Why?', 'Because.'), SystemChecks::splitSentence('Why? Because.'));
+pin('config.php does not split', array('config.php can be written by the web server.', 'Make it read-only.'), SystemChecks::splitSentence('config.php can be written by the web server. Make it read-only.'));
+pin('a version number does not split', array('MySQL 5.5 is old.', ''), SystemChecks::splitSentence('MySQL 5.5 is old.'));
+pin('a full-width stop splits before a space', array('一。', '二。'), SystemChecks::splitSentence('一。 二。'));
+$bad = array();
+foreach (SystemChecks::noticeIssues($firing) as $row) {
+    if (SystemChecks::splitSentence($row['text'])[0] === '') {
+        $bad[] = $row['id'];
+    }
+}
+pin('every notice text has a first part', array(), $bad);
+
 exit(harness_result());
 
 /* file end: ./tests/system-checks.php */

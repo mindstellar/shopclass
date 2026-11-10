@@ -55,6 +55,7 @@ Worth knowing before you port something:
 | Take payments | [Payment gateways](/docs/developers/payment-gateways/) |
 | Call another service over HTTPS | [HTTP client](/docs/developers/http-client/) |
 | Add toolbar shortcuts | [Admin toolbar](/docs/developers/admin-toolbar/) |
+| Show a warning in the admin bell | [Admin notices](/docs/developers/admin-notices/) |
 | Load CSS and JavaScript | [Scripts and styles](/docs/developers/scripts-and-styles/) |
 | Host core's own pages in your theme | [Theme chrome](/docs/developers/theme-chrome/) |
 | Let owners customise a theme with a live preview | [Customiser](/docs/developers/customiser/) |

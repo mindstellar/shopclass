@@ -92,6 +92,7 @@ if ($oscSidebar !== 'collapsed') {
                     </li>
                     <?php } ?>
                     <?php AdminToolbar::getInstance()->render(); ?>
+                    <?php require __DIR__ . '/notices-bell.php'; ?>
                     <li class="nav-item admin-topbar-divider" aria-hidden="true"></li>
                     <li class="nav-item">
                         <button type="button" id="oscThemeToggle" class="admin-topbar-btn"

@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- A bell in the top bar lists site problems and plugin warnings, with sidebar dots, Hide for 7 days and a Notices screen.
 - Price, photos and location can each be Required or Optional, and price and photos Off, on the Listings settings screen; photos can require a minimum count.
 - A custom field can be hidden from visitors: the poster and admins still see it, the listing page and the public API do not. A hidden field cannot be searchable.
 - Invoices and credit notes show tax per line, and a refund of units takes those units' own tax. Tax plugins report it with `CartTaxLines::setLineTax()`.

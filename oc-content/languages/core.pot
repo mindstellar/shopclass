@@ -488,6 +488,12 @@ msgid_plural "%d groups"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "%d hidden"
+msgid_plural "%d hidden"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hAdminUi.php
 msgid "%d hour"
 msgid_plural "%d hours"
@@ -563,6 +569,18 @@ msgstr[1] ""
 #: oc-admin/themes/modern/upgrade/index.php
 msgid "%d more change"
 msgid_plural "%d more changes"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/functions.php
+msgid "%d needs action"
+msgid_plural "%d need action"
+msgstr[0] ""
+msgstr[1] ""
+
+#: oc-includes/osclass/functions.php
+msgid "%d notice"
+msgid_plural "%d notices"
 msgstr[0] ""
 msgstr[1] ""
 
@@ -835,6 +853,10 @@ msgstr ""
 msgid "%s is corrupt or broken!"
 msgstr ""
 
+#: oc-includes/classes/admin/AdminNoticeFeed.php
+msgid "%s is in test mode: no real money is taken."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hBilling.php
 msgid ""
 "%s is in test mode: no real money is taken. Switch it to live mode before "
@@ -981,6 +1003,7 @@ msgstr ""
 msgid "%s set differently"
 msgstr ""
 
+#: oc-includes/classes/admin/AdminNoticeFeed.php
 #: oc-includes/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "%s settings"
@@ -1640,6 +1663,7 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/messages/index.php
+#: oc-admin/themes/modern/notices/index.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/billing.php
@@ -1686,6 +1710,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/dependencies.php
 #: oc-admin/themes/modern/comments/frm.php
 #: oc-admin/themes/modern/items/index.php
+#: oc-admin/themes/modern/notices/index.php
 #: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/api.php
@@ -2713,6 +2738,10 @@ msgstr ""
 msgid "Are you sure you want to delete this alert?"
 msgstr ""
 
+#: oc-admin/themes/modern/notices/index.php
+msgid "Area"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-shop.php
 msgid "Art Supplies"
 msgstr ""
@@ -2962,6 +2991,7 @@ msgid "Background jobs are running normally."
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/jobs.php
+#: oc-includes/classes/backup/BackupJobs.php
 msgid "Backup"
 msgstr ""
 
@@ -4091,6 +4121,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/parts/media-picker.php
+#: oc-admin/themes/modern/parts/notices-panel.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/preview.php
 #: oc-includes/osclass/classes/form/ItemForm.php
@@ -4109,6 +4140,10 @@ msgstr ""
 #: oc-admin/themes/modern/messages/index.php
 #: oc-admin/themes/modern/messages/thread.php
 msgid "Close conversation"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "Close list"
 msgstr ""
 
 #: oc-admin/themes/modern/parts/header.php
@@ -4181,6 +4216,14 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
 msgid "Column has a different type"
+msgstr ""
+
+#: oc-admin/themes/modern/notices/index.php
+msgid "Comes back"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "Comes back %s"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/frm.php
@@ -7159,6 +7202,11 @@ msgstr ""
 msgid "Have these ready"
 msgstr ""
 
+#: oc-admin/themes/modern/notices/index.php
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "Heads-up"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Health & Beauty"
 msgstr ""
@@ -7195,6 +7243,7 @@ msgid "Hi %s,"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/customise.php
+#: oc-admin/themes/modern/notices/index.php
 #: oc-admin/themes/modern/settings/locations.php
 #: oc-admin/themes/modern/settings/locations/form.php
 #: oc-admin/themes/modern/settings/locations/list.php
@@ -7204,6 +7253,14 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid "Hidden at checkout until you write instructions."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "Hidden by you"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/notices-bell.php
+msgid "Hidden for 7 days."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/preview.php
@@ -7221,8 +7278,13 @@ msgstr ""
 msgid "Hide %s"
 msgstr ""
 
+#: oc-includes/classes/admin/AdminNoticeView.php
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Hide for 7 days"
+msgstr ""
+
+#: oc-includes/classes/admin/AdminNoticeView.php
+msgid "Hide for 7 days: %s"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
@@ -9489,6 +9551,7 @@ msgstr ""
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/messages/index.php
 #: oc-admin/themes/modern/messages/thread.php
+#: oc-admin/themes/modern/notices/index.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-includes/classes/admin/form/MaintenanceSettingsScreen.php
 msgid "Message"
@@ -9980,6 +10043,11 @@ msgstr ""
 msgid "Needs a closer look"
 msgstr ""
 
+#: oc-admin/themes/modern/notices/index.php
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "Needs action"
+msgstr ""
+
 #: oc-admin/themes/modern/comments/index.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/osclass/classes/datatables/AlertsDataTable.php
@@ -10379,6 +10447,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/messages/index.php
 msgid "No held messages"
+msgstr ""
+
+#: oc-admin/themes/modern/notices/index.php
+msgid "No hidden notices."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
@@ -10807,6 +10879,11 @@ msgstr ""
 msgid "Nothing needed repairing."
 msgstr ""
 
+#: oc-admin/themes/modern/notices/index.php
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "Nothing needs attention."
+msgstr ""
+
 #: oc-admin/themes/modern/parts/market.php
 msgid "Nothing to browse yet"
 msgstr ""
@@ -10844,6 +10921,20 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
 msgid "Nothing was waiting. The database is up to date."
+msgstr ""
+
+#: oc-admin/themes/modern/notices/index.php
+#: oc-admin/themes/modern/parts/notices-bell.php
+#: oc-admin/themes/modern/parts/notices-panel.php
+msgid "Notices"
+msgstr ""
+
+#: oc-includes/osclass/functions.php
+msgid "Notices, %s"
+msgstr ""
+
+#: oc-includes/osclass/functions.php
+msgid "Notices, nothing needs attention"
 msgstr ""
 
 #: oc-includes/classes/admin/form/CommentSettingsScreen.php
@@ -11196,6 +11287,10 @@ msgstr ""
 msgid "Open storage settings"
 msgstr ""
 
+#: oc-includes/classes/billing/ListingCheckout.php
+msgid "Open the order"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid "Open the site again"
 msgstr ""
@@ -11309,6 +11404,10 @@ msgstr ""
 msgid "Order #%d"
 msgstr ""
 
+#: oc-includes/classes/billing/ListingCheckout.php
+msgid "Order #%d was paid, but its listing did not publish."
+msgstr ""
+
 #: oc-includes/classes/billing/Receipts.php
 msgid "Order %1$s, paid on %2$s by %3$s."
 msgstr ""
@@ -11345,6 +11444,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
+#: oc-includes/classes/billing/ListingCheckout.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Orders"
 msgstr ""
@@ -13747,7 +13847,13 @@ msgid "Security updates"
 msgstr ""
 
 #: oc-admin/themes/modern/main/index.php
+#: oc-admin/themes/modern/parts/notices-panel.php
 msgid "See all"
+msgstr ""
+
+#: oc-includes/classes/admin/AdminNoticeFeed.php
+#: oc-includes/classes/admin/AdminNoticeView.php
+msgid "See details"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/comments.php
@@ -14450,6 +14556,7 @@ msgid "Short name: this field is required"
 msgstr ""
 
 #: oc-admin/themes/modern/comments/index.php
+#: oc-admin/themes/modern/parts/notices-panel.php
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-includes/classes/admin/ui/Field.php
 msgid "Show"
@@ -14469,6 +14576,14 @@ msgstr ""
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/classes/admin/form/StaticPageForm.php
 msgid "Show a link in the footer"
+msgstr ""
+
+#: oc-includes/classes/admin/AdminNoticeView.php
+msgid "Show again"
+msgstr ""
+
+#: oc-includes/classes/admin/AdminNoticeView.php
+msgid "Show again: %s"
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
@@ -14570,6 +14685,10 @@ msgstr ""
 msgid "Showing %s to %s of %s results (filtered from %s total results)"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/notices-bell.php
+msgid "Shown again."
+msgstr ""
+
 #: oc-admin/themes/modern/items/frm.php
 msgid "Shown crossed out next to the price. Leave empty when not on sale."
 msgstr ""
@@ -14665,6 +14784,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-classifieds.php
 msgid "Silver"
+msgstr ""
+
+#: oc-admin/themes/modern/notices/index.php
+msgid "Since"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
@@ -14974,6 +15097,7 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/fields/submissions.php
 #: oc-admin/themes/modern/messages/thread.php
+#: oc-admin/themes/modern/notices/index.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/settings/billing.php
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -15157,6 +15281,10 @@ msgstr ""
 msgid "Switch debugging on"
 msgstr ""
 
+#: oc-includes/classes/admin/AdminNoticeFeed.php
+msgid "Switch it to live mode before the site takes payments."
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 msgid "Switch off"
 msgstr ""
@@ -15198,6 +15326,7 @@ msgid "System"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info.php
+#: oc-includes/classes/admin/AdminNoticeFeed.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "System info"
 msgstr ""
@@ -15640,6 +15769,12 @@ msgstr ""
 msgid "The buyer is not charged. This cannot be undone."
 msgstr ""
 
+#: oc-includes/classes/billing/ListingCheckout.php
+msgid ""
+"The buyer paid and the listing is still waiting. Open the order to publish "
+"it."
+msgstr ""
+
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid ""
 "The buyer pays the courier. Ship the order unpaid; marking it delivered "
@@ -15946,6 +16081,10 @@ msgstr ""
 msgid ""
 "The new key gets the same type, scopes and expiry. The old key keeps working "
 "until you revoke it, so you can switch over first."
+msgstr ""
+
+#: oc-admin/themes/modern/parts/notices-bell.php
+msgid "The notice could not be changed. Reload the page and try again."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/data.php
@@ -17223,6 +17362,7 @@ msgstr ""
 msgid "Turn on the REST API"
 msgstr ""
 
+#: oc-includes/classes/admin/AdminNoticeFeed.php
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "Turn on yours"
 msgstr ""
@@ -18723,6 +18863,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-site-type.php
 msgid "You sell your own products, with a cart and checkout."
+msgstr ""
+
+#: oc-includes/classes/admin/AdminNoticeFeed.php
+msgid "You sign in with a password only."
 msgstr ""
 
 #: oc-admin/themes/modern/admins/two_factor.php

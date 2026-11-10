@@ -122,7 +122,7 @@ $csrf = array(
     'form_submission_delete', 'form_submissions_purge', 'enable_category', 'delete_category',
     'edit_category_post', 'category_move', 'category_bulk', 'test_mail', 'test_mail_template', 'order_pages', 'market_refresh',
     'market_install', 'market_update', 'market_detail', 'upgrade', 'upgrade_db',
-    'location_stats', 'backup_status', 'market_install_dependency',
+    'location_stats', 'backup_status', 'market_install_dependency', 'notice_hide', 'notice_show',
 );
 $open = array(
     'regions', 'cities', 'location_catalog', 'userajax', 'date_format',
@@ -134,7 +134,7 @@ $open = array(
 
 harness_section('every action still has a handler');
 $all = array_merge($csrf, $open);
-pin('56 actions, none added or lost', 56, count($all));
+pin('58 actions, none added or lost', 58, count($all));
 $registered = AjaxRegistry::actions();
 sort($registered);
 $expected = $all;
@@ -156,6 +156,7 @@ foreach ($open as $action) {
 harness_section('moderators');
 pin('the moderator allow-list is unchanged', array(
     'custom', 'runhook', 'save_admin_theme', 'save_sidebar_state', 'resource_upload', 'media_list',
+    'notice_hide', 'notice_show',
 ), AjaxRegistry::MODERATOR_ACTIONS);
 pin('a moderator asking to upgrade is refused', '{"error":"You don\'t have the necessary permissions"}', ajax_drive(array('action' => 'upgrade'), true));
 pin('a moderator may run a hook', array(array('ajax_admin_ping', array())), (ajax_drive(array('action' => 'runhook', 'hook' => 'ping'), true) === '') ? $GLOBALS['hooks'] : null);

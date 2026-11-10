@@ -16,6 +16,7 @@ if (!defined('ABS_PATH')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+use mindstellar\admin\AdminNoticeFeed;
 use mindstellar\admin\BulkAction;
 use mindstellar\admin\form\AdminAccountForm;
 use mindstellar\admin\ListPaging;
@@ -450,6 +451,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 }
                 $session->_drop('admin2faSetup');
                 $session->_set('admin2faCodes', $codes);
+                AdminNoticeFeed::forget();
                 osc_add_flash_ok_message(_m('Two-step sign-in is on.'), 'admin');
                 break;
             case '2fa_codes':
@@ -457,6 +459,7 @@ class CAdminAdmins extends AdminSecBaseModel
                 break;
             case '2fa_off':
                 AdminTwoFactor::disable($target);
+                AdminNoticeFeed::forget();
                 osc_add_flash_ok_message(_m('Two-step sign-in is off.'), 'admin');
                 break;
         }

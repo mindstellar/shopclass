@@ -778,6 +778,28 @@ function osc_admin_toolbar_update_counter(string $kind, bool $force = false): vo
 }
 
 /**
+ * How notices are named to a screen reader: "8 notices, 1 needs action". With $bell, the bell's name.
+ *
+ * @param int  $count  active notices
+ * @param int  $action those that need action
+ * @param bool $bell   the whole bell name, which also covers zero
+ *
+ * @return string
+ */
+function osc_admin_notice_name(int $count, int $action, bool $bell = false): string
+{
+    if ($count < 1) {
+        return $bell ? __('Notices, nothing needs attention') : '';
+    }
+    $text = sprintf(_n('%d notice', '%d notices', $count), $count);
+    if ($action > 0) {
+        $text .= ', ' . sprintf(_n('%d needs action', '%d need action', $action), $action);
+    }
+
+    return $bell ? sprintf(__('Notices, %s'), $text) : $text;
+}
+
+/**
  * Add the toolbar entry announcing a core update, when one is recorded as available.
  *
  * @param bool $force Rebuild the entry rather than leaving an already-rendered one in place

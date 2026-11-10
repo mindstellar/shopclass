@@ -133,6 +133,7 @@ foreach ($schedules as $type => [$period, $purgeKey, $jobs]) {
             LatestSearches::getInstance()->purgeDate(date('Y-m-d H:i:s', time() - $period));
         }
         \mindstellar\auth\Actor::runAsSystem(static fn () => $jobs($cron));
+        \mindstellar\admin\AdminNoticeFeed::cronRan();
     }
 }
 

@@ -2661,6 +2661,7 @@ msgstr ""
 msgid "Private seller"
 msgstr ""
 
+#: oc-includes/classes/admin/ajax/NoticeAjax.php
 #: oc-includes/classes/core/security/Csrf.php
 msgid "Probable invalid request."
 msgstr ""

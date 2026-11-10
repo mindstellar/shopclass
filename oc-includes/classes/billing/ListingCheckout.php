@@ -13,6 +13,7 @@ declare(strict_types=1);
 
 namespace mindstellar\billing;
 
+use mindstellar\admin\AdminNotices;
 use mindstellar\auth\Actor;
 use mindstellar\billing\event\OrderPaid;
 use mindstellar\billing\event\OrderReturnUrlResolving;
@@ -149,6 +150,9 @@ final class ListingCheckout
     private static function closeOrders(int $itemId, int $sellerId): void
     {
         $linked = OrderStore::listingOrder($itemId);
+        if ($linked !== null) {
+            AdminNotices::getInstance()->clear('order_publish:' . $linked->getId());
+        }
         OrderStore::unlinkListing($itemId);
         foreach (self::openOrders($itemId, $sellerId, $linked) as $order) {
             OrderStore::markMailSent($order->getId(), Receipts::MAIL_CANCELLED);
@@ -265,6 +269,15 @@ final class ListingCheckout
         if ($reason !== null) {
             error_log(sprintf('Billing: order #%d could not publish listing #%d: %s', $order->getId(), $itemId, $reason));
             OrderStore::notePublishFailed($order->getId(), $reason);
+            AdminNotices::getInstance()->raise('error', sprintf(__('Order #%d was paid, but its listing did not publish.'), $order->getId()), array(
+                'id'         => 'order_publish:' . $order->getId(),
+                'detail'     => __('The buyer paid and the listing is still waiting. Open the order to publish it.'),
+                'link'       => '?page=billing&action=order&id=' . $order->getId(),
+                'link_label' => __('Open the order'),
+                'menu'       => 'billing',
+                'submenu'    => 'billing_orders',
+                'source'     => __('Orders'),
+            ));
         }
     }
 

@@ -111,11 +111,17 @@ $dump  = static function (string $file, callable $each) use (&$dumps): array {
 };
 $builder = new Builder($store, $content, array('dump' => $dump));
 
-$saved = array();
-$logs  = array();
+$saved  = array();
+$logs   = array();
+$raised = array();
 BackupJobs::effects(array(
     'saved'    => static function (array $p) use (&$saved) {
         $saved[] = $p;
+
+        return true;
+    },
+    'failed'   => static function (array $p) use (&$raised) {
+        $raised[] = $p;
 
         return true;
     },
@@ -260,6 +266,7 @@ list(, $last) = $runJob($restoreJob($make()), Restorer::begin($source, true, fal
 $state = $store->state();
 pin('a failed load stops the restore', array('failed', 'database'), array($state['status'], $state['stage']));
 pin('...puts the safety copy back', true, $state['rolled_back']);
+pin('...and raises one bell notice for the restore', array(true, 'A statement in the backup failed (MySQL error 1062).'), array(end($raised)['restore'] ?? null, end($raised)['message'] ?? null));
 check('...by loading it after the failed backup', end($conn->ran) === 'SET FOREIGN_KEY_CHECKS = 1'
     && in_array("insert into `sc_t_probe` values\n(13)", $conn->ran, true));
 pin('...keeps the site closed', OSC_MAINTENANCE_RESTORE_MARKER, file_get_contents($site . '/.maintenance'));
@@ -355,6 +362,11 @@ $effects = array(
     },
     'upload'   => static function (array $p) use (&$uploads) {
         $uploads[] = $p;
+
+        return true;
+    },
+    'failed'   => static function (array $p) use (&$raised) {
+        $raised[] = $p;
 
         return true;
     },

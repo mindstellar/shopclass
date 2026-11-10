@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1295 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1301 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -41,12 +41,13 @@ Core defines 1295 helpers, 29 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_sanitizeString($string)` | Turn a string into a URL-safe slug: tags, accents, entities and punctuation removed, whitespace collapsed to single hyphens. |
 
-### functions (32)
+### functions (33)
 
 `oc-includes/osclass/functions.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_admin_notice_name(int $count, int $action, bool $bell = false)` | How notices are named to a screen reader: "8 notices, 1 needs action". With $bell, the bell's name. |
 | `osc_admin_toolbar_comments()` | Add a toolbar counter for comments awaiting moderation, when there are any. |
 | `osc_admin_toolbar_logout()` | Add logout link |
 | `osc_admin_toolbar_spam()` | Add a toolbar counter for listings marked as spam, when there are any. |
@@ -104,6 +105,18 @@ Core defines 1295 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_menu_page($menu_id)` | Remove menu section with id $menu_id |
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
+
+### hAdminNotices (5)
+
+`oc-includes/osclass/helpers/hAdminNotices.php`
+
+| Helper | What it does |
+|---|---|
+| `osc_add_admin_check(string $id, string $type, string\|callable $text, callable $when, array $options = array())` | Add a standing check: shown while $when returns true, not stored, ignored outside the admin. |
+| `osc_add_admin_notice(string $type, string\|callable $text, array $options = array())` | Add a notice to the admin bell. |
+| `osc_admin_notice_viewer()` | Who is looking at the notices. The role is read once a request. |
+| `osc_admin_notices()` | The notices of the signed-in admin. |
+| `osc_clear_admin_notice(string $id)` | Remove a notice for every admin. |
 
 ### hAdminUi (55)
 
@@ -196,7 +209,7 @@ Core defines 1295 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_account_upgrade_offers(?int $userId = null)` | Upgrades a seller can buy for their account with credits: each is ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`. With $userId, extra photos and runtime that seller already holds are left out: they raise a limit to a level, so buying them again would only stack it. |
 | `osc_account_upgrade_url(string $feature)` | The POST target for buying the account upgrade $feature. |
 | `osc_admin_billing_order_url(int $orderId)` | The admin page of one order. |
-| `osc_admin_payment_test_notice(array $query, string $hidden = '')` | One notice naming every payment method still in test mode, for the dashboard, the billing screens and those methods' own settings pages. Empty anywhere else, when none is in test mode, or when the admin hid it for this set of methods. Plugins add themselves through the PaymentTestModes event or the `admin_payment_test_modes` filter. |
+| `osc_admin_payment_test_notice(array $query, string $hidden = '')` | One notice naming every payment method still in test mode, on those methods' own settings pages. Empty anywhere else, when none is in test mode, or when the admin hid it for this set of methods. The bell lists each method on every admin page. Plugins add themselves through the PaymentTestModes event or the `admin_payment_test_modes` filter. |
 | `osc_billing_bump_cooldown_hours()` | Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. |
 | `osc_billing_bump_credits()` | Credit price of a bump. 0 with billing_bump_enabled on means free, not off. |
 | `osc_billing_bump_enabled()` | Whether bump-to-top is registered as a purchasable upgrade at all. |

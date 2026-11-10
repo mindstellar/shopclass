@@ -19,7 +19,7 @@ namespace mindstellar\admin;
  */
 final class ModeratorAccess
 {
-    public const DEFAULT_PAGES = ['items', 'comments', 'messages', 'media', 'login', 'admins', 'ajax', 'stats', ''];
+    public const DEFAULT_PAGES = ['items', 'comments', 'messages', 'media', 'login', 'admins', 'ajax', 'stats', 'notices', ''];
 
     private function __construct()
     {
