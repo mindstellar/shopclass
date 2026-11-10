@@ -125,6 +125,12 @@ if (!function_exists('osc_locale_dec_point')) {
 
 // Recorded rather than enforced: whether the check runs at all, and on which actions, is one
 // of the things this file asserts.
+if (!function_exists('_mn')) {
+    function _mn($one, $many, $count)
+    {
+        return (int) $count === 1 ? $one : $many;
+    }
+}
 $GLOBALS['csrfChecks'] = array();
 if (!function_exists('osc_csrf_check')) {
     function osc_csrf_check($die = true)
@@ -1233,6 +1239,19 @@ pin('the saved-search limit is a number, floored at 0', array('0', 'INTEGER'), p
 
 $run = drive('CAdminMessages', 'messages_post', array('message_max_links' => '2', 'message_max_length' => '100', 'message_report_link' => '1', 'message_report_days' => '5'));
 pin('the old messages_post action is CSRF-checked', array('messages_post'), $run['csrf']);
+
+harness_section('security actions need the CSRF token');
+foreach (array(
+    array('CAdminSettingsSpamnBots', 'login_throttle_unblock', array('ip' => '203.0.113.9', 'context' => 'admin')),
+    array('CAdminSettingsSpamnBots', 'login_throttle_reset', array()),
+    array('CAdminSettingsKeywordBlock', 'keyword_block_add_post', array('s_keyword' => 'csrf-pin')),
+    array('CAdminSettingsKeywordBlock', 'keyword_block_edit_post', array('id' => '0', 's_keyword' => 'csrf-pin')),
+    array('CAdminSettingsKeywordBlock', 'keyword_block_delete', array('id' => array('0'))),
+    array('CAdminSettingsKeywordBlock', 'keyword_block_import_post', array('keywords' => '')),
+) as [$controller, $securityAction, $securityFields]) {
+    $run = drive($controller, $securityAction, $securityFields);
+    check($securityAction . ' is CSRF-checked', in_array($securityAction, $run['csrf'], true));
+}
 
 harness_section('keyword blocklist moderation');
 
