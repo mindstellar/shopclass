@@ -135,10 +135,12 @@
 
 .osc-flash-more {
   align-self: flex-start;
+  background: var(--bs-body-bg);
+  border-radius: 4px;
   color: var(--osc-bronze);
   font-size: .8125rem;
   min-block-size: 1.5rem;
-  padding: 0;
+  padding: 0 .5rem;
 }
 
 #message-wrapper > .col {
