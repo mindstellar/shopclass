@@ -345,7 +345,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             $opts['open'] = true;
         }
         $itemToc[] = array('id' => $id, 'title' => $title, 'fix' => $fix, 'attrs' => $opts['attrs'] ?? array());
-        osc_admin_panel_open($title, $opts + array('id' => $id, 'class' => 'osc-section', 'hint' => $hints));
+        osc_admin_panel_open($title, $opts + array('id' => $id, 'class' => 'osc-editor-section', 'hint' => $hints));
     };
 
     // 1. What it is.

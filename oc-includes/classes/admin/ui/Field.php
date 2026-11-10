@@ -888,8 +888,11 @@ class Field
         $warn  = ($spec['help_tone'] ?? '') === 'warning';
         $class = 'help-box' . ($warn ? ' help-box--warning' : '');
         $icon  = $warn ? '<i class="bi bi-exclamation-triangle" aria-hidden="true"></i> ' : '';
-        if (!empty($spec['help_html'])) {
-            echo '<div class="' . $class . '">' . $icon . $spec['help_html'] . '</div>';
+        // A closure is for help known only when the form is drawn, after the page was registered.
+        $html = $spec['help_html'] ?? '';
+        $html = $html instanceof \Closure ? (string)$html() : $html;
+        if (!empty($html)) {
+            echo '<div class="' . $class . '">' . $icon . $html . '</div>';
         } elseif (!empty($spec['help'])) {
             echo '<div class="' . $class . '">' . $icon . osc_esc_html((string)$spec['help']) . '</div>';
         }

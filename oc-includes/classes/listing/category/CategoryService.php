@@ -39,6 +39,12 @@ final class CategoryService
     /** What bulk() can do. */
     public const BULK_ACTIONS = ['enable', 'disable', 'delete', 'move', 'expiry'];
 
+    /** Outcomes of save(); the numbers are the screen's error codes. */
+    public const SAVE_OK = 0;
+    public const SAVE_NO_NAME = 1;
+    public const SAVE_FAILED = 2;
+    public const SAVE_BLANK_NAMES = 4;
+
     public function __construct(private Category $categories)
     {
     }
@@ -147,7 +153,7 @@ final class CategoryService
      * @param array{i_expiration_days?:int|string,b_price_enabled:int} $fields
      * @param array<string,array<string,mixed>>                        $descriptions locale => s_name, s_description, s_slug
      *
-     * @return array{outcome:int,moved:bool} outcome 0 saved, 1 not saved for want of a name, 2 the write failed, 4 saved with some names blank
+     * @return array{outcome:int,moved:bool} outcome: one of the SAVE_* constants
      * @throws RefusedException for a refused move (pointer /parent_id), a reserved slug or days that are not a whole number
      */
     public function save(int $id, ?int $parentId, array $fields, array $descriptions, bool $toSubcategories, bool $newDates = false): array
@@ -162,7 +168,7 @@ final class CategoryService
         if ($blank && !self::titled($descriptions)) {
             $this->edited($id, 1);
 
-            return ['outcome' => 1, 'moved' => false];
+            return ['outcome' => self::SAVE_NO_NAME, 'moved' => false];
         }
         $moved = false;
         if ($parentId !== null && $parentId !== (int) $this->tree()->parent($id)) {
@@ -170,10 +176,10 @@ final class CategoryService
             $moved = true;
         }
         if (!$this->update($id, $fields, $descriptions, $toSubcategories, $blank ? 1 : 0, $newDates)) {
-            return ['outcome' => 2, 'moved' => $moved];
+            return ['outcome' => self::SAVE_FAILED, 'moved' => $moved];
         }
 
-        return ['outcome' => $blank ? 4 : 0, 'moved' => $moved];
+        return ['outcome' => $blank ? self::SAVE_BLANK_NAMES : self::SAVE_OK, 'moved' => $moved];
     }
 
     /**

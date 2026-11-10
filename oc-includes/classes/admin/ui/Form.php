@@ -14,6 +14,7 @@ namespace mindstellar\admin\ui;
  * The scaffolding behind osc_admin_form_open()/_close(), osc_admin_form_section() and the
  * form-row pair. Those functions are the public, plugin-facing API and stay procedural;
  * this class is the implementation they delegate to, so the markup lives in one place.
+ * Which helper for which job: see the index at the top of oc-includes/osclass/helpers/hAdminUi.php.
  */
 class Form
 {
@@ -235,7 +236,7 @@ class Form
      *
      * @param string              $title empty for a section with no heading
      * @param array<string,mixed> $opts  'intro'/'intro_html', 'actions', 'id', 'level' => 'section' or
-     *                                   'subsection', 'card', 'class', 'attrs'
+     *                                   'subsection', 'class', 'attrs'
      *
      * @since 7.1.0
      */
@@ -243,7 +244,6 @@ class Form
     {
         $id    = (string)($opts['id'] ?? ($title !== '' ? self::anchor($title) : ''));
         $class = 'osc-section'
-            . (!empty($opts['card']) ? ' osc-section-card' : '')
             . (!empty($opts['class']) ? ' ' . $opts['class'] : '');
 
         echo '<section class="' . osc_esc_html($class) . '"' . self::idAndAttrs($opts, $id) . '>';

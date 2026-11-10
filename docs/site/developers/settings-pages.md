@@ -340,7 +340,7 @@ one.
 | `osc_admin_section_heading($text, $level)` | A section (`'section'`) or sub-section (`'subsection'`) heading. |
 | `osc_admin_body_open($opts)` · `osc_admin_body_close()` | The screen's body, a stack spaced by gap. `'layout'` is `'stack'` (default), `'split'` or `'grid'`. |
 | `osc_admin_body_rail($opts)` | In a `'split'` body: ends the main column and starts the rail. |
-| `osc_admin_section($title, $opts)` · `osc_admin_section_close()` | A section with its heading, intro and content. `'card' => true` draws a panel, `'actions'` puts buttons in the head row. No icon option: headings carry none. |
+| `osc_admin_section($title, $opts)` · `osc_admin_section_close()` | A section with its heading, intro and content. `'actions'` puts buttons in the head row. No icon option: headings carry none. |
 | `osc_admin_form_row_open($label)` · `osc_admin_form_row_close()` | One labelled row holding several controls. |
 | `osc_admin_page_head($title, $actions, $opts)` | The screen title with its action buttons, for a screen that does not declare a `heading`. `'level' => 3` draws a section with buttons; the header draws its own title row with `'level' => 1`. |
 | `osc_admin_action_section()` | An intro, a status block, and buttons, no form. |

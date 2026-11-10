@@ -9,6 +9,31 @@
  */
 
 /**
+ * Which admin helper for which job (the full list is in docs/site/developers/admin-screens.md).
+ *
+ * Blocks on a screen:
+ *   osc_admin_section()            a titled block in the body, with a close; the default for screen content.
+ *   osc_admin_panel_open()         a card with a border and title bar: a side box, a dashboard tile, a list wrapper.
+ *   osc_admin_form_section()       only a heading and intro inside a form; prints no wrapper and needs no close.
+ *
+ * Page layout:
+ *   osc_admin_body_open()          any screen; 'layout' stack, split or grid.
+ *   osc_admin_editor_open()        a screen editing one record, with a sticky rail for status and Save.
+ *
+ * Paging (both in parts/ui.php):
+ *   osc_admin_pagination()         under a list whose controller gives DataTables-shaped $aData.
+ *   osc_admin_pager()              when you only have the total, per-page size and page number.
+ *
+ * Form rows:
+ *   osc_admin_field()              one label and one control; use this first.
+ *   osc_admin_form_row_open()      a row whose content is your own markup; end with osc_admin_form_row_close().
+ *   osc_admin_field_row()          one label over several controls. No core screen calls it; kept for themes and plugins.
+ *
+ * Also kept for themes and plugins, no core screen calls them: osc_admin_secret(), and
+ * osc_admin_page_titled() in parts/ui.php.
+ */
+
+/**
  * Admin form field primitives.
  *
  * The admin theme has had a component vocabulary for a while, but it lives inside the
@@ -424,8 +449,7 @@ if (!function_exists('osc_admin_section')) {
      * @param string $title Empty for a section with no heading
      * @param array  $opts  'intro', 'intro_html', 'actions' (action specs, end of the head row,
      *                      as on a builder column), 'id' (made from the title by default),
-     *                      'level' => 'section' (default) or 'subsection', 'card' => true for the
-     *                      panel look, as on a dashboard tile, 'class', 'attrs'
+     *                      'level' => 'section' (default) or 'subsection', 'class', 'attrs'
      *
      * @return void
      * @since 7.1.0

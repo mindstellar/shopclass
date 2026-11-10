@@ -246,10 +246,10 @@ final class CategoryAjax extends AjaxHandler
         AjaxResponse::json(array(
             'error'     => $saved['outcome'],
             'msg'       => match ($saved['outcome']) {
-                0       => __('Category updated correctly'),
-                1       => __('Sorry, including at least a title is mandatory'),
-                4       => __('Category updated correctly, but some titles are empty'),
-                default => __('An error occurred while updating'),
+                CategoryService::SAVE_OK          => __('Category updated correctly'),
+                CategoryService::SAVE_NO_NAME     => __('Sorry, including at least a title is mandatory'),
+                CategoryService::SAVE_BLANK_NAMES => __('Category updated correctly, but some titles are empty'),
+                default                           => __('An error occurred while updating'),
             },
             'text'      => ($descriptions[osc_language()]['s_name'] ?? '') !== '' ? $descriptions[osc_language()]['s_name'] : null,
             'parent_id' => (int) CategoryStore::tree()->parent($id),

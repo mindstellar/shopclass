@@ -78,7 +78,7 @@ $comment = __get('comment');
                         osc_admin_action_button(array(
                             'label' => $comment['b_active'] == 1 ? __('Deactivate') : __('Activate'),
                             'url'   => osc_admin_base_url(true) . '?page=comments&action=status&id=' . $comment['pk_i_id']
-                                . '&value=' . ($comment['b_active'] == 1 ? 'INACTIVE' : 'ACTIVE'),
+                                . '&value=' . ($comment['b_active'] == 1 ? 'INACTIVE' : 'ACTIVE') . '&' . osc_csrf_token_url(),
                             'variant' => 'dim',
                         )); ?>
                     </div>
@@ -89,7 +89,7 @@ $comment = __get('comment');
                         osc_admin_action_button(array(
                             'label' => $comment['b_enabled'] == 1 ? __('Block') : __('Unblock'),
                             'url'   => osc_admin_base_url(true) . '?page=comments&action=status&id=' . $comment['pk_i_id']
-                                . '&value=' . ($comment['b_enabled'] == 1 ? 'DISABLE' : 'ENABLE'),
+                                . '&value=' . ($comment['b_enabled'] == 1 ? 'DISABLE' : 'ENABLE') . '&' . osc_csrf_token_url(),
                             'variant' => 'dim',
                         )); ?>
                     </div>

@@ -84,6 +84,25 @@ osc_admin_body_close();
 Do not write your own tabs, status pills, callouts, empty states or confirm dialogs. The
 rules tests in core fail when a template does.
 
+## Choosing between similar helpers
+
+Some helpers look alike. Pick by what the content is.
+
+| Job | Use | Not |
+|---|---|---|
+| A block of screen content with a heading | `osc_admin_section()` | |
+| A card: a border and a title bar, such as a side box or a dashboard tile | `osc_admin_panel_open()` | `osc_admin_section()` |
+| A heading and intro line between fields in one form | `osc_admin_form_section()`. It prints no wrapper and has no close. | `osc_admin_section()` |
+| Any screen body | `osc_admin_body_open()` with `'layout'` `stack`, `split` or `grid` | |
+| Editing one record, with a sticky rail for status and Save | `osc_admin_editor_open()` | `osc_admin_body_open()` with `split` |
+| Paging under a list with DataTables-shaped `$aData` | `osc_admin_pagination()` | |
+| Paging when you only have total, per-page size and page number | `osc_admin_pager()` | |
+| One label and one control | `osc_admin_field()` | `osc_admin_form_row_open()` |
+| A row holding your own markup | `osc_admin_form_row_open()` / `osc_admin_form_row_close()` | |
+| One label over several controls | `osc_admin_field_row()` | |
+
+No core screen calls `osc_admin_field_row()`, `osc_admin_secret()` or `osc_admin_page_titled()`. They stay for themes and plugins. `osc_admin_secret()` is `osc_admin_field()` with `'type' => 'secret'`.
+
 ## No icons, no margins
 
 - **Icons** go on buttons, status marks, callouts and dialogs. Not on headings, intro or

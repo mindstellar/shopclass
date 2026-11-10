@@ -39,6 +39,9 @@ final class SpamSettingsScreen
     /** Hourly limits on the public forms and uploads. */
     public const PAGE_LIMITS = 'core.settings_limits';
 
+    /** What Akismet said about the stored key; set by the drawing controller. */
+    private static ?int $akismetStatus = null;
+
     /** The sign-in limiter is a security setting and is stored with the others. */
     public const SECURITY_SECTION = 'security';
 
@@ -53,13 +56,32 @@ final class SpamSettingsScreen
      */
     public static function registerAkismet($status = null): string
     {
-        if (osc_settings_page(self::PAGE_AKISMET) !== null) {
+        $registered = osc_settings_page(self::PAGE_AKISMET) !== null;
+        if ($status !== null || !$registered) {
+            self::$akismetStatus = $status === null ? null : (int)$status;
+        }
+        if ($registered) {
             return self::PAGE_AKISMET;
         }
 
-        $alertType = 'danger';
-        $alertMsg  = '';
-        switch ($status) {
+        CoreSettings::page(self::PAGE_AKISMET, __('Akismet'))
+            ->text('akismetKey', __('Akismet API Key'))
+                ->width('key')
+                ->set('help_html', static fn (): string => self::akismetCallout())
+            ->register();
+
+        return self::PAGE_AKISMET;
+    }
+
+    /**
+     * The callout beside the key for the status the drawing controller worked out; none until
+     * it has. A closure on the field, so a save that registered first and was refused still gets it.
+     *
+     * @return string
+     */
+    private static function akismetCallout(): string
+    {
+        switch (self::$akismetStatus) {
             case 1:
                 $alertType = 'success';
                 $alertMsg  = __('This key is valid');
@@ -75,20 +97,11 @@ final class SpamSettingsScreen
                     'http://akismet.com/get/'
                 );
                 break;
+            default:
+                return '';
         }
 
-        CoreSettings::page(self::PAGE_AKISMET, __('Akismet'))
-            ->text('akismetKey', __('Akismet API Key'))
-                ->width('key')
-                ->set(
-                    'help_html',
-                    $alertMsg === ''
-                        ? ''
-                        : \mindstellar\admin\ui\Form::callout($alertType, $alertMsg, array('block' => false, 'html' => true, 'tag' => 'span'))
-                )
-            ->register();
-
-        return self::PAGE_AKISMET;
+        return \mindstellar\admin\ui\Form::callout($alertType, $alertMsg, array('block' => false, 'html' => true, 'tag' => 'span'));
     }
 
     /**

@@ -96,13 +96,6 @@ $osc-stack-reset: '.render-title, .form-intro, .form-row, .settings-actions, .se
   }
 }
 
-.osc-section-card {
-  padding: 1rem 1.25rem;
-  background: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
-  border-radius: var(--bs-border-radius);
-}
-
 .form-horizontal.osc-stack {
   display: flex;
   flex-direction: column;

@@ -194,28 +194,28 @@ osc_admin_page(array(
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
     <?php osc_admin_body_open(array('id' => 'stats-page', 'layout' => 'grid', 'class' => 'stats-grid')); ?>
-        <?php osc_admin_panel_open(osc_mode_text(__('New listing'), __('New products'))); ?>
+        <?php osc_admin_panel_open(osc_mode_text(__('New listing'), __('New products')), array('hint' => osc_mode_text(__('Number of new listings'), __('Number of new products')))); ?>
                     <div id="placeholder" class="graph-placeholder" style="height:150px">
                         <?php if (count($items) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
         <?php osc_admin_panel_close(); ?>
-        <?php osc_admin_panel_open(osc_mode_text(__('Listings\' views'), __('Product views'))); ?>
+        <?php osc_admin_panel_open(osc_mode_text(__('Listings\' views'), __('Product views')), array('hint' => osc_mode_text(__("Total number of listings' views"), __('Total number of product views')))); ?>
                     <div id="placeholder_total" class="graph-placeholder" style="height:150px">
                         <?php if (count($reports) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
         <?php osc_admin_panel_close(); ?>
-        <?php osc_admin_panel_open(__('New alerts')); ?>
+        <?php osc_admin_panel_open(__('New alerts'), array('hint' => __('Number of new alerts'))); ?>
                     <div id="placeholder_alerts" class="graph-placeholder" style="height:150px">
                         <?php if (count($alerts) == 0) {
                             _e("There are no statistics yet");
                         } ?>
                     </div>
         <?php osc_admin_panel_close(); ?>
-        <?php osc_admin_panel_open(__('New subscribers')); ?>
+        <?php osc_admin_panel_open(__('New subscribers'), array('hint' => __('Number of new subscribers'))); ?>
                     <div id="placeholder_subscribers" class="graph-placeholder" style="height:150px">
                         <?php if (count($subscribers) == 0) {
                             _e("There are no statistics yet");

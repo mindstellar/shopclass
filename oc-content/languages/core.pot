@@ -10944,6 +10944,22 @@ msgstr ""
 msgid "Number of moderated products"
 msgstr ""
 
+#: oc-admin/themes/modern/stats/items.php
+msgid "Number of new alerts"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Number of new listings"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Number of new products"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Number of new subscribers"
+msgstr ""
+
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Nutrition & Supplements"
 msgstr ""
@@ -17077,6 +17093,14 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/document.php
 msgid "Total credited"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Total number of listings' views"
+msgstr ""
+
+#: oc-admin/themes/modern/stats/items.php
+msgid "Total number of product views"
 msgstr ""
 
 #: oc-admin/themes/modern/stats/reports.php

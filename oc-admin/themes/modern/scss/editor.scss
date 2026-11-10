@@ -786,12 +786,12 @@
 }
 
 // Product form sections: one card per concern, a warm title bar with a muted subtitle.
-.osc-editor-main .osc-section {
+.osc-editor-main .osc-editor-section {
   min-inline-size: 0;
 }
 
-.osc-section > .widget-box-title,
-.osc-section > .osc-panel-head {
+.osc-editor-section > .widget-box-title,
+.osc-editor-section > .osc-panel-head {
   align-items: baseline;
   background: var(--osc-bench-warm);
   border-block-end: 1px solid var(--osc-rule);
@@ -802,13 +802,13 @@
   padding: .8rem 1.25rem;
 }
 
-.osc-section > .widget-box-content,
-.osc-section > .osc-panel-body {
+.osc-editor-section > .widget-box-content,
+.osc-editor-section > .osc-panel-body {
   padding: 1.25rem;
 }
 
-.osc-section > .widget-box-content > :last-child,
-.osc-section > .osc-panel-body > :last-child {
+.osc-editor-section > .widget-box-content > :last-child,
+.osc-editor-section > .osc-panel-body > :last-child {
   margin-block-end: 0;
 }
 
@@ -831,16 +831,16 @@
 }
 
 // Collapsible sections: no marker, a chevron that turns, the hint pushed to the end.
-details.osc-section > summary {
+details.osc-editor-section > summary {
   cursor: pointer;
   list-style: none;
 }
 
-details.osc-section > summary::-webkit-details-marker {
+details.osc-editor-section > summary::-webkit-details-marker {
   display: none;
 }
 
-details.osc-section > summary::before {
+details.osc-editor-section > summary::before {
   block-size: .45rem;
   border-block-end: 2px solid var(--osc-ink-muted);
   border-inline-end: 2px solid var(--osc-ink-muted);
@@ -852,21 +852,21 @@ details.osc-section > summary::before {
   transition: transform 150ms;
 }
 
-details.osc-section[open] > summary::before {
+details.osc-editor-section[open] > summary::before {
   transform: rotate(45deg);
 }
 
-details.osc-section:not([open]) > summary {
+details.osc-editor-section:not([open]) > summary {
   border-block-end: 0;
   border-radius: inherit;
 }
 
-details.osc-section > summary .widget-box-title-hint:not(.is-error),
-details.osc-section > summary .osc-panel-hint:not(.is-error) {
+details.osc-editor-section > summary .widget-box-title-hint:not(.is-error),
+details.osc-editor-section > summary .osc-panel-hint:not(.is-error) {
   margin-inline-start: auto;
 }
 
-details.osc-section[open] {
+details.osc-editor-section[open] {
   border-color: var(--osc-rule-strong);
 }
 
@@ -891,7 +891,7 @@ details.osc-section[open] {
 }
 
 // The sell switch: a bold label with a muted line under it, on a warm strip.
-.osc-section .form-switch {
+.osc-editor-section .form-switch {
   align-items: start;
   background: var(--osc-bench-warm);
   border: 1px solid var(--osc-rule);
@@ -903,29 +903,29 @@ details.osc-section[open] {
   padding: .75rem 1rem;
 }
 
-.osc-section .form-switch > * {
+.osc-editor-section .form-switch > * {
   grid-column: 2;
   margin-block: 0;
 }
 
-.osc-section .form-switch > .form-check-input {
+.osc-editor-section .form-switch > .form-check-input {
   float: none;
   grid-column: 1;
   grid-row: 1;
   margin: .15em 0 0;
 }
 
-.osc-section .form-switch .form-check-label {
+.osc-editor-section .form-switch .form-check-label {
   font-weight: 600;
 }
 
 // The form's own label spacing would push the label below the switch.
-#item-form .osc-section .form-switch > .form-check-label {
+#item-form .osc-editor-section .form-switch > .form-check-label {
   margin: 0;
 }
 
-.osc-section .form-switch .form-text,
-.osc-section .form-switch small {
+.osc-editor-section .form-switch .form-text,
+.osc-editor-section .form-switch small {
   color: var(--osc-ink-muted);
   display: block;
   font-size: .8125rem;
@@ -944,7 +944,7 @@ details.osc-section[open] {
 }
 
 // A unit such as the weight's "g" sits in a box at the end of its input.
-.osc-section .field-group > .field-suffix {
+.osc-editor-section .field-group > .field-suffix {
   align-self: stretch;
   background: var(--osc-bench-warm);
   border: 1px solid var(--osc-rule-strong);

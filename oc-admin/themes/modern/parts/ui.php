@@ -36,6 +36,8 @@ if (!defined('OC_ADMIN')) {
  *   osc_admin_page()'s `help` -- the help-box body is a prose slot; a dozen of them carry
  *       <strong> or <p>, and translators supply markup there too.
  *   osc_admin_definition()'s `value` when the row sets `html => true` -- opt-in per row.
+ *
+ * Which helper for which job: see the index at the top of oc-includes/osclass/helpers/hAdminUi.php.
  */
 
 if (!function_exists('osc_admin_page')) {
