@@ -24,7 +24,7 @@ const RUNNER_EXCLUDE = array(
 );
 
 // Timing tests measure wall-clock budgets, so they run last and one at a time, with nothing else running.
-const RUN_ALONE = array('categories-drag-perf', 'categories-table-ui', 'category-table');
+const RUN_ALONE = array('categories-drag-perf', 'categories-table-ui', 'category-screen', 'category-table');
 
 $dir = __DIR__;
 $all = array();

@@ -465,7 +465,7 @@ await new Promise(requestAnimationFrame);
 r.region = [live('polite').getAttribute('aria-live'), live('assertive').getAttribute('aria-live')];
 r.pagePolite = live('polite').textContent;
 r.pageAssertive = live('assertive').textContent;
-r.flashRole = [document.querySelector('#message-wrapper .flashmessage').getAttribute('role')];
+r.flashRole = [document.querySelector('#message-wrapper .flashmessage').getAttribute('role'), document.querySelector('#message-wrapper .flashmessage').getAttribute('aria-live')];
 r.outsideRole = document.getElementById('plugin-flash').getAttribute('role');
 const jsm = document.getElementById('jsMessage');
 r.jsRole = [jsm.getAttribute('role'), jsm.getAttribute('aria-live')];
@@ -503,7 +503,7 @@ if ($r !== null) {
     pin('the region is polite and assertive', array('polite', 'assertive'), $r['region'] ?? null);
     pin('server messages are copied in, ok politely', 'All saved', $r['pagePolite'] ?? null);
     pin('and errors assertively', 'It broke', $r['pageAssertive'] ?? null);
-    pin('the box in the stack is not a region of its own', array(null), $r['flashRole'] ?? null);
+    pin('the box in the stack is not a region of its own', array(null, null), $r['flashRole'] ?? null);
     pin('#jsMessage is not a region of its own', array(null, null), $r['jsRole'] ?? null);
     pin('a plugin box outside the stack keeps its role', 'status', $r['outsideRole'] ?? null);
     pin('an error is assertive', array('All saved', 'Boom'), $r['afterError'] ?? null);

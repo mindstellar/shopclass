@@ -1484,7 +1484,7 @@ var oscToast = (function () {
     var closeBtn = null;
     var timer = 0;
     var undo = null;
-    var ms = 7000;
+    var ms = OSC_FLASH_MS;
     var current = null;
     var from = null;
     var icon = null;
@@ -1599,7 +1599,7 @@ var oscToast = (function () {
         void box.offsetWidth;
         box.classList.remove('is-leaving');
         place();
-        ms = opts.ms > 0 ? opts.ms : 7000;
+        ms = opts.ms > 0 ? opts.ms : OSC_FLASH_MS;
         arm();
         var handle = {close: function () { if (current === handle) { close(); } }};
         current = handle;
