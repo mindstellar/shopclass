@@ -138,7 +138,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - In shop mode credit packages are hidden: the Packages and Credits menus, the buy-credits and pay-to-publish pages, and `POST /listings/{id}/publish`.
 - In shop mode a listing can be posted in a parent category, and its location is optional (the store address is used).
 - The admin listing form is grouped into sections.
-- Settings is grouped by area (General, Content, Email, Security, System), with a "Find a setting" box in the top bar. Ban rules moved to Settings → Security; URLs are unchanged.
+- Settings is grouped by area (General, Content, Email, Security, System), with a "Find a setting" box in the top bar. Ban rules are under Users; URLs are unchanged.
 - Settings › Languages marks the site and admin default languages and can change either one.
 - When the default language is empty or missing, core uses en_US, else the first language that is on.
 - Searches ignore anything past 191 characters of a filter value, and match a NUMBER or DATE range only on numeric values.
@@ -168,6 +168,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Under the header's title, section headings are h2 and sub-sections h3, so the outline skips no level; they look the same.
 - A plugin screen's title from `osc_admin_plugin_page()` is its header title row; `heading` sets a different one.
 - Admin notices and the owner's new-order mail go to the first administrator when the site has no contact e-mail.
+- Every admin form ends in one sticky, right-aligned Save bar labelled Save changes.
+- Admin lists and report tables share `osc_admin_data_table()` and `osc_admin_table()`, with Status first after the checkbox.
 
 ### Security
 - Code acting as an admin with no admin signed in gets admin rights only in the admin area, cron, jobs and the CLI. Plugin code that needs them elsewhere wraps the call in `Actor::runAsSystem()`.
