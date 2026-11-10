@@ -188,12 +188,9 @@ if (!function_exists('osc_plugins_path')) {
         return PLUGINS_PATH;
     }
 }
-if (!function_exists('osc_admin_base_url')) {
-    function osc_admin_base_url($index = false)
-    {
-        return 'https://example.test/oc-admin/index.php';
-    }
-}
+define('OSC_TEST_REAL_HOOKS', true);
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
+
 if (!function_exists('osc_base_url')) {
     function osc_base_url($index = false)
     {
@@ -310,12 +307,6 @@ if (!function_exists('osc_allowed_extension')) {
     function osc_allowed_extension()
     {
         return 'gif,jpg,png,webp';
-    }
-}
-if (!function_exists('osc_locale_thousands_sep')) {
-    function osc_locale_thousands_sep()
-    {
-        return ',';
     }
 }
 if (!function_exists('osc_locale_dec_point')) {

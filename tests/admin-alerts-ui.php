@@ -257,6 +257,28 @@ check('its flash uses the shared look', str_contains($login, "osc_show_flash_mes
 check('and not the old alert look', !str_contains($login, "osc_show_flash_message('admin', 'alert')"));
 check('the close button has its script', str_contains($login, "osclass/flash-dismiss.js"));
 
+// flash-dismiss.js closes `.flashmessage`; the login page's own script must leave those alone.
+preg_match('~<script type="text/javascript">(.*?)</script>~s', $login, $loginScript);
+$loginDriver = <<<'JS'
+const box = document.getElementById('f');
+let removed = 0;
+new MutationObserver(records => records.forEach(m => m.removedNodes.forEach(n => { if (n === box) { removed++; } }))).observe(box.parentNode, {childList: true});
+box.querySelector('.ico-close').click();
+await t.wait(50);
+const plugin = document.getElementById('plugin-box');
+plugin.querySelector('.ico-close').click();
+await t.wait(50);
+r.closed = [box.isConnected, removed, box.style.display];
+r.plugin = plugin.style.display;
+JS;
+$r = alerts_run('<div class="flashmessage flashmessage-ok" id="f" role="status">Saved<a class="btn ico btn-mini ico-close" href="#">x</a></div>'
+    . '<div class="alert" id="plugin-box">Plugin<a class="ico-close" href="#">x</a></div><script>' . ($loginScript[1] ?? '') . '</script>',
+    $loginDriver, 1440, array('oc-includes/assets/osclass/flash-dismiss.js'));
+if ($r !== null) {
+    pin('a click closes the login flash once, and only flash-dismiss.js touches it', array(false, 1, ''), $r['closed'] ?? null);
+    pin('a plugin box on the login page still closes', 'none', $r['plugin'] ?? null);
+}
+
 harness_section('flashes sent over AJAX');
 
 foreach (glob(ABS_PATH . 'oc-includes/classes/admin/ajax/*.php') ?: array() as $file) {

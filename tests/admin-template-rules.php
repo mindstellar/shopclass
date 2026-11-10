@@ -9,8 +9,9 @@
  */
 
 /**
- * Static rules for the stock admin theme templates: no HTML comments in the markup, and no
- * icons in headings, intro or lead lines. Icons stay on buttons, status marks, callouts and dialogs.
+ * Static markup rules for the stock admin theme templates: no HTML comments, no icons in
+ * headings, intro or lead lines, the shared body on every screen, no widget-box or col-title
+ * markup, no margins on gap-spaced classes. Component rules are in tests/admin-component-rules.php.
  *
  * Usage:  php tests/admin-template-rules.php
  */
@@ -238,7 +239,7 @@ $noMargin = array(
     '.upgrade-tool .osc-verdict',
     '.cat-intro', '.categories-app .osc-toolbar', '.cat-foot', '.cat-tabs', '.field-groups', '.col-head',
     '.col-hint', '.form-card', '.palette-group + .palette-group', '.help-box + .osc-catcards-bar',
-    '.osc-editor-main .osc-section', '.osc-editor-group',
+    '.osc-editor-main .osc-editor-section', '.osc-editor-group',
 );
 $marginHits = array();
 foreach ($margins as [$file, $sel, $prop, $val]) {

@@ -23,9 +23,8 @@ if (!defined('OC_ADMIN')) {
     define('OC_ADMIN', true);
 }
 
-function osc_add_hook($hook, $fn, $priority = 5)
-{
-}
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
+
 function osc_run_hook($hook, ...$args)
 {
 }
@@ -37,11 +36,6 @@ require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/stubs.php';
-
-function osc_admin_base_url($index = false)
-{
-    return 'https://example.test/oc-admin/index.php';
-}
 
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
@@ -84,6 +78,9 @@ check('the alert dialog is the shared one', strpos($users, '<dialog') === false 
 
 check('the comment form has no "( <a" pair', strpos(src($theme . 'comments/frm.php'), '( <a') === false);
 check('the comment form uses the form opener', strpos(src($theme . 'comments/frm.php'), 'osc_admin_form_open(') !== false);
+preg_match_all("/action=status.*?'variant'/s", src($theme . 'comments/frm.php'), $statusLinks);
+check('the comment Activate and Block links both carry the CSRF token', count($statusLinks[0]) === 2
+    && count(array_filter($statusLinks[0], static fn (string $l): bool => str_contains($l, 'osc_csrf_token_url()'))) === 2, count($statusLinks[0]) . ' links');
 check('the package form uses the form opener', strpos(src($theme . 'billing/package.php'), '<form') === false);
 
 // One render: the alert dialog as the user form draws it.

@@ -68,6 +68,16 @@ switch ($_GET['do'] ?? '') {
         $s->_setMessage('pubMessages', 'saved', 'ok');
         $s->_flushFlashMessages();
         break;
+    case 'ajaxflash':
+        // What an admin AJAX handler does before its reply reloads the screen.
+        require_once ABS_PATH . 'oc-includes/osclass/helpers/hMessages.php';
+        osc_add_flash_ok_message('Category added', 'admin');
+        $s->_flushFlashMessages();
+        break;
+    case 'reload':
+        $s->_loadFlashMessages();
+        echo json_encode($s->_getMessage('admin'));
+        break;
     case 'flashmany':
         for ($i = 1; $i <= 80; $i++) {
             $s->_setMessage('pubMessages', sprintf('Photo %02d could not be saved: ', $i) . str_repeat('x', 150), 'error');
@@ -165,6 +175,13 @@ pin('...and its signed value expires with it', 0, $signedLead($flash));
 $back = $get('do=readflash', 'oc_flash=' . (string) strtok(substr($flash, 9), ';'));
 pin('the next request reads it back', array(array('msg' => 'saved', 'type' => 'ok')), json_decode($back['body'], true));
 check('...and deletes it', isset($back['cookies']['oc_flash']) && (int) $attr($back['cookies']['oc_flash'], 'Max-Age') === 0);
+
+harness_section('a flash added in an AJAX call reaches the reload');
+
+$ajax   = $get('do=ajaxflash')['cookies']['oc_flash'] ?? '';
+$reload = $get('do=reload', 'oc_flash=' . (string) strtok(substr($ajax, 9), ';'));
+pin('the next page shows it', array(array('msg' => 'Category added', 'type' => 'ok')), json_decode($reload['body'], true));
+check('...and clears the cookie', isset($reload['cookies']['oc_flash']) && (int) $attr($reload['cookies']['oc_flash'], 'Max-Age') === 0);
 
 harness_section('a long flash queue still fits a cookie');
 

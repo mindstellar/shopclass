@@ -107,12 +107,8 @@ foreach (array(
         eval('function ' . $fn . '(...$args) { ' . $body . ' }');
     }
 }
-if (!function_exists('osc_admin_base_url')) {
-    function osc_admin_base_url($index = false)
-    {
-        return 'https://example.test/oc-admin/index.php';
-    }
-}
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
+
 if (!function_exists('osc_add_admin_submenu_page')) {
     function osc_add_admin_submenu_page($menu, $title, $url, $id, $capability = 'administrator')
     {
@@ -124,12 +120,6 @@ if (!function_exists('osc_locale_dec_point')) {
     function osc_locale_dec_point()
     {
         return '.';
-    }
-}
-if (!function_exists('osc_locale_thousands_sep')) {
-    function osc_locale_thousands_sep()
-    {
-        return ',';
     }
 }
 
@@ -1146,6 +1136,7 @@ $throttle = array(
     'login_attempt_retention_days' => '-1',
 );
 $run = drive('CAdminSettingsSpamnBots', 'login_throttle_post', $throttle);
+pin('the sign-in protection save is CSRF-checked', array('login_throttle_post'), $run['csrf']);
 pin('a zero window is floored, not refused', array('1', 'INTEGER'), pref($admin, 'login_throttle_window', 'security'));
 pin('and so is a negative account limit', array('1', 'INTEGER'), pref($admin, 'login_throttle_max_account', 'security'));
 pin('retention floors at zero instead', array('0', 'INTEGER'), pref($admin, 'login_attempt_retention_days', 'security'));
@@ -1154,12 +1145,25 @@ check('and none of it landed in the osclass section', pref($admin, 'login_thrott
 pin('the save reports itself once', array('ok:Sign-in protection settings have been updated'), flashed($run));
 
 $run = drive('CAdminSettingsKeywordBlock', 'akismet_post', array('akismetKey' => '  abc123  '));
+pin('the Akismet save is CSRF-checked', array('akismet_post'), $run['csrf']);
 pin('an Akismet key is trimmed', array('abc123', 'STRING'), pref($admin, 'akismetKey'));
 pin('and a key that was set says so', array('ok:Your Akismet key has been updated'), flashed($run));
 pin('and the save goes back to Spam filter', array('https://example.test/oc-admin/index.php?page=settings&action=keyword_block'), $run['redirects']);
 $run = drive('CAdminSettingsKeywordBlock', 'akismet_post', array('akismetKey' => ''));
 pin('a cleared one says the other thing', array('info:Your Akismet key has been cleared'), flashed($run));
 pin('and the preference is empty', array('', 'STRING'), pref($admin, 'akismetKey'));
+
+// A refused save registered the form before the status was known; the redraw still shows it.
+SpamSettingsScreen::registerAkismet();
+$akismetForm = SpamSettingsScreen::formVars(2)['akismet'];
+ob_start();
+osc_admin_settings_form($akismetForm['id'], array('titles' => false) + $akismetForm);
+$akismetHtml = (string)ob_get_clean();
+check('the Akismet status shows on a redraw after a refused save', str_contains($akismetHtml, 'The key you entered is invalid'), substr($akismetHtml, 0, 300));
+SpamSettingsScreen::registerAkismet(3);
+ob_start();
+osc_admin_settings_form($akismetForm['id'], array('titles' => false) + $akismetForm);
+check('a later status replaces it', str_contains((string)ob_get_clean(), 'Akismet is disabled'));
 
 harness_section('Settings › Security: old tab links open the new places');
 foreach (array(
@@ -1209,20 +1213,26 @@ $run = drive('CAdminSettingsSpamnBots', 'recaptcha_post', array(
     'turnstileSiteKey'   => 'site',
     'turnstileSecretKey' => 'secret',
 ));
+pin('the captcha save is CSRF-checked', array('recaptcha_post'), $run['csrf']);
 pin('the provider lands', array('turnstile', 'STRING'), pref($admin, 'captchaProvider'));
 pin('the hidden version keeps the key it has always had', array('2', 'STRING'), pref($admin, 'recaptcha_version'));
 pin('and a blank key is cleared rather than left alone', array('', 'STRING'), pref($admin, 'recaptchaPubKey'));
 
 $run = drive('CAdminSettingsSpamnBots', 'limits_post', array('throttle_send_friend' => '0', 'throttle_form_submit' => '-3'));
+pin('the limits save is CSRF-checked', array('limits_post'), $run['csrf']);
 pin('a limit of 0 is stored, switching it off', array('0', 'INTEGER'), pref($admin, 'throttle_send_friend'));
 pin('a negative limit is floored at 0', array('0', 'INTEGER'), pref($admin, 'throttle_form_submit'));
 pin('the limits save reports itself once', array('ok:Limits have been updated'), flashed($run));
 check('a spam save returns to its tab', str_ends_with((string) end($run['redirects']), '&tab=limits'), (string) end($run['redirects']));
 
 $run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_require_login' => '1'));
+pin('the search-alert save is CSRF-checked', array('alerts_post'), $run['csrf']);
 pin('the alert rule is a boolean', array('1', 'BOOLEAN'), pref($admin, 'alerts_require_login'));
 $run = drive('CAdminSettingsSpamnBots', 'alerts_post', array('alerts_max_per_user' => '-4'));
 pin('the saved-search limit is a number, floored at 0', array('0', 'INTEGER'), pref($admin, 'alerts_max_per_user'));
+
+$run = drive('CAdminMessages', 'messages_post', array('message_max_links' => '2', 'message_max_length' => '100', 'message_report_link' => '1', 'message_report_days' => '5'));
+pin('the old messages_post action is CSRF-checked', array('messages_post'), $run['csrf']);
 
 harness_section('keyword blocklist moderation');
 
@@ -2622,6 +2632,10 @@ $got = array_intersect_key($found, $want);
 ksort($want);
 ksort($got);
 pin('each moved setting is found where it now lives', $want, $got);
+pin('the Messages list is not offered as a page of its own', array(), array_values(array_filter(
+    \mindstellar\admin\SettingsSearch::build(),
+    static fn (array $row): bool => $row[1] === 'Messages' && str_contains($row[3], 'page=messages')
+)));
 
 $screens = array_merge(
     glob(ABS_PATH . 'oc-admin/themes/modern/settings/*.php') ?: array(),

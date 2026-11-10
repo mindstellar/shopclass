@@ -542,14 +542,14 @@ pin('a plain panel is an osc-panel with a head and a body', '<div class="osc-pan
 $section = render(static function () {
     osc_admin_panel_open('Price', array(
         'id'    => 'sec-price',
-        'class' => 'osc-section',
+        'class' => 'osc-editor-section',
         'hint'  => array('What buyers pay', array('text' => '1 to fix', 'state' => 'error')),
         'attrs' => array('data-osc-needs-sell' => true),
     ));
     osc_admin_panel_close();
 });
 emits('a section carries its id, class and attributes', $section,
-    '<div class="osc-panel osc-section" id="sec-price" data-osc-needs-sell>');
+    '<div class="osc-panel osc-editor-section" id="sec-price" data-osc-needs-sell>');
 emits('its hint sits in the title bar after the heading', $section,
     '<h3>Price</h3><span class="osc-panel-hint">What buyers pay</span>');
 emits('an error hint is marked', $section, '<span class="osc-panel-hint is-error">1 to fix</span>');
@@ -622,7 +622,7 @@ if (preg_match_all('~(?:^|\})\s*([^{}]*\.osc-panel\s*(?:,[^{}]*)?)\{([^}]*)\}~',
 check('the panel has a hairline border from the rule token', str_contains($panel, 'var(--osc-rule)'), $panel);
 check('the panel is flat', !str_contains($panel, 'box-shadow'), $panel);
 check('stacked panels keep a gap between them', preg_match('~\\.osc-panel\\s*\\+\\s*\\.osc-panel\\s*\\{[^}]*margin-block-start:\\s*1rem~', $css) === 1);
-// The editor's fold-out .osc-section keeps its own warm head on purpose.
+// The editor's fold-out .osc-editor-section keeps its own warm head on purpose.
 check('the plain head is not a card header bar', !preg_match('~(?:^|[},])\s*\.osc-panel-head\s*[,{][^}]*background~', $css));
 
 // The panel and page-head helpers have one copy, in core; the stock theme must not redefine them.

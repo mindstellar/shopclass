@@ -143,9 +143,7 @@ function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'ST
     return (int)((string)$was !== (string)$value);
 }
 
-function osc_add_hook($hook, $fn, $priority = 5)
-{
-}
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
 
 /** The real filter runner in miniature: listeners chain and the last return wins. */
 function osc_apply_filter($hook, $content = '', ...$args)
@@ -204,11 +202,6 @@ function osc_admin_page(array $opts = array())
 
 function osc_current_admin_theme_path($path)
 {
-}
-
-function osc_admin_base_url($index = false)
-{
-    return 'https://example.test/oc-admin/index.php';
 }
 
 function osc_add_admin_submenu_page($menu, $title, $url, $id, $capability = 'administrator')

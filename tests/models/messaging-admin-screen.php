@@ -226,6 +226,9 @@ $r = drive('');
 check('and sees no Settings tab', strpos($r['html'], 'action=settings') === false);
 $GLOBALS['stubs']['osc_is_moderator'] = static fn () => false;
 
+$method = harness_method_source(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminMessages.php', 'settingsPost');
+check('saving the message rules checks the token first', (bool) preg_match('/\{\s*osc_csrf_check\(\);/', $method), $method);
+
 harness_section('demo site');
 define('DEMO', true);
 $r = drive('remove_post', array('id' => $held->messageId()));

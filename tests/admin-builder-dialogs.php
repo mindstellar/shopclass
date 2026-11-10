@@ -64,16 +64,9 @@ check('the other category dialogs stay hand-built', str_contains($cat, 'id="catM
 harness_section('the catConfirm dialog renders as it did');
 require_once ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/stubs.php';
-function osc_admin_base_url($index = false)
-{
-    return 'https://example.test/oc-admin/index.php';
-}
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
+
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
-if (!function_exists('osc_add_hook')) {
-    function osc_add_hook($hook, $fn, $priority = 5)
-    {
-    }
-}
 $html = '';
 if (preg_match("~(osc_admin_confirm_dialog\\(array\\(\\s*'id'\\s*=> 'catConfirm'.*?\\)\\);)~s", $cat, $m)) {
     ob_start();

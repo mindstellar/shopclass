@@ -123,14 +123,13 @@ $head = render(static function () {
     osc_admin_section('Notes', array(
         'intro'   => 'A <b> intro',
         'actions' => array(array('label' => 'Add', 'url' => 'https://example.test/add')),
-        'card'    => true,
         'class'   => 'sysinfo-group',
         'attrs'   => array('data-x' => '1'),
     ));
     echo 'body';
     osc_admin_section_close();
 });
-same('title, actions, intro, card and body', $head, '<section class="osc-section osc-section-card sysinfo-group" id="s-notes" data-x="1">'
+same('title, actions, intro and body', $head, '<section class="osc-section sysinfo-group" id="s-notes" data-x="1">'
     . '<div class="osc-section-head"><h2 class="render-title osc-section-title">Notes</h2>'
     . '<span class="osc-section-actions"><a class="btn btn-sm btn-secondary" href="https://example.test/add">Add</a></span></div>'
     . '<p class="form-intro osc-section-intro">A &lt;b&gt; intro</p>'

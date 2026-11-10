@@ -227,9 +227,7 @@ namespace {
         return $content;
     }
 
-    function osc_add_hook($hook, $fn, $priority = 5)
-    {
-    }
+    require_once __DIR__ . '/lib/admin-ui-stubs.php';
 
     function osc_is_admin_user_logged_in()
     {
@@ -249,11 +247,6 @@ namespace {
     function osc_base_url()
     {
         return 'https://example.test/';
-    }
-
-    function osc_admin_base_url($index = false)
-    {
-        return 'https://example.test/oc-admin/index.php';
     }
 
     function osc_add_admin_submenu_page($menu, $title, $url, $id, $capability = 'administrator')

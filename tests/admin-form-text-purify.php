@@ -102,14 +102,7 @@ function osc_set_preference($key, $value = '', $section = 'osclass', $type = 'ST
     return 1;
 }
 
-function osc_add_hook($hook, $fn, $priority = 5)
-{
-}
-
-function osc_admin_base_url($index = false)
-{
-    return 'https://example.test/oc-admin/index.php';
-}
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
 
 function osc_add_admin_submenu_page($menu, $title, $url, $id, $capability = 'administrator')
 {

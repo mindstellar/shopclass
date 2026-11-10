@@ -9,9 +9,19 @@
  */
 
 /**
- * Static rules that keep admin screens on the shared components: no hand-built tab strips,
- * confirm dialogs, status pills, toolbars, empty states or callouts, and no icon in an empty
- * state. Each rule lists the few files that may break it, with the reason.
+ * Static rules that keep admin screens on the shared components. Each rule lists the few files
+ * that may break it, with the reason (one allow list per rule).
+ *
+ * Rules:
+ *   tabs           no hand-built .osc-tab, .ui-osc-tabs, .osc-tabnav or nav nav-tabs strip
+ *   dialogs        every <dialog> is osc_admin_confirm_dialog() or allowed by id
+ *   status         no Bootstrap "badge bg-" pill, no raw osc-status outside its helpers
+ *   toolbars       no table-toolbar
+ *   empty states   no builder-empty or osc-empty-icon, no 'icon' inside an empty-state spec
+ *   callouts       no hand-built callout-block or callout tone class
+ *   tables         no hand-written <table> or <thead>; Status is first, or second after the bulk checkbox
+ *
+ * Markup and icon rules stay in tests/admin-template-rules.php.
  *
  * Usage:  php tests/admin-component-rules.php
  */
@@ -91,12 +101,14 @@ $tabRules = array(
     'no hand-built .osc-tab strip'     => '/class=\\\\?["\'][^"\']*\bosc-tab(?![\w-])/',
     'no hand-built .ui-osc-tabs strip' => '/class=\\\\?["\'][^"\']*\bui-osc-tabs(?![\w-])/',
     'no hand-built .osc-tabnav list'   => '/class=\\\\?["\'][^"\']*\bosc-tabnav(?:-scroll)?(?![\w-])/',
+    'no hand-built nav-tabs strip'     => '/class=\\\\?["\'][^"\']*\bnav nav-tabs(?![\w-])/',
 );
 $tabProbe = array(
     '<nav class="osc-tabnav-scroll"><ul id="t" class="osc-tabnav">' => 'no hand-built .osc-tabnav list',
     '<ul class="mb-2 osc-tabnav">'                                  => 'no hand-built .osc-tabnav list',
     'echo "<div class=\\"osc-tab\\">";'                              => 'no hand-built .osc-tab strip',
     "echo '<div id=\"x\" class=\"ui-osc-tabs osc-tab\">';"            => 'no hand-built .ui-osc-tabs strip',
+    '<ul class="nav nav-tabs">'                                     => 'no hand-built nav-tabs strip',
     '<div class="osc-tabs-x">'                                      => '',
 );
 foreach ($tabProbe as $code => $rule) {
@@ -320,5 +332,64 @@ foreach ($php as $path) {
     }
 }
 check("no 'icon' inside an empty-state spec", $hits === array(), implode(', ', $hits));
+
+// Tables come from osc_admin_table() and osc_admin_data_table(); these templates may still write their own.
+$tableAllow = array(
+    'categories/index.php' => 'drag-and-drop tree of category rows',
+    'items/frm.php'        => 'variant editor: every cell is an input',
+    'parts/market.php'     => 'rows filled by market.js',
+);
+$themeRoot = $theme . '/';
+$templates = array();
+foreach (rules_files($theme, array('php')) as $path) {
+    $templates[substr($path, strlen($themeRoot))] = (string)file_get_contents($path);
+}
+$stray = array();
+foreach ($templates as $file => $src) {
+    if ((str_contains($src, '<table') || str_contains($src, '<thead')) && !isset($tableAllow[$file])) {
+        $stray[] = $file;
+    }
+}
+check('no template outside the allow list has <table or <thead', $stray === array(), implode(', ', $stray));
+foreach ($tableAllow as $file => $why) {
+    check('allow-list entry still exists and still needs it: ' . $file . ' (' . $why . ')', isset($templates[$file]) && str_contains($templates[$file], '<thead'));
+}
+
+// Status comes first in a helper-drawn table, or second after the bulk checkbox.
+$checked = 0;
+$tables  = 0;
+foreach ($templates as $file => $src) {
+    if (!preg_match('/osc_admin_(data_)?table\(/', $src)) {
+        continue;
+    }
+    $tables++;
+    $lines = explode("\n", $src);
+    foreach ($lines as $i => $line) {
+        if (!preg_match("/^(\s*)'status'\s*=>\s*(array\('label(_html)?'|__\()/", $line, $m)) {
+            continue;
+        }
+        $checked++;
+        $indent = strlen($m[1]);
+        $before = array();
+        for ($j = $i - 1; $j >= 0; $j--) {
+            if (!preg_match("/^(\s*)'([\w-]+)'\s*=>/", $lines[$j], $k)) {
+                if (trim($lines[$j]) !== '' && strlen($lines[$j]) - strlen(ltrim($lines[$j])) < $indent) {
+                    break;
+                }
+                continue;
+            }
+            $ind = strlen($k[1]);
+            if ($ind < $indent) {
+                break;
+            }
+            if ($ind === $indent) {
+                $before[] = $k[2];
+            }
+        }
+        check($file . ':' . ($i + 1) . ' status is first, or second after bulkactions', $before === array() || $before === array('bulkactions'), implode(',', array_reverse($before)));
+    }
+}
+check('the table rule saw table templates', $tables >= 25, (string)$tables);
+check('the table rule saw status column definitions', $checked >= 7, (string)$checked);
 
 exit(harness_result());

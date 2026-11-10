@@ -28,9 +28,8 @@ if (!defined('OC_ADMIN')) {
     define('OC_ADMIN', true);
 }
 
-function osc_add_hook($hook, $fn, $priority = 5)
-{
-}
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
+
 function osc_run_hook($hook, ...$args)
 {
 }
@@ -43,26 +42,8 @@ require_once __DIR__ . '/lib/harness.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/stubs.php';
 
-function osc_admin_base_url($index = false)
-{
-    return 'https://example.test/oc-admin/index.php';
-}
-
-function osc_locale_thousands_sep()
-{
-    return ',';
-}
-
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
-
-function html_of(callable $fn): string
-{
-    ob_start();
-    $fn();
-
-    return (string)ob_get_clean();
-}
 
 /** Collapses the indentation of a PHP template so markup can be compared exactly. */
 function squeezed(string $html): string

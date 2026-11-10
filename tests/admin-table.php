@@ -26,6 +26,7 @@ if (!defined('OC_ADMIN')) {
 
 require_once dirname(__DIR__) . '/oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
+require_once __DIR__ . '/lib/admin-ui-stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSanitize.php';
 require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
@@ -40,13 +41,6 @@ function table_html(array $columns, array $rows, array $opts = array()): string
 }
 
 /** Collapse whitespace and drop what sits between tags, so markup compares by content. */
-function squeeze(string $html): string
-{
-    $html = (string)preg_replace('/\s+/', ' ', $html);
-
-    return trim((string)preg_replace(array('/>\s+/', '/\s+</'), array('>', '<'), $html));
-}
-
 harness_section('headers');
 $html = table_html(array(
     'plain'  => 'Name <b>',
