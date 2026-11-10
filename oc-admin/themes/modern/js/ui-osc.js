@@ -442,10 +442,20 @@ document.addEventListener('click', function (e) {
 // a labelled dismiss control, and an animated removal that respects reduced motion.
 function oscDismissFlash(fm) {
     if (!fm) { return; }
+    // #jsMessage is reused for the next message, so it is hidden rather than removed.
+    var gone = function () {
+        if (fm.id === 'jsMessage') {
+            fm.classList.add('hide');
+            fm.classList.remove('is-dismissing');
+        } else {
+            fm.remove();
+        }
+    };
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduce) { fm.remove(); return; }
+    if (reduce) { gone(); return; }
     var done = false;
-    var finish = function () { if (!done) { done = true; fm.remove(); } };
+    // setJsMessage clears is-dismissing when a new message arrives during the exit.
+    var finish = function () { if (!done) { done = true; if (fm.classList.contains('is-dismissing')) { gone(); } } };
     fm.classList.add('is-dismissing');
     fm.addEventListener('animationend', finish, { once: true });
     setTimeout(finish, 400); // fallback if animationend never fires (e.g. hidden tab)
@@ -1321,6 +1331,25 @@ osc.toast = (function () {
         timer = setTimeout(close, ms);
     }
 
+    // Rests above a Save bar it would otherwise cover.
+    function place() {
+        if (!box || box.hidden) {
+            return;
+        }
+        box.style.insetBlockEnd = '';
+        var own = box.getBoundingClientRect();
+        var clear = 0;
+        document.querySelectorAll('.form-actions').forEach(function (bar) {
+            var r = bar.getBoundingClientRect();
+            if (r.height > 0 && r.top < own.bottom && r.bottom > own.top && r.left < own.right && r.right > own.left) {
+                clear = Math.max(clear, window.innerHeight - r.top);
+            }
+        });
+        if (clear > 0) {
+            box.style.insetBlockEnd = (clear + 8) + 'px';
+        }
+    }
+
     function build() {
         box = document.createElement('div');
         box.className = 'osc-toast is-leaving';
@@ -1366,6 +1395,8 @@ osc.toast = (function () {
                 back.focus();
             }
         });
+        window.addEventListener('scroll', place, {passive: true});
+        window.addEventListener('resize', place);
         box.addEventListener('mouseleave', function () { if (current) { arm(); } });
         box.addEventListener('focusout', function () { if (current) { arm(); } });
     }
@@ -1383,6 +1414,7 @@ osc.toast = (function () {
         box.hidden = false;
         void box.offsetWidth;
         box.classList.remove('is-leaving');
+        place();
         ms = opts.ms > 0 ? opts.ms : 7000;
         arm();
         var handle = {close: function () { if (current === handle) { close(); } }};

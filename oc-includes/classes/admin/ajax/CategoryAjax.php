@@ -23,6 +23,7 @@ use mindstellar\utility\AjaxResponse;
 use OSCLocale;
 use Params;
 use RuntimeException;
+use Session;
 
 /**
  * The Categories screen: drag-and-drop order, the edit frame, enable, delete and save.
@@ -292,6 +293,8 @@ final class CategoryAjax extends AjaxHandler
         }
         $msg = __('A new category has been added');
         osc_add_flash_ok_message($msg, 'admin');
+        // The screen reloads on this reply, and a flash only reaches the next page in its cookie.
+        Session::getInstance()->_flushFlashMessages();
 
         return array('error' => 0, 'msg' => $msg, 'created' => true, 'id' => $id);
     }

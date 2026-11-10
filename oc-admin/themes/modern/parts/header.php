@@ -152,7 +152,7 @@ if ($oscSidebar !== 'collapsed') {
                 <div class="col">
                     <?php osc_show_flash_message('admin'); ?>
                     <div id="jsMessage" class="jsMessage flashmessage flashmessage-info hide shadow-sm">
-                        <a class="btn ico btn-mini ico-close">×</a>
+                        <a class="btn ico btn-mini ico-close" data-oc-close-label="<?php echo osc_esc_html(__('Dismiss')); ?>">×</a>
                         <p></p>
                     </div>
                 </div>

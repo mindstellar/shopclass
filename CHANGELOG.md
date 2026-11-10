@@ -181,6 +181,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### Fixed
 - The installer's Documentation link opens the Shopclass docs.
+- Admin messages: closing a JS message no longer breaks the next one, JS errors scroll into view, the toast sits above the Save bar, text and links in a message stay together on a phone, and the login message uses the shared look.
 - The owner's new-order e-mail goes to the first administrator when the site has no contact address, instead of being dropped.
 - Block fields in the Customise screen can be changed again; only rich text worked. In dark mode a field with an error shows its red border, and the collapsed admin menu shows counts as a dot.
 - Custom date fields no longer save or show the day before when the visitor's time zone differs from the site's. The REST API now reads a custom-field date sent as a day, `2026-11-01`, on the site's clock, and a range ends at the end of its last day.

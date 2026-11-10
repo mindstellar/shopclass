@@ -91,11 +91,8 @@ function osc_add_flash_warning_message($msg, $section = 'pubMessages')
  *
  * The message element carries role=status (role=alert for an error), which is an
  * implicit live region: assistive technology is told the message appeared without
- * any script running. No dismiss control is rendered -- these messages are
- * one-shot, dropped from the session as they are printed, so they never come back
- * on the next page and a close button removed something already gone. The one
- * previously rendered was an <a> with no href: not focusable, not operable by
- * keyboard, and inert on every theme that ships no JavaScript.
+ * any script running. Each message has a dismiss control unless it was added as
+ * not dismissible; the osc-flash-dismiss script makes the control work on any theme.
  *
  * `flashmessage` and `flashmessage-<type>` are a published API -- core, bundled
  * plugins and unknown third-party themes all style those exact names -- so they

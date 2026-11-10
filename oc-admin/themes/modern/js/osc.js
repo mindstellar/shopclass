@@ -126,8 +126,21 @@ function setJsMessage(alertClass, alertMessage) {
     ['ok', 'error', 'warning', 'info'].forEach(function (state) {
         jsMessage.classList.toggle('flashmessage-' + state, state === alertClass);
     });
-    jsMessage.classList.remove('hide');
+    jsMessage.classList.remove('hide', 'is-dismissing');
     jsMessage.removeAttribute('style');
+    if (alertClass === 'error' || alertClass === 'warning') {
+        oscRevealMessage(jsMessage);
+    }
+}
+// Scroll to a message that is hidden above the top bar or below the fold, so it cannot be missed.
+function oscRevealMessage(box) {
+    var bar = document.querySelector('.admin-topbar');
+    var rect = box.getBoundingClientRect();
+    var top = bar ? Math.max(0, bar.getBoundingClientRect().bottom) : 0;
+    if (rect.top < top || rect.bottom > window.innerHeight) {
+        box.style.scrollMarginBlockStart = (top + 8) + 'px';
+        box.scrollIntoView({block: 'start'});
+    }
 }
 // Open the bulk-actions confirm dialog for the selected action (native <dialog>).
 function toggleBulkActionsModal() {

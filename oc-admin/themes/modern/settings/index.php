@@ -162,7 +162,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                 lastVersionElement.textContent = '<?php echo osc_esc_js(__('Last checked on ')); ?>' + new Date().toLocaleString();
                 setJsMessage('info', data.msg);
             })
-            .catch(function (error) { setJsMessage('error', error); });
+            .catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Could not check for updates')); ?>'); });
     });
 </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

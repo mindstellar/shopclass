@@ -39,19 +39,16 @@ if (!defined('ABS_PATH')) {
                 </a>
             </h1>
             <div class="mb-3">
-                <?php osc_show_flash_message('admin', 'alert'); ?>
+                <?php osc_show_flash_message('admin'); ?>
             </div>
             <?php require_once osc_admin_base_path() . View::getInstance()->_get('login_admin_form'); ?>
         </div>
+        <script src="<?php echo osc_assets_url('osclass/flash-dismiss.js?v=' . OSCLASS_VERSION); ?>"></script>
         <script type="text/javascript">
-            // The login shell renders its flash message as `.alert` (see the
-            // osc_show_flash_message call above), not `.flashmessage`, so the admin theme's
-            // own dismissal handler does not cover it — and the theme's JS is not loaded
-            // here anyway. Delegated from the document so a plugin rendering its own
-            // dismissible box into the login page gets the behaviour for free.
+            // flash-dismiss.js closes `.flashmessage`. A plugin's own dismissible box still closes here.
             document.addEventListener('click', function (e) {
                 var close = e.target.closest ? e.target.closest('.ico-close') : null;
-                if (!close) {
+                if (!close || close.closest('.flashmessage')) {
                     return;
                 }
                 e.preventDefault();

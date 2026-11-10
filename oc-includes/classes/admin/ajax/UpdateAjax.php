@@ -133,8 +133,6 @@ final class UpdateAjax extends AjaxHandler
         try {
             (new Upgrade(new Osclass(Osclass::getPackageInfo())))->doUpgrade();
         } catch (Exception $e) {
-            osc_add_flash_error_message($e->getMessage(), 'admin');
-
             return ['error' => 1, 'message' => $e->getMessage()];
         }
 
@@ -155,7 +153,7 @@ final class UpdateAjax extends AjaxHandler
     }
 
     /**
-     * Why an in-app upgrade is refused here, with a flash for the next page, or null.
+     * Why an in-app upgrade is refused here, or null.
      *
      * @return array{error:int, message:string}|null
      */
@@ -168,8 +166,6 @@ final class UpdateAjax extends AjaxHandler
         } else {
             return null;
         }
-        osc_add_flash_warning_message($msg, 'admin');
-
         return array('error' => 6, 'message' => $msg);
     }
 

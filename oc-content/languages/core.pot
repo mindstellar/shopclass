@@ -4560,6 +4560,7 @@ msgstr ""
 msgid "Could not change the widget. Reload and try again."
 msgstr ""
 
+#: oc-admin/themes/modern/settings/index.php
 #: oc-includes/classes/admin/ajax/UpdateAjax.php
 msgid "Could not check for updates"
 msgstr ""
@@ -5642,6 +5643,7 @@ msgstr ""
 msgid "Dishwasher safe"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/header.php
 #: oc-admin/themes/modern/tools/backup.php
 #: oc-includes/osclass/helpers/hMessages.php
 msgid "Dismiss"

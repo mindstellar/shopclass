@@ -10,6 +10,8 @@
 /* Makes the dismiss button on a front-end flash message work: keyboard-operable, click removes the message. */
 (function () {
     function dismiss(btn) {
+        // The admin theme closes its own messages, with an animated exit.
+        if (typeof window.oscDismissFlash === 'function') { return; }
         var box = btn.closest('.flashmessage');
         if (box && box.parentNode) { box.parentNode.removeChild(box); }
     }

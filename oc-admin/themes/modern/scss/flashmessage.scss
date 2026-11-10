@@ -19,16 +19,16 @@ $flashmessage-states: (
   // Borderless, like the callouts below — the tint, the semantic glyph, and the text are the
   // three signals; a saturated state border would be a redundant fourth and, stacked, reads
   // like the notice pile-up this admin is meant NOT to be. The tint carries the surface.
-  align-items: flex-start;
+  // A block, not a flex row: a plugin's bare text and its link would become two columns.
   background-color: var(--osc-bench-warm);
   border-radius: $border-radius-lg;
   color: var(--osc-ink);
-  display: flex;
+  display: block;
   font-size: .9375rem;
-  gap: .625rem;
   line-height: 1.5;
   margin-block-end: .75rem;
   padding: .85rem 1rem;
+  position: relative;
   text-align: start;
   // Appears right after an action — a short settle reads as feedback, not
   // choreography. Reduced-motion gets the resting state with no movement.
@@ -43,12 +43,14 @@ $flashmessage-states: (
   // The semantic glyph. States below set the character and its colour; a plain
   // .flashmessage with no state draws no icon.
   &::before {
-    flex: 0 0 auto;
     font-family: "bootstrap-icons";
     font-size: 1.05em;
     font-style: normal;
     font-weight: normal;
+    inset-block-start: .85rem;
+    inset-inline-start: 1rem;
     line-height: 1.45;
+    position: absolute;
   }
 
   p { margin: 0; }
@@ -63,23 +65,17 @@ $flashmessage-states: (
 
   // Dismiss. `.ico-close` is globally Bootstrap's `.btn-close` (an SVG ×, drawn as a
   // background so it survives the global `content-visibility: hidden` that hides the
-  // literal "×"/"x" text, and auto-inverted under data-bs-theme="dark"). So it only
-  // needs placement here: its global `float: inline-end` is ignored on a flex item, so
-  // `order` moves it past the bare message text node (which can't take an order of its
-  // own) and an auto inline-start margin parks it at the trailing edge — top-aligned
-  // with the icon so it stays put on multi-line messages.
+  // literal "×"/"x" text, and auto-inverted under data-bs-theme="dark"). Held in the
+  // trailing corner so it stays put on multi-line messages, with a 24×24 hit area
+  // (WCAG 2.2 target-size floor) around the small glyph.
   .ico-close {
-    align-self: flex-start;
-    // A 24×24 hit area (WCAG 2.2 target-size floor) around the small glyph, which stays its
-    // own size, centred. The negative top margin keeps the glyph optically level with the
-    // message icon despite the taller box.
     background-position: center;
-    flex: 0 0 auto;
-    margin-block-start: -.15rem;
-    margin-inline-start: auto;
+    inset-block-start: .7rem;
+    inset-inline-end: .75rem;
+    margin: 0;
     min-block-size: 1.5rem;
     min-inline-size: 1.5rem;
-    order: 1;
+    position: absolute;
   }
 
   // Exit: ui-osc.js adds this, then removes the node on animationend.
@@ -90,6 +86,11 @@ $flashmessage-states: (
 }
 
 @each $state, $props in $flashmessage-states {
+  // Room for the icon. :where keeps this no stronger than .flashmessage-inline's padding.
+  .flashmessage:where(.flashmessage-#{$state}) {
+    padding-inline-start: calc(1rem + 1.05em + .625rem);
+  }
+
   .flashmessage-#{$state} {
     background-color: map-get($props, tint);
 
@@ -100,16 +101,16 @@ $flashmessage-states: (
   }
 }
 
+// Room for the close button, at the same strength as the rule above.
+.flashmessage:where(:has(.ico-close)) {
+  padding-inline-end: 2.75rem;
+}
+
 // A legacy shape: `.flashmessage-error` applied to a table row/cell. Keep the tint
 // readable there rather than inheriting a semantic ink on a semantic tint.
 .flashmessage-error td { color: var(--osc-ink); }
 
 // The payment test-mode notice: on a phone its settings links go below the text.
-.osc-pay-test-text {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
 @media (max-width: 575.98px) {
   .osc-pay-test-links {
     display: block;
@@ -137,10 +138,26 @@ $flashmessage-states: (
 // block"` is being cleaned up in the bundled templates; third-party callers still doing it
 // degrade to a readable two-line block rather than breaking.
 .flashmessage-inline {
+  align-items: flex-start;
   display: inline-flex;
+  gap: .625rem;
   min-height: 0;
   padding: .4rem .7rem;
   @include rounded-corners;
+
+  &::before {
+    flex: 0 0 auto;
+    position: static;
+  }
+
+  .ico-close {
+    align-self: flex-start;
+    flex: 0 0 auto;
+    margin-block-start: -.15rem;
+    margin-inline-start: auto;
+    order: 1;
+    position: static;
+  }
 }
 
 .flashmessage-inline p {
