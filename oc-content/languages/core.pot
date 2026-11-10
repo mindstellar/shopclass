@@ -2202,17 +2202,6 @@ msgstr ""
 msgid "Age"
 msgstr ""
 
-#: oc-admin/themes/modern/fields/index.php
-msgid "Ajax error, please try again."
-msgstr ""
-
-#: oc-admin/themes/modern/fields/group_iframe.php
-#: oc-admin/themes/modern/fields/iframe.php
-#: oc-admin/themes/modern/fields/index.php
-#: oc-admin/themes/modern/fields/submissions.php
-msgid "Ajax error, try again."
-msgstr ""
-
 #: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 msgid "Akismet"
@@ -2435,33 +2424,10 @@ msgstr ""
 msgid "An email address for the site."
 msgstr ""
 
-#: oc-includes/classes/admin/ajax/AjaxHandler.php
-#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
-msgid "An error occurred"
-msgstr ""
-
-#: oc-includes/classes/admin/ajax/CategoryAjax.php
-#: oc-includes/classes/admin/ajax/FieldAjax.php
-#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
 #: oc-includes/classes/listing/category/CategoryService.php
 msgid "An error occurred while deleting"
 msgstr ""
 
-#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
-msgid "An error occurred while saving the form"
-msgstr ""
-
-#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
-msgid "An error occurred while saving the group"
-msgstr ""
-
-#: oc-admin/themes/modern/emails/frm.php
-#: oc-includes/classes/admin/ajax/SystemAjax.php
-msgid "An error occurred while sending email"
-msgstr ""
-
-#: oc-includes/classes/admin/ajax/CategoryAjax.php
-#: oc-includes/classes/admin/ajax/FieldAjax.php
 #: oc-includes/classes/listing/category/CategoryService.php
 msgid "An error occurred while updating"
 msgstr ""
@@ -3691,11 +3657,11 @@ msgid "Category settings"
 msgstr ""
 
 #: oc-includes/classes/admin/ajax/CategoryAjax.php
-msgid "Category updated correctly"
+msgid "Category updated"
 msgstr ""
 
 #: oc-includes/classes/admin/ajax/CategoryAjax.php
-msgid "Category updated correctly, but some titles are empty"
+msgid "Category updated, but some titles are empty"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -4586,6 +4552,7 @@ msgid "Could not refresh the catalog: %s. Showing the last successful results."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
+#: oc-includes/classes/admin/ajax/AjaxHandler.php
 msgid "Could not save the new order. Reload and try again."
 msgstr ""
 
@@ -6085,7 +6052,7 @@ msgid "Email of the friend who wants send"
 msgstr ""
 
 #: oc-includes/classes/admin/ajax/SystemAjax.php
-msgid "Email sent successfully"
+msgid "Email sent"
 msgstr ""
 
 #: oc-admin/themes/modern/emails/index.php
@@ -6290,10 +6257,6 @@ msgstr ""
 
 #: oc-includes/osclass/functions.php
 msgid "Error"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Error loading theme custom file"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -7491,6 +7454,10 @@ msgstr ""
 msgid "Identifier name"
 msgstr ""
 
+#: oc-includes/classes/admin/form/SpamSettingsScreen.php
+msgid "If a captcha widget shows below, the active provider is set up"
+msgstr ""
+
 #: oc-includes/classes/admin/form/CommentSettingsScreen.php
 msgid "If the value is zero all comments are shown"
 msgstr ""
@@ -7503,12 +7470,6 @@ msgstr ""
 msgid ""
 "If this was not you, change your password now. Until you do, the code step "
 "can make you wait."
-msgstr ""
-
-#: oc-includes/classes/admin/form/SpamSettingsScreen.php
-msgid ""
-"If you see a captcha widget below, the active provider is configured "
-"correctly"
 msgstr ""
 
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
@@ -7941,6 +7902,12 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
 msgid "It always appear before the category, region or city url."
+msgstr ""
+
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+#: oc-includes/classes/admin/ajax/FieldAjax.php
+#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
+msgid "It could not be deleted. Reload and try again."
 msgstr ""
 
 #: oc-includes/classes/search/AlertStore.php
@@ -14858,13 +14825,10 @@ msgstr ""
 msgid "Something went wrong. Check your connection and try again."
 msgstr ""
 
+#: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/categories/index.php
 #: oc-admin/themes/modern/parts/market.php
 #: oc-admin/themes/modern/settings/locations.php
-msgid "Something went wrong. Please try again."
-msgstr ""
-
-#: oc-admin/themes/modern/appearance/customise.php
 msgid "Something went wrong. Try again."
 msgstr ""
 
@@ -15359,6 +15323,10 @@ msgstr ""
 msgid "That could not be saved. Please check the values and try again."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "That custom file could not be loaded."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "That form does not name a record that can be saved."
 msgstr ""
@@ -15734,6 +15702,12 @@ msgid ""
 "emptied in the background."
 msgstr ""
 
+#: oc-includes/classes/admin/ajax/CategoryAjax.php
+#: oc-includes/classes/admin/ajax/FieldAjax.php
+#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
+msgid "The change could not be saved. Reload and try again."
+msgstr ""
+
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid ""
 "The cheapest speed-up there is — PHP stops recompiling every file on every "
@@ -15819,6 +15793,11 @@ msgstr ""
 msgid "The draft is too large to save."
 msgstr ""
 
+#: oc-admin/themes/modern/emails/frm.php
+#: oc-includes/classes/admin/ajax/SystemAjax.php
+msgid "The email could not be sent. Check the mail settings."
+msgstr ""
+
 #: oc-includes/classes/core/install/FinishLater.php
 msgid "The example listings have no photos."
 msgstr ""
@@ -15858,6 +15837,14 @@ msgstr ""
 msgid "The files belong to %s."
 msgstr ""
 
+#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
+msgid "The form could not be saved. Reload and try again."
+msgstr ""
+
+#: oc-includes/classes/admin/ajax/FormBuilderAjax.php
+msgid "The group could not be saved. Reload and try again."
+msgstr ""
+
 #: oc-includes/classes/market/Installer.php
 msgid "The installation directory is not writable."
 msgstr ""
@@ -15867,7 +15854,7 @@ msgid "The invoice for your order %1$s from %2$s is ready."
 msgstr ""
 
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
-msgid "The key you entered is invalid. Please double-check it"
+msgid "The key you entered is invalid. Double-check it"
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
@@ -16046,6 +16033,10 @@ msgid "The refund could not be started. Try again."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
+#: oc-admin/themes/modern/fields/group_iframe.php
+#: oc-admin/themes/modern/fields/iframe.php
+#: oc-admin/themes/modern/fields/index.php
+#: oc-admin/themes/modern/fields/submissions.php
 msgid "The request failed. Check your connection and try again."
 msgstr ""
 
@@ -18718,8 +18709,8 @@ msgstr ""
 
 #: oc-admin/themes/modern/upgrade/index.php
 msgid ""
-"You have uploaded a new version of Shopclass, you need to upgrade Shopclass "
-"for it to work correctly."
+"You have uploaded a new version of Shopclass. Upgrade it for the site to "
+"work."
 msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php

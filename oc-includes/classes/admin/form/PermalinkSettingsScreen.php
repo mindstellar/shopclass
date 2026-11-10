@@ -319,7 +319,7 @@ final class PermalinkSettingsScreen extends SettingsScreen
         }
 
         if ($deleted) {
-            osc_add_flash_ok_message(_m('Friendly URLs successfully deactivated'), 'admin');
+            osc_add_flash_ok_message(_m('Friendly URLs turned off'), 'admin');
         } elseif ($ours) {
             osc_add_flash_warning_message(
                 sprintf(_m('Friendly URLs are off, but the %s file could not be deleted. Delete it yourself.'), '.htaccess'),

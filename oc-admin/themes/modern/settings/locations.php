@@ -49,7 +49,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             'data-i18n' => json_encode(array(
                 'loading'       => __('Loading…'),
                 'loadError'     => __('The list could not be loaded. Check your connection and try again.'),
-                'saveError'     => __('Something went wrong. Please try again.'),
+                'saveError'     => __('Something went wrong. Try again.'),
                 'nothingPicked' => __('Select at least one location to delete.'),
                 'noAction'      => __('Choose a bulk action first.'),
                 'selected'      => __('Selected: %s'),

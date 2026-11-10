@@ -55,7 +55,7 @@ class CAdminMedia extends AdminSecBaseModel
             case ('delete'):
                 osc_csrf_check();
                 $this->deleteMedia(Params::getParam('src'), Params::getParamInt('id'));
-                osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
+                osc_add_flash_ok_message(_m('File deleted'), 'admin');
                 $this->redirectTo($this->libraryUrl(Params::getParam('type')));
                 break;
             case ('bulk'):

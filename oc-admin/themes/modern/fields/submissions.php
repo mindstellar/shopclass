@@ -281,7 +281,7 @@ osc_current_admin_theme_path('parts/header.php');
             }).then(function (r) { return r.json(); }).then(function (o) {
                 if (o.error) { setJsMessage('error', o.error); return; }
                 location.reload();
-            }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
+            }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>'); });
             return false;
         }
 
@@ -339,7 +339,7 @@ osc_current_admin_theme_path('parts/header.php');
                             var row = document.querySelector('tr[data-sub-id="' + id + '"]');
                             if (row) { row.remove(); }
                         }
-                    }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
+                    }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>'); });
             };
 
             // purge all
@@ -363,7 +363,7 @@ osc_current_admin_theme_path('parts/header.php');
                 }).then(function (r) { return r.json(); }).then(function (o) {
                     if (o.error) { setJsMessage('error', o.error); }
                     if (o.ok) { location.reload(); }
-                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
+                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>'); });
             };
         })();
     </script>

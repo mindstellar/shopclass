@@ -366,7 +366,7 @@ $driven = drive('create_ban_rule_post', array(
     's_email' => '*@BadSite.com',
 ));
 pin('one rule more than there was', $before + 1, rows($admin));
-pin('the admin is told it saved', array(array('ok', 'Rule saved correctly')), $driven['flashes']);
+pin('the admin is told it saved', array(array('ok', 'Rule saved')), $driven['flashes']);
 pin(
     'and an added rule is sent back to the list',
     array('https://example.test/oc-admin/index.php?page=users&action=ban'),
@@ -428,7 +428,7 @@ check(
 harness_section('a value the column cannot hold is refused, not cut short');
 
 // STRICT_TRANS_TABLES is off unless OSC_DB_STRICT_MODE says otherwise, so an over-long
-// value used to be stored as its first 250 characters under "Rule saved correctly" -- the
+// value used to be stored as its first 250 characters under "Rule saved" -- the
 // end of it gone, with nothing said. The column widths are declared, so the form comes back
 // to be shortened instead.
 $count  = rows($admin);
@@ -455,7 +455,7 @@ $driven = drive('create_ban_rule_post', array(
     's_ip'    => '10.7.7.8',
     's_email' => '',
 ));
-pin('exactly 250 characters is still saved', array(array('ok', 'Rule saved correctly')), $driven['flashes']);
+pin('exactly 250 characters is still saved', array(array('ok', 'Rule saved')), $driven['flashes']);
 pin('and stored whole', str_repeat('a', 250), row($admin, (int)($driven['effects'][0][1] ?? 0))['s_name'] ?? null);
 
 // The cap is the column's, so it is measured on what reaches the column and not on what was
@@ -495,7 +495,7 @@ $driven = drive('edit_ban_rule_post', array(
     's_email' => '*@badsite.com',
 ), array('id' => (string)$new));
 pin('no second row: the edit updated one', $count, rows($admin));
-pin('the admin is told it updated', array(array('ok', 'Rule updated correctly')), $driven['flashes']);
+pin('the admin is told it updated', array(array('ok', 'Rule updated')), $driven['flashes']);
 pin(
     'and an edited rule is sent back to the list',
     array('https://example.test/oc-admin/index.php?page=users&action=ban'),
@@ -517,7 +517,7 @@ $driven = drive('edit_ban_rule_post', array(
 // An update that changed nothing affects zero rows. Reading that as a failure is the bug
 // the keyword-block controller carries a comment about: the save worked and the admin is
 // told it did not, so they save again, and again.
-pin('the admin is told it updated, not that nothing happened', array(array('ok', 'Rule updated correctly')), $driven['flashes']);
+pin('the admin is told it updated, not that nothing happened', array(array('ok', 'Rule updated')), $driven['flashes']);
 pin('and it still counts as one save for the effects', 1, count($driven['effects']));
 
 harness_section('the row is the one the controller passed, not one the body names');
@@ -635,7 +635,7 @@ $driven = drive('create_ban_rule_post', array(
     's_ip'    => '10.2.3.4',
     's_email' => '',
 ));
-pin('a rule with no name is still saved', array(array('ok', 'Rule saved correctly')), $driven['flashes']);
+pin('a rule with no name is still saved', array(array('ok', 'Rule saved')), $driven['flashes']);
 pin('and it is a row', $count + 1, rows($admin));
 $nameless = (int)($driven['effects'][0][1] ?? 0);
 pin('with the name left empty', '', row($admin, $nameless)['s_name'] ?? null);
@@ -845,7 +845,7 @@ $driven = drive('edit_ban_rule_post', array(
 ), array('id' => (string)$new));
 osc_remove_filter('admin_form_before_save', $listener);
 pin('the row holds what the pipeline made of the submission', 'through the pipeline', row($admin, $new)['s_name'] ?? null);
-pin('and the save still reported success', array(array('ok', 'Rule updated correctly')), $driven['flashes']);
+pin('and the save still reported success', array(array('ok', 'Rule updated')), $driven['flashes']);
 
 harness_section('the guard: no view of a declared page rolls its own form');
 

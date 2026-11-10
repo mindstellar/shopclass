@@ -112,7 +112,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 break;
             case (1):
                 if (osc_checkLocales()) {
-                    $msg = _m('The language has been installed correctly');
+                    $msg = _m('Language installed');
                     osc_add_flash_ok_message($msg, 'admin');
                 } else {
                     $msg = _m('File uploaded but unable to activate the language');
@@ -130,7 +130,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 break;
             case (-1):
             default:
-                $msg = _m('There was a problem adding the language');
+                $msg = _m('The language could not be added.');
                 osc_add_flash_error_message($msg, 'admin');
                 break;
         }
@@ -168,7 +168,7 @@ class CAdminLanguages extends AdminSecBaseModel
             if (isset($published[$languageToImport])) {
                 $result = $this->languages->importPublished($languageToImport, $published[$languageToImport]);
                 if (!$result['mail']) {
-                    osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
+                    osc_add_flash_error_message(_m('The email templates could not be imported.'), 'admin');
                 }
                 $failed = $result['failed'];
                 if ($failed === null) {
@@ -182,7 +182,7 @@ class CAdminLanguages extends AdminSecBaseModel
                         'admin'
                     );
                 } else {
-                    osc_add_flash_ok_message(_m('Language imported successfully'), 'admin');
+                    osc_add_flash_ok_message(_m('Language imported'), 'admin');
                 }
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
 
@@ -494,7 +494,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 switch ($this->languages->delete($code, $adminLocale)) {
                     case LanguageService::IS_CURRENT:
                         osc_add_flash_warning_message(
-                            _m('The current language can\'t be deleted. Please logout and login again with another language.'),
+                            _m('This is the language you are using. Sign in with another language to delete it.'),
                             'admin'
                         );
                         break;
@@ -512,19 +512,19 @@ class CAdminLanguages extends AdminSecBaseModel
                         break;
                     case LanguageService::DIR_KEPT:
                         osc_add_flash_error_message(sprintf(
-                            _m("Directory '%s' couldn't be removed"),
+                            _m('The language was removed, but its folder "%s" could not be deleted. Delete it yourself.'),
                             $code
                         ), 'admin');
                         break;
                     case LanguageService::DELETED:
                         osc_add_flash_ok_message(
-                            sprintf(_m('Directory "%s" has been successfully removed'), $code),
+                            sprintf(_m('Language "%s" removed'), $code),
                             'admin'
                         );
                         break;
                     default:
                         osc_add_flash_error_message(
-                            sprintf(_m("Directory '%s' couldn't be removed;)"), $code),
+                            sprintf(_m('Language "%s" could not be removed.'), $code),
                             'admin'
                         );
                 }

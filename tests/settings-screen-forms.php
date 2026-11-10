@@ -1596,7 +1596,7 @@ pin('and so does the module flag beside it', array('0', 'BOOLEAN'), pref($admin,
 pin('a structure typed while the switch was off is discarded', array('feed', 'STRING'), pref($admin, 'rewrite_feed'));
 check('our own rules file is taken back off disk', !file_exists($htaccess));
 pin('the rule cache is not rebuilt for a structure that was not stored', array(), $run['effects']);
-pin('and the screen says so', array('ok:Friendly URLs successfully deactivated'), flashed($run));
+pin('and the screen says so', array('ok:Friendly URLs turned off'), flashed($run));
 
 // A file somebody else wrote is not ours to delete: it may be carrying rules that have
 // nothing to do with this, and the byte comparison is the only thing that can tell.

@@ -30,6 +30,6 @@ abstract class AjaxHandler
      */
     protected static function orderResult(int $error): array
     {
-        return $error ? array('error' => __('An error occurred')) : array('ok' => __('Order saved'));
+        return $error ? array('error' => __('Could not save the new order. Reload and try again.')) : array('ok' => __('Order saved'));
     }
 }

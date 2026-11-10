@@ -439,7 +439,7 @@ _e('Tick to open links in new tab'); ?></label>
                     // means the save endpoint errored (e.g. a PHP warning corrupted it);
                     // surface that instead of executing whatever came back.
                     try { ret = JSON.parse(data); } catch (err) {
-                        setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                        setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
                         return;
                     }
                     if (ret && ret.ok) {
@@ -461,10 +461,10 @@ _e('Tick to open links in new tab'); ?></label>
                         // Close the drawer once the definition is saved.
                         if (window.cfCloseDrawer) { window.cfCloseDrawer(); }
                     } else {
-                        setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                        setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
                     }
                 }).catch(function () {
-                    setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                    setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
                 });
             });
         }

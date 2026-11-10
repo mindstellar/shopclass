@@ -191,10 +191,10 @@ class CAdminPages extends AdminSecBaseModel
         }
         if ($page_deleted_correcty > 0) {
             if ($page_deleted_correcty == 1) {
-                osc_add_flash_ok_message(_m('One page has been deleted correctly'), 'admin');
+                osc_add_flash_ok_message(_m('Page deleted'), 'admin');
             } else {
                 osc_add_flash_ok_message(sprintf(
-                    _m('%s pages have been deleted correctly'),
+                    _m('%s pages deleted'),
                     $page_deleted_correcty
                 ), 'admin');
             }

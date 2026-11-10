@@ -111,10 +111,10 @@ $isPlaceable = is_array($groupMeta) && !empty($groupMeta['placeable']);
                     if (window.cfCloseDrawer) { window.cfCloseDrawer(); }
                     else { var frame = document.getElementById('edit-field-group-frame'); if (frame) { frame.remove(); } }
                 } else {
-                    setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                    setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
                 }
             }).catch(function () {
-                setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>');
+                setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
             });
         });
     })();

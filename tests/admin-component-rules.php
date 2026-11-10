@@ -20,6 +20,7 @@
  *   empty states   no builder-empty or osc-empty-icon, no 'icon' inside an empty-state spec
  *   callouts       no hand-built callout-block or callout tone class
  *   tables         no hand-written <table> or <thead>; Status is first, or second after the bulk checkbox
+ *   wording        no "successfully", "correctly", "Oops" or "Ajax" in admin message text
  *
  * Markup and icon rules stay in tests/admin-template-rules.php.
  *
@@ -391,5 +392,33 @@ foreach ($templates as $file => $src) {
 }
 check('the table rule saw table templates', $tables >= 25, (string)$tables);
 check('the table rule saw status column definitions', $checked >= 7, (string)$checked);
+
+// Wording: admin message text says what happened, with no filler and no "Ajax".
+$wordingDirs = array(
+    $theme,
+    ABS_PATH . 'oc-includes/classes/admin',
+    ABS_PATH . 'oc-includes/osclass/classes/controller/admin',
+);
+$wordingAllow = array(
+    // 'file-suffix::exact text' => 'reason'
+);
+$wordingSeen = 0;
+foreach ($wordingDirs as $dir) {
+    foreach (rules_files($dir, array('php')) as $file) {
+        $src = (string)file_get_contents($file);
+        if (!preg_match_all('/\b(?:_m|__|_e|_mn|_n)\(\s*([\'"])((?:\\\\.|(?!\1).)*)\1/s', $src, $mm, PREG_SET_ORDER)) {
+            continue;
+        }
+        foreach ($mm as $hit) {
+            $wordingSeen++;
+            $rel = substr($file, strlen(ABS_PATH));
+            if (isset($wordingAllow[$rel . '::' . $hit[2]])) {
+                continue;
+            }
+            check($rel . ' message "' . substr($hit[2], 0, 50) . '" avoids banned words', !preg_match('/\b(successfully|correctly|oops|ajax)\b/i', $hit[2]));
+        }
+    }
+}
+check('the wording rule saw admin messages', $wordingSeen >= 500, (string)$wordingSeen);
 
 exit(harness_result());

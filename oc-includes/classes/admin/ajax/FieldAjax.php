@@ -145,7 +145,7 @@ final class FieldAjax extends AjaxHandler
                 }
             }
             if ($error == 1) {
-                $message = __('An error occurred while updating');
+                $message = __('The change could not be saved. Reload and try again.');
             }
         } else {
             $error   = 1;
@@ -173,7 +173,7 @@ final class FieldAjax extends AjaxHandler
             FieldService::make(osc_language())->delete(Params::getParamInt('id'));
             $result = array('ok' => __('The custom field has been deleted'));
         } catch (RefusedException | RuntimeException $e) {
-            $result = array('error' => __('An error occurred while deleting'));
+            $result = array('error' => __('It could not be deleted. Reload and try again.'));
         }
 
         AjaxResponse::json($result);

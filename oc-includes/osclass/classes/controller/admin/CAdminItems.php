@@ -304,7 +304,7 @@ class CAdminItems extends AdminSecBaseModel
             return false;
         }
         $action = ($value === '1' ? '' : 'un') . ($this->action === 'status_spam' ? 'spam' : 'premium');
-        $this->moderate($action, $id, _m('Changes have been applied'), _m('An error has occurred'));
+        $this->moderate($action, $id, _m('Changes have been applied'), _m('That change could not be applied.'));
         $this->redirectTo(Params::getServerParam('HTTP_REFERER', false, false));
 
         return null;
@@ -428,7 +428,7 @@ class CAdminItems extends AdminSecBaseModel
 
         // A save that changed nothing affected no rows and is still a save.
         if ($saved instanceof SavedListing && $saved->rows() !== false) {
-            osc_add_flash_ok_message(_m('Changes saved correctly'), 'admin');
+            osc_add_flash_ok_message(_m('Changes saved'), 'admin');
             $url = osc_admin_base_url(true) . '?page=items';
             // if Referer is saved that means referer is ManageListings or ReportListings
             if (Session::getInstance()->_get('osc_admin_referer') != '') {
@@ -461,9 +461,9 @@ class CAdminItems extends AdminSecBaseModel
             Params::getParamString('name')
         );
         if (!$deleted) {
-            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
+            osc_add_flash_error_message(_m('That photo could not be removed.'), 'admin');
         } else {
-            osc_add_flash_ok_message(_m('Resource deleted'), 'admin');
+            osc_add_flash_ok_message(_m('Photo deleted'), 'admin');
         }
         $this->redirectTo(osc_admin_base_url(true) . '?page=items');
     }
@@ -914,7 +914,7 @@ class CAdminItems extends AdminSecBaseModel
         $errors = $result instanceof InvalidException ? $this->itemErrors($result->errors(), $data) : array();
         if ($errors === array()) {
             $message = $result instanceof RefusedException ? $result->getMessage() : '';
-            osc_add_flash_error_message($message !== '' ? $message : _m('An error has occurred'), 'admin');
+            osc_add_flash_error_message($message !== '' ? $message : _m('The listing could not be saved.'), 'admin');
         }
 
         return $errors;
@@ -979,7 +979,7 @@ class CAdminItems extends AdminSecBaseModel
         } catch (ConflictException $e) {
             osc_add_flash_error_message($e->getMessage() !== '' ? $e->getMessage() : $conflict, 'admin');
         } catch (RefusedException | RuntimeException $e) {
-            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
+            osc_add_flash_error_message(_m('That change could not be applied.'), 'admin');
         }
     }
 

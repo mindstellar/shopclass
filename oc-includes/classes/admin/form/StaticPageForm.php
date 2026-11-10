@@ -254,7 +254,7 @@ final class StaticPageForm
             return self::fail(
                 's_internal_name',
                 'taken',
-                _m("Oops! That internal name is already in use. We can't make the changes")
+                _m('That internal name is already in use. Choose another.')
             );
         }
 

@@ -229,9 +229,9 @@ class CAdminSettingsKeywordBlock extends AdminSecBaseModel
 
         try {
             KeywordBlockStore::save($id ?: null, $bare, $scope, $substring);
-            osc_add_flash_ok_message($id ? _m('Keyword updated correctly') : _m('Keyword saved correctly'), 'admin');
+            osc_add_flash_ok_message($id ? _m('Keyword updated') : _m('Keyword saved'), 'admin');
         } catch (DbException $e) {
-            osc_add_flash_error_message(_m('An error has occurred'), 'admin');
+            osc_add_flash_error_message(_m('The keyword could not be saved.'), 'admin');
         }
 
         $this->redirectTo(osc_admin_base_url(true) . '?page=settings&action=keyword_block');

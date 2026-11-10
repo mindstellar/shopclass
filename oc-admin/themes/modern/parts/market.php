@@ -689,7 +689,7 @@ function osc_market_i18n($type)
         'installing'       => __('Installing…'),
         'updating'         => __('Updating…'),
         'installed'        => __('Installed'),
-        'ajaxError'        => __('Something went wrong. Please try again.'),
+        'ajaxError'        => __('Something went wrong. Try again.'),
         'updateAllRunning' => __('Updating…'),
         'updateAllDone'    => $type === 'theme' ? __('Themes updated.') : __('Plugins updated.'),
         'checking'         => __('Checking…'),

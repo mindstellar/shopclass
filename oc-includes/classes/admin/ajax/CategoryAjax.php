@@ -135,7 +135,7 @@ final class CategoryAjax extends AjaxHandler
                 ? array('ok' => __('The category is too large to delete at once. It has been hidden and is being emptied in the background.'), 'queued' => true)
                 : array('ok' => __('The categories have been deleted'), 'queued' => false);
         } catch (RefusedException | RuntimeException $e) {
-            $result = array('error' => __('An error occurred while deleting'));
+            $result = array('error' => __('It could not be deleted. Reload and try again.'));
         }
 
         AjaxResponse::json($result);
@@ -152,7 +152,7 @@ final class CategoryAjax extends AjaxHandler
 
             return;
         } catch (RuntimeException $e) {
-            AjaxResponse::json(array('error' => __('An error occurred while updating')));
+            AjaxResponse::json(array('error' => __('The change could not be saved. Reload and try again.')));
 
             return;
         }
@@ -184,7 +184,7 @@ final class CategoryAjax extends AjaxHandler
 
             return;
         } catch (RuntimeException $e) {
-            AjaxResponse::json(array('error' => __('An error occurred while updating')));
+            AjaxResponse::json(array('error' => __('The change could not be saved. Reload and try again.')));
 
             return;
         }
@@ -246,10 +246,10 @@ final class CategoryAjax extends AjaxHandler
         AjaxResponse::json(array(
             'error'     => $saved['outcome'],
             'msg'       => match ($saved['outcome']) {
-                CategoryService::SAVE_OK          => __('Category updated correctly'),
+                CategoryService::SAVE_OK          => __('Category updated'),
                 CategoryService::SAVE_NO_NAME     => __('Sorry, including at least a title is mandatory'),
-                CategoryService::SAVE_BLANK_NAMES => __('Category updated correctly, but some titles are empty'),
-                default                           => __('An error occurred while updating'),
+                CategoryService::SAVE_BLANK_NAMES => __('Category updated, but some titles are empty'),
+                default                           => __('The change could not be saved. Reload and try again.'),
             },
             'text'      => ($descriptions[osc_language()]['s_name'] ?? '') !== '' ? $descriptions[osc_language()]['s_name'] : null,
             'parent_id' => (int) CategoryStore::tree()->parent($id),
@@ -289,7 +289,7 @@ final class CategoryAjax extends AjaxHandler
 
             return array('error' => 2, 'msg' => $refusal['error']) + array_intersect_key($refusal, array('field' => 1));
         } catch (RuntimeException $e) {
-            return array('error' => 2, 'msg' => __('An error occurred while updating'));
+            return array('error' => 2, 'msg' => __('The change could not be saved. Reload and try again.'));
         }
         $msg = __('A new category has been added');
         osc_add_flash_ok_message($msg, 'admin');

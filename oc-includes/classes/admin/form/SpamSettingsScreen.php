@@ -88,7 +88,7 @@ final class SpamSettingsScreen
                 break;
             case 2:
                 $alertType = 'danger';
-                $alertMsg  = __('The key you entered is invalid. Please double-check it');
+                $alertMsg  = __('The key you entered is invalid. Double-check it');
                 break;
             case 3:
                 $alertType = 'warning';
@@ -167,7 +167,7 @@ final class SpamSettingsScreen
                     return;
                 }
                 osc_admin_form_row_open(
-                    __('If you see a captcha widget below, the active provider is configured correctly')
+                    __('If a captcha widget shows below, the active provider is set up')
                 );
                 osc_show_captcha();
                 osc_admin_form_row_close();

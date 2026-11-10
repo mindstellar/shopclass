@@ -131,9 +131,9 @@ final class SystemAjax extends AjaxHandler
     private static function sendTestMail(array $emailParams): void
     {
         if (osc_sendMail($emailParams)) {
-            $array = array('status' => '1', 'html' => __('Email sent successfully'));
+            $array = array('status' => '1', 'html' => __('Email sent'));
         } else {
-            $array = array('status' => '0', 'html' => __('An error occurred while sending email'));
+            $array = array('status' => '0', 'html' => __('The email could not be sent. Check the mail settings.'));
         }
         AjaxResponse::json($array);
     }

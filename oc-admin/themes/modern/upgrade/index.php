@@ -254,7 +254,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         </div>
         <div id="tohide">
             <p>
-                <?php _e('You have uploaded a new version of Shopclass, you need to upgrade Shopclass for it to work correctly.'); ?>
+                <?php _e('You have uploaded a new version of Shopclass. Upgrade it for the site to work.'); ?>
             </p>
             <a class="btn btn-dim"
                href="<?php echo osc_admin_base_url(true); ?>?page=upgrade&confirm=true"><?php _e('Upgrade now'); ?></a>

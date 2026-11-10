@@ -231,7 +231,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
             }).then(function (r) { return r.json(); }).then(function (data) {
                 say(data.html || data.msg || '', data.status === '1');
             }).catch(function () {
-                say(<?php echo json_encode(__('An error occurred while sending email')); ?>, false);
+                say(<?php echo json_encode(__('The email could not be sent. Check the mail settings.')); ?>, false);
             }).finally(function () {
                 sendBtn.disabled = false;
             });

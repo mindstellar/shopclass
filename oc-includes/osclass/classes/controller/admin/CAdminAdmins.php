@@ -189,7 +189,7 @@ class CAdminAdmins extends AdminSecBaseModel
         $isDeleted = \mindstellar\auth\AdminStore::delete($adminId);
 
         if ($isDeleted) {
-            osc_add_flash_ok_message(_m('The admin has been deleted correctly'), 'admin');
+            osc_add_flash_ok_message(_m('Admin deleted'), 'admin');
         } else {
             osc_add_flash_error_message(_m('The admin couldn\'t be deleted'), 'admin');
         }

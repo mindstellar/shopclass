@@ -107,6 +107,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
+- Admin messages say what happened and what to do next, without "successfully", "correctly" or "Ajax". Reworded messages lose their old translations until retranslated.
 - Admin results share one path: `osc.notify()` behind `setJsMessage` and `osc.toast`, a sticky stack with "and N more", ok and info hide after 7 s, and one screen-reader region.
 - Admin screens share one body, sections and panels with gap spacing; Statistics, the dashboard, Locations and the order screens use them.
 - Settings → Security has one tab row: Sign-in, Captcha, Spam filter (Akismet and keywords) and Limits; Ban rules moved to Users and message rules to Listings → Messages → Settings. Old links still work.

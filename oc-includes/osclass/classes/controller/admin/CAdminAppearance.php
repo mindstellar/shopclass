@@ -109,7 +109,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 osc_add_flash_error_message($msg, 'admin');
                 break;
             case (1):
-                $msg = _m('The theme has been installed correctly');
+                $msg = _m('Theme installed');
                 osc_add_flash_ok_message($msg, 'admin');
                 break;
             case (2):
@@ -123,7 +123,7 @@ class CAdminAppearance extends AdminSecBaseModel
                 break;
             case (-1):
             default:
-                $msg = _m('There was a problem adding the theme');
+                $msg = _m('The theme could not be added.');
                 osc_add_flash_error_message($msg, 'admin');
                 break;
         }
@@ -178,9 +178,9 @@ class CAdminAppearance extends AdminSecBaseModel
             }
             osc_run_hook('theme_delete_' . $theme);
             if (osc_deleteDir(osc_content_path() . 'themes/' . $theme . '/')) {
-                osc_add_flash_ok_message(_m('Theme removed successfully'), 'admin');
+                osc_add_flash_ok_message(_m('Theme removed'), 'admin');
             } else {
-                osc_add_flash_error_message(_m('There was a problem removing the theme'), 'admin');
+                osc_add_flash_error_message(_m('The theme could not be removed. Check the folder permissions.'), 'admin');
             }
         }
 
@@ -228,7 +228,7 @@ class CAdminAppearance extends AdminSecBaseModel
             // A failed delete still flashes success, as the legacy model did.
         }
         osc_run_hook('after_delete_widget', $widgetId);
-        osc_add_flash_ok_message(_m('Widget removed correctly'), 'admin');
+        osc_add_flash_ok_message(_m('Widget removed'), 'admin');
         $this->redirectTo($this->widgetReturnUrl());
     }
 
@@ -283,9 +283,9 @@ class CAdminAppearance extends AdminSecBaseModel
         }
         if ($res) {
             osc_purge_page_cache('widget');
-            osc_add_flash_ok_message(_m('Widget updated correctly'), 'admin');
+            osc_add_flash_ok_message(_m('Widget updated'), 'admin');
         } else {
-            osc_add_flash_error_message(_m('Widget cannot be updated correctly'), 'admin');
+            osc_add_flash_error_message(_m('The widget could not be updated.'), 'admin');
         }
         $this->redirectTo($this->widgetReturnUrl());
     }
@@ -329,7 +329,7 @@ class CAdminAppearance extends AdminSecBaseModel
             // A failed insert still flashes success, as the legacy model did.
         }
         osc_purge_page_cache('widget');
-        osc_add_flash_ok_message(_m('Widget added correctly'), 'admin');
+        osc_add_flash_ok_message(_m('Widget added'), 'admin');
         $this->redirectTo($this->widgetReturnUrl());
     }
 
@@ -725,7 +725,7 @@ class CAdminAppearance extends AdminSecBaseModel
             $this->redirectTo($back . '&action=dependencies&theme=' . urlencode($theme));
             return;
         }
-        osc_add_flash_ok_message(_m('Theme activated correctly'), 'admin');
+        osc_add_flash_ok_message(_m('Theme activated'), 'admin');
         $this->redirectTo($back);
     }
 
@@ -787,7 +787,7 @@ class CAdminAppearance extends AdminSecBaseModel
             array(osc_themes_path(), osc_plugins_path())
         );
         if ($resolved === null) {
-            osc_add_flash_warning_message(__('Error loading theme custom file'), 'admin');
+            osc_add_flash_warning_message(__('That custom file could not be loaded.'), 'admin');
         }
         $this->_exportVariableToView('file', $resolved);
         $this->doView('appearance/view.php');

@@ -140,7 +140,7 @@ class CAdminUsers extends AdminSecBaseModel
                 );
                 break;
             case 2:
-                osc_add_flash_ok_message(_m('The user has been created successfully'), 'admin');
+                osc_add_flash_ok_message(_m('User created'), 'admin');
                 break;
             default:
                 osc_add_flash_error_message($success, 'admin');
@@ -732,7 +732,7 @@ class CAdminUsers extends AdminSecBaseModel
         osc_web_user_login($aUser);
 
         osc_run_hook('after_login', $aUser, osc_user_dashboard_url());
-        osc_add_flash_ok_message(sprintf(_m('Logged in as %s successfully'), $aUser['s_name']));
+        osc_add_flash_ok_message(sprintf(_m('Logged in as %s'), $aUser['s_name']));
         $this->redirectTo(osc_user_dashboard_url());
     }
 
@@ -856,7 +856,7 @@ class CAdminUsers extends AdminSecBaseModel
         // throws when a write fails and refuses a key with no row behind it, so there is
         // nothing left for a zero to mean.
         osc_add_flash_ok_message(
-            $id === null ? _m('Rule saved correctly') : _m('Rule updated correctly'),
+            $id === null ? _m('Rule saved') : _m('Rule updated'),
             'admin'
         );
         $this->redirectTo(osc_admin_base_url(true) . '?page=users&action=ban');

@@ -106,10 +106,10 @@ class CAdminMain extends AdminSecBaseModel
                             osc_add_flash_warning_message(_m("You're already subscribed"), 'admin');
                             break;
                         case 1:
-                            osc_add_flash_ok_message(_m('Subscribed correctly'), 'admin');
+                            osc_add_flash_ok_message(_m('Subscribed'), 'admin');
                             break;
                         default:
-                            osc_add_flash_warning_message(_m('Error subscribing'), 'admin');
+                            osc_add_flash_warning_message(_m('Could not subscribe. Try again later.'), 'admin');
                             break;
                     }
                 }

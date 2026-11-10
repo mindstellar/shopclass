@@ -505,10 +505,10 @@ $returns    = static function (string $action, array $post, string $flash) use (
     pin("$action returns to the Widgets screen", array($widgetsUrl), $r['redirects']);
     pin("...and flashes \"$flash\"", array('ok:' . $flash), $GLOBALS['flashes']);
 };
-$returns('add_widget_post', array('location' => 'home', 'description' => 'Plain', 'content' => '<p>a</p>'), 'Widget added correctly');
+$returns('add_widget_post', array('location' => 'home', 'description' => 'Plain', 'content' => '<p>a</p>'), 'Widget added');
 $plain = (int) $admin->query("SELECT MAX(pk_i_id) FROM $table")->fetch_row()[0];
-$returns('edit_widget_post', array('id' => (string) $plain, 'description' => 'Plain', 'content' => '<p>b</p>'), 'Widget updated correctly');
-$returns('delete_widget', array('id' => (string) $plain), 'Widget removed correctly');
+$returns('edit_widget_post', array('id' => (string) $plain, 'description' => 'Plain', 'content' => '<p>b</p>'), 'Widget updated');
+$returns('delete_widget', array('id' => (string) $plain), 'Widget removed');
 check('the old page block undo is gone', !class_exists('mindstellar\widgets\PageBlockUndo'));
 
 $admin->query("DELETE FROM $table");

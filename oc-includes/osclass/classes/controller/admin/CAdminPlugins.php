@@ -107,7 +107,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 osc_add_flash_error_message($msg, 'admin');
                 break;
             case (1):
-                $msg = _m('The plugin has been uploaded correctly');
+                $msg = _m('Plugin uploaded');
                 osc_add_flash_ok_message($msg, 'admin');
                 break;
             case (2):
@@ -121,7 +121,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 break;
             case (-1):
             default:
-                $msg = _m('There was a problem adding the plugin');
+                $msg = _m('The plugin could not be added.');
                 osc_add_flash_error_message($msg, 'admin');
                 break;
         }
@@ -493,7 +493,7 @@ class CAdminPlugins extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('The files were deleted'), 'admin');
             } else {
                 osc_add_flash_error_message(sprintf(
-                    _m('There were an error deleting the files, please check the permissions of the files in %s'),
+                    _m('The plugin files could not be deleted. Check the permissions of %s.'),
                     $path . '/'
                 ), 'admin');
             }

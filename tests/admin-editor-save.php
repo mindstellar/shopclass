@@ -375,7 +375,7 @@ $result = drive('CAdminItems', $itemPost, array('page' => 'items', 'action' => '
 harness_section('the listing save is guarded and reports success');
 
 pin('the token is checked before anything is written', array('item_edit_post'), $result['csrf']);
-pin('the admin is told it saved', array(array('ok', 'Changes saved correctly')), $result['flashes']);
+pin('the admin is told it saved', array(array('ok', 'Changes saved')), $result['flashes']);
 
 harness_section('the listing save writes the columns its fields feed');
 

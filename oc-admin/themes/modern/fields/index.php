@@ -280,7 +280,7 @@ function customHead()
             newFieldTitle: '<?php echo osc_esc_js(__('New field')); ?>',
             newFormTitle:  '<?php echo osc_esc_js(__('New form')); ?>',
             nameNeeded:    '<?php echo osc_esc_js(__('Give it a name.')); ?>',
-            ajaxError:     '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>',
+            ajaxError:     '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>',
             saving:     '<?php echo osc_esc_js(__('Saving…')); ?>',
             saved:      '<?php echo osc_esc_js(__('Saved')); ?>',
             inForms:    '<?php echo osc_esc_js(__('In %d forms')); ?>',
@@ -481,7 +481,7 @@ function customHead()
                     if (ret.error) { setJsMessage('error', ret.error); setCardStatus(status, ''); }
                     else { setCardStatus(status, 'saved'); }
                 }).catch(function () {
-                    setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                    setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
                     setCardStatus(status, '');
                 });
                 refreshEmptyStates();
@@ -645,12 +645,12 @@ function customHead()
                             setJsMessage('ok', ret.ok);
                             window.setTimeout(function () { window.location.reload(); }, 600);
                         } else {
-                            setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                            setJsMessage('error', (ret && ret.error) || '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
                             migrateBtn.disabled = false;
                             migrateBtn.classList.remove('is-busy');
                         }
                     }).catch(function () {
-                        setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, please try again.')); ?>');
+                        setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>');
                         migrateBtn.disabled = false;
                         migrateBtn.classList.remove('is-busy');
                     });
@@ -931,7 +931,7 @@ if ($looseCount > 0) { ?>
                         });
                         if (typeof refreshSharedBadges === 'function') { refreshSharedBadges(); }
                     }
-                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
+                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>'); });
         };
         document.getElementById('deleteGroupSubmit').onclick = function () {
             var modal = document.getElementById('deleteGroupModal');
@@ -946,7 +946,7 @@ if ($looseCount > 0) { ?>
                         if (card) { card.remove(); }
                         if (typeof refreshSharedBadges === 'function') { refreshSharedBadges(); }
                     }
-                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('Ajax error, try again.')); ?>'); });
+                }).catch(function () { setJsMessage('error', '<?php echo osc_esc_js(__('The request failed. Check your connection and try again.')); ?>'); });
         };
     </script>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>

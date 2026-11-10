@@ -75,7 +75,7 @@ final class FormBuilderAjax extends AjaxHandler
             $groupManager->setMeta($groupId, 'placeable', Params::getParam('group_placeable') == '1' ? 1 : '');
         }
         if ($error) {
-            AjaxResponse::json(array('error' => __('An error occurred while saving the group')));
+            AjaxResponse::json(array('error' => __('The group could not be saved. Reload and try again.')));
         } else {
             AjaxResponse::json(array('ok' => __('Saved'), 'group_id' => $groupId, 'text' => $name));
         }
@@ -89,7 +89,7 @@ final class FormBuilderAjax extends AjaxHandler
         if ($res > 0) {
             AjaxResponse::json(array('ok' => __('The field group has been deleted')));
         } else {
-            AjaxResponse::json(array('error' => __('An error occurred while deleting')));
+            AjaxResponse::json(array('error' => __('It could not be deleted. Reload and try again.')));
         }
     }
 
@@ -116,7 +116,7 @@ final class FormBuilderAjax extends AjaxHandler
         if ((new FormService())->setFormFields($formId, $ids)) {
             AjaxResponse::json(array('ok' => __('Saved')));
         } else {
-            AjaxResponse::json(array('error' => __('An error occurred while saving the form')));
+            AjaxResponse::json(array('error' => __('The form could not be saved. Reload and try again.')));
         }
     }
 
@@ -138,18 +138,18 @@ final class FormBuilderAjax extends AjaxHandler
     public function submissionStatus(): void
     {
         $ok = (new FormSubmission())->setStatus(Params::getParamInt('id'), (string) Params::getParam('status'));
-        AjaxResponse::json($ok ? array('ok' => __('Saved')) : array('error' => __('An error occurred')));
+        AjaxResponse::json($ok ? array('ok' => __('Saved')) : array('error' => __('The change could not be saved. Reload and try again.')));
     }
 
     public function submissionDelete(): void
     {
         $ok = (new FormSubmission())->delete(Params::getParamInt('id'));
-        AjaxResponse::json($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('An error occurred while deleting')));
+        AjaxResponse::json($ok ? array('ok' => __('The submission has been deleted')) : array('error' => __('It could not be deleted. Reload and try again.')));
     }
 
     public function submissionsPurge(): void
     {
         $res = (new FormSubmission())->deleteByForm(Params::getParamInt('form_id'));
-        AjaxResponse::json($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('An error occurred while deleting')));
+        AjaxResponse::json($res !== false ? array('ok' => __('All submissions for this form have been deleted')) : array('error' => __('It could not be deleted. Reload and try again.')));
     }
 }

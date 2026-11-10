@@ -417,7 +417,7 @@ class CAdminTools extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Maintenance mode is ON'), 'admin');
             } else {
                 osc_add_flash_error_message(
-                    _m('There was an error creating the .maintenance file, please create it manually at the root folder'),
+                    sprintf(_m('The %s file could not be created. Create it yourself in the site root folder.'), '.maintenance'),
                     'admin'
                 );
             }
@@ -428,7 +428,7 @@ class CAdminTools extends AdminSecBaseModel
                 osc_add_flash_ok_message(_m('Maintenance mode is OFF'), 'admin');
             } else {
                 osc_add_flash_error_message(
-                    _m('There was an error removing the .maintenance file, please remove it manually from the root folder'),
+                    sprintf(_m('The %s file could not be deleted. Delete it yourself from the site root folder.'), '.maintenance'),
                     'admin'
                 );
             }
@@ -515,7 +515,7 @@ class CAdminTools extends AdminSecBaseModel
             $done = \mindstellar\job\JobQueue::getInstance()->forgetAll() > 0;
         }
         if ($done) {
-            osc_add_flash_ok_message(_m('Thrown away.'), 'admin');
+            osc_add_flash_ok_message(_mn('Failed job removed.', 'Failed jobs removed.', $id > 0 ? 1 : 2), 'admin');
         } else {
             osc_add_flash_warning_message(_m('Nothing to throw away.'), 'admin');
         }

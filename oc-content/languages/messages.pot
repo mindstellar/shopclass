@@ -252,7 +252,7 @@ msgid "%s pages couldn't be deleted because they are indelible"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php
-msgid "%s pages have been deleted correctly"
+msgid "%s pages deleted"
 msgstr ""
 
 #: oc-includes/classes/admin/form/StaticPageForm.php
@@ -471,6 +471,10 @@ msgstr ""
 msgid "Admin #%d"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
+msgid "Admin deleted"
+msgstr ""
+
 #: oc-includes/classes/messaging/MessagingService.php
 msgid "Admins cannot write in a conversation"
 msgstr ""
@@ -523,11 +527,6 @@ msgstr ""
 
 #: oc-includes/osclass/gui/billing/publish-content.php
 msgid "Amount to pay: %s"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
-msgid "An error has occurred"
 msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
@@ -758,7 +757,7 @@ msgid "Changes have been applied"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-msgid "Changes saved correctly"
+msgid "Changes saved"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
@@ -996,6 +995,10 @@ msgid ""
 "reach it."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminMain.php
+msgid "Could not subscribe. Try again later."
+msgstr ""
+
 #: oc-includes/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -1193,25 +1196,13 @@ msgid "Did you not write this? Delete it, and nothing is sent."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "Directory \"%s\" has been successfully removed"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Directory \"%s\" was not created"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "Directory '%s' couldn't be removed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid ""
 "Directory '%s' couldn't be removed because it's the default language. <a "
 "href=\"%s\">Set another language</a> as default first and try again"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "Directory '%s' couldn't be removed;)"
 msgstr ""
 
 #: oc-includes/classes/user/AddressFormat.php
@@ -1373,10 +1364,6 @@ msgstr ""
 msgid "Entered an invalid email"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminMain.php
-msgid "Error subscribing"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 msgid "Error, the password don't match"
 msgstr ""
@@ -1414,6 +1401,12 @@ msgstr ""
 msgid "Failed"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid "Failed job removed."
+msgid_plural "Failed jobs removed."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hBilling.php
 msgid "Feature"
 msgstr ""
@@ -1429,6 +1422,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
 msgid "File <b>.htaccess</b> couldn't be filled out with the right content."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
+msgid "File deleted"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -1473,7 +1470,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
-msgid "Friendly URLs successfully deactivated"
+msgid "Friendly URLs turned off"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-api_access-content.php
@@ -1626,11 +1623,11 @@ msgid "Keyword id isn't in the correct format"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
-msgid "Keyword saved correctly"
+msgid "Keyword saved"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
-msgid "Keyword updated correctly"
+msgid "Keyword updated"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
@@ -1643,6 +1640,14 @@ msgstr ""
 
 #: oc-includes/classes/user/AccountService.php
 msgid "Landline"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Language \"%s\" could not be removed."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Language \"%s\" removed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -1662,11 +1667,15 @@ msgid "Language id isn't in the correct format"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "Language imported successfully"
+msgid "Language imported"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "Language imported, but %d file(s) could not be downloaded."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "Language installed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
@@ -1740,7 +1749,7 @@ msgid "Log out"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
-msgid "Logged in as %s successfully"
+msgid "Logged in as %s"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hBilling.php
@@ -2188,10 +2197,6 @@ msgstr ""
 msgid "One page couldn't be deleted"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
-msgid "One page has been deleted correctly"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
 msgid "Only a paid order can be refunded"
 msgstr ""
@@ -2268,10 +2273,6 @@ msgstr ""
 
 #: oc-includes/classes/listing/ListingService.php
 msgid "Only the shop owner can add products"
-msgstr ""
-
-#: oc-includes/classes/admin/form/StaticPageForm.php
-msgid "Oops! That internal name is already in use. We can't make the changes"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUserNonSecure.php
@@ -2398,6 +2399,10 @@ msgstr ""
 msgid "Package updated"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminPages.php
+msgid "Page deleted"
+msgstr ""
+
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "Page title field is required"
 msgstr ""
@@ -2508,6 +2513,10 @@ msgstr ""
 msgid "Photo"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "Photo deleted"
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Photos"
 msgstr ""
@@ -2584,6 +2593,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "Plugin uninstalled"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+msgid "Plugin uploaded"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/slot-prompt.php
@@ -2845,11 +2858,6 @@ msgstr ""
 msgid "Reset your password"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
-#: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
-msgid "Resource deleted"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "Restore is turned off on this site. Use the command line."
 msgstr ""
@@ -2865,11 +2873,11 @@ msgid "Revoke key"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
-msgid "Rule saved correctly"
+msgid "Rule saved"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
-msgid "Rule updated correctly"
+msgid "Rule updated"
 msgstr ""
 
 #: oc-includes/classes/listing/ListingValidator.php
@@ -3228,7 +3236,7 @@ msgid "Subject (optional)"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
-msgid "Subscribed correctly"
+msgid "Subscribed"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -3276,6 +3284,10 @@ msgstr ""
 msgid "That ban rule no longer exists"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "That change could not be applied."
+msgstr ""
+
 #: oc-includes/classes/core/security/AdminTwoFactor.php
 msgid ""
 "That code is not right. Try the newest code from your app. After 10 tries, "
@@ -3302,6 +3314,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebForm.php
 msgid "That form is no longer available."
+msgstr ""
+
+#: oc-includes/classes/admin/form/StaticPageForm.php
+msgid "That internal name is already in use. Choose another."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -3393,6 +3409,10 @@ msgid ""
 "That payment method is not available right now. Try again or choose another."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "That photo could not be removed."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsCustom.php
 msgid "That settings page is not available"
 msgstr ""
@@ -3438,6 +3458,17 @@ msgstr ""
 msgid "The %s file already exists and was not changed."
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid ""
+"The %s file could not be created. Create it yourself in the site root folder."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
+msgid ""
+"The %s file could not be deleted. Delete it yourself from the site root "
+"folder."
+msgstr ""
+
 #: oc-includes/classes/core/routing/PageDispatcher.php
 msgid "The active theme has no cart page. Choose a shop theme to use the cart."
 msgstr ""
@@ -3460,10 +3491,6 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "The admin has been added"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
-msgid "The admin has been deleted correctly"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
@@ -3573,12 +3600,6 @@ msgid "The currency code is not in the correct format"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid ""
-"The current language can't be deleted. Please logout and login again with "
-"another language."
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "The default language has been changed"
 msgstr ""
 
@@ -3596,6 +3617,10 @@ msgstr ""
 
 #: oc-includes/classes/user/AccountService.php
 msgid "The email is not valid"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "The email templates could not be imported."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminEmails.php
@@ -3628,6 +3653,10 @@ msgid "The key name is too long. Use 100 characters or fewer."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
+msgid "The keyword could not be saved."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsKeywordBlock.php
 msgid "The keyword must be at least %d characters long"
 msgstr ""
 
@@ -3636,11 +3665,17 @@ msgid "The kind is stock or price."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "The language has been installed correctly"
+msgid "The language could not be added."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 msgid "The language ids aren't in the correct format"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid ""
+"The language was removed, but its folder \"%s\" could not be deleted. Delete "
+"it yourself."
 msgstr ""
 
 #: oc-includes/classes/user/AccountService.php
@@ -3653,6 +3688,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebItem.php
 msgid "The listing can't be validated"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminItems.php
+msgid "The listing could not be saved."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
@@ -3879,11 +3918,15 @@ msgid "The password needs at least %d characters"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "The plugin folder is not writable"
+msgid "The plugin could not be added."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "The plugin has been uploaded correctly"
+msgid "The plugin files could not be deleted. Check the permissions of %s."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
+msgid "The plugin folder is not writable"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
@@ -3992,11 +4035,15 @@ msgid "The specified username is not valid, it contains some invalid words"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "The theme folder is not writable"
+msgid "The theme could not be added."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "The theme has been installed correctly"
+msgid "The theme could not be removed. Check the folder permissions."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The theme folder is not writable"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminBilling.php
@@ -4015,10 +4062,6 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/CWebLogin.php
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "The user doesn't exist"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
-msgid "The user has been created successfully"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebRegister.php
@@ -4100,6 +4143,10 @@ msgid "The webhook endpoint is saved."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "The widget could not be updated."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
 #: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "The zip file is not valid"
@@ -4114,11 +4161,15 @@ msgid "Their name"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Theme activated correctly"
+msgid "Theme activated"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Theme removed successfully"
+msgid "Theme installed"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
+msgid "Theme removed"
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/buy-content.php
@@ -4133,54 +4184,16 @@ msgstr ""
 msgid "There is no user with that ID."
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "There was a problem adding the language"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid "There was a problem adding the plugin"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "There was a problem adding the theme"
-msgstr ""
-
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "There was a problem deleting locations"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
-msgid "There was a problem importing email templates"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "There was a problem importing the selected location"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "There was a problem removing the theme"
-msgstr ""
-
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
 msgid "There was a problem uploading the watermark image"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid ""
-"There was an error creating the .maintenance file, please create it manually "
-"at the root folder"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid ""
-"There was an error removing the .maintenance file, please remove it manually "
-"from the root folder"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
-msgid ""
-"There were an error deleting the files, please check the permissions of the "
-"files in %s"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
@@ -4235,6 +4248,12 @@ msgstr ""
 #: oc-includes/classes/user/AddressFormat.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "This field is needed."
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid ""
+"This is the language you are using. Sign in with another language to delete "
+"it."
 msgstr ""
 
 #: oc-includes/classes/billing/currency/CurrencyService.php
@@ -4408,10 +4427,6 @@ msgstr ""
 msgid "This was not me, delete it"
 msgstr ""
 
-#: oc-includes/osclass/classes/controller/admin/CAdminTools.php
-msgid "Thrown away."
-msgstr ""
-
 #: oc-includes/osclass/gui/item-comments-content.php
 msgid "Title"
 msgstr ""
@@ -4575,6 +4590,10 @@ msgid "Use a new address"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
+msgid "User created"
+msgstr ""
+
+#: oc-includes/osclass/classes/controller/admin/CAdminUsers.php
 msgid "User id isn't in the correct format"
 msgstr ""
 
@@ -4720,19 +4739,15 @@ msgid "Why are you reporting this conversation?"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Widget added correctly"
+msgid "Widget added"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Widget cannot be updated correctly"
+msgid "Widget removed"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Widget removed correctly"
-msgstr ""
-
-#: oc-includes/osclass/classes/controller/admin/CAdminAppearance.php
-msgid "Widget updated correctly"
+msgid "Widget updated"
 msgstr ""
 
 #: oc-includes/osclass/helpers/hUsers.php
