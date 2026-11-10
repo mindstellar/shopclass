@@ -41,10 +41,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     )); ?>
                 </form>
             <?php } else { ?>
-                <div class="flashmessage flashmessage-error">
-                    <a class="btn ico btn-mini ico-close" href="#">×</a>
-                    <p><?php _e("Can't install a new language"); ?></p>
-                </div>
+                <?php osc_admin_callout('danger', __("Can't install a new language")); ?>
                 <p class="text">
                     <?php _e('The translations folder is not writable on your server '
                              . "so you can't upload translations from the administration panel. "

@@ -118,9 +118,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 
     <?php osc_admin_section(__('robots.txt'), array('id' => 'sitemap-robots')); ?>
         <?php if (!$robots_writable) { ?>
-            <div class="flashmessage flashmessage-error">
-                <?php _e('robots.txt is not writable by the web server. Fix the file or folder permissions before saving changes here.'); ?>
-            </div>
+            <?php osc_admin_callout('danger', __('robots.txt is not writable by the web server. Fix the file or folder permissions before saving changes here.')); ?>
         <?php } ?>
         <?php osc_admin_settings_form($forms['robots']['id'], $forms['robots']); ?>
     <?php osc_admin_section_close(); ?>

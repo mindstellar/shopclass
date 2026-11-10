@@ -49,10 +49,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                     )); ?>
                 </form>
             <?php } else { ?>
-                <div class="flashmessage flashmessage-error">
-                    <a class="btn ico btn-mini ico-close" href="#">×</a>
-                    <p><?php _e('Cannot install new plugin'); ?></p>
-                </div>
+                <?php osc_admin_callout('danger', __('Cannot install new plugin')); ?>
                 <p class="text">
                     <?php _e('The plugin folder is not writable on your server so you cannot upload '
                              . 'plugins from the administration panel. Please make the folder writable and try again.');

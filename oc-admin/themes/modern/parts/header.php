@@ -148,10 +148,14 @@ if ($oscSidebar !== 'collapsed') {
                     </div>
                 </div>
             </div>
-            <div id="message-wrapper" class="row">
+            <div id="osc-live" class="visually-hidden">
+                <div data-osc-live="polite" role="status" aria-live="polite"></div>
+                <div data-osc-live="assertive" role="alert" aria-live="assertive"></div>
+            </div>
+            <div id="message-wrapper" class="row" data-osc-more="<?php echo osc_esc_html((string) json_encode(\mindstellar\admin\AdminText::pluralForms(static fn (int $n): string => _n('and %d more', 'and %d more', $n)))); ?>">
                 <div class="col">
                     <?php osc_show_flash_message('admin'); ?>
-                    <div id="jsMessage" class="jsMessage flashmessage flashmessage-info hide shadow-sm">
+                    <div id="jsMessage" class="jsMessage flashmessage flashmessage-info hide">
                         <a class="btn ico btn-mini ico-close" data-oc-close-label="<?php echo osc_esc_html(__('Dismiss')); ?>">×</a>
                         <p></p>
                     </div>

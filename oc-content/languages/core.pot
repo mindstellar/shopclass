@@ -19058,6 +19058,12 @@ msgstr ""
 msgid "an hour"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/header.php
+msgid "and %d more"
+msgid_plural "and %d more"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "any address"
 msgstr ""

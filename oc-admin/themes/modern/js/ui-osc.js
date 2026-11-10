@@ -442,6 +442,8 @@ document.addEventListener('click', function (e) {
 // a labelled dismiss control, and an animated removal that respects reduced motion.
 function oscDismissFlash(fm) {
     if (!fm) { return; }
+    clearTimeout(fm.oscFlashTimer);
+    fm.oscFlashTimer = 0;
     // #jsMessage is reused for the next message, so it is hidden rather than removed.
     var gone = function () {
         if (fm.id === 'jsMessage') {
@@ -450,6 +452,7 @@ function oscDismissFlash(fm) {
         } else {
             fm.remove();
         }
+        oscFlashSync();
     };
     var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduce) { gone(); return; }
@@ -459,6 +462,130 @@ function oscDismissFlash(fm) {
     fm.classList.add('is-dismissing');
     fm.addEventListener('animationend', finish, { once: true });
     setTimeout(finish, 400); // fallback if animationend never fires (e.g. hidden tab)
+    oscFlashSync();
+}
+
+// The result messages in #message-wrapper: up to three in view, worst first, then "and N more".
+// ok and info hide after 7 s unless they have no close button; hover or focus pauses the clock.
+var OSC_FLASH_MS = 7000;
+var OSC_FLASH_CAP = 3;
+
+function oscFlashCol() {
+    return document.querySelector('#message-wrapper > .col');
+}
+
+function oscFlashList(col) {
+    return Array.prototype.filter.call(col.children, function (el) {
+        return el.classList.contains('flashmessage') && !el.classList.contains('hide') && !el.classList.contains('is-dismissing');
+    });
+}
+
+function oscFlashRank(el) {
+    if (el.classList.contains('flashmessage-error')) { return 0; }
+    return el.classList.contains('flashmessage-warning') ? 1 : 2;
+}
+
+function oscFlashHides(el) {
+    return (el.classList.contains('flashmessage-ok') || el.classList.contains('flashmessage-info')) && !!el.querySelector('.ico-close');
+}
+
+function oscFlashMore(col, hidden) {
+    var more = col.querySelector(':scope > .osc-flash-more');
+    if (!more && hidden > 0) {
+        more = document.createElement('button');
+        more.type = 'button';
+        more.className = 'btn btn-link osc-flash-more';
+        more.addEventListener('click', function () {
+            var target = col.querySelector(':scope > .flashmessage.is-stacked .ico-close');
+            col.dataset.oscExpanded = '1';
+            oscFlashSync();
+            if (target) { target.focus(); }
+        });
+        col.appendChild(more);
+    }
+    if (more) {
+        var label = col.parentNode.dataset.oscMore ? JSON.parse(col.parentNode.dataset.oscMore) : 'and %d more';
+        more.hidden = hidden === 0;
+        more.textContent = String(osc.plural(label, hidden)).replace('%d', hidden);
+    }
+}
+
+// Sets what is in view and starts or stops the clocks. Called after every change to the stack.
+function oscFlashSync() {
+    var col = oscFlashCol();
+    if (!col) { return; }
+    var list = oscFlashList(col);
+    if (list.length === 0) { col.oscFlashHover = false; }
+    if (list.length <= OSC_FLASH_CAP) { delete col.dataset.oscExpanded; }
+    var keep = col.dataset.oscExpanded ? list : list.slice().sort(function (a, b) {
+        return oscFlashRank(a) - oscFlashRank(b) || list.indexOf(b) - list.indexOf(a);
+    }).slice(0, OSC_FLASH_CAP);
+    var paused = !!col.oscFlashHover || col.contains(document.activeElement);
+    list.forEach(function (el) {
+        var inView = keep.indexOf(el) !== -1;
+        el.classList.toggle('is-stacked', !inView);
+        if (!inView || paused || !oscFlashHides(el)) {
+            clearTimeout(el.oscFlashTimer);
+            el.oscFlashTimer = 0;
+        } else if (!el.oscFlashTimer) {
+            el.oscFlashTimer = setTimeout(function () {
+                el.oscFlashTimer = 0;
+                oscDismissFlash(el);
+            }, OSC_FLASH_MS);
+        }
+    });
+    oscFlashMore(col, list.length - keep.length);
+}
+
+function oscFlashText(el) {
+    var copy = el.cloneNode(true);
+    copy.querySelectorAll('.ico-close').forEach(function (close) { close.remove(); });
+    return copy.textContent.replace(/\s+/g, ' ').trim();
+}
+
+// The one always-present speaker: #osc-live holds a polite and an assertive region.
+function oscFlashRegion(type) {
+    var mode = type === 'error' ? 'assertive' : 'polite';
+    var box = document.getElementById('osc-live');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'osc-live';
+        box.className = 'visually-hidden';
+        box.innerHTML = '<div data-osc-live="polite" role="status" aria-live="polite"></div>'
+            + '<div data-osc-live="assertive" role="alert" aria-live="assertive"></div>';
+        document.body.appendChild(box);
+    }
+    return box.querySelector('[data-osc-live="' + mode + '"]');
+}
+
+// A flash already in the page at load is not spoken by itself, so it is copied into the speaker.
+function oscFlashSpeakPage(col) {
+    var said = {polite: [], assertive: []};
+    oscFlashList(col).forEach(function (el) {
+        var text = oscFlashText(el);
+        if (text) { said[el.classList.contains('flashmessage-error') ? 'assertive' : 'polite'].push(text); }
+    });
+    setTimeout(function () {
+        if (said.polite.length) { osc.announce(oscFlashRegion('ok'), said.polite.join(' ')); }
+        if (said.assertive.length) { osc.announce(oscFlashRegion('error'), said.assertive.join(' ')); }
+    }, 100);
+}
+
+function oscFlashInit() {
+    var col = oscFlashCol();
+    if (!col) { return; }
+    var wrapper = col.parentNode;
+    wrapper.addEventListener('mouseenter', function () { col.oscFlashHover = true; oscFlashSync(); });
+    wrapper.addEventListener('mouseleave', function () { col.oscFlashHover = false; oscFlashSync(); });
+    wrapper.addEventListener('focusin', oscFlashSync);
+    wrapper.addEventListener('focusout', function () { setTimeout(oscFlashSync, 0); });
+    // A script may add its own .flashmessage here; it follows the same rule.
+    new MutationObserver(function () {
+        oscEnhanceFlash(col);
+        oscFlashSync();
+    }).observe(col, {childList: true});
+    oscFlashSpeakPage(col);
+    oscFlashSync();
 }
 
 function oscEnhanceFlash(root) {
@@ -466,9 +593,15 @@ function oscEnhanceFlash(root) {
         if (fm.dataset.oscFlash) { return; }
         fm.dataset.oscFlash = '1';
         var isError = fm.classList.contains('flashmessage-error');
-        // An error interrupts; anything else is a passive confirmation.
-        if (!fm.hasAttribute('role')) { fm.setAttribute('role', isError ? 'alert' : 'status'); }
-        if (!fm.hasAttribute('aria-live')) { fm.setAttribute('aria-live', isError ? 'assertive' : 'polite'); }
+        // In the stack the shared speaker says it once; elsewhere the box is its own region.
+        if (fm.closest('#message-wrapper')) {
+            fm.removeAttribute('role');
+            fm.removeAttribute('aria-live');
+        } else {
+            // An error interrupts; anything else is a passive confirmation.
+            if (!fm.hasAttribute('role')) { fm.setAttribute('role', isError ? 'alert' : 'status'); }
+            if (!fm.hasAttribute('aria-live')) { fm.setAttribute('aria-live', isError ? 'assertive' : 'polite'); }
+        }
         var close = fm.querySelector('.ico-close');
         if (close) {
             close.setAttribute('role', 'button');
@@ -505,6 +638,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Flash messages: announce them to assistive tech and wire up dismissal. (The
     // help box closes via Bootstrap's own collapse toggle, so no handler here.)
     oscEnhanceFlash(document);
+    oscFlashInit();
 
     oscInitTabs(document);
 });
@@ -1069,10 +1203,17 @@ osc.dropdown = (function () {
 // depth. A block is a row plus every row nested under it; skipFrom/skipTo leave out a moving block.
 // osc.announce(el, text): puts text in a live region. A message the same as the one shown is
 // cleared and set again on the next frame, so a screen reader reads it again.
+// The same text on another region within a second is one message and is not said again.
+var oscSaid = {el: null, text: '', at: 0};
 osc.announce = function (el, text) {
     if (!el) {
         return;
     }
+    var now = Date.now();
+    if (text && text === oscSaid.text && el !== oscSaid.el && now - oscSaid.at < 1000) {
+        return;
+    }
+    oscSaid = {el: el, text: text, at: now};
     if (el.textContent !== (text || '')) {
         el.textContent = text || '';
         return;
@@ -1291,11 +1432,51 @@ osc.sortable = (function () {
     };
 })();
 
-// osc.toast(text, {undo, ms}) — one short note at the foot of the screen, with an optional Undo.
-// A new toast replaces the old one; Undo runs once. It never takes focus and is not a live region:
-// the screen speaks the result once through osc.announce. Esc closes it when focus is inside.
-// Labels come from the screen once: osc.toast.labels({undo, close}).
-osc.toast = (function () {
+// osc.notify(type, text, {undo, ms}): the one entry point for a result. Type is ok, info, warning
+// or error. With undo (or from osc.toast) it shows at the foot of the screen, otherwise in the
+// stack at the top. It is spoken once through the shared region. Returns {close}.
+osc.notify = function (type, text, opts) {
+    opts = opts || {};
+    if (text) {
+        osc.announce(oscFlashRegion(type), text);
+    }
+    if (opts.undo || opts.toast) {
+        return oscToast(type, text, opts);
+    }
+    return oscFlashShow(type, text);
+};
+
+// #jsMessage holds the newest message; one still showing moves up the stack as a copy.
+function oscFlashShow(type, text) {
+    var slot = document.getElementById('jsMessage');
+    if (!slot) {
+        return {close: function () {}};
+    }
+    var body = slot.querySelector('p');
+    var showing = !slot.classList.contains('hide') && !slot.classList.contains('is-dismissing');
+    if (showing && body.textContent !== text) {
+        var copy = slot.cloneNode(true);
+        copy.removeAttribute('id');
+        copy.classList.remove('jsMessage', 'is-stacked');
+        slot.parentNode.insertBefore(copy, slot);
+    }
+    clearTimeout(slot.oscFlashTimer);
+    slot.oscFlashTimer = 0;
+    body.setAttribute('class', type);
+    body.textContent = text;
+    ['ok', 'error', 'warning', 'info'].forEach(function (state) {
+        slot.classList.toggle('flashmessage-' + state, state === type);
+    });
+    slot.classList.remove('hide', 'is-dismissing');
+    slot.removeAttribute('style');
+    oscFlashSync();
+    var filled = slot.oscFlashFill = {};
+    return {close: function () { if (slot.oscFlashFill === filled) { oscDismissFlash(slot); } }};
+}
+
+// The toast: one short note at the foot of the screen, with an optional Undo. A new one replaces
+// the old one and Undo runs once. It never takes focus; Esc closes it when focus is inside.
+var oscToast = (function () {
     var labels = {undo: 'Undo', close: 'Close'};
     var box = null;
     var text = null;
@@ -1306,6 +1487,8 @@ osc.toast = (function () {
     var ms = 7000;
     var current = null;
     var from = null;
+    var icon = null;
+    var ICONS = {ok: 'bi-check-circle-fill', info: 'bi-info-circle-fill', warning: 'bi-exclamation-triangle-fill', error: 'bi-exclamation-octagon-fill'};
 
     function still() {
         return !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
@@ -1354,8 +1537,7 @@ osc.toast = (function () {
         box = document.createElement('div');
         box.className = 'osc-toast is-leaving';
         box.hidden = true;
-        var icon = document.createElement('i');
-        icon.className = 'bi bi-check-circle-fill osc-toast-icon';
+        icon = document.createElement('i');
         icon.setAttribute('aria-hidden', 'true');
         text = document.createElement('span');
         text.className = 'osc-toast-text';
@@ -1401,11 +1583,13 @@ osc.toast = (function () {
         box.addEventListener('focusout', function () { if (current) { arm(); } });
     }
 
-    function toast(message, opts) {
-        opts = opts || {};
+    function toast(type, message, opts) {
         if (!box) {
             build();
         }
+        var tone = ICONS[type] ? type : 'info';
+        box.className = 'osc-toast osc-toast-' + tone + (box.classList.contains('is-leaving') ? ' is-leaving' : '');
+        icon.className = 'bi ' + ICONS[tone] + ' osc-toast-icon';
         text.textContent = message;
         undo = typeof opts.undo === 'function' ? opts.undo : null;
         undoBtn.hidden = !undo;
@@ -1432,6 +1616,13 @@ osc.toast = (function () {
 
     return toast;
 })();
+
+// osc.toast(text, {undo, ms}) shows the foot-of-screen note. It routes through osc.notify.
+osc.toast = function (message, opts) {
+    opts = opts || {};
+    return osc.notify(opts.type || 'ok', message, Object.assign({}, opts, {toast: true}));
+};
+osc.toast.labels = oscToast.labels;
 
 // osc.sidebar — the admin menu: the rail (collapsed) mode with its flyouts, the ghost
 // scrollbar, and bringing an opened section into view. Runs once on DOMContentLoaded;

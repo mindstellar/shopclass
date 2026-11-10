@@ -72,17 +72,20 @@ if (!function_exists('osc_register_settings_page')) {
 
 if (!function_exists('osc_settings_refused_notices')) {
     /**
-     * Queue an admin warning for each plugin or theme settings page that was left out.
+     * Show a callout on the dashboard, Plugins and Appearance for each settings page left out.
      *
      * @return void
      */
     function osc_settings_refused_notices()
     {
+        if (!in_array(Params::getParamString('page'), array('', 'main', 'plugins', 'appearance'), true)) {
+            return;
+        }
         foreach (SettingsPageRegistry::getInstance()->refused() as $page) {
             $text = $page['kind'] === 'theme'
                 ? __('The %1$s theme has a settings page Shopclass cannot load, so it is left out: %2$s. Update the theme or switch to another one.')
                 : __('The %1$s plugin has a settings page Shopclass cannot load, so it is left out: %2$s. Update or deactivate the plugin.');
-            osc_add_flash_warning_message(sprintf($text, osc_esc_html($page['owner']), osc_esc_html($page['error'])), 'admin');
+            osc_admin_callout('warning', sprintf($text, $page['owner'], $page['error']));
         }
     }
 }
@@ -1004,8 +1007,6 @@ if (!function_exists('osc_category_mode')) {
     }
 }
 
-// Early on every admin page, whatever the admin theme, so the warning is queued before the
-// page prints its flash messages.
-osc_add_hook('admin_page_header', 'osc_settings_refused_notices', 1);
+osc_add_hook('admin_page_header', 'osc_settings_refused_notices', 10);
 
 /* file end: ./oc-includes/osclass/helpers/hSettings.php */

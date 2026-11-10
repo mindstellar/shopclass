@@ -1275,7 +1275,7 @@ Core defines 1295 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_settings_page_conflicts()` | Page ids more than one plugin tried to register, and how many times each. Empty on a healthy install; an entry means a plugin's settings page is not the one being shown, and its saved values are under a section nothing reads. |
 | `osc_settings_page_url($id)` | The admin URL of a declared settings page. |
 | `osc_settings_pages()` | All registered settings pages, keyed by id. |
-| `osc_settings_refused_notices()` | Queue an admin warning for each plugin or theme settings page that was left out. |
+| `osc_settings_refused_notices()` | Show a callout on the dashboard, Plugins and Appearance for each settings page left out. |
 | `osc_settings_sanitize(array $field)` | The submitted value of one field, sanitised by its type. |
 | `osc_settings_save($pageId, $id = null)` | Sanitise, validate and store every field on a declared page. |
 | `osc_settings_validate(array $field, $value)` | Check one submitted value against what its field declares. Returns an error message, or null when the value is good. |

@@ -54,6 +54,9 @@ osc_add_hook('admin_header', 'admin_js_lang_string');
  */
 function admin_broken_plugin_notice()
 {
+    if (!in_array(Params::getParamString('page'), array('', 'main', 'plugins'), true)) {
+        return;
+    }
     foreach (Plugins::listEnabled() as $plugin) {
         if (!is_file(osc_plugins_path() . $plugin)) {
             continue;
@@ -61,18 +64,18 @@ function admin_broken_plugin_notice()
         $info   = Plugins::getInfo($plugin);
         $needed = \mindstellar\market\Compatibility::brokenBelow(dirname($plugin), (string) ($info['version'] ?? ''));
         if ($needed !== null) {
-            osc_add_flash_warning_message(sprintf(
+            osc_admin_callout('warning', sprintf(
                 __('%1$s %2$s does not fully work on this version of Shopclass. Update it to %3$s or newer.'),
                 (string) ($info['plugin_name'] ?? dirname($plugin)),
                 (string) $info['version'],
                 $needed
-            ), 'admin');
+            ));
         }
     }
 }
 
-// Early, so the warning is queued before the page prints its flash messages.
-osc_add_hook('admin_page_header', 'admin_broken_plugin_notice', 1);
+// On the dashboard and Plugins only: a warning repeated on every screen is just noise.
+osc_add_hook('admin_page_header', 'admin_broken_plugin_notice', 10);
 
 /**
  * Print the one payment test-mode notice where it belongs (dashboard and billing screens).

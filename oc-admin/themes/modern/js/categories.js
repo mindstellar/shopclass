@@ -2406,7 +2406,7 @@
                 } else {
                     relocate(node.id, oldParent ? oldParent.id : 0, oldIndex);
                 }
-                // The flash bar is a live region of its own, so the error is not announced twice.
+                // The flash bar speaks through the shared region, so the error is not announced twice.
                 flash('error', text);
             };
             return post(CFG.move, new URLSearchParams({id: String(node.id), parent_id: String(newParent), position: String(m.index)}))

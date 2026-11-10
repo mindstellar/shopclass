@@ -91,10 +91,8 @@ osc_admin_page(array(
 osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_body_open(array('id' => 'storage-settings')); ?>
         <?php if ($betterS3Active) { ?>
-            <div class="flashmessage flashmessage-error">
-                <?php _e('The <strong>Better S3</strong> plugin is currently active. Disable it before turning on '
-                         . 'core S3 storage below, otherwise both will rewrite resource URLs and uploads will break.'); ?>
-            </div>
+            <?php osc_admin_callout('danger', __('The <strong>Better S3</strong> plugin is currently active. Disable it before turning on '
+                         . 'core S3 storage below, otherwise both will rewrite resource URLs and uploads will break.'), array('html' => true)); ?>
         <?php } ?>
 
         <?php osc_admin_settings_form($form['id'], $form); ?>

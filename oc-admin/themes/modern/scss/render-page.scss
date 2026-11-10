@@ -118,10 +118,35 @@
   display: none;
 }
 
+// Results stay on screen on a long page: below the sticky top bar, above the sticky Save bar.
+#message-wrapper {
+  inset-block-start: .5rem;
+  position: sticky;
+  z-index: 5;
+
+  @media (min-width: 1025px) {
+    inset-block-start: 3.75rem;
+  }
+}
+
+.flashmessage.is-stacked {
+  display: none;
+}
+
+.osc-flash-more {
+  align-self: flex-start;
+  color: var(--osc-bronze);
+  font-size: .8125rem;
+  min-block-size: 1.5rem;
+  padding: 0;
+}
+
 #message-wrapper > .col {
   display: flex;
   flex-direction: column;
   gap: .75rem;
+  max-block-size: 70vh;
+  overflow-y: auto;
 
   > .flashmessage {
     margin-block: 0;
@@ -141,7 +166,7 @@
 // When the page prints its own title, the header's section name steps down to a small label,
 // so each screen has one large title. A page with no title of its own keeps the large name.
 // The top bar already names the section, so a label with no actions is not shown.
-#content-render:has(#content-page .osc-page-title) #content-head:not(:has(h1 a, .osc-tabnav-scroll, #help-box.show)) {
+#content-render:has(#content-page .osc-page-title) #content-head:not(:has(h1 a, .osc-tabnav-scroll, #help-box.show, .flashmessage, [class^="callout-"], [class*=" callout-"])) {
   display: none;
 }
 

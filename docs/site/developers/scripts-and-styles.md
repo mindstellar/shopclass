@@ -255,6 +255,26 @@ The rules for the list live in `osc.flatTree`, which works on a pre-order array 
 `clamp(items, maxLevels)`, `moveBlock(items, from, at, depth)`, `keyTarget`, `siblingIndex` and
 `position`. Use it to keep your data in step with the rows.
 
+## Messages
+
+| Kind | Use when | How |
+|---|---|---|
+| Result | An action just finished | `osc_add_flash_*_message()` before a redirect, or `osc.notify()` after AJAX |
+| Undo | A result that can be undone | `osc.notify(type, text, {undo})` |
+| Callout | A fact about this screen | `osc_admin_callout($tone, $text)` |
+
+`osc.notify(type, text, {undo, ms})` is the one way to show a result from a script. `type` is `ok`,
+`info`, `warning` or `error`. It speaks the text and shows it in `#message-wrapper`, which stays on
+screen under the top bar. With `undo` it shows as a toast at the foot of the screen. It returns
+`{close}`. `setJsMessage(type, text)` and `osc.toast()` still work and go through it.
+
+Up to three results are in view, errors first, then an "and N more" button. `ok` and `info` hide
+after 7 seconds (with a close button) and wait while the pointer or focus is on them. `error` and
+`warning` stay until closed. A `.flashmessage` outside `#message-wrapper` keeps its own behaviour.
+
+Do not add a flash on every page load for a problem that lasts. Show a callout on the screen that
+can fix it.
+
 ## Toasts and announcements
 
 `osc.toast(text, {undo, ms})` shows one short note at the foot of the screen. A new toast replaces
@@ -263,9 +283,10 @@ it stays (default 7000). A toast never takes focus, stays while the pointer or f
 closes with **Esc** from inside. It returns `{close}`. Set the button texts once per screen with
 `osc.toast.labels({undo: 'Undo', close: 'Close'})`.
 
-The toast is not a live region, so it does not speak. Say the result with
-`osc.announce(el, text)` on a screen-reader-only element that has `role="status"`
-(`aria-live="polite"`). Calling it twice with the same text still speaks twice.
+`osc.notify` and `osc.toast` speak through `#osc-live`: polite for `ok`, `info` and `warning`,
+assertive for `error`. For your own region use `osc.announce(el, text)` on a screen-reader-only
+element with `role="status"` and `aria-live="polite"`. Calling it twice with the same text speaks
+twice. The same text on another region within a second is said once.
 
 ## Bootstrap's JavaScript
 

@@ -228,10 +228,9 @@ tr.is-tree-gap-after > * {
 
 .osc-toast {
   align-items: center;
-  background: var(--osc-bench);
-  border: 1px solid var(--osc-rule);
+  background: var(--osc-bench-warm);
   border-radius: 6px;
-  box-shadow: var(--osc-shadow-overlay);
+  color: var(--osc-ink);
   display: flex;
   gap: .75rem;
   inset-block-end: max(1.25rem, env(safe-area-inset-bottom));
@@ -258,14 +257,23 @@ tr.is-tree-gap-after > * {
   }
 }
 
+.osc-toast-ok { background: var(--osc-success-tint); }
+.osc-toast-info { background: var(--osc-info-tint); }
+.osc-toast-warning { background: var(--osc-warning-tint); }
+.osc-toast-error { background: var(--osc-danger-tint); }
+
 .osc-toast-text {
   min-inline-size: 0;
   overflow-wrap: anywhere;
 }
 
 .osc-toast-icon {
-  color: var(--osc-success);
   flex: none;
+
+  .osc-toast-ok & { color: var(--osc-success); }
+  .osc-toast-info & { color: var(--osc-info); }
+  .osc-toast-warning & { color: var(--osc-warning-deep); }
+  .osc-toast-error & { color: var(--osc-danger); }
 }
 
 .osc-toast-undo {

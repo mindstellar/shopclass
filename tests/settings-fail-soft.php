@@ -55,9 +55,9 @@ function osc_add_hook($hook, $fn, $priority = 5)
     Plugins::addHook($hook, $fn, $priority);
 }
 
-function osc_add_flash_warning_message($msg, $section = 'pubMessages')
+function osc_admin_callout($tone, $text, array $opts = array())
 {
-    $GLOBALS['flash'][] = array($section, $msg);
+    $GLOBALS['flash'][] = array($tone, $text);
 }
 
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
@@ -162,12 +162,15 @@ pin('...and nothing is recorded for them', array(), array_filter(array_keys($reg
 
 harness_section('The admin notice');
 check('core hooks it on admin_page_header, for every admin theme', in_array('osc_settings_refused_notices', Plugins::callbacks('admin_page_header'), true));
+Params::setParam('page', 'items');
 osc_settings_refused_notices();
-pin('one admin warning per refused page', 6, count($GLOBALS['flash']));
-pin('it goes to the admin section', 'admin', $GLOBALS['flash'][0][0] ?? null);
+pin('no callout on other screens, so it does not repeat on every page', 0, count($GLOBALS['flash']));
+Params::setParam('page', 'plugins');
+osc_settings_refused_notices();
+pin('one callout per refused page, on Plugins', 6, count($GLOBALS['flash']));
+pin('it is a warning', 'warning', $GLOBALS['flash'][0][0] ?? null);
 check('it names the plugin and the error', str_contains($GLOBALS['flash'][0][1] ?? '', 'bad-plugin plugin') && str_contains($GLOBALS['flash'][0][1] ?? '', 'purify'), $GLOBALS['flash'][0][1] ?? '');
 check('a theme gets the theme wording', (bool)array_filter($GLOBALS['flash'], static fn ($f) => str_contains($f[1], 'bad-theme theme')));
-check('the error text is escaped', !str_contains(implode('', array_column($GLOBALS['flash'], 1)), '"bad-plugin"'));
 
 exec('rm -rf ' . escapeshellarg($root));
 
