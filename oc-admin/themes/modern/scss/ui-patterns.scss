@@ -158,6 +158,12 @@ thead:has(~ tbody > .osc-table-empty-row),
     overflow-wrap: anywhere;
   }
 
+  // A value keeps the direction of its own text (a version, a path), on the reading edge.
+  [dir="rtl"] & dd {
+    text-align: right;
+    unicode-bidi: plaintext;
+  }
+
   @media (max-width: 575.98px) {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -431,6 +437,12 @@ thead:has(~ tbody > .osc-table-empty-row),
 .col-numeric {
   font-variant-numeric: tabular-nums;
   text-align: end;
+}
+
+// Digits read left to right in every language, so a sign stays in front and the column
+// still lines up on the last digit.
+[dir="rtl"] .col-numeric {
+  direction: ltr;
 }
 
 // A balance that has gone negative after a chargeback. Colour is the second

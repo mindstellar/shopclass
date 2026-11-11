@@ -269,4 +269,40 @@ if ($r !== null) {
     pin('rows, chevrons and submenu links are 44px', array(44, 44, 44, 44), $r['targets'] ?? null);
 }
 
+harness_section('right to left');
+$r = sidebar_run(<<<'JS'
+const nav = t.$('.dashboard-sidebar');
+const inside = (outer) => t.$$('#dashboard-menu > .nav-item > .nav-link').every((row) => { const b = t.box(row); return b.x >= outer.x - .5 && b.x + b.w <= outer.x + outer.w + .5; });
+const open = t.box(nav);
+r.open = [Math.round(open.x + open.w), inside(open)];
+t.$('#oscSidebarToggle').click();
+await t.finish();
+const rail = t.box(nav);
+r.rail = [Math.round(rail.x + rail.w), Math.round(rail.w), inside(rail), Math.round(t.box(t.row('Dashboard').querySelector('a > i')).cx - rail.x)];
+const u = t.box(t.row('Users'));
+await mouseMove(u.cx, u.cy); await t.finish();
+const fly = t.box(t.panel('Users'));
+r.flyout = fly.x + fly.w <= u.x;
+JS, array('rtl' => true));
+if ($r !== null) {
+    pin('no script errors', array(), $r['errors'] ?? null);
+    pin('nothing thrown', null, $r['thrown'] ?? null);
+    pin('the menu sits on the right edge with every row inside it', array(1440, true), $r['open'] ?? null);
+    pin('the rail too, 4rem wide, icons on its centre', array(1440, 56, true, 28), $r['rail'] ?? null);
+    check('a flyout opens to the left of its row', $r['flyout'] ?? false);
+}
+$r = sidebar_run(<<<'JS'
+const nav = t.$('#sidebar-wrapper');
+t.$('#header .navbar-toggler').click();
+await t.wait(30);
+await t.finish();
+for (let i = 0; i < 20 && !nav.classList.contains('show'); i++) { await t.wait(25); }
+const b = t.box(nav);
+r.drawer = [nav.classList.contains('show'), Math.round(b.x + b.w)];
+JS, array('width' => 390, 'height' => 844, 'rtl' => true));
+if ($r !== null) {
+    pin('no script errors', array(), $r['errors'] ?? null);
+    pin('on a phone the menu opens from the right', array(true, 390), $r['drawer'] ?? null);
+}
+
 exit(harness_result());

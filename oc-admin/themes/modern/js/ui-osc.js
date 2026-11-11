@@ -80,8 +80,11 @@ function oscInitTabs(root) {
                 });
                 link.addEventListener('keydown', function (e) {
                     var next = null;
-                    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { next = linkArr[(idx + 1) % linkArr.length]; }
-                    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { next = linkArr[(idx - 1 + linkArr.length) % linkArr.length]; }
+                    // Right to left, the left arrow goes to the next tab.
+                    var fwd = getComputedStyle(link).direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight';
+                    var back = fwd === 'ArrowLeft' ? 'ArrowRight' : 'ArrowLeft';
+                    if (e.key === fwd || e.key === 'ArrowDown') { next = linkArr[(idx + 1) % linkArr.length]; }
+                    else if (e.key === back || e.key === 'ArrowUp') { next = linkArr[(idx - 1 + linkArr.length) % linkArr.length]; }
                     else if (e.key === 'Home') { next = linkArr[0]; }
                     else if (e.key === 'End') { next = linkArr[linkArr.length - 1]; }
                     if (next) { e.preventDefault(); select(next, true); }

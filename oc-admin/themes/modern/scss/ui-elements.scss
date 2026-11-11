@@ -569,4 +569,25 @@ ul.showing-results {
   .osc-empty-text {
     text-align: right;
   }
+
+  // Typed text takes the direction of its own words, as dir="auto" would.
+  :is(input:not([type]), input[type="text"], input[type="search"], textarea) {
+    unicode-bidi: plaintext;
+  }
+
+  // Code, addresses and e-mails are left-to-right whatever the page language.
+  :is(input[type="url"], input[type="email"], code, pre, kbd) {
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  // Back, sign-out and previous/next arrows point the way the page reads.
+  :is(.bi-arrow-left, .bi-box-arrow-right, .market-detail-screens-prev .bi, .market-detail-screens-next .bi)::before {
+    transform: scaleX(-1);
+  }
+}
+
+// The same for help lines and typed text, without outweighing a screen that aligns its own.
+:where([dir="rtl"]) :where(.osc-dialog-text, .flashmessage p, .help-box, .form-text, input:not([type]), input[type="text"], input[type="search"], textarea) {
+  text-align: right;
 }

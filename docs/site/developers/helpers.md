@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1301 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1302 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -728,12 +728,13 @@ Core defines 1301 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_kv_list(string $group, int $limit = 100, ?string $updatedBefore = null, ?string $afterKey = null)` | One page of a group's live keys, in key order. Pass the last key of a page as $afterKey for the next. A row never rewritten counts as updated when it was created. |
 | `osc_kv_set(string $group, string $key, $value, ?int $ttl = null)` | Write a key, replacing any value, state and expiry it had. |
 
-### hLocale (22)
+### hLocale (23)
 
 `oc-includes/osclass/helpers/hLocale.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_admin_locale_text_direction()` | The admin's language direction, 'rtl' or 'ltr'. The visitor's language plays no part. |
 | `osc_all_enabled_locales_for_admin($indexed_by_pk = false)` | Gets list of enabled locales |
 | `osc_count_web_enabled_locales()` | Gets number of enabled locales for website |
 | `osc_current_admin_locale()` | Get the actual locale of the admin. |

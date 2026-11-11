@@ -1,0 +1,272 @@
+// Bootstrap writes these parts with left and right. Under dir="rtl" they are mirrored here,
+// wrapped in :where() so no rule gains weight over the theme rules that follow.
+
+@mixin rtl-radius($left, $right) {
+  border-top-left-radius: $left;
+  border-bottom-left-radius: $left;
+  border-top-right-radius: $right;
+  border-bottom-right-radius: $right;
+}
+
+:where([dir="rtl"]) {
+  ol,
+  ul {
+    padding-left: 0;
+    padding-right: 2rem;
+  }
+
+  dd {
+    margin-right: 0;
+  }
+
+  caption {
+    text-align: right;
+  }
+
+  legend {
+    float: right;
+  }
+
+  .nav,
+  .navbar-nav,
+  .list-unstyled,
+  .list-inline,
+  .list-group,
+  .pagination {
+    padding-right: 0;
+  }
+
+  .list-inline-item:not(:last-child) {
+    margin-left: $list-inline-padding;
+    margin-right: 0;
+  }
+
+  .ms-auto {
+    margin-left: 0 !important;
+    margin-right: auto !important;
+  }
+
+  .me-auto {
+    margin-left: auto !important;
+    margin-right: 0 !important;
+  }
+
+  .border-start {
+    border-left: 0 !important;
+    border-right: var(--#{$prefix}border-width) var(--#{$prefix}border-style) var(--#{$prefix}border-color) !important;
+  }
+
+  .border-end {
+    border-left: var(--#{$prefix}border-width) var(--#{$prefix}border-style) var(--#{$prefix}border-color) !important;
+    border-right: 0 !important;
+  }
+
+  .navbar-brand {
+    margin-left: var(--#{$prefix}navbar-brand-margin-end);
+    margin-right: 0;
+  }
+
+  // Selects: the chevron and the room for it go on the left.
+  .form-select {
+    background-position: left $form-select-padding-x center;
+    padding-left: $form-select-indicator-padding;
+    padding-right: $form-select-padding-x;
+
+    &[multiple],
+    &[size]:not([size="1"]) {
+      padding-left: $form-select-padding-x;
+    }
+  }
+
+  .form-select-sm {
+    padding-right: $form-select-padding-x-sm;
+  }
+
+  .form-select-lg {
+    padding-right: $form-select-padding-x-lg;
+  }
+
+  .input-group-lg > .form-select {
+    padding-left: $form-select-padding-x-lg + $form-select-indicator-padding;
+  }
+
+  .form-control.is-valid,
+  .form-control.is-invalid,
+  .was-validated .form-control:valid,
+  .was-validated .form-control:invalid {
+    background-position: left $input-height-inner-quarter center;
+    padding-left: $input-height-inner;
+    padding-right: $input-padding-x;
+  }
+
+  .form-select.is-valid:not([multiple]):not([size]),
+  .form-select.is-invalid:not([multiple]):not([size]),
+  .was-validated .form-select:valid:not([multiple]):not([size]),
+  .was-validated .form-select:invalid:not([multiple]):not([size]) {
+    background-position: left $form-select-padding-x center, center left $form-select-indicator-padding;
+    padding-left: $form-select-feedback-icon-padding-end;
+    padding-right: $form-select-padding-x;
+  }
+
+  .form-check {
+    padding-left: 0;
+    padding-right: $form-check-padding-start;
+
+    .form-check-input {
+      float: right;
+      margin-left: 0;
+      margin-right: $form-check-padding-start * -1;
+    }
+  }
+
+  .form-switch {
+    padding-right: $form-switch-padding-start;
+
+    .form-check-input {
+      background-position: right center;
+      margin-right: $form-switch-padding-start * -1;
+
+      &:checked {
+        background-position: left center;
+      }
+    }
+  }
+
+  .form-check-inline {
+    margin-left: $form-check-inline-margin-end;
+    margin-right: 0;
+  }
+
+  .form-floating > label {
+    left: auto;
+    right: 0;
+  }
+
+  // Joined groups: Bootstrap squares the inner corners by their left/right side.
+  .input-group {
+    > :not(:first-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+      margin-left: 0;
+      margin-right: calc(-1 * var(--#{$prefix}border-width));
+      @include rtl-radius(var(--#{$prefix}border-radius), 0);
+    }
+
+    &:not(.has-validation) > :not(:last-child):not(.dropdown-toggle):not(.dropdown-menu):not(.form-floating) {
+      @include rtl-radius(0, var(--#{$prefix}border-radius));
+    }
+
+    &:not(.has-validation) > :not(:first-child):not(:last-child):not(.dropdown-menu):not(.valid-tooltip):not(.valid-feedback):not(.invalid-tooltip):not(.invalid-feedback) {
+      border-radius: 0;
+    }
+  }
+
+  .btn-group {
+    > :not(.btn-check:first-child) + .btn,
+    > .btn-group:not(:first-child) {
+      margin-left: 0;
+      margin-right: calc(-1 * var(--#{$prefix}border-width));
+    }
+
+    > .btn:not(:last-child):not(.dropdown-toggle),
+    > .btn-group:not(:last-child) > .btn {
+      @include rtl-radius(0, var(--#{$prefix}btn-border-radius));
+    }
+
+    > .btn:nth-child(n + 3),
+    > :not(.btn-check) + .btn,
+    > .btn-group:not(:first-child) > .btn {
+      @include rtl-radius(var(--#{$prefix}btn-border-radius), 0);
+    }
+
+    > .btn:not(:first-child):not(:last-child):not(.dropdown-toggle) {
+      border-radius: 0;
+    }
+  }
+
+  .page-item {
+    &:not(:first-child) .page-link {
+      margin-left: 0;
+      margin-right: calc(-1 * var(--#{$prefix}border-width));
+    }
+
+    &:first-child .page-link {
+      @include rtl-radius(0, var(--#{$prefix}pagination-border-radius));
+    }
+
+    &:last-child .page-link {
+      @include rtl-radius(var(--#{$prefix}pagination-border-radius), 0);
+    }
+
+    &:only-child .page-link {
+      border-radius: var(--#{$prefix}pagination-border-radius);
+    }
+  }
+
+  .dropdown-menu,
+  .tooltip,
+  .popover,
+  .accordion-button {
+    text-align: right;
+  }
+
+  .dropdown-toggle::after {
+    margin-left: 0;
+    margin-right: $caret-spacing;
+  }
+
+  .accordion-button::after {
+    margin-left: 0;
+    margin-right: auto;
+  }
+
+  .breadcrumb-item + .breadcrumb-item {
+    padding-left: 0;
+    padding-right: var(--#{$prefix}breadcrumb-item-padding-x);
+
+    &::before {
+      float: right;
+      padding-left: var(--#{$prefix}breadcrumb-item-padding-x);
+      padding-right: 0;
+    }
+  }
+
+  .alert-dismissible {
+    padding-left: $alert-dismissible-padding-r;
+    padding-right: $alert-padding-x;
+
+    .btn-close {
+      left: 0;
+      right: auto;
+    }
+  }
+
+  .modal-header .btn-close {
+    margin-left: calc(-.5 * var(--#{$prefix}modal-header-padding-x));
+    margin-right: auto;
+  }
+
+  .toast-header .btn-close {
+    margin-left: calc(-.5 * var(--#{$prefix}toast-padding-x));
+    margin-right: var(--#{$prefix}toast-padding-x);
+  }
+
+  .offcanvas.offcanvas-start {
+    border-left: var(--#{$prefix}offcanvas-border-width) solid var(--#{$prefix}offcanvas-border-color);
+    border-right: 0;
+    left: auto;
+    right: 0;
+    transform: translateX(100%);
+  }
+
+  .offcanvas.offcanvas-end {
+    border-left: 0;
+    border-right: var(--#{$prefix}offcanvas-border-width) solid var(--#{$prefix}offcanvas-border-color);
+    left: 0;
+    right: auto;
+    transform: translateX(-100%);
+  }
+
+  .offcanvas.showing,
+  .offcanvas.show:not(.hiding) {
+    transform: none;
+  }
+}

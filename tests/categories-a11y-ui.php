@@ -26,8 +26,8 @@ require_once __DIR__ . '/lib/stubs.php';
 if (!function_exists('osc_esc_html')) {
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 }
-if (!function_exists('osc_locale_text_direction')) {
-    function osc_locale_text_direction()
+if (!function_exists('osc_admin_locale_text_direction')) {
+    function osc_admin_locale_text_direction(): string
     {
         return $GLOBALS['a11y_ui_dir'] ?? 'ltr';
     }

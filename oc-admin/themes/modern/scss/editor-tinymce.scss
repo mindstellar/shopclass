@@ -190,12 +190,12 @@ body {
 
   .tox .tox-split-button__main,
   .tox .tox-split-button__main:focus::after {
-    border-radius: 4px 0 0 4px;
+    @include rounded-corners(4px 0 0 4px);
   }
 
   .tox .tox-split-button__chevron,
   .tox .tox-split-button__chevron:focus::after {
-    border-radius: 0 4px 4px 0;
+    @include rounded-corners(0 4px 4px 0);
   }
 
   .tox .tox-split-button__chevron svg,

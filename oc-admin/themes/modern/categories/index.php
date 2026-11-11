@@ -40,7 +40,7 @@ osc_admin_page(array(
     'help'    => static function () {
         $bold = static fn (string $label): string => '<strong>' . osc_esc_html($label) . '</strong>';
         $kbd  = static fn (string $key, string $class = ''): string => '<kbd class="cat-k' . ($class !== '' ? ' ' . $class : '') . '">' . $key . '</kbd>';
-        $rtl  = osc_locale_text_direction() === 'rtl';
+        $rtl  = osc_admin_locale_text_direction() === 'rtl';
         $grip = '<i class="bi bi-grip-vertical cat-help-grip" aria-hidden="true"></i>'; ?>
         <ul>
             <li><?php printf(

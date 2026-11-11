@@ -257,7 +257,7 @@ $rows = array(
                         <?php foreach ($rows as $r) { ?>
                             <li class="dash-system-row">
                                 <span class="dash-system-label"><?php echo osc_esc_html($r[0]); ?></span>
-                                <span class="dash-system-value"><?php echo osc_esc_html($r[1]); ?></span>
+                                <span class="dash-system-value" dir="ltr"><?php echo osc_esc_html($r[1]); ?></span>
                             </li>
                         <?php } ?>
                     </ul>

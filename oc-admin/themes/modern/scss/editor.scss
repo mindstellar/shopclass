@@ -943,7 +943,7 @@ details.osc-editor-section[open] {
   background: var(--osc-bench-warm);
   border: 1px solid var(--osc-rule-strong);
   border-inline-start: 0;
-  border-radius: 0 4px 4px 0;
+  @include rounded-corners(0 4px 4px 0);
   display: inline-flex;
   align-items: center;
   padding-inline: .6rem;

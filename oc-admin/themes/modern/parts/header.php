@@ -17,7 +17,7 @@ if ($oscSidebar !== 'collapsed') {
     $oscSidebar = 'expanded';
 } ?>
 <!DOCTYPE html>
-<html lang="<?php echo substr(osc_current_admin_locale(), 0, 2); ?>" data-bs-theme="<?php echo $oscAdminTheme; ?>" data-osc-sidebar="<?php echo $oscSidebar; ?>">
+<html lang="<?php echo substr(osc_current_admin_locale(), 0, 2); ?>"<?php echo osc_admin_locale_text_direction() === 'rtl' ? ' dir="rtl"' : ''; ?> data-bs-theme="<?php echo $oscAdminTheme; ?>" data-osc-sidebar="<?php echo $oscSidebar; ?>">
 <head>
     <meta charset="utf-8">
     <title><?php echo osc_apply_filter('admin_title', osc_page_title() . ' - Shopclass'); ?></title>

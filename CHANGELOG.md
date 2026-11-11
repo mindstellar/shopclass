@@ -98,6 +98,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - A theme can declare `osc_add_theme_support('category-depth', N)` to limit how deep categories nest; the admin and the API both enforce it.
 - Categories has a **⋯** actions sheet on phones.
 - `osc.sortable(el, {tree: {…}})`, `osc.flatTree`, `osc.toast(text, {undo, ms})` and `osc.announce(el, text)` are documented for plugin screens.
+- The admin reads right to left for a right-to-left admin language: the page mirrors, and arrows, selects and joined buttons turn with it.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.

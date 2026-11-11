@@ -214,6 +214,23 @@ function osc_locale_text_direction()
 }
 
 /**
+ * The admin's language direction, 'rtl' or 'ltr'. The visitor's language plays no part.
+ *
+ * @return string
+ */
+function osc_admin_locale_text_direction(): string
+{
+    $code = (string) osc_current_admin_locale();
+    foreach (osc_get_admin_locales() as $locale) {
+        if (($locale['pk_c_code'] ?? '') === $code) {
+            return ($locale['s_direction'] ?? '') === 'rtl' ? 'rtl' : 'ltr';
+        }
+    }
+
+    return 'ltr';
+}
+
+/**
  * Gets current locale's number of decimals
  *
  * @return int|string

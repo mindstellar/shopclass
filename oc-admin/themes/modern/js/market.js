@@ -582,13 +582,13 @@
             moveScreenshot(1);
         });
         dScreensStrip.addEventListener('keydown', function (e) {
-            if (e.key === 'ArrowLeft') {
-                e.preventDefault();
-                moveScreenshot(-1);
-            } else if (e.key === 'ArrowRight') {
-                e.preventDefault();
-                moveScreenshot(1);
+            if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') {
+                return;
             }
+            e.preventDefault();
+            // Right to left, the left arrow goes forward.
+            var back = (e.key === 'ArrowLeft') !== (getComputedStyle(dScreensStrip).direction === 'rtl');
+            moveScreenshot(back ? -1 : 1);
         });
 
         // ---- Version table ------------------------------------------------------

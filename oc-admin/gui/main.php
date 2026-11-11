@@ -11,7 +11,7 @@ if (!defined('ABS_PATH')) {
     exit('ABS_PATH is not loaded. Direct access is not allowed.');
 }
 ?>
-<html dir="ltr" lang="en-US">
+<html lang="<?php echo osc_esc_html(str_replace('_', '-', (string) osc_current_admin_locale())); ?>"<?php echo osc_admin_locale_text_direction() === 'rtl' ? ' dir="rtl"' : ''; ?>>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1">
