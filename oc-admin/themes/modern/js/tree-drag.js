@@ -19,10 +19,7 @@ osc.treeDrag = (function () {
     }
 
     function make(tag, cls, parent) {
-        var el = document.createElement(tag);
-        if (cls) {
-            el.className = cls;
-        }
+        var el = osc.el(tag, cls ? { class: cls } : {});
         if (parent) {
             parent.appendChild(el);
         }

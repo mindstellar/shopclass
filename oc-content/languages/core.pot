@@ -568,13 +568,13 @@ msgid_plural "%d more changes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-includes/osclass/functions.php
+#: oc-includes/osclass/helpers/hAdminNotices.php
 msgid "%d needs action"
 msgid_plural "%d need action"
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-includes/osclass/functions.php
+#: oc-includes/osclass/helpers/hAdminNotices.php
 msgid "%d notice"
 msgid_plural "%d notices"
 msgstr[0] ""
@@ -10916,11 +10916,11 @@ msgstr ""
 msgid "Notices"
 msgstr ""
 
-#: oc-includes/osclass/functions.php
+#: oc-includes/osclass/helpers/hAdminNotices.php
 msgid "Notices, %s"
 msgstr ""
 
-#: oc-includes/osclass/functions.php
+#: oc-includes/osclass/helpers/hAdminNotices.php
 msgid "Notices, nothing needs attention"
 msgstr ""
 

@@ -59,7 +59,7 @@ final class NoticeAjax extends AjaxHandler
             'count'  => $view->count(),
             'action' => $view->actionCount(),
             'hidden' => count($view->hidden),
-            'name'   => osc_admin_notice_name($view->count(), $view->actionCount(), true),
+            'name'   => osc_admin_bell_name($view->count(), $view->actionCount()),
             'panel'  => (string) ob_get_clean(),
             'marks'  => $marks,
         ));

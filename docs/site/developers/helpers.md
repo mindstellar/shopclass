@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1302 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1303 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -41,13 +41,12 @@ Core defines 1302 helpers, 29 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_sanitizeString($string)` | Turn a string into a URL-safe slug: tags, accents, entities and punctuation removed, whitespace collapsed to single hyphens. |
 
-### functions (33)
+### functions (32)
 
 `oc-includes/osclass/functions.php`
 
 | Helper | What it does |
 |---|---|
-| `osc_admin_notice_name(int $count, int $action, bool $bell = false)` | How notices are named to a screen reader: "8 notices, 1 needs action". With $bell, the bell's name. |
 | `osc_admin_toolbar_comments()` | Add a toolbar counter for comments awaiting moderation, when there are any. |
 | `osc_admin_toolbar_logout()` | Add logout link |
 | `osc_admin_toolbar_spam()` | Add a toolbar counter for listings marked as spam, when there are any. |
@@ -106,7 +105,7 @@ Core defines 1302 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_admin_submenu_divider($menu_id, $submenu_id)` | Remove submenu divider with id $submenu_id under menu id $menu_id |
 | `osc_remove_admin_submenu_page($menu_id, $submenu_id)` | Remove submenu with id $submenu_id under menu id $menu_id |
 
-### hAdminNotices (5)
+### hAdminNotices (7)
 
 `oc-includes/osclass/helpers/hAdminNotices.php`
 
@@ -114,6 +113,8 @@ Core defines 1302 helpers, 29 of them deprecated. Generated from the source; do 
 |---|---|
 | `osc_add_admin_check(string $id, string $type, string\|callable $text, callable $when, array $options = array())` | Add a standing check: shown while $when returns true, not stored, ignored outside the admin. |
 | `osc_add_admin_notice(string $type, string\|callable $text, array $options = array())` | Add a notice to the admin bell. |
+| `osc_admin_bell_name(int $count, int $action)` | The bell's name for a screen reader: "Notices, 8 notices, 1 needs action". |
+| `osc_admin_notice_name(int $count, int $action)` | How a count of notices is named to a screen reader: "8 notices, 1 needs action". Empty for none. |
 | `osc_admin_notice_viewer()` | Who is looking at the notices. The role is read once a request. |
 | `osc_admin_notices()` | The notices of the signed-in admin. |
 | `osc_clear_admin_notice(string $id)` | Remove a notice for every admin. |
@@ -734,7 +735,7 @@ Core defines 1302 helpers, 29 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_admin_locale_text_direction()` | The admin's language direction, 'rtl' or 'ltr'. The visitor's language plays no part. |
+| `osc_admin_locale_text_direction()` | The admin's language direction, 'rtl' or 'ltr'. The visitor's language plays no part; for the visitor's, see osc_locale_text_direction(). |
 | `osc_all_enabled_locales_for_admin($indexed_by_pk = false)` | Gets list of enabled locales |
 | `osc_count_web_enabled_locales()` | Gets number of enabled locales for website |
 | `osc_current_admin_locale()` | Get the actual locale of the admin. |

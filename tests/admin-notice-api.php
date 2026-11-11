@@ -419,8 +419,8 @@ namespace {
     pin('only the good row reads', ['ok'], array_map(static fn (AdminNotice $x): string => $x->id, $service()->view(1, false)->active));
 
     harness_section('Boot loads the helper file');
-    $boot = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/boot/Boot.php');
-    check('in Boot::HELPERS', str_contains($boot, "'osclass/helpers/hAdminNotices.php'"));
+    require_once ABS_PATH . 'oc-includes/classes/core/boot/Boot.php';
+    check('in Boot::HELPERS', in_array('osclass/helpers/hAdminNotices.php', \mindstellar\boot\Boot::HELPERS, true));
 
     @unlink($logFile);
     exit(harness_result());

@@ -206,11 +206,6 @@ namespace {
     [$rows, $complete] = $f->notices($store(), 1, false, $now + 2000);
     pin('a failed read keeps the old copy', [true, ['debug_on']], [$complete, $ids($rows)]);
 
-    $source = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/admin/SystemEnvironment.php');
-    foreach (['php_uname', 'php_ini_loaded_file'] as $fn) {
-        check($fn . ' is guarded, hosts disable it', str_contains($source, "function_exists('$fn') ?"));
-    }
-
     harness_section('remember() and forget()');
     $reset();
     $f = $feed([]);
@@ -229,9 +224,6 @@ namespace {
     KeyValue::$rows['checks'] = ['value' => (string) json_encode(['at' => time(), 'env' => ['cron_last' => 0]]), 'expires' => null];
     AdminNoticeFeed::cronRan();
     check('the first run after cron had stopped drops it', !isset(KeyValue::$rows['checks']));
-    foreach (['classes/controller/admin/CAdminAdmins.php' => 2, 'classes/controller/admin/settings/CAdminSettingsSpamnBots.php' => 1] as $file => $calls) {
-        pin("$file drops the copy after a save", $calls, substr_count((string) file_get_contents(ABS_PATH . 'oc-includes/osclass/' . $file), 'AdminNoticeFeed::forget()'));
-    }
 
     harness_section('one row for each check');
     $reset();

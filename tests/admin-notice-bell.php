@@ -60,6 +60,7 @@ function osc_update_check_state(string $kind): array
 }
 require_once __DIR__ . '/lib/stubs.php';
 require_once __DIR__ . '/lib/admin-ui-stubs.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminNotices.php';
 if (!defined('OSCLASS_VERSION')) {
     define('OSCLASS_VERSION', '7.1.0');
 }
@@ -86,7 +87,7 @@ class AdminToolbar
 
 // These helpers live in functions.php, which cannot load without the whole core.
 $functionsSource = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/functions.php');
-foreach (array('osc_admin_notice_name', 'osc_update_check_count', 'osc_admin_toolbar_update_counter', 'osc_admin_toolbar_update_core', 'osc_admin_toolbar_update_plugins', 'osc_admin_toolbar_update_themes', 'osc_admin_toolbar_update_languages') as $fn) {
+foreach (array('osc_update_check_count', 'osc_admin_toolbar_update_counter', 'osc_admin_toolbar_update_core', 'osc_admin_toolbar_update_plugins', 'osc_admin_toolbar_update_themes', 'osc_admin_toolbar_update_languages') as $fn) {
     preg_match('~^function ' . $fn . '\(.*?^}~ms', $functionsSource, $m);
     eval($m[0]);
 }

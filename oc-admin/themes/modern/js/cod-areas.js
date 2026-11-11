@@ -11,6 +11,7 @@
  * Settings > Billing > Shop: the cash on delivery areas. Chips for the chosen places, and a
  * search over the locations that adds one; the hidden field holds the list as JSON.
  */
+/* global osc */
 (function () {
     'use strict';
 
@@ -23,10 +24,10 @@
     var results = root.querySelector('[data-cod-results]'), timer = 0, ctl = null, rows = [], active = -1;
 
     function el(tag, cls, text) {
-        var n = document.createElement(tag);
-        if (cls) { n.className = cls; }
-        if (text) { n.textContent = text; }
-        return n;
+        var a = {};
+        if (cls) { a['class'] = cls; }
+        if (text) { a.text = text; }
+        return osc.el(tag, a);
     }
     function save() {
         store.value = chips.length ? JSON.stringify(chips.map(function (c) { return { type: c.type, id: c.id }; })) : '';

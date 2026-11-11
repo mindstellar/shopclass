@@ -37,7 +37,7 @@ foreach (['__' => 'return $s;', '_n' => 'return $n === 1 ? $s : $p;'] as $fn => 
     }
 }
 if (!function_exists('osc_admin_notice_name')) {
-    function osc_admin_notice_name(int $count, int $action, bool $bell = false): string
+    function osc_admin_notice_name(int $count, int $action): string
     {
         if ($count < 1) {
             return '';

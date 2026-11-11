@@ -12,7 +12,7 @@ $oscNoticeCount = $oscNoticeView->count();
     data-osc-notice-fail="<?php echo osc_esc_html(__('The notice could not be changed. Reload the page and try again.')); ?>">
     <button type="button" id="oscNoticeBell" class="admin-topbar-btn"
             aria-haspopup="dialog" aria-expanded="false" aria-controls="oscNoticePanel"
-            aria-label="<?php echo osc_esc_html(osc_admin_notice_name($oscNoticeCount, $oscNoticeView->actionCount(), true)); ?>"
+            aria-label="<?php echo osc_esc_html(osc_admin_bell_name($oscNoticeCount, $oscNoticeView->actionCount())); ?>"
             title="<?php echo osc_esc_html(__('Notices')); ?>">
         <i class="bi bi-bell" aria-hidden="true"></i>
         <?php if ($oscNoticeCount > 0) { ?>

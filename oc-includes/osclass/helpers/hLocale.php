@@ -214,7 +214,8 @@ function osc_locale_text_direction()
 }
 
 /**
- * The admin's language direction, 'rtl' or 'ltr'. The visitor's language plays no part.
+ * The admin's language direction, 'rtl' or 'ltr'. The visitor's language plays no part; for the
+ * visitor's, see osc_locale_text_direction().
  *
  * @return string
  */

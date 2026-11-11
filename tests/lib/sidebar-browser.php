@@ -30,7 +30,7 @@ if (!function_exists('osc_is_moderator')) {
     }
 }
 if (!function_exists('osc_admin_notice_name')) {
-    function osc_admin_notice_name(int $count, int $action, bool $bell = false): string
+    function osc_admin_notice_name(int $count, int $action): string
     {
         return $count < 1 ? '' : $count . ' notices';
     }

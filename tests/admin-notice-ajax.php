@@ -107,10 +107,6 @@ namespace {
     require_once __DIR__ . '/lib/admin-ui-stubs.php';
     require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminNotices.php';
 
-    // The helper lives in functions.php, which cannot load without the whole core.
-    preg_match('~function osc_admin_notice_name\(.*?\n}\n~s', (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/functions.php'), $nameSource);
-    eval($nameSource[0]);
-
     class AdminSecBaseModel
     {
         protected $action;

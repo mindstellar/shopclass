@@ -109,3 +109,35 @@ if (!function_exists('osc_admin_notice_viewer')) {
         return array($admin, $roles[$admin]);
     }
 }
+
+if (!function_exists('osc_admin_notice_name')) {
+    /**
+     * How a count of notices is named to a screen reader: "8 notices, 1 needs action". Empty for none.
+     */
+    function osc_admin_notice_name(int $count, int $action): string
+    {
+        if ($count < 1) {
+            return '';
+        }
+        $text = sprintf(_n('%d notice', '%d notices', $count), $count);
+        if ($action > 0) {
+            $text .= ', ' . sprintf(_n('%d needs action', '%d need action', $action), $action);
+        }
+
+        return $text;
+    }
+}
+
+if (!function_exists('osc_admin_bell_name')) {
+    /**
+     * The bell's name for a screen reader: "Notices, 8 notices, 1 needs action".
+     */
+    function osc_admin_bell_name(int $count, int $action): string
+    {
+        if ($count < 1) {
+            return __('Notices, nothing needs attention');
+        }
+
+        return sprintf(__('Notices, %s'), osc_admin_notice_name($count, $action));
+    }
+}

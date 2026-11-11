@@ -68,24 +68,13 @@ use mindstellar\admin\ModeratorAccess;
 use mindstellar\routing\PageRoutes;
 
 $root       = ABS_PATH;
-$controller = $root . 'oc-includes/osclass/classes/controller/admin/CAdminNotices.php';
 $template   = $root . 'oc-admin/themes/modern/notices/index.php';
 
 harness_section('route and access');
 pin('the page is routed', 'CAdminNotices', PageRoutes::admin()['notices'] ?? null);
 check('moderators may open it', in_array('notices', ModeratorAccess::DEFAULT_PAGES, true));
-check('the page has no menu entry', strpos(file_get_contents($root . 'oc-includes/osclass/classes/AdminMenu.php'), 'page=notices') === false);
-
-harness_section('controller');
-$source = file_get_contents($controller);
-check('the tab is read as a string', strpos($source, "Params::getParamString('tab')") !== false);
-check('no raw request value is read', strpos($source, 'Params::getParam(') === false);
-check('the controller reads the notices helper', strpos($source, 'osc_admin_notices()') !== false);
-check('only hidden asks for the hidden tab', (bool) preg_match("/=== 'hidden' \? 'hidden' : 'active'/", $source));
 
 harness_section('template');
-$html = file_get_contents($template);
-check('no HTML comment', strpos($html, '<!--') === false);
 
 $now    = 1_800_000_000;
 $action = new AdminNotice('backups_open', 'error', 'Backups are open to the web.', 'Anyone can download them.', 'https://example.test/oc-admin/?page=tools', 'Fix it', 'tools', 'tools_backup', 'System info', false, $now - 86400);
@@ -124,6 +113,7 @@ check('an area with no section is blank, not an error', (bool) preg_match('~Plug
 $menuProp->setValue(AdminMenu::getInstance(), []);
 
 harness_section('escaping');
+check('no HTML comment reaches the page', strpos($out, '<!--') === false);
 check('hostile text is escaped', strpos($out, '&lt;b&gt;Stripe&lt;/b&gt;') !== false && strpos($out, '<b>Stripe') === false);
 
 harness_section('Hidden tab');

@@ -40,19 +40,54 @@ function osc_esc_html($s)
     return htmlspecialchars((string) $s, ENT_QUOTES);
 }
 
+// What the shells call besides the locale helpers; their output does not matter here.
+foreach (array('osc_admin_base_url', 'osc_admin_breadcrumb', 'osc_api_admin_session_meta', 'osc_asset_url_versioned', 'osc_assets_url', 'osc_base_url', 'osc_csrf_token_url', 'osc_current_admin_theme_js_url', 'osc_current_admin_theme_styles_url', 'osc_draw_admin_menu', 'osc_logged_admin_email', 'osc_logged_admin_name', 'osc_logged_admin_username', 'osc_page_title', 'osc_run_hook', 'osc_show_flash_message') as $fn) {
+    if (!function_exists($fn)) {
+        eval('function ' . $fn . '() { return ""; }');
+    }
+}
+function osc_admin_base_path()
+{
+    return __DIR__ . '/lib/';
+}
+function __($s)
+{
+    return $s;
+}
+function _e($s)
+{
+    echo $s;
+}
+function osc_apply_filter($hook, $value = '')
+{
+    return $value;
+}
+function osc_is_moderator()
+{
+    return true;
+}
+if (!defined('OSCLASS_VERSION')) {
+    define('OSCLASS_VERSION', '7.1.0');
+}
+
 $row = static fn (string $code, string $dir): array => array('pk_c_code' => $code, 's_direction' => $dir);
+View::getInstance()->_exportVariableToView('login_admin_form', 'empty-template.php');
 View::getInstance()->_exportVariableToView('adminLocales', array($row('ar_SA', 'rtl'), $row('en_US', 'ltr')));
 View::getInstance()->_exportVariableToView('locales', array($row('ar_SA', 'rtl'), $row('en_US', 'ltr')));
 
-/** The <html> tag a shell prints: its own code, run up to and including that tag. */
+/** The <html> tag a shell prints, from the real template. The page below <head> needs the whole admin, so its first error ends the render. */
 function html_tag(string $file): string
 {
-    $src = (string) file_get_contents(ABS_PATH . $file);
-    $end = (int) strpos($src, "\n", (int) strpos($src, "\n<html") + 1);
     ob_start();
-    eval('?>' . substr($src, 0, $end));
+    try {
+        include ABS_PATH . $file;
+    } catch (\Error) {
+    } finally {
+        $out = (string) ob_get_clean();
+    }
+    preg_match('~<html[^>]*>~', $out, $m);
 
-    return trim((string) strrchr("\n" . (string) ob_get_clean(), "\n"));
+    return $m[0] ?? '';
 }
 
 $shells = array('oc-admin/themes/modern/parts/header.php', 'oc-admin/gui/main.php');
