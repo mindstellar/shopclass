@@ -337,6 +337,19 @@ pin('← is in and → is out in RTL', array(
 ), $r['moves'] ?? null);
 pin('the hint shows ← for in', '←', $r['hint'] ?? null);
 
+echo "Selects keep their chevron clear of the text\n";
+foreach (array('LTR' => array(), 'RTL' => array('rtl' => true)) as $dir => $o) {
+    $r = tree_ui_run(<<<'JS'
+var s = t.$('#bulk');
+var cs = getComputedStyle(s);
+var rtl = document.documentElement.dir === 'rtl';
+var start = parseFloat(rtl ? cs.paddingRight : cs.paddingLeft);
+var end = parseFloat(rtl ? cs.paddingLeft : cs.paddingRight);
+r.room = end > start + 16;
+JS, $o);
+    pin('a bulk select has its room for the chevron at the inline end, ' . $dir, true, $r['room'] ?? null);
+}
+
 echo "The slot sits where a row's label would at each depth\n";
 $align = <<<'JS'
 var rtl = document.documentElement.dir === 'rtl';

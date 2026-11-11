@@ -88,6 +88,12 @@
 
   .input-group-lg > .form-select {
     padding-left: $form-select-padding-x-lg + $form-select-indicator-padding;
+    padding-right: $form-select-padding-x-lg;
+  }
+
+  .input-group-sm > .form-select {
+    padding-left: $form-select-padding-x + $form-select-indicator-padding;
+    padding-right: $input-padding-x-sm;
   }
 
   .form-control.is-valid,
