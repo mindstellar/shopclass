@@ -40,6 +40,8 @@
   --osc-chrome-edge:   #3a424f;
   --osc-chrome-hover:  rgba(255, 255, 255, .06);
   --osc-nav-label:     var(--osc-ink-muted); // 6.31:1 on the dark chrome — no darkening needed
+  // The bronze tint is 1.01:1 against the dark rail, so the current page mixes its own: 1.30:1.
+  --osc-sidebar-active-bg: color-mix(in srgb, var(--osc-sidebar-accent) 14%, var(--osc-sidebar-surface));
   // The --osc-sidebar-* layer (see _brand.scss) aliases the base tokens above, so the rail
   // picks up these dark values automatically — no sidebar override needed here unless the
   // rail is rethemed to diverge from the chrome.

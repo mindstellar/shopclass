@@ -972,8 +972,11 @@ document.addEventListener('input', function (e) {
 
 // osc.collapse — show and hide a .collapse panel from a [data-osc-collapse="#panel"] button,
 // an accordion with data-osc-parent. See docs/site/developers/scripts-and-styles.md.
+// The panel can set --osc-collapse-duration and --osc-collapse-easing; a click while it moves
+// turns it around from where it is.
 osc.collapse = (function () {
     var DURATION = 350;
+    var moving = new WeakMap();
 
     function emit(panel, name, cancelable) {
         return panel.dispatchEvent(new CustomEvent('osc:collapse:' + name, {bubbles: true, cancelable: !!cancelable}));
@@ -987,66 +990,79 @@ osc.collapse = (function () {
         });
     }
 
-    function animate(panel, from, to, done) {
-        if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    function timing(panel) {
+        var css = getComputedStyle(panel);
+        var m = /^([\d.]+)(m?s)$/.exec(css.getPropertyValue('--osc-collapse-duration').trim());
+        return {
+            duration: m ? parseFloat(m[1]) * (m[2] === 's' ? 1000 : 1) : DURATION,
+            easing: css.getPropertyValue('--osc-collapse-easing').trim() || 'ease'
+        };
+    }
+
+    function isOpen(panel) {
+        var run = moving.get(panel);
+        return run ? run.open : panel.classList.contains('show');
+    }
+
+    // Moves the panel's height from where it is now, so a reversal never jumps.
+    function run(panel, open, done) {
+        var current = moving.get(panel);
+        var from = (current || panel.classList.contains('show')) ? panel.getBoundingClientRect().height : 0;
+        if (current) {
+            moving.delete(panel);
+            current.anim.cancel();
+        }
+        panel.classList.add('show');
+        var full = panel.scrollHeight;
+        var to = open ? full : 0;
+        var t = timing(panel);
+        var duration = full > 0 ? t.duration * Math.abs(to - from) / full : 0;
+        var reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        function end() {
+            panel.style.overflow = '';
+            if (!open) { panel.classList.remove('show'); }
             done();
+        }
+        if (reduce || duration <= 0 || !panel.animate) {
+            end();
             return;
         }
-        var finished = false;
-        function finish() {
-            if (finished) { return; }
-            finished = true;
-            panel.style.transition = panel.style.height = panel.style.overflow = '';
-            done();
-        }
         panel.style.overflow = 'hidden';
-        panel.style.height = from + 'px';
-        void panel.offsetHeight;
-        panel.style.transition = 'height ' + DURATION + 'ms ease';
-        panel.style.height = to + 'px';
-        panel.addEventListener('transitionend', function end(e) {
-            if (e.target === panel && e.propertyName === 'height') {
-                panel.removeEventListener('transitionend', end);
-                finish();
-            }
-        });
-        setTimeout(finish, DURATION + 50);
+        var state = {open: open};
+        state.anim = panel.animate([{height: from + 'px'}, {height: to + 'px'}], {duration: duration, easing: t.easing, fill: 'forwards'});
+        moving.set(panel, state);
+        state.anim.onfinish = function () {
+            if (moving.get(panel) !== state) { return; }
+            moving.delete(panel);
+            end();
+            state.anim.cancel();
+        };
     }
 
     function show(panel) {
-        if (!panel || panel.classList.contains('show') || panel.dataset.oscCollapseBusy || !emit(panel, 'show', true)) {
+        if (!panel || isOpen(panel) || !emit(panel, 'show', true)) {
             return;
         }
         var group = panel.getAttribute('data-osc-parent');
         if (group) {
-            document.querySelectorAll('.collapse.show[data-osc-parent]').forEach(function (other) {
+            document.querySelectorAll('.collapse[data-osc-parent]').forEach(function (other) {
                 if (other !== panel && other.getAttribute('data-osc-parent') === group) { hide(other); }
             });
         }
-        panel.dataset.oscCollapseBusy = '1';
-        panel.classList.add('show');
         sync(panel, true);
-        animate(panel, 0, panel.scrollHeight, function () {
-            delete panel.dataset.oscCollapseBusy;
-            emit(panel, 'shown');
-        });
+        run(panel, true, function () { emit(panel, 'shown'); });
     }
 
     function hide(panel) {
-        if (!panel || !panel.classList.contains('show') || panel.dataset.oscCollapseBusy || !emit(panel, 'hide', true)) {
+        if (!panel || !isOpen(panel) || !emit(panel, 'hide', true)) {
             return;
         }
-        panel.dataset.oscCollapseBusy = '1';
         sync(panel, false);
-        animate(panel, panel.scrollHeight, 0, function () {
-            panel.classList.remove('show');
-            delete panel.dataset.oscCollapseBusy;
-            emit(panel, 'hidden');
-        });
+        run(panel, false, function () { emit(panel, 'hidden'); });
     }
 
     function toggle(panel) {
-        if (panel) { (panel.classList.contains('show') ? hide : show)(panel); }
+        if (panel) { (isOpen(panel) ? hide : show)(panel); }
     }
 
     document.addEventListener('click', function (e) {
@@ -1060,7 +1076,7 @@ osc.collapse = (function () {
         }
     });
 
-    return {show: show, hide: hide, toggle: toggle};
+    return {show: show, hide: hide, toggle: toggle, isOpen: isOpen};
 })();
 
 // osc.offcanvas — slide a .offcanvas panel in from a [data-osc-offcanvas="#panel"] button,
@@ -1075,6 +1091,11 @@ osc.offcanvas = (function () {
     function settle(panel, done) {
         var finished = false;
         function finish() { if (!finished) { finished = true; done(); } }
+        var css = getComputedStyle(panel);
+        if ((parseFloat(css.transitionDuration) || 0) + (parseFloat(css.transitionDelay) || 0) === 0) {
+            finish();
+            return;
+        }
         panel.addEventListener('transitionend', function end(e) {
             if (e.target === panel) { panel.removeEventListener('transitionend', end); finish(); }
         });
@@ -1681,10 +1702,17 @@ osc.sidebar = (function () {
 
     function initRail(nav, scroller) {
         var items = Array.prototype.slice.call(nav.querySelectorAll('#dashboard-menu > li.nav-item'));
-        var open = null;
+        var open = null, shown = null;
         addFlyouts(items);
         items.forEach(function (item) {
-            function enter() { if (collapsed()) { open = item; place(item); } }
+            function enter() {
+                if (!collapsed()) { return; }
+                // The last flyout goes at once, so two never overlap.
+                if (shown && shown !== item) { shown.classList.add('is-flyout-gone'); }
+                item.classList.remove('is-flyout-gone');
+                open = shown = item;
+                place(item);
+            }
             function leave() { if (open === item) { open = null; } }
             item.addEventListener('mouseenter', enter);
             item.addEventListener('mouseleave', leave);
@@ -1699,14 +1727,55 @@ osc.sidebar = (function () {
         var toggle = document.getElementById('oscSidebarToggle');
         if (!toggle) { return; }
         toggle.addEventListener('click', function () {
-            var next = root.getAttribute('data-osc-sidebar') === 'collapsed' ? 'expanded' : 'collapsed';
-            root.setAttribute('data-osc-sidebar', next);
+            var state = root.getAttribute('data-osc-sidebar');
+            var next = (state === 'collapsed' || state === 'collapsing') ? 'expanded' : 'collapsed';
+            changeRail(nav, next);
             toggle.setAttribute('aria-expanded', next === 'collapsed' ? 'false' : 'true');
             var url = toggle.getAttribute('data-osc-save-url');
             if (url) {
                 fetch(url + '&state=' + next, {method: 'POST', headers: {'X-Requested-With': 'XMLHttpRequest'}});
             }
         });
+    }
+
+    // Collapse or expand the rail. For the length of the width change the state is
+    // "collapsing" or "expanding": the labels fade, open panels stay in the flow and move
+    // their height with the width, and the flyout rules wait for "collapsed".
+    var railRun = 0;
+    function changeRail(nav, next) {
+        var run = ++railRun;
+        var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var panels = Array.prototype.slice.call(nav.querySelectorAll('#dashboard-menu .sidebar-submenu.show'));
+        var from = panels.map(function (p) {
+            return root.getAttribute('data-osc-sidebar') === 'collapsed' ? 0 : p.getBoundingClientRect().height;
+        });
+        panels.forEach(function (p) { if (p.oscRail) { p.oscRail.cancel(); p.oscRail = null; } });
+        if (reduce || !desktop.matches || !nav.animate) {
+            root.setAttribute('data-osc-sidebar', next);
+            return;
+        }
+        root.setAttribute('data-osc-sidebar', next === 'collapsed' ? 'collapsing' : 'expanding');
+        var width = nav.getAnimations().filter(function (a) { return a.transitionProperty === 'width'; })[0];
+        var css = getComputedStyle(nav);
+        var duration = width ? width.effect.getTiming().duration : (parseFloat(css.transitionDuration) || 0) * 1000;
+        panels.forEach(function (p, i) {
+            var to = next === 'collapsed' ? 0 : p.scrollHeight;
+            p.style.overflow = 'hidden';
+            p.oscRail = p.animate([{height: from[i] + 'px'}, {height: to + 'px'}], {duration: duration, easing: css.transitionTimingFunction, fill: 'forwards'});
+        });
+        function done() {
+            if (run !== railRun) { return; }
+            root.setAttribute('data-osc-sidebar', next);
+            panels.forEach(function (p) {
+                if (p.oscRail) { p.oscRail.cancel(); p.oscRail = null; }
+                p.style.overflow = '';
+            });
+        }
+        if (!width) {
+            done();
+            return;
+        }
+        width.finished.then(done, function () {});
     }
 
     // The native scrollbar is hidden; this thin overlay tracks it, shows on scroll or
@@ -1780,12 +1849,48 @@ osc.sidebar = (function () {
         }
     }
 
-    // An opened section can end below the fold; bring as much of it into view as fits.
+    // An opened section can end below the fold; the menu follows it as it grows, frame by
+    // frame, so the scroll never jumps at the end.
     function revealOnOpen(scroller, measure) {
+        var follow = null;
+        scroller.addEventListener('osc:collapse:show', function (e) {
+            var section = e.target.closest('.nav-item');
+            if (!section || collapsed() || e.defaultPrevented) { return; }
+            follow = section;
+            (function step() {
+                if (follow !== section) { return; }
+                scrollIntoMenu(scroller, section);
+                requestAnimationFrame(step);
+            })();
+        });
+        scroller.addEventListener('osc:collapse:hide', function (e) {
+            if (follow && follow.contains(e.target)) { follow = null; }
+        });
         scroller.addEventListener('osc:collapse:shown', function (e) {
             var section = e.target.closest('.nav-item');
-            if (section && !collapsed()) { scrollIntoMenu(scroller, section); }
+            if (section && follow === section) {
+                follow = null;
+                if (!collapsed()) { scrollIntoMenu(scroller, section); }
+            }
             measure();
+        });
+    }
+
+    // A plain click on a menu link marks it current at once; the next page confirms it.
+    function initGoing(nav) {
+        nav.addEventListener('click', function (e) {
+            var link = e.target.closest('#dashboard-menu a[href]');
+            if (!link || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey
+                || link.target === '_blank' || link.getAttribute('href').charAt(0) === '#') {
+                return;
+            }
+            nav.querySelectorAll('.is-going').forEach(function (el) { el.classList.remove('is-going'); });
+            (link.closest('.sidebar-submenu') ? link : link.parentNode).classList.add('is-going');
+        });
+        window.addEventListener('pageshow', function (e) {
+            if (e.persisted) {
+                nav.querySelectorAll('.is-going').forEach(function (el) { el.classList.remove('is-going'); });
+            }
         });
     }
 
@@ -1818,6 +1923,7 @@ osc.sidebar = (function () {
         var frame = nav.querySelector('.sidebar-scroll-frame');
         var scroller = frame ? frame.querySelector('.sidebar-scroll') : null;
         initRail(nav, scroller);
+        initGoing(nav);
         if (frame && scroller) {
             var current = nav.querySelector('.sidebar-submenu .sub-active');
             if (current && !collapsed()) { scrollIntoMenu(scroller, current); }

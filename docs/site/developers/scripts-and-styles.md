@@ -161,8 +161,11 @@ panel that starts open needs `aria-expanded="true"` on its button in the markup.
 `osc.*` namespace and `data-osc-*` attributes the same way for new admin components. Panels that share
 a `data-osc-parent` value work as an accordion: opening one closes the others.
 
-From script, call `osc.collapse.show(panel)`, `osc.collapse.hide(panel)` or
-`osc.collapse.toggle(panel)`. The panel fires these events, which bubble:
+A panel takes 350ms to open or close unless it sets `--osc-collapse-duration` and
+`--osc-collapse-easing` in CSS. A click while it moves turns it around from where it is.
+
+From script, call `osc.collapse.show(panel)`, `osc.collapse.hide(panel)`,
+`osc.collapse.toggle(panel)` or `osc.collapse.isOpen(panel)`. The panel fires these events, which bubble:
 
 | Event | When |
 |---|---|

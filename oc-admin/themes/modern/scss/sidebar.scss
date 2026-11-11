@@ -28,6 +28,10 @@
 // there is no hairline guide rail. One Sass value keeps the two in lockstep.
 $sidebar-gutter: 2.35rem;
 
+// The collapsed rail. 4rem puts the icon column (sidebar inset + row inset + half the icon
+// slot) on the rail's centre, so the icons do not move when it collapses.
+$sidebar-rail: 4rem;
+
 .dashboard-sidebar {
   max-width: 15rem;
 
@@ -79,30 +83,31 @@ $sidebar-gutter: 2.35rem;
       padding-block: .5rem;
       @extend .text-decoration-none;
 
+      // The label fades on the rail; the icon keeps its own colour, so it never fades with it.
+      transition: color var(--osc-duration-fast) var(--osc-ease);
+
       > i {
+        color: var(--osc-sidebar-label);
         flex: 0 0 1.25rem;
         text-align: center;
         width: 1.25rem;
-        // A small moment: the icon lights to the vivid brand teal and lifts a touch as the
-        // pointer lands on the row — the section you're about to open briefly comes alive.
-        // Rides the duration tokens, so it is instant under prefers-reduced-motion.
-        transition: color var(--osc-duration-fast) var(--osc-ease),
-                    transform var(--osc-duration-fast) var(--osc-ease);
+        transition: color var(--osc-duration-fast) var(--osc-ease);
       }
 
-      // `&:hover`, not `:hover`. The previous rule nested a bare `:hover`, which compiles
-      // to `a *:hover` — it recoloured the icon INSIDE the link and never the link itself.
-      // Sidebar hover has been silently broken.
       &:hover {
         color: inherit;
       }
 
-      // Keyboard users must be able to see where they are. Never remove this.
+      // The ring is drawn on the row pill (below), so it matches the shape that lights up.
       &:focus-visible {
-        border-radius: $border-radius;
-        outline: 2px solid var(--osc-sidebar-accent);
-        outline-offset: 2px;
+        outline: 0;
       }
+    }
+
+    // Keyboard users must be able to see where they are. Never remove this.
+    &:has(> a:focus-visible) {
+      outline: 2px solid var(--osc-sidebar-accent);
+      outline-offset: 1px;
     }
 
     // The disclosure toggle. A real <button> (not an <i role="button">) so it
@@ -122,40 +127,50 @@ $sidebar-gutter: 2.35rem;
       margin-inline-end: -.25rem;
       margin-inline-start: auto;
       padding: .35rem;
-      transition: transform var(--osc-duration-base) var(--osc-ease);
+      // In step with the panel: osc.collapse reads the same duration and easing.
+      transition: transform var(--osc-duration-base) var(--osc-ease),
+                  background-color var(--osc-duration-fast) var(--osc-ease),
+                  opacity var(--osc-duration-fast) var(--osc-ease);
 
       &.collapsed {
         transform: rotate(-90deg);
       }
 
+      // Inset, so the ring stays inside the row.
       &:focus-visible {
         outline: 2px solid var(--osc-sidebar-accent);
-        outline-offset: 2px;
+        outline-offset: -2px;
       }
     }
 
-    &:hover {
-      background-color: var(--osc-sidebar-hover-bg);
-      color: var(--osc-sidebar-strong);
-
-      // The delight moment (see `> i` above): brand teal + a small lift on the icon.
-      a > i {
-        color: var(--osc-sidebar-accent-hover);
-        transform: scale(1.08);
-      }
-    }
-
-    &.active {
+    // The current page: tint, bronze ink and weight, so it survives greyscale and
+    // colour-blindness. A click answers at once with .is-going, before the next page loads.
+    &.active,
+    &.is-going {
       background-color: var(--osc-sidebar-active-bg);
       color: var(--osc-sidebar-accent);
 
-      // Weight and colour both shift, so "where I am" survives greyscale and
-      // colour-blindness — the tint is not carrying the meaning alone.
-      a {
+      a,
+      a > i {
         color: var(--osc-sidebar-accent);
+      }
+
+      a {
         font-weight: 600;
       }
     }
+
+    &.is-going,
+    &.is-going a,
+    &.is-going a > i {
+      transition: none;
+    }
+  }
+
+  // A section whose current page is in its open submenu keeps the ink and weight but not
+  // the fill, so one pill marks one place.
+  .nav-item:has(.sub-active) > div.nav-link.active {
+    background-color: transparent;
   }
 
   // Section bands. Twelve sections in one undivided column is a list to read, not a
@@ -181,11 +196,16 @@ $sidebar-gutter: 2.35rem;
 // (0,2,0): the submenu anchors also carry `.nav-link`, so an unqualified
 // `.sidebar-submenu a` (0,1,1) loses to the row rule and the gutter indent never lands.
 .dashboard-sidebar .sidebar-submenu {
+  // Read by osc.collapse, so the panel opens in step with its chevron.
+  --osc-collapse-duration: var(--osc-duration-base);
+  --osc-collapse-easing: var(--osc-ease);
+
   background-color: transparent;
   border: 0;
   font-size: $font-size-sm;
   margin: 0;
   padding: 0;
+  transition: opacity var(--osc-duration-fast) var(--osc-ease);
 
   // Room above and below the group, as blocks inside it. On the list itself the space
   // sat outside the height Bootstrap animates, so it jumped in at the end of each toggle.
@@ -222,10 +242,8 @@ $sidebar-gutter: 2.35rem;
     padding-inline: $sidebar-gutter .6rem;
     position: relative;
 
-    // Leading dot, sitting in the icon gutter under the parent's icon spine. It is a
-    // marker in its own right: its colour and glow are driven by the rules below,
-    // NOT by the link's text colour — so a row hover lights the text on its own pill
-    // while the dot does its own glow, and the two never share a state.
+    // Leading dot, sitting in the icon gutter under the parent's icon spine. Its colour
+    // is set by the rules below, not by the link's text colour.
     &::before {
       background-color: var(--osc-sidebar-icon);
       block-size: .34rem;
@@ -235,47 +253,31 @@ $sidebar-gutter: 2.35rem;
       inset-block-start: 50%;
       inset-inline-start: 1.05rem;
       position: absolute;
-      // Scale rides the glow so the dot pops a touch on hover; the translate keeps it
-      // vertically centred through the scale.
-      transform: translateY(-50%) scale(1);
-      transition: background-color var(--osc-duration-fast) var(--osc-ease),
-                  box-shadow var(--osc-duration-fast) var(--osc-ease),
-                  transform var(--osc-duration-fast) var(--osc-ease);
+      transform: translateY(-50%);
+      transition: background-color var(--osc-duration-fast) var(--osc-ease);
     }
 
-    &:hover {
-      background-color: var(--osc-sidebar-hover-bg);
-      color: var(--osc-sidebar-strong);
-    }
-
-    // The dot glows on hover — bronze fill, a tight bronze ring, and a soft halo —
-    // independent of the text recolour above. The ring carries the effect even in
-    // light mode (where bronze is dark and a bare blur would read as a shadow);
-    // --osc-bronze-rgb is re-pointed in dark mode, so it all tracks the theme.
-    &:hover::before {
-      background-color: var(--osc-sidebar-accent);
-      transform: translateY(-50%) scale(1.15);
-    }
-
-    // Current page. The exact same bronze pill as a top-level active row — tint wash,
-    // bronze ink, weight 600 — so "you are here" is one system at both levels instead
-    // of two. (The old treatment was a full white box with a side marker, which read
-    // louder than the parent's own active state.)
-    &.sub-active {
+    // Current page: the same pill as a top-level current row, so "you are here" is one
+    // language at both levels.
+    &.sub-active,
+    &.is-going {
       background-color: var(--osc-sidebar-active-bg);
       color: var(--osc-sidebar-accent);
       font-weight: 600;
 
-      // Solid bronze dot to match the active ink; no halo (this row is already the
-      // loud one — the glow is a hover affordance, not a resting state).
       &::before {
         background-color: var(--osc-sidebar-accent);
       }
     }
 
+    &.is-going,
+    &.is-going::before {
+      transition: none;
+    }
+
     &:focus-visible {
       outline: 2px solid var(--osc-sidebar-accent);
-      outline-offset: 2px;
+      outline-offset: 1px;
     }
   }
 
@@ -333,6 +335,79 @@ $sidebar-gutter: 2.35rem;
 
 
 
+// Hover only where there is a pointer that hovers: a tap would leave the row stuck lit.
+// It arrives fast and leaves at the normal pace, and the current page does not change.
+@media (hover: hover) {
+  .dashboard-sidebar {
+    div.nav-link:not(.active, .is-going):hover,
+    .sidebar-submenu a:not(.sub-active, .is-going):hover {
+      background-color: var(--osc-sidebar-hover-bg);
+      color: var(--osc-sidebar-strong);
+      transition-duration: var(--osc-duration-quick);
+    }
+
+    div.nav-link:not(.active, .is-going):hover a > i {
+      color: var(--osc-sidebar-accent-hover);
+      transition-duration: var(--osc-duration-quick);
+    }
+
+    .sidebar-submenu a:not(.sub-active, .is-going):hover::before {
+      background-color: var(--osc-sidebar-accent);
+      transition-duration: var(--osc-duration-quick);
+    }
+
+    .nav-chevron:hover {
+      background-color: var(--osc-sidebar-hover-bg);
+      color: var(--osc-sidebar-strong);
+      transition-duration: var(--osc-duration-base), var(--osc-duration-quick), var(--osc-duration-fast);
+    }
+  }
+}
+
+// Pressed: no delay in, the normal fade out. After the hover rules, so it wins over them.
+.dashboard-sidebar {
+  div.nav-link:not(.active, .is-going):has(> a:active),
+  .sidebar-submenu a:not(.sub-active, .is-going):active {
+    background-color: var(--osc-sidebar-press-bg);
+    color: var(--osc-sidebar-strong);
+    transition-duration: 0s;
+  }
+
+  div.nav-link:not(.active, .is-going):has(> a:active) a > i {
+    color: var(--osc-sidebar-accent-hover);
+    transition-duration: 0s;
+  }
+}
+
+// Once a menu link is clicked it is the only current mark; the page it left lets go.
+#dashboard-menu:has(.is-going) {
+  div.nav-link.active:not(.is-going),
+  .sidebar-submenu a.sub-active:not(.is-going) {
+    background-color: transparent;
+    color: var(--osc-sidebar-label);
+    font-weight: 500;
+    transition: none;
+  }
+
+  div.nav-link.active:not(.is-going) a {
+    color: inherit;
+    font-weight: 500;
+  }
+
+  div.nav-link.active:not(.is-going) a > i {
+    color: var(--osc-sidebar-label);
+  }
+
+  .sidebar-submenu a.sub-active:not(.is-going)::before {
+    background-color: var(--osc-sidebar-icon);
+  }
+}
+
+// Directional pieces for a right-to-left admin: the closed chevron points to the inline end.
+[dir="rtl"] .dashboard-sidebar .nav-chevron.collapsed {
+  transform: rotate(90deg);
+}
+
 // =============================================================================
 // The app shell: full-height sidebar + collapsible rail
 // =============================================================================
@@ -368,7 +443,10 @@ $sidebar-gutter: 2.35rem;
   gap: .5rem;
   min-height: 3.25rem;
   overflow: hidden;
-  padding: .7rem .85rem;
+  // The icon sits on the menu icons' column, which is also the rail's centre, so it stays put
+  // when the rail collapses.
+  padding-block: .7rem;
+  padding-inline: 1.4rem .85rem;
   text-decoration: none;
   white-space: nowrap;
 
@@ -387,6 +465,7 @@ $sidebar-gutter: 2.35rem;
   .sidebar-brand-label {
     overflow: hidden;
     text-overflow: ellipsis;
+    transition: opacity var(--osc-duration-fast) var(--osc-ease);
   }
 
   &:hover {
@@ -421,11 +500,17 @@ $sidebar-gutter: 2.35rem;
   font-size: $font-size-sm;
   font-weight: 500;
   gap: .5rem;
+  overflow: clip;
   padding: .45rem .55rem;
   text-align: start;
   transition: background-color var(--osc-duration-fast) var(--osc-ease),
               color var(--osc-duration-fast) var(--osc-ease);
+  white-space: nowrap;
   width: 100%;
+
+  .sidebar-collapse-toggle-label {
+    transition: opacity var(--osc-duration-fast) var(--osc-ease);
+  }
 
   > i {
     flex: 0 0 auto;
@@ -433,15 +518,27 @@ $sidebar-gutter: 2.35rem;
     transition: transform var(--osc-duration-base) var(--osc-ease);
   }
 
-  &:hover {
-    background-color: var(--osc-sidebar-hover-bg);
-    color: var(--osc-sidebar-strong);
+  @media (hover: hover) {
+    &:hover {
+      background-color: var(--osc-sidebar-hover-bg);
+      color: var(--osc-sidebar-strong);
+      transition-duration: var(--osc-duration-quick);
+    }
+  }
+
+  &:active {
+    background-color: var(--osc-sidebar-press-bg);
+    transition-duration: 0s;
   }
 
   &:focus-visible {
     outline: 2px solid var(--osc-sidebar-accent);
     outline-offset: -2px;
   }
+}
+
+[dir="rtl"] .sidebar-collapse-toggle > i {
+  transform: scaleX(-1);
 }
 
 // ---- Header zone over the content -------------------------------------------
@@ -888,8 +985,8 @@ $sidebar-gutter: 2.35rem;
     }
   }
 
-  [data-osc-sidebar="collapsed"] #content > .row.flex-nowrap::before {
-    width: 3.5rem;
+  :is([data-osc-sidebar="collapsed"], [data-osc-sidebar="collapsing"]) #content > .row.flex-nowrap::before {
+    width: $sidebar-rail;
   }
 
   // A fixed-height frame stuck to the top of a scrolling page. Inside it the
@@ -952,61 +1049,27 @@ $sidebar-gutter: 2.35rem;
     z-index: 1020;
   }
 
-  [data-osc-sidebar="collapsed"] {
+  // The rail, and the 200ms on the way to it: osc.sidebar sets "collapsing" or "expanding"
+  // while the width moves. Rows stay start-aligned and the labels fade out with
+  // `color: transparent`, so the icons keep their place and the text stays for screen readers.
+  // Open panels stay in the flow until "collapsed" and shrink with the width.
+  :is([data-osc-sidebar="collapsed"], [data-osc-sidebar="collapsing"]) {
     .dashboard-sidebar {
-      width: 3.5rem;
+      width: $sidebar-rail;
     }
 
-    // The positioning context every flyout resolves against.
-    .dashboard-sidebar .nav-item {
-      position: relative;
-    }
-
-    // Icon-only masthead + footer rows.
-    .sidebar-brand {
-      justify-content: center;
-      padding-inline: .25rem;
-
-      .sidebar-brand-label {
-        display: none;
-      }
-    }
-
-    .sidebar-collapse-toggle {
-      justify-content: center;
-      padding-inline: 0;
-    }
-
+    .sidebar-brand-label,
     .sidebar-collapse-toggle-label {
-      display: none;
+      opacity: 0;
     }
 
     .sidebar-collapse-toggle > i {
       transform: rotate(180deg);
     }
 
-    // Icon-only menu rows. `font-size: 0` collapses the label's text node while
-    // leaving it in the accessibility tree (unlike display:none), so the icon
-    // stays the only thing painted and screen readers still read the name.
     .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link {
-      gap: 0;
-      justify-content: center;
-      padding-inline: .25rem;
-
-      // The disclosure chevron has nothing to disclose on a rail.
-      > .nav-chevron {
-        display: none;
-      }
-
       a {
-        flex: 0 0 auto;
-        font-size: 0;
-        gap:initial;
-        position: relative;
-
-        .bi {
-          font-size: 1.05rem;
-        }
+        color: transparent;
 
         // A count becomes a dot on the icon's corner; its number stays for screen readers.
         .osc-count {
@@ -1017,7 +1080,7 @@ $sidebar-gutter: 2.35rem;
           font-size: 0;
           inline-size: .625rem;
           inset-block-start: -.2rem;
-          inset-inline-end: -.35rem;
+          inset-inline-start: .975rem;
           min-inline-size: 0;
           padding: 0;
           position: absolute;
@@ -1027,6 +1090,59 @@ $sidebar-gutter: 2.35rem;
           }
         }
       }
+
+      // The disclosure chevron has nothing to disclose on a rail.
+      > .nav-chevron {
+        opacity: 0;
+        visibility: hidden;
+      }
+    }
+
+    .dashboard-sidebar .sidebar-submenu {
+      opacity: 0;
+    }
+  }
+
+  [dir="rtl"]:is([data-osc-sidebar="collapsed"], [data-osc-sidebar="collapsing"]) .sidebar-collapse-toggle > i {
+    transform: none;
+  }
+
+  // A right-to-left flyout slides in from the other side.
+  [dir="rtl"][data-osc-sidebar="collapsed"] .dashboard-sidebar :is(.sidebar-submenu, .sidebar-flyout) {
+    transform: translateX(.25rem);
+  }
+
+  // Through the whole change the rows hold one line, so text never wraps and shakes them,
+  // and the label is cut at the row's edge rather than the rail's.
+  :is([data-osc-sidebar="collapsed"], [data-osc-sidebar="collapsing"], [data-osc-sidebar="expanding"]) {
+    // .nav wraps, and a wrapping column is as wide as its widest one-line row.
+    #dashboard-menu {
+      flex-wrap: nowrap;
+    }
+
+    .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link {
+      overflow-x: clip;
+
+      a {
+        position: relative;
+        white-space: nowrap;
+      }
+    }
+
+    .dashboard-sidebar .sidebar-submenu a {
+      white-space: nowrap;
+    }
+  }
+
+  [data-osc-sidebar="collapsed"] {
+    // The positioning context every flyout resolves against.
+    .dashboard-sidebar .nav-item {
+      position: relative;
+    }
+
+    // On the rail the section row is the only mark left in view, so it carries the pill.
+    .dashboard-sidebar .nav-item:has(.sub-active) > div.nav-link.active {
+      background-color: var(--osc-sidebar-active-bg);
     }
 
     // --- Flyouts ----------------------------------------------------------
@@ -1131,6 +1247,13 @@ $sidebar-gutter: 2.35rem;
       visibility: visible;
     }
 
+    // Moving to another row hides the last flyout at once, so two never overlap.
+    .dashboard-sidebar #dashboard-menu .nav-item.is-flyout-gone > :is(.sidebar-submenu, .sidebar-flyout) {
+      opacity: 0;
+      transition: none;
+      visibility: hidden;
+    }
+
     .rail-flyout-title {
       border-block-end: 1px solid var(--osc-rule);
       color: var(--osc-ink);
@@ -1150,12 +1273,32 @@ $sidebar-gutter: 2.35rem;
     display: none;
   }
 
-  // The submenu density that reads well under a pointer is too tight for a thumb, and
-  // below this breakpoint the menu is the full-width off-canvas panel — so the rows grow
-  // back to the same target size as the sections above them.
+  // Below this breakpoint the menu is the off-canvas panel, used by thumb: rows and the
+  // chevron are 44px targets.
+  .dashboard-sidebar div.nav-link,
   .dashboard-sidebar .sidebar-submenu a {
-    min-height: 2.5rem;
+    min-height: max(2.75rem, 44px);
   }
+
+  .dashboard-sidebar div.nav-link > .nav-chevron {
+    align-items: center;
+    block-size: max(2.75rem, 44px);
+    display: inline-flex;
+    inline-size: max(2.75rem, 44px);
+    justify-content: center;
+    margin-inline-end: -.6rem;
+  }
+
+  // Until the script makes it a drawer, the menu is out of the page, so the content never
+  // paints squeezed beside it.
+  .dashboard-sidebar:not(.offcanvas) {
+    position: fixed;
+    visibility: hidden;
+  }
+}
+
+#sidebar-wrapper {
+  --bs-offcanvas-transition: transform var(--osc-duration-base) var(--osc-ease);
 }
 
 // The open panel leaves room at its top for the close button that sits over it: the topbar's

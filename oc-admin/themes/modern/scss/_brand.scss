@@ -277,9 +277,10 @@ $table-cell-vertical-align: middle;
   --osc-sidebar-subhead:      var(--osc-ink-emphasis);  // group subheads
   --osc-sidebar-icon:         var(--osc-rule-strong);   // resting submenu dots
   --osc-sidebar-accent:       var(--osc-bronze);         // current-item ink, active dot, focus
-  --osc-sidebar-accent-hover: var(--osc-accent-brand);   // the hover-icon delight
+  --osc-sidebar-accent-hover: var(--osc-sidebar-accent);  // hover icon: bronze holds 3:1 on the hover wash, teal does not
   --osc-sidebar-active-bg:    var(--osc-bronze-tint);
   --osc-sidebar-hover-bg:     var(--osc-chrome-hover);
+  --osc-sidebar-press-bg:     color-mix(in srgb, var(--osc-sidebar-strong) 12%, transparent);
   --osc-sidebar-scroll:       var(--osc-rule-strong);
   --osc-sidebar-scroll-hover: var(--osc-ink-muted);
   --osc-sidebar-brand-bg:     var(--osc-bench);          // the brand masthead (its own cap)
@@ -350,12 +351,14 @@ $table-cell-vertical-align: middle;
 
   // 150–250ms. The owner is in a task, not watching choreography.
   --osc-ease:          cubic-bezier(.2, 0, 0, 1);
+  --osc-duration-quick: 80ms; // hover arrival
   --osc-duration-fast: 150ms;
   --osc-duration-base: 200ms;
 }
 
 @media (prefers-reduced-motion: reduce) {
   :root {
+    --osc-duration-quick: 0ms;
     --osc-duration-fast: 0ms;
     --osc-duration-base: 0ms;
   }

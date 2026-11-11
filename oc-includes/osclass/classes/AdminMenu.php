@@ -935,7 +935,7 @@ class AdminMenu
     private function renderGroupList($parentMenuId, $activeMenu, $activeSubmenu)
     {
         $str = '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
-               . '-submenu" data-osc-parent="#dashboard-menu">';
+               . '-submenu">';
         foreach ($this->settingsGroups(osc_is_moderator()) as $group) {
             $isCurrent = in_array($activeSubmenu, array_column($group['entries'], 'id'), true);
             $str       .= '<li><a class="nav-link py-1 ' . ($isCurrent ? 'sub-active' : '')
@@ -1191,7 +1191,7 @@ class AdminMenu
         }
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
-            . '-submenu" data-osc-parent="#dashboard-menu">';
+            . '-submenu">';
         // Which items this admin may see. Index 4 is the capability on a submenu entry.
         //
         // A divider is skipped here on purpose. It is a label with no destination, so it can

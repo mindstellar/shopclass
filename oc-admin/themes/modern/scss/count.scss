@@ -98,12 +98,14 @@
 }
 
 // On the icon-only rail the dot sits on the icon's corner, like a count.
-[data-osc-sidebar="collapsed"] .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link a .osc-dot {
-  inset-block-start: -.2rem;
-  inset-inline-end: -.35rem;
-  margin: 0;
-  outline: 2px solid var(--osc-sidebar-surface);
-  position: absolute;
+@media (min-width: 1025px) {
+  :is([data-osc-sidebar="collapsed"], [data-osc-sidebar="collapsing"]) .dashboard-sidebar #dashboard-menu > .nav-item > .nav-link a .osc-dot {
+    inset-block-start: -.2rem;
+    inset-inline-start: .975rem;
+    margin: 0;
+    outline: 2px solid var(--osc-sidebar-surface);
+    position: absolute;
+  }
 }
 
 // Notices screen: status words with their shape, and the message cell.
