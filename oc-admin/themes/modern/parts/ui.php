@@ -37,7 +37,7 @@ if (!defined('OC_ADMIN')) {
  *       <strong> or <p>, and translators supply markup there too.
  *   osc_admin_definition()'s `value` when the row sets `html => true` -- opt-in per row.
  *
- * Which helper for which job: see the index at the top of oc-includes/osclass/helpers/hAdminUi.php.
+ * Which helper for which job: see docs/site/developers/admin-screens.md.
  */
 
 if (!function_exists('osc_admin_page')) {
@@ -336,7 +336,7 @@ if (!function_exists('osc_admin_tab_nav')) {
      *
      * @param array<int,array<string,mixed>> $links
      * @param string                         $class an extra class on the list
-     * @param array<string,mixed>            $opts  since 7.1.0
+     * @param array<string,mixed>            $opts
      *
      * @return void
      */
@@ -419,8 +419,8 @@ if (!function_exists('osc_admin_empty')) {
      * The state a screen is in before it has been used: one quiet line, and the action that
      * fills it when there is one.
      *
-     * Keys: title, text, action (a single action spec); id, class and
-     * tag ('div' or 'li') since 7.1.0. icon is still accepted and is ignored.
+     * Keys: title, text, action (a single action spec), id, class and tag ('div' or 'li').
+     * icon is accepted and ignored.
      *
      * @param array<string,mixed> $opts
      *
@@ -528,7 +528,7 @@ if (!function_exists('osc_admin_toolbar_open')) {
      * where it is — but new work gets a toolbar that is simply a row.
      *
      * @param array<string,mixed> $opts 'align' => 'start'|'between'|'end' (default 'between');
-     *                                  'class', added to the toolbar, since 7.1.0
+     *                                  'class', added to the toolbar
      *
      * @return void
      */
@@ -973,11 +973,10 @@ if (!function_exists('osc_admin_confirm_dialog')) {
      * Keys: id, title, text, confirm (label), confirm_id, method ('get'|'post'), url,
      * fields (name => value hidden inputs), body_html (extra markup, printed as given),
      * confirm_form (the id of a form on the page that the confirm button submits instead,
-     * for a form the dialog cannot hold, such as a file upload).
-     *
-     * Since 7.1.0: form (false for a dialog a script drives: no <form>, the confirm button is
-     * type="button", and url, method and fields are unused), attrs (on the <dialog>), title_id,
-     * cancel (its label), cancel_id, text_slot (an empty text line for a script to fill).
+     * for a form the dialog cannot hold, such as a file upload), form (false for a dialog a
+     * script drives: no <form>, the confirm button is type="button", and url, method and fields
+     * are unused), attrs (on the <dialog>), title_id, cancel (its label), cancel_id, text_slot
+     * (an empty text line for a script to fill).
      *
      * `text` is escaped, exactly as osc_admin_empty()'s `text` is. Pass `text_html` for
      * the rare sentence that needs a <strong>.

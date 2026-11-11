@@ -510,7 +510,7 @@ function oscFlashMore(col, hidden) {
     }
 }
 
-// Sets what is in view and starts or stops the clocks. Called after every change to the stack.
+// Sets what is in view and starts or stops the clocks.
 function oscFlashSync() {
     var col = oscFlashCol();
     if (!col) { return; }
@@ -1004,7 +1004,7 @@ osc.collapse = (function () {
         return run ? run.open : panel.classList.contains('show');
     }
 
-    // Moves the panel's height from where it is now, so a reversal never jumps.
+    // Animates the panel's height from its current value, so a reversal never jumps.
     function run(panel, open, done) {
         var current = moving.get(panel);
         var from = (current || panel.classList.contains('show')) ? panel.getBoundingClientRect().height : 0;
@@ -1220,9 +1220,8 @@ osc.dropdown = (function () {
     return {show: show, hide: hide};
 })();
 
-// osc.announce(el, text): puts text in a live region. A message the same as the one shown is
-// cleared and set again on the next frame, so a screen reader reads it again.
-// The same text on another region within a second is one message and is not said again.
+// osc.announce(el, text): puts text in a live region, re-set on the next frame when it is the
+// same so a screen reader reads it again. The same text on another region within a second is not said again.
 var oscSaid = {el: null, text: '', at: 0};
 osc.announce = function (el, text) {
     if (!el) {
@@ -1471,9 +1470,8 @@ osc.sortable = (function () {
     };
 })();
 
-// osc.notify(type, text, {undo, ms}): the one entry point for a result. Type is ok, info, warning
-// or error. With undo (or from osc.toast) it shows at the foot of the screen, otherwise in the
-// stack at the top. It is spoken once through the shared region. Returns {close}.
+// osc.notify(type, text, {undo, ms}): shows and speaks a result (ok, info, warning or error) and
+// returns {close}. With undo (or from osc.toast) it shows at the foot of the screen, otherwise in the stack at the top.
 osc.notify = function (type, text, opts) {
     opts = opts || {};
     if (text) {
@@ -1513,8 +1511,8 @@ function oscFlashShow(type, text) {
     return {close: function () { if (slot.oscFlashFill === filled) { oscDismissFlash(slot); } }};
 }
 
-// The toast: one short note at the foot of the screen, with an optional Undo. A new one replaces
-// the old one and Undo runs once. It never takes focus; Esc closes it when focus is inside.
+// The toast: one short note at the foot of the screen with an optional Undo that runs once, and a
+// new one replaces the old. It never takes focus; Esc closes it when focus is inside.
 var oscToast = (function () {
     var labels = {undo: 'Undo', close: 'Close'};
     var box = null;

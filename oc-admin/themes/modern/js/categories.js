@@ -1,8 +1,7 @@
 /*
- * Categories screen: the tree table in categories/index.php. Rows are drawn once by the server;
- * this file keeps one flat model of them and drives disclosure, status tabs, search, selection,
- * totals, the edit drawer, row and bulk actions, and sibling drag. Endpoints and copy arrive as
- * data-* on .categories-app.
+ * Categories screen: one flat model of the server-drawn tree table in categories/index.php, driving
+ * disclosure, status tabs, search, selection, totals, the edit drawer, row and bulk actions and drag.
+ * Endpoints and copy arrive as data-* on .categories-app.
  */
 /* global oscInitTabs, oscFill */
 (function () {
@@ -466,9 +465,9 @@
             tpl.content.replaceChildren(frag);
         }
 
-        // Fills a parent select from the template. selfId's own subtree cannot be picked, and with
-        // a theme depth limit neither can a parent that would put it deeper than both the limit
-        // and where it sits now. Returns whether any option was refused for depth.
+        // Fills a parent select from the template, leaving out selfId's subtree and, under a theme
+        // depth limit, any parent that puts it deeper than both the limit and its current place.
+        // Returns whether any option was refused for depth.
         function fillParents(select, selfId, selectedId) {
             const tpl = document.getElementById('catParentOptions');
             if (!tpl || !select) {
@@ -1054,7 +1053,7 @@
             }
         }
 
-        // The note under "Also apply to its N subcategories" counts the subcategories set differently from the drawer now.
+        // The note under "Also apply to its N subcategories" counts those set differently from the drawer.
         function syncApplyNote() {
             const box = drawerBody.querySelector('#apply_changes_to_subcategories');
             const note = document.getElementById('cat-apply-note');

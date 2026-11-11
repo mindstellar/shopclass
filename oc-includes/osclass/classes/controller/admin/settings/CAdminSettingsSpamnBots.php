@@ -27,7 +27,7 @@ class CAdminSettingsSpamnBots extends AdminSecBaseModel
     /** The Settings › Security tabs drawn here; Spam filter is the keyword blocklist screen. */
     private const TABS = array('signin', 'captcha', 'limits');
 
-    /** Tabs this screen used to have, and where each one lives now. */
+    /** Old tab names, sent on to the screen that holds each. */
     private const MOVED_TABS = array(
         'akismet'  => '?page=settings&action=keyword_block',
         'alerts'   => '?page=settings&action=spamNbots&tab=limits#s-search-alerts',

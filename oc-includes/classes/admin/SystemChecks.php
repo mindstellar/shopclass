@@ -271,8 +271,6 @@ final class SystemChecks
      * An issue's first sentence and the rest. A text with no sentence end, or with nothing
      * after it, stays whole.
      *
-     * @param string $text
-     *
      * @return array{0:string,1:string}
      */
     public static function splitSentence(string $text): array

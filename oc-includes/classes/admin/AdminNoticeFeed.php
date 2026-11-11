@@ -14,9 +14,8 @@ namespace mindstellar\admin;
 
 /**
  * Core's standing notices: the System info checks and the payment methods in test mode.
- * The checks run on a cached copy of the environment, so each admin gets their own language.
- * A page shows the copy it finds and a stale one is read again after the response.
- * Not final, so tests can stand in for it.
+ * The checks run on a cached copy of the environment, read again once stale, and the class is not
+ * final so tests can stand in for it.
  */
 class AdminNoticeFeed
 {
@@ -152,7 +151,7 @@ class AdminNoticeFeed
     }
 
     /**
-     * One request pays for the refresh. A failed read keeps the lock, so the next try waits for it
+     * One request pays for the refresh, and a failed read keeps the lock so the next try waits for it
      * to run out. A quick read is saved as out of date, so the full read follows.
      *
      * @return array{at:int, env:array<string,mixed>}|null null on a lost claim or a failed read

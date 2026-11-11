@@ -8,9 +8,9 @@
  */
 
 /*
- * Appearance > Menus. The menu is held as a flat list with a depth per item and drawn as one flat
- * list, indented by depth. Dragging and the handle keys run on osc.sortable's tree mode; saving
- * nests the list and posts it as JSON. An item moves with the items nested under it.
+ * Appearance > Menus: the menu is one flat list with a depth per item, indented by depth, and an
+ * item moves with the items nested under it. Drag and keys run on osc.sortable's tree mode; saving
+ * nests the list and posts it as JSON.
  */
 /* global osc */
 (function () {
@@ -146,7 +146,6 @@
         render(focusIndex, focusAct);
     }
 
-    // Light up the row that just moved or was added, so the eye finds where it went.
     function settle(i) {
         var row = list.querySelector('.menu-item[data-index="' + i + '"]');
         if (row) {

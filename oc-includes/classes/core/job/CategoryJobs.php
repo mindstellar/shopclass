@@ -61,7 +61,6 @@ final class CategoryJobs
     /**
      * Delete a category, choosing the way that fits its size.
      *
-     * @param int  $categoryId
      * @param bool $queue      true queues it whatever its size
      *
      * @return string 'done' when it was deleted here, 'queued' when a job will finish it,
@@ -95,7 +94,6 @@ final class CategoryJobs
      * Queue new end dates for every listing in these categories (0 days = never end).
      *
      * @param int[] $categoryIds
-     * @param int   $days
      *
      * @return bool false when nothing could be queued
      */
@@ -112,10 +110,6 @@ final class CategoryJobs
     /**
      * Re-date the next batch of listings after the last id done, then ask to run again.
      * Idempotent: a listing that already has its new date is left as it is.
-     *
-     * @param Job $job
-     *
-     * @return void
      */
     private static function expiry(Job $job): void
     {

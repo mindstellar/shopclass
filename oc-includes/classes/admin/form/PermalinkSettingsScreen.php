@@ -382,11 +382,6 @@ final class PermalinkSettingsScreen extends SettingsScreen
 
     /**
      * One titled block of server rules.
-     *
-     * @param string $title
-     * @param string $text
-     *
-     * @return void
      */
     private static function rulesSection(string $title, string $text): void
     {
@@ -397,10 +392,6 @@ final class PermalinkSettingsScreen extends SettingsScreen
 
     /**
      * Server rules as text to copy.
-     *
-     * @param string $text
-     *
-     * @return void
      */
     private static function rulesBlock(string $text): void
     {

@@ -14,9 +14,8 @@ namespace mindstellar\admin;
 
 /**
  * The admin notices service: every rule on what a notice may hold and who sees it.
- *
- * One-off notices are stored until cleared or expired. Standing checks live in memory and run
- * on each admin page. Nothing here throws on a page: a bad notice is logged and skipped.
+ * One-off notices are stored until cleared or expired, standing checks run on each admin page,
+ * and a bad notice is logged and skipped, never thrown.
  */
 final class AdminNotices
 {

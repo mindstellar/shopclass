@@ -107,8 +107,8 @@ final class SettingsSearch
     );
 
     /**
-     * Screens outside Settings that hold settings or used to sit there: entry id => whether
-     * the screen is listed as a page of its own. Ban rules is, the Messages list is not.
+     * Screens outside Settings that the search lists: entry id => whether the screen is listed
+     * as a page of its own. Ban rules is, the Messages list is not.
      */
     private const OTHER_SCREENS = array('users_ban' => true, 'items_messages' => false);
 

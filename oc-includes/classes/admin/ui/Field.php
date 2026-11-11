@@ -676,8 +676,6 @@ class Field
      * @param array<int,string>   $tabs localeTab() strings; none prints no list
      * @param array<string,mixed> $opts 'id', 'class' (default "ui-osc-tabs osc-tab"),
      *                                  'panels' (markup inside the wrapper, after the list)
-     *
-     * @since 7.1.0
      */
     public static function localeStrip(array $tabs, array $opts = array()): string
     {

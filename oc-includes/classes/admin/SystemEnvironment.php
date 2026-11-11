@@ -179,8 +179,6 @@ final class SystemEnvironment
     /**
      * Whether an object-cache driver has a class here and says this server can run it.
      *
-     * @param string $driver
-     *
      * @return bool
      */
     private static function cacheSupported(string $driver): bool
@@ -191,10 +189,8 @@ final class SystemEnvironment
     }
 
     /**
-     * Whether the cache keeps a value: write a probe key, read it back, remove it. The
-     * write's own answer counts, because a driver may serve the read from its in-request copy.
-     *
-     * @return bool
+     * Whether the cache keeps a value. The write's own answer counts, because a driver may
+     * serve the read from its in-request copy.
      */
     private static function cacheAnswers(): bool
     {

@@ -134,7 +134,7 @@ Core defines 1301 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_category_picker(array $opts = array())` | The category chooser: a control showing the chosen path, and a searchable list of the whole tree behind it. |
 | `osc_admin_checkbox(array $opts)` | A checkbox with its label on one line and its hint underneath. |
 | `osc_admin_count(int $count, string $id = '', string $title = '')` | A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather than "Pending (3)". Returns the markup, led by a space so the label and number never run together; a zero is drawn muted. |
-| `osc_admin_data_table(array $aData, array $opts = array())` | A list screen's table from DataTable output. Titles and cells print as DataTable built them; the wrapper always holds the empty #table-row-actions. |
+| `osc_admin_data_table(array $aData, array $opts = array())` | A list screen's table from DataTable output, printed as DataTable built it, in a wrapper that holds the empty #table-row-actions. |
 | `osc_admin_definition(array $rows)` | Label/value rows -- the read-only counterpart to a form. A row may set 'html' =&gt; true to pass markup through, which is why the default escapes. |
 | `osc_admin_disclosure_close()` | Close what osc_admin_disclosure_open() opened. |
 | `osc_admin_disclosure_open($title, array $opts = array())` | A collapsible group, for the settings a screen has to offer and nobody changes twice a year. A &lt;details&gt;, so it works with no JavaScript and is findable by the browser's own in-page search. |
@@ -173,7 +173,7 @@ Core defines 1301 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_select(array $opts)` | A dropdown. Keys: the shared set, plus 'options', 'selected', 'placeholder'. |
 | `osc_admin_settings_form($page, array $opts = array())` | The whole form of a declared page (osc_register_settings_page()): the element, the hidden route, every declared field with the value it should show, and the submit row. |
 | `osc_admin_status($state, $word, string $title = '')` | A status pill: a tint, a shape, and the word. An unmapped state still renders, in the neutral tint, so a plugin's own word degrades instead of vanishing. |
-| `osc_admin_table(array $columns, array $rows, array $opts = array())` | A hand-built admin table: header, rows, optional empty row and wrapper. Plain values are escaped; only 'label_html', 'html' and 'render' print as given. |
+| `osc_admin_table(array $columns, array $rows, array $opts = array())` | A hand-built admin table: header, rows, optional empty row and wrapper; only 'label_html', 'html' and 'render' print unescaped. |
 | `osc_admin_text(array $opts)` | Single-line text. Keys: the shared set, plus 'placeholder', 'width', 'prefix', 'suffix'. |
 | `osc_admin_textarea(array $opts)` | Multi-line text. Keys: the shared set, plus 'rows', 'monospace'. |
 | `osc_admin_tree_picker(array $opts)` | A category checkbox tree with "Check all / Uncheck all" toggles, shared by every screen that assigns fields, groups or plugin config to categories. Each main category is a card; its subcategories fold below it. |
@@ -209,7 +209,7 @@ Core defines 1301 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_account_upgrade_offers(?int $userId = null)` | Upgrades a seller can buy for their account with credits: each is ['feature', 'label', 'detail', 'credits']. A plugin adds its own through `account_upgrade_offers`. With $userId, extra photos and runtime that seller already holds are left out: they raise a limit to a level, so buying them again would only stack it. |
 | `osc_account_upgrade_url(string $feature)` | The POST target for buying the account upgrade $feature. |
 | `osc_admin_billing_order_url(int $orderId)` | The admin page of one order. |
-| `osc_admin_payment_test_notice(array $query, string $hidden = '')` | One notice naming every payment method still in test mode, on those methods' own settings pages. Empty anywhere else, when none is in test mode, or when the admin hid it for this set of methods. The bell lists each method on every admin page. Plugins add themselves through the PaymentTestModes event or the `admin_payment_test_modes` filter. |
+| `osc_admin_payment_test_notice(array $query, string $hidden = '')` | One notice naming every payment method still in test mode, on those methods' own settings pages, unless the admin hid it for this set of methods. Plugins add themselves through the PaymentTestModes event or the `admin_payment_test_modes` filter. |
 | `osc_billing_bump_cooldown_hours()` | Hours a listing must wait between bumps -- the row ItemUpgrades grants IS the cooldown. |
 | `osc_billing_bump_credits()` | Credit price of a bump. 0 with billing_bump_enabled on means free, not off. |
 | `osc_billing_bump_enabled()` | Whether bump-to-top is registered as a purchasable upgrade at all. |

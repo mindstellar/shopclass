@@ -8,30 +8,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-/**
- * Which admin helper for which job (the full list is in docs/site/developers/admin-screens.md).
- *
- * Blocks on a screen:
- *   osc_admin_section()            a titled block in the body, with a close; the default for screen content.
- *   osc_admin_panel_open()         a card with a border and title bar: a side box, a dashboard tile, a list wrapper.
- *   osc_admin_form_section()       only a heading and intro inside a form; prints no wrapper and needs no close.
- *
- * Page layout:
- *   osc_admin_body_open()          any screen; 'layout' stack, split or grid.
- *   osc_admin_editor_open()        a screen editing one record, with a sticky rail for status and Save.
- *
- * Paging (both in parts/ui.php):
- *   osc_admin_pagination()         under a list whose controller gives DataTables-shaped $aData.
- *   osc_admin_pager()              when you only have the total, per-page size and page number.
- *
- * Form rows:
- *   osc_admin_field()              one label and one control; use this first.
- *   osc_admin_form_row_open()      a row whose content is your own markup; end with osc_admin_form_row_close().
- *   osc_admin_field_row()          one label over several controls. No core screen calls it; kept for themes and plugins.
- *
- * Also kept for themes and plugins, no core screen calls them: osc_admin_secret(), and
- * osc_admin_page_titled() in parts/ui.php.
- */
+// Which admin helper for which job: see docs/site/developers/admin-screens.md.
 
 /**
  * Admin form field primitives.
@@ -344,7 +321,6 @@ if (!function_exists('osc_admin_section_heading')) {
      * @param string|null $id    the id to link to; null makes one from the text, '' leaves it off
      *
      * @return void
-     * @since 7.1.0
      */
     function osc_admin_section_heading($text, $level = 'section', $id = null)
     {
@@ -405,7 +381,6 @@ if (!function_exists('osc_admin_body_open')) {
      *                    dashboard); 'id', 'class', 'attrs'
      *
      * @return void
-     * @since 7.1.0
      */
     function osc_admin_body_open(array $opts = array())
     {
@@ -420,7 +395,6 @@ if (!function_exists('osc_admin_body_rail')) {
      * @param array $opts 'id', 'class', 'attrs'
      *
      * @return void
-     * @since 7.1.0
      */
     function osc_admin_body_rail(array $opts = array())
     {
@@ -433,7 +407,6 @@ if (!function_exists('osc_admin_body_close')) {
      * Close the body osc_admin_body_open() opened.
      *
      * @return void
-     * @since 7.1.0
      */
     function osc_admin_body_close()
     {
@@ -452,7 +425,6 @@ if (!function_exists('osc_admin_section')) {
      *                      'level' => 'section' (default) or 'subsection', 'class', 'attrs'
      *
      * @return void
-     * @since 7.1.0
      */
     function osc_admin_section(string $title, array $opts = array())
     {
@@ -465,7 +437,6 @@ if (!function_exists('osc_admin_section_close')) {
      * Close the section osc_admin_section() opened.
      *
      * @return void
-     * @since 7.1.0
      */
     function osc_admin_section_close()
     {
@@ -816,7 +787,6 @@ if (!function_exists('osc_admin_header_title')) {
      * The page title the admin header drew in its title row, or null when it drew none.
      *
      * @return string|null
-     * @since 7.1.0
      */
     function osc_admin_header_title()
     {
@@ -998,8 +968,8 @@ if (!function_exists('osc_admin_panel_open')) {
      * @param string $title Omit for a panel that needs no header
      * @param array  $opts  'subtitle', 'actions' (action specs in the header), 'class', 'id',
      *                      'attrs', 'hint' (string, or a list of strings or array('text', 'state')),
-     *                      'hint_state' => 'error', 'collapsible' (a <details>) and 'open'.
-     *                      Since 7.1.0: 'stack' => true (the body becomes a gap column) and
+     *                      'hint_state' => 'error', 'collapsible' (a <details>), 'open',
+     *                      'stack' => true (the body becomes a gap column) and
      *                      'count' => int (a badge after the title)
      *
      * @return void
@@ -1133,7 +1103,7 @@ if (!function_exists('osc_admin_status')) {
      *
      * @param string $state Lower-case state key, e.g. 'paid'
      * @param string $word  The visible word, already translated
-     * @param string $title Optional tooltip, since 7.1.0
+     * @param string $title Optional tooltip
      *
      * @return void
      */
@@ -1148,11 +1118,9 @@ if (!function_exists('osc_admin_callout')) {
      * A warning or note box. $text is escaped unless 'html' is true.
      *
      * @param string              $tone danger, warning, info or success
-     * @param string              $text
      * @param array<string,mixed> $opts 'html', 'id', 'class', 'role', 'attrs' (more attributes), 'tag' (div or span), 'block' (default true; false for an inline callout)
      *
      * @return void
-     * @since 7.1.0
      */
     function osc_admin_callout(string $tone, string $text, array $opts = array()): void
     {
@@ -1162,12 +1130,12 @@ if (!function_exists('osc_admin_callout')) {
 
 if (!function_exists('osc_admin_table')) {
     /**
-     * A hand-built admin table: header, rows, optional empty row and wrapper. Plain values are
-     * escaped; only 'label_html', 'html' and 'render' print as given.
+     * A hand-built admin table: header, rows, optional empty row and wrapper; only 'label_html',
+     * 'html' and 'render' print unescaped.
      *
      * A cell is a scalar or null (escaped text), ['html' => markup], ['render' => callable that
-     * echoes] or ['status' => [$state, $word]]; any array form may add 'class'. Since 7.1.0 it
-     * may also add 'colspan' => n (the next n-1 columns are skipped for that row) and 'th' => true
+     * echoes] or ['status' => [$state, $word]]; any array form may add 'class',
+     * 'colspan' => n (the next n-1 columns are skipped for that row) and 'th' => true
      * (a <th scope="row"> in place of the <td>).
      *
      * @param array $columns key => plain label, or an array: 'label', 'label_html', 'hide_label',
@@ -1179,10 +1147,7 @@ if (!function_exists('osc_admin_table')) {
      *                       (default 'responsive'; 'actions' adds #table-row-actions); 'wrap_id';
      *                       'stack' => true (cards on a phone); 'empty' => what no rows shows:
      *                       'title', 'text', 'action' (a button spec); 'caption' (escaped, for
-     *                       screen readers), since 7.1.0
-     *
-     * @return void
-     * @since 7.1.0
+     *                       screen readers)
      */
     function osc_admin_table(array $columns, array $rows, array $opts = array()): void
     {
@@ -1192,8 +1157,8 @@ if (!function_exists('osc_admin_table')) {
 
 if (!function_exists('osc_admin_data_table')) {
     /**
-     * A list screen's table from DataTable output. Titles and cells print as DataTable built them;
-     * the wrapper always holds the empty #table-row-actions.
+     * A list screen's table from DataTable output, printed as DataTable built it, in a wrapper that
+     * holds the empty #table-row-actions.
      *
      * Rows without a bulkactions column turn into cards on a phone unless 'stack' says otherwise.
      *
@@ -1203,9 +1168,6 @@ if (!function_exists('osc_admin_data_table')) {
      *                     'row_attrs' => fn($key, $row): array of <tr> attributes;
      *                     'cell' => fn($column, $value, $key): ?string (markup, null for the default);
      *                     'empty' => what no rows shows: 'title', 'text', 'action' (a button spec)
-     *
-     * @return void
-     * @since 7.1.0
      */
     function osc_admin_data_table(array $aData, array $opts = array()): void
     {
@@ -1221,7 +1183,7 @@ if (!function_exists('osc_admin_count')) {
      *
      * @param int    $count
      * @param string $id    Optional id, for a script that updates the number
-     * @param string $title Optional tooltip, since 7.1.0
+     * @param string $title Optional tooltip
      *
      * @return string
      * @since 7.0.0

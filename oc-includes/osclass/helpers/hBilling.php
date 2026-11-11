@@ -1694,8 +1694,7 @@ const OSC_PAY_TEST_COOKIE = 'osc_pay_test_hidden';
 
 /**
  * One notice naming every payment method still in test mode, on those methods' own settings
- * pages. Empty anywhere else, when none is in test mode, or when the admin hid it for this set
- * of methods. The bell lists each method on every admin page. Plugins add themselves through the
+ * pages, unless the admin hid it for this set of methods. Plugins add themselves through the
  * PaymentTestModes event or the `admin_payment_test_modes` filter.
  *
  * @param array<string,mixed> $query  the request's page, action and id

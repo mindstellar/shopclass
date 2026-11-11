@@ -83,7 +83,7 @@ class CAdminSettings
             case ('akismet_post'):
                 $do = new CAdminSettingsKeywordBlock();
                 break;
-            // The message rules moved to Listings › Messages; a form posting the old action still saves there.
+            // An old form posting this action saves the message rules on Listings › Messages.
             case ('messages_post'):
                 $do = new CAdminMessages();
                 break;

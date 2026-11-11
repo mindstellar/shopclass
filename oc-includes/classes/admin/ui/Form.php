@@ -149,7 +149,6 @@ class Form
      * Print the intro paragraph of $opts, if it has one.
      *
      * @param array<string,mixed> $opts
-     * @param string              $class
      */
     private static function intro(array $opts, string $class): void
     {
@@ -164,7 +163,6 @@ class Form
      * The id and extra attributes of a body or a section.
      *
      * @param array<string,mixed> $opts
-     * @param string              $id
      */
     private static function idAndAttrs(array $opts, string $id): string
     {
@@ -177,8 +175,6 @@ class Form
      *
      * @param array<string,mixed> $opts 'layout' => 'stack', 'split' (record and rail, as on a billing
      *                                  order) or 'grid' (tiles, as on the dashboard); 'id', 'class', 'attrs'
-     *
-     * @since 7.1.0
      */
     public static function bodyOpen(array $opts = array()): void
     {
@@ -198,8 +194,6 @@ class Form
      * End a split body's main column and start its rail. Body of osc_admin_body_rail().
      *
      * @param array<string,mixed> $opts 'id', 'class', 'attrs'
-     *
-     * @since 7.1.0
      */
     public static function bodyRail(array $opts = array()): void
     {
@@ -215,8 +209,6 @@ class Form
 
     /**
      * Close the innermost open body. Body of osc_admin_body_close().
-     *
-     * @since 7.1.0
      */
     public static function bodyClose(): void
     {
@@ -237,8 +229,6 @@ class Form
      * @param string              $title empty for a section with no heading
      * @param array<string,mixed> $opts  'intro'/'intro_html', 'actions', 'id', 'level' => 'section' or
      *                                   'subsection', 'class', 'attrs'
-     *
-     * @since 7.1.0
      */
     public static function sectionOpen(string $title, array $opts = array()): void
     {
@@ -271,8 +261,6 @@ class Form
 
     /**
      * Close the innermost open section. Body of osc_admin_section_close().
-     *
-     * @since 7.1.0
      */
     public static function sectionClose(): void
     {
@@ -363,8 +351,6 @@ class Form
 
     /**
      * The select-all checkbox for a table's header. Its id is what the check-all script looks for.
-     *
-     * @since 7.1.0
      */
     public static function bulkHeader(): string
     {
@@ -378,8 +364,6 @@ class Form
      * @param mixed               $value Submitted value, usually the row id
      * @param string|null         $label Row name used in the "Select %s" aria-label
      * @param array<string,mixed> $attrs Extra attributes
-     *
-     * @since 7.1.0
      */
     public static function bulkCell(string $name, $value, ?string $label, array $attrs = array()): string
     {
@@ -397,8 +381,6 @@ class Form
      *
      * @param string $state Lower-case state key, or '' for a pill with no state of its own
      * @param string $title Optional tooltip
-     *
-     * @since 7.1.0
      */
     public static function statusBadge(string $state, string $html, string $title = ''): string
     {
@@ -410,8 +392,6 @@ class Form
      * A warning or note box. Body of osc_admin_callout(), which documents the arguments.
      *
      * @param array<string,mixed> $opts
-     *
-     * @since 7.1.0
      */
     public static function callout(string $tone, string $text, array $opts = array()): string
     {
@@ -434,8 +414,6 @@ class Form
      * @param array<string,string|array<string,mixed>> $columns
      * @param array<int,array<string,mixed>>           $rows
      * @param array<string,mixed>                      $opts
-     *
-     * @since 7.1.0
      */
     public static function table(array $columns, array $rows, array $opts = array()): void
     {
@@ -502,13 +480,11 @@ class Form
     }
 
     /**
-     * A table of DataTable output. Body of osc_admin_data_table(), which documents the options.
-     * Titles and cells print as given: DataTable builds them and plugin filters may add markup.
+     * Body of osc_admin_data_table(), which documents the options. Titles and cells print as given:
+     * DataTable builds them and plugin filters may add markup.
      *
      * @param array<string,mixed> $aData DataTable::getData() shape
      * @param array<string,mixed> $opts
-     *
-     * @since 7.1.0
      */
     public static function dataTable(array $aData, array $opts = array()): void
     {

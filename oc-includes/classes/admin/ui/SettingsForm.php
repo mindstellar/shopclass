@@ -96,10 +96,7 @@ final class SettingsForm
      * Open a group's section. The section carries the group's anchor even when it draws no heading.
      *
      * @param array<string,mixed> $group
-     * @param int                 $index
      * @param bool                $titled false when the form sits on a tab that already names it
-     *
-     * @return void
      */
     private static function openGroup(array $group, int $index, bool $titled): void
     {

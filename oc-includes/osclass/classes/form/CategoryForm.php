@@ -204,8 +204,6 @@ class CategoryForm extends Form
      * @param string $prefix  Id prefix, also the radio group name stem
      * @param string $name    Name of the day count field
      * @param bool   $posted  Print the "Listings already posted" fieldset
-     *
-     * @return void
      */
     public static function expiry_control(
         int $days,
@@ -247,8 +245,6 @@ class CategoryForm extends Form
      * shows it. expiry_control() prints it unless told not to, for a form that puts it elsewhere.
      *
      * @param string $prefix Id prefix, the same as the control's
-     *
-     * @return void
      */
     public static function expiry_posted(string $prefix): void
     {
