@@ -106,7 +106,7 @@ function sidebar_shell_html(string $menuHtml): string
 {
     $src   = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/parts/header.php');
     $start = (int) strpos($src, '<div id="content"');
-    $menuButton = (int) strpos($src, 'admin-topbar-menu-close');
+    $menuButton = (int) strpos($src, 'admin-topbar-menu-open');
     $end   = (int) strpos($src, '</button>', $menuButton) + strlen('</button>');
     $part  = substr($src, $start, $end - $start);
     $part  = (string) preg_replace_callback('~<\?php(.*?)\?>~s', static function (array $m) use ($menuHtml): string {

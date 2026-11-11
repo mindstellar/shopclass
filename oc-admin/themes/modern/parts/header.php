@@ -61,7 +61,6 @@ if ($oscSidebar !== 'collapsed') {
                         aria-expanded="false" aria-label="<?php echo osc_esc_html(__('Open menu')); ?>"
                         data-label-open="<?php echo osc_esc_html(__('Open menu')); ?>" data-label-close="<?php echo osc_esc_html(__('Close menu')); ?>">
                     <i class="bi bi-list admin-topbar-menu-open" aria-hidden="true"></i>
-                    <i class="bi bi-x-lg admin-topbar-menu-close" aria-hidden="true"></i>
                 </button>
                 <?php osc_admin_breadcrumb(); ?>
                 <ul class="navbar-nav admin-topbar-tools ms-auto">

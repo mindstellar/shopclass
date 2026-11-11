@@ -207,6 +207,10 @@ $sidebar-rail: 4rem;
   padding: 0;
   transition: opacity var(--osc-duration-fast) var(--osc-ease);
 
+  > li + li {
+    margin-block-start: .15rem;
+  }
+
   // Room above and below the group, as blocks inside it. On the list itself the space
   // sat outside the height Bootstrap animates, so it jumped in at the end of each toggle.
   &::before,
@@ -454,6 +458,11 @@ $sidebar-rail: 4rem;
   // instead of floating inside it. Matches the topbar, which pulls out the same way.
   @include media-breakpoint-up(sm) {
     margin-inline: -.5rem;
+  }
+
+  // Without that padding the icon would sit right of the menu icons below it.
+  @include media-breakpoint-down(sm) {
+    padding-inline-start: .9rem;
   }
 
   > i {
@@ -793,8 +802,8 @@ $sidebar-rail: 4rem;
   }
 }
 
-// The phone menu button: a topbar button whose icon turns into a close while the menu is open.
-// It shows only where responsive.scss turns the sidebar into a panel.
+// The phone menu button. It shows only where responsive.scss turns the sidebar into a
+// panel; the panel closes from its backdrop or Escape.
 .admin-topbar .navbar-toggler.admin-topbar-menu {
   border: 0;
   box-shadow: none;
@@ -802,39 +811,9 @@ $sidebar-rail: 4rem;
   // 44px is the smallest comfortable tap target, whatever the root size.
   min-height: max(2.75rem, 44px);
   min-width: max(2.75rem, 44px);
-  position: relative;
 
   > i {
     font-size: 1.35rem;
-    transition: opacity var(--osc-duration-base) var(--osc-ease),
-                transform var(--osc-duration-base) var(--osc-ease);
-  }
-
-  .admin-topbar-menu-close {
-    inset: 0;
-    margin: auto;
-    opacity: 0;
-    position: absolute;
-    transform: rotate(-90deg);
-    block-size: fit-content;
-    inline-size: fit-content;
-  }
-
-  // Open, it stays above the panel and its backdrop, so the close is where the menu was opened.
-  &[aria-expanded="true"] {
-    background-color: var(--osc-chrome-hover);
-    color: var(--osc-bronze);
-    z-index: 1060;
-
-    .admin-topbar-menu-open {
-      opacity: 0;
-      transform: rotate(90deg);
-    }
-
-    .admin-topbar-menu-close {
-      opacity: 1;
-      transform: none;
-    }
   }
 }
 
@@ -1145,27 +1124,10 @@ $sidebar-rail: 4rem;
       background-color: var(--osc-sidebar-active-bg);
     }
 
-    // --- Flyouts ----------------------------------------------------------
-    // Both flyout kinds are position:fixed so they escape the menu's scroll
-    // frame (an overflow container would otherwise clip them). Their viewport
-    // coordinates are set in JS from the hovered row's rect; the reveal stays
-    // here. They remain DOM children of the <li>, so hovering the flyout still
-    // counts as hovering the row (hover propagates up the DOM tree), which keeps
-    // the panel open while the pointer travels to it.
-    //
-    // HOVER INTENT. There is a 6px gap between the rail and the panel (the JS
-    // offset), and crossing it un-hovers the row for an instant. So the HIDE is
-    // delayed (--osc-flyout-hide) and visibility only flips after the fade, giving
-    // the pointer time to bridge the gap; re-entering within the window cancels it.
-    // The SHOW stays instant — the reveal rule below zeroes the delay — so the
-    // panel never feels laggy to open, only reluctant to close.
+
     .dashboard-sidebar .sidebar-submenu,
     .dashboard-sidebar .sidebar-flyout {
       --osc-flyout-hide: .15s;
-
-      // The detached flyout is a white popover over the content, not part of the navy
-      // rail — so re-point the sidebar tokens the submenu items consume back to the
-      // light-popover palette. The rail keeps its dark values; only this subtree flips.
       --osc-sidebar-label:     var(--osc-nav-label);
       --osc-sidebar-strong:    var(--osc-ink);
       --osc-sidebar-icon:      var(--osc-rule-strong);
@@ -1178,6 +1140,9 @@ $sidebar-rail: 4rem;
       border: 1px solid var(--osc-rule);
       box-shadow: var(--osc-shadow-overlay);
       color: var(--osc-ink);
+      display: flex;
+      flex-direction: column;
+      gap: .15rem;
       // Neutralise the expanded group's indent: these are fixed and JS-positioned,
       // so the rail's margin would otherwise offset the flyout from the hovered row.
       margin-inline: 0;
@@ -1194,8 +1159,8 @@ $sidebar-rail: 4rem;
     // Parent panel.
     .dashboard-sidebar .sidebar-submenu {
       border-radius: $border-radius-lg;
-      // display:block wins over Bootstrap's `.collapse:not(.show){display:none}`.
-      display: block;
+      // display:flex wins over Bootstrap's `.collapse:not(.show){display:none}`.
+      display: flex;
       margin-block: 0;
       max-height: calc(100vh - 1rem);
       min-width: 12rem;
@@ -1301,8 +1266,3 @@ $sidebar-rail: 4rem;
   --bs-offcanvas-transition: transform var(--osc-duration-base) var(--osc-ease);
 }
 
-// The open panel leaves room at its top for the close button that sits over it: the topbar's
-// inset, the button, then a clear gap before the logo.
-#sidebar-wrapper.offcanvas:is(.show, .showing) .sidebar-brand {
-  padding-inline-start: calc(.75rem + max(2.75rem, 44px) + .875rem);
-}
