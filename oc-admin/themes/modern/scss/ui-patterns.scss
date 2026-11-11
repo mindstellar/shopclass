@@ -81,13 +81,6 @@
   text-align: start;
 }
 
-.osc-empty-icon {
-  color: var(--osc-ink-muted);
-  font-size: 1.75rem;
-  line-height: 1;
-  margin-block-end: .75rem;
-}
-
 .osc-empty-title {
   color: var(--osc-ink);
   font-weight: 500;
@@ -504,14 +497,6 @@ thead:has(~ tbody > .osc-table-empty-row),
   gap: 1rem;
   justify-content: space-between;
   padding: 1.1rem 1.25rem;
-}
-
-.cat-drawer-eyebrow {
-  color: var(--osc-ink-muted);
-  display: block;
-  font-size: $font-size-label;
-  font-weight: 500;
-  letter-spacing: .01em;
 }
 
 .osc-drawer-title,

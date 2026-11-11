@@ -26,24 +26,10 @@ use RuntimeException;
 use Session;
 
 /**
- * The Categories screen: drag-and-drop order, the edit frame, enable, delete and save.
+ * The Categories screen: the edit frame, move, enable, delete and save.
  */
 final class CategoryAjax extends AjaxHandler
 {
-    /** Save the order of the categories: a list of {c: id, p: parent id or 'root'}. */
-    public function order(): void
-    {
-        $rows = array();
-        foreach ((array) json_decode(Params::getParamString('list'), true) as $cat) {
-            if (is_array($cat) && isset($cat['c'])) {
-                $parent = ($cat['p'] ?? 'root') === 'root' ? 0 : (int) $cat['p'];
-                $rows[] = array((int) $cat['c'], $parent > 0 ? $parent : null);
-            }
-        }
-
-        AjaxResponse::json(self::orderResult(CategoryService::make()->arrange($rows) ? 0 : 1));
-    }
-
     public function editIframe(): void
     {
         $tree = CategoryStore::tree();

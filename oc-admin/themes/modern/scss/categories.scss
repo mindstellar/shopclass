@@ -330,20 +330,6 @@
   }
 }
 
-.col-head {
-  align-items: center;
-  display: flex;
-  gap: .75rem;
-  justify-content: space-between;
-
-  // Keep the action button on one line; the narrow palette rail was letting
-  // "New field" shrink and wrap to three lines.
-  .btn {
-    flex: 0 0 auto;
-    white-space: nowrap;
-  }
-}
-
 // The two panes sit side by side, so their intros reserve the same two lines.
 .forms-builder-grid .osc-section-intro {
   min-height: 2.4em;
@@ -360,25 +346,6 @@
   font-weight: 600;
   margin: 0;
   min-width: 0;
-}
-
-.col-hint {
-  color: var(--osc-ink-muted);
-  font-size: $font-size-label;
-  margin: 0;
-  // Reserve two lines so the Forms and Fields lists start at the same height and
-  // the two columns line up.
-  min-height: 2.4em;
-}
-
-.builder-empty {
-  border: 1px dashed var(--osc-rule-strong);
-  border-radius: $border-radius;
-  color: var(--osc-ink-muted);
-  font-size: .875rem;
-  list-style: none;
-  padding: 1.25rem;
-  text-align: center;
 }
 
 // ---- Forms (left) -----------------------------------------------------------

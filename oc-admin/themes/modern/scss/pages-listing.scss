@@ -4,7 +4,7 @@
   float: inline-end;
 }
 
-#listing-toolbar, #admins-toolbar, #users-toolbar {
+#listing-toolbar, #admins-toolbar {
   & + #datatablesForm #bulk-actions {
     float: inline-start;
   }

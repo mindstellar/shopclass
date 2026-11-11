@@ -22,14 +22,4 @@ abstract class AjaxHandler
     public function __construct(protected \CAdminAjax $controller)
     {
     }
-
-    /**
-     * The answer a drag-and-drop reorder sends back.
-     *
-     * @return array{error:string}|array{ok:string}
-     */
-    protected static function orderResult(int $error): array
-    {
-        return $error ? array('error' => __('Could not save the new order. Reload and try again.')) : array('ok' => __('Order saved'));
-    }
 }

@@ -1220,8 +1220,6 @@ osc.dropdown = (function () {
     return {show: show, hide: hide};
 })();
 
-// osc.flatTree — pure helpers for a tree held as a pre-order list of objects with a 0-based
-// depth. A block is a row plus every row nested under it; skipFrom/skipTo leave out a moving block.
 // osc.announce(el, text): puts text in a live region. A message the same as the one shown is
 // cleared and set again on the next frame, so a screen reader reads it again.
 // The same text on another region within a second is one message and is not said again.
@@ -1255,6 +1253,26 @@ osc.plural = function (p, n) {
     return p.forms[+p.idx.charAt(i) || 0];
 };
 
+// osc.el(tag, attrs, kids): a new element; attrs.text sets its text, other attrs are attributes.
+osc.el = function (tag, attrs, kids) {
+    var node = document.createElement(tag);
+    Object.keys(attrs || {}).forEach(function (k) {
+        if (k === 'text') {
+            node.textContent = attrs[k];
+        } else {
+            node.setAttribute(k, attrs[k]);
+        }
+    });
+    (kids || []).forEach(function (kid) {
+        if (kid) {
+            node.append(kid);
+        }
+    });
+    return node;
+};
+
+// osc.flatTree: helpers for a tree held as a pre-order list with a 0-based depth. A block is a row
+// plus every row nested under it; skipFrom/skipTo leave out a moving block.
 osc.flatTree = (function () {
     function inSkip(k, skipFrom, skipTo) {
         return skipTo > skipFrom && k >= skipFrom && k < skipTo;

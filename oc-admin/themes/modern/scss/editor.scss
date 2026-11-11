@@ -790,7 +790,6 @@
   min-inline-size: 0;
 }
 
-.osc-editor-section > .widget-box-title,
 .osc-editor-section > .osc-panel-head {
   align-items: baseline;
   background: var(--osc-bench-warm);
@@ -802,24 +801,20 @@
   padding: .8rem 1.25rem;
 }
 
-.osc-editor-section > .widget-box-content,
 .osc-editor-section > .osc-panel-body {
   padding: 1.25rem;
 }
 
-.osc-editor-section > .widget-box-content > :last-child,
 .osc-editor-section > .osc-panel-body > :last-child {
   margin-block-end: 0;
 }
 
-.widget-box-title-hint,
 .osc-panel-hint {
   color: var(--osc-ink-muted);
   font-size: .875rem;
   font-weight: 400;
 }
 
-.widget-box-title-hint.is-error,
 .osc-panel-hint.is-error {
   background: var(--osc-danger-tint);
   border-radius: 999px;
@@ -861,7 +856,6 @@ details.osc-editor-section:not([open]) > summary {
   border-radius: inherit;
 }
 
-details.osc-editor-section > summary .widget-box-title-hint:not(.is-error),
 details.osc-editor-section > summary .osc-panel-hint:not(.is-error) {
   margin-inline-start: auto;
 }
@@ -968,10 +962,6 @@ details.osc-editor-section[open] {
 
 // The user form, laid out as a settings page: plain values, status pills and the action buttons
 // sit on the same baseline as the inputs in other rows.
-.user-editor-text {
-  padding-block-start: 6px;
-}
-
 .user-editor-status,
 .user-editor-actions {
   align-items: center;

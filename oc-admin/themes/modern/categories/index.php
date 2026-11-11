@@ -14,7 +14,6 @@ if (!defined('OC_ADMIN')) {
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
-osc_enqueue_script('sortablejs');
 osc_enqueue_script('admin-categories');
 
 $table  = __get('category_table');
@@ -66,9 +65,7 @@ $ajax = static fn (string $action, bool $csrf = true): string =>
 $plural = static fn (callable $form): array => \mindstellar\admin\AdminText::pluralForms($form);
 
 $i18n = array(
-    'deleteTitle'      => __('Delete category'),
     'delete'           => __('Delete'),
-    'cancel'           => __('Cancel'),
     'ajaxError'        => __('Something went wrong. Try again.'),
     'enabled'          => __('Enabled'),
     'disabled'         => __('Disabled'),
@@ -87,10 +84,7 @@ $i18n = array(
     'after'            => __('After %s'),
     'last'             => __('Last'),
     'moved'            => __('Moved.'),
-    'setExpiry'        => __('Set expiry…'),
     'never'            => __('Never'),
-    'selected'         => __('%d selected'),
-    'clear'            => __('Clear'),
     'clearSearch'      => __('Clear search'),
     'showAll'          => __('Show all'),
     'addAs'            => __('Add “%s” as a category'),
@@ -117,8 +111,6 @@ $i18n = array(
     'expiryTag'        => __('%d-day expiry'),
     'emptyOn'          => __('No enabled categories.'),
     'emptyOff'         => __('No disabled categories.'),
-    // translators: 1: category name, 2: Enabled or Disabled
-    'nameState'        => __('%1$s: %2$s'),
     'tooDeepDrag'      => $limit === null ? '' : sprintf(_n('Too deep. This theme shows %d level of categories.', 'Too deep. This theme shows %d levels of categories.', $limit), $limit),
     'moreSubs'         => $plural(static fn (int $n): string => _n('+ %d subcategory', '+ %d subcategories', $n)),
     'hintMove'         => __('move up or down'),
@@ -211,7 +203,6 @@ $i18n = array(
         'Listings already posted got new end dates; %d listings ended today.',
         $n
     )),
-    'working'          => __('This can take a moment on a large category.'),
 );
 ?>
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
@@ -226,7 +217,6 @@ $i18n = array(
         'data-bulk-url'           => $ajax('category_bulk'),
         'data-preview-url'        => $ajax('category_delete_preview', false),
         'data-expiry-preview-url' => $ajax('category_expiry_preview', false),
-        'data-order-url'          => $ajax('categories_order'),
         'data-depth-limit'        => $limit === null ? '' : (string)(int)$limit,
         'data-status'             => $status,
         'data-i18n'               => json_encode($i18n, JSON_HEX_APOS | JSON_HEX_QUOT),

@@ -279,10 +279,6 @@ msgstr ""
 msgid "%1$s: %2$d, %3$s holds %4$d"
 msgstr ""
 
-#: oc-admin/themes/modern/categories/index.php
-msgid "%1$s: %2$s"
-msgstr ""
-
 #: oc-admin/themes/modern/comments/index.php
 msgid "%d Comments"
 msgstr ""
@@ -627,10 +623,6 @@ msgid "%d sample listing is on this site."
 msgid_plural "%d sample listings are on this site."
 msgstr[0] ""
 msgstr[1] ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid "%d selected"
-msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
 #: oc-includes/classes/admin/ui/Picker.php
@@ -4595,7 +4587,6 @@ msgid "Could not refresh the catalog: %s. Showing the last successful results."
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/widgets.php
-#: oc-includes/classes/admin/ajax/AjaxHandler.php
 msgid "Could not save the new order. Reload and try again."
 msgstr ""
 
@@ -5285,10 +5276,6 @@ msgstr ""
 
 #: oc-admin/themes/modern/fields/submissions.php
 msgid "Delete all submissions"
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid "Delete category"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -11436,10 +11423,6 @@ msgstr ""
 msgid "Order number, name or e-mail"
 msgstr ""
 
-#: oc-includes/classes/admin/ajax/AjaxHandler.php
-msgid "Order saved"
-msgstr ""
-
 #: oc-admin/themes/modern/billing/documents.php
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/settings/billing.php
@@ -16632,10 +16615,6 @@ msgstr ""
 msgid ""
 "This can take a minute on a large site. Please leave this page open until it "
 "finishes."
-msgstr ""
-
-#: oc-admin/themes/modern/categories/index.php
-msgid "This can take a moment on a large category."
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php

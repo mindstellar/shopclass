@@ -92,7 +92,7 @@ check('bulk bar posts to the hidden form', $xp->query('//form[@id="cat-bulk-form
 
 harness_section('urls');
 $app = $xp->query('//div[contains(@class,"categories-app")]')->item(0);
-foreach (['edit', 'enable', 'delete', 'move', 'bulk', 'preview', 'order'] as $k) {
+foreach (['edit', 'enable', 'delete', 'move', 'bulk', 'preview'] as $k) {
     check("data-$k-url is set", $app->getAttribute("data-$k-url") !== '');
 }
 foreach (['enable', 'delete', 'move', 'bulk'] as $k) {

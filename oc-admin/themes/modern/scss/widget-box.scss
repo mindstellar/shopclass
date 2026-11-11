@@ -158,14 +158,12 @@ div.widget-box-content-no-wrapp li a {
 
 // Hints, section notes and type badges stay at 12px or more, as on the Menus screen.
 .widgets-builder {
-  .col-hint,
   .osc-section-intro,
   .form-card-cats,
   .chip-type {
     font-size: .875rem;
   }
 
-  .col-hint,
   .osc-section-intro {
     max-width: 75ch;
   }

@@ -58,7 +58,6 @@ final class AjaxRegistry
         'location_record'        => array(LocationAjax::class, 'read', false),
         'location_stats'         => array(LocationAjax::class, 'stats', true),
 
-        'categories_order'       => array(CategoryAjax::class, 'order', true),
         'category_edit_iframe'   => array(CategoryAjax::class, 'editIframe', false),
         'enable_category'        => array(CategoryAjax::class, 'enable', true),
         'delete_category'        => array(CategoryAjax::class, 'delete', true),

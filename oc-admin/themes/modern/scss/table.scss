@@ -391,12 +391,6 @@
   }
 }
 
-.table-first-row {
-  td {
-    border-top: 0;
-  }
-}
-
 // The row actions are always visible and in-flow (see .actions above), so there is nothing to
 // reveal on hover and no space to reserve: the row is exactly as tall as its content.
 .table-contains-actions {

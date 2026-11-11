@@ -262,7 +262,7 @@ namespace {
     pin('cron_never sits under System info', 'tools_system_info', $by['cron_never']->submenu);
     pin('cache_unsupported sits under System info', 'tools_system_info', $by['cache_unsupported']->submenu);
     pin('signin_protection_off sits under Users', ['users', ''], [$by['signin_protection_off']->menu, $by['signin_protection_off']->submenu]);
-    pin('config_writable has no sub-item', ['tools', ''], [$by['config_writable']->menu, $by['config_writable']->submenu]);
+    pin('config_writable sits under System info', ['tools', 'tools_system_info'], [$by['config_writable']->menu, $by['config_writable']->submenu]);
     check('signin_blocked is not here', !isset($by['signin_blocked']));
     pin('the first sentence is the text, the rest the detail', ['config.php can be written by the web server.', 'It holds your database password; make it read-only.'], [$by['config_writable']->text, $by['config_writable']->detail]);
     pin('a line with no action points at System info', ['https://example.com/oc-admin/index.php?page=tools&action=system-info', 'See details'], [$by['config_writable']->link, $by['config_writable']->linkLabel]);

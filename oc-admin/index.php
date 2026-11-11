@@ -31,7 +31,7 @@ osc_register_script('bootstrap5', osc_asset_url_versioned(osc_assets_url('bootst
 osc_register_script('sortablejs', osc_asset_url_versioned(osc_assets_url('sortablejs/Sortable.min.js')));
 osc_register_script('qrcode-generator', osc_asset_url_versioned(osc_assets_url('qrcode-generator/qrcode.js')));
 osc_register_script('admin-tree-drag', osc_asset_url_versioned(osc_current_admin_theme_js_url('tree-drag.js')), 'admin-ui-osc');
-osc_register_script('admin-categories', osc_asset_url_versioned(osc_current_admin_theme_js_url('categories.js')), array('admin-ui-osc', 'admin-tree-drag', 'sortablejs'));
+osc_register_script('admin-categories', osc_asset_url_versioned(osc_current_admin_theme_js_url('categories.js')), array('admin-ui-osc', 'admin-tree-drag'));
 // enqueue scripts. Bootstrap's JS (bootstrap5) stays registered for plugins that enqueue it.
 osc_enqueue_script('admin-osc');
 osc_enqueue_script('admin-ui-osc');

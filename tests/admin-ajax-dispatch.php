@@ -116,7 +116,7 @@ function ajax_drive(array $query, bool $moderator = false): string
 
 // Every action the endpoint answers; dead ones were removed in 7.1.
 $csrf = array(
-    'resource_upload', 'save_admin_theme', 'save_sidebar_state', 'categories_order',
+    'resource_upload', 'save_admin_theme', 'save_sidebar_state',
     'field_categories_post', 'delete_field', 'add_field', 'add_group', 'group_post',
     'delete_group', 'form_set_fields', 'migrate_loose_fields', 'form_submission_status',
     'form_submission_delete', 'form_submissions_purge', 'enable_category', 'delete_category',
@@ -134,7 +134,7 @@ $open = array(
 
 harness_section('every action still has a handler');
 $all = array_merge($csrf, $open);
-pin('58 actions, none added or lost', 58, count($all));
+pin('57 actions, none added or lost', 57, count($all));
 $registered = AjaxRegistry::actions();
 sort($registered);
 $expected = $all;

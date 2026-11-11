@@ -24,7 +24,7 @@ class AdminNoticeFeed
 
     private bool $refreshing = false;
 
-    /** Where each notice belongs in the sidebar: menu, then sub-menu. Anything else goes under Tools. */
+    /** Where each notice belongs in the sidebar: menu, then sub-menu. Anything else goes under System info. */
     private const PLACES = [
         'admins_no_2fa'             => ['users', ''],
         'signin_protection_off'     => ['users', ''],
@@ -32,31 +32,6 @@ class AdminNoticeFeed
         'backup_none'               => ['tools', 'tools_backup'],
         'backup_old'                => ['tools', 'tools_backup'],
         'maintenance_on'            => ['tools', 'tools_maintenance'],
-        'jobs_failed'               => ['tools', 'tools_system_info'],
-        'jobs_stuck'                => ['tools', 'tools_system_info'],
-        'jobs_orphans'              => ['tools', 'tools_system_info'],
-        'cron_never'                => ['tools', 'tools_system_info'],
-        'cron_stale'                => ['tools', 'tools_system_info'],
-        'cache_unsupported'         => ['tools', 'tools_system_info'],
-        'cache_unreachable'         => ['tools', 'tools_system_info'],
-        'db_server_old'             => ['tools', 'tools_system_info'],
-        'ext_missing'               => ['tools', 'tools_system_info'],
-        'no_image_library'          => ['tools', 'tools_system_info'],
-        'memory_low'                => ['tools', 'tools_system_info'],
-        'post_below_upload'         => ['tools', 'tools_system_info'],
-        'uploads_below_photos'      => ['tools', 'tools_system_info'],
-        'uploads_read_only'         => ['tools', 'tools_system_info'],
-        'core_read_only'            => ['tools', 'tools_system_info'],
-        'packages_read_only'        => ['tools', 'tools_system_info'],
-        'secret_mail_blocked'       => ['tools', 'tools_system_info'],
-        'opcache_off'               => ['tools', 'tools_system_info'],
-        'debug_on'                  => ['tools', 'tools_system_info'],
-        'disk_low'                  => ['tools', 'tools_system_info'],
-        'htaccess_no_authorization' => ['tools', 'tools_system_info'],
-        'api_slug_taken'            => ['tools', 'tools_system_info'],
-        'live_publish_failed'       => ['tools', 'tools_system_info'],
-        'push_needs_https'          => ['tools', 'tools_system_info'],
-        'push_send_failed'          => ['tools', 'tools_system_info'],
     ];
 
     /**
@@ -229,7 +204,7 @@ class AdminNoticeFeed
             $url   = SystemChecks::url($env, 'overview');
             $label = __('See details');
         }
-        [$menu, $submenu] = self::PLACES[$id] ?? ['tools', ''];
+        [$menu, $submenu] = self::PLACES[$id] ?? ['tools', 'tools_system_info'];
 
         return new AdminNotice(
             $id,

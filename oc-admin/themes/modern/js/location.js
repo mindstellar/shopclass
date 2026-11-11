@@ -23,6 +23,7 @@
     const RECALC_DELAY = 250;
     // Polls in a row without the queue shrinking before a recount gives up.
     const RECALC_STALLS = 3;
+    const el = window.osc.el;
 
     function init() {
         const app = document.querySelector('.locations-app');
@@ -109,13 +110,7 @@
         }
 
         function announce(text) {
-            if (!announcer) {
-                return;
-            }
-            announcer.textContent = '';
-            window.requestAnimationFrame(function () {
-                announcer.textContent = text || '';
-            });
+            window.osc.announce(announcer, text);
         }
 
         function flash(type, text) {
@@ -173,23 +168,6 @@
             } else if (mode === 'replace') {
                 window.history.replaceState({ locations: true }, '', href);
             }
-        }
-
-        function el(tag, attrs, children) {
-            const node = document.createElement(tag);
-            Object.keys(attrs || {}).forEach(function (key) {
-                if (key === 'text') {
-                    node.textContent = attrs[key];
-                } else {
-                    node.setAttribute(key, attrs[key]);
-                }
-            });
-            (children || []).forEach(function (child) {
-                if (child) {
-                    node.append(child);
-                }
-            });
-            return node;
         }
 
         function icon(name) {

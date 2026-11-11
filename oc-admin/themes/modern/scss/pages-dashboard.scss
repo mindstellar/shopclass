@@ -64,23 +64,6 @@
   border-color: var(--osc-rule-strong);
 }
 
-.dash-stat-icon {
-  align-items: center;
-  border-radius: $border-radius;
-  display: inline-flex;
-  flex: 0 0 auto;
-  font-size: 1.35rem;
-  height: 2.75rem;
-  justify-content: center;
-  width: 2.75rem;
-}
-
-.dash-stat-icon-bronze  { background-color: var(--osc-bronze-tint);  color: var(--osc-bronze); }
-.dash-stat-icon-info    { background-color: var(--osc-info-tint);    color: var(--osc-info); }
-.dash-stat-icon-warning { background-color: var(--osc-warning-tint); color: var(--osc-ink-emphasis); }
-.dash-stat-icon-danger  { background-color: var(--osc-danger-tint);  color: var(--osc-danger); }
-.dash-stat-icon-muted   { background-color: var(--osc-bench-sunk);   color: var(--osc-ink-muted); }
-
 .dash-stat-body {
   display: flex;
   flex-direction: column;
@@ -104,14 +87,8 @@
 }
 
 // ---- Listings-by-category scroll region -------------------------------------
-// The category ledger can run long; it scrolls inside the panel so the three
-// dashboard columns keep an even height. Was an inline style with overflow on the
-// WRONG axis (overflow-x for a vertically-overflowing list) plus a magic height —
-// moved to a class and corrected to overflow-y.
-// Scroll shadows, not a plain cut: the cover layers are attached `local` so they ride
-// with the content and mask the shadow at each end, leaving the hint only while there
-// is more to scroll. A half-cut row then reads as more below, not as a broken panel.
-.dash-category-scroll,
+// The ledger scrolls inside the panel so the dashboard columns keep an even height. The `local`
+// cover layers hide each scroll shadow once that end is reached.
 .dash-category-card > .osc-panel-body {
   max-height: 19rem;
   overflow-y: auto;
@@ -124,7 +101,6 @@
 }
 
 // The card is the frame; the table inside it draws no second border.
-.dash-category-scroll .table,
 .dash-category-card .table {
   border: 0;
   margin: 0;

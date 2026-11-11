@@ -19,22 +19,7 @@
         return Number(n || 0).toLocaleString(document.documentElement.lang || undefined);
     }
 
-    function el(tag, attrs, kids) {
-        const node = document.createElement(tag);
-        Object.keys(attrs || {}).forEach(function (k) {
-            if (k === 'text') {
-                node.textContent = attrs[k];
-            } else {
-                node.setAttribute(k, attrs[k]);
-            }
-        });
-        (kids || []).forEach(function (kid) {
-            if (kid) {
-                node.append(kid);
-            }
-        });
-        return node;
-    }
+    const el = window.osc.el;
 
     function init() {
         const app = document.querySelector('.categories-app');
@@ -950,7 +935,7 @@
         let drawerSeq = 0;
         let drawerOpener = null;
 
-        const panel = drawer && typeof window.oscDrawer === 'function' ? window.oscDrawer({
+        const panel = drawer ? window.oscDrawer({
             drawer: drawer,
             backdrop: backdrop,
             openOn: app,
@@ -1420,14 +1405,10 @@
             return subs > 0 ? pluralWith('disabledSubs', subs, [node.name, fmt(subs)]) : oscFill(I18N.disabledOne, [node.name]);
         }
 
-        // A toast with Undo, spoken too. Without the toast layer the flash bar stands in.
+        // A toast with Undo, spoken too.
         function notify(text, undo) {
             announce(text);
-            if (typeof window.osc.toast === 'function') {
-                window.osc.toast(text, undo ? {undo: undo} : {});
-            } else {
-                flash('ok', text);
-            }
+            window.osc.toast(text, undo ? {undo: undo} : {});
         }
 
         // A request that must answer ok; otherwise it throws {reply: text} for the caller to flash.
@@ -2327,9 +2308,7 @@
             });
         }
 
-        if (window.osc && typeof window.osc.toast === 'function' && window.osc.toast.labels) {
-            window.osc.toast.labels({undo: I18N.undo, close: I18N.close});
-        }
+        window.osc.toast.labels({undo: I18N.undo, close: I18N.close});
 
         // --- Drag and arrow keys: the shared tree layer in ui-osc.js -------------------------
         const place = function (parent) {
@@ -2452,7 +2431,7 @@
             }
         }
 
-        const sorter = tbody && typeof window.osc === 'object' && typeof window.osc.sortable === 'function'
+        const sorter = tbody
             ? window.osc.sortable(table, {
                 handle: '.cat-handle',
                 tree: {

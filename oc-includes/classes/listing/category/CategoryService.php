@@ -298,46 +298,13 @@ final class CategoryService
     }
 
     /**
-     * Place categories in the order given, each under its parent (null = top level), as the
-     * drag-and-drop list sends the whole tree. Each placement passes move()'s checks, and
-     * `edited_category_order` fires once, with 1 when any placement failed.
-     *
-     * @param array<int,array{0:int,1:?int}> $rows id and parent, in order
-     *
-     * @return bool false when a placement was refused or failed
-     */
-    public function arrange(array $rows): bool
-    {
-        $tree = $this->tree();
-        $next = [];
-        $ok   = true;
-        foreach ($rows as [$id, $parentId]) {
-            $key        = (string) $parentId;
-            $position   = $next[$key] ?? 0;
-            $next[$key] = $position + 1;
-            if ($tree->exists($id) && $tree->parent($id) === $parentId && array_search($id, $tree->children($parentId), true) === $position) {
-                continue;
-            }
-            try {
-                $tree = $this->moveIn($tree, $id, $parentId, $position, false);
-            } catch (RefusedException | \RuntimeException $e) {
-                $ok = false;
-            }
-        }
-        osc_run_hook('edited_category_order', $ok ? 0 : 1);
-
-        return $ok;
-    }
-
-    /**
-     * move() on a tree already read; returns the tree as it is after the move. Without $hook the
-     * caller fires `edited_category_order` itself.
+     * move() on a tree already read; returns the tree as it is after the move.
      *
      * @throws NotFoundException
      * @throws InvalidException
      * @throws \mindstellar\database\DbException when a write failed
      */
-    private function moveIn(CategoryTree $tree, int $id, ?int $parentId, int $position, bool $hook = true): CategoryTree
+    private function moveIn(CategoryTree $tree, int $id, ?int $parentId, int $position): CategoryTree
     {
         if (!$tree->exists($id)) {
             throw new NotFoundException(_m('No such category.'));
@@ -384,15 +351,11 @@ final class CategoryService
                 }
             });
         } catch (\Throwable $e) {
-            if ($hook) {
-                osc_run_hook('edited_category_order', 1);
-            }
+            osc_run_hook('edited_category_order', 1);
             throw $e;
         }
         $this->flushCaches();
-        if ($hook) {
-            osc_run_hook('edited_category_order', 0);
-        }
+        osc_run_hook('edited_category_order', 0);
 
         // The same map with this category's parent changed and both groups in their new order.
         $map      = $tree->map();
