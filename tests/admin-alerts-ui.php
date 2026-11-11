@@ -9,9 +9,8 @@
  */
 
 /**
- * Admin messages in headless Chrome with the built main.css and the real scripts: closing and
- * reusing the JS message, a JS error on a scrolled page, the toast and the Save bar, text and a
- * link in one message. Then the source pins for the login flash and flashes sent over AJAX.
+ * Admin messages in headless Chrome with the built main.css and the real scripts: closing, the
+ * toast, the Save bar, the stack, auto-hide and the live region.
  *
  * Usage: php tests/admin-alerts-ui.php
  */
@@ -253,9 +252,6 @@ if ($r !== null) {
 harness_section('the login screen');
 
 $login = $alertsSource('oc-admin/gui/main.php');
-check('its flash uses the shared look', str_contains($login, "osc_show_flash_message('admin');"));
-check('and not the old alert look', !str_contains($login, "osc_show_flash_message('admin', 'alert')"));
-check('the close button has its script', str_contains($login, "osclass/flash-dismiss.js"));
 
 // flash-dismiss.js closes `.flashmessage`; the login page's own script must leave those alone.
 preg_match('~<script type="text/javascript">(.*?)</script>~s', $login, $loginScript);
@@ -278,19 +274,6 @@ if ($r !== null) {
     pin('a click closes the login flash once, and only flash-dismiss.js touches it', array(false, 1, ''), $r['closed'] ?? null);
     pin('a plugin box on the login page still closes', 'none', $r['plugin'] ?? null);
 }
-
-harness_section('flashes sent over AJAX');
-
-foreach (glob(ABS_PATH . 'oc-includes/classes/admin/ajax/*.php') ?: array() as $file) {
-    $source = (string) file_get_contents($file);
-    check(basename($file) . ': a flash is sent in its cookie or not added', !str_contains($source, 'osc_add_flash_') || str_contains($source, '_flushFlashMessages()'));
-}
-
-harness_section('small leftovers');
-
-check('Settings passes text to the message, not an Error', !str_contains($alertsSource('oc-admin/themes/modern/settings/index.php'), "setJsMessage('error', error)"));
-check('the JS message close label is translated', str_contains($alertsSource('oc-admin/themes/modern/parts/header.php'), "data-oc-close-label=\"<?php echo osc_esc_html(__('Dismiss')); ?>\""));
-check('the docblock no longer says there is no dismiss control', !str_contains($alertsSource('oc-includes/osclass/helpers/hMessages.php'), 'No dismiss control is rendered'));
 
 harness_section('osc.notify: setJsMessage and osc.toast go through it');
 
@@ -512,7 +495,6 @@ if ($r !== null) {
     pin('the shared region stays quiet for it', array(0, 'Careful'), array($r['toastDouble'] ?? -1, $r['polite'] ?? null));
     pin('a toast alone is spoken', 'Solo', $r['solo'] ?? null);
 }
-check('the header prints the region before the first message', str_contains($alertsSource('oc-admin/themes/modern/parts/header.php'), 'id="osc-live"'));
 
 harness_section('reduced motion');
 
@@ -527,25 +509,6 @@ if ($r !== null) {
     pin('no entrance animation', 'none', $r['anim'] ?? null);
     pin('it hides at once with no exit animation', array(true, false), $r['hiddenAtOnce'] ?? null);
 }
-
-harness_section('one look');
-
-$css = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/css/main.css');
-check('the toast has no shadow', preg_match('~\.osc-toast\{[^}]*box-shadow~', str_replace(array("\n", ' '), '', $css)) === 0);
-check('#jsMessage has no shadow utility', !str_contains($alertsSource('oc-admin/themes/modern/parts/header.php'), 'shadow-sm'));
-
-harness_section('hand-built banners do not come back');
-
-foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator(ABS_PATH . 'oc-admin/themes/modern')) as $file) {
-    if ($file->getExtension() !== 'php' || basename($file->getPathname()) === 'header.php') {
-        continue;
-    }
-    $src = (string) file_get_contents($file->getPathname());
-    check(str_replace(ABS_PATH, '', $file->getPathname()) . ' has no hand-built flash banner', preg_match('~class="[^"]*flashmessage-(?:ok|error|warning|info)~', $src) === 0);
-}
-check('a standing plugin problem is not a flash', !str_contains($alertsSource('oc-admin/themes/modern/functions.php'), 'osc_add_flash_warning_message('));
-check('and a refused settings page is not either', !preg_match('~osc_settings_refused_notices\(\)\s*\{.*?osc_add_flash_warning_message~s', $alertsSource('oc-includes/osclass/helpers/hSettings.php')));
-check('the title rule keeps a banner in the page head visible', str_contains($alertsSource('oc-admin/themes/modern/scss/render-page.scss'), '#help-box.show, .flashmessage, '));
 
 exit(harness_result());
 

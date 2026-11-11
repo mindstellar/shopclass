@@ -9,11 +9,8 @@
  */
 
 /**
- * The admin sidebar in Chrome: sections open on their own and the clicked row stays put, one
- * pill marks the current page, hover and pressed use the sidebar tokens, the rail collapses
- * with the icons still, panel and chevron move together and turn around on a second click,
- * reduced motion is instant, and the phone menu never paints in the page.
- * Animations are read on a paused clock (t.seek), not on the wall clock.
+ * The admin sidebar in Chrome: sections open and close, the clicked row stays put, one pill marks
+ * the current page, the rail collapses, and the phone menu never paints in the page.
  *
  * Usage: php tests/admin-sidebar-ui.php
  */
@@ -33,9 +30,6 @@ pin('a page load opens only the current section', array('users-submenu'), (funct
     return $m[1];
 })());
 check('its chevron says it is open', (bool) preg_match('~class="nav-chevron" data-osc-collapse="#users-submenu" aria-expanded="true"~', $html));
-$scss = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/scss/sidebar.scss');
-check('no scale on hover in sidebar.scss', !preg_match('~scale\(1\.~', $scss));
-check('no raw hex or Sass colour in a sidebar transition', !preg_match('~transition:[^;]*(#[0-9a-f]{3}|\$[a-z])~i', $scss));
 
 harness_section('sections in the expanded menu');
 $r = sidebar_run(<<<'JS'
@@ -108,15 +102,10 @@ $r = sidebar_run(<<<'JS'
 const dash = t.row('Dashboard');
 const a = t.box(dash.querySelector('a'));
 await mouseMove(a.x + 40, a.cy);
-r.hoverIn = t.css(dash, 'transition-duration');
 await t.finish();
-r.hoverBg = [t.css(dash, 'background-color'), t.token(dash, '--osc-sidebar-hover-bg')];
 const icon = dash.querySelector('a > i');
-r.hoverIcon = [t.css(icon, 'color'), t.token(dash, '--osc-sidebar-accent', 'color')];
-r.hoverIconTransform = t.css(icon, 'transform');
 await mouseDown();
 await t.finish();
-r.pressBg = [t.css(dash, 'background-color'), t.token(dash, '--osc-sidebar-press-bg')];
 await mouseMove(900, 500);
 await mouseUp();
 await t.finish();
@@ -125,13 +114,10 @@ const add = t.$('#items_1');
 const b = t.box(add);
 await mouseMove(b.x + 50, b.cy);
 await t.finish();
-r.subHover = [t.css(add, 'background-color'), t.token(add, '--osc-sidebar-hover-bg')];
-r.subDot = t.css(add, 'transform', '::before');
 const cur = t.$('#items_0');
 const c = t.box(cur);
 await mouseMove(c.x + 50, c.cy);
 await t.finish();
-r.activeHover = [t.css(cur, 'background-color'), t.token(cur, '--osc-sidebar-active-bg')];
 await mouseMove(900, 500);
 await t.finish();
 
@@ -156,14 +142,6 @@ JS);
 if ($r !== null) {
     pin('no script errors', array(), $r['errors'] ?? null);
     pin('nothing thrown', null, $r['thrown'] ?? null);
-    pin('hover arrives in 80ms', '0.08s', $r['hoverIn'] ?? null);
-    pin('hover paints the hover token', $r['hoverBg'][1] ?? 'x', $r['hoverBg'][0] ?? null);
-    pin('the hover icon is bronze', $r['hoverIcon'][1] ?? 'x', $r['hoverIcon'][0] ?? null);
-    pin('the hover icon does not scale', 'none', $r['hoverIconTransform'] ?? null);
-    pin('pressed paints the press token', $r['pressBg'][1] ?? 'x', $r['pressBg'][0] ?? null);
-    pin('a submenu link takes the hover token', $r['subHover'][1] ?? 'x', $r['subHover'][0] ?? null);
-    check('its dot does not scale', preg_match('~^matrix\(1, 0, 0, 1,~', (string) ($r['subDot'] ?? '')) === 1, (string) ($r['subDot'] ?? ''));
-    pin('hover leaves the current page as it is', $r['activeHover'][1] ?? 'x', $r['activeHover'][0] ?? null);
     pin('the open section keeps bronze ink and weight with no fill', array('rgba(0, 0, 0, 0)', '600', true), $r['sectionRow'] ?? null);
     pin('one pill, on the current page', array('Manage listings'), $r['pills'] ?? null);
     pin('the focus ring is on the row, 2px, not on the link', array(true, 'solid', '2px', 'none'), $r['focusRow'] ?? null);

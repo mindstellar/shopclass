@@ -9,20 +9,8 @@
  */
 
 /**
- * Static rules that keep admin screens on the shared components. Each rule lists the few files
- * that may break it, with the reason (one allow list per rule).
- *
- * Rules:
- *   tabs           no hand-built .osc-tab, .ui-osc-tabs, .osc-tabnav or nav nav-tabs strip
- *   dialogs        every <dialog> is osc_admin_confirm_dialog() or allowed by id
- *   status         no Bootstrap "badge bg-" pill, no raw osc-status outside its helpers
- *   toolbars       no table-toolbar
- *   empty states   no builder-empty or osc-empty-icon, no 'icon' inside an empty-state spec
- *   callouts       no hand-built callout-block or callout tone class
- *   tables         no hand-written <table> or <thead>; Status is first, or second after the bulk checkbox
- *   wording        no "successfully", "correctly", "Oops" or "Ajax" in admin message text
- *
- * Markup and icon rules stay in tests/admin-template-rules.php.
+ * Static rules that keep admin screens on the shared components (tabs, dialogs, status, tables,
+ * empty states, callouts, message wording). Each rule has its own allow list with reasons.
  *
  * Usage:  php tests/admin-component-rules.php
  */

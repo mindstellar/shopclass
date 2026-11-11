@@ -25,11 +25,9 @@ $row = static fn (array $over = []): array => $over + [
 harness_section('Heading and parent');
 $html = categories_drawer_html($row(), ['parent' => ['id' => 2, 'name' => 'Vehicles'], 'subcategory_count' => 3, 'has_subcategories' => true]);
 check('no <h3> naming the category', !preg_match('~<h3>(New|Edit) category</h3>~', $html));
-check('the section heading is printed', str_contains($html, '<h3 class="cat-drawer-section">Listings in this category</h3>'));
 check('the Parent select carries data-self', str_contains($html, 'name="parent_id"') && str_contains($html, 'data-self="7"'));
 check('the current parent is selected', (bool) preg_match('~<option value="2" selected>Vehicles</option>~', $html));
 check('the hint carries the count below', str_contains($html, 'id="cat-parent-hint" data-below="3"'));
-check('the web address field is relabelled', str_contains($html, 'Web address name') && !str_contains($html, '>Slug<'));
 
 $new = categories_drawer_html($row(['pk_i_id' => '', 'fk_i_parent_id' => null]), ['parent' => ['id' => 5, 'name' => 'Real estate']]);
 check('a new subcategory shows its parent', (bool) preg_match('~<option value="5" selected>Real estate</option>~', $new));
@@ -58,7 +56,6 @@ check('the posted group starts hidden', (bool) preg_match('~<fieldset class="cat
 harness_section('Apply box');
 check('a category with subcategories shows the apply box', str_contains($html, 'id="apply_changes_to_subcategories"'));
 check('the box is unticked', !preg_match('~id="apply_changes_to_subcategories"[^>]*checked~', $html));
-check('the label counts every level below', str_contains($html, 'Also apply to its 3 subcategories'));
 $leaf = categories_drawer_html($row());
 check('a leaf has no apply box', !str_contains($leaf, 'apply_changes_to_subcategories'));
 

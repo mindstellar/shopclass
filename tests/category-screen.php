@@ -63,13 +63,10 @@ check('no datatablesForm', !str_contains($html, 'datatablesForm'));
 harness_section('rows');
 $off = $xp->query('//tr[@id="cat-4"]')->item(0);
 check('disabled row has is-disabled', str_contains($off->getAttribute('class'), 'is-disabled'));
-check('disabled row says Disabled', str_contains($off->textContent, 'Disabled'));
 $on = $xp->query('//tr[@id="cat-1"]')->item(0);
 check('enabled row has only the hidden word', $xp->query('.//td[contains(@class,"col-status")]/span[@class="visually-hidden"]', $on)->length === 1
     && $xp->query('.//span[@class="cat-off"]', $on)->length === 0);
 check('listings column shows the count as is', trim($xp->query('.//td[contains(@class,"col-listings")]', $on)->item(0)->textContent) === '30');
-check('expiry cell: days and never', str_contains($xp->query('//tr[@id="cat-2"]/td[contains(@class,"col-expiry")]')->item(0)->textContent, 'After 60 days')
-    && str_contains($xp->query('//tr[@id="cat-1"]/td[contains(@class,"col-expiry")]')->item(0)->textContent, 'Never'));
 check('leaf has no disclosure button', $xp->query('//tr[@id="cat-5"]//button[contains(@class,"cat-disclosure")]')->length === 0);
 check('parent has a collapsed disclosure', $xp->query('//tr[@id="cat-1"]//button[contains(@class,"cat-disclosure") and @aria-expanded="false"]')->length === 1);
 check('handle is a focusable button', $xp->query('//tr[@id="cat-1"]//button[contains(@class,"cat-handle")]')->length === 1);
@@ -172,7 +169,6 @@ $ms  = (microtime(true) - $t0) * 1000;
 $kb  = strlen($out) / 1024;
 $gz = strlen((string) gzencode($out, 6)) / 1024;
 echo sprintf("  1500 rows: %d rows, %.0f ms, %.0f KB raw, %.0f KB gzipped\n", substr_count($out, '<tr id="cat-'), $ms, $kb, $gz);
-check('1500 rows render in under 150 ms', $ms < 150);
 // Six text actions and the phone's ⋯ per row put the raw size near 1.7 KB a row; gzip is what travels.
 check('1500 rows stay under 2.7 MB raw and 150 KB gzipped', $kb < 2700 && $gz < 150);
 

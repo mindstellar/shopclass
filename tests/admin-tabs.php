@@ -124,45 +124,4 @@ pin(
     $field::localeStrip(array(), array('id' => 'language-tab', 'class' => 'x'))
 );
 
-harness_section('the screens use the helpers');
-$modern = $root . '/oc-admin/themes/modern/';
-$files  = array(
-    $modern . 'settings/locations.php',
-    $modern . 'appearance/index.php',
-    $modern . 'appearance/dependencies.php',
-    $modern . 'plugins/index.php',
-    $modern . 'parts/market.php',
-    $root . '/oc-includes/classes/core/form/admin/Item.php',
-    $root . '/oc-includes/osclass/classes/form/PageForm.php',
-    $root . '/oc-includes/osclass/classes/form/CategoryForm.php',
-    $root . '/oc-includes/osclass/classes/form/FieldForm.php',
-    $root . '/oc-includes/osclass/classes/form/UserForm.php',
-);
-foreach ($files as $file) {
-    $src = (string) file_get_contents($file);
-    $name = basename($file);
-    check($name . ' draws no tab wrapper by hand', !str_contains($src, 'class="osc-tab') && !str_contains($src, 'ui-osc-tabs osc-tab"') && !str_contains($src, 'osc-tabnav"'));
-    check($name . ' has no hand-built callout', !str_contains($src, 'class="callout-'));
-}
-foreach (array('Item.php', 'PageForm.php', 'CategoryForm.php', 'FieldForm.php', 'UserForm.php') as $name) {
-    $src = (string) file_get_contents(array_values(array_filter($files, static fn ($f) => basename($f) === $name))[0]);
-    check($name . ' calls localeStrip', str_contains($src, 'localeStrip('));
-}
-
-$loc = (string) file_get_contents($modern . 'settings/locations.php');
-check('locations tabs use the helper', str_contains($loc, 'osc_admin_tab_nav('));
-check('locations keeps loc-tabs and data-loc-tab', str_contains($loc, "'loc-tabs'") && str_contains($loc, 'data-loc-tab'));
-
-foreach (array('appearance/index.php', 'plugins/index.php') as $rel) {
-    $src = (string) file_get_contents($modern . $rel);
-    check($rel . ' market tabs use panels mode', str_contains($src, "'panels' => true") && str_contains($src, "'count_id' => 'market-updates-count'"));
-    foreach (array('#market-tab-installed', '#market-tab-browse', '#market-tab-updates') as $href) {
-        check($rel . ' keeps ' . $href, str_contains($src, "'" . $href . "'"));
-    }
-}
-
-$plugins = (string) file_get_contents($modern . 'plugins/index.php');
-check('plugin modal uses the confirm helper', str_contains($plugins, "'id'         => 'pluginModal'") && !str_contains($plugins, '<dialog'));
-check('plugin modal keeps its submit id', str_contains($plugins, "'confirm_id' => 'pluginModalSubmit'"));
-
 exit(harness_result());

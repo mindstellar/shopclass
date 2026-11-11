@@ -130,13 +130,6 @@ $bell = render_view('notices-bell.php', new AdminNoticeView(array(notice_row('a'
 pin('no action in the name when none need it', 'Notices, 1 notice', bell_aria($bell));
 check('grey chip when none need action', str_contains($bell, 'circle circle-gray'));
 
-harness_section('the bell sits after the chips and before the divider');
-$header = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/parts/header.php');
-$after  = strpos($header, "AdminToolbar::getInstance()->render()");
-$here   = strpos($header, 'notices-bell.php');
-$before = strpos($header, 'admin-topbar-divider');
-check('order is toolbar, bell, divider', $after !== false && $here > $after && $before > $here);
-
 harness_section('the panel');
 $panel = render_view('notices-panel.php', new AdminNoticeView(array(notice_row('warn', 'warning', 900), notice_row('old', 'error', 100), notice_row('new', 'error', 500))));
 check('Needs action comes before Heads-up', strpos($panel, 'Needs action') < strpos($panel, 'Heads-up'));

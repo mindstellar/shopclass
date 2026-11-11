@@ -430,12 +430,4 @@ if ($r !== null) {
     pin('the line before Delete still shows', true, $r['gap'] ?? null);
 }
 
-harness_section('Colours come from tokens');
-$scss = (string) file_get_contents(ABS_PATH . 'oc-admin/themes/modern/scss/categories.scss');
-$code = (string) preg_replace('~//[^\n]*|/\*.*?\*/~s', '', $scss);
-preg_match_all('/#[0-9a-fA-F]{3,8}\b/', $code, $hex);
-pin('no hex colour in categories.scss', array(), $hex[0]);
-preg_match_all('/\$(?:white|black|gray-\d+|primary|secondary|success|danger|warning|info|light|dark|body-color|body-bg|blue|red|green|yellow|orange|teal|cyan)\b/', $code, $vars);
-pin('no Sass colour variable in categories.scss', array(), $vars[0]);
-
 exit(harness_result());

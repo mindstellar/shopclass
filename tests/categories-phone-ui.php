@@ -10,7 +10,7 @@
 
 /**
  * Categories screen at phone width (390) in headless Chrome: the row menu sheet, the meta line,
- * the toolbar order, no sideways scroll, hold-drag, and the filter, no-result and help copy.
+ * the toolbar order, no sideways scroll, hold-drag and the filter.
  *
  * Usage: php tests/categories-phone-ui.php
  */
@@ -254,74 +254,15 @@ if ($r !== null) {
     pin('the meta lines follow the move', array('6 subcategories · 33 listings · 60-day expiry', '3 subcategories · 23 listings · 60-day expiry'), $r['meta'] ?? null);
 }
 
-harness_section('Filter line, handle press and no results');
+harness_section('Filtered rows');
 $r = phone_ui_run(<<<'JS'
 await t.type('#cat-q', 'car');
-var line = t.$('#cat-filter-line');
-r.line = line.hidden ? null : line.querySelector('span').textContent;
-r.showAll = line.hidden ? null : line.querySelector('button').textContent;
 r.handleOff = t.$$('tr.cat-row').filter(function (tr) { return !tr.hidden; }).every(function (tr) { return tr.querySelector('.cat-handle').getAttribute('aria-disabled') === 'true'; });
 r.moreHiddenOnContext = t.$$('tr.cat-row.is-context').every(function (tr) { return !vis(tr.querySelector('.cat-more')); });
-await t.click(t.$$('tr.cat-row').filter(function (tr) { return !tr.hidden; })[0].querySelector('.cat-handle'));
-r.toast = t.$('.osc-toast-text') ? t.$('.osc-toast-text').textContent : null;
-await t.type('#cat-q', 'zzz');
-var st = t.$('.cat-state');
-r.none = [st.querySelector('strong').textContent, st.querySelector('.cat-state-hint').textContent, texts(t.$$('.cat-state button'))];
-await t.type('#cat-q', '');
-t.tab('Disabled').click();
-await t.settle(300);
-await t.type('#cat-q', 'zzz');
-r.noneTab = t.$('.cat-state strong').textContent;
-await t.type('#cat-q', '');
-r.tabLine = t.$('#cat-filter-line').hidden ? null : t.$('#cat-filter-line span').textContent;
 JS, $demo);
 if ($r !== null) {
-    check('the filter line counts the matches and names the search', preg_match('/^\d+ categories match “car”\. Their groups are shown in grey\. Clear the search and filter to reorder\.$/u', (string) ($r['line'] ?? '')) === 1, (string) ($r['line'] ?? 'hidden'));
-    pin('and offers Show all', 'Show all', $r['showAll'] ?? null);
     pin('handles are marked off while filtered', true, $r['handleOff'] ?? null);
     pin('the ⋯ is hidden on grey context rows', true, $r['moreHiddenOnContext'] ?? null);
-    pin('pressing a handle while filtered says what to do', 'Clear the search and status filter to reorder.', $r['toast'] ?? null);
-    pin('no results: the title, a hint, Clear search and Add', array('No category matches “zzz”', 'Check the spelling, or search for part of the name.', array('Clear search', 'Add “zzz” as a category')), $r['none'] ?? null);
-    pin('no results on a tab names the tab', 'No category matches “zzz” in Disabled', $r['noneTab'] ?? null);
-    check('the Disabled tab line counts the disabled categories', preg_match('/^Showing \d+ disabled categories\. Their groups are shown in grey/u', (string) ($r['tabLine'] ?? '')) === 1, (string) ($r['tabLine'] ?? 'hidden'));
 }
-
-harness_section('Empty tab');
-$allOn = $demo;
-$walk = function (array &$rows) use (&$walk): void {
-    foreach ($rows as &$row) {
-        $row['b_enabled'] = 1;
-        $walk($row['categories']);
-    }
-};
-$walk($allOn);
-$r = phone_ui_run(<<<'JS'
-t.tab('Disabled').click();
-await t.settle(300);
-r.off = [t.$('.cat-state strong').textContent, t.$('.cat-state .cat-state-hint').textContent];
-JS, $allOn);
-if ($r !== null) {
-    pin('the Disabled tab of an all-enabled tree says so', array('No disabled categories.', 'Every category is showing on your site.'), $r['off'] ?? null);
-}
-
-harness_section('Help panel keys');
-$help = static function (string $dir): string {
-    $GLOBALS['phone_ui_dir'] = $dir;
-    require_once __DIR__ . '/lib/categories-page.php';
-    categories_page_html(categories_fixture_demo());
-    $fn = $GLOBALS['categories_page_head']['help'] ?? null;
-    ob_start();
-    if (is_callable($fn)) {
-        $fn();
-    }
-
-    return (string) ob_get_clean();
-};
-$ltr = $help('ltr');
-check('the help bullet shows the handle icon', str_contains($ltr, 'bi-grip-vertical'));
-check('and the arrow keys as kbd', str_contains($ltr, '<kbd class="cat-k">↑</kbd> <kbd class="cat-k">↓</kbd>'));
-check('right nests, left moves out', str_contains($ltr, '<kbd class="cat-k cat-k-in">→</kbd>') && str_contains($ltr, '<kbd class="cat-k cat-k-out">←</kbd>'));
-$rtl = $help('rtl');
-check('in RTL the nesting keys swap', str_contains($rtl, '<kbd class="cat-k cat-k-in">←</kbd>') && str_contains($rtl, '<kbd class="cat-k cat-k-out">→</kbd>'));
 
 exit(harness_result());

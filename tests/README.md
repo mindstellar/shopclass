@@ -123,7 +123,7 @@ Tests for the admin and public form screens added in the UI polish work:
 
 ## Browser tests
 
-The `*-ui.php` tests and `categories-drag-perf.php` drive a real browser.
+The `*-ui.php` tests drive a real browser.
 
 - They need Chrome or Chromium (`CHROME` picks one), and `npm ci` for `puppeteer-core`.
   `test_browser()` and `test_puppeteer()` in `lib/harness.php` find them.

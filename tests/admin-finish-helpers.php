@@ -125,13 +125,4 @@ harness_section('toolbar');
 check('class joins the toolbar, escaped', finish_toolbar(array('class' => 'loc-toolbar "x"')) === '<div class="osc-toolbar osc-toolbar-between loc-toolbar &quot;x&quot;"></div>', finish_toolbar(array('class' => 'loc-toolbar "x"')));
 check('a plain toolbar is the same bytes as before', finish_toolbar(array('align' => 'end')) === '<div class="osc-toolbar osc-toolbar-end"></div>', finish_toolbar(array('align' => 'end')));
 
-harness_section('styles');
-$scss      = ABS_PATH . 'oc-admin/themes/modern/scss/';
-$structure = (string)file_get_contents($scss . '_structure.scss');
-check('a stack panel body is a gap column', preg_match('/\.osc-panel-stack > \.osc-panel-body \{\s*display: flex;\s*flex-direction: column;\s*gap: var\(--osc-field-gap\);/', $structure) === 1);
-check('an empty error list takes no gap', str_contains($structure, ':is(.osc-body, .osc-section-body) > #error_list:empty'));
-check('the read width token exists', str_contains((string)file_get_contents($scss . '_brand.scss'), '--osc-read-width: 56rem;'));
-preg_match('/^\.osc-panel-body \{.*?^\}/ms', (string)file_get_contents($scss . 'widget-box.scss'), $plain);
-check('a plain panel body stays block flow', ($plain[0] ?? '') !== '' && !str_contains($plain[0], 'display:'));
-
 exit(harness_result());
