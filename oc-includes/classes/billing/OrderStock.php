@@ -74,15 +74,18 @@ final class OrderStock
     }
 
     /**
-     * Give back what take() took, if the order holds it.
+     * Give back what take() took, if the order holds it. Units in $shipped went out to the buyer
+     * and stay out of stock.
+     *
+     * @param array<int,int> $shipped line id => units shipped, from Order::shippedQty()
      *
      * @return bool whether stock was given back by this call
      * @throws \mindstellar\database\DbException
      */
-    public static function release(int $orderId): bool
+    public static function release(int $orderId, array $shipped = array()): bool
     {
         $released = false;
-        OrderStore::withMeta($orderId, static function (array $meta) use ($orderId, &$released): array {
+        OrderStore::withMeta($orderId, static function (array $meta) use ($orderId, $shipped, &$released): array {
             if (!array_key_exists(self::TAKEN, $meta)) {
                 return $meta;
             }
@@ -91,7 +94,10 @@ final class OrderStock
                 $variants = array();
                 foreach (OrderLineStore::itemLines($orderId, true) as $line) {
                     if (isset($taken[$line['id']]) && $line['variant_id'] !== null) {
-                        $variants[$line['id']] = $line['variant_id'];
+                        $taken[$line['id']] = min($taken[$line['id']], (int) $line['qty'] - ($shipped[$line['id']] ?? 0));
+                        if ($taken[$line['id']] > 0) {
+                            $variants[$line['id']] = $line['variant_id'];
+                        }
                     }
                 }
                 asort($variants);

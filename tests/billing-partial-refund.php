@@ -340,4 +340,26 @@ check('a webhook refund after it does nothing', !Billing::refund($fresh($e)));
 pin('two notes, no third', 2, count($notes($e->getId())));
 pin('the hook did not run again', 1, $refunds);
 
+harness_section('closing a shipped order by amount keeps shipped units out of stock');
+$sh    = $order();
+$teeSh = $lineOf($sh, 'Tee');
+$mugSh = $lineOf($sh, 'Mug');
+check('two tees and the mug go out', \mindstellar\billing\Shipments::add($sh->getId(), [$teeSh => 2, $mugSh => 1], 'DHL', 'S1', '') !== null);
+$teeAt = $stock($vTee);
+$mugAt = $stock($vMug);
+Billing::refundPart($fresh($sh), 0, [$teeSh => 1], 'Returned', true, false);
+Billing::refundPart($fresh($sh), $m(5), [], 'Goodwill', false, false);
+$rest = $m(44) - DocumentStore::refundedTotal($sh->getId());
+pin('the last amount refunds the order', Order::STATUS_REFUNDED, Billing::refundPart($fresh($sh), $rest, [], 'Rest', true, false)->getOutcome() === CallbackResult::OUTCOME_REFUNDED ? $fresh($sh)->getStatus() : null);
+pin('the returned tee and the one never sent go back, the kept tee and the mug do not', [$teeAt + 2, $mugAt], [$stock($vTee), $stock($vMug)]);
+pin('the order holds nothing', [], OrderStock::held($fresh($sh)));
+
+$fu    = $order();
+$teeFu = $lineOf($fu, 'Tee');
+\mindstellar\billing\Shipments::add($fu->getId(), [$teeFu => 2], 'DHL', 'S2', '');
+$teeAt = $stock($vTee);
+$mugAt = $stock($vMug);
+check('a full refund with no partials settles it', Billing::refund($fresh($fu)));
+pin('only the tee and the mug never sent go back', [$teeAt + 1, $mugAt + 1], [$stock($vTee), $stock($vMug)]);
+
 exit(harness_result());

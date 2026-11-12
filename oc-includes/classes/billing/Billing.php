@@ -310,11 +310,12 @@ final class Billing
         // The credit note for what is left is composed first and stored with the status write.
         $draft    = Invoices::remainderDraft($order);
         $reversed = Db::transaction(static function () use ($order, &$draft): bool {
+            $shipped = $order->isGoods() ? (DocumentStore::lockOrder($order->getId())?->shippedQty() ?? array()) : array();
             if (!OrderStore::refund($order->getId())) {
                 return false;
             }
             if ($order->isGoods()) {
-                OrderStock::release($order->getId());
+                OrderStock::release($order->getId(), $shipped);
             }
 
             if ($order->getCredits() > 0) {
@@ -742,7 +743,8 @@ final class Billing
                 $note = DocumentStore::atomic(static function () use ($draft, $lines, $restock, $order, &$closed) {
                     // Order row first, then stock, then the note's counter, as refund() does.
                     $closed = false;
-                    if (DocumentStore::lockOrder($order->getId()) === null) {
+                    $locked = DocumentStore::lockOrder($order->getId());
+                    if ($locked === null) {
                         return null;
                     }
                     if (DocumentStore::refundedTotal($order->getId()) !== $draft['refunded']) {
@@ -754,7 +756,8 @@ final class Billing
                     OrderStore::partRefundDone($order->getId());
                     if ((int) $draft['refunded'] + (int) $draft['amount'] >= $order->getAmount() && OrderStore::refund($order->getId())) {
                         $closed = true;
-                        OrderStock::release($order->getId());
+                        // Shipped units stay with the buyer unless this refund chose them to restock.
+                        OrderStock::release($order->getId(), $locked->shippedQty());
                     }
                     $note = Invoices::storeNote($draft);
                     if (!$note instanceof Document) {
