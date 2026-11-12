@@ -50,6 +50,14 @@ final class LocationNames
         }
     }
 
+    /**
+     * "City, Region", or the city alone when there is no region.
+     */
+    public static function label(string $city, string $region): string
+    {
+        return $region === '' ? $city : $city . ', ' . $region;
+    }
+
     public function name(string $type, int|string $id, string $locale, string $fallback): string
     {
         $key = $this->id($type, $id);

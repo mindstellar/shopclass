@@ -83,6 +83,23 @@ You cannot undo a delete.
 The listing counts do not change until you recalculate them on the **Data** tab.
 :::
 
+## How visitors pick a place
+
+The place field suggests cities as you type, with the region beside each
+("Pune, Maharashtra"). Picking one fills in the city, region and country. So a
+city needs a region, and a region needs a country, or it can never be
+suggested. Hidden places are not suggested.
+
+The admin listing form always has this field. The public posting form has it
+only when the theme prints `osc_place_field()`; other themes keep their own
+location boxes.
+
+With **Listings → Settings → Location → Only places from the list** on, a place
+typed by hand is refused. Turn it on only once your theme prints the place
+field: an older theme's typed city has no id, so every post from it is refused.
+With it off, the field still suggests places, but typed text is kept as it was
+typed.
+
 ## From the command line
 
 ```bash

@@ -41,6 +41,7 @@ use mindstellar\api\schema\OpenApi;
 use mindstellar\api\schema\Schema;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\RelatedListings;
+use mindstellar\location\LocationQuery;
 use mindstellar\search\query\BoxFilter;
 use mindstellar\search\SearchSuggestions;
 
@@ -335,6 +336,19 @@ final class PublicRoutes
                 response: 'CityList',
                 query: $places,
                 errors: [404]
+            ),
+            'GET cities' => RouteSpec::read(
+                handler: [LocationsController::class, 'search'],
+                tag: 'Locations',
+                summary: 'Cities in any region whose name starts with what was typed, for a place field',
+                response: 'CitySuggestionList',
+                query: [
+                    'q'       => ['type' => 'string', 'maxLength' => 100, 'description' => 'What was typed. Matches the start of a city\'s name in any language; under ' . LocationQuery::SEARCH_MIN_CHARS . ' characters finds nothing.'],
+                    'country' => ['type' => 'string', 'maxLength' => 10, 'description' => 'Only cities in this country: a two-letter code.'],
+                    'limit'   => ['type' => 'integer', 'minimum' => 1, 'maximum' => LocationsController::SEARCH_MAX_LIMIT, 'default' => LocationsController::SEARCH_LIMIT],
+                    'locale'  => self::LOCALE,
+                ],
+                errors: [422]
             ),
             'GET cities/{id}/areas' => RouteSpec::read(
                 handler: [LocationsController::class, 'areas'],

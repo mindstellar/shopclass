@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1303 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1306 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -759,7 +759,7 @@ Core defines 1303 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_priv_count_locales()` | Private function to count locales |
 | `osc_set_current_user_locale($locale)` | Persist the visitor's chosen front-end locale in a dedicated cookie. |
 
-### hLocation (29)
+### hLocation (31)
 
 `oc-includes/osclass/helpers/hLocation.php`
 
@@ -790,6 +790,8 @@ Core defines 1303 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_install_json_locations($location = null)` | Install or update one country's locations from the published catalog. |
 | `osc_location_name(string $type, int\|string $id, string $fallback = '')` | The name of a country, region or city in the current language, or $fallback when none is stored. Each new place costs a query; in a loop, call osc_location_names_prime() first. |
 | `osc_location_names_prime(string $type, array $ids)` | Load the current-language names of many places in one query, so osc_location_name() calls in a loop read them from memory. Call it before the loop. |
+| `osc_place_field(array $opts = array())` | Print the Location field: one box that suggests places and sets the city, region and country ids when one is picked. It posts `city`, `cityId`, `regionId`, `countryId` (and `region`, `country` for a typed place). |
+| `osc_place_field_value(array $opts = array())` | What the Location field holds: the place of a refused form, else of the listing in `item`, else the signed-in user's saved place. `saved` is the place offered by the "Use my saved place" button. |
 | `osc_region()` | Gets current region |
 | `osc_region_items()` | Gets region's items |
 | `osc_region_name()` | Gets region's name |
@@ -911,7 +913,7 @@ Core defines 1303 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (150)
+### hPreference (151)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -962,6 +964,7 @@ Core defines 1303 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_item_contact_name_required()` | Whether a guest must give a name to publish a new listing. When off, a blank name is saved as Anonymous. |
 | `osc_item_location_required(string $place)` | Whether the Required location setting asks for this place. |
 | `osc_item_photos_min()` | How many photos a listing must have: the Photos setting's minimum, or 0 when photos are off or not required. |
+| `osc_item_place_from_list()` | Whether a listing's place must be picked from the site's list, so a typed country, region or city that is not one of the site's places is refused. Off on a site that never saved it. |
 | `osc_item_price_required()` | Whether a listing must have a price: prices are on and the Price setting is Required. A price of 0 counts as one. |
 | `osc_item_required_location()` | How much of the location a listing must give: 'none', 'country', 'region' or 'city'. Each level includes the ones above it. |
 | `osc_item_spam_delay()` | Gets how many seconds between item post to not consider it SPAM |

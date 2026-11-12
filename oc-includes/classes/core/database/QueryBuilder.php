@@ -380,6 +380,14 @@ class QueryBuilder
     }
 
     /**
+     * A LIKE pattern for values that start with $value, its wildcards escaped.
+     */
+    public static function prefixLike(string $value): string
+    {
+        return self::escapeLike($value) . '%';
+    }
+
+    /**
      * Rows newest first by $column, below $before when given: one page of a keyset list.
      *
      * @return array<int,array<string,mixed>>
@@ -413,7 +421,7 @@ class QueryBuilder
                 $pattern = '%' . $escaped;
                 break;
             case 'after':
-                $pattern = $escaped . '%';
+                $pattern = self::prefixLike($value);
                 break;
             case 'both':
                 $pattern = '%' . $escaped . '%';

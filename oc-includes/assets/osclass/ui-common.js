@@ -17,9 +17,17 @@
 // `input`, debounce-fetches JSON [{id,label,value}] from opts.source (adds a
 // `term` param), shows a listbox, and drives it with the standard combobox
 // keyboard model. opts: { source, minLength=1, onSearch(input), onSelect(item) }.
-// Optional: load(term) returns a Promise of items in place of fetching source, and
-// renderItem(item, li) fills an option instead of its label text.
 // onSelect returning false suppresses writing item.value into the input.
+// Optional hooks:
+//   load(term)                Promise of items, or of {items, extra}, in place of fetching source
+//   renderItem(item, li, i, term)  fills an option instead of its label text
+//   list                      an <ul> already in the markup; it is not moved or placed, so CSS sizes it
+//   delay (180), wrap         debounce in ms; arrow keys wrap around the options
+//   skip(term)                true to close instead of searching
+//   footer(term, items, extra)  rows (role="presentation") shown after the options, or alone
+//   onLoading(term), onResults(term, items, extra), onError(term) returning rows to show,
+//   onClose(), onBlur() returning false to keep the list open
+// Returns {search, close, show(rows)}.
 //
 // The dropdown's *structural* styles (fixed positioning, stacking) are applied
 // inline here so the widget works with no stylesheet at all. Its *appearance*
@@ -29,12 +37,15 @@
 var oscAcSeq = 0;
 function oscAutocomplete(input, opts) {
     if (!input || input.getAttribute('data-osc-ac-init')) {
-        return;
+        return null;
     }
     input.setAttribute('data-osc-ac-init', '1');
     opts = opts || {};
     var minLength = opts.minLength != null ? opts.minLength : 1;
-    var uid = 'osc-ac-' + (++oscAcSeq);
+    var delay = opts.delay != null ? opts.delay : 180;
+    var own = !opts.list;
+    var list = opts.list || document.createElement('ul');
+    var uid = own ? 'osc-ac-' + (++oscAcSeq) : list.id;
 
     input.setAttribute('autocomplete', 'off');
     input.setAttribute('role', 'combobox');
@@ -42,26 +53,28 @@ function oscAutocomplete(input, opts) {
     input.setAttribute('aria-expanded', 'false');
     input.setAttribute('aria-controls', uid);
 
-    var list = document.createElement('ul');
-    list.className = 'osc-ac-list';
-    list.id = uid;
-    list.setAttribute('role', 'listbox');
-    list.hidden = true;
-    // Structural only — themes own the rest via .osc-ac-list.
-    list.style.position = 'fixed';
-    list.style.zIndex = '1080';
-    list.style.margin = '0';
-    // A modal <dialog> renders in the browser's top layer, which sits above every
-    // z-index on the page -- a list appended to <body> is behind it however high its
-    // z-index goes. So the list joins the dialog when the field is inside one.
-    var host = input.closest ? input.closest('dialog') : null;
-    (host || document.body).appendChild(list);
+    if (own) {
+        list.className = 'osc-ac-list';
+        list.id = uid;
+        list.setAttribute('role', 'listbox');
+        list.hidden = true;
+        // Structural only — themes own the rest via .osc-ac-list.
+        list.style.position = 'fixed';
+        list.style.zIndex = '1080';
+        list.style.margin = '0';
+        // A modal <dialog> renders in the browser's top layer, which sits above every
+        // z-index on the page -- a list appended to <body> is behind it however high its
+        // z-index goes. So the list joins the dialog when the field is inside one.
+        var host = input.closest ? input.closest('dialog') : null;
+        (host || document.body).appendChild(list);
+    }
 
     var items = [];
     var active = -1;
     var timer = null;
 
     function place() {
+        if (!own) { return; }
         var r = input.getBoundingClientRect();
         list.style.left = r.left + 'px';
         list.style.top = (r.bottom + 2) + 'px';
@@ -73,10 +86,11 @@ function oscAutocomplete(input, opts) {
         input.setAttribute('aria-expanded', 'false');
         input.removeAttribute('aria-activedescendant');
         active = -1;
+        if (opts.onClose) { opts.onClose(); }
     }
 
     function open() {
-        if (!items.length) {
+        if (!list.children.length) {
             close();
             return;
         }
@@ -85,17 +99,27 @@ function oscAutocomplete(input, opts) {
         input.setAttribute('aria-expanded', 'true');
     }
 
-    function render(data) {
+    function show(rows) {
+        items = [];
+        active = -1;
+        input.removeAttribute('aria-activedescendant');
+        list.replaceChildren.apply(list, rows || []);
+        open();
+    }
+
+    function render(data, term, extra) {
         items = data || [];
         list.textContent = '';
         active = -1;
+        input.removeAttribute('aria-activedescendant');
         items.forEach(function (item, i) {
             var li = document.createElement('li');
             li.className = 'osc-ac-option';
             li.id = uid + '-' + i;
             li.setAttribute('role', 'option');
+            li.setAttribute('data-i', i);
             if (opts.renderItem) {
-                opts.renderItem(item, li);
+                opts.renderItem(item, li, i, term);
             } else {
                 li.textContent = item.label != null ? item.label : item.value;
             }
@@ -105,21 +129,34 @@ function oscAutocomplete(input, opts) {
             });
             list.appendChild(li);
         });
+        (opts.footer ? opts.footer(term, items, extra) || [] : []).forEach(function (row) { list.appendChild(row); });
         open();
+        if (opts.onResults) { opts.onResults(term, items, extra); }
     }
 
     function highlight(i) {
-        var opts2 = list.children;
-        for (var k = 0; k < opts2.length; k++) {
-            opts2[k].classList.toggle('is-active', k === i);
+        var rows = list.children;
+        for (var k = 0; k < rows.length; k++) {
+            rows[k].classList.toggle('is-active', k === i);
         }
         active = i;
-        if (i >= 0 && opts2[i]) {
-            input.setAttribute('aria-activedescendant', opts2[i].id);
-            opts2[i].scrollIntoView({ block: 'nearest' });
+        if (i >= 0 && rows[i]) {
+            input.setAttribute('aria-activedescendant', rows[i].id);
+            if (rows[i].scrollIntoView) { rows[i].scrollIntoView({ block: 'nearest' }); }
         } else {
             input.removeAttribute('aria-activedescendant');
         }
+    }
+
+    function step(by) {
+        if (!items.length) { return; }
+        var next = active + by;
+        if (opts.wrap) {
+            next = (next + items.length) % items.length;
+        } else {
+            next = Math.max(0, Math.min(next, items.length - 1));
+        }
+        highlight(next);
     }
 
     function choose(i) {
@@ -134,16 +171,26 @@ function oscAutocomplete(input, opts) {
         close();
     }
 
+    function failed(term) {
+        var rows = opts.onError ? opts.onError(term) : null;
+        if (rows && rows.length) { show(rows); } else { close(); }
+    }
+
     function fetchList() {
         var term = input.value;
-        if (term.length < minLength) {
+        if (term.length < minLength || (opts.skip && opts.skip(term))) {
             close();
             return;
         }
+        if (opts.onLoading) { opts.onLoading(term); }
         if (opts.load) {
-            opts.load(term)
-                .then(function (data) { if (input.value === term) { render(Array.isArray(data) ? data : []); } })
-                .catch(function () { close(); });
+            opts.load(term).then(function (data) {
+                if (input.value !== term) { return; }
+                var rows = Array.isArray(data) ? data : (data && Array.isArray(data.items) ? data.items : []);
+                render(rows, term, data && !Array.isArray(data) ? data.extra : undefined);
+            }, function () {
+                if (input.value === term) { failed(term); }
+            });
             return;
         }
         // source may be a string, or a function resolved at fetch time (so a
@@ -152,14 +199,14 @@ function oscAutocomplete(input, opts) {
         var url = base + (base.indexOf('?') > -1 ? '&' : '?') + 'term=' + encodeURIComponent(term);
         fetch(url, { credentials: 'same-origin', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
             .then(function (r) { return r.json(); })
-            .then(function (data) { render(Array.isArray(data) ? data : []); })
-            .catch(function () { close(); });
+            .then(function (data) { render(Array.isArray(data) ? data : [], term); })
+            .catch(function () { failed(term); });
     }
 
     input.addEventListener('input', function () {
         if (opts.onSearch) { opts.onSearch(input); }
         clearTimeout(timer);
-        timer = setTimeout(fetchList, 180);
+        timer = setTimeout(fetchList, delay);
     });
     input.addEventListener('focus', function () {
         if (minLength === 0 && list.hidden) {
@@ -170,21 +217,39 @@ function oscAutocomplete(input, opts) {
     input.addEventListener('keydown', function (e) {
         if (e.key === 'ArrowDown') {
             e.preventDefault();
-            if (list.hidden) { fetchList(); } else { highlight(Math.min(active + 1, items.length - 1)); }
+            if (list.hidden) { fetchList(); } else { step(1); }
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            highlight(Math.max(active - 1, 0));
+            if (!list.hidden) { step(-1); }
         } else if (e.key === 'Enter') {
             if (!list.hidden && active >= 0) { e.preventDefault(); choose(active); }
         } else if (e.key === 'Escape') {
+            if (!list.hidden) { e.preventDefault(); e.stopPropagation(); }
             close();
         }
     });
     input.addEventListener('blur', function () {
-        setTimeout(close, 120);
+        setTimeout(function () {
+            if (opts.onBlur && opts.onBlur() === false) { return; }
+            close();
+        }, 120);
     });
-    window.addEventListener('scroll', function () { if (!list.hidden) { place(); } }, true);
-    window.addEventListener('resize', function () { if (!list.hidden) { place(); } });
+    // Status rows and their buttons keep the input's focus too.
+    list.addEventListener('mousedown', function (e) { e.preventDefault(); });
+    list.addEventListener('mousemove', function (e) {
+        var row = e.target.closest ? e.target.closest('.osc-ac-option') : null;
+        if (row && row.parentNode === list && +row.getAttribute('data-i') !== active) { highlight(+row.getAttribute('data-i')); }
+    });
+    if (own) {
+        window.addEventListener('scroll', function () { if (!list.hidden) { place(); } }, true);
+        window.addEventListener('resize', function () { if (!list.hidden) { place(); } });
+    }
+
+    return {
+        search: function () { clearTimeout(timer); fetchList(); },
+        close: close,
+        show: show
+    };
 }
 
 // ---------------------------------------------------------------------------

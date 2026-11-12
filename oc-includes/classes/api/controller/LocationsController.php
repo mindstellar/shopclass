@@ -16,6 +16,7 @@ use mindstellar\api\ApiCall;
 use mindstellar\api\ApiServices;
 use mindstellar\api\ProblemException;
 use mindstellar\api\read\ListSpec;
+use mindstellar\api\read\Page;
 use mindstellar\api\read\Pager;
 use mindstellar\api\Request;
 use mindstellar\api\Response;
@@ -28,12 +29,16 @@ use mindstellar\location\LocationQuery;
 
 /**
  * `GET /countries`, `/countries/{code}/regions`, `/regions/{id}/cities`, `/cities/{id}/areas`:
- * by name, `?q=` keeping names that start with it, paged (500 a page, up to 1000).
+ * by name, `?q=` keeping names that start with it, paged (500 a page, up to 1000). `GET /cities`
+ * finds cities in any region for a typed place.
  */
 final class LocationsController
 {
     public const DEFAULT_LIMIT = 500;
     public const MAX_LIMIT     = 1000;
+
+    public const SEARCH_LIMIT     = 8;
+    public const SEARCH_MAX_LIMIT = 20;
 
     private LocationSerializer $serializer;
 
@@ -65,6 +70,21 @@ final class LocationsController
         $id = $call->intArg();
 
         return $this->page($call->request(), 'regions/' . $id . '/cities', 'city', [LocationQuery::REGION, $id, 'No such region.'], fn (string $q, int $limit, int $offset): array => $this->places->cities($id, $q, $limit, $offset));
+    }
+
+    public function search(ApiCall $call): Response
+    {
+        $request = $call->request();
+        $country = null;
+        if ($request->queryString('country') !== '') {
+            $country = CountryCode::normalize($request->queryString('country'))
+                ?? throw ProblemException::field('/country', 'pattern', 'must be a two-letter country code', 'query');
+        }
+        $limit = $request->queryInt('limit', self::SEARCH_LIMIT);
+        $found = $this->places->searchCities($request->queryString('q'), $country, $limit, $this->api->locale($request));
+
+        return (new Page(array_map([$this->serializer, 'citySuggestion'], $found['rows']), null, $limit, null, meta: ['more' => $found['more']]))
+            ->response($this->api->links(), $request->routePath(), $request->query(), $request->version());
     }
 
     public function areas(ApiCall $call): Response

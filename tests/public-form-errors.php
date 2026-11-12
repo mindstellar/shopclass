@@ -70,6 +70,12 @@ if (!function_exists('osc_item_required_location')) {
         return 'none';
     }
 }
+if (!function_exists('osc_item_place_from_list')) {
+    function osc_item_place_from_list(): bool
+    {
+        return (bool) ($GLOBALS['placeFromList'] ?? false);
+    }
+}
 if (!function_exists('osc_max_characters_per_title')) {
     function osc_max_characters_per_title()
     {
@@ -265,5 +271,44 @@ foreach ((new ListingValidator())->common($data) as $error) {
     }
 }
 pin('an empty description is required', array('required'), $codes);
+
+harness_section('only places from the list');
+$placeData = array(
+    'photos' => array(), 'title' => array('en_US' => 'A red car'), 'description' => array('en_US' => 'A long enough text'),
+    'catId' => 0, 'price' => null, 'countryId' => null, 'countryName' => '', 'regionId' => null, 'regionName' => '',
+    'cityId' => null, 'cityName' => '', 'cityArea' => '', 'address' => '', 'contactPhone' => '',
+);
+$placeErrors = static function (array $place, bool $checkPlace = true) use ($placeData): array {
+    $found   = array();
+    $notices = array();
+    foreach ((new ListingValidator())->common($place + $placeData, $notices, $checkPlace) as $error) {
+        if (in_array($error['pointer'], array('/country', '/region', '/city'), true)) {
+            $found[] = array($error['pointer'], $error['code'], $error['message']);
+        }
+    }
+
+    return $found;
+};
+$typedCity = array('countryId' => 'ES', 'countryName' => 'Spain', 'regionId' => 4, 'regionName' => 'Madrid', 'cityName' => 'Smalltown');
+$GLOBALS['placeFromList'] = false;
+pin('off: a typed city is taken', array(), $placeErrors($typedCity));
+$GLOBALS['placeFromList'] = true;
+pin('on: a typed city is refused once, on /city', array(array('/city', 'not_listed', 'Pick your location from the list.')), $placeErrors($typedCity));
+pin('a typed city alone points at the city', array(array('/city', 'not_listed', 'Pick your location from the list.')), $placeErrors(array('cityName' => 'Smalltown')));
+pin('a typed region with no city points at the region', array(array('/region', 'not_listed', 'Pick your location from the list.')), $placeErrors(array('countryId' => 'ES', 'countryName' => 'Spain', 'regionName' => 'Nowhere')));
+pin('nothing given with nothing required is taken', array(), $placeErrors(array()));
+pin('a save that keeps its place is not checked', array(), $placeErrors($typedCity, false));
+pin('a typed country above nothing else points at the country', array(array('/country', 'not_listed', 'Pick your location from the list.')), $placeErrors(array('countryName' => 'Atlantis')));
+pin('an import names the typed place', array(array('/city', 'not_listed', 'Smalltown is not one of the site’s places.')), array_map(
+    static fn (array $e): array => array($e['pointer'], $e['code'], $e['message']),
+    ListingValidator::unlistedPlace($typedCity, 'none', true)
+));
+$both = static fn (array $place, string $level): array => array_map(
+    static fn (array $e): array => array($e['pointer'], $e['code'], $e['message']),
+    array_merge(ListingValidator::missingPlaces($place, $level), ListingValidator::unlistedPlace($place, $level))
+);
+pin('a required city left empty asks for a city only', array(array('/city', 'required', 'Choose a city.')), $both(array('countryId' => 'ES', 'regionId' => 4), 'city'));
+pin('an empty region above a typed city counts as the city', array(array('/city', 'not_listed', 'Pick your location from the list.')), $both(array('countryId' => 'ES', 'cityName' => 'Smalltown'), 'country'));
+$GLOBALS['placeFromList'] = false;
 
 exit(harness_result());

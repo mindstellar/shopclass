@@ -500,3 +500,52 @@ function osc_location_name(string $type, int|string $id, string $fallback = ''):
 
     return \mindstellar\container\Container::root()->get(\mindstellar\location\LocationNames::class)->name($type, $id, $locale, $fallback);
 }
+
+/**
+ * What the Location field holds: the place of a refused form, else of the listing in `item`,
+ * else the signed-in user's saved place. `saved` is the place offered by the "Use my saved place" button.
+ *
+ * @param array<string,mixed> $opts `item` (listing row when editing), `saved` (false to skip the button)
+ *
+ * @return array<string,mixed> text, city_id, region_id, country_code, region_text, country_text, origin, saved
+ * @since 7.1.0
+ */
+function osc_place_field_value(array $opts = array()): array
+{
+    $kept = array();
+    foreach (\mindstellar\location\PlaceField::KEYS as $key) {
+        $kept[$key] = trim((string) Session::getInstance()->_getForm($key));
+    }
+    $userId  = ($opts['account'] ?? true) === false ? 0 : (int) osc_logged_user_id();
+    $account = $userId > 0 ? \mindstellar\location\PlaceField::account(\mindstellar\user\UserStore::find($userId)) : null;
+
+    return \mindstellar\location\PlaceField::value($kept, is_array($opts['item'] ?? null) ? $opts['item'] : null, $account, ($opts['saved'] ?? true) !== false);
+}
+
+/**
+ * Print the Location field: one box that suggests places and sets the city, region and country ids
+ * when one is picked. It posts `city`, `cityId`, `regionId`, `countryId` (and `region`, `country` for a typed place).
+ *
+ * @param array<string,mixed> $opts id (default 'place'), label, required (default from the Required location setting),
+ *                                  item (listing row when editing), saved (default true), account (default true), error (the refused-save message,
+ *                                  default the form's `/city` message), class, hint_class, error_class, req_class (the admin's own classes
+ *                                  by default there), plain_ids (the hidden inputs take their names as ids)
+ *
+ * @return void
+ * @since 7.1.0
+ */
+function osc_place_field(array $opts = array()): void
+{
+    osc_enqueue_style('osc-ui-common');
+    osc_enqueue_script('osc-place-field');
+    $opts += array('required' => osc_item_required_location() !== 'none');
+    if (defined('OC_ADMIN') && OC_ADMIN) {
+        $opts += array('class' => 'osc-field', 'hint_class' => 'form-text', 'error_class' => 'field-error');
+    }
+    $error = (string) ($opts['error'] ?? '');
+    if (!isset($opts['error'])) {
+        $error = osc_form_error('/city') ?: osc_form_error('/region') ?: osc_form_error('/country');
+    }
+
+    echo \mindstellar\location\PlaceField::render($opts, osc_place_field_value($opts), osc_item_place_from_list(), count(osc_get_countries()) > 1, $error);
+}

@@ -120,6 +120,7 @@ class Scripts extends Dependencies
         osc_register_script('tiny_mce', osc_asset_url_versioned(osc_assets_url('tinymce/tinymce.min.js')));
         osc_register_script('osc-ui-common', osc_asset_url_versioned(osc_assets_url('osclass/ui-common.js')));
         osc_register_script('osc-flash-dismiss', osc_asset_url_versioned(osc_assets_url('osclass/flash-dismiss.js')));
+        osc_register_script('osc-place-field', osc_asset_url_versioned(osc_assets_url('osclass/place-field.js')), 'osc-ui-common');
         osc_register_script('osc-uploader', osc_asset_url_versioned(osc_assets_url('osclass/osc-uploader.js')));
     }
 

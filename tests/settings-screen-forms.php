@@ -593,6 +593,7 @@ pin(
         'item_photos_min'             => 'osclass/item_photos_min',
         'item_required_location'      => 'osclass/item_required_location',
         'item_location_level'         => '(not stored)',
+        'item_place_from_list'        => 'osclass/item_place_from_list',
     ),
     keymap(ItemSettingsScreen::register())
 );
@@ -1052,6 +1053,10 @@ drive('CAdminItems', 'settings_post', array('search_count_cap' => '5000000') + $
 pin('a search count limit past the most is saved as the most', '100000', pref($admin, 'search_count_cap')[0] ?? null);
 drive('CAdminItems', 'settings_post', array('search_count_cap' => '-3') + $items);
 pin('a negative search count limit is saved as 0', '0', pref($admin, 'search_count_cap')[0] ?? null);
+drive('CAdminItems', 'settings_post', array('item_place_from_list' => '1') + $items);
+pin('only places from the list is stored on', array('1', 'BOOLEAN'), pref($admin, 'item_place_from_list'));
+drive('CAdminItems', 'settings_post', array('item_place_from_list' => 'yes') + $items);
+pin('a hand-made value stores it off', array('0', 'BOOLEAN'), pref($admin, 'item_place_from_list'));
 
 harness_section('user settings');
 

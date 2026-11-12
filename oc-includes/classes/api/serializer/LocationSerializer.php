@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\api\serializer;
 
 use mindstellar\currency\CurrencyCode;
+use mindstellar\location\LocationNames;
 use mindstellar\user\AddressFormat;
 
 /**
@@ -76,6 +77,29 @@ final class LocationSerializer
             'slug'         => Format::text($row['s_slug'] ?? null),
             'lat'          => Format::float($row['d_coord_lat'] ?? null),
             'lng'          => Format::float($row['d_coord_long'] ?? null),
+        ];
+    }
+
+    /**
+     * A city search row: the city with its region and country, and "City, Region".
+     *
+     * @param array<string,mixed> $row a LocationQuery::searchCities() row
+     *
+     * @return array<string,mixed>
+     */
+    public function citySuggestion(array $row): array
+    {
+        $name   = Format::plain($row['s_city'] ?? '');
+        $region = Format::plain($row['s_region'] ?? '');
+
+        return [
+            'id'           => Format::int($row['fk_i_city_id'] ?? 0),
+            'name'         => $name,
+            'region_id'    => Format::int($row['fk_i_region_id'] ?? 0),
+            'region'       => $region,
+            'country_code' => strtoupper((string) ($row['fk_c_country_code'] ?? '')),
+            'country'      => Format::plain($row['s_country'] ?? ''),
+            'label'        => LocationNames::label($name, $region),
         ];
     }
 

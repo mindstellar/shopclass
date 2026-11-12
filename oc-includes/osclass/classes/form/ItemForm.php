@@ -1137,7 +1137,8 @@ class ItemForm extends Form
                 }
 
                 function boot() {
-                    if (typeof oscAutocomplete === 'function') { initAutocomplete(); }
+                    // The place field handles its own suggestions and ids.
+                    if (typeof oscAutocomplete === 'function' && !document.querySelector('[data-osc-place]')) { initAutocomplete(); }
                     initValidation();
                 }
                 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', boot); } else { boot(); }

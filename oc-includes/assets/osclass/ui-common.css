@@ -76,3 +76,215 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+
+/*
+ * Place field (place-field.js). Structure only: the box, the pin and clear button, and a
+ * list exactly as wide as the input. Themes add colour, type and spacing.
+ */
+
+.oe-place__box {
+    position: relative;
+}
+
+.oe-place__input {
+    box-sizing: border-box;
+    padding-inline: 2.125rem 2.5rem;
+    width: 100%;
+}
+
+.oe-place__pin {
+    color: var(--osc-ink-muted, currentColor);
+    inset-inline-start: .7rem;
+    pointer-events: none;
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 2;
+}
+
+.oe-place__end {
+    align-items: center;
+    display: flex;
+    inset-inline-end: .2rem;
+    position: absolute;
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 2;
+}
+
+.oe-place__clear,
+.oe-place__spin {
+    display: grid;
+    height: 2rem;
+    place-items: center;
+    width: 2rem;
+}
+
+.oe-place__clear {
+    background: transparent;
+    border: 0;
+    border-radius: var(--osc-radius-sm, .2rem);
+    color: var(--osc-ink-muted, currentColor);
+    cursor: pointer;
+    padding: 0;
+}
+
+.oe-place__clear[hidden],
+.oe-place__spin[hidden],
+.oe-place__note[hidden],
+.oe-place__saved[hidden],
+.oe-place .osc-ac-list[hidden],
+.oe-place .oe-field-error[hidden] {
+    display: none;
+}
+
+.oe-place__spin::before {
+    animation: oe-place-spin .7s linear infinite;
+    border: 2px solid color-mix(in srgb, currentColor 25%, transparent);
+    border-radius: 50%;
+    border-top-color: currentColor;
+    content: "";
+    height: 1rem;
+    width: 1rem;
+}
+
+@keyframes oe-place-spin {
+    to { rotate: 360deg; }
+}
+
+.oe-place .osc-ac-list {
+    box-sizing: border-box;
+    inset-inline: 0;
+    margin: 0;
+    max-height: min(22rem, 60vh);
+    position: absolute;
+    top: calc(100% + .25rem);
+    z-index: 30;
+}
+
+.oe-place .osc-ac-list:not([hidden]) {
+    animation: oe-place-in .16s ease-out;
+}
+
+@keyframes oe-place-in {
+    from { opacity: 0; transform: translateY(-4px); }
+}
+
+.oe-place .osc-ac-option {
+    align-items: baseline;
+    display: flex;
+    gap: .5rem;
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+}
+
+.oe-place .osc-ac-option > span:first-child {
+    min-width: 0;
+}
+
+.oe-place__name b {
+    font-weight: 700;
+}
+
+.oe-place__region {
+    color: var(--osc-ink-muted, inherit);
+}
+
+.oe-place__cc,
+.oe-place__tick {
+    align-self: center;
+    flex: none;
+    margin-inline-start: auto;
+}
+
+.oe-place__cc + .oe-place__tick {
+    margin-inline-start: 0;
+}
+
+.oe-place__cc {
+    font-size: .6875rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+}
+
+.oe-place__status {
+    align-items: center;
+    color: var(--osc-ink-muted, inherit);
+    display: flex;
+    flex-wrap: wrap;
+    font-size: .8125rem;
+    gap: .5rem;
+    overflow-wrap: anywhere;
+    padding: .4rem .6rem;
+}
+
+.oe-place__status--more {
+    border-top: 1px solid var(--osc-rule, currentColor);
+}
+
+.oe-place__retry {
+    background: transparent;
+    border: 1px solid currentColor;
+    border-radius: 4px;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+    margin-inline-start: auto;
+    padding: .125rem .5rem;
+}
+
+.oe-place__note {
+    align-items: center;
+    display: flex;
+    gap: .375rem;
+}
+
+.oe-place__saved {
+    align-items: center;
+    cursor: pointer;
+    display: inline-flex;
+    gap: .375rem;
+}
+
+.oe-place__live {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+}
+
+@media (max-width: 520px) {
+    .oe-place .osc-ac-list {
+        max-height: 50vh;
+    }
+}
+
+@media (pointer: coarse) {
+    .oe-place .osc-ac-option {
+        align-items: center;
+        min-height: 44px;
+    }
+
+    .oe-place__clear,
+    .oe-place__spin {
+        height: 2.5rem;
+        width: 2.5rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .oe-place .osc-ac-list:not([hidden]) {
+        animation: none;
+    }
+
+    .oe-place__spin::before {
+        animation-duration: 2s;
+    }
+}

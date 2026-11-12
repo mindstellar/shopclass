@@ -35,6 +35,11 @@ $result = $actions->add();
 $itemId = Params::getParamInt('itemId');
 ```
 
+With **Only places from the list** on, a typed place must match one of the site's
+places, or the row is refused on `/city` with "Munich is not one of the site’s places."
+Send `countryId` with the region and city names as the site stores them, and they are
+matched to their ids. Or send `cityId` (with `regionId` and `countryId` if you have them).
+
 `add()` returns `1` (saved, waiting for validation), `2` (saved and live) or an error
 message. On success the new id is in `Params::getParamInt('itemId')`.
 

@@ -22,6 +22,7 @@ use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\listing\ListingValidator;
 use mindstellar\listing\PhotoRoom;
 use mindstellar\listing\SavedListing;
 use mindstellar\moderation\ListingModeration;
@@ -33,6 +34,9 @@ use mindstellar\moderation\ListingModeration;
  */
 final class ListingWriter
 {
+    /** The body members that write a listing's place. */
+    private const PLACE_MEMBERS = ['country' => true, 'region' => true, 'region_id' => true, 'city' => true, 'city_id' => true];
+
     private PhotoRoom $room;
 
     public function __construct(private CustomFieldValues $fields, private SiteFacts $facts, private ListingService $listings, ?PhotoRoom $room = null)
@@ -58,7 +62,8 @@ final class ListingWriter
     }
 
     /**
-     * The whole form for an edit: the stored listing with the sent members over it.
+     * The whole form for an edit: the stored listing with the sent members over it. An edit that
+     * sends no place member keeps the stored place unchecked.
      *
      * @param OwnedListing        $listing read with its texts
      * @param array<string,mixed> $input   the request body
@@ -73,6 +78,9 @@ final class ListingWriter
         $form = $this->checked($body->patch($body->stored($listing, self::metaRows($listing->id())), $input), $request, $credential);
         if (array_intersect_key($input, ['country' => true, 'region_id' => true, 'city_id' => true]) !== []) {
             PlaceBody::check($form);
+        }
+        if (array_intersect_key($input, self::PLACE_MEMBERS) === []) {
+            $form[ListingValidator::PLACE_KEPT] = true;
         }
 
         return $form;
@@ -133,7 +141,7 @@ final class ListingWriter
      */
     public function adminUpdate(OwnedListing $listing, ?array $form, array $flags, Actor $actor, ListingModeration $moderation, int $adminId, string $note): void
     {
-        $data = $form === null ? null : ListingInput::fromArray(['id' => $listing->id(), 'secret' => $listing->secret()] + $form, $actor, false);
+        $data = $form === null ? null : self::editInput(['id' => $listing->id(), 'secret' => $listing->secret()] + $form, $actor);
         try {
             $saved = $moderation->edit($listing->id(), $data, $actor, $flags, $adminId, $note, $this->listings);
         } catch (InvalidException $e) {
@@ -162,7 +170,7 @@ final class ListingWriter
     private function edit(array $input, Actor $actor): SavedListing
     {
         try {
-            $saved = $this->listings->update(ListingInput::fromArray($input, $actor, false), $actor, false, true);
+            $saved = $this->listings->update(self::editInput($input, $actor), $actor, false, true);
         } catch (InvalidException $e) {
             throw self::refusal($e);
         }
@@ -171,6 +179,21 @@ final class ListingWriter
         }
 
         return $saved;
+    }
+
+    /**
+     * @param array<string,mixed> $form from editForm()
+     *
+     * @return array<string,mixed>
+     */
+    private static function editInput(array $form, Actor $actor): array
+    {
+        $data = ListingInput::fromArray($form, $actor, false);
+        if (!empty($form[ListingValidator::PLACE_KEPT])) {
+            $data[ListingValidator::PLACE_KEPT] = true;
+        }
+
+        return $data;
     }
 
     /**

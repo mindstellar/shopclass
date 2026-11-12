@@ -8983,6 +8983,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/classes/admin/form/ItemSettingsScreen.php
+#: oc-includes/classes/admin/ui/Picker.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Location"
 msgstr ""
@@ -11238,6 +11239,10 @@ msgstr ""
 msgid "Only new and renewed listings use the new expiry."
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Only places from the list"
+msgstr ""
+
 #: oc-admin/themes/modern/tools/backup.php
 msgid ""
 "Only restore backups you made. A restore runs the SQL and puts back the "
@@ -12790,6 +12795,13 @@ msgstr ""
 msgid ""
 "Refunded at the provider, but the order had already been refunded here. "
 "Check the credit notes."
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"Refuse a place typed by hand. Posters must pick their town or city from the "
+"suggestions, which the admin form has and a theme shows once it prints the "
+"place field."
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php

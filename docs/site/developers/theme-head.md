@@ -114,3 +114,34 @@ instead of printing it.
 
 A theme that calls none of these behaves exactly as it did. They exist so a theme
 stops reimplementing them, and so core can describe a page it renders itself.
+
+## The place field
+
+```php
+<?php osc_place_field(); ?>
+```
+
+Prints the Location field: one box that suggests cities from `GET /api/v1/cities`
+and sets the place when one is picked. Core owns the markup and the script; the
+theme only places and styles it. On an edit page pass the listing:
+`osc_place_field(['item' => osc_item()])`. Other keys: `id`, `label`, `required`,
+`class`, `hint_class`, `error_class`, `req_class`, `saved`, `account` and `error`.
+`required` defaults to the Required location setting.
+
+The form posts `city` (the text), `cityId`, `regionId` and `countryId`. An old
+listing with a typed place also posts `region` and `country` as text. Read them
+as before; nothing changes for the listing input.
+
+Style these classes: `oe-place` (and `is-picked`), `oe-place__box`,
+`oe-place__input`, `oe-place__pin`, `oe-place__clear`, `oe-place__spin`,
+`oe-place__hint`, `oe-place__note` (and `oe-place__note--picked`),
+`oe-place__end`, `oe-place__saved`, `oe-field-error`, and in the list
+`osc-ac-list`, `osc-ac-option`, `is-active`, `oe-place__name`,
+`oe-place__region`, `oe-place__cc`, `oe-place__tick`, `oe-place__status` (with
+`--more` and `--error`) and the **Try again** button `oe-place__retry`. The list sits inside
+the box at the input's width.
+
+When **Only places from the list** refuses a save, the error is one entry on
+`/city` with the text "Pick your location from the list.". The helper prints it
+itself; a theme that prints its own errors reads it with `osc_form_error('/city')`.
+With the option off, typed text is accepted and the field only suggests.

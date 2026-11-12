@@ -88,6 +88,7 @@ A `422 validation_failed` lists every problem at once in `errors`:
 | `not_buyable` | An order line names a product that is gone, hidden, unpriced or in another currency. |
 | `unavailable` | The payment method is not on offer for this order. |
 | `too_many_open` | The buyer already holds the most unpaid bank transfer orders the shop allows. |
+| `not_listed` | The site takes only places from its list, and this typed place is not one of them. Send `city_id` (or `region_id`, `country`) instead. |
 
 Plugin endpoints may add `ext_<slug>_<name>` codes. Treat an unknown code as `invalid`.
 

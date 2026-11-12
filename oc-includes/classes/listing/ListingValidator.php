@@ -14,6 +14,7 @@
 namespace mindstellar\listing;
 
 use mindstellar\form\builder\FieldValidator;
+use mindstellar\location\LocationQuery;
 use mindstellar\security\SpamCheck;
 
 /**
@@ -37,6 +38,9 @@ final class ListingValidator
         's_zip'           => 15,
         's_contact_phone' => 40,
     );
+
+    /** Set by an API edit that sends no place member. Its stored place is then not checked. */
+    public const PLACE_KEPT = 'placeKept';
 
     /** Widths of the t_item_variant columns the "Sell this item" section fills, from struct.sql. */
     public const VARIANT_WIDTHS = array(
@@ -92,12 +96,14 @@ final class ListingValidator
      *
      * Photo checks add their own notice to $notices too, as the form shows both.
      *
-     * @param array<string,mixed> $aItem    the prepared listing data
+     * @param array<string,mixed> $aItem      the prepared listing data
      * @param string[]            $notices
+     * @param bool                $checkPlace false for a save that writes no place of its own
+     * @param bool                $import     a row of an import, whose refusals name the place
      *
      * @return array<int,array{pointer:string,code:string,message:string}> empty when there are none
      */
-    public function common(array $aItem, array &$notices = array()): array
+    public function common(array $aItem, array &$notices = array(), bool $checkPlace = true, bool $import = false): array
     {
         $errors = array();
         if (!PhotoService::checkTypes($aItem['photos'], $notices)) {
@@ -160,7 +166,8 @@ final class ListingValidator
             $errors,
             self::missingPrice($aItem, osc_item_price_required(), (bool) ($aItem['categoryTakesPrice'] ?? true)),
             self::tooFewPhotos($aItem, osc_item_photos_min()),
-            self::missingPlaces($aItem, osc_item_required_location())
+            self::missingPlaces($aItem, osc_item_required_location()),
+            osc_item_place_from_list() && $checkPlace ? self::notOnTheList($aItem, $import) : array()
         );
         if (!osc_validate_text($aItem['countryName'], 3, false)) {
             $errors[] = self::entry('/country', 'too_short', _m('Country too short.'));
@@ -282,6 +289,57 @@ final class ListingValidator
         }
 
         return $errors;
+    }
+
+    /**
+     * unlistedPlace(), then a refusal when the picked city or region is switched off.
+     *
+     * @param array<string,mixed> $aItem the prepared listing data
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}>
+     */
+    private static function notOnTheList(array $aItem, bool $import): array
+    {
+        $errors = self::unlistedPlace($aItem, osc_item_required_location(), $import);
+        if ($errors !== array()) {
+            return $errors;
+        }
+        $region = (int) ($aItem['regionId'] ?? 0);
+        $city   = (int) ($aItem['cityId'] ?? 0);
+        if (($region > 0 || $city > 0) && !(new LocationQuery())->isOffered($region, $city)) {
+            return array(self::entry($city > 0 ? '/city' : '/region', 'not_listed', _m('Pick your location from the list.')));
+        }
+
+        return array();
+    }
+
+    /**
+     * The error for a place typed by hand when only places from the list are taken: every level
+     * given, and every level between the Required one and the deepest given, needs an id.
+     *
+     * @param array<string,mixed> $aItem  the prepared listing data
+     * @param string              $level  'none', 'country', 'region' or 'city'
+     * @param bool                $import name the typed place in the message
+     *
+     * @return array<int,array{pointer:string,code:string,message:string}> one entry, on the deepest failing level, or none
+     */
+    public static function unlistedPlace(array $aItem, string $level, bool $import = false): array
+    {
+        $has      = static fn (string $key): bool => trim((string) ($aItem[$key] ?? '')) !== '';
+        $required = (int) array_search($level, array('none', 'country', 'region', 'city'), true);
+        $deeper   = false;
+        foreach (array(3 => array('city', 'cityId', 'cityName'), 2 => array('region', 'regionId', 'regionName'), 1 => array('country', 'countryId', 'countryName')) as $depth => [$place, $id, $name]) {
+            if (!$has($id) && ($has($name) || ($deeper && $depth > $required))) {
+                $message = $import && $has($name)
+                    ? sprintf(_m('%s is not one of the site’s places.'), trim((string) $aItem[$name]))
+                    : _m('Pick your location from the list.');
+
+                return array(self::entry('/' . $place, 'not_listed', $message));
+            }
+            $deeper = $deeper || $has($id) || $has($name);
+        }
+
+        return array();
     }
 
     /**

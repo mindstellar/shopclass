@@ -40769,6 +40769,333 @@
                 "x-scope": "listings:read"
             }
         },
+        "/cities": {
+            "get": {
+                "operationId": "getCities",
+                "summary": "Cities in any region whose name starts with what was typed, for a place field",
+                "tags": [
+                    "Locations"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "description": "What was typed. Matches the start of a city's name in any language; under 2 characters finds nothing.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 100
+                        }
+                    },
+                    {
+                        "name": "country",
+                        "in": "query",
+                        "required": false,
+                        "description": "Only cities in this country: a two-letter code.",
+                        "schema": {
+                            "type": "string",
+                            "maxLength": 10
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 20,
+                            "default": 8
+                        }
+                    },
+                    {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
+                        }
+                    },
+                    {
+                        "name": "If-None-Match",
+                        "in": "header",
+                        "required": false,
+                        "description": "An ETag from an earlier answer: 304 with no body while it still matches.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CitySuggestionList"
+                                }
+                            }
+                        }
+                    },
+                    "304": {
+                        "description": "Not modified",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "ETag": {
+                                "$ref": "#/components/headers/ETag"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "No valid credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Not allowed for this credential",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Not valid",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "Too many requests",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Server error",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Maintenance",
+                        "headers": {
+                            "Request-Id": {
+                                "$ref": "#/components/headers/Request-Id"
+                            },
+                            "RateLimit": {
+                                "$ref": "#/components/headers/RateLimit"
+                            },
+                            "RateLimit-Policy": {
+                                "$ref": "#/components/headers/RateLimit-Policy"
+                            },
+                            "X-RateLimit-Limit": {
+                                "$ref": "#/components/headers/X-RateLimit-Limit"
+                            },
+                            "X-RateLimit-Remaining": {
+                                "$ref": "#/components/headers/X-RateLimit-Remaining"
+                            },
+                            "X-RateLimit-Reset": {
+                                "$ref": "#/components/headers/X-RateLimit-Reset"
+                            },
+                            "Retry-After": {
+                                "$ref": "#/components/headers/Retry-After"
+                            }
+                        },
+                        "content": {
+                            "application/problem+json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Problem"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "bearer": [
+                            "listings:read"
+                        ]
+                    },
+                    {
+                        "pageSession": [
+                            "listings:read"
+                        ]
+                    },
+                    {
+                        "publicKey": [
+                            "listings:read"
+                        ]
+                    }
+                ],
+                "x-auth": "public",
+                "x-scope": "listings:read"
+            }
+        },
         "/cities/{id}/areas": {
             "get": {
                 "operationId": "getCitiesByIdAreas",
@@ -53746,7 +54073,8 @@
                                         "out_of_stock",
                                         "not_buyable",
                                         "unavailable",
-                                        "too_many_open"
+                                        "too_many_open",
+                                        "not_listed"
                                     ]
                                 },
                                 "message": {
@@ -53832,6 +54160,12 @@
                     "relaxed": {
                         "type": "boolean",
                         "description": "Listing search only: present and true when a search engine plugin widened the search to find these results."
+                    },
+                    "more": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 100,
+                        "description": "City search only: how many more cities match, counted up to 100."
                     }
                 },
                 "required": [
@@ -55063,6 +55397,43 @@
                     "region_id",
                     "name",
                     "slug"
+                ]
+            },
+            "CitySuggestion": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "region_id": {
+                        "type": "integer"
+                    },
+                    "region": {
+                        "type": "string"
+                    },
+                    "country_code": {
+                        "type": "string",
+                        "pattern": "^[A-Z]{2}$"
+                    },
+                    "country": {
+                        "type": "string"
+                    },
+                    "label": {
+                        "type": "string",
+                        "description": "\"City, Region\", to show in a list."
+                    }
+                },
+                "required": [
+                    "id",
+                    "name",
+                    "region_id",
+                    "region",
+                    "country_code",
+                    "country",
+                    "label"
                 ]
             },
             "CityArea": {
@@ -57401,6 +57772,28 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/Address"
+                        }
+                    },
+                    "meta": {
+                        "$ref": "#/components/schemas/PageMeta"
+                    },
+                    "links": {
+                        "$ref": "#/components/schemas/PageLinks"
+                    }
+                },
+                "required": [
+                    "data",
+                    "meta",
+                    "links"
+                ]
+            },
+            "CitySuggestionList": {
+                "type": "object",
+                "properties": {
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CitySuggestion"
                         }
                     },
                     "meta": {

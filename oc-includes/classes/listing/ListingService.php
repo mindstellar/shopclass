@@ -86,7 +86,7 @@ final class ListingService
         $files   = $tooSoon || empty($data['photos']['error']) ? null : $data['photos'];
 
         return $this->write(
-            fn (array &$notices): array => $this->checkAdd($data, $actor, $tooSoon, $notices),
+            fn (array &$notices): array => $this->checkAdd($data, $actor, $tooSoon, $import, $notices),
             fn (array $checked): SavedListing => $this->insert($checked, $actor, $import),
             $files,
             $files === null ? null : PhotoService::cap(isset($data['userId']) ? (int) $data['userId'] : null)
@@ -149,7 +149,7 @@ final class ListingService
         }
 
         return $this->write(
-            fn (array &$notices): array => $this->checkEdit($data, $actor, $notices),
+            fn (array &$notices): array => $this->checkEdit($data, $actor, $import, $notices),
             function (array $checked) use ($actor, $import, $matchSecret, $then): SavedListing {
                 $saved = $this->change($checked, $actor, $import, $matchSecret);
                 if ($then !== null) {
@@ -860,9 +860,10 @@ final class ListingService
      * @return array{item:array<string,mixed>,meta:mixed,spam:int,active:string}
      * @throws InvalidException with the form's errors
      */
-    private function checkAdd(array $data, Actor $actor, bool $tooSoon, array &$notices): array
+    private function checkAdd(array $data, Actor $actor, bool $tooSoon, bool $import, array &$notices): array
     {
-        $aItem   = osc_apply_filter('item_add_prepare_data', self::withStoreAddress($data));
+        [$aItem, $storePlace] = self::withStoreAddress($data);
+        $aItem   = osc_apply_filter('item_add_prepare_data', $aItem);
         $is_spam = 0;
 
         // Check status
@@ -893,7 +894,7 @@ final class ListingService
         $errors = array_merge(
             $errors,
             $this->validator->contactWidths(array('contactEmail' => $aItem['contactEmail'])),
-            $this->validator->common($aItem, $notices)
+            $this->validator->common($aItem, $notices, !$storePlace, $import)
         );
 
         // The wait is the global preference unless the posting user holds a
@@ -1088,9 +1089,10 @@ final class ListingService
      * @return array{item:array<string,mixed>,meta:mixed}
      * @throws InvalidException with the form's errors
      */
-    private function checkEdit(array $data, Actor $actor, array &$notices): array
+    private function checkEdit(array $data, Actor $actor, bool $import, array &$notices): array
     {
-        $aItem           = osc_apply_filter('item_edit_prepare_data', self::withStoreAddress($data));
+        [$aItem, $storePlace] = self::withStoreAddress($data);
+        $aItem           = osc_apply_filter('item_edit_prepare_data', $aItem);
         $aItem['idItem'] = (int) $aItem['idItem'];
 
         $aItem             = $this->sanitize($aItem);
@@ -1100,7 +1102,7 @@ final class ListingService
         // Validate
         $errors = array_merge(
             self::ownerErrors($aItem, $actor, $aItem['idItem']),
-            $this->validator->common($aItem, $notices)
+            $this->validator->common($aItem, $notices, !$storePlace && empty($aItem[ListingValidator::PLACE_KEPT]), $import)
         );
         // Only an admin editing a listing with no owner writes the contact name and e-mail.
         if ($actor->isAdmin() && !$aItem['userId']) {
@@ -1406,24 +1408,24 @@ final class ListingService
      *
      * @param array<string,mixed> $aItem
      *
-     * @return array<string,mixed>
+     * @return array{0:array<string,mixed>,1:bool} the data, and whether the store address was used
      */
     private static function withStoreAddress(array $aItem): array
     {
         foreach (array('countryId', 'countryName', 'regionId', 'regionName', 'cityId', 'cityName') as $key) {
             if (trim((string) ($aItem[$key] ?? '')) !== '') {
-                return $aItem;
+                return array($aItem, false);
             }
         }
         $store = LocationService::storeAddress();
         if ($store === null) {
-            return $aItem;
+            return array($aItem, false);
         }
         foreach ($store as $key => $value) {
             $aItem[$key] = $value ?? (str_ends_with($key, 'Id') ? null : '');
         }
 
-        return $aItem;
+        return array($aItem, true);
     }
 
     private static function place(mixed $value): string

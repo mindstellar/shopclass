@@ -213,6 +213,11 @@ if (!function_exists('osc_enqueue_script')) {
     {
     }
 }
+if (!function_exists('osc_enqueue_style')) {
+    function osc_enqueue_style($id)
+    {
+    }
+}
 if (!function_exists('osc_item_url')) {
     function osc_item_url()
     {
@@ -285,6 +290,31 @@ if (!function_exists('osc_item_photos_min')) {
         return 0;
     }
 }
+if (!function_exists('osc_item_place_from_list')) {
+    function osc_item_place_from_list(): bool
+    {
+        return false;
+    }
+}
+if (!function_exists('osc_item_required_location')) {
+    function osc_item_required_location(): string
+    {
+        return 'none';
+    }
+}
+if (!function_exists('osc_current_ui_locale')) {
+    function osc_current_ui_locale(): string
+    {
+        return 'en_US';
+    }
+}
+// Place names come back as stored: this test is about the form, not the translations.
+\mindstellar\container\Container::root()->instance(\mindstellar\location\LocationNames::class, new class () {
+    public function name(string $type, $id, string $locale, string $fallback): string
+    {
+        return $fallback;
+    }
+});
 if (!function_exists('osc_item_location_required')) {
     function osc_item_location_required(string $place): bool
     {
@@ -408,6 +438,7 @@ require_once __DIR__ . '/lib/stubs.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hUtils.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hLocation.php';
 require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 
 /* ----------------------------------------------------------------------------
@@ -752,10 +783,10 @@ $itemEdit = array(
     'showEmail'            => array('checkbox', 'checked:1'),
     'ipAddress'            => array('text', '203.0.113.7'),
     // Location
-    'countryId'            => array('select', 'US'),
-    'region'               => array('text', 'California'),
+    'countryId'            => array('hidden', 'US'),
+    'region'               => array('hidden', ''),
     'regionId'             => array('hidden', '12'),
-    'city'                 => array('text', 'San Jose'),
+    'city'                 => array('text', 'San Jose, California'),
     'cityId'               => array('hidden', '340'),
     'cityArea'             => array('text', 'Downtown'),
     'zip'                  => array('text', '95110'),
@@ -944,7 +975,7 @@ foreach (array('item-add' => $classifiedsOrder, 'item-edit' => $classifiedsOrder
     check("$screen: and is still inside the form", id_in_form($screen, 'plugin-hook'));
     check("$screen: the price sits in its section", dom($screen)->query('//*[@id="sec-price"]//input[@id="price"]')->length === 1);
     check("$screen: the contact e-mail sits in Seller", dom($screen)->query('//*[@id="sec-seller"]//input[@id="contactEmail"]')->length === 1);
-    check("$screen: the country sits in Location", dom($screen)->query('//*[@id="sec-location"]//select[@name="countryId"]')->length === 1);
+    check("$screen: the place field sits in Location", dom($screen)->query('//*[@id="sec-location"]//input[@name="city"][@role="combobox"]')->length === 1);
 
     $rail = array();
     foreach (dom($screen)->query('//*[@id="right-side"]/*') as $node) {
@@ -997,6 +1028,7 @@ check('item-add-shop-refused: the banner counts five', str_contains((string)dom(
 pin('item-add-shop-refused: Product holds the title, both descriptions and the category', '4 to fix', $fixOf('item-add-shop-refused', 'sec-product'));
 pin('item-add-shop-refused: Location holds the city', '1 to fix', $fixOf('item-add-shop-refused', 'sec-location'));
 $location = dom('item-add-shop-refused')->query('//*[@id="sec-location"]')->item(0);
+pin('item-add-shop-refused: the city refusal shows under the place field', 'City too short.', trim((string)dom('item-add-shop-refused')->query('//*[@id="sec-location"]//p[@id="city-error"]')->item(0)?->textContent));
 check('item-add-shop-refused: so the folded Location opens', $location instanceof DOMElement && $location->hasAttribute('open'));
 
 harness_section('Sell online is a switch that still posts product[sell]');

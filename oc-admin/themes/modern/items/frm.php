@@ -13,6 +13,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  */
 
+osc_enqueue_style('osc-ui-common');
+osc_enqueue_script('osc-place-field');
 osc_enqueue_script('tiny_mce');
 osc_enqueue_script('admin-editor');
 if (osc_is_shop_mode()) {
@@ -679,19 +681,23 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         osc_mode_text(__('Where the item is'), __('Optional · empty uses the store address')),
         array('collapsible' => $itemShop)
     );
+    // A refused place is told by pointer; the picker reads it by field name.
+    $placeErrors = array();
+    foreach ($itemErrorFields as $errorIndex => $errorPointer) {
+        $placeKey = ltrim((string)$errorPointer, '/');
+        if (in_array($placeKey, array('city', 'region', 'country'), true) && is_string($itemErrors[$errorIndex] ?? null)) {
+            $placeErrors += array($placeKey => $itemErrors[$errorIndex]);
+        }
+    }
     osc_admin_location_picker(array(
+        'place' => true,
+        'item'  => $itemRecord,
         'value' => array(
-            'countryId' => $itemTyped('countryId', $itemRecord['fk_c_country_code'] ?? ''),
-            'country'   => $itemTyped('country', $itemRecord['s_country'] ?? ''),
-            'region'    => $itemTyped('region', $itemRecord['s_region'] ?? ''),
-            'regionId'  => $itemTyped('regionId', $itemRecord['fk_i_region_id'] ?? ''),
-            'city'      => $itemTyped('city', $itemRecord['s_city'] ?? ''),
-            'cityId'    => $itemTyped('cityId', $itemRecord['fk_i_city_id'] ?? ''),
             'cityArea'  => $itemTyped('cityArea', $itemRecord['s_city_area'] ?? ''),
             'zip'       => $itemTyped('zip', $itemRecord['s_zip'] ?? ''),
             'address'   => $itemTyped('address', $itemRecord['s_address'] ?? ''),
         ),
-        'errors'   => $itemErrors,
+        'errors'   => $placeErrors + $itemErrors,
         // In shop mode an empty location takes the store address, so the browser asks for none.
         'required' => $itemShop ? array() : array_values(array_filter(array('country', 'region', 'city'), 'osc_item_location_required')),
     ));

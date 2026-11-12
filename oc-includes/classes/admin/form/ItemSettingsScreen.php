@@ -279,7 +279,11 @@ final class ItemSettingsScreen extends SettingsScreen
             ->custom('location_level_close', static function () {
                 echo '</div>';
             })
-                ->set('row', false);
+                ->set('row', false)
+            ->checkbox('item_place_from_list', __('Only places from the list'), __('Refuse a place typed by hand. Posters must pick their town or city from the suggestions, which the admin form has and a theme shows once it prints the place field.'))
+                ->set('row', false)
+                // Only the box's own value turns it on.
+                ->set('collect', static fn (): bool => \Params::getParamString('item_place_from_list') === '1');
         self::rowClose($form, 'location');
 
         $form->register();

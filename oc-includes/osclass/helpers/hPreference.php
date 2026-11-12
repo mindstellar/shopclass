@@ -425,6 +425,17 @@ function osc_item_required_location(): string
 }
 
 /**
+ * Whether a listing's place must be picked from the site's list, so a typed country, region
+ * or city that is not one of the site's places is refused. Off on a site that never saved it.
+ *
+ * @return bool
+ */
+function osc_item_place_from_list(): bool
+{
+    return getBoolPreference('item_place_from_list');
+}
+
+/**
  * Whether the Required location setting asks for this place.
  *
  * @param string $place 'country', 'region' or 'city'

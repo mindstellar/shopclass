@@ -36,7 +36,8 @@ final class LocationService
     /**
      * Turn a posted country, region and city into stored ids and names. An id that exists wins,
      * an empty one falls back to the free text (and, with $matchByName, to a place of that
-     * name). An id that is posted but not found gives null for the id and the name.
+     * name). An id that is posted but not found gives null for the id and the name. A found city
+     * fills a blank region id, and a found region a blank country.
      *
      * @param array<string,mixed> $in countryCode, country, regionId, region, cityId, city
      *
@@ -44,14 +45,15 @@ final class LocationService
      */
     public static function resolve(array $in, bool $matchByName = false): array
     {
-        $text  = static fn (string $key): string => (string) ($in[$key] ?? '');
-        $found = (new LocationQuery())->lineage($text('countryCode'), (int) $text('regionId'), (int) $text('cityId'));
-        $out   = [
+        $text     = static fn (string $key): string => (string) ($in[$key] ?? '');
+        $found    = (new LocationQuery())->lineage($text('countryCode'), (int) $text('regionId'), (int) $text('cityId'));
+        $regionId = $text('regionId') === '' && $found['regionId'] !== null ? (string) $found['regionId'] : $text('regionId');
+        $out      = [
             'countryId'   => $found['countryCode'],
             'countryName' => $found['countryCode'] !== null ? $found['countryName'] : $text('country'),
         ];
 
-        $region = self::place('region', $text('regionId'), $text('region'), $found['regionName'], \Region::getInstance(), null, $out['countryId'], $matchByName);
+        $region = self::place('region', $regionId, $text('region'), $found['regionName'], \Region::getInstance(), null, $out['countryId'], $matchByName);
         $out    = $out + ['regionId' => $region[0], 'regionName' => $region[1]];
         $city   = self::place('city', $text('cityId'), $text('city'), $found['cityName'], \City::getInstance(), $out['regionId'], $out['countryId'], $matchByName);
 

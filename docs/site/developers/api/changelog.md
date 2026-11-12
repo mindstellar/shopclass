@@ -75,6 +75,19 @@ None.
 
 ## Changes
 
+### v1: city search
+
+Added to v1 on 2026-11-12.
+
+- `GET /cities?q=` finds active cities in any region whose name starts with `q` (2 characters or more), in any language. Each row has the city's region and country and a `label` ("City, Region"). `country` keeps one country, `limit` is 8 by default and at most 20, and `meta.more` says how many more match, up to 100.
+
+### v1: places from the list
+
+Added to v1 on 2026-11-12.
+
+- New field error code `not_listed`: with "Only places from the list" on, a listing write that sends a typed `city`, `region` or `country` that is not one of the site's places is refused on that pointer. An edit that sends no place member is not checked.
+- A listing write that sends only `city_id` gets the city's region and country.
+
 ### v1: order parcels
 
 Added to v1 on 2026-11-02.

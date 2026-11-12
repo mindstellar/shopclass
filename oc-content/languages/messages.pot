@@ -164,6 +164,10 @@ msgid ""
 "%s can't be disabled for oc-admin because it's the admin default language"
 msgstr ""
 
+#: oc-includes/classes/location/PlaceField.php
+msgid "%s chosen."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "%s could not be read from the catalog"
 msgstr ""
@@ -227,6 +231,10 @@ msgstr ""
 msgid "%s is not a scope of this site"
 msgstr ""
 
+#: oc-includes/classes/listing/ListingValidator.php
+msgid "%s is not one of the site’s places."
+msgstr ""
+
 #: oc-includes/classes/core/form/builder/FieldValidator.php
 msgid "%s is required."
 msgstr ""
@@ -241,6 +249,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "%s locations are still to be counted. Continue counting to finish."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "%s more. Keep typing to narrow it down."
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminPages.php
@@ -894,6 +906,10 @@ msgstr ""
 msgid "Cleanup started. It runs in the background until nothing matches."
 msgstr ""
 
+#: oc-includes/osclass/gui/parts/place-field.php
+msgid "Clear location"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
 #: oc-includes/osclass/gui/account/user-public-profile-content.php
 msgid "Close"
@@ -997,6 +1013,14 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminMain.php
 msgid "Could not subscribe. Try again later."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Couldn’t load places."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Couldn’t load places. You can still type your place."
 msgstr ""
 
 #: oc-includes/classes/user/AccountService.php
@@ -1473,6 +1497,14 @@ msgstr ""
 msgid "Friendly URLs turned off"
 msgstr ""
 
+#: oc-includes/classes/location/PlaceField.php
+msgid "From your account"
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "From your saved address"
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-api_access-content.php
 msgid "From: %s"
 msgstr ""
@@ -1741,6 +1773,7 @@ msgid "Listings' settings have been updated"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/gui/parts/place-field.php
 msgid "Location"
 msgstr ""
 
@@ -2006,6 +2039,18 @@ msgstr ""
 msgid "No photo"
 msgstr ""
 
+#: oc-includes/classes/location/PlaceField.php
+msgid "No places match “%s”. Check the spelling, or try a bigger town nearby."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "No places match “%s”. You can keep what you typed."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "No places match."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminPlugins.php
 msgid "No plugin selected"
 msgstr ""
@@ -2099,6 +2144,10 @@ msgstr ""
 
 #: oc-includes/classes/billing/GoodsCheckout.php
 msgid "Not enough left in stock."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Not on the list. It will be shown as you typed it."
 msgstr ""
 
 #: oc-includes/osclass/gui/billing/wallet-content.php
@@ -2521,6 +2570,23 @@ msgstr ""
 msgid "Photos"
 msgstr ""
 
+#: oc-includes/classes/listing/ListingValidator.php
+#: oc-includes/classes/location/PlaceField.php
+msgid "Pick your location from the list."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Picked from the list"
+msgstr ""
+
+#: oc-includes/osclass/gui/parts/place-field.php
+msgid "Places"
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Places found: %s. Use the up and down arrows to choose."
+msgstr ""
+
 #: oc-includes/classes/core/security/Captcha.php
 #: oc-includes/classes/user/AccountService.php
 msgid "Please complete the security check."
@@ -2924,6 +2990,10 @@ msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-list.php
 msgid "Search by name or listing"
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Searching…"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-dashboard-content.php
@@ -4345,6 +4415,10 @@ msgid_plural "This listing will cost %d credits. You pay on the last step."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/classes/location/PlaceField.php
+msgid "This listing’s place"
+msgstr ""
+
 #: oc-includes/classes/location/LocationService.php
 #: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsLocations.php
 msgid "This location no longer exists."
@@ -4488,6 +4562,10 @@ msgstr ""
 msgid "Tracking of order #%d is updated"
 msgstr ""
 
+#: oc-includes/classes/location/PlaceField.php
+msgid "Try again"
+msgstr ""
+
 #: oc-includes/classes/core/language/LanguageService.php
 msgid "Turn the language on for oc-admin before you make it the admin default"
 msgstr ""
@@ -4502,6 +4580,15 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminAdmins.php
 msgid "Two-step sign-in is on."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid ""
+"Type the first letters of your town or city, then pick it from the list."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Type your town or city. Pick it from the list if it is there."
 msgstr ""
 
 #: oc-includes/osclass/gui/account/parts/messenger-chat.php
@@ -4588,6 +4675,10 @@ msgstr[1] ""
 
 #: oc-includes/osclass/gui/parts/address-picker.php
 msgid "Use a new address"
+msgstr ""
+
+#: oc-includes/osclass/gui/parts/place-field.php
+msgid "Use my saved place"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminUsers.php

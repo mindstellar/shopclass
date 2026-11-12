@@ -103,8 +103,8 @@ class Picker
      * Where a listing is: the country select, the region and city inputs with their hidden
      * ids, and the rest of the address. Body of osc_admin_location_picker().
      *
-     * Every control keeps the id the shipped autocomplete binds to, so that script is
-     * reused as it stands.
+     * Every control keeps the id the shipped autocomplete binds to. With 'place' set, one place field
+     * (osc_place_field()) replaces the country, region and city controls and ignores their 'names' and 'value' entries.
      *
      * @param array<string,mixed> $opts
      *
@@ -139,7 +139,19 @@ class Picker
                 . ' value="' . osc_esc_html((string)($value[$key] ?? '')) . '" />';
         };
 
-        if ($countries !== array()) {
+        $place = !empty($opts['place']);
+        if ($place) {
+            osc_place_field(array(
+                'id'        => 'city',
+                'plain_ids' => true,
+                'label'     => (string)($opts['label_place'] ?? __('Location')),
+                'required'  => !empty($opts['required']),
+                'item'      => is_array($opts['item'] ?? null) ? $opts['item'] : null,
+                'saved'     => false,
+                'account'   => false,
+                'error'     => self::placeError($errors),
+            ));
+        } elseif ($countries !== array()) {
             $options = array();
             foreach ($countries as $country) {
                 $options[$country['pk_c_code']] = $country['s_name'];
@@ -160,10 +172,12 @@ class Picker
             $field('country', (string)($opts['label_country'] ?? __('Country')), array('required' => $needed('country')));
         }
 
-        $field('region', (string)($opts['label_region'] ?? __('Region')), array('attrs' => array('autocomplete' => 'off'), 'required' => $needed('region')));
-        $hidden('regionId');
-        $field('city', (string)($opts['label_city'] ?? __('City')), array('attrs' => array('autocomplete' => 'off'), 'required' => $needed('city')));
-        $hidden('cityId');
+        if (!$place) {
+            $field('region', (string)($opts['label_region'] ?? __('Region')), array('attrs' => array('autocomplete' => 'off'), 'required' => $needed('region')));
+            $hidden('regionId');
+            $field('city', (string)($opts['label_city'] ?? __('City')), array('attrs' => array('autocomplete' => 'off'), 'required' => $needed('city')));
+            $hidden('cityId');
+        }
 
         if ($detail === 'none') {
             return;
@@ -190,6 +204,22 @@ class Picker
         if ($detail === 'disclosure') {
             osc_admin_disclosure_close();
         }
+    }
+
+    /**
+     * The first refusal kept for the place, by field name.
+     *
+     * @param array<string,mixed> $errors
+     */
+    private static function placeError(array $errors): string
+    {
+        foreach (array('city', 'cityId', 'region', 'regionId', 'country', 'countryId') as $key) {
+            if (is_string($errors[$key] ?? null) && $errors[$key] !== '') {
+                return $errors[$key];
+            }
+        }
+
+        return '';
     }
 
     /**

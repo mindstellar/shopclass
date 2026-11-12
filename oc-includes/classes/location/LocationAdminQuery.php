@@ -236,7 +236,7 @@ final class LocationAdminQuery
             return $result;
         }
         $limit   = $perLevel < 1 ? 10 : min(50, $perLevel);
-        $pattern = self::prefixPattern($q);
+        $pattern = QueryBuilder::prefixLike($q);
 
         $rows = Db::select(
             'SELECT pk_c_code, s_name, s_slug FROM ' . $this->table('t_country')
@@ -508,7 +508,7 @@ final class LocationAdminQuery
         $q = trim($q);
         if ($q !== '') {
             $where[]  = 's_name LIKE ?';
-            $params[] = self::prefixPattern($q);
+            $params[] = QueryBuilder::prefixLike($q);
         }
         $whereSql = $where === array() ? '' : ' WHERE ' . implode(' AND ', $where);
 
@@ -661,11 +661,6 @@ final class LocationAdminQuery
      *
      * @return string
      */
-    private static function prefixPattern(string $q): string
-    {
-        return QueryBuilder::escapeLike($q) . '%';
-    }
-
     /**
      * @param string $level
      *

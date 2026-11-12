@@ -1711,10 +1711,25 @@ Answers: 200 OK (`PhotoTokenDocument`); 400 Bad request; 401 No valid credential
 
 | Method | Path | Auth | Scope | Summary |
 |---|---|---|---|---|
+| GET | `/cities` | public | `listings:read` | Cities in any region whose name starts with what was typed, for a place field |
 | GET | `/cities/{id}/areas` | public | `listings:read` | A city's areas |
 | GET | `/countries` | public | `listings:read` | Countries |
 | GET | `/countries/{code}/regions` | public | `listings:read` | A country's regions |
 | GET | `/regions/{id}/cities` | public | `listings:read` | A region's cities |
+
+### GET `/cities`
+
+Cities in any region whose name starts with what was typed, for a place field
+
+| Parameter | In | Type | Required | Notes |
+|---|---|---|---|---|
+| `q` | query | string | no | What was typed. Matches the start of a city's name in any language; under 2 characters finds nothing. |
+| `country` | query | string | no | Only cities in this country: a two-letter code. |
+| `limit` | query | integer | no |  |
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
+| `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
+
+Answers: 200 OK (`CitySuggestionList`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.
 
 ### GET `/cities/{id}/areas`
 

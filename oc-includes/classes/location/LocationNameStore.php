@@ -73,7 +73,7 @@ final class LocationNameStore
             return [];
         }
         $params[] = $locale;
-        $sql      = 'SELECT e_place_type, s_place_id, s_name FROM ' . self::table() . ' WHERE (' . implode(' OR ', $where) . ') AND fk_c_locale_code = ?';
+        $sql      = 'SELECT e_place_type, s_place_id, s_name FROM ' . self::tableName() . ' WHERE (' . implode(' OR ', $where) . ') AND fk_c_locale_code = ?';
         // Cached like other place data, so a page served from the object cache needs no database.
         $rows = CacheGroup::remember(self::CACHE_GROUP, md5($sql . '|' . implode("\0", $params)), static fn (): array => Db::select($sql, $params));
         $names = [];
@@ -90,7 +90,7 @@ final class LocationNameStore
     public function all(string $type, int|string $id): array
     {
         $rows  = Db::select(
-            'SELECT fk_c_locale_code, s_name FROM ' . self::table() . ' WHERE e_place_type = ? AND s_place_id = ? ORDER BY fk_c_locale_code',
+            'SELECT fk_c_locale_code, s_name FROM ' . self::tableName() . ' WHERE e_place_type = ? AND s_place_id = ? ORDER BY fk_c_locale_code',
             [$this->checkedType($type), $this->key($type, $id)]
         );
         $names = [];
@@ -110,7 +110,7 @@ final class LocationNameStore
     {
         $key  = $this->key($type, $id);
         $name = trim($name);
-        $rows = Db::table(self::table());
+        $rows = Db::table(self::tableName());
         if ($name === '') {
             $rows->where('e_place_type', $type)->where('s_place_id', $key)->where('fk_c_locale_code', $locale)->delete();
             CacheGroup::changed(self::CACHE_GROUP);
@@ -134,7 +134,7 @@ final class LocationNameStore
      */
     public function forget(string $type, int|string $id): void
     {
-        Db::table(self::table())->where('e_place_type', $this->checkedType($type))->where('s_place_id', $this->key($type, $id))->delete();
+        Db::table(self::tableName())->where('e_place_type', $this->checkedType($type))->where('s_place_id', $this->key($type, $id))->delete();
         CacheGroup::changed(self::CACHE_GROUP);
     }
 
@@ -155,7 +155,7 @@ final class LocationNameStore
      */
     public function idsStartingWith(string $type, string $prefix, int $limit = 100): array
     {
-        return $this->ids($type, 'LIKE ?', QueryBuilder::escapeLike($prefix) . '%', $limit);
+        return $this->ids($type, 'LIKE ?', QueryBuilder::prefixLike($prefix), $limit);
     }
 
     /**
@@ -168,13 +168,13 @@ final class LocationNameStore
     public function matchClause(string $type, string $idColumn, string $nameColumn, string $term, string $mode = 'prefix'): array
     {
         $type          = $this->checkedType($type);
-        [$op, $value] = $mode === 'exact' ? ['= ?', $term] : ['LIKE ?', QueryBuilder::escapeLike($term) . '%'];
+        [$op, $value] = $mode === 'exact' ? ['= ?', $term] : ['LIKE ?', QueryBuilder::prefixLike($term)];
         if ($term === '') {
             return [$nameColumn . ' ' . $op, [$value]];
         }
         if ($type !== self::COUNTRY) {
             return [
-                '(' . $nameColumn . ' ' . $op . ' OR ' . $idColumn . ' IN (SELECT s_place_id FROM ' . self::table() . ' WHERE e_place_type = ? AND s_name ' . $op . '))',
+                '(' . $nameColumn . ' ' . $op . ' OR ' . $idColumn . ' IN (SELECT s_place_id FROM ' . self::tableName() . ' WHERE e_place_type = ? AND s_name ' . $op . '))',
                 [$value, $type, $value],
             ];
         }
@@ -199,7 +199,7 @@ final class LocationNameStore
             return [];
         }
         $rows = Db::select(
-            'SELECT s_place_id FROM ' . self::table() . ' WHERE e_place_type = ? AND s_name ' . $op . ($limit === null ? '' : ' LIMIT ' . max(1, $limit)),
+            'SELECT s_place_id FROM ' . self::tableName() . ' WHERE e_place_type = ? AND s_name ' . $op . ($limit === null ? '' : ' LIMIT ' . max(1, $limit)),
             [$this->checkedType($type), $value]
         );
 
@@ -220,7 +220,7 @@ final class LocationNameStore
         if (str_starts_with($flag, '0@') && time() - (int) substr($flag, 2) < self::EMPTY_TTL) {
             return false;
         }
-        if (Db::selectOne('SELECT 1 FROM ' . self::table() . ' LIMIT 1') !== null) {
+        if (Db::selectOne('SELECT 1 FROM ' . self::tableName() . ' LIMIT 1') !== null) {
             \Preference::getInstance()->replace(self::FLAG, '1');
 
             return true;
@@ -252,7 +252,7 @@ final class LocationNameStore
         return $type;
     }
 
-    private static function table(): string
+    public static function tableName(): string
     {
         return DB_TABLE_PREFIX . 't_location_name';
     }

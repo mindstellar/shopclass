@@ -37,3 +37,129 @@
     color: var(--osc-bronze);
   }
 }
+
+// =============================================================================
+// Place field (place-field.js) — the admin skin. Structure and the list width
+// (never wider than the input) come from ui-common.css; this adds colour and type.
+// =============================================================================
+
+.oe-place {
+  max-width: 32rem;
+
+  > label {
+    color: var(--osc-ink);
+    display: block;
+    font-weight: 600;
+    margin-bottom: .35rem;
+  }
+}
+
+.oe-place__req {
+  color: var(--osc-danger);
+  margin-inline-start: .2rem;
+}
+
+.oe-place__input {
+  @extend .form-control, .form-control-sm;
+
+  &[aria-invalid="true"] {
+    background-color: var(--osc-danger-tint);
+    border-color: var(--osc-danger);
+  }
+}
+
+.oe-place.is-picked .oe-place__pin {
+  color: var(--osc-bronze);
+}
+
+.oe-place__clear {
+  &:hover,
+  &:focus-visible {
+    background-color: var(--osc-bronze-tint);
+    color: var(--osc-bronze);
+  }
+}
+
+.oe-place__spin {
+  color: var(--osc-bronze);
+}
+
+.oe-place .osc-ac-option {
+  &:hover .oe-place__region,
+  &.is-active .oe-place__region {
+    color: inherit;
+  }
+}
+
+.oe-place__cc {
+  background-color: var(--osc-bench-sunk);
+  border-radius: $border-radius-sm;
+  color: var(--osc-ink-muted);
+  padding: .05rem .35rem;
+}
+
+.oe-place__tick {
+  color: var(--osc-bronze);
+}
+
+.oe-place__status--error {
+  color: var(--osc-danger);
+}
+
+// The admin's small secondary button.
+.oe-place__retry {
+  background: var(--osc-bench);
+  border: 1px solid var(--osc-rule-strong);
+  border-radius: $border-radius-sm;
+  color: var(--osc-ink);
+  cursor: pointer;
+  font: inherit;
+  font-size: .8125rem;
+  line-height: 1.5;
+  padding: .125rem .5rem;
+
+  &:hover {
+    background: var(--osc-bench-warm);
+    border-color: var(--osc-ink-muted);
+  }
+
+  &:active {
+    background: var(--osc-bench-sunk);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--osc-bronze);
+    outline-offset: 1px;
+  }
+}
+
+.oe-place__note {
+  color: var(--osc-ink-muted);
+  font-size: .8125rem;
+  margin: .35rem 0 0;
+}
+
+.oe-place__note--picked {
+  color: var(--osc-bronze);
+}
+
+.oe-place__saved {
+  background: transparent;
+  border: 1px solid var(--osc-rule);
+  border-radius: $border-radius;
+  color: var(--osc-bronze);
+  font-size: .8125rem;
+  font-weight: 600;
+  margin-top: .5rem;
+  padding: .25rem .6rem;
+
+  &:hover {
+    background-color: var(--osc-bronze-tint);
+  }
+
+  span {
+    color: var(--osc-ink);
+    font-weight: 400;
+  }
+}
+

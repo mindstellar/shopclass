@@ -21,6 +21,7 @@ use mindstellar\currency\CurrencyCode;
 use mindstellar\listing\ListingStatus;
 use mindstellar\listing\WishlistService;
 use mindstellar\location\CountryCode;
+use mindstellar\location\LocationQuery;
 use mindstellar\search\query\BoxFilter;
 use mindstellar\user\AccountService;
 use mindstellar\user\AddressBook;
@@ -37,7 +38,7 @@ final class Schema
     /** The object schemas, each written out below. */
     private const OBJECTS = [
         'Problem', 'PageMeta', 'PageLinks', 'Photo', 'CategoryRef', 'CustomFieldValue', 'Listing', 'User', 'Category', 'CustomField',
-        'Country', 'Region', 'City', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
+        'Country', 'Region', 'City', 'CitySuggestion', 'CityArea', 'Currency', 'Comment', 'Site', 'OpenApiDocument',
         'Warning', 'TokenDocument', 'TokenRequest', 'SessionToken', 'AccountInput', 'AccountDocument', 'PasswordChange', 'Session',
         'PersonalKey', 'PersonalKeyInput', 'Registration', 'NewAccount',
         'ListingInput', 'ListingPatch', 'SavedListing', 'ListingPayment', 'ListingPublishInput', 'ListingPublished', 'PhotoToken', 'CommentInput', 'SavedComment',
@@ -46,7 +47,7 @@ final class Schema
     ];
 
     /** `<name>List`: every item at once. */
-    private const LISTS = ['PageSummary', 'Menu', 'Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert', 'Address'];
+    private const LISTS = ['PageSummary', 'Menu', 'Category', 'CustomField', 'Currency', 'Photo', 'Session', 'PersonalKey', 'Alert', 'Address', 'CitySuggestion'];
 
     /** `<name>List` that is paged: the location lists keep their List names. */
     private const PAGED_LISTS = ['Country', 'Region', 'City', 'CityArea'];
@@ -128,6 +129,7 @@ final class Schema
                 ], []) + ['description' => 'Listing search only, when a search engine plugin sent counts.'],
                 'suggestion' => ['type' => 'string', 'description' => 'Listing search only: a corrected query from a search engine plugin.'],
                 'relaxed'    => ['type' => 'boolean', 'description' => 'Listing search only: present and true when a search engine plugin widened the search to find these results.'],
+                'more'       => ['type' => 'integer', 'minimum' => 0, 'maximum' => LocationQuery::SEARCH_MORE_CAP, 'description' => 'City search only: how many more cities match, counted up to ' . LocationQuery::SEARCH_MORE_CAP . '.'],
             ], ['limit']),
             'PageLinks'    => self::object([
                 'self' => ['type' => 'string', 'format' => 'uri'],
@@ -181,6 +183,15 @@ final class Schema
             ], ['code', 'name', 'slug', 'address_format']),
             'Region'       => self::object(self::regionMembers(), ['id', 'country_code', 'name', 'slug']),
             'City'         => self::object(self::cityMembers(), ['id', 'region_id', 'name', 'slug']),
+            'CitySuggestion' => self::object([
+                'id'           => ['type' => 'integer'],
+                'name'         => ['type' => 'string'],
+                'region_id'    => ['type' => 'integer'],
+                'region'       => ['type' => 'string'],
+                'country_code' => ['type' => 'string', 'pattern' => CountryCode::PATTERN],
+                'country'      => ['type' => 'string'],
+                'label'        => ['type' => 'string', 'description' => '"City, Region", to show in a list.'],
+            ], ['id', 'name', 'region_id', 'region', 'country_code', 'country', 'label']),
             'CityArea'     => self::object([
                 'id'      => ['type' => 'integer'],
                 'city_id' => ['type' => 'integer'],

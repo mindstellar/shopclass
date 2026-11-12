@@ -686,7 +686,8 @@ if (!function_exists('osc_admin_location_picker')) {
      *       cityArea, zip, address; 'names' to post any of them under another name;
      *       'countries'; 'detail' => 'disclosure' (default), 'inline' or 'none';
      *       'label_*' for each label; 'required' => the places marked required
-     *       ('country', 'region', 'city').
+     *       ('country', 'region', 'city'); 'place' => true draws one place field in
+     *       place of the country, region and city controls, with 'item' the listing row.
      *
      * @param array $opts
      *

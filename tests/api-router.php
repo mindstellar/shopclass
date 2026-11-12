@@ -209,6 +209,7 @@ pin('the core table needs no database; every route names its auth and scope', [
     'GET cart/quote'                    => 'public listings:read',
     'GET categories'                    => 'public listings:read',
     'GET categories/{category}'         => 'public listings:read',
+    'GET cities'                        => 'public listings:read',
     'GET cities/{id}/areas'             => 'public listings:read',
     'GET comments/{id}'                 => 'public listings:read',
     'GET countries'                     => 'public listings:read',

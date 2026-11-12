@@ -508,7 +508,7 @@ Core fires 653 names. Generated from the source; do not edit by hand.
 | `filters_manage_item_search` | action | none | `oc-admin/themes/modern/items/index.php` |
 | `init_item` | action | none | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `invalidate_item_cache` | action | `$itemId` | `oc-includes/osclass/helpers/hCache.php` |
-| `item_add_prepare_data` | filter | `with_store_address` | `oc-includes/classes/listing/ListingService.php` |
+| `item_add_prepare_data` | filter | `$aItem` | `oc-includes/classes/listing/ListingService.php` |
 | `item_bulk_filter` | filter | `$bulk_options` | `oc-includes/osclass/classes/controller/admin/CAdminItems.php` |
 | `item_bumped` | action | `$id` | `oc-includes/classes/listing/ListingService.php` |
 | `item_comments_after` | action | none | `oc-includes/osclass/gui/item-comments-content.php` |
@@ -518,7 +518,7 @@ Core fires 653 names. Generated from the source; do not edit by hand.
 | `item_decrease_stat` | action | `$item` | `oc-includes/classes/listing/ListingStats.php` |
 | `item_description` | filter | `s_description` | `oc-includes/osclass/classes/controller/CWebItem.php` |
 | `item_edit` | action | `$catId, $itemId` | `oc-includes/classes/admin/ajax/PluginAjax.php` |
-| `item_edit_prepare_data` | filter | `with_store_address` | `oc-includes/classes/listing/ListingService.php` |
+| `item_edit_prepare_data` | filter | `$aItem` | `oc-includes/classes/listing/ListingService.php` |
 | `item_expiration_updated` | action | `value, dt_expiration` | `oc-includes/osclass/classes/model/Item.php` |
 | `item_form` | action | `get_param` | `oc-includes/classes/admin/ajax/PluginAjax.php` |
 | `item_form_new_validation_messages` | action | none | `oc-includes/osclass/classes/form/ItemForm.php` |
