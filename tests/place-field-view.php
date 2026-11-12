@@ -252,6 +252,8 @@ $ddLists = array(
 $ddValue = PlaceField::compose($kept(array()), array('fk_i_city_id' => '5002', 's_city' => 'Pune', 'fk_i_region_id' => '101', 's_region' => 'Maharashtra', 'fk_c_country_code' => 'IN'), null);
 $html = PlaceField::render(array('id' => 'loc', 'style' => 'dropdown', 'strict' => true, 'multi' => true, 'lists' => $ddLists), $ddValue);
 $x    = $dom($html);
+$hintOf = static fn (string $style): string => trim($dom(PlaceField::render(array('id' => 'loc', 'style' => $style, 'strict' => false, 'multi' => true, 'lists' => $ddLists), $ddValue))->query('//p[@id="loc-hint"]')->item(0)->textContent);
+check('each style has its own hint, so dropdowns do not ask the visitor to type', count(array_unique(array($hintOf('single'), $hintOf('fields'), $hintOf('dropdown')))) === 3);
 pin('three selects named by id', array('countryId', 'regionId', 'cityId'), array_map(static fn (DOMNode $n): string => $n->attributes->getNamedItem('name')->nodeValue, iterator_to_array($x->query('//select'))));
 pin('the listing\'s country, region and city are selected', array('IN', '101', '5002'), array(
     $attr($x, '//select[@name="countryId"]/option[@selected]', 'value'),

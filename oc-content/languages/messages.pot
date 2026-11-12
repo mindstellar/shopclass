@@ -866,6 +866,10 @@ msgid_plural "Choose up to %d categories at a time."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/classes/location/PlaceField.php
+msgid "Choose your country, region and city."
+msgstr ""
+
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Choose…"
 msgstr ""
@@ -4593,7 +4597,16 @@ msgstr ""
 
 #: oc-includes/classes/location/PlaceField.php
 msgid ""
+"Type the first letters of your region and city, then pick each from the list."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid ""
 "Type the first letters of your town or city, then pick it from the list."
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Type your region and city. Pick each from the list if it is there."
 msgstr ""
 
 #: oc-includes/classes/location/PlaceField.php

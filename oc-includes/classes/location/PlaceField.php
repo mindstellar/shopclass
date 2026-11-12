@@ -286,6 +286,9 @@ final class PlaceField
             'note-typed'   => _m('Not on the list. It will be shown as you typed it.'),
             'hint-on'      => _m('Type the first letters of your town or city, then pick it from the list.'),
             'hint-off'     => _m('Type your town or city. Pick it from the list if it is there.'),
+            'hint-fields-on'  => _m('Type the first letters of your region and city, then pick each from the list.'),
+            'hint-fields-off' => _m('Type your region and city. Pick each from the list if it is there.'),
+            'hint-dropdown'   => _m('Choose your country, region and city.'),
         );
     }
 

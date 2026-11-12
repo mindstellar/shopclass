@@ -75,8 +75,9 @@ $placeHidden = static fn (string $name, string $value): string => '<input type="
     <p class="<?php echo $placeEsc(trim('oe-field-error ' . (string) ($placeOpts['error_class'] ?? ''))); ?>" id="<?php echo $placeId; ?>-error"<?php echo $placeError !== '' ? '' : ' hidden'; ?>><?php echo $placeEsc($placeError); ?></p>
 <?php } else {
     require __DIR__ . '/place-field-levels.php';
+    $placeHint = $placeStyle === 'dropdown' ? 'hint-dropdown' : ($placeStrict ? 'hint-fields-on' : 'hint-fields-off');
     ?>
-    <p class="<?php echo $placeEsc(trim('oe-place__hint ' . (string) ($placeOpts['hint_class'] ?? ''))); ?>" id="<?php echo $placeId; ?>-hint"><?php echo $placeEsc($placeTexts[$placeStrict ? 'hint-on' : 'hint-off']); ?></p>
+    <p class="<?php echo $placeEsc(trim('oe-place__hint ' . (string) ($placeOpts['hint_class'] ?? ''))); ?>" id="<?php echo $placeId; ?>-hint"><?php echo $placeEsc($placeTexts[$placeHint]); ?></p>
 <?php } ?>
     <?php if (is_array($placeValue['saved'] ?? null)) { ?>
         <button type="button" class="oe-place__saved" data-place="<?php echo $placeEsc(json_encode($placeValue['saved'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR)); ?>"><?php
