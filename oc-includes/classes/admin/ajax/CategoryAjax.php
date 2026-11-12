@@ -227,6 +227,11 @@ final class CategoryAjax extends AjaxHandler
                 : array('error' => 3, 'msg' => $e->getMessage(), 'field' => '/parent_id'));
 
             return;
+        } catch (RuntimeException) {
+            $parent = (int) CategoryStore::tree()->parent($id);
+            AjaxResponse::json(array('error' => 2, 'msg' => __('The change could not be saved. Reload and try again.'), 'parent_id' => $parent, 'moved' => $parent !== $before));
+
+            return;
         }
 
         AjaxResponse::json(array(
@@ -234,7 +239,6 @@ final class CategoryAjax extends AjaxHandler
             'msg'       => match ($saved['outcome']) {
                 CategoryService::SAVE_OK          => __('Category updated'),
                 CategoryService::SAVE_NO_NAME     => __('Sorry, including at least a title is mandatory'),
-                CategoryService::SAVE_BLANK_NAMES => __('Category updated, but some titles are empty'),
                 default                           => __('The change could not be saved. Reload and try again.'),
             },
             'text'      => ($descriptions[osc_language()]['s_name'] ?? '') !== '' ? $descriptions[osc_language()]['s_name'] : null,

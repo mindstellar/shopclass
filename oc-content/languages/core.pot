@@ -3682,10 +3682,6 @@ msgstr ""
 msgid "Category updated"
 msgstr ""
 
-#: oc-includes/classes/admin/ajax/CategoryAjax.php
-msgid "Category updated, but some titles are empty"
-msgstr ""
-
 #: oc-includes/osclass/installer/data/categories-classifieds.php
 msgid "Cats"
 msgstr ""
@@ -16936,8 +16932,10 @@ msgid ""
 msgstr ""
 
 #: oc-admin/themes/modern/categories/index.php
-msgid "This theme shows %d levels of categories."
-msgstr ""
+msgid "This theme shows %d level of categories."
+msgid_plural "This theme shows %d levels of categories."
+msgstr[0] ""
+msgstr[1] ""
 
 #: oc-admin/themes/modern/appearance/dependencies.php
 msgid "This theme works better with the plugins below. They are optional."

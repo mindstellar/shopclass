@@ -268,6 +268,8 @@
 .osc-pkg-note {
   font-size: $font-size-label;
   margin: .35rem 0 0;
+  overflow-wrap: anywhere;
+  white-space: normal;
 
   &.osc-pkg-note--info {
     color: var(--osc-ink-muted);
@@ -425,6 +427,7 @@
     // On a phone the name leads the card and the status takes its own line under it.
     td.col-status {
       flex: 0 0 100%;
+      min-inline-size: 0;
       order: 2;
     }
 

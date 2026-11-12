@@ -223,7 +223,11 @@ pin('a saved menu wins over the default', [], $bi->save('main', [$link('Mine')])
 pin('saved main resolves to the saved items', ['Mine'], array_column($bi->resolve('main', 'en_US'), 'label'));
 $bi->delete('main');
 pin('deleting it brings the default back', ['Home', 'Browse all', 'Help'], array_column($bi->resolve('main', 'en_US'), 'label'));
+MenuService::syncPlaces();
 $support->reset();
+pin('a request that never loads the theme still sees the declared default', ['Home', 'Browse all', 'Help'], array_column($bi->resolve('main', 'en_US'), 'label'));
+MenuService::placesCleared();
+pin('a theme switch drops the stored copy', null, $bi->themeDefault('main'));
 pin('without the theme, main is the top categories again', [['type' => 'category', 'ref' => $motors]], $bi->automaticItems('main'));
 
 harness_section('site links');

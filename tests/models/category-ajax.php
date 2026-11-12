@@ -234,6 +234,19 @@ $r = $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => '', 'b_pric
 pin('no name at all saves nothing', [1, 'Alpha one'], [$r['error'] ?? null, $one("SELECT s_name FROM {$p}t_category_description WHERE fk_i_category_id = $a1")]);
 $r = $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha uno', 'b_price_enabled' => '1']);
 pin('a name saves with code 0', [0, 'Alpha uno'], [$r['error'] ?? null, $r['text'] ?? null]);
+seed_locale($admin, 'de_DE', 'Deutsch');
+$r = $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha uno', 'de_DE#s_name' => '', 'b_price_enabled' => '1']);
+pin('one title set and another blank saves with no warning', 0, $r['error'] ?? null);
+
+$boom = true;
+osc_add_hook('edited_category', static function () use (&$boom): void {
+    if ($boom) {
+        throw new RuntimeException('queue down');
+    }
+});
+$r = $call('editPost', ['id' => (string) $a1, $locale . '#s_name' => 'Alpha uno', 'b_price_enabled' => '1']);
+pin('a storage failure while saving is JSON error 2', [2, true], [$r['error'] ?? null, array_key_exists('moved', $r) && array_key_exists('parent_id', $r)]);
+$boom = false;
 
 $r2 = seed_category($admin, 'Root two', null, $locale);
 $r3 = seed_category($admin, 'Root three', $r2, $locale);

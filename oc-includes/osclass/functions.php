@@ -579,6 +579,11 @@ if (defined('OC_ADMIN') && OC_ADMIN) {
     osc_add_hook('after_init_web_theme', array(\mindstellar\category\CategoryDepth::class, 'sync'));
 }
 
+osc_add_hook('theme_activate', array(\mindstellar\menu\MenuService::class, 'placesCleared'));
+if (defined('OC_ADMIN') && OC_ADMIN) {
+    osc_add_hook('after_init_web_theme', array(\mindstellar\menu\MenuService::class, 'syncPlaces'));
+}
+
 /**
  * Draws admin toolbar
  *

@@ -178,6 +178,12 @@ $service->move($b2, $off, 0);
 pin('moved under a disabled parent, it is switched off', '0', $one("SELECT b_enabled FROM {$p}t_category WHERE pk_i_id = $b2"));
 $service->move($b2, $b, 0);
 
+$admin->query("UPDATE {$p}t_category SET b_enabled = 1, i_num_items = 3 WHERE pk_i_id = $b2");
+$admin->query("UPDATE {$p}t_category SET i_num_items = 0 WHERE pk_i_id = $off");
+$service->move($b2, $off, 0);
+pin('a move under a disabled parent adds no count to it', '0', $one("SELECT i_num_items FROM {$p}t_category WHERE pk_i_id = $off"));
+$service->move($b2, $b, 0);
+
 harness_section('expiry, keeping end dates');
 $was = [$expiry($inA1), $expiry($deep[0])];
 pin('keep: the category row is written, no listing', ['categories' => 1, 'listings' => 0, 'queued' => false], $service->setExpiry([$a1], 45, false, false));

@@ -62,7 +62,7 @@ $base = osc_admin_base_url(true);
 $ajax = static fn (string $action, bool $csrf = true): string =>
     $base . '?page=ajax&action=' . $action . ($csrf ? '&' . osc_csrf_token_url() : '');
 
-$plural = static fn (callable $form): array => \mindstellar\admin\AdminText::pluralForms($form);
+$plural = static fn (callable $form): string|array => \mindstellar\admin\AdminText::pluralForms($form);
 
 $i18n = array(
     'delete'           => __('Delete'),
@@ -91,7 +91,7 @@ $i18n = array(
     'noMatch'          => __('No category matches “%s”'),
     'showSubs'         => __('Show subcategories'),
     'hideSubs'         => __('Hide subcategories'),
-    'depthNote'        => $limit === null ? '' : sprintf(__('This theme shows %d levels of categories.'), $limit),
+    'depthNote'        => $limit === null ? '' : sprintf(_n('This theme shows %d level of categories.', 'This theme shows %d levels of categories.', $limit), $limit),
     'footSum'          => __('%1$s in %2$s · %3$s'),
     'categoriesN'      => $plural(static fn (int $n): string => _n('%d category', '%d categories', $n)),
     'groupsN'          => $plural(static fn (int $n): string => _n('%d group', '%d groups', $n)),
@@ -345,7 +345,7 @@ foreach ($rows as $row) {
                             <div class="actions cat-actions">
                                 <ul>
                                     <li><button type="button" data-cat-act="edit"><?php _e('Edit'); ?></button></li>
-                                    <li><button type="button" data-cat-act="addsub"<?php echo $row['canAddChild'] ? '' : ' disabled title="' . osc_esc_html(sprintf(__('This theme shows %d levels of categories.'), (int)$limit)) . '"'; ?>><?php _e('Add subcategory'); ?></button></li>
+                                    <li><button type="button" data-cat-act="addsub"<?php echo $row['canAddChild'] ? '' : ' disabled title="' . osc_esc_html(sprintf(_n('This theme shows %d level of categories.', 'This theme shows %d levels of categories.', (int)$limit), (int)$limit)) . '"'; ?>><?php _e('Add subcategory'); ?></button></li>
                                     <li><button type="button" data-cat-act="move"><?php _e('Move to…'); ?></button></li>
                                     <li><button type="button" data-cat-act="toggle"><?php echo $row['enabled'] ? osc_esc_html(__('Disable')) : osc_esc_html(__('Enable')); ?></button></li>
                                     <li class="cat-actions-gap" aria-hidden="true"></li>
