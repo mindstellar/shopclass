@@ -43,7 +43,6 @@ final class CategoryService
     public const SAVE_OK = 0;
     public const SAVE_NO_NAME = 1;
     public const SAVE_FAILED = 2;
-    public const SAVE_BLANK_NAMES = 4;
 
     public function __construct(private Category $categories)
     {
@@ -175,11 +174,11 @@ final class CategoryService
             $this->move($id, $parentId > 0 ? $parentId : null, PHP_INT_MAX);
             $moved = true;
         }
-        if (!$this->update($id, $fields, $descriptions, $toSubcategories, $blank ? 1 : 0, $newDates)) {
+        if (!$this->update($id, $fields, $descriptions, $toSubcategories, 0, $newDates)) {
             return ['outcome' => self::SAVE_FAILED, 'moved' => $moved];
         }
 
-        return ['outcome' => $blank ? self::SAVE_BLANK_NAMES : self::SAVE_OK, 'moved' => $moved];
+        return ['outcome' => self::SAVE_OK, 'moved' => $moved];
     }
 
     /**
@@ -341,7 +340,9 @@ final class CategoryService
                     CategoryStore::reorder($old);
                     if ($count > 0) {
                         ListingCountStore::categories()->add(array_values(array_diff($from, $to)), -$count);
-                        ListingCountStore::categories()->add(array_values(array_diff($to, $from)), $count);
+                        if ($off === []) {
+                            ListingCountStore::categories()->add(array_values(array_diff($to, $from)), $count);
+                        }
                     }
                 }
                 CategoryStore::reorder($new);

@@ -72,9 +72,9 @@ final class AdminText
      *
      * @param callable(int):string $form
      *
-     * @return array{forms: list<string>, idx: string}
+     * @return string|array{forms: list<string>, idx: string} the text itself when every n reads the same
      */
-    public static function pluralForms(callable $form): array
+    public static function pluralForms(callable $form): string|array
     {
         $forms = [];
         $idx   = '';
@@ -88,6 +88,6 @@ final class AdminText
             $idx .= chr(48 + (int) $at);
         }
 
-        return ['forms' => $forms, 'idx' => $idx];
+        return count($forms) === 1 ? $forms[0] : ['forms' => $forms, 'idx' => $idx];
     }
 }

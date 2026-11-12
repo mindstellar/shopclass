@@ -33,6 +33,9 @@ final class MenuService
     public const MAX_MENUS = 20;
     public const ID        = '/^[a-z][a-z0-9_-]{0,31}$/';
 
+    /** Preference that keeps the theme's declared menu places for requests that never load the theme. */
+    public const PLACES_PREFERENCE = 'menu_theme_places';
+
     private static ?self $instance = null;
 
     /**
@@ -99,7 +102,7 @@ final class MenuService
      */
     public function themePlaces(): array
     {
-        $raw = ThemeSupports::getInstance()->get('menus');
+        $raw = self::declared();
         if (!is_array($raw)) {
             return [];
         }
@@ -426,11 +429,46 @@ final class MenuService
     }
 
     /**
+     * The theme's declared menu places. The API never loads the theme, so it reads the stored copy.
+     */
+    private static function declared(): mixed
+    {
+        $raw = ThemeSupports::getInstance()->get('menus');
+        if ($raw !== false) {
+            return $raw;
+        }
+        $stored = \osc_get_preference(self::PLACES_PREFERENCE);
+        $stored = is_string($stored) && $stored !== '' ? json_decode($stored, true) : null;
+
+        return is_array($stored) ? $stored : false;
+    }
+
+    /**
+     * Keep a copy of the declared places in step with the theme, writing only on a change.
+     */
+    public static function syncPlaces(): void
+    {
+        $raw   = ThemeSupports::getInstance()->get('menus');
+        $value = is_array($raw) ? (string) json_encode($raw) : '';
+        if ((string) \osc_get_preference(self::PLACES_PREFERENCE) !== $value) {
+            \osc_set_preference(self::PLACES_PREFERENCE, $value);
+        }
+    }
+
+    /**
+     * A theme switch drops the old theme's copy; the next admin page stores the new one.
+     */
+    public static function placesCleared(): void
+    {
+        \osc_set_preference(self::PLACES_PREFERENCE, '');
+    }
+
+    /**
      * The raw 'default' a theme place declared, or null.
      */
     private function themeSpec(string $id): mixed
     {
-        $raw = ThemeSupports::getInstance()->get('menus');
+        $raw = self::declared();
 
         return is_array($raw) && is_array($raw[$id] ?? null) ? ($raw[$id]['default'] ?? null) : null;
     }
