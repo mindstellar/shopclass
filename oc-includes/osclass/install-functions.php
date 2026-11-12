@@ -984,6 +984,18 @@ function install_seed_categories(string $type): int
 }
 
 /**
+ * The country code whose places the Your-site step imported, or null.
+ *
+ * @return string|null
+ */
+function install_chosen_country(): ?string
+{
+    $country = (string) Session::getInstance()->_get('install_country');
+
+    return $country !== '' ? $country : null;
+}
+
+/**
  * Add the sample custom fields and listings for a site type; see SampleData::install().
  *
  * @param string      $type     'classifieds' or 'shop'
@@ -996,7 +1008,7 @@ function install_seed_sample(string $type, ?string $imageDir = null): array
 {
     require_once LIB_PATH . 'osclass/helpers/hKv.php';
 
-    return (new \mindstellar\install\SampleData())->install($type, $imageDir);
+    return (new \mindstellar\install\SampleData())->install($type, $imageDir, install_chosen_country());
 }
 
 /**
@@ -1028,7 +1040,7 @@ function install_seed_site(string $type, bool $sample, ?\mindstellar\install\Sam
     if ($sample && $ok) {
         $photos ??= new \mindstellar\install\SamplePhotos();
         try {
-            $ok = install_sample_result((new \mindstellar\install\SampleData())->install($type, $photos->fetch()));
+            $ok = install_sample_result((new \mindstellar\install\SampleData())->install($type, $photos->fetch(), install_chosen_country()));
         } catch (\Throwable $e) {
             error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
             $ok = false;
@@ -1118,7 +1130,7 @@ function install_sample_step(string $action, int $batch, ?\mindstellar\install\S
     }
     $folder = (string) $session->_get('install_sample_photos');
     try {
-        $ok = install_sample_result($data->installBatch($choice['type'], $batch, $photos->owns($folder) ? $folder : null));
+        $ok = install_sample_result($data->installBatch($choice['type'], $batch, $photos->owns($folder) ? $folder : null, install_chosen_country()));
     } catch (\Throwable $e) {
         error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
         $ok = false;
@@ -1857,6 +1869,7 @@ function install_locations_unit(string $location, ?callable $import = null): arr
         $location = 'lost';
     }
     $session->_set('install_location_failed', $ok ? '' : $location);
+    $session->_set('install_country', $ok && preg_match('/^[A-Za-z]{2}$/', $location) === 1 ? strtoupper($location) : '');
 
     return array('status' => $ok, 'message' => $ok ? '' : __("We couldn't download the places for this country."));
 }

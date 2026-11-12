@@ -274,6 +274,7 @@ Core fires 652 names. Generated from the source; do not edit by hand.
 | `admin_page_title` | filter | `$title, $page, $pageLocale` | `oc-admin/themes/modern/pages/frm.php` |
 | `admin_pages_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/PagesDataTable.php` |
 | `admin_payment_test_modes` | event | `PaymentTestModes` | `oc-includes/classes/billing/event/PaymentTestModes.php` |
+| `admin_payment_keys_missing` | event | `PaymentKeysMissing` | `oc-includes/classes/billing/event/PaymentKeysMissing.php` |
 | `admin_post` | action | none | `oc-includes/osclass/classes/controller/admin/CAdminPlugins.php` |
 | `admin_profile_form` | action | `__get` | `oc-includes/classes/admin/form/AdminAccountForm.php` |
 | `admin_rules_table` | action | `$dummy` | `oc-includes/osclass/classes/datatables/BanRulesDataTable.php` |

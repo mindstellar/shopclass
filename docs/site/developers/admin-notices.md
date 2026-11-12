@@ -107,6 +107,9 @@ A gateway does not call `osc_add_admin_notice()`. Register the method on the
 [Payment gateways](/docs/developers/payment-gateways/). Core makes one notice for each method,
 with its own hide.
 
+A gateway that is on but has no keys does the same on the `admin_payment_keys_missing` filter, or on the
+`PaymentKeysMissing` event, so the admin learns why checkout offers no payment method.
+
 ## Related
 
 - [Key-value store](/docs/developers/kv-store/): stored notices live in the core group `admin_notice`.

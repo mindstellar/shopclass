@@ -39,8 +39,10 @@ class AdminNoticeFeed
     public function notices(AdminNoticeStore $s, int $admin, bool $moderator, int $now): array
     {
         $rows      = $this->testModeNotices();
+        $keyRows   = $this->keysMissingNotices();
         $modesRead = $rows !== null;
         $rows    ??= [];
+        array_push($rows, ...$keyRows);
         $snapshot  = $s->checks() ?? $this->refresh($s, $now, true);
         if ($snapshot === null) {
             return [$rows, false];
@@ -136,6 +138,14 @@ class AdminNoticeFeed
     protected function testModes(): array
     {
         return \mindstellar\boot\CoreServices::dispatcher()->dispatch(new \mindstellar\billing\event\PaymentTestModes())->all();
+    }
+
+    /**
+     * @return array<string,string> payment method name => settings URL
+     */
+    protected function keysMissing(): array
+    {
+        return \mindstellar\boot\CoreServices::dispatcher()->dispatch(new \mindstellar\billing\event\PaymentKeysMissing())->all();
     }
 
     private function refreshLater(AdminNoticeStore $s, int $now): void
@@ -245,6 +255,43 @@ class AdminNoticeFeed
                 'warning',
                 sprintf(__('%s is in test mode: no real money is taken.'), $name),
                 __('Switch it to live mode before the site takes payments.'),
+                (string) $url,
+                sprintf(__('%s settings'), $name),
+                'billing',
+                'billing_settings',
+                $name
+            );
+        }
+
+        return array_values($rows);
+    }
+
+    /**
+     * One notice for each enabled payment method that has no keys yet. A failed read adds none.
+     *
+     * @return AdminNotice[]
+     */
+    private function keysMissingNotices(): array
+    {
+        try {
+            $methods = $this->keysMissing();
+        } catch (\Throwable $e) {
+            error_log('Admin notice missing keys not read: ' . $e->getMessage());
+
+            return [];
+        }
+        $rows = [];
+        foreach ($methods as $name => $url) {
+            $name = (string) $name;
+            $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-');
+            if ($slug === '' || isset($rows['pay_keys:' . $slug])) {
+                $slug = ($slug === '' ? 'x' : $slug) . '-' . substr(sha1($name), 0, 6);
+            }
+            $rows['pay_keys:' . $slug] = new AdminNotice(
+                'pay_keys:' . $slug,
+                'warning',
+                sprintf(__('%s is on but has no keys, so checkout cannot take payments.'), $name),
+                __('Add its keys in its settings.'),
                 (string) $url,
                 sprintf(__('%s settings'), $name),
                 'billing',
