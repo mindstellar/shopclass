@@ -344,6 +344,9 @@ await test('more matches show the count row; no match shows the ON and OFF texts
   const rows = t.list.querySelectorAll('.oe-place__status--more');
   assert.equal(rows[0].textContent, '12 more. Keep typing to narrow it down.');
   assert.equal(t.live.textContent, 'Places found: 1+. Use the up and down arrows to choose.');
+  const cap = run();
+  cap.type('mu'); cap.tick(150); cap.answer(0, [MUM], 100); await cap.flush();
+  assert.equal(cap.list.querySelectorAll('.oe-place__status--more')[0].textContent, '100+ more. Keep typing to narrow it down.');
   const on = run({ strict: '1' });
   on.type('zz'); on.tick(150); on.answer(0, []); await on.flush();
   assert.equal(on.list.textContent, 'No places match “zz”. Check the spelling, or try a bigger town nearby.');

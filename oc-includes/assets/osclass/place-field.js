@@ -204,7 +204,8 @@
             if (!rows.length) {
                 return [statusRow(fill(text(strict ? 'none-on' : 'none-off'), q.trim()))];
             }
-            return more > 0 ? [statusRow(fill(text('more'), more), 'oe-place__status--more')] : [];
+            // The server stops counting at 100, so a count at the cap reads "100+".
+            return more > 0 ? [statusRow(fill(text('more'), more >= 100 ? '100+' : more), 'oe-place__status--more')] : [];
         }
 
         function failure() {
