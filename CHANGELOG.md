@@ -2,11 +2,12 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.beta7
+## Shopclass 7.1.0.beta8
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- The admin bell warns when a payment method is on but has no keys.
 - The admin listing form's Location is one box that suggests cities with their region. Themes can print it on the posting form with `osc_place_field()`.
 - **Location field** in Listings → Settings picks one box, separate country, region and city boxes, or dropdown lists on the post and edit forms. `osc_place_field()` takes `style` and `part_class`.
 - **Only places from the list** in Listings → Settings refuses a place typed by hand, on the web form, admin, API and imports.
@@ -191,6 +192,10 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- Refunds no longer put shipped units back in stock, and an amount-only credit note carries its share of tax.
+- Refund History shows who made each credit note, and the last refund says the order is refunded.
+- The installer shows the real error when its e-mail fails, sorts countries by name, sets the time zone from the chosen country and places the example listings there.
+- Editing a category no longer warns about empty titles when one title is set.
 - The installer's Documentation link opens the Shopclass docs.
 - Admin messages: closing a JS message no longer breaks the next one, JS errors scroll into view, the toast sits above the Save bar, text and links in a message stay together on a phone, and the login message uses the shared look.
 - The owner's new-order e-mail goes to the first administrator when the site has no contact address, instead of being dropped.
