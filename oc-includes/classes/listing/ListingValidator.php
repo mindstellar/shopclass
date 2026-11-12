@@ -17,6 +17,7 @@ use mindstellar\exception\InvalidException;
 use mindstellar\form\builder\FieldValidator;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
+use mindstellar\location\PlaceField;
 use mindstellar\security\SpamCheck;
 
 /**
@@ -312,10 +313,10 @@ final class ListingValidator
         try {
             LocationService::checkPlaces((string) ($aItem['countryId'] ?? ''), $region > 0 ? (string) $region : '', $city > 0 ? (string) $city : '');
         } catch (InvalidException $e) {
-            return array(self::entry(str_replace('_id', '', $e->pointer()), $e->reason(), _m('Pick your location from the list.')));
+            return array(self::entry(str_replace('_id', '', $e->pointer()), $e->reason(), PlaceField::pickMessage()));
         }
         if (($region > 0 || $city > 0) && !(new LocationQuery())->isOffered($region, $city)) {
-            return array(self::entry($city > 0 ? '/city' : '/region', 'not_listed', _m('Pick your location from the list.')));
+            return array(self::entry($city > 0 ? '/city' : '/region', 'not_listed', PlaceField::pickMessage()));
         }
 
         return array();
@@ -334,13 +335,13 @@ final class ListingValidator
     public static function unlistedPlace(array $aItem, string $level, bool $import = false): array
     {
         $has      = static fn (string $key): bool => trim((string) ($aItem[$key] ?? '')) !== '';
-        $required = (int) array_search($level, array('none', 'country', 'region', 'city'), true);
+        $required = (int) array_search($level, PlaceField::LEVELS, true);
         $deeper   = false;
         foreach (array(3 => array('city', 'cityId', 'cityName'), 2 => array('region', 'regionId', 'regionName'), 1 => array('country', 'countryId', 'countryName')) as $depth => [$place, $id, $name]) {
             if (!$has($id) && ($has($name) || ($deeper && $depth > $required))) {
                 $message = $import && $has($name)
                     ? sprintf(_m('%s is not one of the site’s places.'), trim((string) $aItem[$name]))
-                    : _m('Pick your location from the list.');
+                    : PlaceField::pickMessage();
 
                 return array(self::entry('/' . $place, 'not_listed', $message));
             }

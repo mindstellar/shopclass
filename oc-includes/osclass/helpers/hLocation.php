@@ -505,7 +505,7 @@ function osc_location_name(string $type, int|string $id, string $fallback = ''):
  * What the Location field holds: the place of a refused form, else of the listing in `item`,
  * else the signed-in user's saved place. `saved` is the place offered by the "Use my saved place" button.
  *
- * @param array<string,mixed> $opts `item` (listing row when editing), `saved` (false to skip the button)
+ * @param array<string,mixed> $opts `item` (listing row when editing), `saved` (false to skip the button), `account` (false to skip the signed-in user's place)
  *
  * @return array<string,mixed> text, city_id, region_id, country_code, region_text, country_text, origin, saved
  * @since 7.1.0

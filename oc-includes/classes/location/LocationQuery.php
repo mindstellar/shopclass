@@ -98,15 +98,13 @@ final class LocationQuery
     }
 
     /**
-     * Active cities in active regions whose stored name or a translated name starts with the
-     * typed text, named in $locale: exact names first, then by listing count, name and id. Text
-     * under SEARCH_MIN_CHARS finds nothing. `more` counts the other matches, up to SEARCH_MORE_CAP.
-     * It does not go through list(): that reads one region's cities, and its OR across the names
-     * table scans every city when no region narrows it.
+     * Active cities in active regions whose name or translated name starts with the typed text,
+     * exact names first, then by listing count. `more` counts the other matches, up to SEARCH_MORE_CAP.
+     * LocationAutocompleteQuery::cities() ranks the same way but joins one OR, which is fine inside a region and slow across all of them.
      *
      * @param string|null $country an upper-case country code, or null for any
      *
-     * @return array{rows:list<array<string,mixed>>,more:int} rows keyed like a listing's location columns
+     * @return array{rows:list<array<string,mixed>>,more:int}
      */
     public function searchCities(string $typed, ?string $country, int $limit, ?string $locale = null): array
     {
@@ -122,8 +120,7 @@ final class LocationQuery
         $scope   = $country === null ? [] : [$country];
         $order   = ' DESC, c.i_num_items DESC, c.pk_i_id LIMIT ' . $cap;
 
-        // Two reads that each stay on a name index, instead of one OR across the names table.
-        // The straight joins keep that index first when a country filter would put regions first.
+        // Two reads that each use a name index, with straight joins so a country filter cannot put regions first.
         $stored = array_map('intval', array_column(Db::select(
             'SELECT c.pk_i_id FROM ' . $city . ' c STRAIGHT_JOIN ' . $region . ' r ON r.pk_i_id = c.fk_i_region_id'
             . ' WHERE c.s_name LIKE ?' . $inScope . ' ORDER BY c.s_name = ?' . $order,

@@ -427,8 +427,6 @@ function osc_item_required_location(): string
 /**
  * Whether a listing's place must be picked from the site's list, so a typed country, region
  * or city that is not one of the site's places is refused. Off on a site that never saved it.
- *
- * @return bool
  */
 function osc_item_place_from_list(): bool
 {
@@ -438,8 +436,6 @@ function osc_item_place_from_list(): bool
 /**
  * How the post and edit forms ask for the place: 'single' (one box that suggests places),
  * 'fields' (a box per level) or 'dropdown' (a list per level). A site that never saved it reads 'single'.
- *
- * @return string
  */
 function osc_item_place_style(): string
 {
@@ -455,7 +451,7 @@ function osc_item_place_style(): string
  */
 function osc_item_location_required(string $place): bool
 {
-    $order = array('none', 'country', 'region', 'city');
+    $order = \mindstellar\location\PlaceField::LEVELS;
     $want  = array_search($place, $order, true);
 
     return $want !== false && $want > 0 && array_search(osc_item_required_location(), $order, true) >= $want;

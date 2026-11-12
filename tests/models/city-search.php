@@ -193,6 +193,21 @@ pin('limit 21 is 422', 422, $get(['q' => 'mu', 'limit' => '21'])->status());
 pin('limit 20 is fine', 200, $get(['q' => 'mu', 'limit' => '20'])->status());
 pin('a translated-only match counts in more', [1, 1], [count(($r = $get(['q' => 'Kö', 'limit' => '1']))->body()['data']), $r->body()['meta']['more'] ?? null]);
 
+$capIds = [];
+for ($i = 0; $i < LocationQuery::SEARCH_MORE_CAP + 30; $i++) {
+    $capIds[] = $city($mh, 'Capville ' . $i, $in);
+    $other    = $city($mh, 'Other ' . $i, $in);
+    $capIds[] = $other;
+    $store->set('city', (string) $other, 'de_DE', 'Capville T' . $i);
+}
+scratchdb_forget_cache();
+pin('meta.more stops at the cap when more cities match', [1, LocationQuery::SEARCH_MORE_CAP], [count(($r = $get(['q' => 'Capville', 'limit' => '1']))->body()['data']), $r->body()['meta']['more'] ?? null]);
+$ids = implode(',', array_map('intval', $capIds));
+seed_exec($admin, "DELETE FROM {$p}t_location_name WHERE e_place_type = 'city' AND s_place_id IN ({$ids})", '', []);
+seed_exec($admin, "DELETE FROM {$p}t_city WHERE pk_i_id IN ({$ids})", '', []);
+scratchdb_forget_cache();
+pin('the cap rows are gone again', [], $names($get(['q' => 'Capville'])));
+
 harness_section('who may call');
 $regions = $call('regions/' . $mh . '/cities', ['q' => 'mu']);
 $r       = $get(['q' => 'mu']);

@@ -95,6 +95,7 @@ final class LocationAutocompleteQuery
             return array();
         }
         $region = trim((string) $region);
+        // One OR across names: fine for a short ajax list, but LocationQuery::searchCities() splits it to stay on an index.
         [$match, $params] = $this->store->matchClause(LocationNameStore::CITY, 'a.pk_i_id', 'a.s_name', $term);
 
         $sql = 'SELECT a.pk_i_id AS id, a.s_name AS label, a.s_name AS value, aux.s_name AS region, a.fk_i_region_id AS region_id'

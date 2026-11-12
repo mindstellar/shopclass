@@ -22,6 +22,15 @@ final class PlaceField
     /** The posted place keys a refused form keeps. */
     public const KEYS = array('cityId', 'city', 'regionId', 'region', 'countryId', 'country');
 
+    /** The Required location levels, shallowest first. */
+    public const LEVELS = array('none', 'country', 'region', 'city');
+
+    /** The error for a place that was typed but is not on the list. */
+    public static function pickMessage(): string
+    {
+        return _m('Pick your location from the list.');
+    }
+
     /**
      * What the field holds, and `saved`: the saved place when it is offered as a button.
      *
@@ -184,8 +193,7 @@ final class PlaceField
     /**
      * The field's markup.
      *
-     * @param array<string,mixed> $opts  id, label, required, required_levels, style, strict (only places from the list), multi (several countries),
-     *                                   error, errors, lists (from prepare()), ajax (the dropdown's ajax address), part_class, class, hint_class, error_class, req_class
+     * @param array<string,mixed> $opts  see osc_place_field() for the options
      * @param array<string,mixed> $value from value()
      */
     public static function render(array $opts, array $value): string
@@ -237,9 +245,7 @@ final class PlaceField
         return $out;
     }
 
-    /**
-     * @return list<array<string,string>>
-     */
+    /** @return list<array<string,string>> */
     private static function rows(mixed $list, string $from, string $to): array
     {
         return array_map(static fn (array $r): array => array($to => (string) $r[$from], 'name' => (string) $r['s_name']), array_values((array) $list));
@@ -278,7 +284,7 @@ final class PlaceField
             'live-found'   => _m('Places found: %s. Use the up and down arrows to choose.'),
             'live-none'    => _m('No places match.'),
             'live-chosen'  => _m('%s chosen.'),
-            'pick-error'   => _m('Pick your location from the list.'),
+            'pick-error'   => self::pickMessage(),
             'note-address' => _m('From your saved address'),
             'note-account' => _m('From your account'),
             'note-listing' => _m('This listing’s place'),

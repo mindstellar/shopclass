@@ -2581,7 +2581,6 @@ msgstr ""
 msgid "Photos"
 msgstr ""
 
-#: oc-includes/classes/listing/ListingValidator.php
 #: oc-includes/classes/location/PlaceField.php
 msgid "Pick your location from the list."
 msgstr ""

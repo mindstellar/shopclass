@@ -159,10 +159,10 @@ pin('OFF warns that a typed place is shown as typed; ON does not', array(true, '
 ));
 
 harness_section('single style is unchanged');
-$phase1Value = PlaceField::value(array('cityId' => '5100', 'city' => 'Munnar', 'regionId' => '103', 'region' => 'Kerala', 'countryId' => 'IN', 'country' => ''), null, array('label' => 'Mumbai, Maharashtra', 'city_id' => 5001, 'region_id' => 101, 'country_code' => 'IN', 'origin' => 'address'));
-$phase1Html  = PlaceField::render(array('id' => 'loc', 'label' => 'Where', 'required' => true, 'class' => 'sf-field', 'hint_class' => 'h', 'error_class' => 'e', 'req_class' => 'r', 'strict' => true, 'multi' => true, 'error' => 'Pick one.'), $phase1Value);
-pin('the markup equals the phase 1 output but for the style class and attribute value', trim((string) file_get_contents(__DIR__ . '/fixtures/place-single-phase1.html')), trim(str_replace(array(' oe-place--single', 'data-osc-place="single"'), array('', 'data-osc-place'), $phase1Html)));
-pin('and says which style it is', array('single', true), array($attr($dom($phase1Html), '//div[@data-osc-place]', 'data-osc-place'), str_contains($phase1Html, 'oe-place--single')));
+$singleValue = PlaceField::value(array('cityId' => '5100', 'city' => 'Munnar', 'regionId' => '103', 'region' => 'Kerala', 'countryId' => 'IN', 'country' => ''), null, array('label' => 'Mumbai, Maharashtra', 'city_id' => 5001, 'region_id' => 101, 'country_code' => 'IN', 'origin' => 'address'));
+$singleHtml  = PlaceField::render(array('id' => 'loc', 'label' => 'Where', 'required' => true, 'class' => 'sf-field', 'hint_class' => 'h', 'error_class' => 'e', 'req_class' => 'r', 'strict' => true, 'multi' => true, 'error' => 'Pick one.'), $singleValue);
+pin('the markup equals the saved single-style output but for the style class and attribute value', trim((string) file_get_contents(__DIR__ . '/fixtures/place-single.html')), trim(str_replace(array(' oe-place--single', 'data-osc-place="single"'), array('', 'data-osc-place'), $singleHtml)));
+pin('and says which style it is', array('single', true), array($attr($dom($singleHtml), '//div[@data-osc-place]', 'data-osc-place'), str_contains($singleHtml, 'oe-place--single')));
 pin('an unknown style is drawn as single', 'single', $attr($dom(PlaceField::render(array('style' => 'x<b>', 'strict' => true, 'multi' => false), $empty)), '//div[@data-osc-place]', 'data-osc-place'));
 
 harness_section('fields style');
@@ -253,6 +253,8 @@ $ddValue = PlaceField::compose($kept(array()), array('fk_i_city_id' => '5002', '
 $html = PlaceField::render(array('id' => 'loc', 'style' => 'dropdown', 'strict' => true, 'multi' => true, 'lists' => $ddLists), $ddValue);
 $x    = $dom($html);
 $hintOf = static fn (string $style): string => trim($dom(PlaceField::render(array('id' => 'loc', 'style' => $style, 'strict' => false, 'multi' => true, 'lists' => $ddLists), $ddValue))->query('//p[@id="loc-hint"]')->item(0)->textContent);
+$fieldsHint = static fn (bool $strict): string => trim($dom(PlaceField::render(array('id' => 'loc', 'style' => 'fields', 'strict' => $strict, 'multi' => true, 'lists' => $ddLists), $ddValue))->query('//p[@id="loc-hint"]')->item(0)->textContent);
+pin('the fields hint follows the setting: ON reads the ON text, OFF does not', array(PlaceField::texts()['hint-fields-on'], true), array($fieldsHint(true), $fieldsHint(true) !== $fieldsHint(false)));
 check('each style has its own hint, so dropdowns do not ask the visitor to type', count(array_unique(array($hintOf('single'), $hintOf('fields'), $hintOf('dropdown')))) === 3);
 pin('three selects named by id', array('countryId', 'regionId', 'cityId'), array_map(static fn (DOMNode $n): string => $n->attributes->getNamedItem('name')->nodeValue, iterator_to_array($x->query('//select'))));
 pin('the listing\'s country, region and city are selected', array('IN', '101', '5002'), array(
