@@ -207,7 +207,7 @@ CATALOG_URL="$(sed -n "s/.*return '\(https:\/\/[^']*latest\.json\)'.*/\1/p" \
 if curl -fsS --max-time 25 -o /dev/null "$CATALOG_URL" 2>/dev/null; then
   grep -q 'id="location-json"' "$WORK/step4.html" \
     || fail "the catalog is reachable but the form offered no country list"
-  COUNTRIES="$(grep -coE '<option value="[A-Za-z]{2}"' "$WORK/step4.html" || true)"
+  COUNTRIES="$(grep -oE '<option value="[A-Za-z]{2}"' "$WORK/step4.html" | wc -l)"
   [ "${COUNTRIES:-0}" -ge 50 ] \
     || fail "the country list offered ${COUNTRIES:-0} countries, expected the catalog's"
   ok "country list populated (${COUNTRIES} countries)"
