@@ -1725,7 +1725,7 @@ Cities in any region whose name starts with what was typed, for a place field
 |---|---|---|---|---|
 | `q` | query | string | no | What was typed. Matches the start of a city's name in any language; under 2 characters finds nothing. |
 | `country` | query | string | no | Only cities in this country: a two-letter code. |
-| `limit` | query | integer | no |  |
+| `limit` | query | integer | no | How many cities to return: default 8, at most 20. |
 | `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 

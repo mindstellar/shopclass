@@ -40801,6 +40801,7 @@
                         "name": "limit",
                         "in": "query",
                         "required": false,
+                        "description": "How many cities to return: default 8, at most 20.",
                         "schema": {
                             "type": "integer",
                             "minimum": 1,

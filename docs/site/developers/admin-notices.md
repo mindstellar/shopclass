@@ -103,12 +103,12 @@ print the full warning only on your own settings page.
 ## Payment methods in test mode
 
 A gateway does not call `osc_add_admin_notice()`. Register the method on the
-`admin_payment_test_modes` filter (name => settings URL), or on the `PaymentTestModes` event. See
+`PaymentTestModes` event (the older `admin_payment_test_modes` filter still works, name => settings URL). See
 [Payment gateways](/docs/developers/payment-gateways/). Core makes one notice for each method,
 with its own hide.
 
-A gateway that is on but has no keys does the same on the `admin_payment_keys_missing` filter, or on the
-`PaymentKeysMissing` event, so the admin learns why checkout offers no payment method.
+A gateway that is on but has no keys does the same on the `PaymentKeysMissing` event (the older
+`admin_payment_keys_missing` filter still works), so the admin learns why checkout offers no payment method.
 
 ## Related
 
