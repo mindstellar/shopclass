@@ -29,6 +29,7 @@ action admin_media_table
 action admin_menu_init
 action admin_page_header
 action admin_pages_table
+action admin_payment_keys_missing
 action admin_post
 action admin_profile_form
 action admin_rules_table
