@@ -39,10 +39,9 @@ class AdminNoticeFeed
     public function notices(AdminNoticeStore $s, int $admin, bool $moderator, int $now): array
     {
         $rows      = $this->testModeNotices();
-        $keyRows   = $this->keysMissingNotices();
         $modesRead = $rows !== null;
         $rows    ??= [];
-        array_push($rows, ...$keyRows);
+        array_push($rows, ...$this->keysMissingNotices());
         $snapshot  = $s->checks() ?? $this->refresh($s, $now, true);
         if ($snapshot === null) {
             return [$rows, false];
@@ -243,27 +242,13 @@ class AdminNoticeFeed
 
             return null;
         }
-        $rows = [];
-        foreach ($modes as $name => $url) {
-            $name = (string) $name;
-            $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-');
-            if ($slug === '' || isset($rows['pay_test:' . $slug])) {
-                $slug = ($slug === '' ? 'x' : $slug) . '-' . substr(sha1($name), 0, 6);
-            }
-            $rows['pay_test:' . $slug] = new AdminNotice(
-                'pay_test:' . $slug,
-                'warning',
-                sprintf(__('%s is in test mode: no real money is taken.'), $name),
-                __('Switch it to live mode before the site takes payments.'),
-                (string) $url,
-                sprintf(__('%s settings'), $name),
-                'billing',
-                'billing_settings',
-                $name
-            );
-        }
 
-        return array_values($rows);
+        return $this->paymentNotices(
+            'pay_test:',
+            $modes,
+            __('%s is in test mode: no real money is taken.'),
+            __('Switch it to live mode before the site takes payments.')
+        );
     }
 
     /**
@@ -280,18 +265,34 @@ class AdminNoticeFeed
 
             return [];
         }
+
+        return $this->paymentNotices(
+            'pay_keys:',
+            $methods,
+            __('%s is on but has no keys, so checkout cannot take payments.'),
+            __('Add its keys in its settings.')
+        );
+    }
+
+    /**
+     * @param array<string,string> $methods payment method name => settings URL
+     *
+     * @return AdminNotice[]
+     */
+    private function paymentNotices(string $prefix, array $methods, string $text, string $detail): array
+    {
         $rows = [];
         foreach ($methods as $name => $url) {
             $name = (string) $name;
             $slug = trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-');
-            if ($slug === '' || isset($rows['pay_keys:' . $slug])) {
+            if ($slug === '' || isset($rows[$prefix . $slug])) {
                 $slug = ($slug === '' ? 'x' : $slug) . '-' . substr(sha1($name), 0, 6);
             }
-            $rows['pay_keys:' . $slug] = new AdminNotice(
-                'pay_keys:' . $slug,
+            $rows[$prefix . $slug] = new AdminNotice(
+                $prefix . $slug,
                 'warning',
-                sprintf(__('%s is on but has no keys, so checkout cannot take payments.'), $name),
-                __('Add its keys in its settings.'),
+                sprintf($text, $name),
+                $detail,
                 (string) $url,
                 sprintf(__('%s settings'), $name),
                 'billing',

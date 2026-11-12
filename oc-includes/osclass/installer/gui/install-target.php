@@ -49,7 +49,7 @@ if ($country_list === array()) {
 
 $countries = array('skip' => __('Skip for now'));
 $selected  = 'skip';
-foreach (install_sort_countries($country_list) as $c) {
+foreach (\mindstellar\install\SiteDetails::sortCountries($country_list) as $c) {
     $countries[(string) $c['code']] = (string) $c['name'];
     if ($country_ip && strcasecmp((string) $c['code'], $country_ip) === 0) {
         $selected = (string) $c['code'];

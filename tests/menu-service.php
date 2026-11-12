@@ -226,9 +226,28 @@ pin('deleting it brings the default back', ['Home', 'Browse all', 'Help'], array
 MenuService::syncPlaces();
 $support->reset();
 pin('a request that never loads the theme still sees the declared default', ['Home', 'Browse all', 'Help'], array_column($bi->resolve('main', 'en_US'), 'label'));
-MenuService::placesCleared();
-pin('a theme switch drops the stored copy', null, $bi->themeDefault('main'));
+MenuService::syncForTheme('');
+pin('a switch to a theme that declares nothing drops the stored copy', null, $bi->themeDefault('main'));
+
 pin('without the theme, main is the top categories again', [['type' => 'category', 'ref' => $motors]], $bi->automaticItems('main'));
+
+$themesDir = sys_get_temp_dir() . '/menu-themes-' . getmypid() . '/';
+mkdir($themesDir . 'sample', 0777, true);
+file_put_contents($themesDir . 'sample/functions.php', "<?php\nPlugins::addHook('init', 'menu_test_sample_places');\nfunction menu_test_sample_places() {\n    mindstellar\\theme\\ThemeSupports::getInstance()->add('menus', ['main' => ['label' => 'Header', 'default' => [['type' => 'builtin', 'ref' => 'home']]]]);\n}\n");
+register_shutdown_function(static function () use ($themesDir): void {
+    @unlink($themesDir . 'sample/functions.php');
+    @rmdir($themesDir . 'sample');
+    @rmdir($themesDir);
+});
+if (!function_exists('osc_themes_path')) {
+    function osc_themes_path()
+    {
+        return $GLOBALS['themesDir'];
+    }
+}
+MenuService::syncForTheme('sample');
+$support->reset();
+pin('activating a theme stores its declared places at once', ['Home'], array_column($bi->resolve('main', 'en_US'), 'label'));
 
 harness_section('site links');
 define('WEB_PATH', 'https://shop.test/sub/');

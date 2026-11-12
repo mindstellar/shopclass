@@ -16,7 +16,7 @@ namespace mindstellar\billing\event;
  * The admin asks which enabled payment methods have no keys yet, to show one notice for each.
  * Old callbacks on `admin_payment_keys_missing` get (array name => settings url) and return it.
  */
-final class PaymentKeysMissing extends PaymentTestModes
+final class PaymentKeysMissing extends PaymentNameList
 {
     public static function legacyNames(): array
     {

@@ -984,18 +984,6 @@ function install_seed_categories(string $type): int
 }
 
 /**
- * The country code whose places the Your-site step imported, or null.
- *
- * @return string|null
- */
-function install_chosen_country(): ?string
-{
-    $country = (string) Session::getInstance()->_get('install_country');
-
-    return $country !== '' ? $country : null;
-}
-
-/**
  * Add the sample custom fields and listings for a site type; see SampleData::install().
  *
  * @param string      $type     'classifieds' or 'shop'
@@ -1008,7 +996,7 @@ function install_seed_sample(string $type, ?string $imageDir = null): array
 {
     require_once LIB_PATH . 'osclass/helpers/hKv.php';
 
-    return (new \mindstellar\install\SampleData())->install($type, $imageDir, install_chosen_country());
+    return (new \mindstellar\install\SampleData())->install($type, $imageDir, \mindstellar\install\SiteDetails::chosenCountry());
 }
 
 /**
@@ -1040,7 +1028,7 @@ function install_seed_site(string $type, bool $sample, ?\mindstellar\install\Sam
     if ($sample && $ok) {
         $photos ??= new \mindstellar\install\SamplePhotos();
         try {
-            $ok = install_sample_result((new \mindstellar\install\SampleData())->install($type, $photos->fetch(), install_chosen_country()));
+            $ok = install_sample_result((new \mindstellar\install\SampleData())->install($type, $photos->fetch(), \mindstellar\install\SiteDetails::chosenCountry()));
         } catch (\Throwable $e) {
             error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
             $ok = false;
@@ -1130,7 +1118,7 @@ function install_sample_step(string $action, int $batch, ?\mindstellar\install\S
     }
     $folder = (string) $session->_get('install_sample_photos');
     try {
-        $ok = install_sample_result($data->installBatch($choice['type'], $batch, $photos->owns($folder) ? $folder : null, install_chosen_country()));
+        $ok = install_sample_result($data->installBatch($choice['type'], $batch, $photos->owns($folder) ? $folder : null, \mindstellar\install\SiteDetails::chosenCountry()));
     } catch (\Throwable $e) {
         error_log('Shopclass install: sample data could not be added: ' . $e->getMessage());
         $ok = false;
@@ -1710,15 +1698,30 @@ function install_run_unit(string $action): array
         $location = Params::getParamString('location-json');
 
         $location = Params::getParam('skip-location-input') === 'skip' ? 'skip' : $location;
-        \mindstellar\database\Db::execute(
-            'REPLACE INTO ' . DB_TABLE_PREFIX . 't_preference (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)',
-            array('timezone', install_timezone_for_country($location), 'osclass', 'STRING')
-        );
+        Preference::getInstance()->replace('timezone', \mindstellar\install\SiteDetails::timezoneForCountry($location));
 
         return install_locations_unit($location);
     }
 
-    return install_storefront_unit();
+    $result = install_storefront_unit();
+    install_sync_menu_places();
+
+    return $result;
+}
+
+/**
+ * Store the theme's menu places, so the REST API has the theme's default menus on a fresh site.
+ *
+ * @return void
+ */
+function install_sync_menu_places(): void
+{
+    try {
+        install_load_app_helpers();
+        \mindstellar\menu\MenuService::syncForTheme(osc_theme());
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: menu places not stored: ' . $e->getMessage());
+    }
 }
 
 /**
@@ -1782,65 +1785,6 @@ function install_starter_unit(?callable $seed = null): array
 }
 
 /**
- * The From address of the install mail: the admin's address, else an address on the site's domain.
- *
- * @param string $adminEmail the admin e-mail from the form
- * @param string $serverName SERVER_NAME, which may be empty on the command line
- * @param string $siteUrl    the site address, used when SERVER_NAME is empty
- *
- * @return string
- */
-function install_mail_from(string $adminEmail, string $serverName, string $siteUrl): string
-{
-    if (filter_var($adminEmail, FILTER_VALIDATE_EMAIL) !== false) {
-        return $adminEmail;
-    }
-    $host = strtolower($serverName !== '' ? $serverName : (string) parse_url($siteUrl, PHP_URL_HOST));
-    $host = preg_replace('/^www\./', '', $host);
-
-    return 'noreply@' . ($host !== '' ? $host : 'localhost');
-}
-
-/**
- * Sort the installer's country rows by display name, in the visitor's language rules when intl is there.
- *
- * @param array<int, array<string, mixed>> $rows catalogue rows with a 'name'
- *
- * @return array<int, array<string, mixed>>
- */
-function install_sort_countries(array $rows): array
-{
-    $collator = class_exists('Collator') ? new Collator('en') : null;
-    usort($rows, static function (array $a, array $b) use ($collator): int {
-        $x = (string) $a['name'];
-        $y = (string) $b['name'];
-
-        return $collator !== null ? (int) $collator->compare($x, $y) : strnatcasecmp($x, $y);
-    });
-
-    return $rows;
-}
-
-/**
- * The first timezone of a country (a code or a catalogue file name such as "IN.json"), else UTC.
- *
- * @param string $location
- *
- * @return string
- */
-function install_timezone_for_country(string $location): string
-{
-    if (preg_match('/^([A-Za-z]{2})(?:[._-]|$)/', $location, $m) === 1) {
-        $zones = @DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, strtoupper($m[1]));
-        if (is_array($zones) && $zones !== []) {
-            return (string) $zones[0];
-        }
-    }
-
-    return 'UTC';
-}
-
-/**
  * Import the places of the country picked on the form. 'skip' or '' imports nothing.
  * A failure keeps the country code in the session for the done step.
  *
@@ -1869,7 +1813,7 @@ function install_locations_unit(string $location, ?callable $import = null): arr
         $location = 'lost';
     }
     $session->_set('install_location_failed', $ok ? '' : $location);
-    $session->_set('install_country', $ok && preg_match('/^[A-Za-z]{2}$/', $location) === 1 ? strtoupper($location) : '');
+    $session->_set('install_country', $ok ? (\mindstellar\install\SiteDetails::countryCode($location) ?? '') : '');
 
     return array('status' => $ok, 'message' => $ok ? '' : __("We couldn't download the places for this country."));
 }
@@ -2099,7 +2043,7 @@ function basic_info()
     $mail           = new PHPMailer(true);
     $mail->CharSet  = 'utf-8';
     $mail->Host     = 'localhost';
-    $mail->From     = install_mail_from(Params::getParam('email'), Params::getServerParam('SERVER_NAME'), (string) WEB_PATH);
+    $mail->From     = \mindstellar\install\SiteDetails::mailFrom(Params::getParam('email'), Params::getServerParam('SERVER_NAME'), (string) WEB_PATH);
     $mail->FromName = 'Shopclass';
     $mail->Subject  = 'Shopclass successfully installed!';
     $mail->addAddress(Params::getParam('email'), 'Shopclass administrator');

@@ -93,8 +93,10 @@ function _osc_die_not_ready(string $title, string $message, bool $help = false)
         'primary' => true,
     ]];
     if ($help) {
-        // A literal URL: this runs before the autoloader is loaded.
-        $actions[] = ['label' => 'Need help?', 'href' => 'https://github.com/mindstellar/shopclass/discussions'];
+        if (!class_exists(\mindstellar\utility\ProjectLinks::class, false)) {
+            require_once ABS_PATH . 'oc-includes/classes/core/utility/ProjectLinks.php';
+        }
+        $actions[] = ['label' => 'Need help?', 'href' => \mindstellar\utility\ProjectLinks::FORUM];
     }
     osc_die($title, $message, ['tone' => 'info', 'status' => 503, 'actions' => $actions]);
 }

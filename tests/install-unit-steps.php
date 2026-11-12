@@ -176,8 +176,8 @@ install_record_lost_steps(array('storefront'));
 check('Storefront on disk is not reported missing', !$session->_get('install_storefront_failed'));
 
 harness_section('timezone, countries and mail sender');
-check('a country picks its first timezone', install_timezone_for_country('IN') === 'Asia/Kolkata' && install_timezone_for_country('in.json') === 'Asia/Kolkata');
-check('no country or an unknown one is UTC', install_timezone_for_country('skip') === 'UTC' && install_timezone_for_country('') === 'UTC' && install_timezone_for_country('ZZ') === 'UTC');
+check('a country picks its first timezone', \mindstellar\install\SiteDetails::timezoneForCountry('IN') === 'Asia/Kolkata' && \mindstellar\install\SiteDetails::timezoneForCountry('in.json') === 'Asia/Kolkata');
+check('no country or an unknown one is UTC', \mindstellar\install\SiteDetails::timezoneForCountry('skip') === 'UTC' && \mindstellar\install\SiteDetails::timezoneForCountry('') === 'UTC' && \mindstellar\install\SiteDetails::timezoneForCountry('ZZ') === 'UTC');
 Params::setParam('skip-location-input', '');
 Params::setParam('location-json', 'MT');
 install_run_unit('locations');
@@ -186,14 +186,14 @@ check('the chosen country sets the saved timezone', $tz() === 'Europe/Malta');
 Params::setParam('skip-location-input', 'skip');
 install_run_unit('locations');
 check('skipping a country saves UTC', $tz() === 'UTC');
-$sorted = array_column(install_sort_countries(array(
+$sorted = array_column(\mindstellar\install\SiteDetails::sortCountries(array(
     array('code' => 'AE', 'name' => 'United Arab Emirates'),
     array('code' => 'AF', 'name' => 'Afghanistan'),
     array('code' => 'AD', 'name' => 'Andorra'),
 )), 'name');
 check('countries sort by name, not code', $sorted === array('Afghanistan', 'Andorra', 'United Arab Emirates'));
-check('mail comes from the admin address', install_mail_from('owner@example.test', '', 'https://x.test/') === 'owner@example.test');
-check('else from the site domain, with www dropped', install_mail_from('', 'www.shop.test', '') === 'noreply@shop.test');
-check('empty SERVER_NAME uses the site address', install_mail_from('bad', '', 'https://www.shop.test/a/') === 'noreply@shop.test');
+check('mail comes from the admin address', \mindstellar\install\SiteDetails::mailFrom('owner@example.test', '', 'https://x.test/') === 'owner@example.test');
+check('else from the site domain, with www dropped', \mindstellar\install\SiteDetails::mailFrom('', 'www.shop.test', '') === 'noreply@shop.test');
+check('empty SERVER_NAME uses the site address', \mindstellar\install\SiteDetails::mailFrom('bad', '', 'https://www.shop.test/a/') === 'noreply@shop.test');
 
 exit(harness_result());

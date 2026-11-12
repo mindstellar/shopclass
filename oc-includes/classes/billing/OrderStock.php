@@ -74,21 +74,21 @@ final class OrderStock
     }
 
     /**
-     * Give back what take() took, if the order holds it. Units in $shipped went out to the buyer
-     * and stay out of stock.
+     * Give back what take() took, if the order holds it. Units shipped to the buyer stay out of stock.
      *
-     * @param array<int,int> $shipped line id => units shipped, from Order::shippedQty()
+     * @param array<int,int>|null $shipped line id => units shipped; read from the order when null
      *
      * @return bool whether stock was given back by this call
      * @throws \mindstellar\database\DbException
      */
-    public static function release(int $orderId, array $shipped = array()): bool
+    public static function release(int $orderId, ?array $shipped = null): bool
     {
         $released = false;
         OrderStore::withMeta($orderId, static function (array $meta) use ($orderId, $shipped, &$released): array {
             if (!array_key_exists(self::TAKEN, $meta)) {
                 return $meta;
             }
+            $shipped ??= DocumentStore::lockOrder($orderId)?->shippedQty() ?? array();
             $taken = self::quantities($meta[self::TAKEN]);
             if ($taken !== array()) {
                 $variants = array();

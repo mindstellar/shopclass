@@ -464,6 +464,38 @@ final class MenuService
     }
 
     /**
+     * The installer stores the new theme's places by running its functions.php and init callbacks.
+     * Only safe where no other theme is loaded, so a theme switch uses placesCleared() instead.
+     *
+     * @param mixed $theme
+     */
+    public static function syncForTheme($theme): void
+    {
+        $theme    = (string) $theme;
+        $supports = ThemeSupports::getInstance();
+        $supports->reset();
+        if ($theme !== '') {
+            $before = \Plugins::callbacks('init');
+            try {
+                foreach ([$theme, \WebThemes::getInstance()->parentOf($theme)] as $slug) {
+                    $file = $slug === '' ? '' : \osc_themes_path() . $slug . '/functions.php';
+                    if ($file !== '' && is_file($file)) {
+                        \Plugins::includeAs('theme', $slug, $file);
+                    }
+                }
+                foreach (\Plugins::callbacks('init') as $callback) {
+                    if (!in_array($callback, $before, true) && is_callable($callback)) {
+                        $callback();
+                    }
+                }
+            } catch (\Throwable $e) {
+                error_log('Menu places not read from theme ' . $theme . ': ' . $e->getMessage());
+            }
+        }
+        self::syncPlaces();
+    }
+
+    /**
      * The raw 'default' a theme place declared, or null.
      */
     private function themeSpec(string $id): mixed
