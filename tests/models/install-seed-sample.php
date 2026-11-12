@@ -121,6 +121,23 @@ check('the rest are added once', $rest['listings'] === 21 && $count("SELECT COUN
 check('the fields are not added twice', $count("SELECT COUNT(*) FROM {$p}t_meta_fields") === $fields);
 check('all 26 ids are recorded', count(osc_kv_get('sample', 'items', array())) === 26);
 
+harness_section('chosen country');
+scratchdb_truncate_all($admin);
+seed_locale($admin);
+seed_currency($admin);
+scratchdb_forget_cache();
+osc_reset_preferences();
+install_seed_categories('classifieds');
+$admin->query("INSERT INTO {$p}t_country (pk_c_code, s_name, s_slug) VALUES ('IN', 'India', 'india')");
+$admin->query("INSERT INTO {$p}t_region (pk_i_id, fk_c_country_code, s_name, s_slug) VALUES (5, 'IN', 'Goa', 'goa')");
+$admin->query("INSERT INTO {$p}t_city (pk_i_id, fk_i_region_id, fk_c_country_code, s_name, s_slug) VALUES (7, 5, 'IN', 'Panaji', 'panaji')");
+$located = (new \mindstellar\install\SampleData())->installBatch('classifieds', 0, null, 'IN');
+check('the batch is made', $located['listings'] === 5);
+check('every example has the chosen country', $count("SELECT COUNT(*) FROM {$p}t_item_location WHERE fk_c_country_code = 'IN'") === 5);
+check('and the imported region and city', $count("SELECT COUNT(*) FROM {$p}t_item_location WHERE fk_i_region_id = 5 AND fk_i_city_id = 7") === 5);
+$bare = (new \mindstellar\install\SampleData())->installBatch('classifieds', 1, null, 'ZZ');
+check('an unknown country adds no location', $bare['listings'] === 5 && $count("SELECT COUNT(*) FROM {$p}t_item_location WHERE fk_c_country_code IS NULL OR fk_c_country_code = ''") === 5);
+
 harness_section('shop sample');
 scratchdb_truncate_all($admin);
 seed_locale($admin);

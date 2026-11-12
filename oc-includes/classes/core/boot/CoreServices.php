@@ -35,6 +35,7 @@ use mindstellar\billing\event\OrderProcessing;
 use mindstellar\billing\event\OrderReturnUrlResolving;
 use mindstellar\billing\event\OrderShipped;
 use mindstellar\billing\event\OrderUrlResolving;
+use mindstellar\billing\event\PaymentKeysMissing;
 use mindstellar\billing\event\PaymentTestModes;
 use mindstellar\billing\event\ReceiptComposing;
 use mindstellar\billing\event\ShipmentAdded;
@@ -118,6 +119,7 @@ final class CoreServices
         'billing_tracking_url' => TrackingUrlResolving::class,
         'admin_billing_carriers' => CarriersListing::class,
         'admin_payment_test_modes' => PaymentTestModes::class,
+        'admin_payment_keys_missing' => PaymentKeysMissing::class,
         'billing_receipt_details' => ReceiptComposing::class,
         'billing_order_return_url' => OrderReturnUrlResolving::class,
         'billing_order_url' => OrderUrlResolving::class,

@@ -20,7 +20,7 @@ use mindstellar\event\Event;
  * A listener adds its name and settings link. Old callbacks on `admin_payment_test_modes`
  * get (array name => settings url) and return it.
  */
-final class PaymentTestModes extends Event implements Bridged
+class PaymentTestModes extends Event implements Bridged
 {
     /** @var array<string,string> */
     private array $modes = [];

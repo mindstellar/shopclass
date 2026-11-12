@@ -96,6 +96,9 @@ namespace {
         /** @var array<string,string> */
         public array $modes = [];
 
+        /** @var array<string,string> */
+        public array $keys = [];
+
         /** @var callable[] */
         public array $held = [];
         public bool $hold = false;
@@ -121,6 +124,11 @@ namespace {
             }
 
             return $this->env;
+        }
+
+        protected function keysMissing(): array
+        {
+            return $this->keys;
         }
 
         protected function testModes(): array
@@ -284,6 +292,16 @@ namespace {
     $service = new AdminNotices(new AdminNoticeStore(new KeyValue(), $clock), $feed($firing), $clock, true);
     pin('a moderator sees only the 2FA row', ['admins_no_2fa'], $ids($service->view(2, true)->active));
     check('an admin sees many', count($service->view(1, false)->active) > 5);
+
+    harness_section('a method that is on but has no keys');
+    $reset();
+    $f       = $feed([]);
+    $f->keys = ['Stripe' => 'https://example.com/oc-admin/index.php?page=settings&action=custom&id=stripe'];
+    [$rows]  = $f->notices($store(), 1, false, $now);
+    pin('one row', ['pay_keys:stripe'], array_values(array_filter($ids($rows), static fn (string $id): bool => str_starts_with($id, 'pay_keys:'))));
+    $f->keys = [];
+    [$rows]  = $f->notices($store(), 1, false, $now);
+    pin('none once it has keys', [], array_values(array_filter($ids($rows), static fn (string $id): bool => str_starts_with($id, 'pay_keys:'))));
 
     harness_section('one row for each payment method in test mode');
     $reset();

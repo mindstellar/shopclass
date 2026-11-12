@@ -18,6 +18,7 @@ use mindstellar\boot\Boot;
 use mindstellar\fields\FieldService;
 use mindstellar\listing\ListingInput;
 use mindstellar\listing\ListingService;
+use mindstellar\location\LocationQuery;
 use mindstellar\site\SiteMode;
 
 /**
@@ -82,15 +83,16 @@ final class SampleData
      *
      * @param string      $type     'classifieds' or 'shop'
      * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
+     * @param string|null $country  code of the country the site was set up for; no location when null or not imported
      *
      * @return array{listings: int, failed: int, errors: string[]}
      * @throws \InvalidArgumentException when the type is unknown
      */
-    public function install(string $type, ?string $imageDir = null): array
+    public function install(string $type, ?string $imageDir = null, ?string $country = null): array
     {
         $total = array('listings' => 0, 'failed' => 0, 'errors' => array());
         for ($batch = 0, $count = $this->batches($type); $batch < $count; $batch++) {
-            $result             = $this->installBatch($type, $batch, $imageDir);
+            $result             = $this->installBatch($type, $batch, $imageDir, $country);
             $total['listings'] += $result['listings'];
             $total['failed']   += $result['failed'];
             $total['errors']    = array_merge($total['errors'], $result['errors']);
@@ -107,11 +109,12 @@ final class SampleData
      * @param string      $type     'classifieds' or 'shop'
      * @param int         $batch    from 0 to batches() - 1
      * @param string|null $imageDir folder of photos named like the sample's 'image' keys; no photos when null
+     * @param string|null $country  code of the country the site was set up for; no location when null or not imported
      *
      * @return array{listings: int, failed: int, errors: string[]}
      * @throws \InvalidArgumentException when the type is unknown
      */
-    public function installBatch(string $type, int $batch, ?string $imageDir = null): array
+    public function installBatch(string $type, int $batch, ?string $imageDir = null, ?string $country = null): array
     {
         // The installer does not boot the app, but saving a listing needs the core services.
         Boot::services();
@@ -130,6 +133,7 @@ final class SampleData
         $failed  = 0;
         $service = new ListingService();
         $actor   = Actor::admin(1, '127.0.0.1');
+        $places  = $this->places($country);
         foreach (array_slice($rows, $batch * self::BATCH, self::BATCH, true) as $index => $row) {
             if (isset($done[$index])) {
                 continue;
@@ -152,6 +156,9 @@ final class SampleData
                     'contactEmail' => self::SELLER_EMAIL,
                     'meta'         => $meta,
                 );
+                if ($places !== array()) {
+                    $form += $places[$index % count($places)];
+                }
                 if (isset($row['variants'])) {
                     $form['product'] = array('sell' => 1, 'hasOptions' => 1, 'variants' => $row['variants']);
                 } elseif (isset($row['stock'])) {
@@ -189,6 +196,29 @@ final class SampleData
         }
 
         return array('listings' => $made, 'failed' => $failed, 'errors' => $errors);
+    }
+
+    /**
+     * The places sample listings are spread over: the country, and the regions with a city when those were imported.
+     *
+     * @return list<array<string,string|int>> empty when the country is not in the database
+     */
+    private function places(?string $country): array
+    {
+        $country = strtoupper(trim((string) $country));
+        $query   = new LocationQuery();
+        if ($country === '' || $query->lineage($country, 0, 0)['country'] === null) {
+            return array();
+        }
+        $places = array();
+        foreach ($query->regions($country, '', 6, 0) as $region) {
+            $city = $query->cities((int) $region['pk_i_id'], '', 1, 0)[0] ?? null;
+            if ($city !== null) {
+                $places[] = array('countryId' => $country, 'regionId' => (int) $region['pk_i_id'], 'cityId' => (int) $city['pk_i_id']);
+            }
+        }
+
+        return $places !== array() ? $places : array(array('countryId' => $country));
     }
 
     /**
