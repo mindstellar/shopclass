@@ -442,7 +442,7 @@ final class Invoices
                 } elseif ($byLine) {
                     $share = $shares['tax'][$id] ?? 0;
                 } else {
-                    $share = max(0, min($left, self::roundTo((int) $line['amount'] * $amount / $invoice->total, $decimals)));
+                    $share = max(0, min($left, self::roundTo(self::taxValue($line, $lineMode) * $amount / $invoice->total, $decimals)));
                 }
                 if ($share !== 0) {
                     $noteLines[] = array('included' => !empty($line['included'])) + self::line($id ?: null, OrderLineStore::KIND_TAX, (string) $line['title'], 1, $share, $currency);
@@ -483,6 +483,7 @@ final class Invoices
                 'reason'       => Receipts::plain($reason, 500, true),
                 'provider_ref' => $providerRef !== null && $providerRef !== '' ? Receipts::plain($providerRef, 200) : null,
                 'restocked'    => $restocked,
+                'actor'        => OrderHistory::actor($order->getUserId()),
             ),
         );
 

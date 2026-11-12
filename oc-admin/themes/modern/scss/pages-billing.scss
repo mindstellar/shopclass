@@ -38,6 +38,12 @@
   padding-block-start: var(--osc-field-gap);
 }
 
+.order-refund-part-fields {
+  display: grid;
+  gap: .875rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .order-refund-part-fields > .panel-subtitle:last-child {
   margin-block-end: 0;
 }

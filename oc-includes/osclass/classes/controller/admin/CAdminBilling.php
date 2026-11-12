@@ -492,6 +492,11 @@ class CAdminBilling extends AdminSecBaseModel
     {
         $names = array();
         $rows  = array_merge($order->history(), $order->shipments(), array($order->packed() ?? array()));
+        foreach (DocumentStore::forOrder($order->getId()) as $doc) {
+            if ($doc->isCreditNote() && is_array($doc->data['refund']['actor'] ?? null)) {
+                $rows[] = $doc->data['refund']['actor'];
+            }
+        }
         foreach ($rows as $row) {
             $id = (int) ($row['id'] ?? 0);
             if (($row['by'] ?? '') === 'admin' && $id > 0 && !isset($names['admin:' . $id])) {
@@ -763,7 +768,8 @@ class CAdminBilling extends AdminSecBaseModel
         );
 
         if ($result->getOutcome() === CallbackResult::OUTCOME_REFUNDED) {
-            osc_add_flash_ok_message(sprintf(_m('Part of order #%d is refunded.'), $order->getId()), 'admin');
+            $closed = OrderStore::find($order->getId())?->getStatus() === Order::STATUS_REFUNDED;
+            osc_add_flash_ok_message(sprintf($closed ? _m('Order #%d is refunded.') : _m('Part of order #%d is refunded.'), $order->getId()), 'admin');
         } elseif ($result->getOutcome() === CallbackResult::OUTCOME_PENDING) {
             osc_add_flash_info_message(
                 sprintf(_m('The refund was sent. %s'), osc_esc_html($result->getMessage() !== '' ? $result->getMessage() : _m('The credit note is made.'))),

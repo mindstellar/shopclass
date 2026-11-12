@@ -229,6 +229,14 @@ pin('the note shows its included tax', [$m(11.9), [['VAT 19%', $m(1.9), true]]],
 check('closing', Billing::refund($fresh($f)));
 pin('the closing note takes the included rest', [['VAT 19%', $m(1.9), true]], $taxOf($notes($f)[1] ?? null));
 
+$f2 = $place([
+    ['kind' => 'item', 'title' => 'Mug', 'qty' => 2, 'unit' => $m(11.9), 'amount' => $m(23.8), 'tax' => $lineTax(true, $m(20), [['tax' => 'vat', 'label' => 'VAT 19%', 'bp' => 1900, 'amount' => $m(3.8)]])],
+    ['kind' => 'tax', 'title' => 'VAT 19%', 'qty' => 1, 'unit' => $m(3.8), 'amount' => 0, 'meta' => ['id' => 'vat', 'included' => true]],
+]);
+Billing::refundPart($f2, $m(11.9), [], 'Goodwill', false, false);
+pin('an amount alone carries its share of the included tax', [['VAT 19%', $m(1.9), true]], $taxOf($notes($f2)[0] ?? null));
+pin('and still totals the amount', $m(11.9), $notes($f2)[0]->total ?? null);
+
 harness_section('a line tax that no longer adds up is not frozen');
 $g = $place([
     ['kind' => 'item', 'title' => 'Lamp', 'qty' => 2, 'unit' => $m(10), 'amount' => $m(20), 'tax' => $lineTax(false, $m(20), [['tax' => 'vat', 'label' => 'VAT', 'bp' => 1000, 'amount' => $m(1.99)]])],

@@ -471,7 +471,7 @@ osc_admin_page(array(
                         $events[] = array(
                             'at'   => $doc->date,
                             'what' => sprintf(__('Refunded %1$s (%2$s)'), osc_admin_money($doc->total, $doc->currency), $doc->number),
-                            'by'   => '',
+                            'by'   => is_array($doc->data['refund']['actor'] ?? null) ? $actorWord($doc->data['refund']['actor']) : '',
                         );
                     }
                 }

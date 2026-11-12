@@ -312,11 +312,18 @@ drive('order_refund_part', ['id' => $bid, 'amount' => '3']);
 pin('without the box it only records', [1, 2], [count($gw->calls), count($notes($bid))]);
 
 harness_section('closing the order');
+$admin->query("INSERT INTO {$p}t_admin (s_name, s_username, s_password, s_email) VALUES ('Refund Rita', 'rita', 'x', 'rita@example.test')");
+$rita = (int) $admin->insert_id;
+\mindstellar\billing\OrderHistory::actAs(\mindstellar\billing\OrderHistory::BY_ADMIN, $rita);
 $rest = $m(44) - DocumentStore::refundedTotal($bid);
-drive('order_refund_part', ['id' => $bid, 'amount' => (string) ($rest / 1000000)]);
+$page = drive('order_refund_part', ['id' => $bid, 'amount' => (string) ($rest / 1000000)]);
+\mindstellar\billing\OrderHistory::actAs(null);
 pin('the notes reaching the paid amount refund the order', 'refunded', $status($bid));
+pin('the message says the order is refunded', true, str_contains(implode(' ', $page['flashes']), 'ok:Order #' . $bid . ' is refunded.'));
 $page = drive('order', [], ['id' => $bid]);
 check('and the chip and the form are gone', !str_contains($page['drawn'], 'Partly refunded') && !str_contains($page['drawn'], 'order_refund_part'));
+$last = $notes($bid)[count($notes($bid)) - 1] ?? null;
+check('the History row of the last refund names the admin', $last !== null && preg_match('#' . preg_quote($last->number, '#') . '\)</td>\s*<td[^>]*>Refund Rita<#', $page['drawn']) === 1);
 
 harness_section('the token and the method');
 $c = $order();
