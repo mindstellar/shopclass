@@ -13,8 +13,10 @@
 
 namespace mindstellar\listing;
 
+use mindstellar\exception\InvalidException;
 use mindstellar\form\builder\FieldValidator;
 use mindstellar\location\LocationQuery;
+use mindstellar\location\LocationService;
 use mindstellar\security\SpamCheck;
 
 /**
@@ -292,7 +294,8 @@ final class ListingValidator
     }
 
     /**
-     * unlistedPlace(), then a refusal when the picked city or region is switched off.
+     * unlistedPlace(), then a refusal when the picked city is not under the picked region or
+     * country, or the picked city or region is switched off.
      *
      * @param array<string,mixed> $aItem the prepared listing data
      *
@@ -306,6 +309,11 @@ final class ListingValidator
         }
         $region = (int) ($aItem['regionId'] ?? 0);
         $city   = (int) ($aItem['cityId'] ?? 0);
+        try {
+            LocationService::checkPlaces((string) ($aItem['countryId'] ?? ''), $region > 0 ? (string) $region : '', $city > 0 ? (string) $city : '');
+        } catch (InvalidException $e) {
+            return array(self::entry(str_replace('_id', '', $e->pointer()), $e->reason(), _m('Pick your location from the list.')));
+        }
         if (($region > 0 || $city > 0) && !(new LocationQuery())->isOffered($region, $city)) {
             return array(self::entry($city > 0 ? '/city' : '/region', 'not_listed', _m('Pick your location from the list.')));
         }

@@ -86,6 +86,29 @@
     position: relative;
 }
 
+.oe-place__part {
+    display: block;
+    min-width: 0;
+}
+
+.oe-place__part + .oe-place__part {
+    margin-top: .75rem;
+}
+
+.oe-place__select,
+.oe-place__text {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.oe-place__select[aria-busy="true"] {
+    cursor: progress;
+}
+
+.oe-place__retry {
+    margin-inline-start: .5rem;
+}
+
 .oe-place__input {
     box-sizing: border-box;
     padding-inline: 2.125rem 2.5rem;

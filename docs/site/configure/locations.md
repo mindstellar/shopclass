@@ -90,7 +90,13 @@ The place field suggests cities as you type, with the region beside each
 city needs a region, and a region needs a country, or it can never be
 suggested. Hidden places are not suggested.
 
-The admin listing form always has this field. The public posting form has it
+Choose how the post and edit forms ask in **Listings → Settings → Location → Location field**:
+
+- **One box that suggests places** (the default).
+- **Separate country, region and city boxes**: a country list, then region and city boxes that suggest places.
+- **Dropdown lists**: country, region and city lists, each filled from the one before.
+
+The admin listing form always has the one box. The public posting form has the field
 only when the theme prints `osc_place_field()`; other themes keep their own
 location boxes.
 

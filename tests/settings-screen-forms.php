@@ -594,6 +594,7 @@ pin(
         'item_required_location'      => 'osclass/item_required_location',
         'item_location_level'         => '(not stored)',
         'item_place_from_list'        => 'osclass/item_place_from_list',
+        'item_place_style'            => 'osclass/item_place_style',
     ),
     keymap(ItemSettingsScreen::register())
 );
@@ -1057,6 +1058,20 @@ drive('CAdminItems', 'settings_post', array('item_place_from_list' => '1') + $it
 pin('only places from the list is stored on', array('1', 'BOOLEAN'), pref($admin, 'item_place_from_list'));
 drive('CAdminItems', 'settings_post', array('item_place_from_list' => 'yes') + $items);
 pin('a hand-made value stores it off', array('0', 'BOOLEAN'), pref($admin, 'item_place_from_list'));
+$admin->query('DELETE FROM ' . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = 'item_place_style'");
+osc_reset_preferences();
+pin('the location field is one box when never saved', 'single', osc_item_place_style());
+foreach (array('fields', 'dropdown') as $style) {
+    drive('CAdminItems', 'settings_post', array('item_place_style' => $style) + $items);
+    osc_reset_preferences();
+    pin('the location field stores ' . $style . ' and reads it back', array(array($style, 'STRING'), $style), array(pref($admin, 'item_place_style'), osc_item_place_style()));
+}
+drive('CAdminItems', 'settings_post', array('item_place_style' => 'x<script>') + $items);
+osc_reset_preferences();
+pin('a hand-made location field is stored as one box', array(array('single', 'STRING'), 'single'), array(pref($admin, 'item_place_style'), osc_item_place_style()));
+seed_pref($admin, 'item_place_style', 'grid');
+osc_reset_preferences();
+pin('an unknown stored location field reads as one box', 'single', osc_item_place_style());
 
 harness_section('user settings');
 

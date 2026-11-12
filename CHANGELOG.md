@@ -8,6 +8,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### New
 - The admin listing form's Location is one box that suggests cities with their region. Themes can print it on the posting form with `osc_place_field()`.
+- **Location field** in Listings → Settings picks one box, separate country, region and city boxes, or dropdown lists on the post and edit forms. `osc_place_field()` takes `style` and `part_class`.
 - **Only places from the list** in Listings → Settings refuses a place typed by hand, on the web form, admin, API and imports.
 - `GET /api/v1/cities?q=` finds cities in any region by the start of their name, in any language.
 - A bell in the top bar lists site problems and plugin warnings, with sidebar dots, Hide for 7 days and a Notices screen.

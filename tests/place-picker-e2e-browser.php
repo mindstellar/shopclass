@@ -56,8 +56,8 @@ file_put_contents($tmp . '/page.html', '<!doctype html><html lang="en"><head><me
     . '<link rel="stylesheet" href="' . $assets . 'ui-common.css">'
     . '<style>body{margin:0;padding:16px;font:15px/1.5 system-ui,sans-serif}form{max-width:680px;margin:0 auto 200px}'
     . '.oe-place__input{min-height:40px;font:inherit;border:1px solid #888;border-radius:6px}</style></head><body>'
-    . '<form id="on">' . PlaceField::render(array('id' => 'on-pl'), $empty, true, true) . '<button type="submit">Save</button></form>'
-    . '<form id="off">' . PlaceField::render(array('id' => 'off-pl'), $empty, false, true) . '<button type="submit">Save</button></form>'
+    . '<form id="on">' . PlaceField::render(array('id' => 'on-pl', 'strict' => true, 'multi' => true), $empty) . '<button type="submit">Save</button></form>'
+    . '<form id="off">' . PlaceField::render(array('id' => 'off-pl', 'strict' => false, 'multi' => true), $empty) . '<button type="submit">Save</button></form>'
     . <<<'HTML'
 <script>
 window.fetch = function () {

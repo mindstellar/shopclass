@@ -873,6 +873,7 @@ msgstr ""
 #: oc-includes/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/gui/parts/place-field-levels.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "City"
 msgstr ""
@@ -906,6 +907,7 @@ msgstr ""
 msgid "Cleanup started. It runs in the background until nothing matches."
 msgstr ""
 
+#: oc-includes/osclass/gui/parts/place-field-levels.php
 #: oc-includes/osclass/gui/parts/place-field.php
 msgid "Clear location"
 msgstr ""
@@ -1026,6 +1028,7 @@ msgstr ""
 #: oc-includes/classes/user/AccountService.php
 #: oc-includes/osclass/gui/account/user-addresses-content.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/gui/parts/place-field-levels.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Country"
 msgstr ""
@@ -1770,6 +1773,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 msgid "Listings' settings have been updated"
+msgstr ""
+
+#: oc-includes/classes/location/PlaceField.php
+msgid "Loading…"
 msgstr ""
 
 #: oc-includes/osclass/gui/account/user-profile-content.php
@@ -2579,6 +2586,7 @@ msgstr ""
 msgid "Picked from the list"
 msgstr ""
 
+#: oc-includes/osclass/gui/parts/place-field-levels.php
 #: oc-includes/osclass/gui/parts/place-field.php
 msgid "Places"
 msgstr ""
@@ -2848,6 +2856,7 @@ msgstr ""
 #: oc-includes/classes/user/AccountService.php
 #: oc-includes/classes/user/AddressFormat.php
 #: oc-includes/osclass/gui/account/user-profile-content.php
+#: oc-includes/osclass/gui/parts/place-field-levels.php
 #: oc-includes/osclass/helpers/hUsers.php
 msgid "Region"
 msgstr ""

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="shopclass-api" content='{"url":"https://x.test/api/v1","header":"X-Shopclass-Token","token":"tok"}'>
+<link rel="stylesheet" href="{{ASSETS}}ui-common.css">
+<style>body{margin:0;padding:16px;font:15px/1.5 system-ui,sans-serif}.field{max-width:680px;margin-inline:auto}
+.oe-place__input,.oe-place__select{min-height:40px;font:inherit;border:1px solid #888;border-radius:6px}</style></head><body>
+<form class="field"><div class="oe-place oe-place--fields" data-osc-place="fields" data-strict="1" data-min="2" data-limit="8" data-countries="n"
+  data-text-searching="Searching…" data-text-more="%s more. Keep typing to narrow it down." data-text-none-on="No places match “%s”."
+  data-text-retry="Try again" data-text-error="Couldn’t load places." data-text-live-found="Places found: %s." data-text-live-none="No places match."
+  data-text-live-chosen="%s chosen." data-text-pick-error="Pick your location from the list.">
+  <div class="oe-place__part" data-level="country">
+    <label for="pl-country">Country</label>
+    <select class="oe-place__select" id="pl-country" name="countryId"><option value="">Select a country…</option><option value="IN">India</option></select>
+  </div>
+  <div class="oe-place__part" data-level="region">
+    <label for="pl-region">Region</label>
+    <div class="oe-place__box">
+      <input type="text" class="oe-place__input" id="pl-region" name="region" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pl-region-list" autocomplete="off">
+      <div class="oe-place__end"><span class="oe-place__spin" hidden></span><button type="button" class="oe-place__clear" hidden>x</button></div>
+      <ul class="osc-ac-list" id="pl-region-list" role="listbox" hidden></ul>
+    </div>
+    <p class="oe-field-error" id="pl-region-error" hidden></p>
+  </div>
+  <div class="oe-place__part" data-level="city">
+    <label for="pl-city">City</label>
+    <div class="oe-place__box">
+      <input type="text" class="oe-place__input" id="pl-city" name="city" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="pl-city-list" autocomplete="off">
+      <div class="oe-place__end"><span class="oe-place__spin" hidden></span><button type="button" class="oe-place__clear" hidden>x</button></div>
+      <ul class="osc-ac-list" id="pl-city-list" role="listbox" hidden></ul>
+    </div>
+    <p class="oe-field-error" id="pl-city-error" hidden></p>
+  </div>
+  <input type="hidden" name="regionId" id="pl-regionId"><input type="hidden" name="cityId" id="pl-cityId"><input type="hidden" name="country">
+  <div class="oe-place__live" role="status" aria-live="polite"></div>
+</div></form>
+<script>
+window.fetch = function (url) {
+  var long = 'A very long name that has to wrap inside the list and never push it wider than the input';
+  var rows = /countries\//.test(url)
+    ? [{id: 10, country_code: 'IN', name: 'Maharashtra ' + long}, {id: 11, country_code: 'IN', name: 'Madhya Pradesh'}]
+    : [{id: 1, name: 'Mumbai', region_id: 10, region: 'Maharashtra', country_code: 'IN', label: 'Mumbai, Maharashtra'},
+       {id: 2, name: 'Munnar', region_id: 11, region: 'Kerala', country_code: 'IN', label: 'Munnar, Kerala'}];
+  return Promise.resolve({ok: true, status: 200, json: function () { return Promise.resolve({data: rows, meta: {more: 0}}); }});
+};
+</script>
+<script src="{{ASSETS}}ui-common.js"></script><script src="{{ASSETS}}place-field.js"></script></body></html>

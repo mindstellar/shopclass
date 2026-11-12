@@ -14,6 +14,7 @@ namespace mindstellar\admin\form;
 
 use mindstellar\admin\ui\FormSpec;
 use mindstellar\base\SettingsScreen;
+use mindstellar\location\PlaceField;
 
 /**
  * The listing settings screen (Listings > Settings).
@@ -280,10 +281,20 @@ final class ItemSettingsScreen extends SettingsScreen
                 echo '</div>';
             })
                 ->set('row', false)
-            ->checkbox('item_place_from_list', __('Only places from the list'), __('Refuse a place typed by hand. Posters must pick their town or city from the suggestions, which the admin form has and a theme shows once it prints the place field.'))
+            ->checkbox('item_place_from_list', __('Only places from the list'), __('Refuse a place typed by hand. Posters must pick their town or city from the suggestions, which the admin form has and themes that print the place field show.'))
                 ->set('row', false)
                 // Only the box's own value turns it on.
-                ->set('collect', static fn (): bool => \Params::getParamString('item_place_from_list') === '1');
+                ->set('collect', static fn (): bool => \Params::getParamString('item_place_from_list') === '1')
+            ->select('item_place_style', __('Location field'), array(
+                'single'   => __('One box that suggests places'),
+                'fields'   => __('Separate country, region and city boxes'),
+                'dropdown' => __('Dropdown lists'),
+            ), __('How the post and edit forms ask for the place. The admin form always uses one box.'))
+                ->set('row', false)
+                ->attrs(array('aria-label' => __('Location field')))
+                ->prefix(__('Location field'))
+                ->sanitize(static fn ($value): string => PlaceField::style(is_string($value) ? $value : ''))
+                ->default(osc_item_place_style());
         self::rowClose($form, 'location');
 
         $form->register();

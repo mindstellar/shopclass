@@ -121,18 +121,36 @@ stops reimplementing them, and so core can describe a page it renders itself.
 <?php osc_place_field(); ?>
 ```
 
-Prints the Location field: one box that suggests cities from `GET /api/v1/cities`
-and sets the place when one is picked. Core owns the markup and the script; the
+Prints the Location field in the style the site chose (see below). Core owns the markup and the script; the
 theme only places and styles it. On an edit page pass the listing:
 `osc_place_field(['item' => osc_item()])`. Other keys: `id`, `label`, `required`,
-`class`, `hint_class`, `error_class`, `req_class`, `saved`, `account` and `error`.
+`class`, `part_class`, `hint_class`, `error_class`, `req_class`, `saved`, `account`, `style`, `error`, `errors` and `plain_ids` (admin only).
 `required` defaults to the Required location setting.
+
+`style` is `single`, `fields` or `dropdown`. It defaults to the **Location field**
+setting (`osc_item_place_style()`), and to `single` in the admin. `part_class` goes on each
+level block of `fields` and `dropdown`. `errors` is a message per level (`country`, `region`,
+`city`); the default is the form's own. `error` wins over `errors` and shows under City.
+
+- `single`: one box that suggests cities from `GET /api/v1/cities` and sets the place when one is picked.
+- `fields`: a country select, then a region box and a city box that suggest places.
+- `dropdown`: country, region and city selects; each fills from the one before.
+
+A theme that styles only the one box passes `'style' => 'single'`, so the site's setting cannot
+switch it to markup the theme has no CSS for.
+
+On a one-country site `fields` and `dropdown` have no country control; a hidden `countryId`
+holds the code. A level whose parent has no places is a text box when **Only places from the
+list** is off, and an empty disabled select when it is on.
 
 The form posts `city` (the text), `cityId`, `regionId` and `countryId`. An old
 listing with a typed place also posts `region` and `country` as text. Read them
 as before; nothing changes for the listing input.
 
-Style these classes: `oe-place` (and `is-picked`), `oe-place__box`,
+`fields` and `dropdown` post `countryId`, `regionId` and `cityId`. `region` and `city` text are posted by `fields`, and by `dropdown` for a level that falls back to a text box. Their controls have ids `{id}-country`, `{id}-region` and `{id}-city`, never the bare
+`countryId`, `regionId` or `cityId`.
+
+Style these classes: `oe-place` (with `oe-place--single`, `--fields` or `--dropdown`, and `is-picked`), `oe-place__part` (one per level, with `data-level`), `oe-place__legend`, `oe-place__select`, `oe-place__text` (a dropdown level drawn as a text box), `oe-place__live`, `oe-place__req`, `oe-place__box`,
 `oe-place__input`, `oe-place__pin`, `oe-place__clear`, `oe-place__spin`,
 `oe-place__hint`, `oe-place__note` (and `oe-place__note--picked`),
 `oe-place__end`, `oe-place__saved`, `oe-field-error`, and in the list
@@ -142,6 +160,7 @@ Style these classes: `oe-place` (and `is-picked`), `oe-place__box`,
 the box at the input's width.
 
 When **Only places from the list** refuses a save, the error is one entry on
-`/city` with the text "Pick your location from the list.". The helper prints it
-itself; a theme that prints its own errors reads it with `osc_form_error('/city')`.
-With the option off, typed text is accepted and the field only suggests.
+`/city` with the text "Pick your location from the list.". In `fields` and `dropdown` the
+entry is on `/country`, `/region` or `/city`, whichever level failed, and shows under that
+level as `{id}-{level}-error`. The helper prints it itself; a theme that prints its own errors reads it with `osc_form_error('/city')`.
+With the option off, typed text is accepted and the field only suggests; the ids are then not checked against each other.

@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="{{ASSETS}}ui-common.css">
+<style>body{margin:0;padding:16px;font:15px/1.5 system-ui,sans-serif}.field{max-width:680px;margin-inline:auto}
+.oe-place__select{min-height:40px;font:inherit}</style></head><body>
+<form class="field">{{FIELD}}</form>
+<script>
+window.fetch = function (url) {
+  var rows = /action=regions/.test(url) ? [{pk_i_id: 10, s_name: 'Maharashtra'}] : [{pk_i_id: 1, s_name: 'Mumbai'}];
+  return Promise.resolve({ok: true, status: 200, json: function () { return Promise.resolve(rows); }});
+};
+</script>
+<script src="{{ASSETS}}ui-common.js"></script><script src="{{ASSETS}}place-field.js"></script></body></html>

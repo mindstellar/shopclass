@@ -79,6 +79,25 @@ final class LocationQuery
     }
 
     /**
+     * Every region of a country, or city of a region, by name: the rows the ajax `regions` and
+     * `cities` actions list.
+     *
+     * @param string $parent a country code for regions, a region id for cities
+     *
+     * @return array<int,array<string,mixed>> pk_i_id, s_name
+     */
+    public function children(string $level, string $parent): array
+    {
+        $query = match ($level) {
+            self::REGION => $this->table(self::REGION)->where('fk_c_country_code', $parent),
+            self::CITY   => $this->table(self::CITY)->where('fk_i_region_id', (int) $parent),
+            default      => throw new \InvalidArgumentException('No list of ' . $level . '.'),
+        };
+
+        return Db::stringifyRows($query->select('pk_i_id', 's_name')->orderBy('s_name')->orderBy('pk_i_id')->get());
+    }
+
+    /**
      * Active cities in active regions whose stored name or a translated name starts with the
      * typed text, named in $locale: exact names first, then by listing count, name and id. Text
      * under SEARCH_MIN_CHARS finds nothing. `more` counts the other matches, up to SEARCH_MORE_CAP.

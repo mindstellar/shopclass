@@ -5822,6 +5822,10 @@ msgstr ""
 msgid "Drop images here or choose files. The first photo is the cover."
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Dropdown lists"
+msgstr ""
+
 #: oc-admin/themes/modern/stats/reports.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Duplicated"
@@ -7442,6 +7446,12 @@ msgid ""
 "hour."
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid ""
+"How the post and edit forms ask for the place. The admin form always uses "
+"one box."
+msgstr ""
+
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "How to change it"
 msgstr ""
@@ -8986,6 +8996,10 @@ msgstr ""
 #: oc-includes/classes/admin/ui/Picker.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Location"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Location field"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/locations.php
@@ -11147,6 +11161,10 @@ msgstr ""
 msgid "One backup at a time. Wait for the one running to finish."
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "One box that suggests places"
+msgstr ""
+
 #: oc-includes/classes/admin/form/LatestSearchSettingsScreen.php
 msgid "One day"
 msgstr ""
@@ -12800,8 +12818,8 @@ msgstr ""
 #: oc-includes/classes/admin/form/ItemSettingsScreen.php
 msgid ""
 "Refuse a place typed by hand. Posters must pick their town or city from the "
-"suggestions, which the admin form has and a theme shows once it prints the "
-"place field."
+"suggestions, which the admin form has and themes that print the place field "
+"show."
 msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
@@ -13931,12 +13949,14 @@ msgstr ""
 msgid "Select a city"
 msgstr ""
 
+#: oc-includes/classes/location/PlaceField.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Select a city..."
 msgstr ""
 
 #: oc-includes/classes/admin/ui/Picker.php
+#: oc-includes/classes/location/PlaceField.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Select a country..."
@@ -13950,6 +13970,7 @@ msgstr ""
 msgid "Select a region"
 msgstr ""
 
+#: oc-includes/classes/location/PlaceField.php
 #: oc-includes/osclass/classes/form/ItemForm.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "Select a region..."
@@ -14173,6 +14194,10 @@ msgstr ""
 
 #: oc-includes/osclass/helpers/hUtils.php
 msgid "Sep"
+msgstr ""
+
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Separate country, region and city boxes"
 msgstr ""
 
 #: oc-admin/themes/modern/fields/iframe.php

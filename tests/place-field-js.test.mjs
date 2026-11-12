@@ -57,11 +57,22 @@ class El extends Node_ {
   }
   removeAttribute(k) { delete this.attrs[k]; }
   appendChild(c) { c.parentNode = this; this.children.push(c); return c; }
+  replaceWith(n) {
+    const i = this.parentNode.children.indexOf(this);
+    n.parentNode = this.parentNode;
+    this.parentNode.children[i] = n;
+    this.parentNode = null;
+  }
+  remove() {
+    if (!this.parentNode) return;
+    this.parentNode.children.splice(this.parentNode.children.indexOf(this), 1);
+    this.parentNode = null;
+  }
   replaceChildren(...nodes) { this._text = ''; this.children = []; nodes.forEach((n) => this.appendChild(n)); }
   addEventListener(t, f) { (this.listeners[t] = this.listeners[t] || []).push(f); }
   fire(type, extra = {}) {
     const e = { type, target: this, defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {}, ...extra };
-    const bubbles = ['click', 'mousemove', 'mousedown'].includes(type);
+    const bubbles = ['click', 'mousemove', 'mousedown', 'change'].includes(type);
     for (let x = this; x instanceof El; x = bubbles ? x.parentNode : null) {
       (x.listeners[type] || []).forEach((f) => f(e));
     }
@@ -138,8 +149,96 @@ function build({ strict = '1', countries = '1', prefill = null, saved = null, me
   return { doc, root, input, list, spin, clear, note, err, savedBtn, hid, live, form };
 }
 
+const addTo = (doc, parent, tag, cls, attrs = {}) => {
+  const e = parent.appendChild(new El(tag, doc));
+  if (cls) e.className = cls;
+  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, v);
+  return e;
+};
+
+function shell({ style, strict, ajax }) {
+  const doc = {
+    readyState: 'complete', activeElement: null,
+    createElement: (t) => new El(t, doc),
+    createTextNode: (t) => new Text_(t),
+    addEventListener() {},
+  };
+  const html = new El('html', doc);
+  const m = addTo(doc, html.appendChild(new El('head', doc)), 'meta', '', { name: 'shopclass-api' });
+  m.setAttribute('content', JSON.stringify({ url: 'https://x.test/api/v1', header: 'X-Shopclass-Token', token: 'tok123' }));
+  const root = html.appendChild(new El('div', doc));
+  root.setAttribute('data-osc-place', style);
+  root.setAttribute('data-strict', strict);
+  if (ajax) root.setAttribute('data-ajax', ajax);
+  for (const [k, v] of Object.entries(texts)) root.setAttribute('data-text-' + k, v);
+  const form = new El('form', doc);
+  form.appendChild(root);
+  doc.querySelector = (q) => html.querySelector(q);
+  doc.querySelectorAll = (q) => html.querySelectorAll(q);
+  return { doc, root, form };
+}
+
+function level(doc, root, name, box) {
+  const part = addTo(doc, root, 'div', 'oe-place__part', { 'data-level': name });
+  let input = null;
+  let list = null;
+  let spin = null;
+  let clear = null;
+  if (box) {
+    const b = addTo(doc, part, 'div', 'oe-place__box');
+    input = addTo(doc, b, 'input', 'oe-place__input', { id: 'pl-' + name, name, 'aria-describedby': 'pl-hint' });
+    const end = addTo(doc, b, 'div', 'oe-place__end');
+    spin = addTo(doc, end, 'span', 'oe-place__spin'); spin.hidden = true;
+    clear = addTo(doc, end, 'button', 'oe-place__clear'); clear.hidden = true;
+    list = addTo(doc, b, 'ul', 'osc-ac-list', { id: 'pl-' + name + '-list' }); list.hidden = true;
+  }
+  const err = addTo(doc, part, 'p', 'oe-field-error', { id: 'pl-' + name + '-error' }); err.hidden = true;
+  return { part, input, list, spin, clear, err };
+}
+
+function buildFields({ strict = '1', one = false, saved = null } = {}) {
+  const { doc, root, form } = shell({ style: 'fields', strict });
+  const country = addTo(doc, root, one ? 'input' : 'select', '', { name: 'countryId' });
+  country.value = one ? 'IN' : '';
+  const region = level(doc, root, 'region', true);
+  const city = level(doc, root, 'city', true);
+  const hid = {};
+  for (const n of ['regionId', 'cityId', 'country']) hid[n] = addTo(doc, root, 'input', '', { name: n });
+  const savedBtn = addTo(doc, root, 'button', 'oe-place__saved'); savedBtn.hidden = true;
+  if (saved) { savedBtn.setAttribute('data-place', JSON.stringify(saved)); savedBtn.hidden = false; }
+  const live = addTo(doc, root, 'div', 'oe-place__live');
+  return { doc, root, form, country, region, city, hid, savedBtn, live };
+}
+
+function buildDropdown({ strict = '1', saved = null, ajax = 'https://x.test/index.php', textRegion = false } = {}) {
+  const { doc, root, form } = shell({ style: 'dropdown', strict, ajax });
+  form.setAttribute('action', 'https://x.test/form.php');
+  const sel = (name, lvl, disabled) => {
+    const s = addTo(doc, lvl.part, 'select', 'oe-place__select', { name, id: 'pl-' + lvl.name });
+    const ph = addTo(doc, s, 'option'); ph.value = '';
+    s.value = ''; s.disabled = disabled;
+    return s;
+  };
+  const mk = (name) => ({ ...level(doc, root, name, false), name });
+  const cl = mk('country'); const rl = mk('region'); const tl = mk('city');
+  const country = sel('countryId', cl, false);
+  for (const c of ['IN', 'DE']) { const o = addTo(doc, country, 'option'); o.value = c; }
+  let region;
+  if (textRegion) {
+    region = addTo(doc, rl.part, 'input', 'oe-place__text', { type: 'text', name: 'region', id: 'pl-region' });
+    addTo(doc, rl.part, 'input', '', { type: 'hidden', name: 'regionId', id: 'pl-regionId' });
+  } else {
+    region = sel('regionId', rl, true);
+  }
+  const city = sel('cityId', tl, true);
+  const savedBtn = addTo(doc, root, 'button', 'oe-place__saved'); savedBtn.hidden = true;
+  if (saved) { savedBtn.setAttribute('data-place', JSON.stringify(saved)); savedBtn.hidden = false; }
+  const live = addTo(doc, root, 'div', 'oe-place__live');
+  return { doc, root, form, country, region, city, regionPart: rl.part, cityPart: tl.part, regionErr: rl.err, cityErr: tl.err, savedBtn, live };
+}
+
 function run(opts = {}) {
-  const f = build(opts);
+  const f = opts.style === 'fields' ? buildFields(opts) : opts.style === 'dropdown' ? buildDropdown(opts) : build(opts);
   let now = 0;
   const timers = [];
   const calls = [];
@@ -162,11 +261,12 @@ function run(opts = {}) {
       for (const t of timers.filter((x) => !x.dead && x.at <= now)) { t.dead = true; t.fn(); }
     },
     async flush() { for (let i = 0; i < 6; i++) await new Promise((r) => setImmediate(r)); },
-    type(v) { f.input.value = v; f.input.fire('input'); },
+    type(v, box) { const i = box || f.input; i.value = v; i.fire('input'); },
+    answerBody(i, body, ok = true) { pending[i].resolve({ ok, status: ok ? 200 : 500, json: async () => body }); },
     answer(i, rows, more = 0, ok = true) {
       pending[i].resolve({ ok, status: ok ? 200 : 500, json: async () => ({ data: rows, meta: { more } }) });
     },
-    options() { return f.list.querySelectorAll('.osc-ac-option'); },
+    options(list) { return (list || f.list).querySelectorAll('.osc-ac-option'); },
   };
   return api;
 }
@@ -425,6 +525,213 @@ await test('without the API meta tag the field shows the error row instead of th
   const t = run({ meta: false });
   t.type('mu'); t.tick(150); await t.flush();
   assert.match(t.list.textContent, /Couldn’t load places\./);
+});
+
+const IN_REGION = { id: 10, country_code: 'IN', name: 'Maharashtra' };
+const KER = { id: 11, country_code: 'IN', name: 'Kerala' };
+
+await test('fields: the region box searches the chosen country with the page token', async () => {
+  const t = run({ style: 'fields' });
+  t.type('ma', t.region.input); t.tick(200);
+  assert.equal(t.calls.length, 0, 'no country, no search');
+  t.country.value = 'IN';
+  t.type('ma', t.region.input); t.tick(200);
+  assert.equal(t.calls.length, 1);
+  assert.equal(t.calls[0].url, 'https://x.test/api/v1/countries/IN/regions?q=ma&limit=100');
+  assert.equal(t.calls[0].init.headers['X-Shopclass-Token'], 'tok123');
+  t.answer(0, [IN_REGION]); await t.flush();
+  assert.equal(t.options(t.region.list)[0].querySelector('b').textContent, 'Ma');
+});
+
+await test('fields: picking a region sets its id and clears the city', async () => {
+  const t = run({ style: 'fields' });
+  t.country.value = 'IN';
+  t.city.input.value = 'Pune'; t.hid.cityId.value = '7';
+  t.type('ma', t.region.input); t.tick(200); t.answer(0, [IN_REGION, KER]); await t.flush();
+  t.options(t.region.list)[0].fire('mousedown');
+  assert.deepEqual([t.region.input.value, t.hid.regionId.value, t.hid.cityId.value, t.city.input.value], ['Maharashtra', 10, '', '']);
+  assert.equal(t.region.list.hidden, true);
+});
+
+await test('fields: the city search follows the region, or all regions when none is set', async () => {
+  const t = run({ style: 'fields' });
+  t.country.value = 'IN';
+  t.type('mu', t.city.input); t.tick(200);
+  assert.equal(t.calls[0].url, 'https://x.test/api/v1/cities?q=mu&limit=8&country=IN');
+  t.hid.regionId.value = '10';
+  t.type('mun', t.city.input); t.tick(200);
+  assert.equal(t.calls[1].url, 'https://x.test/api/v1/regions/10/cities?q=mun&limit=100');
+  const none = run({ style: 'fields' });
+  none.type('mu', none.city.input); none.tick(200);
+  assert.equal(none.calls[0].url, 'https://x.test/api/v1/cities?q=mu&limit=8', 'no country filter without a country');
+});
+
+await test('fields: a city picked from the wide search fills region and country', async () => {
+  const t = run({ style: 'fields' });
+  t.type('mu', t.city.input); t.tick(200); t.answer(0, [MUM]); await t.flush();
+  t.options(t.city.list)[0].fire('mousedown');
+  assert.deepEqual([t.city.input.value, t.hid.cityId.value, t.region.input.value, t.hid.regionId.value, t.country.value], ['Mumbai', 1, 'Maharashtra', 10, 'IN']);
+});
+
+await test('fields: editing a level clears its id and the deeper levels, and a country change clears both', async () => {
+  const t = run({ style: 'fields' });
+  t.country.value = 'IN';
+  const set = () => { t.region.input.value = 'Maharashtra'; t.hid.regionId.value = '10'; t.city.input.value = 'Pune'; t.hid.cityId.value = '7'; };
+  set();
+  t.type('Maharash', t.region.input);
+  assert.deepEqual([t.hid.regionId.value, t.hid.cityId.value, t.city.input.value], ['', '', '']);
+  set();
+  t.type('Pun', t.city.input);
+  assert.deepEqual([t.hid.regionId.value, t.hid.cityId.value, t.region.input.value], ['10', '', 'Maharashtra']);
+  set();
+  t.country.value = 'DE'; t.country.fire('change');
+  assert.deepEqual([t.region.input.value, t.hid.regionId.value, t.city.input.value, t.hid.cityId.value], ['', '', '', '']);
+});
+
+await test('fields: ON refuses each part with text and no id, in its own line, focusing the first', async () => {
+  const t = run({ style: 'fields' });
+  t.country.value = 'IN';
+  t.region.input.value = 'Maharashtra'; t.hid.regionId.value = '10';
+  t.city.input.value = 'Bombay';
+  const e = t.form.fire('submit');
+  assert.equal(e.defaultPrevented, true);
+  assert.equal(t.city.err.hidden, false);
+  assert.equal(t.city.err.textContent, 'Pick your location from the list.');
+  assert.equal(t.region.err.hidden, true);
+  assert.equal(t.city.input.getAttribute('aria-invalid'), 'true');
+  assert.equal(t.region.input.getAttribute('aria-invalid'), null);
+  assert.equal(t.doc.activeElement, t.city.input);
+  t.region.input.value = 'Mahar'; t.hid.regionId.value = '';
+  t.form.fire('submit');
+  assert.equal(t.region.err.hidden, false);
+  assert.equal(t.doc.activeElement, t.region.input);
+  const off = run({ style: 'fields', strict: '0' });
+  off.city.input.value = 'Bombay';
+  assert.equal(off.form.fire('submit').defaultPrevented, false);
+});
+
+await test('fields: a region name with markup is text, and blur picks the one exact match', async () => {
+  const t = run({ style: 'fields' });
+  t.country.value = 'IN';
+  const evil = { id: 12, country_code: 'IN', name: '<img src=x onerror=alert(1)>' };
+  t.type('<i', t.region.input); t.tick(200); t.answer(0, [evil]); await t.flush();
+  assert.equal(t.options(t.region.list)[0].all().some((e) => e.tagName === 'IMG'), false);
+  t.type('Maharashtra', t.region.input); t.tick(200); t.answer(1, [IN_REGION]); await t.flush();
+  t.region.input.fire('blur'); t.tick(200);
+  assert.equal(t.hid.regionId.value, 10);
+});
+
+await test('fields: Use my saved place fills country, region and city', async () => {
+  const saved = { label: 'Mumbai, Maharashtra', city_id: 1, region_id: 10, country_code: 'IN', origin: 'address' };
+  const t = run({ style: 'fields', saved });
+  t.savedBtn.fire('click');
+  assert.deepEqual([t.country.value, t.region.input.value, t.hid.regionId.value, t.city.input.value, t.hid.cityId.value], ['IN', 'Maharashtra', 10, 'Mumbai', 1]);
+  assert.equal(t.savedBtn.hidden, true);
+});
+
+const states = (t) => [t.region.disabled, t.region.getAttribute('aria-busy'), t.city.disabled];
+const optionTexts = (s) => s.querySelectorAll('option').map((o) => o.textContent);
+const ajaxRegions = (code) => 'https://x.test/index.php?page=ajax&action=regions&countryId=' + code;
+
+await test('dropdown: a country fills the regions as text, keeps the placeholder, resets the city', async () => {
+  const t = run({ style: 'dropdown' });
+  t.country.value = 'DE'; t.country.fire('change');
+  assert.equal(t.calls[0].url, ajaxRegions('DE'));
+  assert.equal(t.calls[0].init.method, 'POST');
+  assert.deepEqual(states(t), [true, 'true', true]);
+  t.answerBody(0, [{ pk_i_id: 5, s_name: 'Bavaria' }, { pk_i_id: 6, s_name: '<img src=x onerror=alert(1)>' }]); await t.flush();
+  assert.deepEqual(optionTexts(t.region), ['', 'Bavaria', '<img src=x onerror=alert(1)>']);
+  assert.equal(t.region.all().some((e) => e.tagName === 'IMG'), false);
+  assert.deepEqual(states(t), [false, null, true]);
+});
+
+await test('dropdown: a late answer for an old country is ignored', async () => {
+  const t = run({ style: 'dropdown' });
+  t.country.value = 'IN'; t.country.fire('change');
+  t.country.value = 'DE'; t.country.fire('change');
+  t.answerBody(1, [{ pk_i_id: 5, s_name: 'Bavaria' }]); await t.flush();
+  t.answerBody(0, [{ pk_i_id: 10, s_name: 'Maharashtra' }]); await t.flush();
+  assert.deepEqual(optionTexts(t.region), ['', 'Bavaria']);
+});
+
+await test('dropdown: a late city answer for the old region is ignored after the country changes', async () => {
+  const t = run({ style: 'dropdown' });
+  t.country.value = 'DE'; t.country.fire('change');
+  t.answerBody(0, [{ pk_i_id: 5, s_name: 'Bavaria' }]); await t.flush();
+  t.region.value = '5'; t.region.fire('change');
+  t.country.value = 'IN'; t.country.fire('change');
+  t.answerBody(1, [{ pk_i_id: 50, s_name: 'Munich' }]); await t.flush();
+  assert.deepEqual([optionTexts(t.city), t.city.disabled], [[''], true]);
+});
+
+await test('dropdown: a region loads its cities; clearing it disables the city again', async () => {
+  const t = run({ style: 'dropdown' });
+  t.country.value = 'DE'; t.country.fire('change');
+  t.answerBody(0, [{ pk_i_id: 5, s_name: 'Bavaria' }]); await t.flush();
+  t.region.value = '5'; t.region.fire('change');
+  assert.equal(t.calls[1].url, 'https://x.test/index.php?page=ajax&action=cities&regionId=5');
+  t.answerBody(1, [{ pk_i_id: 50, s_name: 'Munich' }]); await t.flush();
+  assert.deepEqual([optionTexts(t.city), t.city.disabled], [['', 'Munich'], false]);
+  t.region.value = ''; t.region.fire('change');
+  assert.deepEqual([optionTexts(t.city), t.city.disabled], [[''], true]);
+  assert.equal(t.calls.length, 2);
+});
+
+await test('dropdown: a failed load shows an error line and Try again asks again', async () => {
+  const t = run({ style: 'dropdown' });
+  t.country.value = 'DE'; t.country.fire('change');
+  t.pending[0].reject(new Error('down')); await t.flush();
+  assert.equal(t.regionErr.hidden, false);
+  assert.match(t.regionErr.textContent, /Couldn’t load places\.Try again$/);
+  assert.equal(t.region.getAttribute('aria-busy'), null);
+  assert.equal(t.region.getAttribute('aria-invalid'), 'true');
+  t.regionErr.querySelector('.oe-place__retry').fire('click');
+  assert.equal(t.calls.length, 2);
+  t.answerBody(1, [{ pk_i_id: 5, s_name: 'Bavaria' }]); await t.flush();
+  assert.equal(t.regionErr.hidden, true);
+  assert.deepEqual(optionTexts(t.region), ['', 'Bavaria']);
+  const http = run({ style: 'dropdown' });
+  http.country.value = 'DE'; http.country.fire('change');
+  http.answerBody(0, [], false); await http.flush();
+  assert.equal(http.regionErr.hidden, false);
+});
+
+await test('dropdown: a country with no regions stays an empty select when ON and becomes a text box when OFF', async () => {
+  const on = run({ style: 'dropdown' });
+  on.country.value = 'DE'; on.country.fire('change');
+  on.answerBody(0, []); await on.flush();
+  assert.deepEqual([optionTexts(on.region), on.region.disabled], [[''], true]);
+  const off = run({ style: 'dropdown', strict: '0' });
+  off.country.value = 'DE'; off.country.fire('change');
+  off.answerBody(0, []); await off.flush();
+  const box = off.regionPart.querySelector('input');
+  assert.deepEqual([box.getAttribute('name'), box.id, off.regionPart.querySelector('select')], ['region', 'pl-region', null]);
+  assert.equal(off.cityPart.querySelector('input').getAttribute('name'), 'city');
+});
+
+await test('dropdown: Use my saved place loads both lists, then selects the place', async () => {
+  const saved = { label: 'Munich, Bavaria', city_id: 50, region_id: 5, country_code: 'DE', origin: 'address' };
+  const t = run({ style: 'dropdown', saved });
+  t.savedBtn.fire('click');
+  assert.equal(t.country.value, 'DE');
+  t.answerBody(0, [{ pk_i_id: 5, s_name: 'Bavaria' }]); await t.flush();
+  assert.equal(t.calls[1].url, 'https://x.test/index.php?page=ajax&action=cities&regionId=5');
+  t.answerBody(1, [{ pk_i_id: 50, s_name: 'Munich' }]); await t.flush();
+  assert.deepEqual([t.region.value, t.city.value, t.savedBtn.hidden], ['5', '50', true]);
+});
+
+await test('dropdown: with no data-ajax the lists load from the form\'s address', async () => {
+  const t = run({ style: 'dropdown', ajax: '' });
+  t.country.value = 'DE'; t.country.fire('change');
+  assert.equal(t.calls[0].url, 'https://x.test/form.php?page=ajax&action=regions&countryId=DE');
+});
+
+await test('dropdown OFF: a region drawn as text turns back into the one regionId control when the new country has regions', async () => {
+  const t = run({ style: 'dropdown', strict: '0', textRegion: true });
+  t.country.value = 'DE'; t.country.fire('change');
+  t.answerBody(0, [{ pk_i_id: 5, s_name: 'Bavaria' }]); await t.flush();
+  const named = t.root.querySelectorAll('[name="regionId"]');
+  assert.deepEqual([named.length, named[0].tagName], [1, 'SELECT']);
 });
 
 console.log(n + ' passed');

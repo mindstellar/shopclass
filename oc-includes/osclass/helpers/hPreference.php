@@ -436,6 +436,17 @@ function osc_item_place_from_list(): bool
 }
 
 /**
+ * How the post and edit forms ask for the place: 'single' (one box that suggests places),
+ * 'fields' (a box per level) or 'dropdown' (a list per level). A site that never saved it reads 'single'.
+ *
+ * @return string
+ */
+function osc_item_place_style(): string
+{
+    return \mindstellar\location\PlaceField::style((string) getPreference('item_place_style'));
+}
+
+/**
  * Whether the Required location setting asks for this place.
  *
  * @param string $place 'country', 'region' or 'city'

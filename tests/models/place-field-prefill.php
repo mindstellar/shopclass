@@ -130,4 +130,67 @@ pin('a refused place shows its message and marks the input', [1, 1], [
     preg_match('/<input[^>]*id="loc"[^>]*aria-invalid="true"/', $html),
 ]);
 
+harness_section('fields and dropdown styles');
+$x = static function (string $html): DOMXPath {
+    $doc = new DOMDocument();
+    @$doc->loadHTML('<?xml encoding="utf-8"?>' . $html);
+
+    return new DOMXPath($doc);
+};
+$opts = static fn (DOMXPath $d, string $q): array => array_map(static fn (DOMNode $n): string => $n->attributes->getNamedItem('value')->nodeValue, iterator_to_array($d->query($q)));
+$login($sue);
+$kept([]);
+$row = $listing($pune, $mh, 'Pune', 'Maharashtra');
+$d   = $x($print(['id' => 'loc', 'style' => 'dropdown', 'item' => $row]));
+pin('dropdown edit: the listing\'s region and city are selected', [(string) $mh, (string) $pune], [
+    $d->query('//select[@name="regionId"]/option[@selected]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+    $d->query('//select[@name="cityId"]/option[@selected]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+]);
+pin('the region list holds the country\'s regions and the city list only the region\'s cities', [['', (string) $kl, (string) $mh], ['', (string) $mumbai, (string) $pune]], [
+    $opts($d, '//select[@name="regionId"]/option'),
+    $opts($d, '//select[@name="cityId"]/option'),
+]);
+pin('a one-country site draws no country control', [0, 'IN'], [
+    $d->query('//select[@name="countryId"]')->length,
+    $d->query('//input[@type="hidden"][@name="countryId"]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+]);
+$region = $x($print(['id' => 'loc', 'style' => 'dropdown', 'item' => ['fk_i_city_id' => null, 'fk_i_region_id' => (string) $kl, 's_region' => 'Kerala', 's_city' => '', 'fk_c_country_code' => 'IN']]));
+pin('a listing with a region and no city keeps the region and lists its cities', [(string) $kl, ['', (string) $munnar]], [
+    $region->query('//select[@name="regionId"]/option[@selected]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+    $opts($region, '//select[@name="cityId"]/option'),
+]);
+$kept(['regionId' => (string) $kl, 'countryId' => 'IN', 'region' => 'Kerala']);
+foreach (['fields', 'dropdown'] as $style) {
+    $d = $x($print(['id' => 'loc', 'style' => $style]));
+    $keptRegion = $style === 'fields'
+        ? $d->query('//input[@name="regionId"]')->item(0)?->attributes->getNamedItem('value')->nodeValue
+        : $d->query('//select[@name="regionId"]/option[@selected]')->item(0)?->attributes->getNamedItem('value')->nodeValue;
+    pin("$style: a refused form with a region and no city keeps the region id", (string) $kl, $keptRegion);
+}
+$kept([]);
+$d = $x($print(['id' => 'loc', 'style' => 'fields', 'item' => $row]));
+pin('fields edit: region and city boxes hold the names and ids', ['Maharashtra', (string) $mh, 'Pune', (string) $pune], [
+    $d->query('//input[@id="loc-region"]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+    $d->query('//input[@name="regionId"]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+    $d->query('//input[@id="loc-city"]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+    $d->query('//input[@name="cityId"]')->item(0)?->attributes->getNamedItem('value')->nodeValue,
+]);
+$kept(['form_errors' => ['/region' => 'Pick your location from the list.']]);
+$d = $x($print(['id' => 'loc', 'style' => 'fields']));
+pin('a refused /region message shows under the region part only', ['Pick your location from the list.', '', ''], [
+    trim($d->query('//p[@id="loc-region-error"]')->item(0)->textContent),
+    trim($d->query('//p[@id="loc-city-error"]')->item(0)->textContent),
+    trim($d->query('//p[@id="loc-country-error"]')?->item(0)?->textContent ?? ''),
+]);
+$kept([]);
+Preference::getInstance()->set('item_place_style', 'dropdown');
+scratchdb_forget_cache();
+osc_reset_preferences();
+pin('the site setting picks the style when none is given', 'dropdown', $x($print(['id' => 'loc']))->query('//div[@data-osc-place]')->item(0)->attributes->getNamedItem('data-osc-place')->nodeValue);
+pin('the dropdown root carries the ajax address its lists reload from', osc_base_url(true), $x($print(['id' => 'loc']))->query('//div[@data-osc-place]')->item(0)->attributes->getNamedItem('data-ajax')?->nodeValue);
+pin('the other styles carry none', [null, null], array_map(
+    static fn (string $style): ?string => $x($print(['id' => 'loc', 'style' => $style]))->query('//div[@data-osc-place]')->item(0)->attributes->getNamedItem('data-ajax')?->nodeValue,
+    ['single', 'fields']
+));
+
 exit(harness_result());

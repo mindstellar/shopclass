@@ -53,6 +53,10 @@ function osc_item_required_location()
 {
     return 'city';
 }
+function osc_item_place_style(): string
+{
+    return $GLOBALS['placeStyle'] ?? 'single';
+}
 function osc_item_place_from_list(): bool
 {
     return false;
@@ -121,6 +125,15 @@ pin('the old ids stay, for plugins that look them up', array('oe-place__input', 
 ));
 pin('the field is marked required when the site asks for a place', 1, $x->query('//span[contains(@class,"oe-place__req")]')->length);
 pin('the field takes the admin field class', true, str_contains((string) $attr($x, '//div[@data-osc-place]', 'class'), 'osc-field'));
+
+$placeStyle = 'dropdown';
+try {
+    $drawn = \mindstellar\location\PlaceField::prepare(array('account' => false, 'saved' => false))[0]['style'];
+} catch (Throwable $e) {
+    $drawn = 'dropdown (needs the lists)';
+}
+pin('the admin form is one box even when the site setting is dropdown', 'single', $drawn);
+$placeStyle = 'single';
 
 harness_section('refused save');
 $x = $draw(array('place' => true, 'errors' => array('city' => 'Pick your location from the list.')));

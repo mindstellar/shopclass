@@ -13,6 +13,15 @@
  * both (e.g. the item-form location fields) can rely on the same API.
  */
 
+// The core ajax address of an action. base is osc_base_url(true); params are extra query values.
+function oscAjaxUrl(base, action, params) {
+    var url = base + (base.indexOf('?') > -1 ? '&' : '?') + 'page=ajax&action=' + encodeURIComponent(action);
+    Object.keys(params || {}).forEach(function (k) {
+        url += '&' + encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    });
+    return url;
+}
+
 // Vanilla ARIA combobox — replaces jQuery-UI .autocomplete(). Attaches to
 // `input`, debounce-fetches JSON [{id,label,value}] from opts.source (adds a
 // `term` param), shows a listbox, and drives it with the standard combobox
@@ -330,15 +339,12 @@ function oscAutocomplete(input, opts) {
                     // Resolved per fetch, not once: a scoped field — a city inside the
                     // region chosen a moment ago — must read the scope as it is now.
                     source: function () {
-                        var u = base + (base.indexOf('?') > -1 ? '&' : '?')
-                            + 'page=ajax&action=' + encodeURIComponent(action);
+                        var params = {};
                         if (scopeSel && scopeParam) {
                             var s = document.querySelector(scopeSel);
-                            if (s && s.value) {
-                                u += '&' + scopeParam + '=' + encodeURIComponent(s.value);
-                            }
+                            if (s && s.value) { params[scopeParam] = s.value; }
                         }
-                        return u;
+                        return oscAjaxUrl(base, action, params);
                     },
                     // Typing again invalidates the id resolved from the last choice.
                     onSearch: clearDependents,
