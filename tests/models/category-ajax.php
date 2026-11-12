@@ -64,6 +64,24 @@ $call = static function (string $method, array $post): array {
 
     return json_decode((string) ob_get_clean(), true) ?? ['unparsed' => true];
 };
+/** A controller that records what the drawer exports instead of rendering it. */
+final class CategoryAjaxViewRecorder extends CAdminAjax
+{
+    public function __construct(public ArrayObject $view)
+    {
+    }
+
+    public function _exportVariableToView($key, $value)
+    {
+        $this->view[$key] = $value;
+    }
+
+    public function doView($file)
+    {
+        $this->view['_file'] = $file;
+    }
+}
+
 /** Run editIframe() against a recording controller and return what it exported. */
 $iframe = static function (array $post): array {
     foreach (['id', 'parent_id'] as $k) {
@@ -73,20 +91,7 @@ $iframe = static function (array $post): array {
         Params::setParam($k, $v);
     }
     $view = new ArrayObject();
-    $stub = new class ($view) extends CAdminAjax {
-        public function __construct(public ArrayObject $view)
-        {
-        }
-        public function _exportVariableToView($key, $value)
-        {
-            $this->view[$key] = $value;
-        }
-        public function doView($file)
-        {
-            $this->view['_file'] = $file;
-        }
-    };
-    (new CategoryAjax($stub))->editIframe();
+    (new CategoryAjax(new CategoryAjaxViewRecorder($view)))->editIframe();
 
     return $view->getArrayCopy();
 };
