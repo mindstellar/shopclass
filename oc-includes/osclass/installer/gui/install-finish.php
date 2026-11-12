@@ -83,6 +83,9 @@ $ins_rows         = array(
                     : sprintf(osc_esc_html(__('We also emailed these to %s.')), '<b>' . osc_esc_html($data['s_email']) . '</b>');
             ?></span>
         </p>
+        <?php if (!empty($error) && is_string($error)) { ?>
+            <p class="ins-cred-note"><span><?php echo osc_esc_html($error); ?></span></p>
+        <?php } ?>
 
         <?php if (!empty($ins_later)) { ?>
             <div class="ins-later">

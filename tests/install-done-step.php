@@ -79,6 +79,7 @@ harness_section('mail note');
 check('mail note shows the address', str_contains($html, 'We also emailed these to <b>owner@example.test</b>.'));
 $failed = $render(array(), 'smtp down');
 check('failed mail says so', str_contains($failed, 'email your password.') && !str_contains($failed, 'We also emailed'));
+check('the real failure is shown, escaped', str_contains($render(array(), 'a@b.test: <i>Invalid</i>'), 'a@b.test: &lt;i&gt;Invalid&lt;/i&gt;'));
 check('no address also says so', str_contains($render(array(), null, ''), 'email your password.'));
 
 harness_section('to finish later');

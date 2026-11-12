@@ -1697,7 +1697,13 @@ function install_run_unit(string $action): array
     if ($action === 'locations') {
         $location = Params::getParamString('location-json');
 
-        return install_locations_unit(Params::getParam('skip-location-input') === 'skip' ? 'skip' : $location);
+        $location = Params::getParam('skip-location-input') === 'skip' ? 'skip' : $location;
+        \mindstellar\database\Db::execute(
+            'REPLACE INTO ' . DB_TABLE_PREFIX . 't_preference (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)',
+            array('timezone', install_timezone_for_country($location), 'osclass', 'STRING')
+        );
+
+        return install_locations_unit($location);
     }
 
     return install_storefront_unit();
@@ -1761,6 +1767,65 @@ function install_starter_unit(?callable $seed = null): array
     Session::getInstance()->_set('install_starter_failed', $ok ? 0 : 1);
 
     return array('status' => $ok, 'message' => $ok ? '' : __("The starter categories couldn't be added."));
+}
+
+/**
+ * The From address of the install mail: the admin's address, else an address on the site's domain.
+ *
+ * @param string $adminEmail the admin e-mail from the form
+ * @param string $serverName SERVER_NAME, which may be empty on the command line
+ * @param string $siteUrl    the site address, used when SERVER_NAME is empty
+ *
+ * @return string
+ */
+function install_mail_from(string $adminEmail, string $serverName, string $siteUrl): string
+{
+    if (filter_var($adminEmail, FILTER_VALIDATE_EMAIL) !== false) {
+        return $adminEmail;
+    }
+    $host = strtolower($serverName !== '' ? $serverName : (string) parse_url($siteUrl, PHP_URL_HOST));
+    $host = preg_replace('/^www\./', '', $host);
+
+    return 'noreply@' . ($host !== '' ? $host : 'localhost');
+}
+
+/**
+ * Sort the installer's country rows by display name, in the visitor's language rules when intl is there.
+ *
+ * @param array<int, array<string, mixed>> $rows catalogue rows with a 'name'
+ *
+ * @return array<int, array<string, mixed>>
+ */
+function install_sort_countries(array $rows): array
+{
+    $collator = class_exists('Collator') ? new Collator('en') : null;
+    usort($rows, static function (array $a, array $b) use ($collator): int {
+        $x = (string) $a['name'];
+        $y = (string) $b['name'];
+
+        return $collator !== null ? (int) $collator->compare($x, $y) : strnatcasecmp($x, $y);
+    });
+
+    return $rows;
+}
+
+/**
+ * The first timezone of a country (a code or a catalogue file name such as "IN.json"), else UTC.
+ *
+ * @param string $location
+ *
+ * @return string
+ */
+function install_timezone_for_country(string $location): string
+{
+    if (preg_match('/^([A-Za-z]{2})(?:[._-]|$)/', $location, $m) === 1) {
+        $zones = @DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, strtoupper($m[1]));
+        if (is_array($zones) && $zones !== []) {
+            return (string) $zones[0];
+        }
+    }
+
+    return 'UTC';
 }
 
 /**
@@ -2018,15 +2083,10 @@ function basic_info()
     $body .= __('Cheers,') . '<br/>';
     $body .= sprintf(__('The <a href="%s">Shopclass</a> team'), \mindstellar\utility\ProjectLinks::REPOSITORY);
 
-    $sitename = strtolower(Params::getServerParam('SERVER_NAME'));
-    if (0 === strpos($sitename, 'www.')) {
-        $sitename = substr($sitename, 4);
-    }
-
     $mail           = new PHPMailer(true);
     $mail->CharSet  = 'utf-8';
     $mail->Host     = 'localhost';
-    $mail->From     = 'osclass@' . $sitename;
+    $mail->From     = install_mail_from(Params::getParam('email'), Params::getServerParam('SERVER_NAME'), (string) WEB_PATH);
     $mail->FromName = 'Shopclass';
     $mail->Subject  = 'Shopclass successfully installed!';
     $mail->addAddress(Params::getParam('email'), 'Shopclass administrator');
@@ -2039,7 +2099,7 @@ function basic_info()
         return array('email_status' => '', 's_password' => $password);
     } catch (\PHPMailer\PHPMailer\Exception $exception) {
         return array(
-            'email_status' => Params::getParam('email') . '<br>' . $exception->errorMessage(),
+            'email_status' => Params::getParam('email') . ': ' . $exception->getMessage(),
             's_password'   => $password
         );
     }

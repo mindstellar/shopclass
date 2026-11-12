@@ -23,7 +23,7 @@ INSERT INTO /*TABLE_PREFIX*/t_preference VALUES
     ,('osclass', 'avatar_dimensions', '200x200', 'STRING')
     ,('osclass', 'dateFormat', 'F j, Y', 'STRING')
     ,('osclass', 'timeFormat', 'g:i a', 'STRING')
-    ,('osclass', 'timezone', 'Europe/Madrid', 'STRING')
+    ,('osclass', 'timezone', 'UTC', 'STRING')
     ,('osclass', 'weekStart', '0', 'STRING')
     ,('osclass', 'csrf_name', 'CSRF', 'STRING')
     ,('osclass', 'moderate_comments', '0', 'INTEGER')
