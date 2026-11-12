@@ -910,6 +910,10 @@ msgstr ""
 msgid "%s is not readable!"
 msgstr ""
 
+#: oc-includes/classes/admin/AdminNoticeFeed.php
+msgid "%s is on but has no keys, so checkout cannot take payments."
+msgstr ""
+
 #: oc-includes/osclass/installer/gui/install-finish.php
 msgid "%s is ready"
 msgstr ""
@@ -1856,6 +1860,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/appearance/menus.php
 msgid "Add items"
+msgstr ""
+
+#: oc-includes/classes/admin/AdminNoticeFeed.php
+msgid "Add its keys in its settings."
 msgstr ""
 
 #: oc-admin/themes/modern/settings/keywordBlock.php
