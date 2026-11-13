@@ -2,10 +2,14 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.0.17
+## Shopclass 7.0.18
 
 ### Fixed
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
+
+## Shopclass 7.0.17
+
+### Fixed
 - Fields a plugin adds to the register, login, comment and contact forms now sit above the captcha.
 
 ## Shopclass 7.0.16
