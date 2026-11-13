@@ -521,6 +521,12 @@ class CAdminPlugins extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
             return;
         }
+        $blocked = $this->missingRequirements($plugin);
+        if ($blocked !== null) {
+            osc_add_flash_error_message(osc_esc_html($blocked), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=plugins');
+            return;
+        }
         if (!OSC_DEBUG) {
             error_reporting(E_ALL);
         }

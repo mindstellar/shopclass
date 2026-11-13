@@ -19,10 +19,13 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 define('OSCLASS_VERSION', '9.9.9');
 
 $base = sys_get_temp_dir() . '/osc-cli-plugin-install-' . getmypid() . '/';
-foreach (array('good', 'throws', 'noisy', 'needy') as $dir) {
+foreach (array('good', 'throws', 'noisy', 'needy', 'toonew') as $dir) {
     @mkdir($base . $dir, 0777, true);
 }
 define('PLUGINS_PATH', $base);
+$themes = sys_get_temp_dir() . '/osc-cli-themes-' . getmypid() . '/';
+@mkdir($themes . 'oldtheme', 0777, true);
+@mkdir($themes . 'toonewtheme', 0777, true);
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
 require_once __DIR__ . '/lib/harness.php';
@@ -50,6 +53,16 @@ function osc_reset_preferences()
 {
 }
 
+function osc_themes_path()
+{
+    return $GLOBALS['themes'];
+}
+
+function osc_theme()
+{
+    return 'oldtheme';
+}
+
 function osc_plugins_path()
 {
     return PLUGINS_PATH;
@@ -60,6 +73,9 @@ file_put_contents(
     $base . 'throws/index.php',
     '<?php Plugins::addHook("install_throws/index.php", function () { throw new Error("needs ext-foo"); });'
 );
+file_put_contents($base . 'toonew/index.php', "<?php\n/*\nPlugin Name: Too New\nRequires Shopclass: 99.0.0\n*/\n");
+file_put_contents($themes . 'oldtheme/index.php', "<?php\n/*\nTheme Name: Old\n*/\n");
+file_put_contents($themes . 'toonewtheme/index.php', "<?php\n/*\nTheme Name: Too New\nRequires Shopclass: 99.0.0\n*/\n");
 file_put_contents($base . 'noisy/index.php', '<?php echo "hello";');
 file_put_contents($base . 'needy/index.php', '<?php');
 file_put_contents($base . 'needy/shopclass.json', '{"plugins":{"required":{"absent":"^0.2.0"}}}');
@@ -78,6 +94,14 @@ final class Capture extends php_user_filter
     }
 }
 stream_filter_register('capture', Capture::class);
+
+/** Forget the installed list Plugins cached, after a test edits the preference. */
+function forget_installed(): void
+{
+    $prop = new ReflectionProperty('Plugins', 'installed');
+    $prop->setAccessible(true);
+    $prop->setValue(null, null);
+}
 
 /** Run the CLI and hand back its exit code and what it printed. */
 function cli(array $argv): array
@@ -127,14 +151,31 @@ pin('a missing required plugin: exit code 1', 1, $code);
 pin('names it and the version', true, str_contains($out, 'absent version ^0.2.0'));
 pin('and it is not installed', false, in_array('needy/index.php', unserialize($GLOBALS['prefs']['installed_plugins']), true));
 $GLOBALS['prefs']['installed_plugins'] = serialize(array('good/index.php', 'noisy/index.php', 'needy/index.php'));
+forget_installed();
 [$code, $out] = cli(array('plugin:activate', '--plugin=needy'));
 pin('activate is refused too', array(1, false), array($code, in_array('needy/index.php', unserialize($GLOBALS['prefs']['active_plugins']), true)));
 unlink($base . 'needy/shopclass.json');
 
-foreach (array('good', 'throws', 'noisy', 'needy') as $dir) {
+harness_section('a plugin or theme that needs a newer Shopclass');
+[$code, $out] = cli(array('plugin:install', '--plugin=toonew'));
+pin('install is refused', array(1, true), array($code, str_contains($out, 'Requires Shopclass 99.0.0 or newer (you have 9.9.9)')));
+$GLOBALS['prefs']['installed_plugins'] = serialize(array('toonew/index.php'));
+forget_installed();
+[$code, $out] = cli(array('plugin:activate', '--plugin=toonew'));
+pin('activate is refused', array(1, false), array($code, in_array('toonew/index.php', unserialize($GLOBALS['prefs']['active_plugins']), true)));
+pin('...with the reason', true, str_contains($out, 'Requires Shopclass 99.0.0'));
+[$code, $out] = cli(array('theme:activate', '--theme=toonewtheme'));
+pin('theme:activate is refused', array(1, true, null), array($code, str_contains($out, 'Requires Shopclass 99.0.0'), $GLOBALS['prefs']['theme'] ?? null));
+
+foreach (array('good', 'throws', 'noisy', 'needy', 'toonew') as $dir) {
     unlink($base . $dir . '/index.php');
     rmdir($base . $dir);
 }
 rmdir($base);
+foreach (array('oldtheme', 'toonewtheme') as $dir) {
+    unlink($themes . $dir . '/index.php');
+    rmdir($themes . $dir);
+}
+rmdir($themes);
 
 exit(harness_result());

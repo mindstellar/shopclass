@@ -118,11 +118,8 @@ final class PluginDependencies
      */
     public static function pluginRequirements(string $path): array
     {
-        $none = ['required' => [], 'recommended' => []];
-        if ($path === '' || str_contains($path, '..') || !is_file(osc_plugins_path() . $path)) {
-            return $none;
-        }
-        $needs = \Plugins::getInfo($path)['requires_plugins'] ?? null;
+        $none  = ['required' => [], 'recommended' => []];
+        $needs = (self::pluginInfo($path) ?? [])['requires_plugins'] ?? null;
 
         return is_array($needs) ? array_merge($none, $needs) : $none;
     }
@@ -156,19 +153,7 @@ final class PluginDependencies
     {
         $info = \WebThemes::getInstance()->loadThemeInfo($theme);
 
-        return is_array($info) ? self::incompatibility($info) : null;
-    }
-
-    /**
-     * The Requires Shopclass / Requires PHP verdict for a plugin or theme header, null when it fits.
-     *
-     * @param array<string,mixed> $info
-     */
-    private static function incompatibility(array $info): ?string
-    {
-        $verdict = Compatibility::evaluate($info);
-
-        return $verdict['blocked'] ? $verdict['reason'] : null;
+        return is_array($info) ? Compatibility::reason($info) : null;
     }
 
     /**
@@ -176,11 +161,9 @@ final class PluginDependencies
      */
     public static function refuseActivation(string $path): ?string
     {
-        if ($path !== '' && !str_contains($path, '..') && is_file(osc_plugins_path() . $path)) {
-            $reason = self::incompatibility(\Plugins::getInfo($path));
-            if ($reason !== null) {
-                return $reason;
-            }
+        $info = self::pluginInfo($path);
+        if ($info !== null && ($reason = Compatibility::reason($info)) !== null) {
+            return $reason;
         }
 
         $requires = self::pluginRequirements($path);
@@ -453,6 +436,21 @@ final class PluginDependencies
         }
 
         return null;
+    }
+
+    /**
+     * The header of the plugin at $path, or null when the path is empty, leaves the plugins
+     * folder or is not a file.
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function pluginInfo(string $path): ?array
+    {
+        if ($path === '' || str_contains($path, '..') || !is_file(osc_plugins_path() . $path)) {
+            return null;
+        }
+
+        return \Plugins::getInfo($path);
     }
 
     /**
