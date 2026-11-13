@@ -25,6 +25,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 $base = sys_get_temp_dir() . '/osc-plugin-install-' . getmypid() . '/';
 @mkdir($base . 'healthy', 0777, true);
 @mkdir($base . 'throws', 0777, true);
+define('OSCLASS_VERSION', '7.0.0');
 define('PLUGINS_PATH', $base);
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';

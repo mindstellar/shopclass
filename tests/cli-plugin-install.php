@@ -19,7 +19,7 @@ define('ABS_PATH', dirname(__DIR__) . '/');
 define('OSCLASS_VERSION', '9.9.9');
 
 $base = sys_get_temp_dir() . '/osc-cli-plugin-install-' . getmypid() . '/';
-foreach (array('good', 'throws', 'noisy') as $dir) {
+foreach (array('good', 'throws', 'noisy', 'toonew', 'lowreq') as $dir) {
     @mkdir($base . $dir, 0777, true);
 }
 define('PLUGINS_PATH', $base);
@@ -60,6 +60,8 @@ file_put_contents(
     $base . 'throws/index.php',
     '<?php Plugins::addHook("install_throws/index.php", function () { throw new Error("needs ext-foo"); });'
 );
+file_put_contents($base . 'toonew/index.php', "<?php\n/*\nPlugin Name: Too New\nRequires Shopclass: 99.0.0\n*/\n");
+file_put_contents($base . 'lowreq/index.php', "<?php\n/*\nPlugin Name: Low Req\nRequires Shopclass: 6.0.0\nRequires PHP: 8.0\n*/\n");
 file_put_contents($base . 'noisy/index.php', '<?php echo "hello";');
 
 /** Keeps what the CLI writes to STDOUT and STDERR, which an output buffer does not see. */
@@ -112,14 +114,22 @@ pin('gives its message', true, str_contains($out, 'needs ext-foo'));
 pin('output during install: exit code 1', 1, $code);
 pin('shows the output', true, str_contains($out, 'hello'));
 
+[$code, $out] = cli(array('plugin:install', '--plugin=toonew'));
+pin('a plugin that needs a newer Shopclass: exit code 1', 1, $code);
+pin('says what it needs', true, str_contains($out, 'Requires Shopclass 99.0.0 or newer (you have 9.9.9)'));
+pin('and it is not installed or enabled', false, in_array('toonew/index.php', unserialize($GLOBALS['prefs']['installed_plugins']), true) || in_array('toonew/index.php', unserialize($GLOBALS['prefs']['active_plugins']), true));
+pin('enabling it directly is refused too', true, \Plugins::incompatibility('toonew/index.php') !== null);
+[$code] = cli(array('plugin:install', '--plugin=lowreq'));
+pin('a plugin whose Requires lines are met installs', 0, $code);
+
 [$code] = cli(array('plugin:install'));
 pin('no --plugin: exit code 2', 2, $code);
 
 [$code] = cli(array('plugin:install', '--plugin=../../evil/index.php'));
 pin('a path outside the plugins folder: exit code 2', 2, $code);
-pin('and nothing is installed', array('good/index.php', 'noisy/index.php'), unserialize($GLOBALS['prefs']['installed_plugins']));
+pin('and nothing else is installed', array('good/index.php', 'noisy/index.php', 'lowreq/index.php'), unserialize($GLOBALS['prefs']['installed_plugins']));
 
-foreach (array('good', 'throws', 'noisy') as $dir) {
+foreach (array('good', 'throws', 'noisy', 'toonew', 'lowreq') as $dir) {
     unlink($base . $dir . '/index.php');
     rmdir($base . $dir);
 }

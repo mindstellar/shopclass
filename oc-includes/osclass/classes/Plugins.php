@@ -388,6 +388,21 @@ class Plugins
     }
 
     /**
+     * Why a plugin needs a newer Shopclass or PHP than this site runs, or null when it fits.
+     *
+     * @param string $path 'dir/index.php' path
+     */
+    public static function incompatibility($path): ?string
+    {
+        if ($path === '' || str_contains($path, '..') || !is_file(PLUGINS_PATH . $path)) {
+            return null;
+        }
+        $verdict = \mindstellar\market\Compatibility::evaluate(self::getInfo($path));
+
+        return $verdict['blocked'] ? $verdict['reason'] : null;
+    }
+
+    /**
      * Install and activate a plugin.
      *
      * @param string $path 'dir/index.php' path
@@ -407,6 +422,11 @@ class Plugins
 
         if (!file_exists(PLUGINS_PATH . $path)) {
             return array('error_code' => 'error_file');
+        }
+
+        $incompatible = self::incompatibility($path);
+        if ($incompatible !== null) {
+            return array('error_code' => 'custom_error', 'msg' => $incompatible);
         }
 
         try {

@@ -203,7 +203,11 @@ class CAdminPlugins extends AdminSecBaseModel
         }
         osc_csrf_check();
 
-        if (Plugins::activate(Params::getParamString('plugin'))) {
+        $plugin       = Params::getParamString('plugin');
+        $incompatible = Plugins::isEnabled($plugin) ? null : Plugins::incompatibility($plugin);
+        if ($incompatible !== null) {
+            osc_add_flash_error_message(osc_esc_html($incompatible), 'admin');
+        } elseif (Plugins::activate($plugin)) {
             osc_add_flash_ok_message(_m('Plugin enabled'), 'admin');
         } else {
             osc_add_flash_error_message(_m('Plugin is already enabled'), 'admin');
