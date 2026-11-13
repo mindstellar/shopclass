@@ -397,9 +397,8 @@ class Plugins
         if ($path === '' || str_contains($path, '..') || !is_file(PLUGINS_PATH . $path)) {
             return null;
         }
-        $verdict = \mindstellar\market\Compatibility::evaluate(self::getInfo($path));
 
-        return $verdict['blocked'] ? $verdict['reason'] : null;
+        return \mindstellar\market\Compatibility::reason(self::getInfo($path));
     }
 
     /**

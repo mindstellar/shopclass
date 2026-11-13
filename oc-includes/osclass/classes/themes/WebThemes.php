@@ -90,6 +90,7 @@ class WebThemes extends Themes
             }
         }
     }
+
     /**
      * Why a theme needs a newer Shopclass or PHP than this site runs, or null when it fits.
      *
@@ -98,12 +99,8 @@ class WebThemes extends Themes
     public function incompatibility($theme): ?string
     {
         $info = $this->loadThemeInfo($theme);
-        if (!is_array($info)) {
-            return null;
-        }
-        $verdict = \mindstellar\market\Compatibility::evaluate($info);
 
-        return $verdict['blocked'] ? $verdict['reason'] : null;
+        return is_array($info) ? \mindstellar\market\Compatibility::reason($info) : null;
     }
 
     /**
