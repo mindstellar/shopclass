@@ -1181,6 +1181,13 @@ class Cli
             return 1;
         }
 
+        $incompatible = Plugins::incompatibility($path);
+        if ($incompatible !== null) {
+            $this->err(sprintf("Plugin '%s': %s\n", $plugin, $incompatible));
+
+            return 1;
+        }
+
         if (!Plugins::activate($path)) {
             $this->err(sprintf("Could not enable plugin '%s'.\n", $plugin));
 
@@ -1276,6 +1283,13 @@ class Cli
             $this->out(sprintf("Theme '%s' is already active.\n", $theme));
 
             return 0;
+        }
+
+        $incompatible = WebThemes::newInstance()->incompatibility($theme);
+        if ($incompatible !== null) {
+            $this->err(sprintf("Theme '%s': %s\n", $theme, $incompatible));
+
+            return 1;
         }
 
         osc_set_preference('theme', $theme);

@@ -21,10 +21,13 @@
  */
 
 define('ABS_PATH', dirname(__DIR__) . '/');
+define('OSCLASS_VERSION', '6.4.10');
 
 $base = sys_get_temp_dir() . '/osc-plugin-install-' . getmypid() . '/';
 @mkdir($base . 'healthy', 0777, true);
 @mkdir($base . 'throws', 0777, true);
+@mkdir($base . 'toonew', 0777, true);
+@mkdir($base . 'lowreq', 0777, true);
 define('PLUGINS_PATH', $base);
 
 require ABS_PATH . 'oc-includes/vendor/autoload.php';
@@ -63,6 +66,9 @@ file_put_contents(
     '<?php Plugins::addHook("install_throws/index.php", function () { throw new Error("needs ext-foo"); });'
 );
 
+file_put_contents($base . 'toonew/index.php', "<?php\n/*\nPlugin Name: Too New\nRequires Shopclass: 7.0.0\n*/\n");
+file_put_contents($base . 'lowreq/index.php', "<?php\n/*\nPlugin Name: Low Req\nRequires Shopclass: 6.0.0\nRequires PHP: 8.0\n*/\n");
+
 $lists = static function (): array {
     return array(
         unserialize($GLOBALS['prefs']['active_plugins']),
@@ -92,6 +98,17 @@ pin(
     Plugins::install('throws/index.php')
 );
 check('the plugin is not activated', !in_array('throws/index.php', $lists()[0], true));
+
+harness_section('a plugin that needs a newer Shopclass');
+
+pin(
+    'install is refused with the reason',
+    array('error_code' => 'custom_error', 'msg' => 'Requires Shopclass 7.0.0 or newer (you have 6.4.10).'),
+    Plugins::install('toonew/index.php')
+);
+check('it is neither active nor installed', !in_array('toonew/index.php', $lists()[0], true) && !in_array('toonew/index.php', $lists()[1], true));
+pin('enabling it is refused too', 'Requires Shopclass 7.0.0 or newer (you have 6.4.10).', Plugins::incompatibility('toonew/index.php'));
+pin('a plugin whose Requires lines are met installs', true, Plugins::install('lowreq/index.php'));
 
 harness_section('admin GET forms never target a CSRF-checked action');
 

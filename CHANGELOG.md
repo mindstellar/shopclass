@@ -8,6 +8,7 @@ This release fixes the search filter sidebar, which listed custom fields in the 
 
 ### Fixed
 
+- A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
 - The search filter sidebar lists custom fields in the order set inside the form, like the post form (#574).
 
 ## Shopclass 6.4.9
