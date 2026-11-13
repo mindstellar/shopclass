@@ -128,6 +128,18 @@ final class Compatibility
     }
 
     /**
+     * Why a plugin or theme header needs a newer Shopclass or PHP than this site runs, or null when it fits.
+     *
+     * @param array<string,mixed> $info
+     */
+    public static function reason(array $info): ?string
+    {
+        $verdict = self::evaluate($info);
+
+        return $verdict['blocked'] ? $verdict['reason'] : null;
+    }
+
+    /**
      * Highest entry whose `requires` <= core and `requires_php` <= PHP.
      *
      * @param array<int,array<string,mixed>> $versions    list of arrays each having at least 'version' and
