@@ -713,6 +713,12 @@ class CAdminAppearance extends AdminSecBaseModel
             $this->redirectTo($back);
             return;
         }
+        $incompatible = PluginDependencies::refuseTheme($theme);
+        if ($incompatible !== null) {
+            osc_add_flash_error_message(osc_esc_html($incompatible), 'admin');
+            $this->redirectTo($back);
+            return;
+        }
         $deps = PluginDependencies::forSite();
         if ($theme === osc_theme()) {
             if ($deps->missingRequired($requires) === array()) {

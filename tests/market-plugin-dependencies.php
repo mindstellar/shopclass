@@ -24,12 +24,15 @@ define('OSCLASS_VERSION', '7.0.0');
 error_reporting(E_ALL & ~E_USER_NOTICE);
 
 $pluginsDir = sys_get_temp_dir() . '/osc-deps-plugins-' . bin2hex(random_bytes(4)) . '/';
-foreach (array('fresh', 'off', 'needy') as $dir) {
+foreach (array('fresh', 'off', 'needy', 'toonew', 'phptoonew', 'lowreq') as $dir) {
     mkdir($pluginsDir . $dir, 0777, true);
     file_put_contents($pluginsDir . $dir . '/index.php', '<?php');
 }
 file_put_contents($pluginsDir . 'off/index.php', "<?php\n/*\nPlugin Name: Off Plugin\nVersion: 0.1.0\n*/\n");
 file_put_contents($pluginsDir . 'needy/shopclass.json', '{"plugins":{"required":{"absent":"^0.2.0","off":"^0.1.0"}}}');
+file_put_contents($pluginsDir . 'toonew/index.php', "<?php\n/*\nPlugin Name: Too New\nVersion: 1.0.0\nRequires Shopclass: 99.0.0\n*/\n");
+file_put_contents($pluginsDir . 'phptoonew/index.php', "<?php\n/*\nPlugin Name: Php Too New\nVersion: 1.0.0\nRequires PHP: 99.0\n*/\n");
+file_put_contents($pluginsDir . 'lowreq/index.php', "<?php\n/*\nPlugin Name: Low Req\nVersion: 1.0.0\nRequires Shopclass: 6.0.0\nRequires PHP: 8.0\n*/\n");
 define('PLUGINS_PATH', $pluginsDir);
 
 $GLOBALS['prefs']       = array();
@@ -245,6 +248,12 @@ pin('...and it stays off and not installed', array(false, false), array(
     in_array('needy/index.php', unserialize($GLOBALS['pluginPrefs']['installed_plugins']), true),
 ));
 pin('a plugin with no requirements is not held', null, Deps::refuseActivation('fresh/index.php'));
+check('a plugin that needs a newer Shopclass is refused', str_contains((string) Deps::refuseActivation('toonew/index.php'), 'Requires Shopclass 99.0.0 or newer (you have 7.0.0)'), (string) Deps::refuseActivation('toonew/index.php'));
+check('a plugin that needs a newer PHP is refused', str_contains((string) Deps::refuseActivation('phptoonew/index.php'), 'Requires PHP 99.0'), (string) Deps::refuseActivation('phptoonew/index.php'));
+pin('a plugin whose Requires lines are met is allowed', null, Deps::refuseActivation('lowreq/index.php'));
+$GLOBALS['pluginPrefs']['active_plugins'] = serialize(array());
+check('switchOn refuses a too-new plugin and leaves it off', str_contains((string) Deps::switchOn('toonew'), 'Requires Shopclass 99.0.0') && !in_array('toonew/index.php', unserialize($GLOBALS['pluginPrefs']['installed_plugins']), true));
+pin('switchOn lets a compatible plugin on', null, Deps::switchOn('lowreq'));
 pin('met requirements do not block', null, $deps->activationBlocker(array('required' => array('stripe' => '>=1.2'))));
 $newer = static fn (bool $on): ?string => (new Deps(array('tax' => array('name' => 'Tax', 'version' => '0.3.0', 'enabled' => $on)), array(), array()))->activationBlocker(array('required' => array('tax' => '^0.2.0')));
 pin('a newer required plugin that is on does not block, so updating it locks nothing out', null, $newer(true));
@@ -256,6 +265,12 @@ mkdir($GLOBALS['themesDir'] . 'aisle', 0777, true);
 file_put_contents($GLOBALS['themesDir'] . 'aisle/index.php', "<?php\n/*\nTheme Name: Aisle\nVersion: 1.0\n*/\n");
 file_put_contents($GLOBALS['themesDir'] . 'aisle/shopclass.json', '{"plugins":{"required":{"stripe":">=1.2"},"recommended":{"tax":""}}}');
 pin('an installed theme lists its plugins', array('required' => array('stripe' => '>=1.2'), 'recommended' => array('tax' => '')), Deps::themeRequirements('aisle'));
+mkdir($GLOBALS['themesDir'] . 'toonew', 0777, true);
+file_put_contents($GLOBALS['themesDir'] . 'toonew/index.php', "<?php\n/*\nTheme Name: Too New\nVersion: 1.0\nRequires Shopclass: 99.0.0\n*/\n");
+check('a theme that needs a newer Shopclass is refused', str_contains((string) Deps::refuseTheme('toonew'), 'Requires Shopclass 99.0.0'), (string) Deps::refuseTheme('toonew'));
+pin('a theme with no Requires line is allowed', null, Deps::refuseTheme('aisle'));
+unlink($GLOBALS['themesDir'] . 'toonew/index.php');
+rmdir($GLOBALS['themesDir'] . 'toonew');
 pin('a theme that is not installed is null', null, Deps::themeRequirements('../aisle'));
 
 $ajax = (new ReflectionClass(MarketAjax::class))->newInstanceWithoutConstructor();
@@ -282,7 +297,7 @@ $r     = $live->ensure($manifest, 'digital-goods');
 pin('a demo site fetches nothing', array(false, array()), array($r['ok'], $calls));
 
 unlink($pluginsDir . 'needy/shopclass.json');
-foreach (array('fresh', 'off', 'needy') as $dir) {
+foreach (array('fresh', 'off', 'needy', 'toonew', 'phptoonew', 'lowreq') as $dir) {
     unlink($pluginsDir . $dir . '/index.php');
     rmdir($pluginsDir . $dir);
 }

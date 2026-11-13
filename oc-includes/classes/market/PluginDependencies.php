@@ -150,10 +150,39 @@ final class PluginDependencies
     }
 
     /**
+     * Why a theme needs a newer Shopclass or PHP than this site runs, or null when it fits.
+     */
+    public static function refuseTheme(string $theme): ?string
+    {
+        $info = \WebThemes::getInstance()->loadThemeInfo($theme);
+
+        return is_array($info) ? self::incompatibility($info) : null;
+    }
+
+    /**
+     * The Requires Shopclass / Requires PHP verdict for a plugin or theme header, null when it fits.
+     *
+     * @param array<string,mixed> $info
+     */
+    private static function incompatibility(array $info): ?string
+    {
+        $verdict = Compatibility::evaluate($info);
+
+        return $verdict['blocked'] ? $verdict['reason'] : null;
+    }
+
+    /**
      * Why the plugin at $path cannot be turned on on this site yet, or null when it can.
      */
     public static function refuseActivation(string $path): ?string
     {
+        if ($path !== '' && !str_contains($path, '..') && is_file(osc_plugins_path() . $path)) {
+            $reason = self::incompatibility(\Plugins::getInfo($path));
+            if ($reason !== null) {
+                return $reason;
+            }
+        }
+
         $requires = self::pluginRequirements($path);
         if ($requires['required'] === []) {
             return null;

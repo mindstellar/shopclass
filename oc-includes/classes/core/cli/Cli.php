@@ -1522,6 +1522,13 @@ class Cli
             return 0;
         }
 
+        $incompatible = PluginDependencies::refuseTheme($theme);
+        if ($incompatible !== null) {
+            $this->err(sprintf("Theme '%s': %s\n", $theme, $incompatible));
+
+            return 1;
+        }
+
         $deps     = PluginDependencies::forSite();
         $requires = PluginDependencies::themeRequirements($theme) ?? [];
         if ($deps->activateTheme($theme, $requires, true) === 'held') {

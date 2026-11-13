@@ -192,6 +192,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Product alerts find their listing through an indexed column (migration 0089).
 
 ### Fixed
+- A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
 - Refunds no longer put shipped units back in stock, and an amount-only credit note carries its share of tax.
 - Refund History shows who made each credit note, and the last refund says the order is refunded.
 - The installer shows the real error when its e-mail fails, sorts countries by name, sets the time zone from the chosen country and places the example listings there.
