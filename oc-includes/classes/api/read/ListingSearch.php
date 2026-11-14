@@ -179,7 +179,7 @@ final class ListingSearch
      * stock (stock not tracked, or above 0), on sale (an old price above the price it sells at)
      * and/or has these options. With several, one variant must meet all. A per-row probe, not
      * EXISTS: the planner would turn EXISTS into a scan of every variant before the sort (0.2 s
-     * against 0.4 ms on 232k listings).
+     * against 0.4 ms on 232k listings). On sale is an `IN` on the sale-price index instead.
      *
      * @param array<string,string[]> $options name => values, from optionFilter()
      *
@@ -200,19 +200,19 @@ final class ListingSearch
             foreach (array_keys($pairs) as $key) {
                 $terms[$key] = array_values($found[$key] ?? []);
             }
+            $ids = FacetFilter::optionIds($terms, $inStock, $onSale);
+            if ($ids !== null) {
+                [$page, $count] = FacetFilter::listingIn($ids);
+
+                return [$page, [], $count];
+            }
             [$page, $count, $params] = FacetFilter::optionProbe($terms, $inStock, $onSale);
 
             return [$page, $params, $count];
         }
         $variants = VariantStore::tableName();
         $item     = ListingQuery::tableName();
-        $where    = array($variants . '.fk_i_item_id = ' . $item . '.pk_i_id');
-        if ($inStock) {
-            $where[] = '(' . $variants . '.i_stock IS NULL OR ' . $variants . '.i_stock > 0)';
-        }
-        if ($onSale) {
-            $where[] = $variants . '.i_compare_price > COALESCE(' . $variants . '.i_price, ' . $item . '.i_price)';
-        }
+        $where    = FacetFilter::variantFlags($variants, $item, $inStock, $onSale);
         $params = [];
         foreach ($options as $name => $values) {
             $any = [];
@@ -223,6 +223,12 @@ final class ListingSearch
             }
             $where[] = '(' . implode(' OR ', $any) . ')';
         }
+
+        if ($onSale) {
+            // idx_compare_price finds the variants on sale; the probe would read every listing's variants.
+            return [$item . '.pk_i_id IN (SELECT ' . $variants . '.fk_i_item_id FROM ' . $variants . ' WHERE ' . implode(' AND ', $where) . ')', $params];
+        }
+        array_unshift($where, $variants . '.fk_i_item_id = ' . $item . '.pk_i_id');
 
         return ['(SELECT 1 FROM ' . $variants . ' WHERE ' . implode(' AND ', $where) . ' LIMIT 1) IS NOT NULL', $params];
     }

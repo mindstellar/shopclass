@@ -605,7 +605,7 @@ class Search extends DAO
         $mainError = false;
         $dao = $this->pluginDao();
         try {
-            $items = SearchExecutor::rows(SearchCompiler::results($this->parts, $dao));
+            $items = SearchExecutor::page($this->parts, $dao);
         } catch (DbException $e) {
             $items     = array();
             $mainError = true;

@@ -84,7 +84,7 @@ $search = static function (array $meta) use ($cat): array {
     $titles = array_map(static fn (array $row): string => (string) $row['s_title'], (array) $s->doSearch());
     sort($titles);
 
-    return [$titles, $s->filters()->meta, str_contains($s->toJson(), 't_item_facet')];
+    return [$titles, $s->filters()->meta, !str_contains($s->toJson(), 't_item_meta')];
 };
 
 $cases = [
@@ -137,8 +137,8 @@ $texts = static function (array $meta) use ($cat): array {
 [$seen, $rows, $total] = $texts([$material => 'Cotton']);
 $page  = $seen[0] ?? '';
 $count = end($seen) ?: '';
-pin('dropdown: page probes per listing, count reads the range', [true, false, true, false], [
-    str_contains($page, 'IS NOT NULL'), str_contains($count, 'IS NOT NULL'), str_contains($count, 'IN (SELECT'), $page === $count,
+pin('dropdown on a few listings: page and count read their ids', [true, true], [
+    $page === $count, preg_match('/pk_i_id IN \\(\\d/', $page) === 1,
 ]);
 pin('dropdown: page rows and count agree', [1, 1], [$rows, $total]);
 

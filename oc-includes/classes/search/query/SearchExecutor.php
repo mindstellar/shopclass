@@ -46,6 +46,45 @@ final class SearchExecutor
     }
 
     /**
+     * The rows of the page. Price low to high reads the priced listings first, then fills a short
+     * page from those with no price, so each read can use an index.
+     *
+     * @return array<int,array<string,string|null>>
+     * @throws DbException
+     */
+    public static function page(SearchParts $parts, ?\DBCommandClass $dao): array
+    {
+        $ordering = $parts->ordering;
+        // Read whole: a plugin's $dao clauses and a lead order (fromPrimaryKeys()) do not survive a split, and one listing by id has no order.
+        if (!$ordering->splitsPrice() || $dao !== null || $parts->leadOrder !== [] || $parts->byItemId) {
+            return self::rows(SearchCompiler::results($parts, $dao));
+        }
+        $price  = DB_TABLE_PREFIX . 't_item.i_price';
+        $priced = clone $parts;
+        $priced->ordering = $ordering->pricedFirst();
+        $priced->addOnce($price . ' IS NOT NULL');
+        $rest = clone $parts;
+        $rest->addOnce($price . ' IS NULL');
+        // The clones carry the one-time conditions; take them from $parts, as one read would.
+        $parts->newStatement();
+        $count = clone $priced;
+
+        $rows   = self::rows(SearchCompiler::results($priced, null));
+        $size   = (int)$ordering->perPage();
+        $offset = max(0, (int)$ordering->offset());
+        if (count($rows) >= $size) {
+            return $rows;
+        }
+        // A page past the last priced listing needs their count to know where it starts.
+        $before = $rows === [] && $offset > 0
+            ? self::total(SearchCompiler::count(SearchCompiler::results($count, null, true)))
+            : $offset + count($rows);
+        $rest->ordering = $ordering->unpricedRest(max(0, $offset - $before), $size - count($rows));
+
+        return array_merge($rows, self::rows(SearchCompiler::results($rest, null)));
+    }
+
+    /**
      * The total a count statement returns, 0 when it fails.
      *
      * @param array{0:string,1:array<int,mixed>} $statement

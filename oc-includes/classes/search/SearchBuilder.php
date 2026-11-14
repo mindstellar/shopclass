@@ -402,7 +402,9 @@ class SearchBuilder
             }
         }
 
-        return FacetFilter::fieldIn($found);
+        $ids = FacetFilter::fieldIds($found);
+
+        return $ids === null ? FacetFilter::fieldIn($found) : FacetFilter::listingIn($ids);
     }
 
     /**

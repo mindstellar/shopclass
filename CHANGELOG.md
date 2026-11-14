@@ -190,6 +190,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - API calls a theme makes on one page share their work, and API listing searches are cached, so a home page runs about half the queries.
 - Deep admin order pages use a deferred join (page 500 of 100,000 orders: about 100 ms to 2 ms).
 - Product alerts find their listing through an indexed column (migration 0089).
+- Faster shop search by price, rare options and `on_sale` (migration 0093).
 
 ### Fixed
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.

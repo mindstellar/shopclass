@@ -252,15 +252,14 @@ $texts = static function (array $query) use ($ask, &$facetSql): array {
     return [$facetSql['off'], $facetSql['on']];
 };
 [$off, $on] = $texts($opt(['Colour' => ['Red']]));
-pin('an option page probes the listing, the count reads the facet range once', [true, true, true], [
-    str_contains($on['page'], 'LIMIT 1) IS NOT NULL'), str_contains($on['count'], 'pk_i_id IN (SELECT'), !str_contains($on['count'], 'LIMIT 1')]);
+$ids = static fn (array $on): array => [$on['page'] === $on['count'], preg_match('/pk_i_id IN \\(\\d/', $on['page']) === 1];
+pin('an option on a few listings: page and count read their ids', [true, true], $ids($on));
 pin('the old text is the same for page and count', true, $off['page'] === $off['count']);
 [$off, $on] = $texts($cf('cb1', '1'));
-pin('a checkbox page probes, the count reads the range', [true, true], [str_contains($on['page'], 'LIMIT 1) IS NOT NULL'), str_contains($on['count'], 'IN (SELECT')]);
+pin('a checkbox on a few listings: page and count read their ids', [true, true], $ids($on));
 foreach (['a dropdown with one value' => $cf('dd', 'Red'), 'a dropdown with several values' => $cf('dd', ['Red', 'Blue']), 'a radio with one value' => $cf('rd', 'Slim'), 'a radio with several values' => $cf('rd', ['Slim', 'Loose'])] as $label => $query) {
     [$off, $on] = $texts($query);
-    pin("$label: the page probes, the count reads the range", [true, true, true], [
-        str_contains($on['page'], 'LIMIT 1) IS NOT NULL'), str_contains($on['count'], 'pk_i_id IN (SELECT fk_i_item_id'), !str_contains($on['count'], 'LIMIT 1')]);
+    pin("$label on a few listings: page and count read their ids", [true, true], $ids($on));
 }
 [$off, $on] = $texts($cf('dd', 'Mauve'));
 pin('an unknown value is no row in either text and reads no table', ['1 = 0', '1 = 0'], [trim($on['page']), trim($on['count'])]);
@@ -269,8 +268,8 @@ pin('a range reads the range once on the page and for the count', [true, true], 
 
 harness_section('which table is read');
 $ask($opt(['Colour' => ['Red']]) + ['limit' => 47]);
-pin('an option filter names the index only when it is ready', [false, true], [str_contains($facetSql['off']['page'] . $facetSql['off']['count'], 'item_facet'), str_contains($facetSql['on']['page'], 'item_facet') && str_contains($facetSql['on']['count'], 'item_facet')]);
+pin('an option filter reads the variant options only when the index is not ready', [true, false], [str_contains($facetSql['off']['page'] . $facetSql['off']['count'], 's_options'), str_contains($facetSql['on']['page'] . $facetSql['on']['count'], 's_options')]);
 $ask($cf('dd', 'Red') + ['limit' => 47]);
-pin('a field filter names the index only when it is ready', [false, true], [str_contains($facetSql['off']['page'] . $facetSql['off']['count'], 'item_facet'), str_contains($facetSql['on']['page'], 'item_facet') && str_contains($facetSql['on']['count'], 'item_facet')]);
+pin('a field filter reads t_item_meta only when the index is not ready', [true, false], [str_contains($facetSql['off']['page'] . $facetSql['off']['count'], 't_item_meta'), str_contains($facetSql['on']['page'] . $facetSql['on']['count'], 't_item_meta')]);
 
 exit(harness_result());

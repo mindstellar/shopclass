@@ -528,9 +528,12 @@ $migration->up(\mindstellar\database\Connection::getInstance());
 pin('the first migration leaves the table without the was price', false, in_array('i_compare_price', array_column($ddl(), 0), true));
 $compare = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0078_item_variant_compare_price.php';
 $compare->up(\mindstellar\database\Connection::getInstance());
+$sale = require ABS_PATH . 'oc-includes/osclass/installer/migrations/0093_variant_compare_price_index.php';
+$sale->up(\mindstellar\database\Connection::getInstance());
 pin('the migrations build the table struct.sql builds', $fresh, [$ddl(), $idx(), $fks()]);
 $migration->up(\mindstellar\database\Connection::getInstance());
 $compare->up(\mindstellar\database\Connection::getInstance());
+$sale->up(\mindstellar\database\Connection::getInstance());
 pin('and run again without error', $fresh, [$ddl(), $idx(), $fks()]);
 
 exit(harness_result());

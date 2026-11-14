@@ -1278,7 +1278,7 @@ return array(
       0 => 'car1',
     ),
     'count' => 1,
-    'q' => 4,
+    'q' => 5,
   ),
   'builder: pattern, user, premium' =>
   array(

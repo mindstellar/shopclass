@@ -63,8 +63,8 @@ pin(
 );
 $joins = "JOIN $f b ON b.fk_i_term_id IN (?, ?) AND b.d_number = 0 AND b.fk_i_item_id = a.fk_i_item_id AND b.fk_i_variant_id = a.fk_i_variant_id"
     . " JOIN $f c ON c.fk_i_term_id = ? AND c.d_number = 0 AND c.fk_i_item_id = a.fk_i_item_id AND c.fk_i_variant_id = a.fk_i_variant_id"
-    . " JOIN $v v ON v.pk_i_id = a.fk_i_variant_id";
-$flags = "(v.i_stock IS NULL OR v.i_stock > 0) AND v.i_compare_price > COALESCE(v.i_price, $i.i_price)";
+    . " JOIN $v v ON v.pk_i_id = a.fk_i_variant_id AND v.fk_i_item_id = a.fk_i_item_id";
+$flags = "(v.i_stock IS NULL OR v.i_stock > 0) AND v.i_compare_price IS NOT NULL AND v.i_compare_price > COALESCE(v.i_price, $i.i_price)";
 pin(
     'three options, in_stock and on_sale',
     [
@@ -77,8 +77,8 @@ pin(
 pin(
     'option and in_stock',
     [
-        "(SELECT 1 FROM $f a JOIN $v v ON v.pk_i_id = a.fk_i_variant_id WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND a.fk_i_item_id = $i.pk_i_id AND (v.i_stock IS NULL OR v.i_stock > 0) LIMIT 1) IS NOT NULL",
-        "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $v v ON v.pk_i_id = a.fk_i_variant_id WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND (v.i_stock IS NULL OR v.i_stock > 0))",
+        "(SELECT 1 FROM $f a JOIN $v v ON v.pk_i_id = a.fk_i_variant_id AND v.fk_i_item_id = a.fk_i_item_id WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND a.fk_i_item_id = $i.pk_i_id AND (v.i_stock IS NULL OR v.i_stock > 0) LIMIT 1) IS NOT NULL",
+        "$i.pk_i_id IN (SELECT a.fk_i_item_id FROM $f a JOIN $v v ON v.pk_i_id = a.fk_i_variant_id AND v.fk_i_item_id = a.fk_i_item_id WHERE a.fk_i_term_id = ? AND a.d_number = 0 AND (v.i_stock IS NULL OR v.i_stock > 0))",
         [101],
     ],
     FacetFilter::optionProbe(['oColour' => [101]], true, false)

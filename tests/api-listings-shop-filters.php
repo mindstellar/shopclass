@@ -237,11 +237,11 @@ pin('option and in_stock need one variant for both: Red is sold out, Blue is in 
 
     return [$ask('Red'), $ask('Blue')];
 })());
-pin('the compiled SQL names the filter index only when it is ready', [false, true], (static function () use ($bothWays, $list, $facetSql, $tees): array {
+pin('the variant options are matched by LIKE only when the filter index is not ready', [true, false], (static function () use ($bothWays, $list, $facetSql, $tees): array {
     $bothWays(static fn (): mixed => $list(['option' => ['Colour' => ['Cherry']], 'category' => (string) $tees]));
     global $facetSql;
 
-    return [str_contains($facetSql['off'], 'item_facet'), str_contains($facetSql['on'], 'item_facet')];
+    return [str_contains($facetSql['off'], 's_options LIKE'), str_contains($facetSql['on'], 's_options LIKE')];
 })());
 pin('in_stock alone never reads the filter index', false, (static function () use ($bothWays, $list): bool {
     $bothWays(static fn (): mixed => $list(['in_stock' => 'true']));

@@ -206,6 +206,39 @@ final class Ordering
     }
 
     /**
+     * Whether the order is price low to high, read in two parts: the priced listings
+     * (pricedFirst()), then those with no price (unpricedRest()). Each part can then use an index.
+     */
+    public function splitsPrice(): bool
+    {
+        return self::isPrice((string)$this->column) && in_array($this->way(), ['ASC', ''], true)
+            && is_numeric($this->perPage) && (int)$this->perPage > 0;
+    }
+
+    /**
+     * The order of the priced part of a split price order: by price, then id.
+     */
+    public function pricedFirst(): self
+    {
+        $part = clone $this;
+        $part->orderBy([['i_price', 'ASC'], ['pk_i_id', 'ASC']]);
+
+        return $part;
+    }
+
+    /**
+     * The order of the part with no price: by id, $size rows from $offset.
+     */
+    public function unpricedRest(int $offset, int $size): self
+    {
+        $part = clone $this;
+        $part->orderBy([['pk_i_id', 'ASC']]);
+        $part->limit($offset, $size);
+
+        return $part;
+    }
+
+    /**
      * Add ORDER BY and LIMIT to $statement.
      *
      * @param Statement $statement
@@ -215,15 +248,32 @@ final class Ordering
     public function apply(Statement $statement): void
     {
         $column = (string)$this->column;
-        if (preg_match('/^(?:[A-Za-z0-9_]*t_item\.)?i_price$/', $column)) {
-            // A listing with no price goes last, whichever way the prices run.
+        $price  = self::isPrice($column);
+        if ($price && $this->way() !== 'DESC') {
+            // A listing with no price goes last; going down NULL already does, which keeps idx_price usable.
             $column = sprintf('ISNULL(%1$s), %1$s', $column);
         }
         $statement->orderBy($column, (string)$this->direction);
-        if ($this->column === 'relevance') {
-            // Many listings share a score; the id keeps their order the same on every page.
+        if ($price || $this->column === 'relevance') {
+            // Many listings share a price or a score; the id keeps their order the same on every page.
             $statement->orderBy(DB_TABLE_PREFIX . 't_item.pk_i_id', (string)$this->direction);
         }
         $statement->limit($this->offset, $this->perPage);
+    }
+
+    /**
+     * The direction, trimmed and in upper case.
+     */
+    private function way(): string
+    {
+        return strtoupper(trim((string)$this->direction));
+    }
+
+    /**
+     * The price column of t_item, bare or with its table.
+     */
+    private static function isPrice(string $column): bool
+    {
+        return preg_match('/^(?:[A-Za-z0-9_]*t_item\.)?i_price$/', $column) === 1;
     }
 }
