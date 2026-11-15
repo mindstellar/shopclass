@@ -66,6 +66,28 @@ final class LanguageService
     }
 
     /**
+     * The published languages in alphabetical order of their display name, locale-aware when
+     * the intl extension is there.
+     *
+     * @param array<string,array<string,mixed>> $published published()'s answer
+     *
+     * @return array<int,array<string,mixed>>
+     */
+    public static function sortedByName(array $published): array
+    {
+        $collator = class_exists(\Collator::class) ? new \Collator('root') : null;
+        $list     = array_values($published);
+        usort($list, static function (array $a, array $b) use ($collator): int {
+            $left  = (string) ($a['name'] ?? $a['locale_code'] ?? '');
+            $right = (string) ($b['name'] ?? $b['locale_code'] ?? '');
+
+            return $collator !== null ? (int) $collator->compare($left, $right) : strnatcasecmp($left, $right);
+        });
+
+        return $list;
+    }
+
+    /**
      * Download a language's translation files into its folder. Static, as the installer
      * calls it before there is a database.
      *

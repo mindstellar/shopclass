@@ -92,6 +92,7 @@ $controllers = array(
         'enable_bo_selected'  => 'enableAdminSelected',
         'enable_selected'     => 'enableSelected',
         'import_locations'    => 'importLocations',
+        'published'           => 'publishedList',
     ), 'languages'),
     'CAdminPlugins' => array('admin/CAdminPlugins.php', array(
         'add'            => 'addForm',
