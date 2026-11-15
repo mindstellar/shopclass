@@ -181,9 +181,9 @@ osc_current_admin_theme_path('parts/header.php');
                     if (aExistingLanguages[locale.locale_code] === undefined || (isUpdated = compareVersion(locale.version, aExistingLanguages[locale.locale_code].s_version) > 0)) {
                         opt = document.createElement('option');
                         opt.value = locale.locale_code;
-                        opt.innerHTML = locale.name;
+                        opt.textContent = locale.name;
                         if(isUpdated) {
-                            opt.innerHTML += ' (<?php _e('Updated');?>)';
+                            opt.textContent += ' (<?php echo osc_esc_js(__('Updated')); ?>)';
                         }
                         importSelect.appendChild(opt);
                     }

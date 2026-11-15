@@ -147,8 +147,9 @@ $service->install($manifest, 'dd_DD', json_encode(array('language' => 'dd_DD', '
     array('fk_i_page_id' => 9023, 's_internal_name' => 'email_listing_unpaid_reminder', 's_title' => 'Newer e-mail', 's_description' => 'x'),
     array('fk_i_page_id' => 9023, 's_title' => 'Id only', 's_description' => 'x'),
     array('fk_i_page_id' => 1, 's_internal_name' => 'email_test_import', 's_title' => 'By name', 's_description' => 'x'),
+    array('fk_i_page_id' => 1, 's_internal_name' => 'about-us', 's_title' => 'Named static page', 's_description' => 'x'),
 ))));
-pin('an e-mail template is matched by name; with only an id it writes to an e-mail page only, never a static page', array(9040 => 'By name'), $texts());
+pin('an e-mail template is matched by name, to e-mail pages only; with only an id it writes to an e-mail page only, never a static page', array(9040 => 'By name'), $texts());
 $service->install($manifest, 'dd_DD', json_encode(array('language' => 'dd_DD', 'template' => array(
     array('fk_i_page_id' => 9040, 's_title' => 'Id of an e-mail page', 's_description' => 'x'),
 ))));
