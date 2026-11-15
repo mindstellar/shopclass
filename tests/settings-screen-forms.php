@@ -562,8 +562,8 @@ pin(
     keymap(CommentSettingsScreen::register())
 );
 pin(
-    'the listing settings screen keeps the field names and preferences it always had',
-    array(
+    'the listing settings screen keeps the field names and preferences it always had, less the poster rows a shop hides',
+    array_diff_key(array(
         'reg_user_post'               => 'osclass/reg_user_post',
         'item_contact_name_required'  => 'osclass/item_contact_name_required',
         'items_wait_time'             => 'osclass/items_wait_time',
@@ -595,7 +595,7 @@ pin(
         'item_location_level'         => '(not stored)',
         'item_place_from_list'        => 'osclass/item_place_from_list',
         'item_place_style'            => 'osclass/item_place_style',
-    ),
+    ), osc_is_shop_mode() ? array_flip(array('reg_user_post', 'moderate_items', 'num_moderate_items', 'logged_user_item_validation')) : array()),
     keymap(ItemSettingsScreen::register())
 );
 pin(
@@ -1012,6 +1012,23 @@ pin('and the -1 lands', array('-1', 'STRING'), pref($admin, 'moderate_comments')
 
 harness_section('listing settings');
 
+// Each page is declared once per request from the site mode; a test that flips the mode
+// drops the declaration so the next draw makes it again.
+$forgetPage = static function (string $pageId): void {
+    $registry = SettingsPageRegistry::getInstance();
+    $entries  = new ReflectionProperty($registry, 'entries');
+    $all      = $entries->getValue($registry);
+    unset($all[$pageId]);
+    $entries->setValue($registry, $all);
+};
+$setMode = static function (string $mode) use ($admin, $forgetPage): void {
+    seed_pref($admin, 'site_mode', $mode);
+    osc_reset_preferences();
+    $forgetPage(ItemSettingsScreen::PAGE_ID);
+};
+$runMode = (string) (pref($admin, 'site_mode')[0] ?? 'classifieds');
+$setMode('classifieds');
+
 if (!function_exists('osc_is_moderator')) {
     function osc_is_moderator()
     {
@@ -1072,6 +1089,18 @@ pin('a hand-made location field is stored as one box', array(array('single', 'ST
 seed_pref($admin, 'item_place_style', 'grid');
 osc_reset_preferences();
 pin('an unknown stored location field reads as one box', 'single', osc_item_place_style());
+
+seed_pref($admin, 'reg_user_post', '1', 'BOOLEAN');
+seed_pref($admin, 'moderate_items', '4');
+seed_pref($admin, 'logged_user_item_validation', '1', 'BOOLEAN');
+$setMode('shop');
+$run = drive('CAdminItems', 'settings_post', array('moderate_items' => '', 'items_wait_time' => '12') + $items);
+pin(
+    'a shop save keeps the posting and e-mail confirmation settings it hides',
+    array(array('1', 'BOOLEAN'), array('4', 'STRING'), array('1', 'BOOLEAN'), '12'),
+    array(pref($admin, 'reg_user_post'), pref($admin, 'moderate_items'), pref($admin, 'logged_user_item_validation'), pref($admin, 'items_wait_time')[0] ?? null)
+);
+$setMode($runMode);
 
 harness_section('user settings');
 
@@ -1323,15 +1352,7 @@ $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' =>
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
 pin('and reports itself', array('ok:Billing settings have been updated'), flashed($run));
 
-// The shop page is declared once per request from the site mode; a test that flips the mode
-// drops the declaration so the next draw makes it again.
-$forgetShopPage = static function (): void {
-    $registry = SettingsPageRegistry::getInstance();
-    $entries  = new ReflectionProperty($registry, 'entries');
-    $all      = $entries->getValue($registry);
-    unset($all[\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP]);
-    $entries->setValue($registry, $all);
-};
+$forgetShopPage = static fn () => $forgetPage(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP);
 seed_pref($admin, 'site_mode', 'shop');
 osc_reset_preferences();
 $forgetShopPage();

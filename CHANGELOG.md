@@ -197,11 +197,12 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - A part refund of a unit with tax in its price refunds that price, not a cent more.
 - The place picker suggests place names in the language picked on the site.
 - Tracking added with **Edit tracking** and no link gets the carrier's tracking link, as at shipping.
-- Order e-mails sent from the admin use the theme's friendly order link when friendly URLs are on; a theme gives it as `order_url_friendly` in shopclass.json.
+- Order e-mails use the theme's `order_url_friendly` link when friendly URLs are on.
 - The account Addresses page has a friendly URL, `user/addresses`.
 - **Billing → Orders** shows the buyer's name kept on the order, marked deleted, when the account is gone.
 - The plugin Details window lists the plugins a package needs.
-- Shop mode: the sample-data note says products, and the posting and e-mail confirmation settings that do not apply are hidden.
+- Shop mode: the sample-data note says products.
+- Shop mode hides the posting and e-mail confirmation settings.
 - The installer's done page no longer prints the raw mail error.
 - Sample listings use ordinary city names instead of the first by name.
 - The Dependencies screen wraps its Installed line on narrow screens.

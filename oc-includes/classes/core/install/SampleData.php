@@ -35,6 +35,9 @@ final class SampleData
     /** Sample listings added per installer request. */
     public const BATCH = 5;
 
+    /** Words in a place name that mark it as something other than a town. */
+    private const NOT_A_TOWN = '/\b(junction|park|trailer|camp|colony|estates?|village|acres|heights)\b/i';
+
     /** Every sample listing has this contact e-mail. */
     public const SELLER_EMAIL = 'seller@example.com';
 
@@ -64,6 +67,21 @@ final class SampleData
         }
 
         return $found;
+    }
+
+    /**
+     * The admin line that says sample data is on the site, with how many sample listings.
+     */
+    public static function note(int $count): string
+    {
+        if ($count < 1) {
+            return __('Sample fields from the installer are on this site.');
+        }
+
+        return sprintf(osc_mode_text(
+            _n('%d sample listing is on this site.', '%d sample listings are on this site.', $count),
+            _n('%d sample product is on this site.', '%d sample products are on this site.', $count)
+        ), $count);
     }
 
     /**
@@ -222,28 +240,27 @@ final class SampleData
     }
 
     /**
-     * The most believable city of a region: the one with the most listings, else the one named
-     * like the region, else the first with a plain name (not a junction or a trailer park).
+     * The most believable city of a region: most listings first, then the one named like the
+     * region, then one with a plain name (not a junction or a trailer park). Ties go to the first.
      *
-     * @param array<string,mixed>             $region
-     * @param array<int,array<string,mixed>>  $cities
+     * @param array<string,mixed>            $region
+     * @param array<int,array<string,mixed>> $cities
      *
      * @return array<string,mixed>|null
      */
     private static function pickCity(array $region, array $cities): ?array
     {
-        $best  = null;
-        $score = -1;
+        $best = null;
+        $bestRank = null;
         foreach ($cities as $city) {
-            $name = (string) $city['s_name'];
+            $name  = (string) $city['s_name'];
             $plain = preg_match('/^\p{L}{3,}( \p{L}+)?$/u', $name) === 1
-                && preg_match('/\b(junction|park|trailer|camp|colony|estates?|village|acres|heights)\b/i', $name) !== 1;
-            $rank = (int) ($city['i_num_items'] ?? 0) * 100
-                + (strcasecmp($name, (string) $region['s_name']) === 0 ? 20 : 0)
-                + ($plain ? 10 : 0);
-            if ($rank > $score) {
-                $best  = $city;
-                $score = $rank;
+                && preg_match(self::NOT_A_TOWN, $name) !== 1;
+            // Compared element by element, so each test only breaks a tie in the one before.
+            $rank = array((int) ($city['i_num_items'] ?? 0), strcasecmp($name, (string) $region['s_name']) === 0, $plain);
+            if ($bestRank === null || $rank > $bestRank) {
+                $best     = $city;
+                $bestRank = $rank;
             }
         }
 

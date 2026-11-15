@@ -618,13 +618,13 @@ msgstr ""
 msgid "%d s"
 msgstr ""
 
-#: oc-admin/themes/modern/items/index.php
+#: oc-includes/classes/core/install/SampleData.php
 msgid "%d sample listing is on this site."
 msgid_plural "%d sample listings are on this site."
 msgstr[0] ""
 msgstr[1] ""
 
-#: oc-admin/themes/modern/items/index.php
+#: oc-includes/classes/core/install/SampleData.php
 msgid "%d sample product is on this site."
 msgid_plural "%d sample products are on this site."
 msgstr[0] ""
@@ -11252,6 +11252,10 @@ msgstr ""
 msgid "Only logged in users can post listings"
 msgstr ""
 
+#: oc-includes/classes/admin/form/ItemSettingsScreen.php
+msgid "Only logged in users can post products"
+msgstr ""
+
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 msgid "Only logged-in users can subscribe to search alerts"
 msgstr ""
@@ -13485,7 +13489,7 @@ msgstr ""
 msgid "Same rules. Credit notes have their own numbers."
 msgstr ""
 
-#: oc-admin/themes/modern/items/index.php
+#: oc-includes/classes/core/install/SampleData.php
 msgid "Sample fields from the installer are on this site."
 msgstr ""
 

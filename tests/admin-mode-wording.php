@@ -129,7 +129,7 @@ harness_section('admin views pick wording by mode');
 // Each view keeps its classifieds text and adds a shop variant through osc_mode_text().
 foreach (array(
     'settings/index.php' => array('how lists of products are displayed'),
-    'items/index.php'    => array('Manage all the products in your shop', 'sample products are on this site'),
+    'items/index.php'    => array('Manage all the products in your shop'),
     'items/frm.php'      => array('The product belongs to', 'Show the e-mail address on the product'),
     'stats/items.php'    => array('new products have been added', 'Product views'),
     'stats/users.php'    => array('%s products per user'),
@@ -141,6 +141,14 @@ foreach (array(
         check($file . ' has the shop text: ' . $needle, str_contains($src, $needle));
     }
 }
+
+$notes = static function (string $mode) use ($setMode): array {
+    $setMode($mode);
+
+    return array(\mindstellar\install\SampleData::note(1), \mindstellar\install\SampleData::note(2));
+};
+pin('the sample note counts listings on a classifieds site', array('1 sample listing is on this site.', '2 sample listings are on this site.'), $notes('classifieds'));
+pin('and products in a shop', array('1 sample product is on this site.', '2 sample products are on this site.'), $notes('shop'));
 
 harness_section('widget sections');
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hWidgets.php';
