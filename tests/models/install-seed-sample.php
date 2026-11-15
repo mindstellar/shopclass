@@ -131,6 +131,8 @@ install_seed_categories('classifieds');
 $admin->query("INSERT INTO {$p}t_country (pk_c_code, s_name, s_slug) VALUES ('IN', 'India', 'india')");
 $admin->query("INSERT INTO {$p}t_region (pk_i_id, fk_c_country_code, s_name, s_slug) VALUES (5, 'IN', 'Goa', 'goa')");
 $admin->query("INSERT INTO {$p}t_city (pk_i_id, fk_i_region_id, fk_c_country_code, s_name, s_slug) VALUES (7, 5, 'IN', 'Panaji', 'panaji')");
+// Names that sort first but are not places anyone lists from.
+$admin->query("INSERT INTO {$p}t_city (pk_i_id, fk_i_region_id, fk_c_country_code, s_name, s_slug) VALUES (8, 5, 'IN', 'Aa Junction', 'aa-junction'), (9, 5, 'IN', 'A and F Trailer Park', 'a-and-f-trailer-park')");
 $located = (new \mindstellar\install\SampleData())->installBatch('classifieds', 0, null, 'IN');
 check('the batch is made', $located['listings'] === 5);
 check('every example has the chosen country', $count("SELECT COUNT(*) FROM {$p}t_item_location WHERE fk_c_country_code = 'IN'") === 5);

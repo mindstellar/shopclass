@@ -65,10 +65,13 @@ final class ItemSettingsScreen extends SettingsScreen
             })
             ->group(osc_mode_text(__('Listing Settings'), __('Product Settings')));
 
+        $shop = osc_is_shop_mode();
         self::rowOpen($form, 'settings', __('Settings'));
+        if (!$shop) {
+            $form->checkbox('reg_user_post', __('Only logged in users can post listings'))
+                ->set('row', false);
+        }
         $form
-            ->checkbox('reg_user_post', osc_mode_text(__('Only logged in users can post listings'), __('Only logged in users can post products')))
-                ->set('row', false)
             ->checkbox('item_contact_name_required', osc_mode_text(__('Name is required when publishing a new listing'), __('Name is required when publishing a new product')))
                 ->set('row', false)
             ->number('items_wait_time', __('Wait time'), __('0 means no wait.'))
@@ -80,37 +83,41 @@ final class ItemSettingsScreen extends SettingsScreen
             ->checkbox('moderate_admin_post', osc_mode_text(__('Hold new listings for admin moderation'), __('Hold new products for admin moderation')))
                 ->set('row', false)
             ->checkbox('moderate_admin_edit', osc_mode_text(__('Hold edited listings for admin moderation'), __('Hold edited products for admin moderation')))
-                ->set('row', false)
-            ->checkbox('moderate_items', osc_mode_text(__('Posters confirm new listings by e-mail'), __('Posters confirm new products by e-mail')))
-                ->set('row', false)
-                ->persist(static function ($value, array $values) {
-                    return $value ? (string)($values['num_moderate_items'] ?? 0) : (string)self::MODERATION_OFF;
+                ->set('row', false);
+        if (!$shop) {
+            $form
+                ->checkbox('moderate_items', osc_mode_text(__('Posters confirm new listings by e-mail'), __('Posters confirm new products by e-mail')))
+                    ->set('row', false)
+                    ->persist(static function ($value, array $values) {
+                        return $value ? (string)($values['num_moderate_items'] ?? 0) : (string)self::MODERATION_OFF;
+                    })
+                    // Stored as a count, not a tick, so the control cannot read it back.
+                    ->writeOnly()
+                    ->default($moderated !== self::MODERATION_OFF)
+                ->custom('moderated_open', static function () {
+                    echo '<div class="num-moderated-items">';
                 })
-                // Stored as a count, not a tick, so the control cannot read it back.
-                ->writeOnly()
-                ->default($moderated !== self::MODERATION_OFF)
-            ->custom('moderated_open', static function () {
-                echo '<div class="num-moderated-items">';
-            })
-                ->set('row', false)
-            ->number(
-                'num_moderate_items',
-                osc_mode_text(__('Number of moderated listings'), __('Number of moderated products')),
-                osc_mode_text(__('0 means every listing needs validation.'), __('0 means every product needs validation.'))
-            )
-                ->set('row', false)
-                ->prefix(__('After'))
-                ->suffix(osc_mode_text(__("validated listings the user doesn't need to validate the listings any more"), __("validated products the user doesn't need to validate the products any more")))
-                ->clampMin(0)
-                // Not stored: it is the value the switch above stores.
-                ->persist(false)
-                ->default($moderated === self::MODERATION_OFF ? 0 : $moderated)
-            ->checkbox('logged_user_item_validation', __('Signed-in posters skip the e-mail confirmation'))
-                ->set('row', false)
-            ->custom('moderated_close', static function () {
-                echo '</div>';
-            })
-                ->set('row', false)
+                    ->set('row', false)
+                ->number(
+                    'num_moderate_items',
+                    osc_mode_text(__('Number of moderated listings'), __('Number of moderated products')),
+                    osc_mode_text(__('0 means every listing needs validation.'), __('0 means every product needs validation.'))
+                )
+                    ->set('row', false)
+                    ->prefix(__('After'))
+                    ->suffix(osc_mode_text(__("validated listings the user doesn't need to validate the listings any more"), __("validated products the user doesn't need to validate the products any more")))
+                    ->clampMin(0)
+                    // Not stored: it is the value the switch above stores.
+                    ->persist(false)
+                    ->default($moderated === self::MODERATION_OFF ? 0 : $moderated)
+                ->checkbox('logged_user_item_validation', __('Signed-in posters skip the e-mail confirmation'))
+                    ->set('row', false)
+                ->custom('moderated_close', static function () {
+                    echo '</div>';
+                })
+                    ->set('row', false);
+        }
+        $form
             ->checkbox('enabled_recaptcha_items', osc_mode_text(__('Show reCAPTCHA in add/edit listing form'), __('Show reCAPTCHA in add/edit product form')), __('Needs reCAPTCHA keys first.'))
                 ->set('row', false);
         self::rowClose($form, 'settings');

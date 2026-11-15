@@ -624,6 +624,12 @@ msgid_plural "%d sample listings are on this site."
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-admin/themes/modern/items/index.php
+msgid "%d sample product is on this site."
+msgid_plural "%d sample products are on this site."
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-admin/themes/modern/categories/index.php
 #: oc-includes/classes/admin/ui/Picker.php
 msgid "%d subcategory"
@@ -11244,10 +11250,6 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/ItemSettingsScreen.php
 msgid "Only logged in users can post listings"
-msgstr ""
-
-#: oc-includes/classes/admin/form/ItemSettingsScreen.php
-msgid "Only logged in users can post products"
 msgstr ""
 
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php

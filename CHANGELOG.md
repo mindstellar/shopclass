@@ -200,6 +200,13 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Order e-mails sent from the admin use the theme's friendly order link when friendly URLs are on; a theme gives it as `order_url_friendly` in shopclass.json.
 - The account Addresses page has a friendly URL, `user/addresses`.
 - **Billing → Orders** shows the buyer's name kept on the order, marked deleted, when the account is gone.
+- The plugin Details window lists the plugins a package needs.
+- Shop mode: the sample-data note says products, and the posting and e-mail confirmation settings that do not apply are hidden.
+- The installer's done page no longer prints the raw mail error.
+- Sample listings use ordinary city names instead of the first by name.
+- The Dependencies screen wraps its Installed line on narrow screens.
+- Admin Add user marks Username as required.
+- Making an API key shows its copy-it-now note once.
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
 - Refunds no longer put shipped units back in stock, and an amount-only credit note carries its share of tax.
 - Refund History shows who made each credit note, and the last refund says the order is refunded.

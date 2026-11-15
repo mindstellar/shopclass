@@ -151,6 +151,11 @@ check(
     $html
 );
 
+harness_section('the username row is marked required');
+
+pin('Username is labelled', 'Username', row_label($html, 's_username'));
+check('and marked required', strpos($html, 'Username <span class="osc-field-required"></span>') !== false);
+
 harness_section('the cell phone row is back');
 
 check('an s_phone_mobile input is drawn', strpos($html, 'name="s_phone_mobile"') !== false, $html);

@@ -212,13 +212,42 @@ final class SampleData
         }
         $places = array();
         foreach ($query->regions($country, '', 6, 0) as $region) {
-            $city = $query->cities((int) $region['pk_i_id'], '', 1, 0)[0] ?? null;
+            $city = self::pickCity($region, $query->cities((int) $region['pk_i_id'], '', 200, 0));
             if ($city !== null) {
                 $places[] = array('countryId' => $country, 'regionId' => (int) $region['pk_i_id'], 'cityId' => (int) $city['pk_i_id']);
             }
         }
 
         return $places !== array() ? $places : array(array('countryId' => $country));
+    }
+
+    /**
+     * The most believable city of a region: the one with the most listings, else the one named
+     * like the region, else the first with a plain name (not a junction or a trailer park).
+     *
+     * @param array<string,mixed>             $region
+     * @param array<int,array<string,mixed>>  $cities
+     *
+     * @return array<string,mixed>|null
+     */
+    private static function pickCity(array $region, array $cities): ?array
+    {
+        $best  = null;
+        $score = -1;
+        foreach ($cities as $city) {
+            $name = (string) $city['s_name'];
+            $plain = preg_match('/^\p{L}{3,}( \p{L}+)?$/u', $name) === 1
+                && preg_match('/\b(junction|park|trailer|camp|colony|estates?|village|acres|heights)\b/i', $name) !== 1;
+            $rank = (int) ($city['i_num_items'] ?? 0) * 100
+                + (strcasecmp($name, (string) $region['s_name']) === 0 ? 20 : 0)
+                + ($plain ? 10 : 0);
+            if ($rank > $score) {
+                $best  = $city;
+                $score = $rank;
+            }
+        }
+
+        return $best;
     }
 
     /**

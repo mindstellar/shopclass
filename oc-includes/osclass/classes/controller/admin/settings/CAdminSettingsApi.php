@@ -125,7 +125,6 @@ class CAdminSettingsApi extends AdminSecBaseModel
             return;
         }
         $this->handOff($issued, $this->keys()->nameOf($issued->id()));
-        osc_add_flash_ok_message(_m('The key is made. Copy it now: it is not shown again.'), 'admin');
         $this->redirectTo(self::url());
     }
 
