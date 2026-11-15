@@ -111,9 +111,10 @@ class CAdminLanguages extends AdminSecBaseModel
                 osc_add_flash_error_message($msg, 'admin');
                 break;
             case (1):
-                if (osc_checkLocales()) {
+                if (osc_checkLocales($kept)) {
                     $msg = _m('Language installed');
                     osc_add_flash_ok_message($msg, 'admin');
+                    $this->flashKeptMails($kept);
                 } else {
                     $msg = _m('File uploaded but unable to activate the language');
                     osc_add_flash_error_message($msg, 'admin');
@@ -137,6 +138,16 @@ class CAdminLanguages extends AdminSecBaseModel
 
         osc_invalidate_locale_cache();
         $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * Tell the admin how many e-mail templates kept their own text over the language's.
+     */
+    private function flashKeptMails(int $kept): void
+    {
+        if ($kept > 0) {
+            osc_add_flash_info_message(sprintf(_mn('%d e-mail kept your changes', '%d e-mails kept your changes', $kept), $kept), 'admin');
+        }
     }
 
     /**
@@ -184,6 +195,7 @@ class CAdminLanguages extends AdminSecBaseModel
                 } else {
                     osc_add_flash_ok_message(_m('Language imported'), 'admin');
                 }
+                $this->flashKeptMails($result['kept']);
                 $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
 
                 return;

@@ -198,6 +198,15 @@ pin('...with no failed query', '', (string) file_get_contents($log));
 ini_set('error_log', (string) $logged);
 @unlink($log);
 
+$pages = DB_TABLE_PREFIX . 't_pages';
+$admin->query("INSERT INTO $pages (s_internal_name, b_indelible, dt_pub_date) VALUES ('email_ls_probe', 1, NOW())");
+$probe = static fn (string $text): string => json_encode(array('language' => 'dd_DD', 'template' => array(
+    array('s_internal_name' => 'email_ls_probe', 's_title' => 'T', 's_description' => $text),
+)));
+$service->install($manifest, 'dd_DD', $probe('Pack one'));
+Page::getInstance()->updateDescription((int) $admin->insert_id, 'dd_DD', 'T', 'Admin text');
+check('an install reports the e-mails that kept the admin\'s text', $service->install($manifest, 'dd_DD', $probe('Pack two'), $kept) && $kept === array('email_ls_probe'));
+
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php');
 check(
     'the languages screen writes t_locale only through LanguageService',
@@ -233,7 +242,7 @@ pin('a code that is not a locale code is refused before any folder or fetch', ar
 osc_update_check_save('languages', array('checked' => 1, 'count' => 2, 'to_update' => array('ff_FF', 'hh_HH'), 'downloaded' => array()));
 $asked  = array();
 $import = $service->importPublished('ff_FF', array('locale_code' => 'ff_FF') + $manifest, $fetch);
-pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('mail' => false, 'failed' => 1), true), array(
+pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('mail' => false, 'failed' => 1, 'kept' => 0), true), array(
     $import, in_array(osc_get_i18n_repository_url('src/translations/ff_FF/mail.json'), $asked, true),
 ));
 pin('...and takes it off the pending-update list', array(array('hh_HH'), 1), array(osc_update_check_state('languages')['to_update'], osc_update_check_state('languages')['count']));

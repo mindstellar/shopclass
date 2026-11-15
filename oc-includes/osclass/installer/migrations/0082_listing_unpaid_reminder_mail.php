@@ -35,16 +35,20 @@ return new class () implements MigrationInterface {
                 [$name]
             );
         }
+        $title = '{WEB_TITLE} - Pay to publish your listing';
+        $text  = '<p>Hi {USER_NAME},</p><p>Your listing <a href="{PAY_URL}">{ITEM_TITLE}</a> is saved but not published. '
+            . 'It costs {CREDITS} credits to publish.</p><p>Pay for it by {DEADLINE} or it is deleted: {PAY_LINK}</p>'
+            . '<p>Regards,</p><p>{WEB_LINK}</p>';
         $conn->execute(
             'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_pages_description (fk_i_pages_id, fk_c_locale_code, s_title, s_text)'
             . " SELECT ?, pk_c_code, ?, ? FROM " . DB_TABLE_PREFIX . "t_locale WHERE b_enabled = 1 OR pk_c_code = 'en_US'",
-            [
-                (int) $id,
-                '{WEB_TITLE} - Pay to publish your listing',
-                '<p>Hi {USER_NAME},</p><p>Your listing <a href="{PAY_URL}">{ITEM_TITLE}</a> is saved but not published. '
-                . 'It costs {CREDITS} credits to publish.</p><p>Pay for it by {DEADLINE} or it is deleted: {PAY_LINK}</p>'
-                . '<p>Regards,</p><p>{WEB_LINK}</p>',
-            ]
+            [(int) $id, $title, $text]
+        );
+        // Fingerprint of the placeholder text, so a language pack imported later replaces it.
+        $conn->execute(
+            'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_key_value (s_group, s_key, s_value, dt_created)'
+            . " SELECT ?, CONCAT(?, ':', pk_c_code), ?, NOW() FROM " . DB_TABLE_PREFIX . "t_locale WHERE b_enabled = 1 OR pk_c_code = 'en_US'",
+            ['email_template_hash', (int) $id, json_encode(hash('sha256', $title . "\0" . $text))]
         );
     }
 };

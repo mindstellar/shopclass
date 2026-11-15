@@ -193,6 +193,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Faster shop search by price, rare options and `on_sale` (migration 0093).
 
 ### Fixed
+- Installing or updating a language keeps e-mail templates the admin edited, and only writes to e-mail pages.
 - `GET` and `PATCH /api/v1/admin/settings` no longer fail with a server error.
 - A part refund of a unit with tax in its price refunds that price, not a cent more.
 - The place picker suggests place names in the language picked on the site.
