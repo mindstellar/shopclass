@@ -435,6 +435,13 @@ $kept = $model->importEmailTemplates($pack('en_US', array(
 )))['kept'];
 pin('an older site with no fingerprint still replaces the English text core shipped', array('New English', array()), array($textOf($unpaid, 'en_US'), $kept));
 
+$admin->query("INSERT INTO $table (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (9077, 'about-us-probe', 0, NOW())");
+$result = $model->importEmailTemplates($pack('fr_FR', array(
+    array('s_internal_name' => 'about-us-probe', 's_title' => 'Named static page', 's_description' => 'x'),
+)));
+pin('a template named after a static page does not write to it', array(array(), ''), array($result['written'], (string) $textOf(9077, 'fr_FR')));
+$admin->query("DELETE FROM $table WHERE pk_i_id = 9077");
+
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
 }

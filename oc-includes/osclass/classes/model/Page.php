@@ -776,7 +776,9 @@ class Page extends DAO
         $kept    = array();
         foreach ($json['template'] as $template) {
             if (!empty($template['s_internal_name'])) {
-                $id = $byName[$template['s_internal_name']] ?? null;
+                $id   = $byName[$template['s_internal_name']] ?? null;
+                $page = $id === null ? null : ($byId[$id] ?? null);
+                $id   = $page !== null && self::isEmailPage($page) ? $id : null;
             } else {
                 $page = $byId[$template['fk_i_page_id'] ?? ''] ?? null;
                 $id   = $page !== null && self::isEmailPage($page) ? $page['pk_i_id'] : null;
