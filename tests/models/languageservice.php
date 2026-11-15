@@ -136,6 +136,25 @@ pin('...with no failed query', '', (string) file_get_contents($log));
 ini_set('error_log', (string) $logged);
 @unlink($log);
 
+$pages = DB_TABLE_PREFIX . 't_pages';
+$admin->query("INSERT INTO $pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (9023, 'about-us', 0, NOW()), (9040, 'email_test_import', 1, NOW())");
+$texts = static function () use ($admin): array {
+    $res = $admin->query('SELECT fk_i_pages_id, s_title FROM ' . DB_TABLE_PREFIX . "t_pages_description WHERE fk_c_locale_code = 'dd_DD' AND fk_i_pages_id IN (9023, 9040)");
+
+    return array_column($res->fetch_all(MYSQLI_ASSOC), 's_title', 'fk_i_pages_id');
+};
+$service->install($manifest, 'dd_DD', json_encode(array('language' => 'dd_DD', 'template' => array(
+    array('fk_i_page_id' => 9023, 's_internal_name' => 'email_listing_unpaid_reminder', 's_title' => 'Newer e-mail', 's_description' => 'x'),
+    array('fk_i_page_id' => 9023, 's_title' => 'Id only', 's_description' => 'x'),
+    array('fk_i_page_id' => 1, 's_internal_name' => 'email_test_import', 's_title' => 'By name', 's_description' => 'x'),
+))));
+pin('an e-mail template is matched by name; with only an id it writes to an e-mail page only, never a static page', array(9040 => 'By name'), $texts());
+$service->install($manifest, 'dd_DD', json_encode(array('language' => 'dd_DD', 'template' => array(
+    array('fk_i_page_id' => 9040, 's_title' => 'Id of an e-mail page', 's_description' => 'x'),
+))));
+pin('...and an id alone still reaches an e-mail page', array(9040 => 'Id of an e-mail page'), $texts());
+$admin->query("DELETE FROM $pages WHERE pk_i_id IN (9023, 9040)");
+
 harness_section('Saving the row');
 
 $logRows = static function (string $code) use ($admin): array {
