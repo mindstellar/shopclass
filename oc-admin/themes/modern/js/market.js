@@ -672,6 +672,9 @@
                 if (newest.requires_php) {
                     needs.push((i18n.requiresPhp || 'PHP %s or newer').replace('%s', newest.requires_php));
                 }
+                (detail.requires_plugins || []).forEach(function (plugin) {
+                    needs.push(plugin.constraint ? plugin.name + ' ' + plugin.constraint : plugin.name);
+                });
                 dRequires.textContent = needs.join(' \u00b7 ');
                 dRequiresRow.hidden = needs.length === 0;
             }

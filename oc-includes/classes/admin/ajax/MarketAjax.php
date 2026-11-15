@@ -325,6 +325,8 @@ final class MarketAjax extends AjaxHandler
             // Not in the catalog, as with a private or hand-installed package: what is on disk.
             $local = self::marketLocalDetail($type, $slug);
             if ($local !== null) {
+                $local['requires_plugins'] = self::marketRequiredPlugins($type, $slug, array());
+
                 return array('ok' => true, 'message' => '', 'detail' => $local);
             }
 
@@ -335,6 +337,7 @@ final class MarketAjax extends AjaxHandler
         }
 
         $detail = self::marketBuildDetail($slug, $raw);
+        $detail['requires_plugins'] = self::marketRequiredPlugins($type, $slug, $raw);
         // An installed copy that is up to date shows its own README, read with this site's renderer.
         $newest = (string) ($detail['versions'][0]['version'] ?? '');
         $local  = self::marketLocalDetail($type, $slug);
@@ -345,6 +348,44 @@ final class MarketAjax extends AjaxHandler
         }
 
         return array('ok' => true, 'message' => '', 'detail' => $detail);
+    }
+
+    /**
+     * The plugins a package needs, as name and version: from the installed copy's manifest,
+     * else from the catalog entry's `plugins.required`.
+     *
+     * @param array<string,mixed> $raw
+     *
+     * @return list<array{name:string, constraint:string}>
+     */
+    private static function marketRequiredPlugins($type, $slug, array $raw)
+    {
+        $required = null;
+        if ($type === 'theme') {
+            $required = PluginDependencies::themeRequirements($slug)['required'] ?? null;
+        } elseif (is_file(osc_plugins_path() . $slug . '/index.php')) {
+            $required = PluginDependencies::pluginRequirements($slug . '/index.php')['required'];
+        }
+        if (!$required && is_array($raw['plugins']['required'] ?? null)) {
+            $required = $raw['plugins']['required'];
+        }
+        if (!$required) {
+            return array();
+        }
+        $names = \mindstellar\market\Catalog::forPlugins()->index();
+        $out   = array();
+        foreach ($required as $key => $value) {
+            $plugin = is_string($key) ? $key : (string) $value;
+            if (preg_match(Installer::SLUG_PATTERN, $plugin) !== 1) {
+                continue;
+            }
+            $out[] = array(
+                'name'       => (string) ($names[$plugin]['name'] ?? $plugin),
+                'constraint' => is_string($key) && is_string($value) ? $value : '',
+            );
+        }
+
+        return $out;
     }
 
     /**
