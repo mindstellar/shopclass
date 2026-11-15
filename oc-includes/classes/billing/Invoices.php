@@ -644,9 +644,15 @@ final class Invoices
                 $out['tax'][$taxId] = ($out['tax'][$taxId] ?? 0) + $share;
                 $parts[] = array('line_id' => $taxId, 'label' => (string) $p['label'], 'bp' => (int) $p['bp'], 'amount' => $share);
             }
-            $base     = (int) ($tax['base'] ?? 0);
-            $baseNow  = $part($base, $now) - $part($base, $was);
-            $out['value'][$id] = $baseNow + array_sum(array_column($parts, 'amount'));
+            $base    = (int) ($tax['base'] ?? 0);
+            $taxNow  = array_sum(array_column($parts, 'amount'));
+            $baseNow = $part($base, $now) - $part($base, $was);
+            if (!empty($tax['included'])) {
+                // The share of the price paid, so a unit refunds its price; the base is what the tax leaves.
+                $gross   = $base + array_sum(array_map(static fn ($p): int => (int) ($p['amount'] ?? 0), (array) ($tax['parts'] ?? array())));
+                $baseNow = $part($gross, $now) - $part($gross, $was) - $taxNow;
+            }
+            $out['value'][$id] = $baseNow + $taxNow;
             if ($parts !== array()) {
                 $out['lines'][$id] = self::docLineTax(!empty($tax['included']), $baseNow, isset($tax['code']) ? (string) $tax['code'] : null, $parts, $invoice->currency);
             }

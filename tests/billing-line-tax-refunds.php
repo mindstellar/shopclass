@@ -237,6 +237,70 @@ Billing::refundPart($f2, $m(11.9), [], 'Goodwill', false, false);
 pin('an amount alone carries its share of the included tax', [['VAT 19%', $m(1.9), true]], $taxOf($notes($f2)[0] ?? null));
 pin('and still totals the amount', $m(11.9), $notes($f2)[0]->total ?? null);
 
+harness_section('a unit of an included-tax line refunds its price exactly');
+$k = $place([
+    ['kind' => 'item', 'title' => 'Shirt', 'qty' => 2, 'unit' => $m(18), 'amount' => $m(36), 'tax' => $lineTax(true, $m(30.51), [['tax' => 'vat', 'label' => 'VAT 18%', 'bp' => 1800, 'amount' => $m(5.49)]])],
+    ['kind' => 'tax', 'title' => 'VAT 18%', 'qty' => 1, 'unit' => $m(5.49), 'amount' => 0, 'meta' => ['id' => 'vat', 'included' => true]],
+]);
+$shirt = $lineOf($k, 'Shirt');
+pin('one of two 18.00 shirts is worth 18.00', $m(18), Invoices::linesAmount($k->getId(), [$shirt => 1]));
+Billing::refundPart($k, 0, [$shirt => 1], 'Return', false, false);
+$kn = $notes($k)[0] ?? null;
+$kl = array_values(array_filter($kn?->data['lines'] ?? [], static fn (array $l): bool => $l['kind'] === 'item'))[0] ?? [];
+pin('the note is 18.00 with no adjustment', [$m(18), []], [$kn?->total, array_values(array_filter($kn?->data['lines'] ?? [], static fn (array $l): bool => $l['kind'] === 'adjustment'))]);
+pin('its base and tax add up to the price', $m(18), ($kl['tax']['base'] ?? 0) + ($kl['tax']['amount'] ?? 0));
+
+harness_section('refunds never pass the paid line total, whatever the rounding');
+$bad = [];
+foreach ([[1800], [1900], [700], [2100], [900, 900]] as $rates) {
+    foreach ([18, 0.99, 11.9, 3.33, 7.77] as $unit) {
+        foreach ([2, 3, 7] as $qty) {
+            foreach ([true, false] as $incl) {
+                $sum   = array_sum($rates);
+                $net   = $incl ? 0 : $m($unit) * $qty;
+                $gross = $incl ? $m($unit) * $qty : 0;
+                $parts = [];
+                foreach ($rates as $i => $bp) {
+                    $amt     = $incl ? (int) round($gross * $bp / (10000 + $sum) / 10000) * 10000 : (int) round($net * $bp / 10000 / 10000) * 10000;
+                    $parts[] = ['tax' => 't' . $i, 'label' => 'T' . $i, 'bp' => $bp, 'amount' => $amt];
+                }
+                $taxSum = array_sum(array_column($parts, 'amount'));
+                $base   = $incl ? $gross - $taxSum : $net;
+                $paid   = $incl ? $gross : $net + $taxSum;
+                $lines  = [['kind' => 'item', 'title' => 'Thing', 'qty' => $qty, 'unit' => $m($unit), 'amount' => $m($unit) * $qty, 'tax' => $lineTax($incl, $base, $parts)]];
+                foreach ($parts as $i => $pt) {
+                    $lines[] = ['kind' => 'tax', 'title' => 'T' . $i, 'qty' => 1, 'unit' => $pt['amount'], 'amount' => $incl ? 0 : $pt['amount'], 'meta' => ['id' => 't' . $i, 'included' => $incl]];
+                }
+                $o     = $place($lines);
+                $id    = $lineOf($o, 'Thing');
+                $case  = implode('+', $rates) . ($incl ? ' incl ' : ' excl ') . $unit . ' x' . $qty;
+                $total = 0;
+                foreach ($qty > 2 ? [1, $qty - 2, 1] : [1, 1] as $units) {
+                    $worth = (int) Invoices::linesAmount($o->getId(), [$id => $units]);
+                    if ($incl && $worth !== $m($unit) * $units) {
+                        $bad[] = $case . ': ' . $units . ' units worth ' . $worth;
+                    }
+                    Billing::refundPart($fresh($o), 0, [$id => $units], 'Return', false, false);
+                    $note   = $notes($o)[count($notes($o)) - 1] ?? null;
+                    $total += (int) $note?->total;
+                    foreach ($note?->data['lines'] ?? [] as $l) {
+                        if ($l['kind'] === 'adjustment' || ($l['kind'] === 'item' && $incl && $l['tax']['base'] + $l['tax']['amount'] !== $l['amount'])) {
+                            $bad[] = $case . ': ' . $l['kind'] . ' line off';
+                        }
+                    }
+                    if ($total > $paid) {
+                        $bad[] = $case . ': notes ' . $total . ' past ' . $paid;
+                    }
+                }
+                if ($total !== $paid) {
+                    $bad[] = $case . ': notes ' . $total . ', paid ' . $paid;
+                }
+            }
+        }
+    }
+}
+pin('every case adds up', [], $bad);
+
 harness_section('a line tax that no longer adds up is not frozen');
 $g = $place([
     ['kind' => 'item', 'title' => 'Lamp', 'qty' => 2, 'unit' => $m(10), 'amount' => $m(20), 'tax' => $lineTax(false, $m(20), [['tax' => 'vat', 'label' => 'VAT', 'bp' => 1000, 'amount' => $m(1.99)]])],

@@ -177,8 +177,11 @@ osc_admin_page(array(
                         <a href="<?php echo osc_esc_html(
                             osc_admin_base_url(true) . '?page=users&action=edit&id=' . $order->getUserId()
                         ); ?>"><?php echo osc_esc_html(\mindstellar\user\UserStore::displayName($user)); ?></a>
-                    <?php } else { ?>
-                        <span class="text-muted"><?php _e('Deleted user'); ?></span>
+                    <?php } else {
+                        $buyer = (array) $order->meta('_buyer');
+                        $kept  = trim((string) ($buyer['name'] ?? '')) ?: trim((string) ($buyer['email'] ?? ''));
+                        ?>
+                        <span class="text-muted"><?php echo osc_esc_html($kept !== '' ? $kept . ' ' . __('(deleted)') : __('Deleted user')); ?></span>
                     <?php }
                 }),
                 'gateway' => osc_billing_gateway_name($order->getGateway()),

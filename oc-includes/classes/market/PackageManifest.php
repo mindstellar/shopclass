@@ -79,12 +79,19 @@ final class PackageManifest
     /**
      * The `order_url` a theme declares for its buyer order page, with `{id}` where the order id
      * goes: a path on this site or an http(s) address. Empty when it is missing or not one.
+     * With $friendly, its `order_url_friendly` comes first, for sites with friendly URLs on.
      *
      * @param array<string,mixed> $json
      */
-    public static function orderUrl(array $json): string
+    public static function orderUrl(array $json, bool $friendly = false): string
     {
-        $url = $json['order_url'] ?? '';
+        $url = $friendly ? self::checkedOrderUrl($json['order_url_friendly'] ?? '') : '';
+
+        return $url !== '' ? $url : self::checkedOrderUrl($json['order_url'] ?? '');
+    }
+
+    private static function checkedOrderUrl(mixed $url): string
+    {
         if (!is_string($url) || !str_contains($url, '{id}')) {
             return '';
         }

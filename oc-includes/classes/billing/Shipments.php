@@ -65,13 +65,7 @@ final class Shipments
 
         $carrier  = self::clip($carrier, 100);
         $tracking = self::clip($tracking, 100);
-        $url      = trim($url);
-        if ($url === '') {
-            $found = new TrackingUrlResolving($carrier, $tracking);
-            CoreServices::dispatcher()->dispatch($found);
-            $url = $found->url();
-        }
-        $url   = mb_substr($url, 0, 500, 'UTF-8');
+        $url      = self::trackingUrl($carrier, $tracking, $url);
         $actor = OrderHistory::actor($order->getUserId());
         $from  = array(Order::STATUS_PAID, Order::STATUS_PROCESSING);
         if ($order->getGateway() === gateway\CashOnDeliveryGateway::ID) {
@@ -141,7 +135,8 @@ final class Shipments
     /**
      * Correct the carrier, tracking number and link of one parcel, in processing or shipped. With
      * $n null it is the order's newest parcel, or its one tracking when it has no parcel list, and
-     * the order must be shipped. The status stays.
+     * the order must be shipped. The status stays. With no URL given, a `TrackingUrlResolving`
+     * listener may supply one, as in add().
      *
      * @param int      $orderId
      * @param int|null $n        The parcel's number
@@ -155,7 +150,7 @@ final class Shipments
     {
         $carrier  = self::clip($carrier, 100);
         $tracking = self::clip($tracking, 100);
-        $url      = self::clip($url, 500);
+        $url      = self::trackingUrl($carrier, $tracking, $url);
         $from     = $n === null ? array(Order::STATUS_SHIPPED) : array(Order::STATUS_PROCESSING, Order::STATUS_SHIPPED);
 
         return self::metaOnly($orderId, $from, static function (array $meta, string $status) use ($n, $carrier, $tracking, $url): ?array {
@@ -184,6 +179,22 @@ final class Shipments
 
             return $meta;
         });
+    }
+
+    /**
+     * The parcel's tracking page: the URL given, or else the one a `TrackingUrlResolving` listener
+     * supplies, up to 500 characters.
+     */
+    private static function trackingUrl(string $carrier, string $tracking, string $url): string
+    {
+        $url = trim($url);
+        if ($url === '') {
+            $found = new TrackingUrlResolving($carrier, $tracking);
+            CoreServices::dispatcher()->dispatch($found);
+            $url = $found->url();
+        }
+
+        return mb_substr($url, 0, 500, 'UTF-8');
     }
 
     /**

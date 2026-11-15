@@ -442,4 +442,14 @@ harness_section('the buyer\'s display name');
 pin('the full name first', 'Asha Rao', \mindstellar\user\UserStore::displayName(array('s_name' => 'Asha Rao', 's_username' => '10')));
 pin('the username when the name is blank', 'asha', \mindstellar\user\UserStore::displayName(array('s_name' => '  ', 's_username' => 'asha')));
 
+harness_section('a deleted buyer');
+$gone      = seed_user($admin, 'gone', 'gone@example.test');
+$goneOrder = OrderStore::create($gone, 'offline', $m(7), 'USD', 0, ['_kind' => Order::KIND_GOODS, '_label' => 'Lamp', '_buyer' => ['email' => 'gone@example.test', 'name' => 'Gina <b>Gone</b>', 'phone' => '']]);
+$bare      = OrderStore::create($gone, 'offline', $m(7), 'USD', 0, ['_kind' => Order::KIND_GOODS, '_label' => 'Lamp']);
+$admin->query("DELETE FROM {$p}t_user WHERE pk_i_id = " . (int) $gone);
+scratchdb_forget_cache();
+$list = drive('', [], [])['drawn'];
+check('the list shows the name kept on the order, marked deleted', str_contains($list, 'Gina &lt;b&gt;Gone&lt;/b&gt; (deleted)'));
+check('an order with no kept name still says Deleted user', str_contains($list, 'Deleted user'));
+
 exit(harness_result());

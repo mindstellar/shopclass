@@ -18,12 +18,14 @@
 require_once __DIR__ . '/lib/harness.php';
 require_once __DIR__ . '/lib/api-admin-kit.php';
 
+use mindstellar\billing\event\TrackingUrlResolving;
 use mindstellar\billing\gateway\CashOnDeliveryGateway;
 use mindstellar\billing\Order;
 use mindstellar\billing\OrderHistory;
 use mindstellar\billing\OrderLineStore;
 use mindstellar\billing\OrderStore;
 use mindstellar\billing\Shipments;
+use mindstellar\boot\CoreServices;
 
 $admin = api_admin_boot('osc_billing_shipments');
 
@@ -127,6 +129,15 @@ pin('a parcel that does not exist', false, Shipments::setTracking($id, 3, 'UPS',
 check('the old setTracking changes the newest parcel', OrderStore::setTracking($id, 'FedEx', 'F1', ''));
 pin('parcel 2 and the order read it', array('FedEx', 'F1', 'FedEx'), array(OrderStore::find($id)->shipments()[1]['carrier'], OrderStore::find($id)->shipments()[1]['tracking'], OrderStore::find($id)->fulfilment()['carrier']));
 pin('the status stays', 'shipped', $status($id));
+$track = static function (TrackingUrlResolving $e): void {
+    $e->setUrl('https://track.example.test/' . $e->carrier() . '/' . $e->tracking());
+};
+CoreServices::dispatcher()->listen(TrackingUrlResolving::class, $track);
+check('edited tracking with no link', Shipments::setTracking($id, 2, 'DHL', 'T9', ''));
+pin('gets the carrier\'s tracking page, as when shipped', array('https://track.example.test/DHL/T9', 'https://track.example.test/DHL/T9'), array(OrderStore::find($id)->shipments()[1]['url'], OrderStore::find($id)->fulfilment()['tracking_url']));
+check('a typed link', Shipments::setTracking($id, 2, 'DHL', 'T9', 'https://own.example.test/T9'));
+pin('is kept', 'https://own.example.test/T9', OrderStore::find($id)->shipments()[1]['url']);
+CoreServices::dispatcher()->remove(TrackingUrlResolving::class, $track);
 
 harness_section('the old ship()');
 [$whole, $wTee, $wMug] = $order();
