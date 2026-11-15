@@ -1504,6 +1504,10 @@ msgstr ""
 msgid "Friendly URLs turned off"
 msgstr ""
 
+#: oc-includes/osclass/helpers/hItems.php
+msgid "From %s"
+msgstr ""
+
 #: oc-includes/classes/location/PlaceField.php
 msgid "From your account"
 msgstr ""

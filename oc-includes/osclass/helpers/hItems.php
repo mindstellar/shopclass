@@ -407,6 +407,37 @@ function osc_item_formatted_price()
 }
 
 /**
+ * Price of the current item as its product shows it in shop mode: the lowest variant price, with
+ * "From" when the variants differ, or the price of the one variant named. A variant without a price
+ * of its own takes the listing's. With no variants or outside shop mode it is the listing price.
+ *
+ * @param int|null $variantId a variant of this listing, e.g. the one a price alert follows
+ *
+ * @return string
+ */
+function osc_item_formatted_variant_price(?int $variantId = null): string
+{
+    $variants = osc_is_shop_mode() ? \mindstellar\listing\VariantStore::ofItem((int) osc_item_id()) : array();
+    $base     = osc_item_price();
+    $prices   = array();
+    foreach ($variants as $variant) {
+        $price = $variant['i_price'] !== null ? (float) $variant['i_price'] : $base;
+        if ($variantId !== null && (int) $variant['pk_i_id'] === $variantId) {
+            return (string) osc_format_price($price);
+        }
+        if ($price !== null && $price > 0) {
+            $prices[] = $price;
+        }
+    }
+    if ($prices === array()) {
+        return osc_item_formatted_price();
+    }
+    $text = (string) osc_format_price(min($prices));
+
+    return max($prices) > min($prices) ? sprintf(_m('From %s'), $text) : $text;
+}
+
+/**
  * @DEPRECATED: incorrect spelling of "formatted." Kept for legacy purposes
  *
  * Calls osc_item_formatted_price

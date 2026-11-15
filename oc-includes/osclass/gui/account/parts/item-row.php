@@ -27,6 +27,8 @@ if (!defined('ABS_PATH')) {
 $rowOwned   = isset($rowOwned) ? (bool) $rowOwned : true;
 $rowContext = isset($rowContext) ? (string) $rowContext : ($rowOwned ? 'user_items' : 'public_profile');
 $rowItem    = osc_item();
+$rowAlert   = $rowContext === 'alert' ? \mindstellar\search\AlertEnvelope::productOf((string) osc_alert_field('s_search')) : null;
+$rowPrice   = osc_item_formatted_variant_price($rowAlert['variant'] ?? null);
 
 $rowBadges = array();
 if ($rowOwned) {
@@ -131,5 +133,5 @@ $rowActions = (array) osc_apply_filter('listing_row_actions', $rowActions, $rowI
         <?php require __DIR__ . '/row-actions.php'; ?>
     </div>
 
-    <p class="oe-price"><?php echo osc_esc_html(osc_item_formatted_price()); ?></p>
+    <p class="oe-price"><?php echo osc_esc_html($rowPrice); ?></p>
 </li>
