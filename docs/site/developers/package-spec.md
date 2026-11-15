@@ -115,6 +115,17 @@ address for a front end on another site:
 }
 ```
 
+When the page has a friendly address only with friendly URLs on, give the plain one in
+`order_url` and the friendly one in `order_url_friendly`. Core uses the friendly one when
+friendly URLs are on, also in e-mails sent from the admin:
+
+```json
+{
+  "order_url": "index.php?page=custom&route=shop-order&id={id}",
+  "order_url_friendly": "orders/{id}"
+}
+```
+
 ## Versioning
 
 Use `MAJOR.MINOR.PATCH`. Core compares versions to decide whether an update is

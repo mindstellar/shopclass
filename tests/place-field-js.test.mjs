@@ -97,7 +97,7 @@ class El extends Node_ {
   closest(sel) { for (let x = this; x instanceof El; x = x.parentNode) if (x.matches(sel)) return x; return null; }
 }
 
-function build({ strict = '1', countries = '1', prefill = null, saved = null, meta = true, errorShown = false } = {}) {
+function build({ strict = '1', countries = '1', prefill = null, saved = null, meta = true, errorShown = false, locale = '' } = {}) {
   const doc = {
     readyState: 'complete', activeElement: null, listeners: {},
     createElement: (t) => new El(t, doc),
@@ -110,7 +110,7 @@ function build({ strict = '1', countries = '1', prefill = null, saved = null, me
   if (meta) {
     const m = head.appendChild(new El('meta', doc));
     m.setAttribute('name', 'shopclass-api');
-    m.setAttribute('content', JSON.stringify({ url: 'https://x.test/api/v1', header: 'X-Shopclass-Token', token: 'tok123' }));
+    m.setAttribute('content', JSON.stringify({ url: 'https://x.test/api/v1', header: 'X-Shopclass-Token', token: 'tok123', ...(locale ? { locale } : {}) }));
   }
   const root = html.appendChild(new El('div', doc));
   root.setAttribute('data-osc-place', '');
@@ -156,7 +156,7 @@ const addTo = (doc, parent, tag, cls, attrs = {}) => {
   return e;
 };
 
-function shell({ style, strict, ajax }) {
+function shell({ style, strict, ajax, locale = '' }) {
   const doc = {
     readyState: 'complete', activeElement: null,
     createElement: (t) => new El(t, doc),
@@ -165,7 +165,7 @@ function shell({ style, strict, ajax }) {
   };
   const html = new El('html', doc);
   const m = addTo(doc, html.appendChild(new El('head', doc)), 'meta', '', { name: 'shopclass-api' });
-  m.setAttribute('content', JSON.stringify({ url: 'https://x.test/api/v1', header: 'X-Shopclass-Token', token: 'tok123' }));
+  m.setAttribute('content', JSON.stringify({ url: 'https://x.test/api/v1', header: 'X-Shopclass-Token', token: 'tok123', ...(locale ? { locale } : {}) }));
   const root = html.appendChild(new El('div', doc));
   root.setAttribute('data-osc-place', style);
   root.setAttribute('data-strict', strict);
@@ -196,8 +196,8 @@ function level(doc, root, name, box) {
   return { part, input, list, spin, clear, err };
 }
 
-function buildFields({ strict = '1', one = false, saved = null } = {}) {
-  const { doc, root, form } = shell({ style: 'fields', strict });
+function buildFields({ strict = '1', one = false, saved = null, locale = '' } = {}) {
+  const { doc, root, form } = shell({ style: 'fields', strict, locale });
   const country = addTo(doc, root, one ? 'input' : 'select', '', { name: 'countryId' });
   country.value = one ? 'IN' : '';
   const region = level(doc, root, 'region', true);
@@ -564,6 +564,18 @@ await test('fields: the city search follows the region, or all regions when none
   const none = run({ style: 'fields' });
   none.type('mu', none.city.input); none.tick(200);
   assert.equal(none.calls[0].url, 'https://x.test/api/v1/cities?q=mu&limit=8', 'no country filter without a country');
+});
+
+await test('the city searches ask in the page\'s language', async () => {
+  const one = run({ locale: 'en_IN' });
+  one.type('mu'); one.tick(200);
+  assert.equal(one.calls[0].url, 'https://x.test/api/v1/cities?q=mu&limit=8&locale=en_IN');
+  const t = run({ style: 'fields', locale: 'en_IN' });
+  t.type('mu', t.city.input); t.tick(200);
+  assert.equal(t.calls[0].url, 'https://x.test/api/v1/cities?q=mu&limit=8&locale=en_IN');
+  t.hid.regionId.value = '10';
+  t.type('mun', t.city.input); t.tick(200);
+  assert.equal(t.calls[1].url, 'https://x.test/api/v1/regions/10/cities?q=mun&limit=100&locale=en_IN');
 });
 
 await test('fields: a city picked from the wide search fills region and country', async () => {

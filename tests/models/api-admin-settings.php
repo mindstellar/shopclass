@@ -28,8 +28,8 @@ use mindstellar\settings\SettingsPageRegistry;
 
 $admin = api_admin_boot('osc_models_api_admin_settings');
 scratchdb_pin_site_mode($admin, 'classifieds');
+
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
-require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
 $p      = DB_TABLE_PREFIX;
 $locale = seed_locale($admin);
@@ -59,6 +59,13 @@ $call     = api_admin_caller();
 $pref     = static fn (string $name, string $section = 'osclass'): ?string => $admin->query(
     "SELECT s_value FROM {$p}t_preference WHERE s_section = '$section' AND s_name = '" . $admin->real_escape_string($name) . "'"
 )->fetch_row()[0] ?? null;
+
+harness_section('settings: the screens the API serves need no admin UI helpers');
+pin('admin UI helpers not loaded, as in a real API call', false, function_exists('osc_admin_settings_form'));
+foreach (array_unique(array_column(ExposedSettings::FIELDS, 0)) as $screen) {
+    $fields = SettingsPageRegistry::getInstance()->fields($screen::register());
+    pin($screen . ' declares its fields', true, $fields !== []);
+}
 
 harness_section('settings: who may call');
 pin('an admin key: 200', 200, $call('GET', 'admin/settings', null, $boss)->status());

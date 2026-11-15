@@ -847,8 +847,8 @@ function osc_billing_order_return_url(int $orderId): string
 
 /**
  * The buyer's page for one order, as order e-mails link it. The `order_url` in the active
- * theme's shopclass.json when it has one, else the order on the orders list; a theme can
- * still return its own page through the filter.
+ * theme's shopclass.json when it has one (its `order_url_friendly` when friendly URLs are on),
+ * else the order on the orders list; a theme can still return its own page through the filter.
  *
  * @param int $orderId
  *
@@ -857,7 +857,7 @@ function osc_billing_order_return_url(int $orderId): string
 function osc_billing_order_url(int $orderId): string
 {
     $pattern = defined('THEMES_PATH')
-        ? \mindstellar\market\PackageManifest::orderUrl(\mindstellar\market\PackageManifest::json(THEMES_PATH . osc_theme()))
+        ? \mindstellar\market\PackageManifest::orderUrl(\mindstellar\market\PackageManifest::json(THEMES_PATH . osc_theme()), (bool) osc_rewrite_enabled())
         : '';
     if ($pattern === '') {
         $url = osc_billing_orders_url() . '#order-' . $orderId;

@@ -37,7 +37,10 @@ function __($key, $domain = 'core')
 }
 require_once ABS_PATH . 'oc-includes/classes/core/site/SiteMode.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
-require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
+function osc_add_hook($name, $fn, $priority = 5)
+{
+}
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hSettings.php';
 
 harness_section('mode text');
 check('classifieds wording by default', osc_mode_text('Manage listings', 'Manage products') === 'Manage listings');

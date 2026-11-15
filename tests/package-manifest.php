@@ -67,6 +67,13 @@ foreach (['no {id}' => 'orders/', 'a script' => 'javascript:alert({id})', 'anoth
     pin("$what is refused", '', PackageManifest::orderUrl(['order_url' => $url]));
 }
 pin('missing or not text', ['', ''], [PackageManifest::orderUrl([]), PackageManifest::orderUrl(['order_url' => ['x']])]);
+$both = ['order_url' => 'index.php?page=custom&route=shop-order&id={id}', 'order_url_friendly' => 'orders/{id}'];
+pin('with friendly URLs on, the friendly pattern', 'orders/{id}', PackageManifest::orderUrl($both, true));
+pin('with them off, the plain one', $both['order_url'], PackageManifest::orderUrl($both, false));
+pin('a bad or missing friendly pattern falls back to the plain one', [$both['order_url'], $both['order_url']], [
+    PackageManifest::orderUrl(['order_url_friendly' => '//evil.test/{id}'] + $both, true),
+    PackageManifest::orderUrl(['order_url' => $both['order_url']], true),
+]);
 
 @unlink($dir . '/shopclass.json');
 rmdir($dir);

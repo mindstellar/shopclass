@@ -1007,6 +1007,18 @@ if (!function_exists('osc_category_mode')) {
     }
 }
 
+if (!function_exists('osc_admin_captcha_settings_path')) {
+    /**
+     * The menu path to the Captcha settings, built from the menu's own names.
+     *
+     * @return string
+     */
+    function osc_admin_captcha_settings_path(): string
+    {
+        return implode(' › ', array(__('Settings'), __('Security'), __('Captcha')));
+    }
+}
+
 osc_add_hook('admin_page_header', 'osc_settings_refused_notices', 10);
 
 /* file end: ./oc-includes/osclass/helpers/hSettings.php */
