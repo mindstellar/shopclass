@@ -68,7 +68,7 @@ check('address and username are wrapping text, only the password is an input', s
 check('username and admin address have copy buttons', str_contains($html, 'data-copy-target="ins-cred-username"') && str_contains($html, 'data-copy-target="ins-cred-admin"'));
 
 harness_section('heading and buttons');
-check('heading uses the site name', str_contains($html, 'Riverside Market is ready'));
+check('heading uses the site name, marked for the accent', str_contains($html, '<span class="ins-site-name">Riverside Market</span> is ready'));
 $GLOBALS['stub_title'] = '';
 check('heading falls back with no site name', str_contains($render(array()), 'Your site is ready.'));
 $GLOBALS['stub_title'] = 'Riverside Market';

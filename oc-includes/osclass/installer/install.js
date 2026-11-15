@@ -216,32 +216,24 @@
     /* -----------------------------------------------------------------
        Copy-to-clipboard buttons (finish screen credentials)
        ------------------------------------------------------------- */
-    function fallbackCopy(input) {
-        if (!('value' in input)) {
-            var range = document.createRange();
-            range.selectNodeContents(input);
-            var selection = window.getSelection();
-            selection.removeAllRanges();
-            selection.addRange(range);
-            try {
-                return document.execCommand('copy');
-            } catch {
-                return false;
-            }
-        }
-        var wasReadOnly = input.hasAttribute('readonly');
-        input.focus();
-        input.select();
-        input.setSelectionRange(0, 999999);
+    // Copies through an off-screen textarea, so a password field can be copied and no box keeps focus.
+    function fallbackCopy(value, btn) {
+        var area = document.createElement('textarea');
+        area.value = value;
+        area.setAttribute('readonly', 'readonly');
+        area.style.position = 'fixed';
+        area.style.insetInlineStart = '-9999px';
+        document.body.appendChild(area);
+        area.select();
         var ok;
         try {
             ok = document.execCommand('copy');
         } catch {
             ok = false;
         }
-        if (wasReadOnly) {
-            input.setAttribute('readonly', 'readonly');
-        }
+        document.body.removeChild(area);
+        window.getSelection().removeAllRanges();
+        btn.focus({ preventScroll: true });
         return ok;
     }
 
@@ -275,17 +267,18 @@
             }
 
             btn.addEventListener('click', function () {
+                var value = 'value' in input ? input.value : input.textContent;
                 if (navigator.clipboard && navigator.clipboard.writeText) {
-                    navigator.clipboard.writeText('value' in input ? input.value : input.textContent).then(
+                    navigator.clipboard.writeText(value).then(
                         function () {
                             onCopied(true);
                         },
                         function () {
-                            onCopied(fallbackCopy(input));
+                            onCopied(fallbackCopy(value, btn));
                         }
                     );
                 } else {
-                    onCopied(fallbackCopy(input));
+                    onCopied(fallbackCopy(value, btn));
                 }
             });
         });

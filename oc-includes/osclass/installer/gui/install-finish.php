@@ -45,7 +45,7 @@ $ins_rows         = array(
             <div>
                 <h1 class="ins-headline" id="ins-done-title" tabindex="-1"><?php
                     echo $ins_site_name !== ''
-                        ? osc_esc_html(sprintf(__('%s is ready'), $ins_site_name))
+                        ? sprintf(osc_esc_html(__('%s is ready')), '<span class="ins-site-name">' . osc_esc_html($ins_site_name) . '</span>')
                         : osc_esc_html(__('Your site is ready.'));
                 ?></h1>
                 <p class="ins-done-lede"><?php _e("Here is your admin login. Save the password now. We won't show it again."); ?></p>

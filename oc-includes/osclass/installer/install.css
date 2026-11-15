@@ -592,6 +592,15 @@ code {
 }
 
 /* Typography: headline, lede, heading, label, body, help */
+/* The done page focuses its headline for screen readers; that focus needs no ring. */
+.ins-headline:focus {
+    outline: none;
+}
+
+.ins-site-name {
+    color: var(--osc-bronze);
+}
+
 .ins-headline {
     font-size: var(--ins-fs-headline);
     line-height: var(--ins-lh-headline);
