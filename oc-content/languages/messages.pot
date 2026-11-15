@@ -3723,7 +3723,6 @@ msgid "The files were deleted"
 msgstr ""
 
 #: oc-includes/osclass/classes/controller/CWebUser.php
-#: oc-includes/osclass/classes/controller/admin/settings/CAdminSettingsApi.php
 msgid "The key is made. Copy it now: it is not shown again."
 msgstr ""
 

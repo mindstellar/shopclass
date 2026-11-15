@@ -107,6 +107,7 @@ pin('bank transfer stays', true, in_array('offline', $gatewayIds(), true));
 pin('the Orders group has hold days and the prefix only', array('billing_hold_days', 'billing_order_prefix'), $shopFields());
 check('reports say listings', str_contains($menuLabels(), 'Reported listings') && !str_contains($menuLabels(), 'Reported products'));
 check('statistics name listings', str_contains($menuLabels(), '"Listings"') && !str_contains($menuLabels(), '"Products"'));
+check('classifieds keep the posting and e-mail confirmation rows', str_contains($itemSettings(), 'reg_user_post') && str_contains($itemSettings(), 'moderate_items'));
 check('listing settings say listings', str_contains($itemSettings(), 'Listing Settings') && !str_contains($itemSettings(), 'Product Settings'));
 check('general settings name the map on listings', str_contains($mainSettings(), 'Map on listings'));
 
@@ -119,6 +120,7 @@ check('the menu never says Listings', !str_contains($menuLabels(), '"Listings"')
 $shopSettings = $itemSettings();
 check('product settings say products', str_contains($shopSettings, 'Product Settings') && str_contains($shopSettings, 'Images per product'));
 check('product settings never say listing', stripos($shopSettings, 'listing') === false);
+check('shop mode hides the posting and e-mail confirmation rows', strpos($shopSettings, 'reg_user_post') === false && strpos($shopSettings, 'moderate_items') === false);
 $shopMain = $mainSettings();
 check('general settings name the map on products', str_contains($shopMain, 'Map on products'));
 check('general settings never say listing', stripos($shopMain, 'listing') === false);
@@ -127,7 +129,7 @@ harness_section('admin views pick wording by mode');
 // Each view keeps its classifieds text and adds a shop variant through osc_mode_text().
 foreach (array(
     'settings/index.php' => array('how lists of products are displayed'),
-    'items/index.php'    => array('Manage all the products in your shop'),
+    'items/index.php'    => array('Manage all the products in your shop', 'sample products are on this site'),
     'items/frm.php'      => array('The product belongs to', 'Show the e-mail address on the product'),
     'stats/items.php'    => array('new products have been added', 'Product views'),
     'stats/users.php'    => array('%s products per user'),

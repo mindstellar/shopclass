@@ -99,7 +99,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         <input type="hidden" name="action" value="remove_sample" />
         <?php echo osc_csrf_token_form(); ?>
         <?php echo osc_esc_html($sampleCount > 0
-            ? sprintf(_n('%d sample listing is on this site.', '%d sample listings are on this site.', $sampleCount), $sampleCount)
+            ? sprintf(osc_is_shop_mode() ? _n('%d sample product is on this site.', '%d sample products are on this site.', $sampleCount) : _n('%d sample listing is on this site.', '%d sample listings are on this site.', $sampleCount), $sampleCount)
             : __('Sample fields from the installer are on this site.')); ?>
         <button type="submit" class="btn btn-link btn-sm p-0 align-baseline"><?php _e('Remove sample data'); ?></button>
     </form>
