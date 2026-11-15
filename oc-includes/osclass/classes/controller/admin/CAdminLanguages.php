@@ -505,6 +505,24 @@ class CAdminLanguages extends AdminSecBaseModel
     }
 
     /**
+     * One page of the languages table and its counts. Nothing filters this list, so both totals
+     * are the number of languages.
+     *
+     * @param array<int,array<string,mixed>> $locales every t_locale row
+     *
+     * @return array{iTotalRecords:int,iTotalDisplayRecords:int,iDisplayLength:int,aaData:array<int,array<string,mixed>>}
+     */
+    public static function tablePage(array $locales, int $start, int $limit): array
+    {
+        return array(
+            'iTotalRecords'        => count($locales),
+            'iTotalDisplayRecords' => count($locales),
+            'iDisplayLength'       => $limit,
+            'aaData'               => array_slice(array_values($locales), $start, $limit),
+        );
+    }
+
+    /**
      * The languages table.
      */
     private function languages(): void
@@ -524,27 +542,13 @@ class CAdminLanguages extends AdminSecBaseModel
 
         $p_iPage = ListPaging::page();
 
-        $aLanguages = OSCLocale::getInstance()->listAll();
-
-        // pagination
-        $start = ListPaging::start($p_iPage, $limit);
-        $count = count($aLanguages);
-
-        $displayRecords = $limit;
-        if (($start + $limit) > $count) {
-            $displayRecords = ($start + $limit) - $count;
-        }
+        $array = self::tablePage(OSCLocale::getInstance()->listAll(), ListPaging::start($p_iPage, $limit), $limit);
         // ----
         $aLanguagesToUpdate = osc_update_check_state('languages')['to_update'];
         $bLanguagesToUpdate = is_array($aLanguagesToUpdate);
         // ----
         $aData = array();
-        $max   = ($start + $limit);
-        if ($max > $count) {
-            $max = $count;
-        }
-        for ($i = $start; $i < $max; $i++) {
-            $l     = $aLanguages[$i];
+        foreach ($array['aaData'] as $l) {
             $row   = array();
             $row[] = '<input type="checkbox" name="id[]" value="' . $l['pk_c_code'] . '" />';
 
@@ -592,10 +596,7 @@ class CAdminLanguages extends AdminSecBaseModel
             $aData[] = $row;
         }
         // ----
-        $array['iTotalRecords']        = $displayRecords;
-        $array['iTotalDisplayRecords'] = count($aLanguages);
-        $array['iDisplayLength']       = $limit;
-        $array['aaData']               = $aData;
+        $array['aaData'] = $aData;
 
         $pastEnd = ListPaging::pastEnd($array, $p_iPage);
         if ($pastEnd !== null) {
