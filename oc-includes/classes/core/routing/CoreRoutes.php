@@ -32,6 +32,7 @@ class CoreRoutes
      *
      * pref    preference holding the editable path; null for a route that has no
      *         friendly form and is always built as a query string
+     * path    fixed friendly path, for a route with no preference
      * to      fixed query parameters, in the order they are written
      * params  arguments, in path order. Each may set:
      *           re        pattern that captures it in a rule
@@ -326,8 +327,8 @@ class CoreRoutes
                 'rule' => false,
             ),
             'user_addresses' => array(
+                'path' => 'user/addresses',
                 'to'   => array('page' => 'user', 'action' => 'addresses'),
-                'rule' => false,
             ),
             'user_api_access' => array(
                 'to'   => array('page' => 'user', 'action' => 'api_access'),
@@ -628,7 +629,7 @@ class CoreRoutes
             if ($group !== null && ($route['group'] ?? 'account') !== $group) {
                 continue;
             }
-            $path = trim((string)osc_get_preference($route['pref']), '/');
+            $path = self::path($route);
             if ($path === '') {
                 continue;
             }
@@ -656,6 +657,16 @@ class CoreRoutes
     }
 
     /**
+     * A route's friendly path: its preference's value, or its fixed path.
+     *
+     * @param array<string,mixed> $route
+     */
+    private static function path(array $route): string
+    {
+        return trim(isset($route['pref']) ? (string)osc_get_preference($route['pref']) : (string)($route['path'] ?? ''), '/');
+    }
+
+    /**
      * Build a route's URL. Returns '' for a name the table does not hold.
      *
      * @param string              $name Route name
@@ -673,9 +684,9 @@ class CoreRoutes
         $admin  = ($route['base'] ?? 'web') === 'admin';
         $params = $route['params'] ?? array();
 
-        $friendly = !$admin && isset($route['pref']) && osc_rewrite_enabled();
+        $friendly = !$admin && (isset($route['pref']) || isset($route['path'])) && osc_rewrite_enabled();
         if ($friendly) {
-            $path  = trim((string)osc_get_preference($route['pref']), '/');
+            $path  = self::path($route);
             $query = array();
             foreach ($params as $key => $spec) {
                 $value = (string)($args[$key] ?? '');

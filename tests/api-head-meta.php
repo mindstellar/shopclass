@@ -10,7 +10,7 @@
 
 /**
  * The API meta tag on public pages: a theme that does not call osc_head() gets it from the `header`
- * hook, a theme may decline it, and a page prints it once.
+ * hook, a theme may decline it, it carries the page's language, and a page prints it once.
  * Usage: php tests/api-head-meta.php
  */
 
@@ -54,6 +54,16 @@ function osc_add_theme_support(string $feature, $args = true): void
     \mindstellar\theme\ThemeSupports::getInstance()->add($feature, $args);
 }
 
+function osc_current_user_locale()
+{
+    return $GLOBALS['metaLocale'];
+}
+
+function osc_get_locales()
+{
+    return [['pk_c_code' => 'en_US'], ['pk_c_code' => 'en_IN']];
+}
+
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hApi.php';
 
 $header = static function (): string {
@@ -67,9 +77,11 @@ osc_add_theme_support('head', ['api' => false]);
 check('a theme that declined the api part gets no tag from the hook', !str_contains($header(), 'name="shopclass-api"'));
 
 \mindstellar\theme\ThemeSupports::getInstance()->reset();
+$GLOBALS['metaLocale'] = 'en_IN';
 $out = $header();
 check('a theme that does not call osc_head() gets the tag from the header hook', str_contains($out, '<meta name="shopclass-api"'));
 check('with a guest token', str_contains($out, '&quot;token&quot;:&quot;scs_'));
+check('with the page\'s language, for API calls made from it', str_contains($out, '&quot;locale&quot;:&quot;en_IN&quot;'));
 pin('a second header run prints nothing', '', $header());
 pin('nor does a theme calling the helper itself', '', osc_api_session_meta());
 

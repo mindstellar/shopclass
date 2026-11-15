@@ -201,7 +201,8 @@ if (!function_exists('osc_api_session_meta')) {
     /**
      * A `<meta name="shopclass-api">` tag for the page head. Its content is JSON: the API's
      * address (`url`), the page token (`token`, a guest's when nobody is signed in), the `header`
-     * to send it in and when it expires (`expires_at`). It is printed while the API is off too.
+     * to send it in, when it expires (`expires_at`) and the page's language (`locale`) when the
+     * API serves it. It is printed while the API is off too.
      * osc_head() prints it; a page gets it once, so a second call returns ''.
      *
      * @api
@@ -222,6 +223,10 @@ if (!function_exists('osc_api_session_meta')) {
             'header'     => \mindstellar\apikey\PageTokens::HEADER,
             'expires_at' => \mindstellar\database\UtcDatetime::rfc3339((int) $token->expiresAt()),
         ];
+        $locale = defined('OC_ADMIN') && OC_ADMIN ? osc_current_admin_locale() : osc_current_user_locale();
+        if (in_array($locale, array_column((array) osc_get_locales(), 'pk_c_code'), true)) {
+            $data['locale'] = $locale;
+        }
 
         return '<meta name="shopclass-api" content="' . osc_esc_html((string) json_encode($data, JSON_UNESCAPED_SLASHES)) . '">' . PHP_EOL;
     }

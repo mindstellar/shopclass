@@ -82,9 +82,10 @@
         };
     }
 
-    // A REST list fetched with the page token, as {items, extra}: extra counts the matches past the limit.
+    // A REST list fetched with the page token in the page's language, as {items, extra}: extra counts the matches past the limit.
     function restList(api, url, limit) {
         if (!api || !api.url) { return Promise.reject(new Error('no api')); }
+        if (api.locale) { url += (url.indexOf('?') > -1 ? '&' : '?') + 'locale=' + encodeURIComponent(api.locale); }
         var headers = {Accept: 'application/json'};
         headers[api.header] = api.token;
         return fetch(url, {credentials: 'same-origin', headers: headers})
