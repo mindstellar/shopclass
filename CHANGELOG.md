@@ -193,6 +193,13 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Faster shop search by price, rare options and `on_sale` (migration 0093).
 
 ### Fixed
+- The plugin Details window lists the plugins a package needs.
+- Shop mode: the sample-data note says products, and the posting and e-mail confirmation settings that do not apply are hidden.
+- The installer's done page no longer prints the raw mail error.
+- Sample listings use ordinary city names instead of the first by name.
+- The Dependencies screen wraps its Installed line on narrow screens.
+- Admin Add user marks Username as required.
+- Making an API key shows its copy-it-now note once.
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
 - Refunds no longer put shipped units back in stock, and an amount-only credit note carries its share of tax.
 - Refund History shows who made each credit note, and the last refund says the order is refunded.

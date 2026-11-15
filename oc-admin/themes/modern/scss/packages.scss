@@ -234,9 +234,7 @@
   color: var(--osc-ink-muted);
   font-size: $font-size-label; // Label
   margin: .2rem 0 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: break-word;
 
   a {
     color: inherit;
@@ -268,7 +266,7 @@
 .osc-pkg-note {
   font-size: $font-size-label;
   margin: .35rem 0 0;
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
   white-space: normal;
 
   &.osc-pkg-note--info {

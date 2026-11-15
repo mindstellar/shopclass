@@ -208,7 +208,7 @@ if ($tab === 'profile') {
     <?php osc_admin_form_row_open(__('Name'), array('for' => 's_name')); ?>
         <?php UserForm::name_text($user); ?>
     <?php osc_admin_form_row_close(); ?>
-    <?php osc_admin_form_row_open(__('Username'), array('for' => 's_username')); ?>
+    <?php osc_admin_form_row_open('', array('for' => 's_username', 'label_html' => osc_esc_html(__('Username')) . ' <span class="osc-field-required"></span>')); ?>
         <?php UserForm::username_text($user); ?>
         <div id="available"></div>
     <?php osc_admin_form_row_close(); ?>

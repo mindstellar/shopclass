@@ -232,6 +232,7 @@ $made = drive('api_key_create', array('key_name' => 'Stock sync', 'key_kind' => 
 pin('the right password makes one key', 1, $count());
 pin('...and goes back to the screen', array(CAdminSettingsApi::url()), $made['redirects']);
 pin('...checking the CSRF token first', array('api_key_create'), $made['csrf']);
+pin('...with no flash, the callout on the next page says it', array(), $made['flashes']);
 
 $first  = drive('api');
 $token  = $shown($first['drawn']);
