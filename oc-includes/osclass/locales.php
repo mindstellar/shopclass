@@ -60,9 +60,7 @@ function osc_checkLocales()
 
         $data = OSCLocale::getInstance()->findByPrimaryKey($locale['locale_code']);
         if (!is_array($data)) {
-            $result = OSCLocale::getInstance()->insertLocaleInfo($locale);
-
-            if ($result === false) {
+            if (!\mindstellar\language\LanguageService::make()->saveLocale($locale)) {
                 return false;
             }
 

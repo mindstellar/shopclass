@@ -33,8 +33,7 @@ CREATE TABLE /*TABLE_PREFIX*/t_locale (
     b_enabled TINYINT(1) NOT NULL DEFAULT 1,
     b_enabled_bo TINYINT(1) NOT NULL DEFAULT 1,
 
-        PRIMARY KEY (pk_c_code),
-        UNIQUE KEY uk_locale_short_name (s_short_name)
+        PRIMARY KEY (pk_c_code)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET 'utf8mb4' COLLATE 'utf8mb4_general_ci';
 
 CREATE TABLE /*TABLE_PREFIX*/t_country (

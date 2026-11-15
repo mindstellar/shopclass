@@ -29,6 +29,7 @@ if (!function_exists('osc_plugins_path')) {
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hHttpCache.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/utils.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hKv.php';
+require_once dirname(__DIR__, 2) . '/oc-includes/osclass/locales.php';
 
 use mindstellar\exception\ConflictException;
 use mindstellar\language\LanguageService;
@@ -135,6 +136,41 @@ pin('...with no failed query', '', (string) file_get_contents($log));
 ini_set('error_log', (string) $logged);
 @unlink($log);
 
+harness_section('Saving the row');
+
+$logRows = static function (string $code) use ($admin): array {
+    $like = $code . ':%';
+    $stmt = $admin->prepare('SELECT s_data FROM ' . DB_TABLE_PREFIX . "t_log WHERE s_section = 'language' AND s_action = 'save_failed' AND s_data LIKE ?");
+    $stmt->bind_param('s', $like);
+    $stmt->execute();
+    $found = array_column($stmt->get_result()->fetch_all(MYSQLI_ASSOC), 's_data');
+    $stmt->close();
+
+    return $found;
+};
+check('a language whose short name another language has gets its row', $service->install(array('locale_code' => 'hh_HH') + $manifest, 'hh_HH', false));
+pin('...beside the first one', array('Dee', 'Dee'), array($row('dd_DD')['s_short_name'] ?? null, $row('hh_HH')['s_short_name'] ?? null));
+$broken = array('locale_code' => 'ii_II', 'name' => null) + $manifest;
+check('a row the database refuses fails the install', !$service->install($broken, 'ii_II', false));
+check('...and the activity log has the database error', ($logRows('ii_II')[0] ?? '') !== '' && str_contains($logRows('ii_II')[0], 's_name'));
+pin('an import whose row the database refuses says so and downloads nothing', array(array('saved' => false, 'mail' => false, 'failed' => 0), false), array(
+    $service->importPublished('ii_II', $broken, static fn () => 'x'), is_dir(osc_translations_path() . 'ii_II'),
+));
+pin('...and has no row', null, $row('ii_II'));
+
+harness_section('Uploaded package');
+
+$admin->query("DELETE FROM " . DB_TABLE_PREFIX . "t_log WHERE s_section = 'language'");
+@mkdir(osc_translations_path() . 'jj_JJ', 0755, true);
+file_put_contents(osc_translations_path() . 'jj_JJ/locale.json', json_encode(array('locale_code' => 'jj_JJ') + $manifest));
+check('an uploaded language whose short name another language has is saved', osc_checkLocales() && $row('jj_JJ') !== null);
+@mkdir(osc_translations_path() . 'kk_KK', 0755, true);
+file_put_contents(osc_translations_path() . 'kk_KK/locale.json', json_encode(array('locale_code' => 'kk_KK', 'name' => null) + $manifest));
+check('an uploaded language the database refuses is reported', !osc_checkLocales());
+check('...with the database error in the activity log', str_contains($logRows('kk_KK')[0] ?? '', 's_name'));
+osc_deleteDir(osc_translations_path() . 'jj_JJ');
+osc_deleteDir(osc_translations_path() . 'kk_KK');
+
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php');
 check(
     'the languages screen writes t_locale only through LanguageService',
@@ -170,7 +206,7 @@ pin('a code that is not a locale code is refused before any folder or fetch', ar
 osc_update_check_save('languages', array('checked' => 1, 'count' => 2, 'to_update' => array('ff_FF', 'hh_HH'), 'downloaded' => array()));
 $asked  = array();
 $import = $service->importPublished('ff_FF', array('locale_code' => 'ff_FF') + $manifest, $fetch);
-pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('mail' => false, 'failed' => 1), true), array(
+pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('saved' => true, 'mail' => false, 'failed' => 1), true), array(
     $import, in_array(osc_get_i18n_repository_url('src/translations/ff_FF/mail.json'), $asked, true),
 ));
 pin('...and takes it off the pending-update list', array(array('hh_HH'), 1), array(osc_update_check_state('languages')['to_update'], osc_update_check_state('languages')['count']));
