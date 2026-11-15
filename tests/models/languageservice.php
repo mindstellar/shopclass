@@ -51,6 +51,15 @@ if (!function_exists('osc_translations_path')) {
     }
 }
 $table = DB_TABLE_PREFIX . 't_locale';
+$clearFolders = static function (): void {
+    foreach (array('dd_DD', 'ee_EE', 'ff_FF', 'gg_GG', 'hh_HH', 'ii_II', 'jj_JJ', 'kk_KK') as $code) {
+        $path = osc_translations_path() . $code;
+        is_dir($path) ? osc_deleteDir($path) : @unlink($path);
+    }
+    @rmdir(osc_translations_path());
+};
+$clearFolders();
+register_shutdown_function($clearFolders);
 
 foreach (array('aa_AA', 'bb_BB', 'cc_CC', 'ee_EE') as $code) {
     seed_exec(
@@ -183,11 +192,20 @@ harness_section('Uploaded package');
 $admin->query("DELETE FROM " . DB_TABLE_PREFIX . "t_log WHERE s_section = 'language'");
 @mkdir(osc_translations_path() . 'jj_JJ', 0755, true);
 file_put_contents(osc_translations_path() . 'jj_JJ/locale.json', json_encode(array('locale_code' => 'jj_JJ') + $manifest));
-check('an uploaded language whose short name another language has is saved', osc_checkLocales() && $row('jj_JJ') !== null);
-@mkdir(osc_translations_path() . 'kk_KK', 0755, true);
-file_put_contents(osc_translations_path() . 'kk_KK/locale.json', json_encode(array('locale_code' => 'kk_KK', 'name' => null) + $manifest));
-check('an uploaded language the database refuses is reported', !osc_checkLocales());
-check('...with the database error in the activity log', str_contains($logRows('kk_KK')[0] ?? '', 's_name'));
+if (\mindstellar\security\Demo::active()) {
+    // Another file in the suite defines DEMO, where osc_checkLocales() imports nothing, so these checks run in a process of their own.
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' 2>&1', $standalone, $exitCode);
+    check('uploaded packages are saved or reported (run standalone, without DEMO)', $exitCode === 0);
+    foreach (preg_grep('/^FAIL/', $standalone) as $line) {
+        echo '  standalone: ', $line, "\n";
+    }
+} else {
+    check('an uploaded language whose short name another language has is saved', osc_checkLocales() && $row('jj_JJ') !== null);
+    @mkdir(osc_translations_path() . 'kk_KK', 0755, true);
+    file_put_contents(osc_translations_path() . 'kk_KK/locale.json', json_encode(array('locale_code' => 'kk_KK', 'name' => null) + $manifest));
+    check('an uploaded language the database refuses is reported', !osc_checkLocales());
+    check('...with the database error in the activity log', str_contains($logRows('kk_KK')[0] ?? '', 's_name'));
+}
 osc_deleteDir(osc_translations_path() . 'jj_JJ');
 osc_deleteDir(osc_translations_path() . 'kk_KK');
 
@@ -244,8 +262,7 @@ osc_deleteDir(osc_translations_path() . 'ff_FF');
 $asked = array();
 touch(osc_translations_path() . 'gg_GG');
 pin('a folder that cannot be made is null, with nothing fetched', array(null, array()), array(LanguageService::downloadFiles('gg_GG', $fetch), $asked));
-@unlink(osc_translations_path() . 'gg_GG');
-@rmdir(osc_translations_path());
+$clearFolders();
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());
