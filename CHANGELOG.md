@@ -2,6 +2,16 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.19
+
+### Fixed
+- A language that shares its short name with another, such as English (Australia), can be installed again.
+- A language that cannot be saved now shows an error on import and upload, with the reason in the activity log.
+- The languages table no longer says "filtered from 9 total results".
+- Language e-mail imports can no longer overwrite a static page.
+- The language import list is in alphabetical order.
+- The Edit language screen has a Save changes button again.
+
 ## Shopclass 7.0.18
 
 ### Fixed
