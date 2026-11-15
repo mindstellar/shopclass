@@ -189,6 +189,10 @@ class CAdminLanguages extends AdminSecBaseModel
 
             if (isset($published[$languageToImport])) {
                 $result = $this->languages->importPublished($languageToImport, $published[$languageToImport]);
+                if (!$result['saved']) {
+                    osc_add_flash_error_message(_m('The language could not be added.'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+                }
                 if (!$result['mail']) {
                     osc_add_flash_error_message(_m('The email templates could not be imported.'), 'admin');
                 }

@@ -104,13 +104,17 @@ final class LanguageService
      * @param array<string,mixed>                     $manifest its entry in published()
      * @param (callable(string): (string|false))|null $fetch    reads a URL; osc_file_get_contents() when null
      *
-     * @return array{mail:bool,failed:?int,kept:array<int,string>} whether the e-mail templates were imported,
+     * @return array{saved:bool,mail:bool,failed:?int,kept:array<int,string>} whether the language's row was
+     *         saved (nothing else is done when it was not), whether the e-mail templates were imported,
      *         downloadFiles()'s answer, and the e-mails that kept the admin's changes
      */
     public function importPublished(string $code, array $manifest, ?callable $fetch = null): array
     {
+        if (!$this->saveLocale($manifest, $code)) {
+            return array('saved' => false, 'mail' => false, 'failed' => 0, 'kept' => array());
+        }
         $fetch ??= 'osc_file_get_contents';
-        $mails   = $this->install($manifest, $code, $fetch(osc_get_i18n_repository_url('src/translations/' . $code . '/mail.json')));
+        $mails   = $this->importMails($fetch(osc_get_i18n_repository_url('src/translations/' . $code . '/mail.json')));
         $failed  = self::downloadFiles($code, $fetch);
         if ($failed !== null) {
             $pending = osc_update_check_state('languages');
@@ -122,7 +126,7 @@ final class LanguageService
             }
         }
 
-        return array('mail' => $mails !== null, 'failed' => $failed, 'kept' => $mails['kept'] ?? array());
+        return array('saved' => true, 'mail' => $mails !== null, 'failed' => $failed, 'kept' => $mails['kept'] ?? array());
     }
 
     /**
@@ -200,12 +204,38 @@ final class LanguageService
      * @param string|false        $mailJson the language's mail.json, or false when it was not fetched
      *
      * @return array{written:array<int,string>,kept:array<int,string>}|null the e-mails written and the
-     *         ones that kept the admin's changes; null when the e-mail templates could not be imported
+     *         ones that kept the admin's changes; null when the language's row could not be saved or its
+     *         e-mail templates could not be imported
      */
     public function install(array $manifest, string $code, $mailJson): ?array
     {
-        $this->locales->insertLocaleInfo($manifest, $code);
+        return $this->saveLocale($manifest, $code) ? $this->importMails($mailJson) : null;
+    }
 
+    /**
+     * Add or refresh a language's t_locale row. A failed save goes to the activity log with the
+     * database error, as the admin is only told that it failed.
+     *
+     * @param array<string,mixed> $manifest the language's locale.json, or its entry in published()
+     */
+    public function saveLocale(array $manifest, string $code = ''): bool
+    {
+        if ($this->locales->insertLocaleInfo($manifest, $code) !== false) {
+            return true;
+        }
+        $code = $code !== '' ? $code : (string) ($manifest['locale_code'] ?? '');
+        \Log::getInstance()->insertLog('language', 'save_failed', 0, $code . ': ' . $this->locales->getErrorDesc(), 'admin', 0);
+
+        return false;
+    }
+
+    /**
+     * @param string|false $mailJson the language's mail.json, or false when there is none
+     *
+     * @return array{written:array<int,string>,kept:array<int,string>}|null
+     */
+    private function importMails($mailJson): ?array
+    {
         return $mailJson ? $this->pages->importEmailTemplates($mailJson) : array('written' => array(), 'kept' => array());
     }
 }
