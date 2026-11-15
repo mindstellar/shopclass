@@ -64,6 +64,12 @@ msgstr ""
 msgid "%d credits removed"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "%d e-mail kept your changes"
+msgid_plural "%d e-mails kept your changes"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/classes/controller/admin/CAdminTools.php
 msgid "%d job ran."
 msgid_plural "%d jobs ran."

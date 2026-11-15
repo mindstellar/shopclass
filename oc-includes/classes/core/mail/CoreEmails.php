@@ -205,38 +205,13 @@ final class CoreEmails
             return array('s_title' => (string) $row['s_title'], 's_text' => (string) ($row['s_text'] ?? ''));
         }
 
-        $bundled = self::bundledTemplates()[$internalName] ?? null;
+        $bundled = Page::bundledEmailTemplates()[$internalName] ?? null;
         if ($bundled !== null) {
             return $bundled;
         }
         error_log('E-mail template "' . $internalName . '" has no text; mail not sent.');
 
         return null;
-    }
-
-    /**
-     * The English templates shipped in installer/mail.json, read once per request.
-     *
-     * @return array<string,array{s_title:string,s_text:string}>
-     */
-    private static function bundledTemplates(): array
-    {
-        static $bundled = null;
-        if ($bundled === null) {
-            $bundled = array();
-            $json    = is_readable(__DIR__ . '/../../../osclass/installer/mail.json')
-                ? json_decode((string) file_get_contents(__DIR__ . '/../../../osclass/installer/mail.json'), true) : null;
-            foreach (is_array($json['template'] ?? null) ? $json['template'] : array() as $row) {
-                if (isset($row['s_internal_name'], $row['s_title'])) {
-                    $bundled[(string) $row['s_internal_name']] = array(
-                        's_title' => (string) $row['s_title'],
-                        's_text'  => (string) ($row['s_description'] ?? ''),
-                    );
-                }
-            }
-        }
-
-        return $bundled;
     }
 
     /**

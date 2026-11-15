@@ -13,6 +13,7 @@
  */
 
 use mindstellar\database\Db;
+use mindstellar\model\KeyValue;
 
 /**
  * Page DAO
@@ -20,6 +21,9 @@ use mindstellar\database\Db;
 class Page extends DAO
 {
     use \mindstellar\base\SharedInstance;
+
+    /** t_key_value group holding the fingerprint of the last imported text of each e-mail, per locale. */
+    public const EMAIL_HASH_GROUP = 'email_template_hash';
 
     protected $cacheGroup = 'page';
 
@@ -725,14 +729,18 @@ class Page extends DAO
     }
 
     /**
-     * Public function to import email templates from json file
+     * Import e-mail templates from a mail.json file, keeping any text the admin edited since the
+     * last import. Without a stored fingerprint only the English text core shipped is replaced.
      *
-     * @param string $json
+     * @param string                 $json
+     * @param array<int,string>|null $kept filled with the internal names of the e-mails kept
+     * @param-out array<int,string>  $kept
      *
      * @return bool False when the JSON is unusable; true once every template was attempted
      */
-    public function importEmailJsonTemplates($json)
+    public function importEmailJsonTemplates($json, ?array &$kept = null)
     {
+        $kept = array();
         $json = json_decode($json, true);
         // check if the json is valid
         if (!$json) {
@@ -752,21 +760,135 @@ class Page extends DAO
 
         // A template names its page; the id is only a fallback, since a page added by a migration
         // can sit at another id on an upgraded site. A page this version no longer has is skipped.
-        $rows   = Db::table($this->getTableName())->select('pk_i_id', 's_internal_name')->get();
-        $byName = array_column($rows, 'pk_i_id', 's_internal_name');
-        $ids    = array_map('strval', array_column($rows, 'pk_i_id'));
+        $rows    = Db::table($this->getTableName())->select('pk_i_id', 's_internal_name', 'b_indelible')->get();
+        $byName  = array_column($rows, 'pk_i_id', 's_internal_name');
+        $byId    = array_column($rows, null, 'pk_i_id');
+        $current = array_column(
+            Db::table($this->getDescriptionTableName())
+                ->select('fk_i_pages_id', 's_title', 's_text')
+                ->where('fk_c_locale_code', $language)
+                ->get(),
+            null,
+            'fk_i_pages_id'
+        );
+        $shipped   = self::bundledEmailTemplates();
+        $keptNames = array();
         foreach ($templates as $template) {
             if (!empty($template['s_internal_name'])) {
                 $id = $byName[$template['s_internal_name']] ?? null;
             } else {
-                $id = in_array((string) $template['fk_i_page_id'], $ids, true) ? $template['fk_i_page_id'] : null;
+                $page = $byId[$template['fk_i_page_id'] ?? ''] ?? null;
+                $id   = $page !== null && self::isEmailPage($page) ? $page['pk_i_id'] : null;
             }
             if ($id === null) {
                 continue;
             }
-            $this->updateDescription((int) $id, $language, $template['s_title'], $template['s_description']);
+            $id       = (int) $id;
+            $name     = (string) $byId[$id]['s_internal_name'];
+            $title    = (string) ($template['s_title'] ?? '');
+            $text     = (string) ($template['s_description'] ?? '');
+            $newHash  = self::emailTextHash($title, $text);
+            $recorded = $this->recordedEmailHash($id, $language);
+            if (isset($current[$id])) {
+                $nowHash = self::emailTextHash((string) $current[$id]['s_title'], (string) $current[$id]['s_text']);
+                if ($nowHash !== $newHash) {
+                    $untouched = $recorded !== null
+                        ? $recorded === $nowHash
+                        : isset($shipped[$name]) && self::emailTextHash($shipped[$name]['s_title'], $shipped[$name]['s_text']) === $nowHash;
+                    if (!$untouched) {
+                        $keptNames[$name] = $name;
+                        continue;
+                    }
+                    if ($this->updateDescription($id, $language, $title, $text) === false) {
+                        continue;
+                    }
+                }
+            } elseif (!$this->insertDescription($id, $language, $title, $text)) {
+                continue;
+            }
+            $current[$id] = array('s_title' => $title, 's_text' => $text);
+            if ($recorded !== $newHash) {
+                $this->recordEmailHash($id, $language, $title, $text);
+            }
         }
+        $this->cacheChanged();
+        $kept = array_values($keptNames);
+
         return true;
+    }
+
+    /**
+     * Store the fingerprint of an e-mail text core wrote, so a later import can tell it from
+     * an admin's edit. Call it wherever core installs an e-mail text outside the import.
+     */
+    public function recordEmailHash(int $id, string $locale, string $title, string $text): void
+    {
+        try {
+            (new KeyValue())->set(self::EMAIL_HASH_GROUP, $id . ':' . $locale, json_encode(self::emailTextHash($title, $text)));
+        } catch (\mindstellar\database\DbException | \InvalidArgumentException $e) {
+            // Without a fingerprint the next import keeps the text, which is the safe side.
+        }
+    }
+
+    /**
+     * The fingerprint stored for a page's text in a locale, or null when there is none.
+     */
+    private function recordedEmailHash(int $id, string $locale): ?string
+    {
+        try {
+            $row = (new KeyValue())->get(self::EMAIL_HASH_GROUP, $id . ':' . $locale);
+        } catch (\mindstellar\database\DbException | \InvalidArgumentException $e) {
+            return null;
+        }
+        $hash = $row === null ? null : json_decode((string) $row['value'], true);
+
+        return is_string($hash) ? $hash : null;
+    }
+
+    /**
+     * Fingerprint of an e-mail's title and text.
+     */
+    public static function emailTextHash(string $title, string $text): string
+    {
+        return hash('sha256', $title . "\0" . $text);
+    }
+
+    /**
+     * Whether a page row is a core e-mail template: a protected page named email_* or alert_email_*.
+     *
+     * @param array<string,mixed> $page
+     */
+    private static function isEmailPage(array $page): bool
+    {
+        $name = (string) ($page['s_internal_name'] ?? '');
+
+        return (int) ($page['b_indelible'] ?? 0) === 1
+            && (str_starts_with($name, 'email_') || str_starts_with($name, 'alert_email_'));
+    }
+
+    /**
+     * The English e-mail templates shipped in installer/mail.json, by internal name, read once per request.
+     *
+     * @return array<string,array{s_title:string,s_text:string}>
+     */
+    public static function bundledEmailTemplates(): array
+    {
+        static $bundled = null;
+        if ($bundled === null) {
+            $bundled = array();
+            $file    = __DIR__ . '/../../installer/mail.json';
+            $json    = is_readable($file) ? json_decode((string) file_get_contents($file), true) : null;
+            foreach (is_array($json['template'] ?? null) ? $json['template'] : array() as $row) {
+                if (isset($row['s_internal_name'], $row['s_title'])) {
+                    $bundled[(string) $row['s_internal_name']] = array(
+                        's_title' => (string) $row['s_title'],
+                        's_text'  => (string) ($row['s_description'] ?? ''),
+                    );
+                }
+            }
+        }
+
+        return $bundled;
     }
 
 }

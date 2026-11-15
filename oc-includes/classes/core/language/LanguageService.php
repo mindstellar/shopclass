@@ -104,12 +104,13 @@ final class LanguageService
      * @param array<string,mixed>                     $manifest its entry in published()
      * @param (callable(string): (string|false))|null $fetch    reads a URL; osc_file_get_contents() when null
      *
-     * @return array{mail:bool,failed:?int} whether the e-mail templates were imported, and downloadFiles()'s answer
+     * @return array{mail:bool,failed:?int,kept:int} whether the e-mail templates were imported, downloadFiles()'s answer,
+     *         and how many e-mails kept the admin's changes
      */
     public function importPublished(string $code, array $manifest, ?callable $fetch = null): array
     {
         $fetch ??= 'osc_file_get_contents';
-        $mail    = $this->install($manifest, $code, $fetch(osc_get_i18n_repository_url('src/translations/' . $code . '/mail.json')));
+        $mail    = $this->install($manifest, $code, $fetch(osc_get_i18n_repository_url('src/translations/' . $code . '/mail.json')), $kept);
         $failed  = self::downloadFiles($code, $fetch);
         if ($failed !== null) {
             $pending = osc_update_check_state('languages');
@@ -121,7 +122,7 @@ final class LanguageService
             }
         }
 
-        return array('mail' => $mail, 'failed' => $failed);
+        return array('mail' => $mail, 'failed' => $failed, 'kept' => count($kept ?? array()));
     }
 
     /**
@@ -195,15 +196,18 @@ final class LanguageService
     /**
      * Add or refresh a language from its manifest entry, with its e-mail templates.
      *
-     * @param array<string,mixed> $manifest one entry of the translation repository's list
-     * @param string|false        $mailJson the language's mail.json, or false when it was not fetched
+     * @param array<string,mixed>    $manifest one entry of the translation repository's list
+     * @param string|false           $mailJson the language's mail.json, or false when it was not fetched
+     * @param array<int,string>|null $kept     filled with the e-mails that kept the admin's changes
+     * @param-out array<int,string>  $kept
      *
      * @return bool false when the e-mail templates could not be imported
      */
-    public function install(array $manifest, string $code, $mailJson): bool
+    public function install(array $manifest, string $code, $mailJson, ?array &$kept = null): bool
     {
+        $kept = array();
         $this->locales->insertLocaleInfo($manifest, $code);
 
-        return !$mailJson || $this->pages->importEmailJsonTemplates($mailJson);
+        return !$mailJson || $this->pages->importEmailJsonTemplates($mailJson, $kept);
     }
 }
