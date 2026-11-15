@@ -193,6 +193,13 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Faster shop search by price, rare options and `on_sale` (migration 0093).
 
 ### Fixed
+- `GET` and `PATCH /api/v1/admin/settings` no longer fail with a server error.
+- A part refund of a unit with tax in its price refunds that price, not a cent more.
+- The place picker suggests place names in the language picked on the site.
+- Tracking added with **Edit tracking** and no link gets the carrier's tracking link, as at shipping.
+- Order e-mails sent from the admin use the theme's friendly order link when friendly URLs are on; a theme gives it as `order_url_friendly` in shopclass.json.
+- The account Addresses page has a friendly URL, `user/addresses`.
+- **Billing → Orders** shows the buyer's name kept on the order, marked deleted, when the account is gone.
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
 - Refunds no longer put shipped units back in stock, and an amount-only credit note carries its share of tax.
 - Refund History shows who made each credit note, and the last refund says the order is refunded.

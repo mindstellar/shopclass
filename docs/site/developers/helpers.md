@@ -119,7 +119,7 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_notices()` | The notices of the signed-in admin. |
 | `osc_clear_admin_notice(string $id)` | Remove a notice for every admin. |
 
-### hAdminUi (55)
+### hAdminUi (54)
 
 `oc-includes/osclass/helpers/hAdminUi.php`
 
@@ -131,7 +131,6 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_admin_body_open(array $opts = array())` | Open a screen's body: blocks inside it are spaced by gap. End it with osc_admin_body_close(). |
 | `osc_admin_body_rail(array $opts = array())` | In a split body: end the main column and start the rail. Prints nothing in any other body. |
 | `osc_admin_callout(string $tone, string $text, array $opts = array())` | A warning or note box. $text is escaped unless 'html' is true. |
-| `osc_admin_captcha_settings_path()` | The menu path to the Captcha settings, built from the menu's own names. |
 | `osc_admin_category_picker(array $opts = array())` | The category chooser: a control showing the chosen path, and a searchable list of the whole tree behind it. |
 | `osc_admin_checkbox(array $opts)` | A checkbox with its label on one line and its hint underneath. |
 | `osc_admin_count(int $count, string $id = '', string $title = '')` | A count as a small badge beside a tab, filter or button label: "Pending" then 3, rather than "Pending (3)". Returns the markup, led by a space so the label and number never run together; a zero is drawn muted. |
@@ -194,7 +193,7 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_api_register_field(string $object, string $slug, string $name, array $schema, array $views = ['public'])` | Declare a field a plugin adds to a listing, user or category, so the OpenAPI document shows it and `?fields=ext.<slug>.<name>` selects it. The plugin sends the value under `ext.<slug>.<name>` from the `api_listing`, `api_user` or `api_category` filter. A public field reaches everyone, an owner field the owner and admins, an admin field admins only. |
 | `osc_api_register_route(string $method, string $path, array $spec)` | Add an API endpoint, through the `api_routes` filter. The path is below /api/v1/ and must start with `ext/<plugin-slug>/`; other paths are refused when the table is built, except a route with both `deprecated` and `sunset`, which may keep a plugin's old path until its sunset day. A second route with the same method and path is refused and logged. `plugin` defaults to the plugin or theme whose code makes the call. |
 | `osc_api_register_schema(string $slug, string $name, array $schema)` | Add a component schema for a plugin's routes, through the `api_schemas` filter. It is named `Ext<Slug><Name>` (`acme-ratings`, `Rating`: `ExtAcmeRatingsRating`), so it never clashes with core's components, which are not part of the plugin contract. A second, different schema under the same name is refused and logged; the first one stays. |
-| `osc_api_session_meta(?\mindstellar\apikey\IssuedToken $token = null)` | A `<meta name="shopclass-api">` tag for the page head. Its content is JSON: the API's address (`url`), the page token (`token`, a guest's when nobody is signed in), the `header` to send it in and when it expires (`expires_at`). It is printed while the API is off too. osc_head() prints it; a page gets it once, so a second call returns ''. |
+| `osc_api_session_meta(?\mindstellar\apikey\IssuedToken $token = null)` | A `<meta name="shopclass-api">` tag for the page head. Its content is JSON: the API's address (`url`), the page token (`token`, a guest's when nobody is signed in), the `header` to send it in, when it expires (`expires_at`) and the page's language (`locale`) when the API serves it. It is printed while the API is off too. osc_head() prints it; a page gets it once, so a second call returns ''. |
 | `osc_api_session_token()` | The page token theme JavaScript sends as the X-Shopclass-Token header to call the API from this site's own pages: the signed-in user's, or a guest's that reads public data only. It lives two hours. It works while the API is off too. |
 | `osc_api_url(string $path = '', ?string $version = null)` | The absolute URL of an API path, with or without friendly URLs. |
 | `osc_is_api_request()` | Whether this request is for the REST API: `?page=api`, or the /api/ path while friendly URLs are on. It works before the router has run. |
@@ -245,7 +244,7 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_billing_order_number(int $orderId, ?string $prefix = null)` | An order's number as buyers see it: "#1042", or "#KC-1042" with a prefix. |
 | `osc_billing_order_prefix()` | Text printed before an order's id in its number, e.g. "KC-". Empty by default. |
 | `osc_billing_order_return_url(int $orderId)` | Where a payment gateway sends the buyer back after paying for an order. The orders list by default; a theme with its own order page returns that page through the filter. |
-| `osc_billing_order_url(int $orderId)` | The buyer's page for one order, as order e-mails link it. The `order_url` in the active theme's shopclass.json when it has one, else the order on the orders list; a theme can still return its own page through the filter. |
+| `osc_billing_order_url(int $orderId)` | The buyer's page for one order, as order e-mails link it. The `order_url` in the active theme's shopclass.json when it has one (its `order_url_friendly` when friendly URLs are on), else the order on the orders list; a theme can still return its own page through the filter. |
 | `osc_billing_orders_url()` | The buyer's own past orders. |
 | `osc_billing_packages()` | The packages a buyer can choose from at checkout. |
 | `osc_billing_pay_at_post()` | Whether a listing over the free limit is held until its slot is paid, instead of refused. Needs credits (billing on, not a shop) and slot sales on; the billing_pay_at_post preference defaults to on. Set on the admin Billing &gt; Pricing screen. |
@@ -1271,12 +1270,13 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_set_alert_private_key()` | Mint the install's persistent alert private key if it has none yet. |
 | `osc_verify_password($password, $hash)` | Verify an user's password |
 
-### hSettings (23)
+### hSettings (24)
 
 `oc-includes/osclass/helpers/hSettings.php`
 
 | Helper | What it does |
 |---|---|
+| `osc_admin_captcha_settings_path()` | The menu path to the Captcha settings, built from the menu's own names. |
 | `osc_admin_form($id)` | A fluent builder over the same spec osc_register_settings_page() takes. |
 | `osc_category_mode($value, int $categoryId)` | The mode a category_modes value gives $categoryId: its own, or the nearest parent's. '' when it is off or nothing above it is set. |
 | `osc_category_modes_parse($value)` | A category_modes value as category id =&gt; mode: the stored JSON or an array of the same shape. Anything that is not a positive id with a mode-shaped value is dropped. |

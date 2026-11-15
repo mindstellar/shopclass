@@ -1019,6 +1019,7 @@ msgstr ""
 msgid "%s+"
 msgstr ""
 
+#: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 msgid "(deleted)"
 msgstr ""
@@ -3574,7 +3575,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/spamNbots.php
 #: oc-includes/classes/admin/form/SpamSettingsScreen.php
 #: oc-includes/osclass/classes/AdminMenu.php
-#: oc-includes/osclass/helpers/hAdminUi.php
+#: oc-includes/osclass/helpers/hSettings.php
 msgid "Captcha"
 msgstr ""
 
@@ -13855,7 +13856,7 @@ msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 #: oc-includes/osclass/classes/AdminMenu.php
-#: oc-includes/osclass/helpers/hAdminUi.php
+#: oc-includes/osclass/helpers/hSettings.php
 msgid "Security"
 msgstr ""
 
@@ -14335,7 +14336,7 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminMedia.php
 #: oc-includes/osclass/classes/datatables/PluginsDataTable.php
 #: oc-includes/osclass/gui/admin/settings-page.php
-#: oc-includes/osclass/helpers/hAdminUi.php
+#: oc-includes/osclass/helpers/hSettings.php
 msgid "Settings"
 msgstr ""
 
