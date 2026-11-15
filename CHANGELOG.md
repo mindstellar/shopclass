@@ -193,6 +193,11 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Faster shop search by price, rare options and `on_sale` (migration 0093).
 
 ### Fixed
+- A language that shares its short name with another, such as English (Australia), can be installed again.
+- A language that cannot be saved now shows an error on import and upload, with the reason in the activity log.
+- The languages table no longer says "filtered from 9 total results".
+- The language import list is in alphabetical order.
+- The Edit language screen has a Save changes button again.
 - Installing or updating a language keeps e-mail templates the admin edited, names them in a notice, and only writes to e-mail pages.
 - `GET` and `PATCH /api/v1/admin/settings` no longer fail with a server error.
 - A part refund of a unit with tax in its price refunds that price, not a cent more.
