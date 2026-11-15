@@ -406,4 +406,26 @@ MailsRecorder::$fail = false;
 $mails();
 $events->remove(MailSent::class, $listener);
 
+harness_section('order link from the theme');
+// The active theme is '' here, so THEMES_PATH itself is the theme folder.
+$theme = sys_get_temp_dir() . '/osc-mails-theme-' . getmypid() . '/';
+@mkdir($theme, 0777, true);
+file_put_contents($theme . 'shopclass.json', json_encode(['order_url' => 'index.php?page=custom&route=order&id={id}', 'order_url_friendly' => 'my-orders/{id}']));
+defined('THEMES_PATH') || define('THEMES_PATH', $theme);
+$linked = static function (bool $rewrite) use ($make, $mails, $tom): array {
+    Preference::getInstance()->set('rewriteEnabled', $rewrite ? '1' : '0');
+    $order = $make('offline');
+    $mails();
+    CoreServices::dispatcher()->dispatch(new OrderPlaced($order->getId(), $tom));
+    $toBuyer = array_values(array_filter($mails(), static fn (array $m): bool => $m['to'] === 'tom@example.test'));
+
+    return [$order->getId(), (string) ($toBuyer[0]['body'] ?? '')];
+};
+[$id, $body] = $linked(true);
+check('with friendly URLs on, the mail links the theme\'s friendly order page', str_contains($body, 'my-orders/' . $id . '"'), $body);
+[$id, $body] = $linked(false);
+check('with them off, its plain pattern', str_contains($body, osc_esc_html('index.php?page=custom&route=order&id=' . $id) . '"') && !str_contains($body, 'my-orders/'), $body);
+@unlink($theme . 'shopclass.json');
+@rmdir($theme);
+
 exit(harness_result());

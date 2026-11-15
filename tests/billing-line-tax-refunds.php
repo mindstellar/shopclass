@@ -252,8 +252,8 @@ pin('its base and tax add up to the price', $m(18), ($kl['tax']['base'] ?? 0) + 
 
 harness_section('refunds never pass the paid line total, whatever the rounding');
 $bad = [];
-foreach ([[1800], [1900], [700], [2100], [900, 900]] as $rates) {
-    foreach ([18, 0.99, 11.9, 3.33, 7.77] as $unit) {
+foreach ([[1800], [1900], [700], [2100], [900, 900], [5000, 5000]] as $rates) {
+    foreach ([18, 0.99, 11.9, 3.33, 7.77, 0.01] as $unit) {
         foreach ([2, 3, 7] as $qty) {
             foreach ([true, false] as $incl) {
                 $sum   = array_sum($rates);
@@ -286,6 +286,9 @@ foreach ([[1800], [1900], [700], [2100], [900, 900]] as $rates) {
                     foreach ($note?->data['lines'] ?? [] as $l) {
                         if ($l['kind'] === 'adjustment' || ($l['kind'] === 'item' && $incl && $l['tax']['base'] + $l['tax']['amount'] !== $l['amount'])) {
                             $bad[] = $case . ': ' . $l['kind'] . ' line off';
+                        }
+                        if ($l['kind'] === 'item' && ($l['tax']['base'] ?? 0) < 0) {
+                            $bad[] = $case . ': base below 0';
                         }
                     }
                     if ($total > $paid) {

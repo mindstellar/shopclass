@@ -651,6 +651,15 @@ final class Invoices
                 // The share of the price paid, so a unit refunds its price; the base is what the tax leaves.
                 $gross   = $base + array_sum(array_map(static fn ($p): int => (int) ($p['amount'] ?? 0), (array) ($tax['parts'] ?? array())));
                 $baseNow = $part($gross, $now) - $part($gross, $was) - $taxNow;
+                // Tax parts that each rounded up can pass the price share: take the cents back from the tax.
+                for ($i = count($parts) - 1; $baseNow < 0 && $i >= 0; $i--) {
+                    $cut                 = min(-$baseNow, $parts[$i]['amount']);
+                    $parts[$i]['amount'] -= $cut;
+                    $left[$parts[$i]['line_id']] += $cut;
+                    $out['tax'][$parts[$i]['line_id']] -= $cut;
+                    $taxNow  -= $cut;
+                    $baseNow += $cut;
+                }
             }
             $out['value'][$id] = $baseNow + $taxNow;
             if ($parts !== array()) {
