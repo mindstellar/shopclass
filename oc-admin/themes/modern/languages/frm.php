@@ -78,6 +78,9 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         'checked' => ($aLocale['b_enabled_bo'] ?? 0) == 1,
                     )); ?>
             <?php osc_admin_form_row_close(); ?>
-        <?php osc_admin_form_close(); ?>
+        <?php osc_admin_form_close(array(
+            array('label' => __('Cancel'), 'url' => osc_admin_base_url(true) . '?page=languages', 'variant' => 'dim'),
+            array('label' => __('Save changes'), 'type' => 'submit', 'variant' => 'primary'),
+        )); ?>
     </div>
 <?php osc_current_admin_theme_path('parts/footer.php'); ?>
