@@ -729,35 +729,36 @@ class Page extends DAO
     }
 
     /**
+     * Import e-mail templates from a mail.json file; false when the JSON is unusable.
+     *
+     * @param string $json
+     *
+     * @return bool
+     * @see importEmailTemplates() for the names written and kept
+     */
+    public function importEmailJsonTemplates($json)
+    {
+        return $this->importEmailTemplates($json) !== null;
+    }
+
+    /**
      * Import e-mail templates from a mail.json file, keeping any text the admin edited since the
      * last import. Without a stored fingerprint only the English text core shipped is replaced.
      *
-     * @param string                 $json
-     * @param array<int,string>|null $kept filled with the internal names of the e-mails kept
-     * @param-out array<int,string>  $kept
+     * @param string $json
      *
-     * @return bool False when the JSON is unusable; true once every template was attempted
+     * @return array{written:array<int,string>,kept:array<int,string>}|null The internal names of the
+     *         e-mails written and of those kept; null when the JSON is unusable
+     * @throws \mindstellar\database\DbException on a query failure
      */
-    public function importEmailJsonTemplates($json, ?array &$kept = null)
+    public function importEmailTemplates($json): ?array
     {
-        $kept = array();
         $json = json_decode($json, true);
-        // check if the json is valid
-        if (!$json) {
-            return false;
-        }
-        // check if json has language code and templates array
-        if (!isset($json['language'], $json['template'])) {
-            return false;
+        if (!$json || !isset($json['language'], $json['template']) || !$json['template']) {
+            return null;
         }
 
         $language = $json['language'];
-        $templates = $json['template'];
-        // check if templates array is not empty
-        if (!$templates) {
-            return false;
-        }
-
         // A template names its page; the id is only a fallback, since a page added by a migration
         // can sit at another id on an upgraded site. A page this version no longer has is skipped.
         $rows    = Db::table($this->getTableName())->select('pk_i_id', 's_internal_name', 'b_indelible')->get();
@@ -771,9 +772,9 @@ class Page extends DAO
             null,
             'fk_i_pages_id'
         );
-        $shipped   = self::bundledEmailTemplates();
-        $keptNames = array();
-        foreach ($templates as $template) {
+        $written = array();
+        $kept    = array();
+        foreach ($json['template'] as $template) {
             if (!empty($template['s_internal_name'])) {
                 $id = $byName[$template['s_internal_name']] ?? null;
             } else {
@@ -792,11 +793,8 @@ class Page extends DAO
             if (isset($current[$id])) {
                 $nowHash = self::emailTextHash((string) $current[$id]['s_title'], (string) $current[$id]['s_text']);
                 if ($nowHash !== $newHash) {
-                    $untouched = $recorded !== null
-                        ? $recorded === $nowHash
-                        : isset($shipped[$name]) && self::emailTextHash($shipped[$name]['s_title'], $shipped[$name]['s_text']) === $nowHash;
-                    if (!$untouched) {
-                        $keptNames[$name] = $name;
+                    if (!$this->isUntouched($name, $recorded, $nowHash)) {
+                        $kept[$name] = $name;
                         continue;
                     }
                     if ($this->updateDescription($id, $language, $title, $text) === false) {
@@ -806,28 +804,38 @@ class Page extends DAO
             } elseif (!$this->insertDescription($id, $language, $title, $text)) {
                 continue;
             }
-            $current[$id] = array('s_title' => $title, 's_text' => $text);
+            $written[$name] = $name;
+            $current[$id]   = array('s_title' => $title, 's_text' => $text);
             if ($recorded !== $newHash) {
-                $this->recordEmailHash($id, $language, $title, $text);
+                $this->recordEmailHash($id, $language, $newHash);
             }
         }
         $this->cacheChanged();
-        $kept = array_values($keptNames);
 
-        return true;
+        return array('written' => array_values($written), 'kept' => array_values($kept));
     }
 
     /**
-     * Store the fingerprint of an e-mail text core wrote, so a later import can tell it from
-     * an admin's edit. Call it wherever core installs an e-mail text outside the import.
+     * Whether the stored text is still the one core wrote: the recorded fingerprint, or, with none,
+     * the English text core shipped.
      */
-    public function recordEmailHash(int $id, string $locale, string $title, string $text): void
+    private function isUntouched(string $name, ?string $recorded, string $nowHash): bool
     {
-        try {
-            (new KeyValue())->set(self::EMAIL_HASH_GROUP, $id . ':' . $locale, json_encode(self::emailTextHash($title, $text)));
-        } catch (\mindstellar\database\DbException | \InvalidArgumentException $e) {
-            // Without a fingerprint the next import keeps the text, which is the safe side.
+        if ($recorded !== null) {
+            return $recorded === $nowHash;
         }
+        $shipped = self::bundledEmailTemplates()[$name] ?? null;
+
+        return $shipped !== null && self::emailTextHash($shipped['s_title'], $shipped['s_text']) === $nowHash;
+    }
+
+    /**
+     * Store the fingerprint of an e-mail text core wrote, so a later import can tell it from an
+     * admin's edit. A query failure is thrown rather than hidden, so a lost fingerprint is never silent.
+     */
+    private function recordEmailHash(int $id, string $locale, string $hash): void
+    {
+        (new KeyValue())->set(self::EMAIL_HASH_GROUP, $id . ':' . $locale, json_encode($hash));
     }
 
     /**
@@ -835,18 +843,14 @@ class Page extends DAO
      */
     private function recordedEmailHash(int $id, string $locale): ?string
     {
-        try {
-            $row = (new KeyValue())->get(self::EMAIL_HASH_GROUP, $id . ':' . $locale);
-        } catch (\mindstellar\database\DbException | \InvalidArgumentException $e) {
-            return null;
-        }
+        $row  = (new KeyValue())->get(self::EMAIL_HASH_GROUP, $id . ':' . $locale);
         $hash = $row === null ? null : json_decode((string) $row['value'], true);
 
         return is_string($hash) ? $hash : null;
     }
 
     /**
-     * Fingerprint of an e-mail's title and text.
+     * Fingerprint of an e-mail's title and text. Migration 0082 builds the same hash inline.
      */
     public static function emailTextHash(string $title, string $text): string
     {

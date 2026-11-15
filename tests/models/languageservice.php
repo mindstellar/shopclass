@@ -29,6 +29,8 @@ if (!function_exists('osc_plugins_path')) {
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hHttpCache.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/utils.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hKv.php';
+require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hSanitize.php';
+require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hMessages.php';
 
 use mindstellar\exception\ConflictException;
 use mindstellar\language\LanguageService;
@@ -36,6 +38,28 @@ use mindstellar\language\LocaleStore;
 
 if (!function_exists('_m')) {
     function _m($text)
+    {
+        return $text;
+    }
+}
+
+if (!defined('OSC_DEBUG')) {
+    define('OSC_DEBUG', false);
+}
+if (!function_exists('osc_admin_base_url')) {
+    function osc_admin_base_url($withIndex = false)
+    {
+        return 'http://admin.test/oc-admin/' . ($withIndex ? 'index.php' : '');
+    }
+}
+if (!function_exists('_mn')) {
+    function _mn($single, $plural, $count)
+    {
+        return $count === 1 ? $single : $plural;
+    }
+}
+if (!function_exists('__')) {
+    function __($text)
     {
         return $text;
     }
@@ -184,16 +208,16 @@ $manifest = array(
     'version' => '2.0', 'direction' => 'ltr', 'author_name' => 'M', 'author_url' => 'https://example.test',
     'currency_format' => '{NUMBER}', 'date_format' => 'd/m/Y',
 );
-check('an install with no mail.json succeeds', $service->install($manifest, 'dd_DD', false));
+check('an install with no mail.json succeeds', $service->install($manifest, 'dd_DD', false) !== null);
 pin('...and adds the row, on for oc-admin only', array('0', '1'), array((string) $row('dd_DD')['b_enabled'], (string) $row('dd_DD')['b_enabled_bo']));
-check('an unreadable mail.json is reported', !$service->install($manifest, 'dd_DD', 'not json'));
+check('an unreadable mail.json is reported', $service->install($manifest, 'dd_DD', 'not json') === null);
 $logged  = ini_get('error_log');
 $log     = tempnam(sys_get_temp_dir(), 'osc-mail-');
 ini_set('error_log', $log);
 $mail = json_encode(array('language' => 'dd_DD', 'template' => array(
     array('fk_i_page_id' => 999999, 's_title' => 'Gone', 's_description' => 'A page this version no longer has'),
 )));
-check('a template for a page that does not exist is skipped', $service->install($manifest, 'dd_DD', $mail));
+check('a template for a page that does not exist is skipped', $service->install($manifest, 'dd_DD', $mail) !== null);
 pin('...with no failed query', '', (string) file_get_contents($log));
 ini_set('error_log', (string) $logged);
 @unlink($log);
@@ -205,7 +229,11 @@ $probe = static fn (string $text): string => json_encode(array('language' => 'dd
 )));
 $service->install($manifest, 'dd_DD', $probe('Pack one'));
 Page::getInstance()->updateDescription((int) $admin->insert_id, 'dd_DD', 'T', 'Admin text');
-check('an install reports the e-mails that kept the admin\'s text', $service->install($manifest, 'dd_DD', $probe('Pack two'), $kept) && $kept === array('email_ls_probe'));
+$flash = new ReflectionMethod(CAdminLanguages::class, 'flashKeptMails');
+$flash->invoke((new ReflectionClass(CAdminLanguages::class))->newInstanceWithoutConstructor(), array('email_new_item_admin', 'email_ls_probe'));
+$notice = (string) (Session::getInstance()->_getMessage('admin')[0]['msg'] ?? '');
+check('the kept notice names the e-mails and links to them', str_contains($notice, 'Kept your changes in 2 e-mails: ') && str_contains($notice, '?page=emails"') && str_contains($notice, EmailVariables::label('email_new_item_admin')));
+check('an install reports the e-mails that kept the admin\'s text', ($service->install($manifest, 'dd_DD', $probe('Pack two'))['kept'] ?? null) === array('email_ls_probe'));
 
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php');
 check(
@@ -242,7 +270,7 @@ pin('a code that is not a locale code is refused before any folder or fetch', ar
 osc_update_check_save('languages', array('checked' => 1, 'count' => 2, 'to_update' => array('ff_FF', 'hh_HH'), 'downloaded' => array()));
 $asked  = array();
 $import = $service->importPublished('ff_FF', array('locale_code' => 'ff_FF') + $manifest, $fetch);
-pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('mail' => false, 'failed' => 1, 'kept' => 0), true), array(
+pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('mail' => false, 'failed' => 1, 'kept' => array()), true), array(
     $import, in_array(osc_get_i18n_repository_url('src/translations/ff_FF/mail.json'), $asked, true),
 ));
 pin('...and takes it off the pending-update list', array(array('hh_HH'), 1), array(osc_update_check_state('languages')['to_update'], osc_update_check_state('languages')['count']));

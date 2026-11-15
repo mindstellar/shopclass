@@ -171,6 +171,7 @@ $writes = array(
     '->install(',
     '->importPublished(',
     'osc_checkLocales(',
+    'osc_importNewLocales(',
     'osc_db_query(',
     't_locale',
 );

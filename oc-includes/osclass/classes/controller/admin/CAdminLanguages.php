@@ -111,7 +111,8 @@ class CAdminLanguages extends AdminSecBaseModel
                 osc_add_flash_error_message($msg, 'admin');
                 break;
             case (1):
-                if (osc_checkLocales($kept)) {
+                $kept = osc_importNewLocales();
+                if ($kept !== null) {
                     $msg = _m('Language installed');
                     osc_add_flash_ok_message($msg, 'admin');
                     $this->flashKeptMails($kept);
@@ -141,12 +142,22 @@ class CAdminLanguages extends AdminSecBaseModel
     }
 
     /**
-     * Tell the admin how many e-mail templates kept their own text over the language's.
+     * Name the e-mail templates that kept their own text over the language's, and link to them.
+     *
+     * @param array<int,string> $kept internal names
      */
-    private function flashKeptMails(int $kept): void
+    private function flashKeptMails(array $kept): void
     {
-        if ($kept > 0) {
-            osc_add_flash_info_message(sprintf(_mn('%d e-mail kept your changes', '%d e-mails kept your changes', $kept), $kept), 'admin');
+        if ($kept) {
+            $titles = array_map(static fn (string $name): string => osc_esc_html(EmailVariables::label($name)), $kept);
+            osc_add_flash_info_message(
+                sprintf(
+                    _mn('Kept your changes in %1$d e-mail: %2$s.', 'Kept your changes in %1$d e-mails: %2$s.', count($kept)),
+                    count($kept),
+                    implode(', ', $titles)
+                ) . ' <a href="' . osc_admin_base_url(true) . '?page=emails">' . _m('Review e-mails') . '</a>',
+                'admin'
+            );
         }
     }
 

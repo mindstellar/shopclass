@@ -46,20 +46,28 @@ function osc_listLocales()
  * Insert or refresh a database row for every locale found on disk, importing its mail
  * templates the first time a locale is seen.
  *
- * @param int|null $kept set to how many e-mails kept the admin's changes
- * @param-out int  $kept
- *
  * @return bool False as soon as one locale row fails to insert, true otherwise
+ * @see osc_importNewLocales() for the e-mails that kept the admin's changes
  */
-function osc_checkLocales(&$kept = null)
+function osc_checkLocales()
 {
-    $kept    = 0;
+    return osc_importNewLocales() !== null;
+}
+
+/**
+ * Same as osc_checkLocales(), returning the internal names of the e-mails that kept the admin's changes.
+ *
+ * @return array<int,string>|null null as soon as one locale row fails to insert
+ */
+function osc_importNewLocales(): ?array
+{
+    $kept    = array();
     $locales = osc_listLocales();
 
     foreach ($locales as $locale) {
         // if it's a demo, we don't import any data
         if (\mindstellar\security\Demo::active()) {
-            return true;
+            return $kept;
         }
 
         $data = OSCLocale::getInstance()->findByPrimaryKey($locale['locale_code']);
@@ -67,7 +75,7 @@ function osc_checkLocales(&$kept = null)
             $result = OSCLocale::getInstance()->insertLocaleInfo($locale);
 
             if ($result === false) {
-                return false;
+                return null;
             }
 
             // inserting e-mail translations
@@ -75,8 +83,7 @@ function osc_checkLocales(&$kept = null)
             if (file_exists($mailJsonPath)) {
                 $mailJson = file_get_contents($mailJsonPath);
                 if ($mailJson) {
-                    Page::getInstance()->importEmailJsonTemplates($mailJson, $keptMails);
-                    $kept += count($keptMails ?? array());
+                    $kept = array_merge($kept, Page::getInstance()->importEmailTemplates($mailJson)['kept'] ?? array());
                 }
             }
         } else {
@@ -84,7 +91,7 @@ function osc_checkLocales(&$kept = null)
         }
     }
 
-    return true;
+    return $kept;
 }
 
 /**

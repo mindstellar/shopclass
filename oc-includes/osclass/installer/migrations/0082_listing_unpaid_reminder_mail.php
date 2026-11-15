@@ -44,7 +44,7 @@ return new class () implements MigrationInterface {
             . " SELECT ?, pk_c_code, ?, ? FROM " . DB_TABLE_PREFIX . "t_locale WHERE b_enabled = 1 OR pk_c_code = 'en_US'",
             [(int) $id, $title, $text]
         );
-        // Fingerprint of the placeholder text, so a language pack imported later replaces it.
+        // Fingerprint of the placeholder text, so a language pack imported later replaces it; must match Page::emailTextHash.
         $conn->execute(
             'INSERT IGNORE INTO ' . DB_TABLE_PREFIX . 't_key_value (s_group, s_key, s_value, dt_created)'
             . " SELECT ?, CONCAT(?, ':', pk_c_code), ?, NOW() FROM " . DB_TABLE_PREFIX . "t_locale WHERE b_enabled = 1 OR pk_c_code = 'en_US'",

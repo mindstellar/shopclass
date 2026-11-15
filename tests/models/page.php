@@ -385,15 +385,16 @@ pin('an id-only template never writes to a user page', 'Owner text', $textOf(60,
 pin('...nor to an unprotected page named like an e-mail', 'Mine', $textOf(62, 'en_US'));
 
 $version = static fn (string $text): array => array('fk_i_page_id' => 1, 's_internal_name' => 'email_keep_probe', 's_title' => 'Title', 's_description' => $text);
-$model->importEmailJsonTemplates($pack('fr_FR', array($version('One'))), $kept);
+$kept = $model->importEmailTemplates($pack('fr_FR', array($version('One'))))['kept'];
 pin('a new e-mail text is inserted, and nothing is reported', array('One', array()), array($textOf(63, 'fr_FR'), $kept));
-$model->importEmailJsonTemplates($pack('fr_FR', array($version('Two'))), $kept);
-pin('a text the admin never touched is replaced', array('Two', array()), array($textOf(63, 'fr_FR'), $kept));
+$result = $model->importEmailTemplates($pack('fr_FR', array($version('Two'))));
+$kept   = $result['kept'];
+pin('a text the admin never touched is replaced, and reported as written', array('Two', array(), array('email_keep_probe')), array($textOf(63, 'fr_FR'), $kept, $result['written']));
 
 $admin->query("UPDATE $kvTbl SET dt_updated = NULL WHERE s_group = 'email_template_hash'");
 $admin->query("UPDATE $dtbl SET s_title = 'Title' WHERE fk_i_pages_id = 63");
 $before = $rawRows("SELECT * FROM $dtbl ORDER BY fk_i_pages_id, fk_c_locale_code");
-$model->importEmailJsonTemplates($pack('fr_FR', array($version('Two'))), $kept);
+$kept = $model->importEmailTemplates($pack('fr_FR', array($version('Two'))))['kept'];
 pin(
     'importing the same pack again changes nothing',
     array($before, 0, array()),
@@ -401,30 +402,37 @@ pin(
 );
 
 $model->updateDescription(63, 'fr_FR', 'Title', 'Admin text');
-$model->importEmailJsonTemplates($pack('fr_FR', array($version('Three'))), $kept);
+$kept = $model->importEmailTemplates($pack('fr_FR', array($version('Three'))))['kept'];
+pin('the result names the e-mails written and kept', array(array(), array('email_keep_probe')), (static function () use ($model, $pack, $version) {
+    $r = $model->importEmailTemplates($pack('fr_FR', array($version('Three'))));
+    return array($r['written'], $r['kept']);
+})());
 pin('a text the admin edited is kept, and reported', array('Admin text', array('email_keep_probe')), array($textOf(63, 'fr_FR'), $kept));
-$model->importEmailJsonTemplates($pack('fr_FR', array($version('Three'))), $kept);
+$kept = $model->importEmailTemplates($pack('fr_FR', array($version('Three'))))['kept'];
 pin('...on every later import too', array('Admin text', array('email_keep_probe')), array($textOf(63, 'fr_FR'), $kept));
 
 $admin->query("DELETE FROM $kvTbl WHERE s_group = 'email_template_hash'");
-$model->importEmailJsonTemplates($pack('fr_FR', array($version('Four'))), $kept);
+$kept = $model->importEmailTemplates($pack('fr_FR', array($version('Four'))))['kept'];
 pin('a text with no fingerprint is kept unless core shipped it', array('Admin text', array('email_keep_probe')), array($textOf(63, 'fr_FR'), $kept));
 
 (require ABS_PATH . 'oc-includes/osclass/installer/migrations/0082_listing_unpaid_reminder_mail.php')->up(\mindstellar\database\Connection::getInstance());
 $unpaid  = (int) $rawRows("SELECT pk_i_id FROM $table WHERE s_internal_name = 'email_listing_unpaid_reminder'")[0]['pk_i_id'];
 $english = Page::bundledEmailTemplates()['email_listing_unpaid_reminder']['s_text'];
+$migrationKey = $unpaid . ':fr_FR';
+$stored       = json_decode((string) $rawRows("SELECT s_value FROM $kvTbl WHERE s_group = 'email_template_hash' AND s_key = '$migrationKey'")[0]['s_value'], true);
+pin('the migration fingerprint is the one Page::emailTextHash makes', Page::emailTextHash('{WEB_TITLE} - Pay to publish your listing', $english), $stored);
 pin('the migration gives French the English placeholder', $english, $textOf($unpaid, 'fr_FR'));
-$model->importEmailJsonTemplates($pack('fr_FR', array(
+$kept = $model->importEmailTemplates($pack('fr_FR', array(
     array('fk_i_page_id' => 23, 's_internal_name' => 'email_listing_unpaid_reminder', 's_title' => 'Payez', 's_description' => 'Payez votre annonce'),
-)), $kept);
+)))['kept'];
 pin('a later language pack replaces the placeholder', array('Payez votre annonce', array()), array($textOf($unpaid, 'fr_FR'), $kept));
 
 $admin->query("DELETE FROM $kvTbl WHERE s_group = 'email_template_hash'");
 $model->updateDescription($unpaid, 'en_US', 'x', 'x');
 $admin->query("UPDATE $dtbl SET s_title = '{WEB_TITLE} - Pay to publish your listing', s_text = '" . $admin->real_escape_string($english) . "' WHERE fk_i_pages_id = $unpaid AND fk_c_locale_code = 'en_US'");
-$model->importEmailJsonTemplates($pack('en_US', array(
+$kept = $model->importEmailTemplates($pack('en_US', array(
     array('s_internal_name' => 'email_listing_unpaid_reminder', 's_title' => 'New', 's_description' => 'New English'),
-)), $kept);
+)))['kept'];
 pin('an older site with no fingerprint still replaces the English text core shipped', array('New English', array()), array($textOf($unpaid, 'en_US'), $kept));
 
 if (!defined('MODELS_RUNNER')) {
