@@ -96,6 +96,7 @@ $controllers = array(
         'import_locations'    => 'importLocations',
         'make_admin_default'  => 'makeAdminDefault',
         'make_default'        => 'makeDefault',
+        'published'           => 'publishedList',
     ), 'languages'),
     'CAdminPlugins' => array('admin/CAdminPlugins.php', array(
         'add'            => 'addForm',

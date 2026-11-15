@@ -291,6 +291,16 @@ $fetch = static function (string $url) use (&$asked) {
 };
 pin('the published list is keyed by code, entries without one dropped', array('ff_FF'), array_keys(LanguageService::published($fetch)));
 pin('an unreadable list is null', null, LanguageService::published(static fn () => false));
+$names = static fn (array $list): array => array_column($list, 'name');
+pin('the import dialog lists languages by name, ignoring case', array('dansk', 'Deutsch', 'English (Australia)', 'English (US)', 'Français'), $names(LanguageService::sortedByName(array(
+    'fr_FR' => array('name' => 'Français'), 'en_US' => array('name' => 'English (US)'), 'de_DE' => array('name' => 'Deutsch'),
+    'en_AU' => array('name' => 'English (Australia)'), 'da_DK' => array('name' => 'dansk'),
+))));
+if (class_exists(Collator::class)) {
+    pin('...and with intl an accented letter sorts beside its base letter', array('Castellano', 'Čeština', 'Deutsch'), $names(LanguageService::sortedByName(array(
+        'de_DE' => array('name' => 'Deutsch'), 'cs_CZ' => array('name' => 'Čeština'), 'es_ES' => array('name' => 'Castellano'),
+    ))));
+}
 
 $asked = array();
 pin('one file that will not download is counted', 1, LanguageService::downloadFiles('ff_FF', $fetch));

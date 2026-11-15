@@ -24,6 +24,7 @@ use mindstellar\admin\ListPaging;
 use mindstellar\exception\ConflictException;
 use mindstellar\language\LanguageService;
 use mindstellar\language\LocaleStore;
+use mindstellar\utility\AjaxResponse;
 
 class CAdminLanguages extends AdminSecBaseModel
 {
@@ -34,6 +35,7 @@ class CAdminLanguages extends AdminSecBaseModel
         'add'                 => 'addForm',
         'add_post'            => 'addPost',
         'import_locations'    => 'importLocations',
+        'published'           => 'publishedList',
         'edit'                => 'editForm',
         'edit_post'           => 'editPost',
         'enable_selected'     => 'enableSelected',
@@ -159,6 +161,16 @@ class CAdminLanguages extends AdminSecBaseModel
                 'admin'
             );
         }
+    }
+
+    /**
+     * The languages the translation repository publishes, as JSON in name order, for the import dialog.
+     */
+    private function publishedList(): void
+    {
+        $published = LanguageService::published();
+        AjaxResponse::json($published === null ? array() : LanguageService::sortedByName($published), $published === null ? 502 : 200);
+        exit;
     }
 
     /**
