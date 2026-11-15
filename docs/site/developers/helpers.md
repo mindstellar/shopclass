@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1309 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -559,7 +559,7 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_send_response_cache_headers()` | Emit the Cache-Control header for a front-end response, once, after the page has been built. |
 | `osc_server_timing_value(float $start, float $now)` | The Server-Timing value for a page built between $start and $now, in milliseconds. |
 
-### hItems (126)
+### hItems (127)
 
 `oc-includes/osclass/helpers/hItems.php`
 
@@ -620,6 +620,7 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_item_field($field, $locale = '')` | Gets a specific field from current item |
 | `osc_item_formated_price()` |  |
 | `osc_item_formatted_price()` | Gets formatted price of current item |
+| `osc_item_formatted_variant_price(?int $variantId = null)` | Price of the current item as its product shows it in shop mode: the lowest variant price, with "From" when the variants differ, or the price of the one variant named. A variant without a price of its own takes the listing's. With no variants or outside shop mode it is the listing price. |
 | `osc_item_id()` | Gets id from current item |
 | `osc_item_ip()` | Gets IP of current item |
 | `osc_item_is_active()` | Gets if current item is active |
@@ -1590,13 +1591,14 @@ Core defines 1307 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_widget_locations()` | The widget sections the active theme offers, in the order it offers them: slug =&gt; array('label' =&gt; string, 'description' =&gt; string). |
 | `osc_widget_types()` | All registered widget types, keyed by id. |
 
-### locales (3)
+### locales (4)
 
 `oc-includes/osclass/locales.php`
 
 | Helper | What it does |
 |---|---|
 | `osc_checkLocales()` | Insert or refresh a database row for every locale found on disk, importing its mail templates the first time a locale is seen. |
+| `osc_importNewLocales()` | Same as osc_checkLocales(), returning the internal names of the e-mails that kept the admin's changes. |
 | `osc_listLanguageCodes()` | List the locale codes that have a folder under the translations path. |
 | `osc_listLocales()` | Read every translation folder and return its locale descriptor, keyed by locale code. |
 
