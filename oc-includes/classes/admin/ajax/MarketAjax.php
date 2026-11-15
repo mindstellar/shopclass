@@ -358,7 +358,7 @@ final class MarketAjax extends AjaxHandler
      *
      * @return list<array{name:string, constraint:string}>
      */
-    private static function marketRequiredPlugins($type, $slug, array $raw)
+    private static function marketRequiredPlugins(string $type, string $slug, array $raw): array
     {
         $required = null;
         if ($type === 'theme') {

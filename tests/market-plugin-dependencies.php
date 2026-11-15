@@ -65,9 +65,13 @@ function osc_plugins_path()
     return PLUGINS_PATH;
 }
 
-// An empty cached catalog, so no test reaches the network.
+// A cached catalog that names one plugin, so no test reaches the network.
 function osc_kv_get(string $group, string $key, $default = null)
 {
+    if ($key === 'market_plugins_index_json') {
+        return '{"off":{"name":"Off Plugin"}}';
+    }
+
     return str_ends_with($key, '_json') ? '{}' : $default;
 }
 
@@ -286,6 +290,30 @@ $r = $send('ghost', 'stripe');
 pin('ajax: an unknown theme is refused', array(false, 'That theme is not installed.'), array($r['ok'] ?? null, $r['message'] ?? null));
 $r = $send('aisle', 'evil');
 pin('ajax: a slug outside the manifest is refused', array(false, 'The theme does not ask for this plugin.'), array($r['ok'] ?? null, $r['message'] ?? null));
+harness_section('the Details window lists the plugins a package needs');
+$needs = static fn (string $type, string $slug, array $raw = array()): array => (new ReflectionMethod(MarketAjax::class, 'marketRequiredPlugins'))->invoke(null, $type, $slug, $raw);
+pin('an installed plugin: from its manifest, named from the catalog', array(array('name' => 'absent', 'constraint' => '^0.2.0'), array('name' => 'Off Plugin', 'constraint' => '^0.1.0')), $needs('plugin', 'needy'));
+pin('an installed theme: from its manifest', array(array('name' => 'stripe', 'constraint' => '>=1.2')), $needs('theme', 'aisle'));
+pin('not installed: from the catalog entry, dropping a bad slug', array(array('name' => 'Off Plugin', 'constraint' => '')), $needs('plugin', 'remote', array('plugins' => array('required' => array('off', '../evil')))));
+pin('none', array(), $needs('plugin', 'fresh'));
+if (!function_exists('osc_base_url')) {
+    function osc_base_url()
+    {
+        return 'https://example.test/';
+    }
+}
+mkdir(PLUGINS_PATH . 'hand_made');
+file_put_contents(PLUGINS_PATH . 'hand_made/index.php', "<?php\n/*\nPlugin Name: Hand Made\nVersion: 1.0.0\n*/\n");
+file_put_contents(PLUGINS_PATH . 'hand_made/shopclass.json', '{"plugins":{"required":{"off":"^0.1.0"}}}');
+Params::setParam('type', 'plugin');
+Params::setParam('slug', 'hand_made');
+ob_start();
+$ajax->detail();
+$r = (array) json_decode((string) ob_get_clean(), true);
+pin('ajax: the detail of a package off the catalog carries them', array(array('name' => 'Off Plugin', 'constraint' => '^0.1.0')), $r['detail']['requires_plugins'] ?? $r);
+array_map('unlink', glob(PLUGINS_PATH . 'hand_made/*'));
+rmdir(PLUGINS_PATH . 'hand_made');
+
 array_map('unlink', glob($GLOBALS['themesDir'] . 'aisle/*'));
 rmdir($GLOBALS['themesDir'] . 'aisle');
 rmdir($GLOBALS['themesDir']);

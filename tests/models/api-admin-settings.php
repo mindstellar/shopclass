@@ -63,8 +63,12 @@ $pref     = static fn (string $name, string $section = 'osclass'): ?string => $a
 harness_section('settings: the screens the API serves need no admin UI helpers');
 pin('admin UI helpers not loaded, as in a real API call', false, function_exists('osc_admin_settings_form'));
 foreach (array_unique(array_column(ExposedSettings::FIELDS, 0)) as $screen) {
-    $fields = SettingsPageRegistry::getInstance()->fields($screen::register());
-    pin($screen . ' declares its fields', true, $fields !== []);
+    try {
+        $fields = SettingsPageRegistry::getInstance()->fields($screen::register());
+    } catch (Error $e) {
+        $fields = $e->getMessage();
+    }
+    check($screen . ' declares its fields', is_array($fields) && $fields !== [], is_string($fields) ? $fields : '');
 }
 
 harness_section('settings: who may call');
