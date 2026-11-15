@@ -39,10 +39,12 @@ foreach (['enabled_users' => '1', 'language' => 'en_US', 'currency' => 'USD', 'r
 }
 
 // Prices repeat every 300 listings, so most prices are shared; every 40th listing has none.
-$admin->query('SET SESSION cte_max_recursion_depth = 5000');
-$admin->query("INSERT INTO {$p}t_item (pk_i_id, fk_i_user_id, fk_i_category_id, dt_pub_date, dt_first_pub_date, dt_mod_date, i_price, fk_c_currency_code, s_contact_name, s_contact_email, b_enabled, b_active, b_spam, s_secret)
-    WITH RECURSIVE n (i) AS (SELECT 1 UNION ALL SELECT i + 1 FROM n WHERE i < " . LISTINGS . ")
-    SELECT i, $sue, $cat, NOW() - INTERVAL i MINUTE, NOW() - INTERVAL i MINUTE, NOW(), IF(i % 40 = 0, NULL, (i % 300 + 1) * 1000000), 'USD', 'Sue', 'sue@example.test', 1, 1, 0, 'x' FROM n");
+$rows = [];
+for ($i = 1; $i <= LISTINGS; $i++) {
+    $price  = $i % 40 === 0 ? 'NULL' : ($i % 300 + 1) * 1000000;
+    $rows[] = "($i, $sue, $cat, NOW() - INTERVAL $i MINUTE, NOW() - INTERVAL $i MINUTE, NOW(), $price, 'USD', 'Sue', 'sue@example.test', 1, 1, 0, 'x')";
+}
+$admin->query("INSERT INTO {$p}t_item (pk_i_id, fk_i_user_id, fk_i_category_id, dt_pub_date, dt_first_pub_date, dt_mod_date, i_price, fk_c_currency_code, s_contact_name, s_contact_email, b_enabled, b_active, b_spam, s_secret) VALUES " . implode(',', $rows));
 $admin->query("INSERT INTO {$p}t_item_description (fk_i_item_id, fk_c_locale_code, s_title, s_description) SELECT pk_i_id, 'en_US', CONCAT('Item ', pk_i_id), '' FROM {$p}t_item");
 $admin->query("INSERT INTO {$p}t_item_location (fk_i_item_id, fk_c_country_code, s_country) SELECT pk_i_id, 'US', 'United States' FROM {$p}t_item");
 $admin->query("INSERT INTO {$p}t_item_stats (fk_i_item_id, dt_date) SELECT pk_i_id, CURDATE() FROM {$p}t_item");
