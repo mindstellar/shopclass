@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
 - The site title and description in Settings → General are set per language; the API exposes them as `site_title_translations` and `site_description_translations`.
 - Appearance → Customise edits a theme's per-language settings, with one box per language.
 - `osc_settings_text_value()` reads a per-language setting with the default-language fallback; `osc_sendMail()` takes a `locale` key.
