@@ -11,7 +11,8 @@
 /**
  * The admin login cookies over real HTTP: a `php -S` server runs oc-admin on an installed
  * scratch site. The redirect cookie lives on the admin path, so public pages never get it, and
- * the two-step code waits in a signed cookie there, so a password alone starts no session.
+ * the two-step code waits in a signed cookie there, so a password alone starts no session. The
+ * chosen admin language is kept there too, through logout.
  * Usage: php tests/models/admin-login-cookies.php
  */
 
@@ -314,6 +315,59 @@ $db->query("UPDATE {$p}t_admin SET s_password = '" . password_hash('new-pass', P
 $r = $post2fa($fresh, $codes[3]);
 check('a password changed after the password step ends the code step', $refused($r), $r[0] . ' ' . $r[1]);
 $db->query("UPDATE {$p}t_admin SET s_password = '$livePass' WHERE pk_i_id = $twoId");
+
+harness_section('the login offers the admin language chosen last');
+
+seed_locale($db, 'es_ES', 'Espanol');
+seed_locale($db, 'fr_FR', 'Francais');
+$db->query("UPDATE {$p}t_locale SET b_enabled_bo = 0 WHERE pk_c_code = 'fr_FR'");
+$localeCookie = 'oc_admin_locale';
+/** The language the login form has selected, or '' when none is. */
+$offered = static function (array $cookies = []) use ($call): string {
+    [, , , $body] = $call('/oc-admin/index.php?page=login', $cookies);
+
+    return preg_match('/<option value="([A-Za-z_]+)"\s+selected/', $body, $m) === 1 ? $m[1] : '';
+};
+pin('with no language chosen, the admin default', 'en_US', $offered());
+pin('a language chosen last comes first', 'es_ES', $offered([$localeCookie => 'es_ES']));
+pin('...unless it is off for oc-admin', 'en_US', $offered([$localeCookie => 'fr_FR']));
+pin('...or not a language at all', 'en_US', $offered([$localeCookie => '../x']));
+$db->query("UPDATE {$p}t_preference SET s_value = 'fr_FR' WHERE s_section = 'osclass' AND s_name = 'admin_language'");
+pin('an admin default that is off for oc-admin gives way to the first language on', 'en_US', $offered());
+$db->query("UPDATE {$p}t_preference SET s_value = 'es_ES' WHERE s_section = 'osclass' AND s_name = 'admin_language'");
+pin('the admin default setting is offered with no language chosen', 'es_ES', $offered());
+$db->query("UPDATE {$p}t_preference SET s_value = 'en_US' WHERE s_section = 'osclass' AND s_name = 'admin_language'");
+
+harness_section('logging out keeps the chosen admin language');
+
+$clearTries();
+$signIn = static function (array $extra) use ($call, $csrf): array {
+    return $call('/oc-admin/index.php', [], ['page' => 'login', 'action' => 'login_post', 'user' => 'plain', 'password' => 'secret-pass'] + $extra + $csrf);
+};
+[$code, , $set] = $signIn(['locale' => 'es_ES', 'remember' => '1']);
+$line           = $set[$localeCookie][0] ?? '';
+check('signing in with Remember me keeps the language', $code === 302 && $valueOf($set, $localeCookie) === 'es_ES', $line);
+check('...in a HttpOnly, SameSite=Lax cookie on the admin path for a year', $paths($set, $localeCookie) === ['/oc-admin/'] && stripos($line, 'HttpOnly') !== false && stripos($line, 'SameSite=Lax') !== false && preg_match('/Max-Age=315\d{5}\b/', $line) === 1, $line);
+$session = $valueOf($set, 'osclass');
+$bag     = [md5($base . '/') => (string) strtok(substr((string) ($set[md5($base . '/')][0] ?? ''), 33), ';')];
+[, , $set] = $call('/oc-admin/index.php?page=main&action=logout', ['osclass' => $session, $localeCookie => 'es_ES'] + $bag);
+pin('logging out leaves the language cookie alone', [], $set[$localeCookie] ?? []);
+pin('...and starts no new session', '', $valueOf($set, 'osclass'));
+pin('the login then offers that language', 'es_ES', $offered([$localeCookie => 'es_ES']));
+
+$clearTries();
+[, , $set] = $signIn(['locale' => 'es_ES', 'remember' => '1']);
+[, , $set] = $call('/oc-admin/index.php?page=main&action=logout', ['osclass' => $valueOf($set, 'osclass')]);
+pin('a browser without the cookie gets it at logout', 'es_ES', $valueOf($set, $localeCookie));
+pin('...still with no new session', '', $valueOf($set, 'osclass'));
+
+$clearTries();
+[, , $set] = $signIn(['locale' => 'es_ES']);
+$line      = $set[$localeCookie][0] ?? '';
+check('without Remember me the language lasts until the browser closes', $valueOf($set, $localeCookie) === 'es_ES' && stripos($line, 'expires') === false, $line);
+$clearTries();
+[, , $set] = $signIn(['locale' => 'fr_FR']);
+pin('a language that is off for oc-admin is not kept', 'en_US', $valueOf($set, $localeCookie));
 
 harness_section('a site in a subfolder');
 
