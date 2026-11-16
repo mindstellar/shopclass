@@ -5,6 +5,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ## Shopclass 7.0.20
 
 ### New
+- `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
 - Settings > General has a Default admin language.
 
 ### Fixed
