@@ -2,6 +2,15 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.20
+
+### New
+- Settings > General has a Default admin language.
+
+### Fixed
+- The admin login remembers the language chosen last, also after logging out.
+- Language bulk actions with nothing ticked say "No language selected."
+
 ## Shopclass 7.0.19
 
 ### Fixed
