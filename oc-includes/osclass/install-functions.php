@@ -1975,6 +1975,20 @@ function install_finish_later(): array
 }
 
 /**
+ * Store a new site's title for its default language and as the single value every other
+ * language falls back to. Used by the web and command-line installers.
+ */
+function install_site_title(string $title): void
+{
+    $prefs  = DB_TABLE_PREFIX . 't_preference';
+    $row    = \mindstellar\database\Db::table($prefs)->where('s_section', 'osclass')->where('s_name', 'language')->first();
+    $locale = (string) ($row['s_value'] ?? '') ?: osc_current_admin_locale();
+    $sql    = "REPLACE INTO $prefs (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
+    \mindstellar\database\Db::execute($sql, array('pageTitle', $title, 'osclass', 'STRING'));
+    \mindstellar\database\Db::execute($sql, array('pageTitle' . $locale, $title, 'osclass', 'STRING'));
+}
+
+/**
  * Create the admin account and the site's identity preferences, then mail the
  * credentials to the address given on the form.
  *
@@ -2017,12 +2031,11 @@ function basic_info()
             \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->insert($adminRow);
         }
 
-        $prefTable = DB_TABLE_PREFIX . 't_preference';
-        $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-        // The install language's own title, and the single one every other language falls back to.
-        \mindstellar\database\Db::execute($replace, array('pageTitle', $webTitle, 'osclass', 'STRING'));
-        \mindstellar\database\Db::execute($replace, array('pageTitle' . osc_current_admin_locale(), $webTitle, 'osclass', 'STRING'));
-        \mindstellar\database\Db::execute($replace, array('contactEmail', $adminEmail, 'osclass', 'STRING'));
+        install_site_title((string) $webTitle);
+        \mindstellar\database\Db::execute(
+            'REPLACE INTO ' . DB_TABLE_PREFIX . 't_preference (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)',
+            array('contactEmail', $adminEmail, 'osclass', 'STRING')
+        );
     });
 
     $body = sprintf(__('Hi %s,'), Params::getParam('webtitle')) . '<br/>';

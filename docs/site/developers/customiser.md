@@ -103,6 +103,9 @@ no draft for the active theme, the preview shows the published page. In a previe
 - `osc_customiser_draft_value( $page, $name )` returns the drafted look value, or
   `null` when it is not drafted. Read it before the saved setting. For a translated
   field it returns the visitor's language, or the one passed as a third argument.
+- `osc_settings_text_value( $name, $section )` reads a translated text setting
+  already: the draft, else the saved text for the visitor's language, then the
+  default language's, then the old single value.
 - The response is not cacheable and sends `X-Robots-Tag: noindex`, and
   `osc_head()` prints `<meta name="osc-customiser" content="ADMIN ORIGIN">`.
 - `osc_customiser_preview_rows( $location )` gives the drafted rows if you render

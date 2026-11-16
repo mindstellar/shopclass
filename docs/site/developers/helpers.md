@@ -23,7 +23,7 @@ New core code calls the services and models under `mindstellar\` instead; see
 
 <!-- generated:helpers -->
 
-Core defines 1309 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
+Core defines 1310 helpers, 29 of them deprecated. Generated from the source; do not edit by hand.
 
 ### alerts (1)
 
@@ -913,7 +913,7 @@ Core defines 1309 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_remove_hook($hook, $function)` | Remove a hook's function |
 | `osc_run_hook($hook, ...$args)` | Run a hook |
 
-### hPreference (152)
+### hPreference (153)
 
 `oc-includes/osclass/helpers/hPreference.php`
 
@@ -1038,6 +1038,7 @@ Core defines 1309 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_search_count_cap()` | The most matches a visitor or API search counts before it shows "1,000+" instead of the total. 0 counts every match; the most it can be is Search::COUNT_CAP_MAX. |
 | `osc_selectable_parent_categories()` | Gets if parent categories are enabled or not. A shop always allows them; the stored value is kept for when the site goes back to classifieds. |
 | `osc_set_preference($key, $value = '', $section = 'osclass', $type = 'STRING')` | generic function to insert/update preferences |
+| `osc_settings_text_value(string $key, string $section = 'osclass', ?string $locale = null)` | A text stored once per language, as $key followed by the locale code: the text for $locale, else the default language's, else the single value stored under $key, else ''. |
 | `osc_site_mode()` | What the site is for: 'classifieds' (the default) or 'shop'. |
 | `osc_subdomain_host()` | Return subdomain host |
 | `osc_subdomain_type()` | Return subdomain type |
@@ -1629,7 +1630,7 @@ Core defines 1309 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_is_ssl()` | Whether the current request arrived over HTTPS. |
 | `osc_is_update_compatible($section, $element, $osclass_version = OSCLASS_VERSION)` | **Deprecated since 7.1.0, removed in 8.0.** Whether a package's published descriptor lists the running core version as compatible. |
 | `osc_item_is_counted(array $item)` | Whether a listing counts toward the category, location and user totals: enabled, active, not spam, and premium or not expired. The daily recount uses the same rule. |
-| `osc_mailBeauty($text, $params)` | Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs first, then the site-wide ones. |
+| `osc_mailBeauty($text, $params, ?string $locale = null)` | Expand the {PLACEHOLDER} tokens in an email body: the caller's pairs first, then the site-wide ones. |
 | `osc_mail_admin(string $subject, array $lines)` | Send a short notice to the site's contact address, one escaped paragraph per line. Returns false when it cannot be sent; never throws once called. |
 | `osc_mail_layout(string $body, array $params = array())` | Wrap an e-mail body in the site's e-mail layout: a theme's templates/email-layout.php, else core's. A body that is already a whole HTML document, or a send with 'layout' =&gt; false, goes out as it is. |
 | `osc_mail_layout_file(?array $bases = null)` | The e-mail layout file: templates/email-layout.php in the active theme or its parent, else core's own. |

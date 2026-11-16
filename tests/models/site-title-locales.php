@@ -98,6 +98,22 @@ pin('with neither, the single value', 'Market', $as('es_ES', 'osc_page_title'));
 $set(['pageTitle' => 'Single', 'pageTitleen_US' => 'Market', 'pageTitlees_ES' => 'Mercado']);
 pin('a language the site does not have falls back to the default language', 'Market', $as('fr_FR', 'osc_page_title'));
 
+harness_section('osc_settings_text_value() for a theme\'s own text');
+osc_set_preference('note', 'Old note', 'mytheme');
+osc_reset_preferences();
+pin('a theme text never split per language reads its single value', ['Old note', 'Old note'], [
+    osc_settings_text_value('note', 'mytheme', 'es_ES'), osc_settings_text_value('note', 'mytheme', 'en_US'),
+]);
+osc_set_preference('noteen_US', 'Note', 'mytheme');
+osc_set_preference('notees_ES', '  ', 'mytheme');
+osc_reset_preferences();
+pin('a blank language falls back to the default language', 'Note', osc_settings_text_value('note', 'mytheme', 'es_ES'));
+osc_set_preference('notees_ES', 'Nota', 'mytheme');
+osc_reset_preferences();
+pin('its own language wins', 'Nota', osc_settings_text_value('note', 'mytheme', 'es_ES'));
+pin('with no locale given, the visitor\'s language', 'Nota', $as('es_ES', static fn () => osc_settings_text_value('note', 'mytheme')));
+pin('another section is not read', '', osc_settings_text_value('note', 'othertheme', 'es_ES'));
+
 harness_section('home page head');
 $seo = SeoResolver::fromSite();
 pin('the SEO title and site name follow the language asked', ['Mercado', 'Mercado', 'Market'], [
@@ -131,15 +147,23 @@ final class SiteTitleRecordingMailer extends PHPMailer
 osc_add_filter('init_send_mail', static fn () => new SiteTitleRecordingMailer(true));
 $mail = $as('en_US', static function (): array {
     $template = CoreEmails::template('email_user_forgot_password', 'es_ES');
-    $title    = osc_mailBeauty('{WEB_TITLE}', [[], []]);
+    $title    = osc_mailBeauty('{WEB_TITLE}', [[], []], $template['locale'] ?? null);
     SiteTitleRecordingMailer::$last = null;
-    osc_sendMail(['to' => 'user@example.test', 'subject' => 's', 'body' => '<p>' . $title . '</p>']);
+    osc_sendMail(['to' => 'user@example.test', 'subject' => 's', 'body' => '<p>' . $title . '</p>', 'locale' => $template['locale'] ?? null]);
     $sent  = SiteTitleRecordingMailer::$last;
     $after = osc_mailBeauty('{WEB_TITLE}', [[], []]);
 
-    return [$template !== null, $title, $sent['from'] ?? null, str_contains((string) ($sent['body'] ?? ''), 'You received this e-mail from Mercado'), $after];
+    return [$template['locale'] ?? null, $title, $sent['from'] ?? null, str_contains((string) ($sent['body'] ?? ''), 'You received this e-mail from Mercado'), $after];
 });
-pin('a mail written in Spanish for a user while the sender browses in English uses the Spanish title', [true, 'Mercado', 'Mercado', true, 'Market'], $mail);
+pin('a mail written in Spanish for a user while the sender browses in English uses the Spanish title', ['es_ES', 'Mercado', 'Mercado', true, 'Market'], $mail);
+$leak = $as('en_US', static function (): array {
+    CoreEmails::template('email_user_forgot_password', 'es_ES');
+    SiteTitleRecordingMailer::$last = null;
+    osc_sendMail(['to' => 'user@example.test', 'subject' => 's', 'body' => '<p>x</p>']);
+
+    return [osc_mailBeauty('{WEB_TITLE}', [[], []]), SiteTitleRecordingMailer::$last['from'] ?? null];
+});
+pin('picking a template that is never sent leaves the next mail in the sender\'s language', ['Market', 'Market'], $leak);
 pin('a send may name the language itself', 'Mercado', Mailer::siteTitle(['locale' => 'es_ES']));
 
 harness_section('API');
@@ -162,6 +186,10 @@ $r = $call('PATCH', 'admin/settings', ['site_title_translations' => ['es_ES' => 
 pin('PATCH one language changes only it', [200, 'Tienda', 'Market', 'Market'], [$r->status(), $pref('pageTitlees_ES'), $pref('pageTitleen_US'), $pref('pageTitle')]);
 $r = $call('PATCH', 'admin/settings', ['site_title' => 'Shop'], $boss);
 pin('PATCH site_title still sets the default language\'s title', [200, 'Shop', 'Shop', 'Tienda'], [$r->status(), $pref('pageTitleen_US'), $pref('pageTitle'), $pref('pageTitlees_ES')]);
+$r = $call('PATCH', 'admin/settings', ['site_title' => 'Plain', 'site_title_translations' => ['en_US' => 'Mapped', 'es_ES' => 'Tienda']], $boss);
+pin('site_title wins over the map for the default language, whichever comes first', [200, 'Plain', 'Tienda'], [$r->status(), $pref('pageTitleen_US'), $pref('pageTitlees_ES')]);
+$r = $call('PATCH', 'admin/settings', ['site_title_translations' => ['en_US' => 'Mapped'], 'site_title' => 'Shop'], $boss);
+pin('and when it comes last', [200, 'Shop'], [$r->status(), $pref('pageTitleen_US')]);
 $r = $call('PATCH', 'admin/settings', ['site_title_translations' => ['de_DE' => 'Laden']], $boss);
 pin('a language the site does not have is 422 and saves nothing', [422, null], [$r->status(), $pref('pageTitlede_DE')]);
 $r = $call('PATCH', 'admin/settings', ['site_title_translations' => ['es_ES' => '']], $boss);

@@ -141,14 +141,14 @@ final class CoreEmails
 
         $title = osc_apply_filter(
             'email_alert_validation_title_after',
-            osc_mailBeauty($_title, $words),
+            osc_mailBeauty($_title, $words, $template['locale']),
             $alert,
             $email,
             $secret
         );
         $body  = osc_apply_filter(
             'email_alert_validation_description_after',
-            osc_mailBeauty($_body, $words),
+            osc_mailBeauty($_body, $words, $template['locale']),
             $alert,
             $email,
             $secret
@@ -163,7 +163,7 @@ final class CoreEmails
             'secret_link' => true,
         );
 
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $template['locale']));
     }
 
     /**
@@ -171,7 +171,7 @@ final class CoreEmails
      *
      * @param string $internalName alert_email_hourly or alert_email_weekly
      *
-     * @return array<string,string>|null The s_title and s_text of that page, or null when none can be found
+     * @return array<string,string>|null The s_title, s_text and locale of that page, or null when none can be found
      */
     public static function alertTemplate($internalName)
     {
@@ -186,7 +186,7 @@ final class CoreEmails
      * @param string      $internalName Template page name, such as email_user_validation
      * @param string|null $locale       Locale code; the current user locale when null
      *
-     * @return array{s_title:string,s_text:string}|null
+     * @return array{s_title:string,s_text:string,locale:string}|null
      */
     public static function template(string $internalName, ?string $locale = null): ?array
     {
@@ -204,16 +204,12 @@ final class CoreEmails
             }
         }
         if ($row !== null) {
-            Mailer::writtenIn($locale);
-
-            return array('s_title' => (string) $row['s_title'], 's_text' => (string) ($row['s_text'] ?? ''));
+            return array('s_title' => (string) $row['s_title'], 's_text' => (string) ($row['s_text'] ?? ''), 'locale' => $locale);
         }
 
         $bundled = Page::bundledEmailTemplates()[$internalName] ?? null;
         if ($bundled !== null) {
-            Mailer::writtenIn($locale);
-
-            return $bundled;
+            return $bundled + array('locale' => $locale);
         }
         error_log('E-mail template "' . $internalName . '" has no text; mail not sent.');
 
@@ -280,10 +276,11 @@ final class CoreEmails
      * @param array<string,mixed> $user
      * @param string              $title
      * @param string              $body
+     * @param string|null         $locale the language the digest is written in
      *
      * @return void
      */
-    public static function alertDeliver($user, $title, $body)
+    public static function alertDeliver($user, $title, $body, ?string $locale = null)
     {
         osc_sendMail(array(
             'from'     => self::fromAddress(),
@@ -291,6 +288,7 @@ final class CoreEmails
             'to_name'  => $user['s_name'],
             'subject'  => $title,
             'body'     => $body,
+            'locale'   => $locale,
         ));
     }
 
@@ -350,7 +348,7 @@ final class CoreEmails
             $user,
             osc_apply_filter(
                 'alert_email_hourly_title_after',
-                osc_mailBeauty($_title, $words),
+                osc_mailBeauty($_title, $words, $template['locale']),
                 $user,
                 $ads,
                 $s_search,
@@ -359,13 +357,14 @@ final class CoreEmails
             ),
             osc_apply_filter(
                 'alert_email_hourly_description_after',
-                osc_mailBeauty($_body, $htmlWords),
+                osc_mailBeauty($_body, $htmlWords, $template['locale']),
                 $user,
                 $ads,
                 $s_search,
                 $items,
                 $totalItems
-            )
+            ),
+            $template['locale']
         );
     }
 
@@ -423,7 +422,7 @@ final class CoreEmails
             $user,
             osc_apply_filter(
                 'alert_email_daily_title_after',
-                osc_mailBeauty($_title, $words),
+                osc_mailBeauty($_title, $words, $template['locale']),
                 $user,
                 $ads,
                 $s_search,
@@ -432,13 +431,14 @@ final class CoreEmails
             ),
             osc_apply_filter(
                 'alert_email_daily_description_after',
-                osc_mailBeauty($_body, $htmlWords),
+                osc_mailBeauty($_body, $htmlWords, $template['locale']),
                 $user,
                 $ads,
                 $s_search,
                 $items,
                 $totalItems
-            )
+            ),
+            $template['locale']
         );
     }
 
@@ -496,7 +496,7 @@ final class CoreEmails
             $user,
             osc_apply_filter(
                 'alert_email_weekly_title_after',
-                osc_mailBeauty($_title, $words),
+                osc_mailBeauty($_title, $words, $template['locale']),
                 $user,
                 $ads,
                 $s_search,
@@ -505,13 +505,14 @@ final class CoreEmails
             ),
             osc_apply_filter(
                 'alert_email_weekly_description_after',
-                osc_mailBeauty($_body, $htmlWords),
+                osc_mailBeauty($_body, $htmlWords, $template['locale']),
                 $user,
                 $ads,
                 $s_search,
                 $items,
                 $totalItems
-            )
+            ),
+            $template['locale']
         );
     }
 
@@ -552,7 +553,7 @@ final class CoreEmails
                 osc_mailBeauty(osc_apply_filter(
                     'email_title',
                     osc_apply_filter('email_comment_validated_title', $content['s_title'], $aComment)
-                ), $words),
+                ), $words, $content['locale']),
                 $aComment
             );
             $body  = osc_apply_filter(
@@ -560,7 +561,7 @@ final class CoreEmails
                 osc_mailBeauty(osc_apply_filter(
                     'email_description',
                     osc_apply_filter('email_comment_validated_description', $content['s_text'], $aComment)
-                ), $words),
+                ), $words, $content['locale']),
                 $aComment
             );
 
@@ -571,7 +572,7 @@ final class CoreEmails
                 'subject'  => $title,
                 'body'     => $body,
             );
-            osc_sendMail($emailParams);
+            osc_sendMail($emailParams + array('locale' => $content['locale']));
         }
     }
 
@@ -626,7 +627,7 @@ final class CoreEmails
             osc_mailBeauty(osc_apply_filter(
                 'email_title',
                 osc_apply_filter('email_new_item_non_register_user_title', $content['s_title'], $item)
-            ), $words),
+            ), $words, $content['locale']),
             $item
         );
         $body  = osc_apply_filter(
@@ -634,7 +635,7 @@ final class CoreEmails
             osc_mailBeauty(osc_apply_filter(
                 'email_description',
                 osc_apply_filter('email_new_item_non_register_user_description', $content['s_text'], $item)
-            ), $words),
+            ), $words, $content['locale']),
             $item
         );
 
@@ -647,7 +648,7 @@ final class CoreEmails
             'secret_link' => true,
         );
 
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -686,7 +687,8 @@ final class CoreEmails
                         'email_title',
                         osc_apply_filter('email_user_forgot_pass_word_title', $content['s_title'], $user, $password_url)
                     ),
-                    $words
+                    $words,
+                    $content['locale']
                 ),
                 $user,
                 $password_url
@@ -703,7 +705,8 @@ final class CoreEmails
                             $password_url
                         )
                     ),
-                    $words
+                    $words,
+                    $content['locale']
                 ),
                 $user,
                 $password_url
@@ -718,7 +721,7 @@ final class CoreEmails
                 'secret_link' => true,
             );
 
-            osc_sendMail($emailParams);
+            osc_sendMail($emailParams + array('locale' => $content['locale']));
         }
     }
 
@@ -751,7 +754,8 @@ final class CoreEmails
                         'email_title',
                         osc_apply_filter('email_user_registration_title', $content['s_title'], $user)
                     ),
-                    $words
+                    $words,
+                    $content['locale']
                 ),
                 $user
             );
@@ -760,7 +764,7 @@ final class CoreEmails
                 osc_mailBeauty(osc_apply_filter(
                     'email_description',
                     osc_apply_filter('email_user_registration_description', $content['s_text'], $user)
-                ), $words),
+                ), $words, $content['locale']),
                 $user
             );
 
@@ -772,7 +776,7 @@ final class CoreEmails
                 'body'     => $body,
             );
 
-            osc_sendMail($emailParams);
+            osc_sendMail($emailParams + array('locale' => $content['locale']));
         }
     }
 
@@ -808,7 +812,7 @@ final class CoreEmails
                 osc_mailBeauty(osc_apply_filter(
                     'email_title',
                     osc_apply_filter('email_new_email_title', $content['s_title'], $new_email, $validation_url)
-                ), $words),
+                ), $words, $content['locale']),
                 $new_email,
                 $validation_url
             );
@@ -819,7 +823,8 @@ final class CoreEmails
                         'email_description',
                         osc_apply_filter('email_new_email_description', $content['s_text'], $new_email, $validation_url)
                     ),
-                    $words
+                    $words,
+                    $content['locale']
                 ),
                 $new_email,
                 $validation_url
@@ -833,7 +838,7 @@ final class CoreEmails
                 'body'     => $body,
                 'secret_link' => true,
             );
-            osc_sendMail($emailParams);
+            osc_sendMail($emailParams + array('locale' => $content['locale']));
             osc_add_flash_ok_message(_m("We've sent you an e-mail. Follow its instructions to validate the changes"));
         } else {
             osc_add_flash_error_message(
@@ -875,7 +880,7 @@ final class CoreEmails
                 osc_mailBeauty(osc_apply_filter(
                     'email_title',
                     osc_apply_filter('email_user_validation_title', $content['s_title'], $user, $input)
-                ), $words),
+                ), $words, $content['locale']),
                 $user,
                 $input
             );
@@ -886,7 +891,8 @@ final class CoreEmails
                         'email_description',
                         osc_apply_filter('email_user_validation_description', $content['s_text'], $user, $input)
                     ),
-                    $words
+                    $words,
+                    $content['locale']
                 ),
                 $user,
                 $input
@@ -900,7 +906,7 @@ final class CoreEmails
                 'body'     => $body,
                 'secret_link' => true,
             );
-            osc_sendMail($emailParams);
+            osc_sendMail($emailParams + array('locale' => $content['locale']));
         }
     }
 
@@ -936,7 +942,7 @@ final class CoreEmails
         $title = osc_apply_filter('email_send_friend_title_after', osc_mailBeauty(osc_apply_filter(
             'email_title',
             osc_apply_filter('email_send_friend_title', $content['s_title'], $aItem)
-        ), $titleWords), $aItem);
+        ), $titleWords, $content['locale']), $aItem);
         $body  = osc_apply_filter(
             'email_send_friend_description_after',
             osc_mailBeauty(
@@ -944,14 +950,15 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_send_friend_description', $content['s_text'], $aItem)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $aItem
         );
 
         $emailParams = array(
             'from'      => self::fromAddress(),
-            'from_name' => Mailer::siteTitle(),
+            'from_name' => Mailer::siteTitle(array('locale' => $content['locale'])),
             'to'        => $aItem['friendEmail'],
             'to_name'   => $aItem['friendName'],
             'reply_to'  => $aItem['yourEmail'],
@@ -973,7 +980,7 @@ final class CoreEmails
             $emailParams['add_bcc'] = $adminEmails;
         }
 
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -1043,7 +1050,7 @@ final class CoreEmails
         $title = osc_apply_filter('email_item_inquiry_title_after', osc_mailBeauty(osc_apply_filter(
             'email_title',
             osc_apply_filter('email_item_inquiry_title', $content['s_title'], $aItem)
-        ), $titleWords), $aItem);
+        ), $titleWords, $content['locale']), $aItem);
         $body  = osc_apply_filter(
             'email_item_inquiry_description_after',
             osc_mailBeauty(
@@ -1051,14 +1058,15 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_item_inquiry_description', $content['s_text'], $aItem)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $aItem
         );
 
         $emailParams = array(
             'from'      => self::fromAddress(),
-            'from_name' => Mailer::siteTitle(),
+            'from_name' => Mailer::siteTitle(array('locale' => $content['locale'])),
             'to'        => $item['s_contact_email'],
             'to_name'   => $item['s_contact_name'],
             'reply_to'  => $yourEmail,
@@ -1088,7 +1096,7 @@ final class CoreEmails
             }
         }
 
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -1148,7 +1156,8 @@ final class CoreEmails
                     'email_title',
                     osc_apply_filter('email_new_comment_admin_title', $content['s_title'], $aItem)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $aItem
         );
@@ -1157,7 +1166,7 @@ final class CoreEmails
             osc_mailBeauty(osc_apply_filter(
                 'email_description',
                 osc_apply_filter('email_new_comment_admin_description', $content['s_text'], $aItem)
-            ), $words),
+            ), $words, $content['locale']),
             $aItem
         );
 
@@ -1171,7 +1180,7 @@ final class CoreEmails
                     'subject'  => $title_email,
                     'body'     => $body_email,
                 );
-                osc_sendMail($emailParams);
+                osc_sendMail($emailParams + array('locale' => $content['locale']));
             }
         }
     }
@@ -1258,7 +1267,7 @@ final class CoreEmails
         $title = osc_apply_filter('email_item_validation_title_after', osc_mailBeauty(osc_apply_filter(
             'email_title',
             osc_apply_filter('email_item_validation_title', $content['s_title'], $item)
-        ), $words), $item);
+        ), $words, $content['locale']), $item);
         $body  = osc_apply_filter(
             'email_item_validation_description_after',
             osc_mailBeauty(
@@ -1266,7 +1275,8 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_item_validation_description', $content['s_text'], $item)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $item
         );
@@ -1279,7 +1289,7 @@ final class CoreEmails
             'body'     => $body,
             'secret_link' => true,
         );
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -1370,7 +1380,7 @@ final class CoreEmails
         $title = osc_apply_filter('email_admin_new_item_title_after', osc_mailBeauty(osc_apply_filter(
             'email_title',
             osc_apply_filter('email_admin_new_item_title', $content['s_title'], $item)
-        ), $words), $item);
+        ), $words, $content['locale']), $item);
         $body  = osc_apply_filter(
             'email_admin_new_item_description_after',
             osc_mailBeauty(
@@ -1378,7 +1388,8 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_admin_new_item_description', $content['s_text'], $item)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $item
         );
@@ -1394,7 +1405,7 @@ final class CoreEmails
                     'body'     => $body,
                     'secret_link' => true,
                 );
-                osc_sendMail($emailParams);
+                osc_sendMail($emailParams + array('locale' => $content['locale']));
             }
         }
     }
@@ -1493,7 +1504,8 @@ final class CoreEmails
                     'email_title',
                     osc_apply_filter('email_item_validation_non_register_user_title', $content['s_title'], $item)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $item
         );
@@ -1504,7 +1516,8 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_item_validation_non_register_user_description', $content['s_text'], $item)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $item
         );
@@ -1518,7 +1531,7 @@ final class CoreEmails
             'secret_link' => true,
         );
 
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -1548,7 +1561,7 @@ final class CoreEmails
                 osc_mailBeauty(osc_apply_filter(
                     'email_title',
                     osc_apply_filter('email_admin_user_registration_title', $content['s_title'], $user)
-                ), $words),
+                ), $words, $content['locale']),
                 $user
             );
             $body  = osc_apply_filter(
@@ -1558,7 +1571,8 @@ final class CoreEmails
                         'email_description',
                         osc_apply_filter('email_admin_user_regsitration_description', $content['s_text'], $user)
                     ),
-                    $words
+                    $words,
+                    $content['locale']
                 ),
                 $user
             );
@@ -1573,7 +1587,7 @@ final class CoreEmails
                         'subject'  => $title,
                         'body'     => $body,
                     );
-                    osc_sendMail($emailParams);
+                    osc_sendMail($emailParams + array('locale' => $content['locale']));
                 }
             }
         }
@@ -1617,7 +1631,7 @@ final class CoreEmails
                 $phoneNumber,
                 $message
             )
-        ), $titleWords), $id, $yourEmail, $yourName, $phoneNumber, $message);
+        ), $titleWords, $content['locale']), $id, $yourEmail, $yourName, $phoneNumber, $message);
         $body  = osc_apply_filter(
             'email_item_inquiry_description_after',
             osc_mailBeauty(
@@ -1633,7 +1647,8 @@ final class CoreEmails
                         $message
                     )
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $id,
             $yourEmail,
@@ -1662,7 +1677,7 @@ final class CoreEmails
             $emailParams['add_bcc'] = $adminEmails;
         }
 
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -1725,7 +1740,8 @@ final class CoreEmails
                     'email_title',
                     osc_apply_filter('email_new_comment_user_title', $content['s_title'], $aItem)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $aItem
         );
@@ -1736,7 +1752,8 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_new_comment_user_description', $content['s_text'], $aItem)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $aItem
         );
@@ -1748,7 +1765,7 @@ final class CoreEmails
             'subject'  => $title_email,
             'body'     => $body_email,
         );
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -1787,7 +1804,7 @@ final class CoreEmails
         $title_email = osc_apply_filter('email_new_admin_title_after', osc_mailBeauty(osc_apply_filter(
             'email_title',
             osc_apply_filter('email_new_admin_title', $content['s_title'], $data)
-        ), $words), $data);
+        ), $words, $content['locale']), $data);
         $body_email  = osc_apply_filter(
             'email_new_admin_description_after',
             osc_mailBeauty(
@@ -1795,7 +1812,8 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_new_admin_description', $content['s_text'], $data)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $data
         );
@@ -1807,7 +1825,7 @@ final class CoreEmails
             'subject'  => $title_email,
             'body'     => $body_email,
         );
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -1864,7 +1882,8 @@ final class CoreEmails
                     'email_title',
                     osc_apply_filter('email_warn_expiration_title', $content['s_title'], $aItem)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $aItem
         );
@@ -1875,7 +1894,8 @@ final class CoreEmails
                     'email_description',
                     osc_apply_filter('email_warn_expiration_description', $content['s_text'], $aItem)
                 ),
-                $words
+                $words,
+                $content['locale']
             ),
             $aItem
         );
@@ -1887,7 +1907,7 @@ final class CoreEmails
             'subject'  => $title_email,
             'body'     => $body_email,
         );
-        osc_sendMail($emailParams);
+        osc_sendMail($emailParams + array('locale' => $content['locale']));
     }
 
     /**
@@ -2145,7 +2165,7 @@ final class CoreEmails
             ),
             array('{USER_NAME}', '{ITEM_TITLE}')
         );
-        return $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item)));
+        return $this->deliver(new MailComposing('listing_unpaid_reminder', $to, $name, $title, $body, $words, $htmlWords, null, null, $item, array($item), $content['locale']));
     }
 
     public function mailOrder(string $kind, Order $order, array $parcel = array(), ?Document $document = null): void
@@ -2336,6 +2356,7 @@ final class CoreEmails
             'to_name' => $composing->recipientName(),
             'subject' => $mail['subject'],
             'body'    => $mail['body'],
+            'locale'  => $composing->locale(),
         ));
         if (!$sent && $composing->order() !== null) {
             self::$orderMailFailed = true;

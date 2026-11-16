@@ -28,32 +28,19 @@ use WebThemes;
  */
 final class Mailer
 {
-    /** The language of the mail being built, set when core picks its template. */
-    private static ?string $locale = null;
-
     /**
-     * Say which language the mail being built is written in, so its site title matches.
-     * The next send takes it along and clears it.
-     */
-    public static function writtenIn(?string $locale): void
-    {
-        self::$locale = $locale === '' ? null : $locale;
-    }
-
-    /**
-     * The site title in a mail's language: the send's 'locale', else the one its template
-     * was picked in, else the current one.
+     * The site title in a mail's language: the send's 'locale', else the current one.
      *
      * @param array<string,mixed> $params osc_sendMail() parameters
      */
     public static function siteTitle(array $params = array()): string
     {
-        $locale = $params['locale'] ?? self::$locale;
-        if (!is_string($locale) || $locale === '' || !function_exists('_osc_site_text')) {
+        $locale = $params['locale'] ?? null;
+        if (!is_string($locale) || $locale === '' || !function_exists('osc_settings_text_value')) {
             return (string) osc_page_title();
         }
 
-        return _osc_site_text('pageTitle', $locale);
+        return osc_settings_text_value('pageTitle', 'osclass', $locale);
     }
 
     /**
@@ -149,10 +136,6 @@ final class Mailer
      */
     public static function send($params)
     {
-        if (is_array($params) && !isset($params['locale']) && self::$locale !== null) {
-            $params['locale'] = self::$locale;
-        }
-        self::$locale = null;
         // DO NOT send mail if it's a demo
         if (\mindstellar\security\Demo::active()) {
             return false;
@@ -403,17 +386,19 @@ final class Mailer
      *
      * @param string                             $text
      * @param array{0:array<int,string>,1:array<int,string>} $params Search list and its replacement list
+     * @param string|null                        $locale the mail's language, for {WEB_TITLE}
      *
      * @return string
      */
-    public static function beauty($text, $params)
+    public static function beauty($text, $params, ?string $locale = null)
     {
         // In the order of EmailVariables::COMMON, which the template editor lists.
+        $title  = self::siteTitle(array('locale' => $locale));
         $kwords = EmailVariables::COMMON;
         $rwords = array(
             osc_base_url(),
-            self::siteTitle(),
-            '<a href="' . osc_base_url() . '">' . self::siteTitle() . '</a>',
+            $title,
+            '<a href="' . osc_base_url() . '">' . $title . '</a>',
             date(osc_date_format() ?: 'Y-m-d') . ' ' . date(osc_time_format() ?: 'H:i:s'),
             date(osc_time_format() ?: 'H:i'),
             Params::getServerParam('REMOTE_ADDR')

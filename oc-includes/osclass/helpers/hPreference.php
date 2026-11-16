@@ -825,17 +825,40 @@ function osc_page_title()
  */
 function _osc_site_text(string $key, ?string $locale = null): string
 {
+    return osc_settings_text_value($key, 'osclass', $locale);
+}
+
+/**
+ * A text stored once per language, as $key followed by the locale code: the text for
+ * $locale, else the default language's, else the single value stored under $key, else ''.
+ *
+ * Themes use it for their own translated settings. In a Customise preview a drafted language
+ * wins over the stored one, looked up with $section as the settings page id.
+ *
+ * @param string      $key     preference name without the locale code
+ * @param string      $section preference section, e.g. the theme's name
+ * @param string|null $locale  locale code; the language of the screen being drawn when null
+ *
+ * @return string
+ */
+function osc_settings_text_value(string $key, string $section = 'osclass', ?string $locale = null): string
+{
     if ($locale === null && function_exists('osc_current_ui_locale')) {
         $locale = osc_current_ui_locale();
     }
+    $drafts = $section !== 'osclass' && function_exists('osc_customiser_draft_value');
     foreach (array((string) $locale, osc_language()) as $code) {
-        $value = $code === '' ? '' : (string) getPreference($key . $code);
-        if ($value !== '') {
+        if ($code === '') {
+            continue;
+        }
+        $value = $drafts ? osc_customiser_draft_value($section, $key, $code) : null;
+        $value = (string) ($value ?? getPreference($key . $code, $section));
+        if (trim($value) !== '') {
             return $value;
         }
     }
 
-    return (string) getPreference($key);
+    return (string) getPreference($key, $section);
 }
 
 /**

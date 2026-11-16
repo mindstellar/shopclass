@@ -175,6 +175,16 @@ $session->_set('install_storefront_failed', 0);
 install_record_lost_steps(array('storefront'));
 check('Storefront on disk is not reported missing', !$session->_get('install_storefront_failed'));
 
+harness_section('the site title');
+$title = static fn (string $name): ?string => $admin->query("SELECT s_value FROM " . DB_TABLE_PREFIX . "t_preference WHERE s_section = 'osclass' AND s_name = '" . $name . "'")->fetch_row()[0] ?? null;
+$admin->query("REPLACE INTO " . DB_TABLE_PREFIX . "t_preference (s_name, s_value, s_section, e_type) VALUES ('language', 'es_ES', 'osclass', 'STRING')");
+install_site_title('Tienda');
+check('a fresh install stores the title for the install language and as the fallback', $title('pageTitlees_ES') === 'Tienda' && $title('pageTitle') === 'Tienda');
+check('and under no other language', $count("t_preference WHERE s_name LIKE 'pageTitle%'") === 2);
+$cli = (string) file_get_contents(ABS_PATH . 'oc-includes/classes/core/cli/Cli.php');
+check('the web and command-line installers both store it this way', strpos($cli, 'install_site_title(') !== false
+    && strpos((string) file_get_contents(LIB_PATH . 'osclass/install-functions.php'), "'pageTitle' . osc_current_admin_locale()") === false);
+
 harness_section('timezone, countries and mail sender');
 check('a country picks its first timezone', \mindstellar\install\SiteDetails::timezoneForCountry('IN') === 'Asia/Kolkata' && \mindstellar\install\SiteDetails::timezoneForCountry('in.json') === 'Asia/Kolkata');
 check('no country or an unknown one is UTC', \mindstellar\install\SiteDetails::timezoneForCountry('skip') === 'UTC' && \mindstellar\install\SiteDetails::timezoneForCountry('') === 'UTC' && \mindstellar\install\SiteDetails::timezoneForCountry('ZZ') === 'UTC');

@@ -58,6 +58,13 @@ osc_add_filter('mail_layout', function (string $html, array $mail, array $params
 
 `$params` is what was passed to `osc_sendMail()`.
 
+## The mail's language
+
+Pass `'locale' => 'es_ES'` to `osc_sendMail()` to show the site name in that language;
+without it the current language is used. Pass the same code as the third argument of
+`osc_mailBeauty()` so `{WEB_TITLE}` matches. `CoreEmails::template()` returns the code
+it picked as `locale`.
+
 ## Sending without it
 
 A body that is already a whole HTML document (it contains `<html`) is sent as it

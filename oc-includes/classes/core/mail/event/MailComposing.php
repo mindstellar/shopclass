@@ -57,6 +57,7 @@ final class MailComposing extends Event implements Bridged
      * @param array<string,mixed>|null    $alert        the t_alerts row of a product alert
      * @param array<string,mixed>|null    $item         the listing row of a product alert
      * @param list<mixed>                 $legacyArgs   what old callbacks get after the text
+     * @param string|null                 $locale       the language the mail is written in
      */
     public function __construct(
         private string $kind,
@@ -69,10 +70,17 @@ final class MailComposing extends Event implements Bridged
         private ?Order $order = null,
         private ?array $alert = null,
         private ?array $item = null,
-        private array $legacyArgs = []
+        private array $legacyArgs = [],
+        private ?string $locale = null
     ) {
         $this->subjectWords = self::pairs($subjectWords);
         $this->bodyWords    = self::pairs($bodyWords);
+    }
+
+    /** The language the mail is written in, or null for the current one. */
+    public function locale(): ?string
+    {
+        return $this->locale;
     }
 
     public function kind(): string
@@ -177,8 +185,8 @@ final class MailComposing extends Event implements Bridged
     public function preview(): array
     {
         return [
-            'subject' => osc_mailBeauty(osc_apply_filter('email_title', $this->subject), $this->beautyWords($this->subjectWords)),
-            'body'    => osc_mailBeauty(osc_apply_filter('email_description', $this->body), $this->beautyWords($this->bodyWords)),
+            'subject' => osc_mailBeauty(osc_apply_filter('email_title', $this->subject), $this->beautyWords($this->subjectWords), $this->locale),
+            'body'    => osc_mailBeauty(osc_apply_filter('email_description', $this->body), $this->beautyWords($this->bodyWords), $this->locale),
         ];
     }
 

@@ -56,9 +56,9 @@ function _alert_email_recipient($user, $ads, $s_search)
  *
  * @see \mindstellar\mail\CoreEmails::alertDeliver()
  */
-function _alert_email_deliver($user, $title, $body)
+function _alert_email_deliver($user, $title, $body, ?string $locale = null)
 {
-    \mindstellar\mail\CoreEmails::alertDeliver($user, $title, $body);
+    \mindstellar\mail\CoreEmails::alertDeliver($user, $title, $body, $locale);
 }
 
 /**

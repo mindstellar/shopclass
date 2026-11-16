@@ -9,6 +9,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ### New
 - The site title and description in Settings → General are set per language; the API exposes them as `site_title_translations` and `site_description_translations`.
 - Appearance → Customise edits a theme's per-language settings, with one box per language.
+- `osc_settings_text_value()` reads a per-language setting with the default-language fallback; `osc_sendMail()` takes a `locale` key.
 - The admin bell warns when a payment method is on but has no keys.
 - The admin listing form's Location is one box that suggests cities with their region. Themes can print it on the posting form with `osc_place_field()`.
 - **Location field** in Listings → Settings picks one box, separate country, region and city boxes, or dropdown lists on the post and edit forms. `osc_place_field()` takes `style` and `part_class`.

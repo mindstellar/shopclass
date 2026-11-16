@@ -246,9 +246,9 @@ function osc_mail_links_trusted($mail, array $params = array()): bool
  *
  * @see \mindstellar\mail\Mailer::beauty()
  */
-function osc_mailBeauty($text, $params)
+function osc_mailBeauty($text, $params, ?string $locale = null)
 {
-    return \mindstellar\mail\Mailer::beauty($text, $params);
+    return \mindstellar\mail\Mailer::beauty($text, $params, $locale);
 }
 
 /**

@@ -410,8 +410,7 @@ class Cli
             // Site identity, matching the GUI installer's basic_info().
             $prefTable = DB_TABLE_PREFIX . 't_preference';
             $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
-            Db::execute($replace, ['pageTitle', $siteTitle, 'osclass', 'STRING']);
-            Db::execute($replace, ['pageTitle' . $locale, $siteTitle, 'osclass', 'STRING']);
+            install_site_title((string) $siteTitle);
             Db::execute($replace, ['contactEmail', $adminEmail, 'osclass', 'STRING']);
         } catch (\Throwable $e) {
             $this->err('Schema installed, but creating the admin account failed: ' . $e->getMessage() . "\n");
