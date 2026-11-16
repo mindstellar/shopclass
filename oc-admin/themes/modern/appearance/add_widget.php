@@ -64,7 +64,9 @@ $currentWidgetConfig = array();
 if ($currentTypeId !== '' && !empty($widget['s_config'])) {
     $decodedWidgetConfig = json_decode($widget['s_config'], true);
     if (is_array($decodedWidgetConfig)) {
-        $currentWidgetConfig = $decodedWidgetConfig;
+        $currentWidgetConfig = isset($widgetTypes[$currentTypeId])
+            ? \mindstellar\widgets\WidgetConfig::forEditor($widgetTypes[$currentTypeId], $decodedWidgetConfig)
+            : $decodedWidgetConfig;
     }
 }
 

@@ -124,6 +124,18 @@ namespace {
             echo '<promise>' . osc_esc_html($config['text'] ?? '') . '</promise>';
         },
     ));
+    osc_register_widget('aisle.banner', array(
+        'label'  => 'Banner',
+        'fields' => array(
+            array('name' => 'heading', 'label' => 'Heading', 'type' => 'text', 'translate' => true, 'default' => 'Sale'),
+            array('name' => 'text', 'label' => 'Text', 'type' => 'richtext', 'translate' => true),
+            array('name' => 'button_url', 'label' => 'Link', 'type' => 'text'),
+            array('name' => 'count', 'label' => 'Count', 'type' => 'number', 'translate' => true),
+        ),
+        'render' => static function ($config) {
+            echo '<banner>' . osc_esc_html($config['heading'] ?? '') . '|' . ($config['text'] ?? '') . '</banner>';
+        },
+    ));
     osc_register_widget('other.thing', array('label' => 'Other', 'render' => static function () {
         echo '<other>';
     }));

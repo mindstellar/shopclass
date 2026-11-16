@@ -409,8 +409,9 @@
             }
             row.config[name] = value;
             var control = fieldset.querySelector('[name="config[' + CSS.escape(name) + ']"]');
-            var rich = control && control.getAttribute('data-osc-richtext') !== null;
-            if (typing && !rich) {
+            // Rich and per-language text reload the preview instead of being typed into it.
+            var reload = control && (control.getAttribute('data-osc-richtext') !== null || control.getAttribute('data-osc-translated') !== null);
+            if (typing && !reload) {
                 post({text: {section: row.ref, field: name, value: value}});
                 changed(false, location_);
             } else {

@@ -8,6 +8,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### New
 - `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
+- Widget and section text fields can be set per language with `'translate' => true`, in Appearance → Widgets and Customise.
 - The site title and description in Settings → General are set per language; the API exposes them as `site_title_translations` and `site_description_translations`.
 - Appearance → Customise edits a theme's per-language settings, with one box per language.
 - `osc_settings_text_value()` reads a per-language setting with the default-language fallback; `osc_sendMail()` takes a `locale` key.

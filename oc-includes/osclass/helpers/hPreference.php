@@ -843,22 +843,44 @@ function _osc_site_text(string $key, ?string $locale = null): string
  */
 function osc_settings_text_value(string $key, string $section = 'osclass', ?string $locale = null): string
 {
+    $drafts = $section !== 'osclass' && function_exists('osc_customiser_draft_value');
+
+    return _osc_locale_text(static function (string $code) use ($key, $section, $drafts) {
+        if ($code === '') {
+            return getPreference($key, $section);
+        }
+        $value = $drafts ? osc_customiser_draft_value($section, $key, $code) : null;
+
+        return $value ?? getPreference($key . $code, $section);
+    }, $locale);
+}
+
+/**
+ * The one fallback for per-language text: $read($locale), else $read() for the default
+ * language, else $read('') for the single value stored before the text was per language.
+ *
+ * @internal Shared by osc_settings_text_value() and translated widget fields.
+ *
+ * @param callable(string):mixed $read   the stored text for a locale code, or the single value for ''
+ * @param string|null            $locale locale code; the language of the screen being drawn when null
+ */
+function _osc_locale_text(callable $read, ?string $locale = null): string
+{
     if ($locale === null && function_exists('osc_current_ui_locale')) {
         $locale = osc_current_ui_locale();
     }
-    $drafts = $section !== 'osclass' && function_exists('osc_customiser_draft_value');
     foreach (array((string) $locale, osc_language()) as $code) {
         if ($code === '') {
             continue;
         }
-        $value = $drafts ? osc_customiser_draft_value($section, $key, $code) : null;
-        $value = (string) ($value ?? getPreference($key . $code, $section));
-        if (trim($value) !== '') {
-            return $value;
+        $value = $read($code);
+        if (is_scalar($value) && trim((string) $value) !== '') {
+            return (string) $value;
         }
     }
+    $single = $read('');
 
-    return (string) getPreference($key, $section);
+    return is_scalar($single) ? (string) $single : '';
 }
 
 /**
