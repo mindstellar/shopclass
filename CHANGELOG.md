@@ -8,9 +8,9 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
 ### New
 - `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
-- Widget and section text fields can be set per language with `'translate' => true`, in Appearance → Widgets and Customise.
+- With `OSC_DEBUG_LOG` on, `oc-content/.htaccess` gets a rule that blocks `*.log` files on Apache.
+- Widget and section text fields can be set per language with `'translate' => true`, and Customise edits a theme's per-language settings, one box per language.
 - The site title and description in Settings → General are set per language; the API exposes them as `site_title_translations` and `site_description_translations`.
-- Appearance → Customise edits a theme's per-language settings, with one box per language.
 - `osc_settings_text_value()` reads a per-language setting with the default-language fallback; `osc_sendMail()` takes a `locale` key.
 - The admin bell warns when a payment method is on but has no keys.
 - The admin listing form's Location is one box that suggests cities with their region. Themes can print it on the posting form with `osc_place_field()`.

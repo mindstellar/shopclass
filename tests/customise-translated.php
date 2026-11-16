@@ -35,6 +35,7 @@ customiser_kit_declare(DECLARE_LOOK);
 use mindstellar\widgets\CustomiserDraft;
 use mindstellar\widgets\CustomiserScreen;
 
+// Stubbed: the real path, URL and CSRF helpers redeclare the ones customiser-kit already installs.
 foreach (array(
     'osc_themes_path'                => 'return sys_get_temp_dir() . "/";',
     'osc_current_admin_theme_path'   => 'return null;',
@@ -51,7 +52,7 @@ require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
 require_once ABS_PATH . 'oc-admin/themes/modern/functions.php';
 require_once ABS_PATH . 'oc-includes/osclass/helpers/hAdminUi.php';
 
-/** The base controller, stubbed: the view is recorded and nothing is drawn. */
+/** The base controller is stubbed: the real one needs a full admin request. */
 class AdminSecBaseModel
 {
     protected $action;

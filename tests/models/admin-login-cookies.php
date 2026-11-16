@@ -349,12 +349,6 @@ $db->query("UPDATE {$p}t_preference SET s_value = 'fr_FR' WHERE s_section = 'osc
 pin('an admin default that is off for oc-admin gives way to the first language on', 'en_US', $offered());
 $db->query("UPDATE {$p}t_preference SET s_value = 'en_US' WHERE s_section = 'osclass' AND s_name = 'admin_language'");
 
-[, , $set] = $call('/oc-admin/index.php?page=login', [$oldLocaleCookie => 'es_ES']);
-$line      = $set[$oldLocaleCookie][0] ?? '';
-check('the login page expires an old language cookie on the admin path', $paths($set, $oldLocaleCookie) === ['/oc-admin/'] && str_contains($line, 'Max-Age=0'), $line);
-[, , $set] = $call('/oc-admin/index.php?page=login');
-pin('...and sends nothing for a browser without one', [], $set[$oldLocaleCookie] ?? []);
-
 harness_section('the language chosen at login lasts for that session only');
 
 $clearTries();

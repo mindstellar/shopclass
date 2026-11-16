@@ -198,6 +198,16 @@ current request: it then reads the preference `logo` in the section `folio`
 directly. A page that sets its own `section` or `column` must be registered
 for this to work.
 
+## Translated fields on a preference page
+
+A `text`, `textarea` or `richtext` field with `translate` is stored once per enabled
+language, as the field name plus the locale code (`hero_titlefr_FR`). The plain name
+(`hero_title`) is the text saved before the field was translated, or the default language's
+text. Always read it with `osc_settings_text_value( $name, $section )`: the visitor's
+language, then the default language, then the plain name, then `''`. In a Customise preview
+it reads the drafted language first. Keep one stored key per language even on a one-language
+site, so turning on a second language strands nothing.
+
 ## Storing in a table instead
 
 A page can write one row of a table rather than one preference per field:

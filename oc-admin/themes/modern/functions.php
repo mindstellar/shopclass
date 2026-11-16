@@ -420,17 +420,16 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
             <span class="form-sublabel" id="<?php echo osc_esc_html($id); ?>-label"><?php echo osc_esc_html($label); ?></span>
         <?php }
 
+        // Text saved before the field was rich opens as paragraphs, not as one run-on line.
+        $richText  = static fn ($text) => (string) $text !== '' && !preg_match('/<[a-z]/i', (string) $text) ? osc_autop((string) $text) : $text;
+        $richExtra = $fieldType !== 'richtext' ? array() : array('rows' => 8, 'width' => 'full', 'preset' => 'full', 'height' => 300, 'media' => true, 'upload_url' => adminLibraryUploadUrl());
         if ($locales !== array()) {
             // One control per locale in the settings screens' language tabs, posted as config[<name><locale>].
             $texts = is_array($value) ? $value : array();
             if ($fieldType === 'richtext') {
-                foreach ($texts as $code => $text) {
-                    $texts[$code] = $text !== '' && !preg_match('/<[a-z]/i', (string) $text) ? osc_autop((string) $text) : $text;
-                }
+                $texts = array_map($richText, $texts);
             }
-            $extra = $fieldType === 'richtext'
-                ? array('rows' => 8, 'width' => 'full', 'preset' => 'full', 'height' => 300, 'media' => true, 'upload_url' => adminLibraryUploadUrl())
-                : ($fieldType === 'textarea' ? array('rows' => 5, 'width' => 'full') : array());
+            $extra = $fieldType === 'richtext' ? $richExtra : ($fieldType === 'textarea' ? array('rows' => 5, 'width' => 'full') : array());
             osc_admin_field(array_merge($spec, $extra, array(
                 'type'           => $fieldType,
                 'value'          => $texts,
@@ -498,13 +497,8 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
                 osc_admin_textarea(array_merge($spec, array('rows' => 5, 'width' => 'full')));
                 break;
             case 'richtext':
-                // Mounted by editor.js where the screen loads it; a plain textarea elsewhere. Text saved
-                // before the field was rich opens as paragraphs, not as one run-on line.
-                if ($val !== '' && !preg_match('/<[a-z]/i', $val)) {
-                    $spec['value'] = osc_autop($val);
-                }
-                osc_admin_field(array_merge($spec, array('type' => 'richtext', 'rows' => 8, 'width' => 'full', 'preset' => 'full', 'height' => 300,
-                    'media' => true, 'upload_url' => adminLibraryUploadUrl())));
+                // Mounted by editor.js where the screen loads it; a plain textarea elsewhere.
+                osc_admin_field(array_merge($spec, $richExtra, array('type' => 'richtext', 'value' => $richText($val))));
                 break;
             case 'image':
                 // A media URL chosen via the picker (parts/media-picker.php), so the value

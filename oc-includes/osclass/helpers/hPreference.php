@@ -832,8 +832,9 @@ function _osc_site_text(string $key, ?string $locale = null): string
  * A text stored once per language, as $key followed by the locale code: the text for
  * $locale, else the default language's, else the single value stored under $key, else ''.
  *
- * Themes use it for their own translated settings. In a Customise preview a drafted language
- * wins over the stored one, looked up with $section as the settings page id.
+ * Themes use it for their own translated settings: field `title` is stored as `titlefr_FR`,
+ * and the plain `title` is the single value from before. In a Customise preview a drafted
+ * language wins over the stored one, looked up with $section as the settings page id.
  *
  * @param string      $key     preference name without the locale code
  * @param string      $section preference section, e.g. the theme's name

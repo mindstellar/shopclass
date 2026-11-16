@@ -62,6 +62,7 @@ class ErrorHandler
                 ini_set('display_errors', '0');
                 $this->logEnabled = true;
                 $this->logFile = CONTENT_PATH . 'debug.log';
+                \mindstellar\utility\FileSystem::denyLogs(CONTENT_PATH);
             }
         } else {
             // Production: never leak raw PHP errors to the page — our handlers

@@ -71,7 +71,8 @@ A `text`, `textarea` or `richtext` field with `'translate' => true` is edited on
 language. Each text is stored in the config as the field name plus the locale code (`titlefr_FR`),
 and the plain name holds the default language's text. Your render callback gets the plain name
 already set to the visitor's language, else the default language's, else a value saved before the
-field was translated.
+field was translated. A theme's own translated settings use the same key shape and are read with
+`osc_settings_text_value( $name, $section )`.
 
 ```php
 osc_register_widget('aisle.hero', array(
