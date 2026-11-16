@@ -2492,10 +2492,6 @@ msgid ""
 "day before."
 msgstr ""
 
-#: oc-admin/themes/modern/plugins/index.php
-msgid "An update is ready for this plugin. Open the Updates tab to apply it."
-msgstr ""
-
 #: oc-admin/themes/modern/appearance/index.php
 msgid "An update is ready for this theme. "
 msgstr ""
@@ -10499,6 +10495,10 @@ msgid "No keys yet."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
+msgid "No language selected."
+msgstr ""
+
+#: oc-admin/themes/modern/languages/index.php
 msgid "No languages yet"
 msgstr ""
 
@@ -11300,6 +11300,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Open Plugins"
+msgstr ""
+
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
+msgid "Open Updates"
 msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
@@ -17716,6 +17720,10 @@ msgstr ""
 #: oc-admin/themes/modern/settings/locations/data.php
 #: oc-includes/classes/admin/ajax/UpdateAjax.php
 msgid "Update available"
+msgstr ""
+
+#: oc-includes/osclass/classes/datatables/PluginsDataTable.php
+msgid "Update available."
 msgstr ""
 
 #: oc-includes/classes/admin/form/MainSettingsScreen.php

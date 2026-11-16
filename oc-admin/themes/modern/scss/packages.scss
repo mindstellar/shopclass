@@ -407,8 +407,18 @@
 
   .osc-pkg-note {
     font-size: $font-size-label;
-    margin: .35rem 0 0;
+    margin: .2rem 0 0;
+    padding-inline: 0;
+
+    a {
+      color: inherit;
+    }
   }
+}
+
+// Table links have no underline, but this one sits inside coloured text and needs it.
+#upload-plugins .plugins-table .osc-pkg-note a {
+  text-decoration-line: underline;
 }
 
 // The table sits in #upload-plugins and #datatablesForm, whose phone rules both label cells.

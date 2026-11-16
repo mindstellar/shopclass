@@ -189,6 +189,8 @@ class PluginsDataTable extends DataTable
             'bulkactions' => $this->bulkCheckbox($pkg['file'], $pkg['name'], 'plugin[]'),
             'status'      => osc_esc_html($pkg['state']),
             'name'        => '<strong class="plugin-name" dir="auto">' . osc_esc_html($pkg['name']) . '</strong>'
+                . (!empty($pkg['update']) ? '<p class="osc-pkg-note osc-pkg-note--update">' . osc_esc_html(__('Update available.'))
+                    . ' <a href="#market-tab-updates">' . osc_esc_html(__('Open Updates')) . '</a></p>' : '')
                 . self::shortDescription((string) $pkg['description']) . $actions,
             'version'     => osc_esc_html($pkg['version']),
         );

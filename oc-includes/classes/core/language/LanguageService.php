@@ -152,19 +152,41 @@ final class LanguageService
     }
 
     /**
-     * The language the admin login offers: the remembered one, else the admin default, else the
-     * first language on for oc-admin. A code that is not on for oc-admin is skipped.
+     * Whether every language folder in a package zip is installed already; false for a zip
+     * with none.
      */
-    public static function adminLoginLocale(string $remembered = ''): string
+    public function packageInstalled(string $zipFile): bool
     {
-        $enabled = array_column(osc_all_enabled_locales_for_admin(), 'pk_c_code');
-        foreach (array($remembered, (string) osc_admin_language()) as $code) {
-            if ($code !== '' && in_array($code, $enabled, true)) {
-                return $code;
+        $codes = array();
+        $zip   = class_exists(\ZipArchive::class) ? new \ZipArchive() : null;
+        if ($zip !== null && $zip->open($zipFile) === true) {
+            for ($i = 0; $i < $zip->numFiles; $i++) {
+                $top = strstr((string) $zip->getNameIndex($i), '/', true);
+                if (is_string($top) && preg_match('/^[a-z]{2,3}_[A-Za-z]{2,4}$/', $top) === 1) {
+                    $codes[$top] = true;
+                }
+            }
+            $zip->close();
+        }
+        foreach (array_keys($codes) as $code) {
+            if (!is_array($this->locales->findByPrimaryKey((string) $code))) {
+                return false;
             }
         }
 
-        return (string) ($enabled[0] ?? osc_admin_language());
+        return $codes !== array();
+    }
+
+    /**
+     * The language the admin login offers: the admin default when it is on for oc-admin, else the
+     * first language on for oc-admin.
+     */
+    public static function adminLoginLocale(): string
+    {
+        $enabled = array_column(osc_all_enabled_locales_for_admin(), 'pk_c_code');
+        $default = (string) osc_admin_language();
+
+        return in_array($default, $enabled, true) ? $default : (string) ($enabled[0] ?? $default);
     }
 
     /**

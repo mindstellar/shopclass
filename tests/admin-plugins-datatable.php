@@ -203,6 +203,8 @@ check('the description is escaped', strpos($data['aRows'][2]['name'], '&lt;b&gt;
 $long = run_table(array(pkg('long', 'Long', 'active', array('description' => str_repeat('word ', 40)))), array())[1]['aRows'][0]['name'] ?? '';
 check('a long description is one short line with the full text in its title', strpos($long, '…') !== false && strpos($long, 'title="word word') !== false);
 pin('status is the plain state', 'disabled', $data['aRows'][2]['status']);
+check('a plugin with an update says so under its name, with a link to the Updates tab', (bool) preg_match('#^<strong class="plugin-name" dir="auto">Alpha</strong><p class="osc-pkg-note osc-pkg-note--update">Update available. <a href="\#market-tab-updates">Open Updates</a></p><span class="plugin-desc"#', $data['aRows'][2]['name']), $data['aRows'][2]['name']);
+check('...and one without an update has no note', strpos($mid['name'], 'osc-pkg-note') === false);
 
 harness_section('Status tabs');
 pin('Active', array('Beta', 'Mid'), run_table($packages, array('status' => 'active'))[0]);

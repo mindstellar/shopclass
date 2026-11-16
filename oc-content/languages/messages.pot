@@ -4378,6 +4378,10 @@ msgstr ""
 msgid "This key cannot hold: %s"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "This language was already installed. It has been updated."
+msgstr ""
+
 #: oc-includes/osclass/gui/contact-message-content.php
 msgid "This link is not valid or has expired."
 msgstr ""

@@ -204,8 +204,12 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The language import list is in alphabetical order.
 - The Edit language screen has a Save changes button again.
 - Installing or updating a language keeps e-mail templates the admin edited, names them in a notice, and only writes to e-mail pages.
-- The admin login remembers the language chosen last, also after logging out.
-- Language bulk actions with nothing ticked say "No language selected."
+- The admin login offers the Default admin language.
+- Language bulk actions with nothing ticked say "No language selected." before asking to confirm.
+- Uploading a language that is already installed says it was updated.
+- The Edit language message names the full language, such as English (Australia).
+- Debug mode no longer adds a timing comment or the query panel after a JSON reply, so Customise saves work.
+- The Plugins table shows "Update available" under the plugin's name, not in the Status column.
 - `GET` and `PATCH /api/v1/admin/settings` no longer fail with a server error.
 - A part refund of a unit with tax in its price refunds that price, not a cent more.
 - The place picker suggests place names in the language picked on the site.

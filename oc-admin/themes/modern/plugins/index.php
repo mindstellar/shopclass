@@ -164,13 +164,8 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
                 $state = (string) ob_get_clean();
                 ob_start();
                 osc_package_mode_badge($pkg['modes']);
-                $badge = (string) ob_get_clean();
-                $note  = $pkg['update'] ? osc_esc_html(__('An update is ready for this plugin. Open the Updates tab to apply it.')) : '';
-                if ($note !== '' || $badge !== '') {
-                    $state .= '<p class="osc-pkg-note osc-pkg-note--' . ($note !== '' ? 'update' : 'info') . '">' . $note . ' ' . $badge . '</p>';
-                }
 
-                return $state;
+                return $state . ' ' . ob_get_clean();
             },
             'empty'     => $status !== '' || $search !== ''
                 ? array(

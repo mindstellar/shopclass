@@ -98,10 +98,12 @@ class CAdminLanguages extends AdminSecBaseModel
         }
         osc_csrf_check();
         $filePackage = Params::getFiles('package');
+        $installed   = false;
 
         if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
-            $path   = osc_translations_path();
-            $status = osc_unzip_file($filePackage['tmp_name'], $path);
+            $path      = osc_translations_path();
+            $installed = \mindstellar\language\LanguageService::make()->packageInstalled($filePackage['tmp_name']);
+            $status    = osc_unzip_file($filePackage['tmp_name'], $path);
             @unlink($filePackage['tmp_name']);
         } else {
             $status = 3;
@@ -115,7 +117,8 @@ class CAdminLanguages extends AdminSecBaseModel
             case (1):
                 $kept = osc_importNewLocales();
                 if ($kept !== null) {
-                    $msg = _m('Language installed');
+                    $msg = $installed ? _m('This language was already installed. It has been updated.')
+                        : _m('Language installed');
                     osc_add_flash_ok_message($msg, 'admin');
                     $this->flashKeptMails($kept);
                 } else {
@@ -345,7 +348,7 @@ class CAdminLanguages extends AdminSecBaseModel
         osc_invalidate_locale_cache();
         if ($iUpdated > 0) {
             osc_purge_page_cache('language');
-            osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageShortName), 'admin');
+            osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageName), 'admin');
         }
         $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
     }
