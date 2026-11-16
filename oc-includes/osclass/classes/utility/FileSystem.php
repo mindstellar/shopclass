@@ -74,6 +74,27 @@ class FileSystem
     }
 
     /**
+     * Deny web access to *.log files under a folder (Apache 2.4 and 2.2): create its .htaccess,
+     * or add the rule to one that has no .log rule yet. Other rules are left as they are.
+     *
+     * @param string $dir
+     *
+     * @return void
+     */
+    public static function denyLogs(string $dir): void
+    {
+        $file  = rtrim($dir, '/\\') . '/.htaccess';
+        $rule  = "<FilesMatch \"\\.log$\">\n"
+            . "    <IfModule mod_authz_core.c>\n        Require all denied\n    </IfModule>\n"
+            . "    <IfModule !mod_authz_core.c>\n        Order allow,deny\n        Deny from all\n    </IfModule>\n"
+            . "</FilesMatch>\n";
+        $found = is_file($file) ? (string) @file_get_contents($file) : '';
+        if (strpos($found, '\\.log$') === false && (is_writable($file) || (!is_file($file) && is_writable($dir)))) {
+            @file_put_contents($file, $found . ($found !== '' && substr($found, -1) !== "\n" ? "\n" : '') . $rule);
+        }
+    }
+
+    /**
      * Sets access and modification time of file.
      *
      * @param string|iterable<string> $files A filename, an array of files, or a \Traversable instance to create
