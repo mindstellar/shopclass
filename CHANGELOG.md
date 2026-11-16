@@ -104,6 +104,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Categories has a **⋯** actions sheet on phones.
 - `osc.sortable(el, {tree: {…}})`, `osc.flatTree`, `osc.toast(text, {undo, ms})` and `osc.announce(el, text)` are documented for plugin screens.
 - The admin reads right to left for a right-to-left admin language: the page mirrors, and arrows, selects and joined buttons turn with it.
+- Settings > General has a Default admin language.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
@@ -199,6 +200,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The language import list is in alphabetical order.
 - The Edit language screen has a Save changes button again.
 - Installing or updating a language keeps e-mail templates the admin edited, names them in a notice, and only writes to e-mail pages.
+- The admin login remembers the language chosen last, also after logging out.
+- Language bulk actions with nothing ticked say "No language selected."
 - `GET` and `PATCH /api/v1/admin/settings` no longer fail with a server error.
 - A part refund of a unit with tax in its price refunds that price, not a cent more.
 - The place picker suggests place names in the language picked on the site.
