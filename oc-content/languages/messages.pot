@@ -2031,6 +2031,10 @@ msgstr ""
 msgid "No keywords have been deleted"
 msgstr ""
 
+#: oc-includes/osclass/classes/controller/admin/CAdminLanguages.php
+msgid "No language selected."
+msgstr ""
+
 #: oc-includes/osclass/gui/account/user-items-content.php
 msgid "No listing is waiting for payment."
 msgstr ""
