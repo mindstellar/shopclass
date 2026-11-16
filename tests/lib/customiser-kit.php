@@ -137,6 +137,7 @@ namespace {
             array('name' => 'logo', 'label' => 'Logo', 'type' => 'image'),
             array('name' => 'api_key', 'label' => 'Key', 'type' => 'secret', 'write_only' => true),
             array('name' => 'hero_title', 'label' => 'Old headline', 'type' => 'text'),
+            array('name' => 'announcement', 'label' => 'Announcement', 'type' => 'text', 'translate' => true, 'maxlength' => 20),
         ),
     ));
 

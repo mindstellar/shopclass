@@ -34,7 +34,8 @@ invalid:
 - `locations` must be widget locations the theme declares, `types` registered
   widget types, and `preview` a URL on this site.
 - `settings.fields` must be fields of the named settings page. Secret, custom,
-  category-mode, rich text and translated fields are not allowed; core drops them.
+  category-mode and rich text fields are not allowed; core drops them. A
+  translated field gets one box per language and cannot be `live`.
 - `swatches` are printed as a background colour only when they match
   `#rrggbb`. A `select` field with swatches is drawn as colour circles.
 - `live` names fields the preview applies without a reload, as attributes on
@@ -100,7 +101,8 @@ no draft for the active theme, the preview shows the published page. In a previe
   id `0`.
 - `osc_customiser_preview()` is `true`.
 - `osc_customiser_draft_value( $page, $name )` returns the drafted look value, or
-  `null` when it is not drafted. Read it before the saved setting.
+  `null` when it is not drafted. Read it before the saved setting. For a translated
+  field it returns the visitor's language, or the one passed as a third argument.
 - The response is not cacheable and sends `X-Robots-Tag: noindex`, and
   `osc_head()` prints `<meta name="osc-customiser" content="ADMIN ORIGIN">`.
 - `osc_customiser_preview_rows( $location )` gives the drafted rows if you render

@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- Appearance → Customise edits a theme's per-language settings, with one box per language.
 - The admin bell warns when a payment method is on but has no keys.
 - The admin listing form's Location is one box that suggests cities with their region. Themes can print it on the posting form with `osc_place_field()`.
 - **Location field** in Listings → Settings picks one box, separate country, region and city boxes, or dropdown lists on the post and edit forms. `osc_place_field()` takes `style` and `part_class`.

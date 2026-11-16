@@ -252,6 +252,7 @@ $currentWidgetConfig = array();
                         $czLabel = (string) ($czField['label'] ?? $czName);
                         $czValue = is_scalar($czLook['value']) ? (string) $czLook['value'] : '';
                         $czSwatches = $czType === 'select' ? ($customiser['swatches'][$czName] ?? array()) : array();
+                        if (($czLook['locales'] ?? array()) === array()) {
                         ?>
                         <div class="cz-field" data-look="<?php echo osc_esc_html($czName); ?>" data-look-type="<?php echo osc_esc_html($czType); ?>">
                             <?php if ($czType === 'checkbox') { ?>
@@ -292,6 +293,23 @@ $currentWidgetConfig = array();
                                 ))); ?>
                             <?php } ?>
                         </div>
+                        <?php } else { ?>
+                        <div class="cz-field" data-look="<?php echo osc_esc_html($czName); ?>" data-look-type="<?php echo osc_esc_html($czType); ?>" data-look-translate>
+                            <?php osc_admin_field(array_merge($czField, array(
+                                'id'             => $czId,
+                                'name'           => $czName,
+                                'translate_name' => $czName . '[%s]',
+                                'label'          => $czLabel,
+                                'layout'         => 'stacked',
+                                'translate'      => true,
+                                'locales'        => $czLook['locales'],
+                                'value'          => $czLook['value'],
+                                'required'       => false,
+                                'help'           => '',
+                                'help_html'      => '',
+                            ))); ?>
+                        </div>
+                        <?php } ?>
                     <?php } ?>
                 </section>
             <?php } ?>

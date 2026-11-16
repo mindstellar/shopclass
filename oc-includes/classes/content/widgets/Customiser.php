@@ -13,6 +13,7 @@ declare(strict_types=1);
 namespace mindstellar\widgets;
 
 use mindstellar\admin\form\store\StoreFactory;
+use mindstellar\admin\ui\Field;
 use mindstellar\boot\CoreServices;
 use mindstellar\database\Db;
 use mindstellar\pages\PageQuery;
@@ -246,15 +247,21 @@ final class Customiser
         if ($page !== null && $draft['settings'] !== array()) {
             $fields = array_intersect_key($this->lookFields(), $draft['settings']);
             $values = array_intersect_key($draft['settings'], $fields);
-            $store  = StoreFactory::forPage($page);
-            $before = array();
+            $store   = StoreFactory::forPage($page);
+            $before  = array();
+            $locales = array();
             foreach ($fields as $name => $field) {
                 if ($field['type'] === 'image') {
                     $before[$name] = $store->value($name, $field, null);
                 }
+                $locales[$name] = osc_settings_field_locales($field);
+                if ($locales[$name] !== array()) {
+                    // The store writes every locale, so the ones not drafted keep their stored text.
+                    $values[$name] = array_intersect_key((is_array($values[$name]) ? $values[$name] : array()) + (array) $store->value($name, $field, null), $locales[$name]);
+                }
             }
             try {
-                $store->save($fields, $values, array(), null);
+                $store->save($fields, $values, $locales, null);
             } catch (\Throwable $e) {
                 return array('status' => 500, 'errors' => array(__('The look settings could not be published.')));
             }
@@ -627,6 +634,11 @@ final class Customiser
                 }
                 continue;
             }
+            $locales = osc_settings_field_locales($field);
+            if ($locales !== array()) {
+                $values[$name] = $this->translatedValue($field, $locales, $value, $values[$name] ?? null, $errors);
+                continue;
+            }
             if (is_array($value)) {
                 $errors[] = sprintf(__('%s is not one of the available options'), $field['label'] ?? $name);
                 continue;
@@ -657,6 +669,53 @@ final class Customiser
         }
 
         return array('values' => $values, 'uploads' => $uploads);
+    }
+
+    /**
+     * A translated look field's posted locale => text, each sanitised and validated as the
+     * settings screen does, merged over the locales already drafted.
+     *
+     * @param array<string,mixed>  $field
+     * @param array<string,string> $locales code => locale name
+     * @param mixed                $posted
+     * @param mixed                $drafted
+     * @param string[]             $errors
+     *
+     * @return array<string,string>
+     */
+    private function translatedValue(array $field, array $locales, $posted, $drafted, array &$errors): array
+    {
+        $label  = (string) ($field['label'] ?? $field['name']);
+        $merged = is_array($drafted) ? array_intersect_key($drafted, $locales) : array();
+        if (!is_array($posted)) {
+            $errors[] = sprintf(__('%s is not in the expected format'), $label);
+
+            return $merged;
+        }
+        foreach ($posted as $code => $text) {
+            $code = (string) $code;
+            if (!isset($locales[$code])) {
+                $errors[] = sprintf(_m('%s is not a language of this site'), $code);
+                continue;
+            }
+            $sub = array(
+                'name'  => Field::translatedName($field, $code),
+                'label' => $label . ' (' . $locales[$code] . ')',
+            ) + $field;
+            if (is_array($text)) {
+                $errors[] = sprintf(__('%s is not in the expected format'), $sub['label']);
+                continue;
+            }
+            $clean = \Params::withRequest(array($sub['name'] => (string) $text), static fn () => osc_settings_sanitize($sub));
+            $error = osc_settings_validate($sub, $clean);
+            if ($error !== null) {
+                $errors[] = $error;
+                continue;
+            }
+            $merged[$code] = (string) $clean;
+        }
+
+        return $merged;
     }
 
     /**

@@ -239,12 +239,12 @@ final class CustomiserScreen
 
     /**
      * The look fields in the order the theme named them, each with the value to show: the
-     * drafted one, else the published one.
+     * drafted one, else the published one. A translated field's value is locale => text.
      *
      * @param array<string,mixed>      $spec
      * @param array<string,mixed>|null $draft
      *
-     * @return array<string,array{field:array<string,mixed>,value:mixed,preview_url:string}>
+     * @return array<string,array{field:array<string,mixed>,value:mixed,locales:array<string,string>,preview_url:string}>
      */
     private static function look(array $spec, ?array $draft): array
     {
@@ -256,11 +256,21 @@ final class CustomiserScreen
             if (!isset($fields[$name])) {
                 continue;
             }
-            $value = is_array($draft) && array_key_exists($name, $draft['settings']) ? $draft['settings'][$name] : ($stored[$name] ?? '');
+            $value   = is_array($draft) && array_key_exists($name, $draft['settings']) ? $draft['settings'][$name] : ($stored[$name] ?? '');
+            $locales = osc_settings_field_locales($fields[$name]);
+            if ($locales !== array()) {
+                // A translated field drafts only the locales the admin changed.
+                $drafted = is_array($value) ? $value : array();
+                $value   = array();
+                foreach ($locales as $code => $localeName) {
+                    $value[$code] = (string) ($drafted[$code] ?? $stored[$name][$code] ?? '');
+                }
+            }
             $look[$name] = array(
                 'field'       => $fields[$name],
                 'value'       => $value,
-                'preview_url' => $fields[$name]['type'] === 'image' && (string) $value !== '' ? SettingsImage::url($value, 'thumbnail') : '',
+                'locales'     => $locales,
+                'preview_url' => $fields[$name]['type'] === 'image' && !is_array($value) && (string) $value !== '' ? SettingsImage::url($value, 'thumbnail') : '',
             );
         }
 
