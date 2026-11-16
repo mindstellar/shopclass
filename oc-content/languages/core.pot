@@ -11683,10 +11683,6 @@ msgstr ""
 msgid "Page title"
 msgstr ""
 
-#: oc-admin/themes/modern/settings/index.php
-msgid "Page title: this field is required"
-msgstr ""
-
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/pages/index.php
 #: oc-includes/osclass/classes/AdminMenu.php

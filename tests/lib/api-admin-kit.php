@@ -186,10 +186,11 @@ function api_admin_key(int $adminId, bool $moderator = false, ?array $scopes = n
  *
  * @param Closure|null $settings fn(): ApiSettings, read for each call; the defaults when null
  * @param Closure|null $limiter  fn(): RateLimiter, read for each call; one that never refuses when null
+ * @param SiteFacts|null $facts the site's locales; English alone when null
  */
-function api_admin_caller(?Closure $settings = null, ?Closure $limiter = null): Closure
+function api_admin_caller(?Closure $settings = null, ?Closure $limiter = null, ?SiteFacts $facts = null): Closure
 {
-    $facts     = new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr']]);
+    $facts   ??= new SiteFacts('en_US', ['en_US' => ['name' => 'English', 'direction' => 'ltr']]);
     $settings ??= static fn (): ApiSettings => new ApiSettings(true, userKeys: true);
     $links     = new class () implements Links {
         public function listing(array $item): string

@@ -2020,6 +2020,7 @@ The site, its locales and its collections
 
 | Parameter | In | Type | Required | Notes |
 |---|---|---|---|---|
+| `locale` | query | string | no | A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default. |
 | `If-None-Match` | header | string | no | An ETag from an earlier answer: 304 with no body while it still matches. |
 
 Answers: 200 OK (`SiteDocument`); 304 Not modified; 401 No valid credential; 403 Not allowed for this credential; 422 Not valid; 429 Too many requests; 500 Server error; 503 Maintenance.

@@ -2019,7 +2019,9 @@ function basic_info()
 
         $prefTable = DB_TABLE_PREFIX . 't_preference';
         $replace   = "REPLACE INTO $prefTable (s_name, s_value, s_section, e_type) VALUES (?, ?, ?, ?)";
+        // The install language's own title, and the single one every other language falls back to.
         \mindstellar\database\Db::execute($replace, array('pageTitle', $webTitle, 'osclass', 'STRING'));
+        \mindstellar\database\Db::execute($replace, array('pageTitle' . osc_current_admin_locale(), $webTitle, 'osclass', 'STRING'));
         \mindstellar\database\Db::execute($replace, array('contactEmail', $adminEmail, 'osclass', 'STRING'));
     });
 

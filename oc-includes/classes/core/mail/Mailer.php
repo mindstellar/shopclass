@@ -28,6 +28,34 @@ use WebThemes;
  */
 final class Mailer
 {
+    /** The language of the mail being built, set when core picks its template. */
+    private static ?string $locale = null;
+
+    /**
+     * Say which language the mail being built is written in, so its site title matches.
+     * The next send takes it along and clears it.
+     */
+    public static function writtenIn(?string $locale): void
+    {
+        self::$locale = $locale === '' ? null : $locale;
+    }
+
+    /**
+     * The site title in a mail's language: the send's 'locale', else the one its template
+     * was picked in, else the current one.
+     *
+     * @param array<string,mixed> $params osc_sendMail() parameters
+     */
+    public static function siteTitle(array $params = array()): string
+    {
+        $locale = $params['locale'] ?? self::$locale;
+        if (!is_string($locale) || $locale === '' || !function_exists('_osc_site_text')) {
+            return (string) osc_page_title();
+        }
+
+        return _osc_site_text('pageTitle', $locale);
+    }
+
     /**
      * Seconds PHPMailer may wait on one SMTP connect or command.
      *
@@ -114,12 +142,17 @@ final class Mailer
      * Send one email through PHPMailer, using the site's configured mail transport.
      *
      * @param array<string,mixed> $params from, to, to_name, subject, body, alt_body and optional attachment/reply-to keys;
-     *                                    secret_link => true marks a mail whose link carries a secret
+     *                                    secret_link => true marks a mail whose link carries a secret;
+     *                                    locale names the language its site title is shown in
      *
      * @return bool False on a demo install or when the send fails
      */
     public static function send($params)
     {
+        if (is_array($params) && !isset($params['locale']) && self::$locale !== null) {
+            $params['locale'] = self::$locale;
+        }
+        self::$locale = null;
         // DO NOT send mail if it's a demo
         if (\mindstellar\security\Demo::active()) {
             return false;
@@ -181,7 +214,7 @@ final class Mailer
 
         $from_name = osc_mailserver_name_from();
         if (empty($from_name)) {
-            $from_name = osc_page_title();
+            $from_name = self::siteTitle($params);
             if (array_key_exists('from_name', $params)) {
                 $from_name = $params['from_name'];
             }
@@ -379,8 +412,8 @@ final class Mailer
         $kwords = EmailVariables::COMMON;
         $rwords = array(
             osc_base_url(),
-            osc_page_title(),
-            '<a href="' . osc_base_url() . '">' . osc_page_title() . '</a>',
+            self::siteTitle(),
+            '<a href="' . osc_base_url() . '">' . self::siteTitle() . '</a>',
             date(osc_date_format() ?: 'Y-m-d') . ' ' . date(osc_time_format() ?: 'H:i:s'),
             date(osc_time_format() ?: 'H:i'),
             Params::getServerParam('REMOTE_ADDR')
@@ -539,11 +572,11 @@ final class Mailer
             'body'      => $body,
             'subject'   => (string) ($params['subject'] ?? ''),
             'preheader' => mb_substr(trim((string) preg_replace('/\s+/u', ' ', self::plainText($body))), 0, 120),
-            'site_name' => osc_page_title(),
+            'site_name' => self::siteTitle($params),
             'site_url'  => osc_base_url(),
             'logo_url'  => '',
             'accent'    => '#0b7269',
-            'footer'    => sprintf(__('You received this e-mail from %s.'), osc_page_title()),
+            'footer'    => sprintf(__('You received this e-mail from %s.'), self::siteTitle($params)),
         ), $params);
 
         $file = self::layoutFile();
