@@ -373,6 +373,26 @@ $clearTries();
 [, , $set] = $signIn(['locale' => 'fr_FR']);
 pin('a language that is off for oc-admin is not kept', 'en_US', $valueOf($set, $localeCookie));
 
+harness_section('a bulk language action with nothing ticked');
+
+$clearTries();
+[, , $set]    = $signIn(['locale' => 'en_US']);
+$session      = $valueOf($set, 'osclass');
+[, , , $body] = $call('/oc-admin/index.php?page=languages', ['osclass' => $session]);
+$token        = preg_match('/CSRFName=([^&"\']+)&(?:amp;)?CSRFToken=([^&"\']+)/', $body, $m) === 1 ? '&CSRFName=' . $m[1] . '&CSRFToken=' . $m[2] : '';
+check('the languages screen carries a CSRF token', $token !== '');
+foreach (['enable_selected', 'disable_selected', 'enable_bo_selected', 'disable_bo_selected', 'delete'] as $action) {
+    [$code, , $set] = $call('/oc-admin/index.php?page=languages&action=' . $action . html_entity_decode($token), ['osclass' => $session]);
+    $flash          = [];
+    foreach ($set as $name => $lines) {
+        if ($valueOf($set, (string) $name) !== '') {
+            $flash[(string) $name] = rawurlencode($valueOf($set, (string) $name));
+        }
+    }
+    [, , , $body] = $call('/oc-admin/index.php?page=languages', ['osclass' => $session] + $flash);
+    check($action . ' says no language was selected', $code === 302 && str_contains($body, 'No language selected.') && !str_contains($body, 'correct format'), (string) $code);
+}
+
 harness_section('a site in a subfolder');
 
 $sub = $serve('/sub');

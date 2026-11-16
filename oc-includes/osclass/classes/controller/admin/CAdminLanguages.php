@@ -326,6 +326,31 @@ class CAdminLanguages extends AdminSecBaseModel
     }
 
     /**
+     * The ticked language codes. With none ticked, or ids in the wrong shape, it says so and goes
+     * back to the list.
+     *
+     * @return array<int,string>
+     */
+    private function selectedIds(): array
+    {
+        $id = Params::getParam('id');
+        if ($id === '' || $id === array()) {
+            osc_add_flash_warning_message(_m('No language selected.'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+
+            return array();
+        }
+        if (!is_array($id)) {
+            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+
+            return array();
+        }
+
+        return array_values(array_filter($id, 'is_string'));
+    }
+
+    /**
      * Turn the selected languages on for the site.
      */
     private function enableSelected(): void
@@ -334,15 +359,8 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg      = _m('Selected languages have been enabled for the website');
         $iUpdated = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
-            $iUpdated += $this->languages->enable((string) $i);
+        foreach ($this->selectedIds() as $i) {
+            $iUpdated += $this->languages->enable($i);
         }
         osc_invalidate_locale_cache();
 
@@ -364,16 +382,9 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg_warning = '';
         $iUpdated    = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
+        foreach ($this->selectedIds() as $i) {
             try {
-                $iUpdated += $this->languages->disable((string) $i);
+                $iUpdated += $this->languages->disable($i);
             } catch (ConflictException $e) {
                 $msg_warning = $e->getMessage();
             }
@@ -405,15 +416,8 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg      = _m('Selected languages have been enabled for the backoffice (oc-admin)');
         $iUpdated = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
-            $iUpdated += $this->languages->enable((string) $i, true);
+        foreach ($this->selectedIds() as $i) {
+            $iUpdated += $this->languages->enable($i, true);
         }
         osc_invalidate_locale_cache();
 
@@ -434,16 +438,9 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg_warning = '';
         $iUpdated    = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
+        foreach ($this->selectedIds() as $i) {
             try {
-                $iUpdated += $this->languages->disable((string) $i, true);
+                $iUpdated += $this->languages->disable($i, true);
             } catch (ConflictException $e) {
                 $msg_warning = $e->getMessage();
             }
@@ -469,10 +466,10 @@ class CAdminLanguages extends AdminSecBaseModel
     private function deleteSelected(): void
     {
         osc_csrf_check();
-        if (is_array(Params::getParam('id'))) {
+        $ids = $this->selectedIds();
+        if ($ids !== array()) {
             $adminLocale = (string) osc_current_admin_locale();
-            foreach (Params::getParam('id') as $code) {
-                $code = (string) $code;
+            foreach ($ids as $code) {
                 switch ($this->languages->delete($code, $adminLocale)) {
                     case LanguageService::IS_CURRENT:
                         osc_add_flash_warning_message(
