@@ -34,12 +34,17 @@ function customHead()
         document.addEventListener('DOMContentLoaded', function () {
             oscValidateForm(document.querySelector('form[name=settings_form]'), {
                 rules: {
+                    '<?php echo osc_esc_js('pageTitle' . osc_language()); ?>': { required: true, minlength: 1 },
                     contactEmail: { required: true, email: true },
                     num_rss_items: { required: true, digits: true },
                     max_latest_items_at_home: { required: true, digits: true },
                     default_results_per_page: { required: true, digits: true }
                 },
                 messages: {
+                    '<?php echo osc_esc_js('pageTitle' . osc_language()); ?>': {
+                        required: '<?php echo osc_esc_js(__('Page title: this field is required')); ?>.',
+                        minlength: '<?php echo osc_esc_js(__('Page title: this field is required')); ?>.'
+                    },
                     contactEmail: {
                         required: '<?php echo osc_esc_js(__('Email: this field is required')); ?>.',
                         email: '<?php echo osc_esc_js(__('Invalid email address')); ?>.'

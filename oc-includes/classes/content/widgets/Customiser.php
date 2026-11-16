@@ -698,24 +698,35 @@ final class Customiser
                 $errors[] = sprintf(_m('%s is not a language of this site'), $code);
                 continue;
             }
-            $sub = array(
-                'name'  => Field::translatedName($field, $code),
-                'label' => $label . ' (' . $locales[$code] . ')',
-            ) + $field;
-            if (is_array($text)) {
-                $errors[] = sprintf(__('%s is not in the expected format'), $sub['label']);
-                continue;
-            }
-            $clean = \Params::withRequest(array($sub['name'] => (string) $text), static fn () => osc_settings_sanitize($sub));
-            $error = osc_settings_validate($sub, $clean);
+            [$clean, $error] = $this->localeText($field, $code, $label . ' (' . $locales[$code] . ')', $text);
             if ($error !== null) {
                 $errors[] = $error;
                 continue;
             }
-            $merged[$code] = (string) $clean;
+            $merged[$code] = $clean;
         }
 
         return $merged;
+    }
+
+    /**
+     * One language's posted text of a translated field, sanitised and validated as that
+     * language's own box.
+     *
+     * @param array<string,mixed> $field
+     * @param mixed               $text
+     *
+     * @return array{0:string,1:string|null} the clean text and an error, or null
+     */
+    private function localeText(array $field, string $code, string $label, $text): array
+    {
+        $sub = array_merge($field, array('name' => Field::translatedName($field, $code), 'label' => $label));
+        if (is_array($text)) {
+            return array('', sprintf(__('%s is not in the expected format'), $label));
+        }
+        $clean = \Params::withRequest(array($sub['name'] => (string) $text), static fn () => osc_settings_sanitize($sub));
+
+        return array((string) $clean, osc_settings_validate($sub, $clean));
     }
 
     /**

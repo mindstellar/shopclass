@@ -828,6 +828,7 @@ harness_section('general settings');
 $main = array(
     'pageTitleen_US'               => 'My Classifieds',
     'pageTitlees_ES'               => 'Mis Clasificados',
+    'pageTitlefr_FR'               => 'Mes Petites Annonces',
     'pageDescen_US'                => 'Things for sale',
     'pageDesces_ES'                => 'Cosas en venta',
     'contactEmail'                 => 'owner@example.test',
@@ -885,6 +886,12 @@ pin('nothing is stored for it', array('My Classifieds', 'STRING'), pref($admin, 
 pin('and the screen is redrawn rather than redirected away from', array('settings/index.php'), $run['views']);
 pin('with no redirect at all', array(), $run['redirects']);
 check('with the rejected date format still in it', strpos($run['drawn'], 'value="..."') !== false);
+$head = 'customHead_v' . (count($GLOBALS['viewCopies']) - 1);
+ob_start();
+$head();
+$head = (string) ob_get_clean();
+check('the browser checks the default language\'s title before sending', str_contains($head, "'pageTitlees_ES': { required: true")
+    && str_contains($head, 'Page title: this field is required') && !str_contains($head, "'pageTitleen_US'"));
 
 $run = drive('CAdminSettingsMain', 'update', array('pageTitlees_ES' => '') + $main);
 pin('an empty title is refused too, naming its language', array('warning:Page title (Espanol) cannot be left empty'), flashed($run));

@@ -113,9 +113,10 @@ final class ExposedSettings
         $byPage = [];
         $errors = [];
         $stored = [];
-        // A whole-locale map first, so a plain member for the same field lands on top of it.
-        uksort($patch, static fn (string $a, string $b): int => (int) is_array($patch[$b]) <=> (int) is_array($patch[$a]));
-        foreach ($patch as $member => $value) {
+        // A plain value for a translated field (site_title) is the default language's text,
+        // applied after any locale map (site_title_translations) so it wins over it.
+        $ordered = array_filter($patch, 'is_array') + $patch;
+        foreach ($ordered as $member => $value) {
             [$form, $field] = self::FIELDS[$member];
             $page = $form::register();
             $stored[$page] ??= osc_settings_values($page);
@@ -124,9 +125,7 @@ final class ExposedSettings
                 continue;
             }
             $current = $byPage[$page][$field] ?? $stored[$page][$field];
-            if (!is_array($value)) {
-                $value = [osc_language() => $value];
-            }
+            $value = is_array($value) ? $value : [osc_language() => $value];
             foreach ($value as $code => $text) {
                 if (!array_key_exists((string) $code, $current)) {
                     $errors[] = ['pointer' => '/' . $member . '/' . $code, 'code' => 'invalid', 'message' => _m('That language is not enabled on this site.')];
