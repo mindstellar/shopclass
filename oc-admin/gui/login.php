@@ -34,12 +34,12 @@ if (!defined('ABS_PATH')) {
     <?php osc_run_hook('login_admin_form'); ?>
     <?php $locales = osc_all_enabled_locales_for_admin(); ?>
     <?php if (count($locales) > 1) { ?>
+        <?php $chosen = CAdminLogin::loginLocale(); ?>
         <div class="form-floating mb-3">
             <select class="form-select" name="locale" id="user_language">
                 <?php foreach ($locales as $locale) { ?>
                     <option value="<?php echo $locale ['pk_c_code']; ?>" <?php
-                    if (osc_admin_language() === $locale['pk_c_code']
-                    ) {
+                    if ($chosen === $locale['pk_c_code']) {
                         echo 'selected="selected"';
                     } ?>><?php echo $locale['s_name']; ?></option>
                 <?php } ?>

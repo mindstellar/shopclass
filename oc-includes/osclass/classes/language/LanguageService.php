@@ -151,6 +151,22 @@ final class LanguageService
     }
 
     /**
+     * The language the admin login offers: the remembered one, else the admin default, else the
+     * first language on for oc-admin. A code that is not on for oc-admin is skipped.
+     */
+    public static function adminLoginLocale(string $remembered = ''): string
+    {
+        $enabled = array_column(osc_all_enabled_locales_for_admin(), 'pk_c_code');
+        foreach (array($remembered, (string) osc_admin_language()) as $code) {
+            if ($code !== '' && in_array($code, $enabled, true)) {
+                return $code;
+            }
+        }
+
+        return (string) ($enabled[0] ?? osc_admin_language());
+    }
+
+    /**
      * Turn a language on for the website, or for oc-admin. Its category names are filled in first.
      *
      * @return int rows changed
