@@ -9,6 +9,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Settings > General has a Default admin language.
 
 ### Fixed
+- With the debug log on, Apache sites deny web access to `.log` files under oc-content.
 - The admin login offers the Default admin language.
 - Language bulk actions with nothing ticked say "No language selected." before asking to confirm.
 - Uploading a language that is already installed says it was updated.
