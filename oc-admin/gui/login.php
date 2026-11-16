@@ -38,10 +38,10 @@ if (!defined('ABS_PATH')) {
         <div class="form-floating mb-3">
             <select class="form-select" name="locale" id="user_language">
                 <?php foreach ($locales as $locale) { ?>
-                    <option value="<?php echo $locale ['pk_c_code']; ?>" <?php
+                    <option value="<?php echo osc_esc_html($locale['pk_c_code']); ?>" <?php
                     if ($chosen === $locale['pk_c_code']) {
                         echo 'selected="selected"';
-                    } ?>><?php echo $locale['s_name']; ?></option>
+                    } ?>><?php echo osc_esc_html($locale['s_name']); ?></option>
                 <?php } ?>
             </select>
             <label for="locale"><i class="bi bi-globe"></i> <?php _e('Choose Language'); ?></label>
