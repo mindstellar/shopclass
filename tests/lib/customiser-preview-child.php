@@ -12,7 +12,7 @@
  * One public request for tests/widgets-customiser.php, in its own process because OC_ADMIN
  * is a constant. Prints what the page rendered and the preview helpers answered, as JSON.
  *
- * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api, ocAdmin, theme, loggedIn, location, pageText>'
+ * Usage:  php tests/lib/customiser-preview-child.php <scratch db> '<json: get, adminId, api, ocAdmin, theme, loggedIn, location, pageText, declare, locale, draftValue>'
  */
 
 ob_start();
@@ -24,7 +24,7 @@ $admin = scratchdb_bootstrap((string) $argv[1]);
 $admin->select_db((string) $argv[1]);
 
 require_once __DIR__ . '/customiser-kit.php';
-customiser_kit_declare();
+customiser_kit_declare((array) ($args['declare'] ?? array()));
 if (!function_exists('osc_assets_url')) {
     function osc_assets_url($file = '')
     {
@@ -43,6 +43,7 @@ $GLOBALS['api']     = !empty($args['api']);
 $GLOBALS['webTheme']      = (string) ($args['theme'] ?? 'aisle');
 $GLOBALS['adminLoggedIn'] = ($args['loggedIn'] ?? true) !== false;
 $_GET               = (array) ($args['get'] ?? array());
+$_COOKIE            = isset($args['locale']) ? array('oc_userLocale' => (string) $args['locale']) : array();
 $_POST              = array();
 $_SERVER['REQUEST_METHOD'] = 'GET';
 Params::init();
@@ -80,6 +81,7 @@ echo json_encode(array(
     'preview'   => osc_customiser_preview(),
     'brand'     => osc_customiser_draft_value('aisle', 'brand'),
     'other'     => osc_customiser_draft_value('other', 'brand'),
+    'drafted'   => isset($args['draftValue']) ? osc_customiser_draft_value(...$args['draftValue']) : null,
     'headers'   => osc_customiser_preview_headers(),
     'cacheable' => $cacheable,
     'assets'    => $assets,

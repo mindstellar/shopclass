@@ -821,6 +821,16 @@
         if (typing && type !== 'text' && type !== 'textarea' && type !== 'email' && type !== 'url' && type !== 'tel') {
             return;
         }
+        if (box.hasAttribute('data-look-translate')) {
+            // One control per language, posted as settings[name][code].
+            var m = /^.+\[([^\]]+)\]$/.exec(e.target.getAttribute('name') || '');
+            if (!m || dirtySettings[name + '][' + m[1]] === e.target.value) {
+                return;
+            }
+            dirtySettings[name + '][' + m[1]] = e.target.value;
+            changed(true);
+            return;
+        }
         var value = lookValue(box);
         if (dirtySettings[name] === value) {
             return;

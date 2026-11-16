@@ -899,6 +899,7 @@ msgstr ""
 msgid "%s is not an origin. Write it as https://example.com, with no path."
 msgstr ""
 
+#: oc-includes/classes/content/widgets/Customiser.php
 #: oc-includes/osclass/helpers/hSettings.php
 msgid "%s is not in the expected format"
 msgstr ""

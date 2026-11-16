@@ -1574,7 +1574,7 @@ Core defines 1309 helpers, 29 of them deprecated. Generated from the source; do 
 
 | Helper | What it does |
 |---|---|
-| `osc_customiser_draft_value(string $page, string $name)` | The drafted value of one look setting while previewing, or null outside a preview or when that setting is not drafted. |
+| `osc_customiser_draft_value(string $page, string $name, ?string $locale = null)` | The drafted value of one look setting while previewing, or null outside a preview or when that setting is not drafted. A translated setting answers for $locale, by default the visitor's language, and null when that language is not drafted. |
 | `osc_customiser_preview()` | Whether this request renders the signed-in admin's customiser draft. |
 | `osc_customiser_preview_draft()` | The draft this request previews, or null. A public page previews only with ?osc_preview=1 and a signed-in admin, never in the admin or the API. With no draft saved for the theme being shown it previews an empty draft, so the published page still answers the customiser. Read once per request. |
 | `osc_customiser_preview_frame_assets()` | Load the frame script and style that let the Customise screen pick and outline blocks. Does nothing outside a page-mode preview. |

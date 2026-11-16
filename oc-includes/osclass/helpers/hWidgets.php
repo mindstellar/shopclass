@@ -196,8 +196,9 @@ function osc_render_widget($widgetRow)
  *   'live'      => array(field => 'data-…'),
  *
  * A location must be a declared widget location, a type a registered widget type, a field a
- * field of that settings page (not secret, custom, category_modes, richtext or translated),
- * a swatch a six-digit hex, a preview URL one on this site. Anything else is dropped.
+ * field of that settings page (not secret, custom, category_modes or richtext), a swatch a
+ * six-digit hex, a preview URL one on this site. Anything else is dropped. A translated field
+ * is edited per locale and is never live.
  *
  * @return array{locations:array<string,array{label:string,types:string[],preview:string}>,settings:array{page:string,fields:string[]},swatches:array<string,array<string,string>>,live:array<string,string>}|null
  */
@@ -236,18 +237,22 @@ function osc_customiser_spec(): ?array
         );
     }
 
-    $page   = is_string($raw['settings']['page'] ?? null) ? $raw['settings']['page'] : '';
-    $fields = array();
+    $page       = is_string($raw['settings']['page'] ?? null) ? $raw['settings']['page'] : '';
+    $fields     = array();
+    $translated = array();
     if ($page !== '' && osc_settings_page($page) !== null) {
         $declaredFields = \mindstellar\settings\SettingsPageRegistry::getInstance()->fields($page);
         foreach ((array) ($raw['settings']['fields'] ?? array()) as $name) {
             $field = is_string($name) ? ($declaredFields[$name] ?? null) : null;
             if ($field === null || in_array($field['type'], array('secret', 'custom', 'category_modes', 'richtext'), true)
-                || osc_settings_field_locales($field) !== array() || in_array($name, $fields, true)
+                || in_array($name, $fields, true)
             ) {
                 continue;
             }
             $fields[] = $name;
+            if (osc_settings_field_locales($field) !== array()) {
+                $translated[$name] = true;
+            }
         }
     }
 
@@ -266,7 +271,7 @@ function osc_customiser_spec(): ?array
 
     $live = array();
     foreach ((array) ($raw['live'] ?? array()) as $name => $attr) {
-        if (in_array($name, $fields, true) && is_string($attr) && preg_match('/^data-[a-z0-9-]{1,40}$/D', $attr)) {
+        if (in_array($name, $fields, true) && !isset($translated[$name]) && is_string($attr) && preg_match('/^data-[a-z0-9-]{1,40}$/D', $attr)) {
             $live[$name] = $attr;
         }
     }
@@ -323,14 +328,16 @@ function osc_customiser_preview(): bool
 
 /**
  * The drafted value of one look setting while previewing, or null outside a preview or when
- * that setting is not drafted.
+ * that setting is not drafted. A translated setting answers for $locale, by default the
+ * visitor's language, and null when that language is not drafted.
  *
- * @param string $page settings page id the theme declared
- * @param string $name field name
+ * @param string      $page   settings page id the theme declared
+ * @param string      $name   field name
+ * @param string|null $locale locale code, for a translated setting
  *
  * @return mixed
  */
-function osc_customiser_draft_value(string $page, string $name)
+function osc_customiser_draft_value(string $page, string $name, ?string $locale = null)
 {
     $draft = osc_customiser_preview_draft();
     if ($draft === null) {
@@ -343,7 +350,12 @@ function osc_customiser_draft_value(string $page, string $name)
         return null;
     }
 
-    return array_key_exists($name, $draft['settings']) ? $draft['settings'][$name] : null;
+    $value = array_key_exists($name, $draft['settings']) ? $draft['settings'][$name] : null;
+    if (is_array($value)) {
+        $value = $value[$locale ?? osc_current_user_locale()] ?? null;
+    }
+
+    return $value;
 }
 
 /**
