@@ -3443,6 +3443,10 @@ msgstr ""
 msgid "That keyword no longer exists"
 msgstr ""
 
+#: oc-includes/classes/admin/ExposedSettings.php
+msgid "That language is not enabled on this site."
+msgstr ""
+
 #: oc-includes/osclass/classes/controller/CWebUser.php
 msgid "That link is not valid"
 msgstr ""

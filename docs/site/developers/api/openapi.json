@@ -102,6 +102,16 @@
                 ],
                 "parameters": [
                     {
+                        "name": "locale",
+                        "in": "query",
+                        "required": false,
+                        "description": "A language of the site, e.g. en_US. Without it the best match for Accept-Language is used, else the site's default.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^[A-Za-z]{2,3}_[A-Za-z]{2}$"
+                        }
+                    },
+                    {
                         "name": "If-None-Match",
                         "in": "header",
                         "required": false,
@@ -55555,13 +55565,36 @@
                 "type": "object",
                 "properties": {
                     "name": {
-                        "type": "string"
+                        "type": "string",
+                        "description": "In the asked locale, else the default one."
                     },
                     "description": {
                         "type": [
                             "string",
                             "null"
                         ]
+                    },
+                    "translations": {
+                        "type": "object",
+                        "description": "Locale => {name, description}, for every language of the site.",
+                        "additionalProperties": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "description": {
+                                    "type": [
+                                        "string",
+                                        "null"
+                                    ]
+                                }
+                            },
+                            "required": [
+                                "name",
+                                "description"
+                            ]
+                        }
                     },
                     "url": {
                         "type": "string",
@@ -55702,6 +55735,7 @@
                 },
                 "required": [
                     "name",
+                    "translations",
                     "url",
                     "mode",
                     "api_version",
@@ -59493,6 +59527,23 @@
                         "type": "string",
                         "maxLength": 1000
                     },
+                    "site_title_translations": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        },
+                        "description": "Locale => site title. `site_title` is the default language's."
+                    },
+                    "site_description_translations": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 1000
+                        },
+                        "description": "Locale => site description. `site_description` is the default language's."
+                    },
                     "contact_email": {
                         "type": "string",
                         "format": "email",
@@ -59610,6 +59661,8 @@
                 "required": [
                     "site_title",
                     "site_description",
+                    "site_title_translations",
+                    "site_description_translations",
                     "contact_email",
                     "language",
                     "currency",
@@ -59652,6 +59705,23 @@
                     "site_description": {
                         "type": "string",
                         "maxLength": 1000
+                    },
+                    "site_title_translations": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "minLength": 1,
+                            "maxLength": 200
+                        },
+                        "description": "Locale => site title. `site_title` is the default language's."
+                    },
+                    "site_description_translations": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "maxLength": 1000
+                        },
+                        "description": "Locale => site description. `site_description` is the default language's."
                     },
                     "contact_email": {
                         "type": "string",

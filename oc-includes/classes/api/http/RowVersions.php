@@ -158,12 +158,13 @@ final class RowVersions implements ResourceVersions
             $section = (string) (osc_settings_page($page)['section'] ?? '');
             $spec    = SettingsPageRegistry::getInstance()->fields($page)[$field] ?? [];
             $name    = PreferenceStore::key($field, $spec);
-            foreach (osc_settings_field_locales($spec) ?: ['' => ''] as $code => $unused) {
-                $keys[] = ['s_section' => $section, 's_name' => $name . $code];
+            // A translated field also reads the single value as every language's fallback.
+            foreach (osc_settings_field_locales($spec) + ['' => ''] as $code => $unused) {
+                $keys[$section . '|' . $name . $code] = ['s_section' => $section, 's_name' => $name . $code];
             }
         }
 
-        return $keys;
+        return array_values($keys);
     }
 
     public function atomically(callable $fn): mixed

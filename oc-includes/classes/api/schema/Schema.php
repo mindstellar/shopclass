@@ -507,8 +507,13 @@ final class Schema
     private static function site(): array
     {
         return self::object([
-            'name'           => ['type' => 'string'],
+            'name'           => ['type' => 'string', 'description' => 'In the asked locale, else the default one.'],
             'description'    => self::nullable('string'),
+            'translations'   => [
+                'type'                 => 'object',
+                'description'          => 'Locale => {name, description}, for every language of the site.',
+                'additionalProperties' => self::object(['name' => ['type' => 'string'], 'description' => self::nullable('string')], ['name', 'description']),
+            ],
             'url'            => ['type' => 'string', 'format' => 'uri'],
             'mode'           => ['type' => 'string', 'enum' => ['classifieds', 'shop'], 'description' => 'What the site is for.'],
             'api_version'    => ['type' => 'string'],
@@ -538,7 +543,7 @@ final class Schema
                 'max_qty'   => ['type' => 'integer', 'description' => 'The most of one variant a cart line takes.'],
             ], ['max_lines', 'max_qty']) + ['description' => 'The limits a cart is held to.'],
             'links'          => ['type' => 'object', 'additionalProperties' => ['type' => 'string']],
-        ], ['name', 'url', 'mode', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
+        ], ['name', 'translations', 'url', 'mode', 'api_version', 'default_locale', 'locales', 'features', 'api', 'links']);
     }
 
     /**

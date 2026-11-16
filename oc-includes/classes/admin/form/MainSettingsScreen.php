@@ -59,16 +59,23 @@ final class MainSettingsScreen extends SettingsScreen
             // A changed channel offers different releases, so the saved answer is dropped and
             // the next update check asks again. With an address lookup set up, older listings
             // are queued for their map positions once per provider.
-            ->onAfterSave(static function () {
+            ->onAfterSave(static function ($values) {
+                self::saveSingleSiteText((array) $values);
                 osc_update_check_save('core', array('checked' => 0));
                 \mindstellar\listing\ListingGeocode::queueForNewProvider();
             });
 
         $form
+            // One per language. A language with nothing saved shows the single value older
+            // versions stored, which is also what the site falls back to.
             ->text('pageTitle', __('Page title'))
+                ->translate()
+                ->default((string) getPreference('pageTitle'))
                 ->required()
                 ->validate(static fn ($value) => osc_validate_text($value) ? null : _m('Page title field is required'))
             ->text('pageDesc', __('Page description'), __('Search engines show it under your home page. Left empty, the home page has no description.'))
+                ->translate()
+                ->default((string) getPreference('pageDesc'))
             ->email('contactEmail', __('Contact e-mail'))
                 ->required();
 
@@ -231,6 +238,22 @@ final class MainSettingsScreen extends SettingsScreen
             })
                 ->set('row', false)
             ->register();
+    }
+
+    /**
+     * Keep the single pageTitle and pageDesc preferences equal to the default language's
+     * text, for plugins that read them directly.
+     *
+     * @param array<string,mixed> $values the saved values
+     */
+    private static function saveSingleSiteText(array $values): void
+    {
+        $default = (string) ($values['language'] ?? osc_language());
+        foreach (array('pageTitle', 'pageDesc') as $key) {
+            if (is_array($values[$key] ?? null) && isset($values[$key][$default])) {
+                osc_set_preference($key, (string) $values[$key][$default]);
+            }
+        }
     }
 
     /**

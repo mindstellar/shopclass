@@ -805,13 +805,37 @@ function osc_version()
 }
 
 /**
- * Gets website's title
+ * Gets website's title, in the current language
  *
  * @return string
  */
 function osc_page_title()
 {
-    return getPreference('pageTitle');
+    return _osc_site_text('pageTitle');
+}
+
+/**
+ * The site title or description in one language: its own text, else the default language's,
+ * else the single value stored before these were per language.
+ *
+ * @internal
+ *
+ * @param string      $key    pageTitle or pageDesc
+ * @param string|null $locale locale code; the language of the screen being drawn when null
+ */
+function _osc_site_text(string $key, ?string $locale = null): string
+{
+    if ($locale === null && function_exists('osc_current_ui_locale')) {
+        $locale = osc_current_ui_locale();
+    }
+    foreach (array((string) $locale, osc_language()) as $code) {
+        $value = $code === '' ? '' : (string) getPreference($key . $code);
+        if ($value !== '') {
+            return $value;
+        }
+    }
+
+    return (string) getPreference($key);
 }
 
 /**
@@ -891,13 +915,13 @@ function osc_admin_theme()
 }
 
 /**
- * Gets website description
+ * Gets website description, in the current language
  *
  * @return string
  */
 function osc_page_description()
 {
-    return getPreference('pageDesc');
+    return _osc_site_text('pageDesc');
 }
 
 /**

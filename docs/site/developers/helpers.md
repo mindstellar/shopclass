@@ -1014,8 +1014,8 @@ Core defines 1309 helpers, 29 of them deprecated. Generated from the source; do 
 | `osc_notify_new_item()` | Gets if notification are sent to admin with new item |
 | `osc_notify_new_user()` | Gets if notification are sent to admin with new user |
 | `osc_num_rss_items()` | Gets number of items to display on RSS |
-| `osc_page_description()` | Gets website description |
-| `osc_page_title()` | Gets website's title |
+| `osc_page_description()` | Gets website description, in the current language |
+| `osc_page_title()` | Gets website's title, in the current language |
 | `osc_plugins_last_version_check()` | Gets when was the last version check |
 | `osc_preview_dimensions()` | Gets preview images' dimensions |
 | `osc_price_enabled_at_items()` | Gets if the prices are o not enabled on the item's form |

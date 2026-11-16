@@ -15,6 +15,7 @@ namespace mindstellar\admin;
 use mindstellar\admin\form\ApiSettingsScreen;
 use mindstellar\admin\form\CommentSettingsScreen;
 use mindstellar\admin\form\MainSettingsScreen;
+use mindstellar\admin\ui\Field;
 use mindstellar\currency\CurrencyCode;
 use mindstellar\database\Db;
 use mindstellar\exception\InvalidException;
@@ -36,6 +37,8 @@ final class ExposedSettings
     public const FIELDS = [
         'site_title'                   => [MainSettingsScreen::class, 'pageTitle', ['type' => 'string', 'minLength' => 1, 'maxLength' => 200]],
         'site_description'             => [MainSettingsScreen::class, 'pageDesc', ['type' => 'string', 'maxLength' => 1000]],
+        'site_title_translations'      => [MainSettingsScreen::class, 'pageTitle', ['type' => 'object', 'additionalProperties' => ['type' => 'string', 'minLength' => 1, 'maxLength' => 200], 'description' => 'Locale => site title. `site_title` is the default language\'s.']],
+        'site_description_translations' => [MainSettingsScreen::class, 'pageDesc', ['type' => 'object', 'additionalProperties' => ['type' => 'string', 'maxLength' => 1000], 'description' => 'Locale => site description. `site_description` is the default language\'s.']],
         'contact_email'                => [MainSettingsScreen::class, 'contactEmail', ['type' => 'string', 'format' => 'email', 'maxLength' => 100]],
         'language'                     => [MainSettingsScreen::class, 'language', ['type' => 'string', 'pattern' => '^[A-Za-z]{2,3}_[A-Za-z]{2}$', 'description' => 'One of the site\'s languages.']],
         'currency'                     => [MainSettingsScreen::class, 'currency', ['type' => 'string', 'pattern' => CurrencyCode::PATTERN, 'description' => 'One of the site\'s currencies.']],
@@ -89,7 +92,7 @@ final class ExposedSettings
         foreach (self::FIELDS as $member => [$form, $field, $schema]) {
             $page = $form::register();
             $values[$page] ??= osc_settings_values($page);
-            $out[$member] = self::typed($values[$page][$field] ?? null, (string) $schema['type']);
+            $out[$member] = self::typed(self::shape($values[$page][$field] ?? null, $schema), (string) $schema['type']);
         }
         // A shop always allows parent categories, whatever is stored.
         $out['selectable_parent_categories'] = (bool) osc_selectable_parent_categories();
@@ -108,9 +111,33 @@ final class ExposedSettings
     public function save(array $patch): void
     {
         $byPage = [];
+        $errors = [];
+        $stored = [];
+        // A whole-locale map first, so a plain member for the same field lands on top of it.
+        uksort($patch, static fn (string $a, string $b): int => (int) is_array($patch[$b]) <=> (int) is_array($patch[$a]));
         foreach ($patch as $member => $value) {
             [$form, $field] = self::FIELDS[$member];
-            $byPage[$form::register()][$field] = $value;
+            $page = $form::register();
+            $stored[$page] ??= osc_settings_values($page);
+            if (!is_array($stored[$page][$field] ?? null)) {
+                $byPage[$page][$field] = $value;
+                continue;
+            }
+            $current = $byPage[$page][$field] ?? $stored[$page][$field];
+            if (!is_array($value)) {
+                $value = [osc_language() => $value];
+            }
+            foreach ($value as $code => $text) {
+                if (!array_key_exists((string) $code, $current)) {
+                    $errors[] = ['pointer' => '/' . $member . '/' . $code, 'code' => 'invalid', 'message' => _m('That language is not enabled on this site.')];
+                    continue;
+                }
+                $current[(string) $code] = (string) $text;
+            }
+            $byPage[$page][$field] = $current;
+        }
+        if ($errors !== []) {
+            throw InvalidException::all($errors);
         }
         Db::transaction(static function () use ($byPage): void {
             $errors = [];
@@ -141,6 +168,12 @@ final class ExposedSettings
     {
         $post = [];
         foreach (array_replace($stored, $changes) as $name => $value) {
+            if (is_array($value) && !empty($fields[$name]['translate'])) {
+                foreach ($value as $code => $text) {
+                    $post[Field::translatedName($fields[$name], (string) $code)] = (string) $text;
+                }
+                continue;
+            }
             if (is_array($value) || $value === null) {
                 continue;
             }
@@ -156,9 +189,25 @@ final class ExposedSettings
         return $post;
     }
 
+    /**
+     * A translated field's value as one member asks for it: the whole locale map for an
+     * object member, the default language's text for a plain one.
+     *
+     * @param array<string,mixed> $schema
+     */
+    private static function shape(mixed $value, array $schema): mixed
+    {
+        if (!is_array($value) || $schema['type'] === 'object') {
+            return $value;
+        }
+
+        return $value[osc_language()] ?? (reset($value) ?: '');
+    }
+
     private static function typed(mixed $value, string $type): mixed
     {
         return match ($type) {
+            'object'  => is_array($value) ? array_map('strval', $value) : [],
             'boolean' => $value === true || (string) $value === '1',
             'integer' => (int) $value,
             default   => $value === null ? '' : (string) $value,

@@ -47,10 +47,16 @@ final class SiteController
         foreach (['listings' => 'listings', 'categories' => 'categories', 'countries' => 'countries', 'currencies' => 'currencies', 'pages' => 'pages', 'menus' => 'menus', 'custom_fields' => 'custom-fields', 'openapi' => 'openapi.json'] as $name => $path) {
             $links[$name] = $this->api->links()->api($path, $call->request()->version());
         }
-        $settings = $this->settings;
-        $site     = [
-            'name'           => (string) osc_page_title(),
-            'description'    => Format::text(osc_page_description()),
+        $settings     = $this->settings;
+        $locale       = $this->api->locale($call->request());
+        $translations = [];
+        foreach (array_keys($facts->locales()) as $code) {
+            $translations[(string) $code] = ['name' => _osc_site_text('pageTitle', (string) $code), 'description' => Format::text(_osc_site_text('pageDesc', (string) $code))];
+        }
+        $site = [
+            'name'           => _osc_site_text('pageTitle', $locale),
+            'description'    => Format::text(_osc_site_text('pageDesc', $locale)),
+            'translations'   => $translations,
             'url'            => (string) osc_base_url(),
             'mode'           => osc_site_mode(),
             'api_version'    => $call->request()->version(),

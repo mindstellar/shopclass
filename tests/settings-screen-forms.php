@@ -822,8 +822,10 @@ pin(
 harness_section('general settings');
 
 $main = array(
-    'pageTitle'                    => 'My Classifieds',
-    'pageDesc'                     => 'Things for sale',
+    'pageTitleen_US'               => 'My Classifieds',
+    'pageTitlees_ES'               => 'Mis Clasificados',
+    'pageDescen_US'                => 'Things for sale',
+    'pageDesces_ES'                => 'Cosas en venta',
     'contactEmail'                 => 'owner@example.test',
     'language'                     => 'es_ES',
     'currency'                     => 'EUR',
@@ -846,7 +848,8 @@ $run = drive('CAdminSettingsMain', 'update', $main);
 pin('the save is CSRF-checked', array('update'), $run['csrf']);
 pin('and reports one success', array('ok:General settings have been updated'), flashed($run));
 pin('and goes back to the screen', array('https://example.test/oc-admin/index.php?page=settings'), $run['redirects']);
-pin('the page title lands as typed', array('My Classifieds', 'STRING'), pref($admin, 'pageTitle'));
+pin('the page title lands as typed, one per language', array(array('My Classifieds', 'STRING'), array('Mis Clasificados', 'STRING')), array(pref($admin, 'pageTitleen_US'), pref($admin, 'pageTitlees_ES')));
+pin('and the single title follows the default language', array(array('Mis Clasificados', 'STRING'), array('Cosas en venta', 'STRING')), array(pref($admin, 'pageTitle'), pref($admin, 'pageDesc')));
 pin('the contact address too', array('owner@example.test', 'STRING'), pref($admin, 'contactEmail'));
 pin('the latest-listings count lands under the key readers use', array('9', 'INTEGER'), pref($admin, 'maxLatestItems@home'));
 pin('and the search page size under its own', array('20', 'INTEGER'), pref($admin, 'defaultResultsPerPage@search'));
@@ -870,16 +873,16 @@ pin('the same save again changes nothing and clears nothing', 0, $GLOBALS['purge
 
 // The one rule the hand-written screen had that a type cannot express: a title of
 // punctuation is not a title.
-$run = drive('CAdminSettingsMain', 'update', array('pageTitle' => '...') + $main);
+$run = drive('CAdminSettingsMain', 'update', array('pageTitleen_US' => '...') + $main);
 pin('a title with no letter or digit is refused', array('warning:Page title field is required'), flashed($run));
 pin('a refused save clears nothing', 0, $GLOBALS['purges']);
-pin('nothing is stored for it', array('My Classifieds', 'STRING'), pref($admin, 'pageTitle'));
+pin('nothing is stored for it', array('My Classifieds', 'STRING'), pref($admin, 'pageTitleen_US'));
 pin('and the screen is redrawn rather than redirected away from', array('settings/index.php'), $run['views']);
 pin('with no redirect at all', array(), $run['redirects']);
 check('with the rejected date format still in it', strpos($run['drawn'], 'value="..."') !== false);
 
-$run = drive('CAdminSettingsMain', 'update', array('pageTitle' => '') + $main);
-pin('an empty title is refused too', array('warning:Page title cannot be left empty'), flashed($run));
+$run = drive('CAdminSettingsMain', 'update', array('pageTitlees_ES' => '') + $main);
+pin('an empty title is refused too, naming its language', array('warning:Page title (Espanol) cannot be left empty'), flashed($run));
 
 $run = drive('CAdminSettingsMain', 'update', array('language' => 'de_DE') + $main);
 pin(

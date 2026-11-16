@@ -181,6 +181,7 @@ final class CoreEmails
     /**
      * The text of an e-mail template: the page text in the given locale, else in any other
      * locale, else the bundled English text. Null (and one log line) when none exists.
+     * The site title in the mail follows the language picked here.
      *
      * @param string      $internalName Template page name, such as email_user_validation
      * @param string|null $locale       Locale code; the current user locale when null
@@ -194,19 +195,24 @@ final class CoreEmails
         $texts    = is_array($page) && is_array($page['locale'] ?? null) ? $page['locale'] : array();
         $row      = isset($texts[$locale]['s_title']) ? $texts[$locale] : null;
         if ($row === null) {
-            foreach ($texts as $candidate) {
+            foreach ($texts as $code => $candidate) {
                 if (is_array($candidate) && isset($candidate['s_title'])) {
-                    $row = $candidate;
+                    $row    = $candidate;
+                    $locale = (string) $code;
                     break;
                 }
             }
         }
         if ($row !== null) {
+            Mailer::writtenIn($locale);
+
             return array('s_title' => (string) $row['s_title'], 's_text' => (string) ($row['s_text'] ?? ''));
         }
 
         $bundled = Page::bundledEmailTemplates()[$internalName] ?? null;
         if ($bundled !== null) {
+            Mailer::writtenIn($locale);
+
             return $bundled;
         }
         error_log('E-mail template "' . $internalName . '" has no text; mail not sent.');
@@ -945,7 +951,7 @@ final class CoreEmails
 
         $emailParams = array(
             'from'      => self::fromAddress(),
-            'from_name' => osc_page_title(),
+            'from_name' => Mailer::siteTitle(),
             'to'        => $aItem['friendEmail'],
             'to_name'   => $aItem['friendName'],
             'reply_to'  => $aItem['yourEmail'],
@@ -1052,7 +1058,7 @@ final class CoreEmails
 
         $emailParams = array(
             'from'      => self::fromAddress(),
-            'from_name' => osc_page_title(),
+            'from_name' => Mailer::siteTitle(),
             'to'        => $item['s_contact_email'],
             'to_name'   => $item['s_contact_name'],
             'reply_to'  => $yourEmail,

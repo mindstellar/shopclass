@@ -29,13 +29,15 @@ final class SeoResolver
 
     /**
      * @param string[]                                  $locales  the site's locale codes
+     * @param string|array<string,string>               $siteTitle       one text, or one per locale code
+     * @param string|array<string,string>               $siteDescription one text, or one per locale code
      * @param \Closure(string,array<string,mixed>,string):string $url builds a URL from a kind (`home`, `listing`, `page`, `category`, `search`), its arguments and a locale code ('' for the default language)
      */
     public function __construct(
         private string $defaultLocale,
         private array $locales,
-        private string $siteTitle,
-        private string $siteDescription,
+        private string|array $siteTitle,
+        private string|array $siteDescription,
         private \Closure $url
     ) {
     }
@@ -47,11 +49,18 @@ final class SeoResolver
     {
         $locales = array_map(static fn (array $l): string => (string) $l['pk_c_code'], (array) osc_get_locales());
 
+        $titles = [];
+        $descriptions = [];
+        foreach ($locales as $code) {
+            $titles[$code]       = _osc_site_text('pageTitle', $code);
+            $descriptions[$code] = _osc_site_text('pageDesc', $code);
+        }
+
         return new self(
             (string) osc_language(),
             $locales,
-            (string) osc_page_title(),
-            (string) osc_page_description(),
+            $titles,
+            $descriptions,
             static function (string $kind, array $args, string $locale): string {
                 return match ($kind) {
                     'listing'  => (string) osc_item_url_from_item($args['item'], $locale),
@@ -80,7 +89,7 @@ final class SeoResolver
     {
         $url = $this->url('home', [], '');
 
-        return $this->document('home', $locale, $url, $this->plain($this->siteTitle), '', 'index, follow', [['label' => $this->homeLabel(), 'url' => $url]], [], 'website', null, false);
+        return $this->document('home', $locale, $url, $this->plain($this->inLocale($this->siteTitle, $locale)), '', 'index, follow', [['label' => $this->homeLabel(), 'url' => $url]], [], 'website', null, false);
     }
 
     /**
@@ -310,8 +319,9 @@ final class SeoResolver
      */
     private function document(string $for, string $locale, string $canonical, string $name, string $description, string $robots, array $breadcrumbs, array $hreflang, string $ogType, ?string $image, bool $suffix): array
     {
-        $title       = $suffix && $this->siteTitle !== '' ? $name . ' - ' . $this->plain($this->siteTitle) : $name;
-        $description = $description !== '' ? $description : $this->excerpt($this->siteDescription);
+        $siteTitle   = $this->inLocale($this->siteTitle, $locale);
+        $title       = $suffix && $siteTitle !== '' ? $name . ' - ' . $this->plain($siteTitle) : $name;
+        $description = $description !== '' ? $description : $this->excerpt($this->inLocale($this->siteDescription, $locale));
 
         return [
             'for'         => $for,
@@ -327,11 +337,23 @@ final class SeoResolver
                 'title'       => $name,
                 'description' => $description,
                 'url'         => $canonical,
-                'site_name'   => $this->plain($this->siteTitle),
+                'site_name'   => $this->plain($siteTitle),
                 'locale'      => $locale,
                 'image'       => $image,
             ],
         ];
+    }
+
+    /**
+     * @param string|array<string,string> $text
+     */
+    private function inLocale(string|array $text, string $locale): string
+    {
+        if (is_string($text)) {
+            return $text;
+        }
+
+        return (string) ($text[$locale] ?? $text[$this->defaultLocale] ?? '');
     }
 
     private function plain(string $text): string

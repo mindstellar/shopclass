@@ -86,7 +86,9 @@ final class PublicRoutes
                 handler: [SiteController::class, 'show'],
                 tag: 'Site',
                 summary: 'The site, its locales and its collections',
-                response: 'SiteDocument'
+                response: 'SiteDocument',
+                query: ['locale' => self::LOCALE],
+                errors: [422]
             ),
             'GET listings' => RouteSpec::read(
                 handler: [ListingsController::class, 'index'],
