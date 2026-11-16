@@ -421,7 +421,9 @@ class CAdminLogin extends AdminBaseModel
      */
     public static function loginLocale(): string
     {
-        return \mindstellar\language\LanguageService::adminLoginLocale((string) ($_COOKIE[self::LOCALE_COOKIE] ?? ''));
+        $cookie = $_COOKIE[self::LOCALE_COOKIE] ?? '';
+
+        return \mindstellar\language\LanguageService::adminLoginLocale(is_string($cookie) ? $cookie : '');
     }
 
     /**
