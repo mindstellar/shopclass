@@ -111,17 +111,12 @@ class AdminSecBaseModel extends SecBaseModel
     }
 
     /**
-     * Ends the admin session, expires its cookie and drops the remember-me cookies. The chosen
-     * admin locale stays in its own cookie for the next login.
+     * Ends the admin session, expires its cookie and drops the remember-me cookies.
      *
      * @return void
      */
     public function logout()
     {
-        $locale = (string) Session::getInstance()->_get('adminLocale');
-        if (($_COOKIE[CAdminLogin::LOCALE_COOKIE] ?? '') !== $locale) {
-            CAdminLogin::rememberLocale($locale, time() + osc_time_cookie());
-        }
         Session::getInstance()->_drop('adminId');
         Session::getInstance()->_drop('adminUserName');
         Session::getInstance()->_drop('adminName');

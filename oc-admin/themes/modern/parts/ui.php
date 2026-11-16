@@ -743,14 +743,18 @@ if (!function_exists('osc_admin_bulk_confirm_dialog')) {
      * `data-dialog-content` into it, so the question matches the action chosen. It cannot
      * go through osc_admin_confirm_dialog(), which owns its own title and text.
      *
-     * @param array<string,mixed> $opts 'id' (default 'bulkActionsModal'), 'confirm' (button label)
+     * @param array<string,mixed> $opts 'id' (default 'bulkActionsModal'), 'confirm' (button label),
+     *                                 'empty' (warning shown instead when no row is ticked)
      *
      * @return void
      */
     function osc_admin_bulk_confirm_dialog(array $opts = array())
     { ?>
         <dialog id="<?php echo osc_esc_html($opts['id'] ?? 'bulkActionsModal'); ?>"
-                class="osc-dialog osc-dialog-danger">
+                class="osc-dialog osc-dialog-danger"<?php
+                if (!empty($opts['empty'])) {
+                    echo ' data-empty-message="' . osc_esc_html($opts['empty']) . '"';
+                } ?>>
             <div class="osc-dialog-body">
                 <p class="osc-dialog-title"><?php _e('Bulk actions'); ?></p>
                 <p class="osc-dialog-text"></p>

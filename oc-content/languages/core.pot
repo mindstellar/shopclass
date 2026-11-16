@@ -7507,6 +7507,10 @@ msgid "No keys yet."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
+msgid "No language selected."
+msgstr ""
+
+#: oc-admin/themes/modern/languages/index.php
 msgid "No languages yet"
 msgstr ""
 

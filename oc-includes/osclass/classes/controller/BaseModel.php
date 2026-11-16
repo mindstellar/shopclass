@@ -272,16 +272,6 @@ abstract class BaseModel
     }
 
     /**
-     * Prints the request duration as an HTML comment on non-ajax debug requests.
-     */
-    public function __destruct()
-    {
-        if (!$this->ajax && OSC_DEBUG) {
-            echo '<!-- ' . $this->getTime() . ' seg. -->';
-        }
-    }
-
-    /**
      * Seconds elapsed since the controller was constructed.
      *
      * @return float

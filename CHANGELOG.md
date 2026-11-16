@@ -9,8 +9,11 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Settings > General has a Default admin language.
 
 ### Fixed
-- The admin login remembers the language chosen last, also after logging out.
-- Language bulk actions with nothing ticked say "No language selected."
+- The admin login offers the Default admin language.
+- Language bulk actions with nothing ticked say "No language selected." before asking to confirm.
+- Uploading a language that is already installed says it was updated.
+- The Edit language message names the full language, such as English (Australia).
+- Debug mode no longer adds a timing comment or the query panel after a JSON reply.
 
 ## Shopclass 7.0.19
 

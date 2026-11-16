@@ -26,8 +26,8 @@ class CAdminLogin extends AdminBaseModel
     /** The cookie that carries a sign-in waiting for its code, on the admin path. */
     private const TWO_FACTOR_COOKIE = 'oc_admin_2fa';
 
-    /** The admin language last chosen at login, on the admin path. Not a sign-in secret, so logout keeps it. */
-    public const LOCALE_COOKIE = 'oc_admin_locale';
+    /** A language cookie that pre-release 7.0.20 builds set; the login page expires it. Can go in 8.0. */
+    private const OLD_LOCALE_COOKIE = 'oc_admin_locale';
 
     /** Each action and the method that answers it; any other action goes to loginForm(). */
     private const ACTIONS = array(
@@ -323,6 +323,10 @@ class CAdminLogin extends AdminBaseModel
         // Signed cookie instead of the session, so opening the admin login page does
         // not start a session; keep a destination the auth gate already recorded.
         osc_set_admin_login_redirect(osc_get_http_referer(), true);
+        if (isset($_COOKIE[self::OLD_LOCALE_COOKIE])) {
+            Cookie::write(self::OLD_LOCALE_COOKIE, '', time() - 3600, osc_admin_cookie_path());
+            unset($_COOKIE[self::OLD_LOCALE_COOKIE]);
+        }
         $this->doView();
     }
     //in this case, this function is prepared for the "recover your password" form
@@ -349,7 +353,6 @@ class CAdminLogin extends AdminBaseModel
         if (osc_validate_locale($locale, true) !== true) {
             $locale = \mindstellar\language\LanguageService::adminLoginLocale();
         }
-        self::rememberLocale($locale, $remember ? time() + osc_time_cookie() : 0);
         if ($remember) {
             Cookie::getInstance()->set_expires(osc_time_cookie());
             Cookie::getInstance()->push('oc_adminId', $admin['pk_i_id']);
@@ -415,25 +418,11 @@ class CAdminLogin extends AdminBaseModel
     }
 
     /**
-     * The language the login form offers first: the one this browser chose last, when it is
-     * still on for oc-admin.
+     * The language the login form offers first: the admin default, when it is on for oc-admin.
      */
     public static function loginLocale(): string
     {
-        $cookie = $_COOKIE[self::LOCALE_COOKIE] ?? '';
-
-        return \mindstellar\language\LanguageService::adminLoginLocale(is_string($cookie) ? $cookie : '');
-    }
-
-    /**
-     * Keep the admin language for the next login; an $expires of 0 lasts until the browser closes.
-     */
-    public static function rememberLocale(string $locale, int $expires): void
-    {
-        if ($locale !== '') {
-            Cookie::write(self::LOCALE_COOKIE, $locale, $expires, osc_admin_cookie_path());
-            $_COOKIE[self::LOCALE_COOKIE] = $locale;
-        }
+        return \mindstellar\language\LanguageService::adminLoginLocale();
     }
 
     /**
