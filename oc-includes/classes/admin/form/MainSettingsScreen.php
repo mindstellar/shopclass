@@ -103,6 +103,7 @@ final class MainSettingsScreen extends SettingsScreen
         }
         $form
             ->select('language', __('Default language'), self::locales())
+            ->select('admin_language', __('Default admin language'), self::adminLocales(), __('The language the admin login offers when the browser has not chosen one.'))
             ->select('currency', __('Default currency'), self::currencies())
                 // The one id on this screen that is not the control's own name, so it is
                 // the one worth keeping.
@@ -268,6 +269,22 @@ final class MainSettingsScreen extends SettingsScreen
         }
 
         return self::orStored($options, (string)osc_language());
+    }
+
+    /**
+     * Every locale that is on for oc-admin, code => name. A stored one that was turned off is
+     * not offered, so the next save replaces it.
+     *
+     * @return array<string,string>
+     */
+    private static function adminLocales(): array
+    {
+        $options = array();
+        foreach (\OSCLocale::getInstance()->listAllEnabled(true) as $locale) {
+            $options[$locale['pk_c_code']] = $locale['s_name'];
+        }
+
+        return self::orStored($options, (string)osc_admin_language());
     }
 
     /**
