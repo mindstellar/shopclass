@@ -31,6 +31,17 @@ if (!function_exists('widgetConfigFieldValue')) {
     {
         $name    = isset($field['name']) && is_string($field['name']) ? $field['name'] : '';
         $default = $field['default'] ?? '';
+        $locales = \mindstellar\widgets\WidgetConfig::locales($field);
+        if ($locales !== array()) {
+            // A translated field shows one text per locale; a new one starts with its default in the site's language.
+            $saved = $typeId === $currentTypeId;
+            $texts = array();
+            foreach (array_keys($locales) as $code) {
+                $texts[$code] = (string) ($saved ? ($currentWidgetConfig[$name . $code] ?? '') : ($code === osc_language() ? $default : ''));
+            }
+
+            return $texts;
+        }
         if ($typeId === $currentTypeId && array_key_exists($name, $currentWidgetConfig)) {
             return $currentWidgetConfig[$name];
         }

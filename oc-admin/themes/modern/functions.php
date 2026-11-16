@@ -387,7 +387,8 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
     }
     $id        = widgetConfigFieldId($typeId, $name);
     $inputName = 'config[' . $name . ']';
-    $val       = (string)$value;
+    $locales   = \mindstellar\widgets\WidgetConfig::locales($field);
+    $val       = is_array($value) ? '' : (string)$value;
 
     $spec = array(
         'row'      => false,
@@ -411,13 +412,40 @@ function osc_widget_config_field($typeId, $field, $value, $disabled)
         echo ' data-show-name="config[' . osc_esc_html((string) array_key_first($showIf)) . ']" data-show-value="'
             . osc_esc_html((string) reset($showIf)) . '"';
     } ?>>
-        <?php if ($fieldType !== 'checkbox' && $fieldType !== 'choice') { ?>
+        <?php if ($locales !== array()) { ?>
+            <label class="form-sublabel" for="<?php echo osc_esc_html(\mindstellar\admin\ui\Field::idFor(array('name' => 'config[' . $name . \mindstellar\admin\ui\Field::openLocale($locales) . ']'))); ?>"><?php echo osc_esc_html($label); ?></label>
+        <?php } elseif ($fieldType !== 'checkbox' && $fieldType !== 'choice') { ?>
             <label class="form-sublabel" for="<?php echo osc_esc_html($id); ?>"><?php echo osc_esc_html($label); ?></label>
         <?php } elseif ($fieldType === 'choice') { ?>
             <span class="form-sublabel" id="<?php echo osc_esc_html($id); ?>-label"><?php echo osc_esc_html($label); ?></span>
         <?php }
 
+        if ($locales !== array()) {
+            // One control per locale in the settings screens' language tabs, posted as config[<name><locale>].
+            $texts = is_array($value) ? $value : array();
+            if ($fieldType === 'richtext') {
+                foreach ($texts as $code => $text) {
+                    $texts[$code] = $text !== '' && !preg_match('/<[a-z]/i', (string) $text) ? osc_autop((string) $text) : $text;
+                }
+            }
+            $extra = $fieldType === 'richtext'
+                ? array('rows' => 8, 'width' => 'full', 'preset' => 'full', 'height' => 300, 'media' => true, 'upload_url' => adminLibraryUploadUrl())
+                : ($fieldType === 'textarea' ? array('rows' => 5, 'width' => 'full') : array());
+            osc_admin_field(array_merge($spec, $extra, array(
+                'type'           => $fieldType,
+                'value'          => $texts,
+                'translate'      => true,
+                'locales'        => $locales,
+                'translate_name' => 'config[' . $name . '%s]',
+                'label'          => $label,
+                'attrs'          => array('data-osc-translated' => '1'),
+            )));
+            $fieldType = 'translated';
+        }
+
         switch ($fieldType) {
+            case 'translated':
+                break;
             case 'checkbox':
                 // value stays '1': it is what a ticked box submits, not what is stored.
                 osc_admin_checkbox(array_merge($spec, array(

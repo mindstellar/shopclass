@@ -223,6 +223,9 @@ final class CustomiserScreen
 
         $enabled = WidgetConfig::enabled($config);
         unset($config[WidgetConfig::ENABLED]);
+        if ($spec !== null) {
+            $config = WidgetConfig::forEditor($spec, $config);
+        }
 
         return array(
             'ref'         => $id !== null ? (string) $id : $key,

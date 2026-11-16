@@ -67,6 +67,12 @@ A field may add `half` to share a row, `section` (with an optional `section_note
 `help`, `placeholder`, `icons` (option value => Bootstrap Icons name, for a `choice`) and `show_if`
 (`array('count' => '3')`: shown only while that field holds that value).
 
+A `text`, `textarea` or `richtext` field with `'translate' => true` is edited once per enabled
+language. Each text is stored in the config as the field name plus the locale code (`titlefr_FR`),
+and the plain name holds the default language's text. Your render callback gets the plain name
+already set to the visitor's language, else the default language's, else a value saved before the
+field was translated.
+
 ```php
 osc_register_widget('aisle.hero', array(
     'label'     => 'Hero banner',

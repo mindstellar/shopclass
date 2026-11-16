@@ -160,6 +160,7 @@ function osc_render_widget($widgetRow)
         if (!WidgetConfig::enabled($config)) {
             return;
         }
+        $config = WidgetConfig::resolve($type, $config);
 
         // In the Customise screen's page preview each block carries its reference, so a click or a scroll finds it.
         $marked = isset($widgetRow['_block_ref']);

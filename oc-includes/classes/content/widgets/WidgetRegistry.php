@@ -45,6 +45,8 @@ final class WidgetRegistry extends Registry
      *                               'default'=>mixed, 'options'=>array or a callable returning one (select only)].
      *                              Layout keys: 'half', 'section', 'section_note', 'help', 'placeholder',
      *                              'icons' (choice only) and 'show_if'; see the customiser developer docs.
+     *                              'translate' => true on a text, textarea or richtext field edits one
+     *                              text per enabled language; render gets the visitor's language's text.
      *   'form'        => callable  Optional callable(array $config): void that renders
      *                              a custom admin form, overriding 'fields'.
      *   'capability'  => string    'admin' (default) or 'super_admin'. A 'super_admin'
