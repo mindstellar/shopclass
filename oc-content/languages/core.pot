@@ -3582,6 +3582,10 @@ msgstr ""
 msgid "Decimal point: this field is required"
 msgstr ""
 
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Default admin language"
+msgstr ""
+
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
 msgid "Default comment settings"
 msgstr ""
@@ -11366,6 +11370,10 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "The language %s is not installed."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "The language the admin login offers when the browser has not chosen one."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php

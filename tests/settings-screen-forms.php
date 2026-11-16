@@ -425,6 +425,8 @@ function flashed(array $result): array
 
 seed_locale($admin, 'en_US', 'English');
 seed_locale($admin, 'es_ES', 'Espanol');
+seed_locale($admin, 'fr_FR', 'Francais');
+$admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_locale SET b_enabled_bo = 0 WHERE pk_c_code = 'fr_FR'");
 seed_currency($admin, 'USD', 'US Dollar');
 seed_currency($admin, 'EUR', 'Euro');
 
@@ -433,6 +435,7 @@ foreach (array(
     array('pageDesc', '', 'STRING'),
     array('contactEmail', 'admin@example.test', 'STRING'),
     array('language', 'en_US', 'STRING'),
+    array('admin_language', 'en_US', 'STRING'),
     array('currency', 'USD', 'STRING'),
     array('weekStart', '0', 'STRING'),
     array('timezone', 'Europe/Madrid', 'STRING'),
@@ -491,6 +494,7 @@ pin(
         'pageDesc'                     => 'osclass/pageDesc',
         'contactEmail'                 => 'osclass/contactEmail',
         'language'                     => 'osclass/language',
+        'admin_language'               => 'osclass/admin_language',
         'currency'                     => 'osclass/currency',
         'weekStart'                    => 'osclass/weekStart',
         'timezone'                     => 'osclass/timezone',
@@ -777,6 +781,7 @@ $main = array(
     'pageDesc'                     => 'Things for sale',
     'contactEmail'                 => 'owner@example.test',
     'language'                     => 'es_ES',
+    'admin_language'               => 'es_ES',
     'currency'                     => 'EUR',
     'weekStart'                    => '1',
     'timezone'                     => 'Europe/Madrid',
@@ -839,6 +844,15 @@ pin(
     flashed($run)
 );
 pin('and the stored one is untouched', array('es_ES', 'STRING'), pref($admin, 'language'));
+
+pin('the admin default language lands', array('es_ES', 'STRING'), pref($admin, 'admin_language'));
+$run = drive('CAdminSettingsMain', 'update', array('admin_language' => 'fr_FR') + $main);
+pin(
+    'an admin language that is off for oc-admin is refused',
+    array('warning:Default admin language is not one of the available options'),
+    flashed($run)
+);
+pin('and the stored admin language is untouched', array('es_ES', 'STRING'), pref($admin, 'admin_language'));
 
 $run = drive('CAdminSettingsMain', 'update', array('num_rss_items' => '-1') + $main);
 pin('a negative count is refused', array('warning:RSS shows must be 0 or more'), flashed($run));
