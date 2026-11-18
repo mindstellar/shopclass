@@ -22,7 +22,15 @@ $aData      = __get('aData');
 $sections   = __get('sections');
 $curSection = (string) Params::getParam('section');
 $curQuery   = (string) Params::getParam('q');
-$hasFilter  = ($curSection !== '' || $curQuery !== '');
+$curFrom    = LogsDataTable::dateParam('from');
+$curTo      = LogsDataTable::dateParam('to');
+$hasFilter  = ($curSection !== '' || $curQuery !== '' || $curFrom !== '' || $curTo !== '');
+$sectionLabels  = array_map(static fn ($code) => \mindstellar\admin\LogView::sectionLabel((string) $code), $sections);
+$sectionCounts  = array_count_values($sectionLabels);
+$sectionOptions = array();
+foreach ($sections as $i => $code) {
+    $sectionOptions[$code] = $sectionCounts[$sectionLabels[$i]] > 1 ? $sectionLabels[$i] . ' (' . $code . ')' : $sectionLabels[$i];
+}
 $sort       = Params::getParam('sort');
 $direction  = Params::getParam('direction');
 
@@ -39,6 +47,7 @@ osc_admin_body_open(); ?>
 
     <?php osc_admin_section(__('Recent activity')); ?>
     <div class="relative">
+        <?php osc_admin_toolbar_open(array('align' => 'between')); ?>
         <?php osc_admin_list_filter(array(
             'page'   => 'tools',
             'hidden' => array('action' => 'logs'),
@@ -51,11 +60,15 @@ osc_admin_body_open(); ?>
                     'label'       => __('Section'),
                     'value'       => $curSection,
                     'placeholder' => __('All sections'),
-                    'options'     => array_combine($sections, $sections),
+                    'options'     => $sectionOptions,
                 ),
+                array('type' => 'date', 'name' => 'from', 'label' => __('From'), 'value' => $curFrom),
+                array('type' => 'date', 'name' => 'to', 'label' => __('To'), 'value' => $curTo),
                 array('name' => 'q', 'value' => $curQuery, 'placeholder' => __('details, action or IP')),
             ),
         )); ?>
+        <button type="button" class="btn btn-danger btn-sm" data-osc-dialog-open="#logs-clear-dialog"><?php _e('Clear log'); ?></button>
+        <?php osc_admin_toolbar_close(); ?>
         <?php
         osc_admin_data_table($aData, array(
             'sort'      => $sort,
@@ -78,9 +91,6 @@ osc_admin_body_open(); ?>
 <?php
 osc_admin_pagination($aData);
 ?>
-    <div class="form-actions">
-        <button type="button" class="btn btn-danger btn-sm" data-osc-dialog-open="#logs-clear-dialog"><?php _e('Clear log'); ?></button>
-    </div>
     <?php osc_admin_section_close(); ?>
 <?php osc_admin_body_close(); ?>
 

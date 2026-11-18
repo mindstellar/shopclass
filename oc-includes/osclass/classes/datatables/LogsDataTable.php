@@ -14,6 +14,7 @@
  * not an editable list. Section and free-text filters come off the request.
  */
 use mindstellar\admin\ListPaging;
+use mindstellar\admin\LogView;
 
 class LogsDataTable extends DataTable
 {
@@ -47,6 +48,8 @@ class LogsDataTable extends DataTable
         $filters = array(
             'section' => (string) Params::getParam('section'),
             'q'       => (string) Params::getParam('q'),
+            'from'    => self::dateParam('from'),
+            'to'      => self::dateParam('to'),
         );
 
         $list = Log::getInstance()->search(
@@ -62,6 +65,17 @@ class LogsDataTable extends DataTable
         $this->total         = $list['rows'];
 
         return $this->getData();
+    }
+
+    /**
+     * A Y-m-d request date, or '' when missing or not a real date.
+     */
+    public static function dateParam(string $name): string
+    {
+        $value = (string) Params::getParam($name);
+        $d     = \DateTime::createFromFormat('!Y-m-d', $value);
+
+        return $d !== false && $d->format('Y-m-d') === $value ? $value : '';
     }
 
     /**
@@ -117,11 +131,35 @@ class LogsDataTable extends DataTable
             $who .= ' <span class="text-muted">#' . (int) $aRow['fk_i_who_id'] . '</span>';
         }
 
-        return $who;
+        return '<span class="text-nowrap">' . $who . '</span>';
     }
 
     /**
-     * Formats each log entry into table cells and keeps the raw row.
+     * A section or action cell: the plain label, with the stored code in the tooltip.
+     */
+    private function codeLabel(string $label, string $code): string
+    {
+        return '<span title="' . osc_esc_html($code) . '">' . osc_esc_html($label) . '</span>';
+    }
+
+    /**
+     * The details cell: object id plus cleaned text.
+     *
+     * @param array<string,mixed> $aRow
+     */
+    private function detailsText(array $aRow): string
+    {
+        $details = osc_esc_html(LogView::cleanDetails((string) $aRow['s_data']));
+        if ((int) $aRow['fk_i_id'] > 0) {
+            $details = trim('<span class="text-muted">#' . (int) $aRow['fk_i_id'] . '</span> ' . $details);
+        }
+
+        return $details;
+    }
+
+    /**
+     * Formats each log entry into table cells and keeps the raw row. Rows one action wrote
+     * are folded under the first.
      *
      * @param array<int,array<string,mixed>> $logs
      *
@@ -133,17 +171,28 @@ class LogsDataTable extends DataTable
             return;
         }
 
-        foreach ($logs as $aRow) {
-            $details = osc_esc_html($aRow['s_data']);
-            if ((int) $aRow['fk_i_id'] > 0) {
-                $details = '<span class="text-muted">#' . (int) $aRow['fk_i_id'] . '</span> ' . $details;
+        foreach (LogView::fold($logs) as $group) {
+            $aRow    = $group['head'];
+            $details = $this->detailsText($aRow);
+            if ($group['more'] !== array()) {
+                $items = '';
+                foreach ($group['more'] as $more) {
+                    $items .= '<li>' . osc_esc_html(LogView::actionLabel((string) $more['s_action']) . ': '
+                        . LogView::cleanDetails((string) $more['s_data'])) . '</li>';
+                }
+                $details .= '<details class="osc-log-more"><summary>'
+                    . osc_esc_html(sprintf(
+                        _n('%d more step', '%d more steps', count($group['more'])),
+                        count($group['more'])
+                    ))
+                    . '</summary><ul>' . $items . '</ul></details>';
             }
 
             $row            = array();
             $row['date']    = osc_admin_date($aRow['dt_date']);
             $row['who']     = $this->whoLabel($aRow);
-            $row['section'] = osc_esc_html($aRow['s_section']);
-            $row['action']  = osc_esc_html($aRow['s_action']);
+            $row['section'] = $this->codeLabel(LogView::sectionLabel((string) $aRow['s_section']), (string) $aRow['s_section']);
+            $row['action']  = $this->codeLabel(LogView::actionLabel((string) $aRow['s_action']), (string) $aRow['s_action']);
             $row['details'] = $details;
             $row['ip']      = osc_esc_html($aRow['s_ip']);
 

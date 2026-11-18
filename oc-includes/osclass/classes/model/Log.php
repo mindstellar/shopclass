@@ -113,7 +113,7 @@ class Log extends DAO
      * @param int    $end
      * @param string $order_column
      * @param string $order_direction
-     * @param array{section?:string,who?:string,q?:string} $filters
+     * @param array{section?:string,who?:string,q?:string,from?:string,to?:string} $filters
      *
      * @return array{rows:int|string,total_results:int|string,logs:array<int,array<string,string|null>>}
      *         The two counts stay int 0 on failure and are unprepared-query strings otherwise
@@ -141,6 +141,15 @@ class Log extends DAO
         if (!empty($filters['who'])) {
             $where[]  = 's_who = ?';
             $params[] = (string) $filters['who'];
+        }
+        // Whole days, inclusive: a range on dt_date so idx_date is used.
+        if (!empty($filters['from'])) {
+            $where[]  = 'dt_date >= ?';
+            $params[] = (string) $filters['from'] . ' 00:00:00';
+        }
+        if (!empty($filters['to'])) {
+            $where[]  = 'dt_date < ?';
+            $params[] = date('Y-m-d', strtotime((string) $filters['to'] . ' +1 day')) . ' 00:00:00';
         }
         if (isset($filters['q']) && $filters['q'] !== '') {
             // Same wildcard escaping the builder applies before a LIKE: a literal

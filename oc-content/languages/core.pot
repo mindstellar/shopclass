@@ -568,6 +568,12 @@ msgid_plural "%d more changes"
 msgstr[0] ""
 msgstr[1] ""
 
+#: oc-includes/osclass/classes/datatables/LogsDataTable.php
+msgid "%d more step"
+msgid_plural "%d more steps"
+msgstr[0] ""
+msgstr[1] ""
+
 #: oc-includes/osclass/helpers/hAdminNotices.php
 msgid "%d needs action"
 msgid_plural "%d need action"
@@ -1707,6 +1713,10 @@ msgid ""
 "search engines and intelligible for users."
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Activated"
+msgstr ""
+
 #: oc-includes/classes/user/SignUpMail.php
 msgid "Activation e-mail"
 msgstr ""
@@ -2036,6 +2046,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/settings/locations/preview.php
+#: oc-includes/classes/admin/LogView.php
 msgid "Added"
 msgstr ""
 
@@ -2972,6 +2983,10 @@ msgstr ""
 msgid "Back up first: %s."
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Backed up"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/storage.php
 msgid ""
 "Backfill existing images between local disk and remote storage. Each action "
@@ -3163,6 +3178,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/billing/wallet.php
 #: oc-admin/themes/modern/settings/billing.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/admin/SettingsSearch.php
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 #: oc-includes/osclass/classes/AdminMenu.php
@@ -3418,6 +3434,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
 msgid "Bump to top"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Bumped"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-classifieds.php
@@ -4000,6 +4020,10 @@ msgstr ""
 
 #: oc-includes/classes/admin/form/MainSettingsScreen.php
 msgid "Classifieds site"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Cleaned up"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/cleanup.php
@@ -5117,6 +5141,10 @@ msgstr ""
 msgid "Deactivate"
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Deactivated"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/storage.php
 msgid "Dead-lettered jobs (past the retry ceiling):"
 msgstr ""
@@ -5448,8 +5476,24 @@ msgstr ""
 msgid "Delete your account"
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Deleted"
+msgstr ""
+
 #: oc-admin/themes/modern/categories/index.php
 msgid "Deleted %s."
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Deleted alerts"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Deleted photo"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Deleted photos"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
@@ -5631,6 +5675,7 @@ msgstr ""
 #: oc-admin/themes/modern/parts/package-ui.php
 #: oc-admin/themes/modern/plugins/index.php
 #: oc-admin/themes/modern/settings/api.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/core/utility/SystemInfo.php
 msgid "Disabled"
 msgstr ""
@@ -6072,6 +6117,10 @@ msgstr ""
 msgid "Edit your listing"
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Edited"
+msgstr ""
+
 #: oc-admin/themes/modern/fields/index.php
 msgid "Editing this field changes it in every form that uses it."
 msgstr ""
@@ -6191,6 +6240,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/packages.php
 #: oc-admin/themes/modern/categories/index.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/core/utility/SystemInfo.php
 msgid "Enabled"
 msgstr ""
@@ -6987,6 +7037,7 @@ msgid "Friendly young Labrador needs a home"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/documents.php
+#: oc-admin/themes/modern/tools/logs.php
 #: oc-includes/osclass/classes/form/FieldForm.php
 #: oc-includes/osclass/helpers/hItems.php
 msgid "From"
@@ -7052,6 +7103,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/tools/system-info/jobs.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/admin/SystemChecks.php
 msgid "Gave up"
 msgstr ""
@@ -7081,6 +7133,10 @@ msgstr ""
 
 #: oc-includes/AjaxUploader.php
 msgid "Getting content length is not supported."
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Ghost buster"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/categories-shop.php
@@ -8316,6 +8372,7 @@ msgstr ""
 msgid "Land & Plots"
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/admin/form/PermalinkSettingsScreen.php
 #: oc-includes/classes/core/mail/CoreEmails.php
 #: oc-includes/osclass/installer/gui/install.php
@@ -8666,6 +8723,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/messages/index.php
+#: oc-includes/classes/admin/LogView.php
 msgid "Listing"
 msgstr ""
 
@@ -9148,6 +9206,10 @@ msgid ""
 "Made in small batches with shea butter and almond oil. No added perfume."
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Made premium"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/mailserver.php
 #: oc-includes/classes/admin/form/MailServerSettingsScreen.php
 msgid "Mail Settings"
@@ -9456,6 +9518,10 @@ msgid ""
 "delivery."
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Marked as spam"
+msgstr ""
+
 #: oc-admin/themes/modern/billing/order.php
 msgid "Marking this paid adds %s credits to the account straight away. "
 msgstr ""
@@ -9519,6 +9585,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/settings/media.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/admin/SettingsSearch.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Media"
@@ -11709,6 +11776,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
+#: oc-includes/classes/admin/LogView.php
 msgid "Paid"
 msgstr ""
 
@@ -11979,6 +12047,10 @@ msgstr ""
 msgid "Photo %d"
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Photo delete trace"
+msgstr ""
+
 #: oc-includes/classes/admin/form/MediaSettingsScreen.php
 msgid "Photo format"
 msgstr ""
@@ -12004,6 +12076,7 @@ msgid "Photography handbook, e-book"
 msgstr ""
 
 #: oc-admin/themes/modern/items/frm.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/admin/form/ItemSettingsScreen.php
 #: oc-includes/classes/admin/ui/PhotoGrid.php
 msgid "Photos"
@@ -12220,6 +12293,10 @@ msgstr ""
 #: oc-includes/osclass/classes/controller/admin/CAdminItems.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 msgid "Premium"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Premium removed"
 msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/database.php
@@ -12467,6 +12544,7 @@ msgstr ""
 #: oc-admin/themes/modern/appearance/customise.php
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
+#: oc-includes/classes/admin/LogView.php
 msgid "Published"
 msgstr ""
 
@@ -12586,6 +12664,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/tools/system-info/server.php
 msgid "Raise memory without touching php.ini"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Ran"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-classifieds.php
@@ -12805,12 +12887,17 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/osclass/gui/billing/receipt.php
 msgid "Refunded"
 msgstr ""
 
 #: oc-admin/themes/modern/billing/order.php
 msgid "Refunded %1$s (%2$s)"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Refunded at the gateway"
 msgstr ""
 
 #: oc-includes/classes/billing/Billing.php
@@ -12913,6 +13000,7 @@ msgid "Register"
 msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
+#: oc-includes/classes/admin/LogView.php
 msgid "Registered"
 msgstr ""
 
@@ -13148,6 +13236,7 @@ msgid "Report threshold"
 msgstr ""
 
 #: oc-admin/themes/modern/messages/tabs.php
+#: oc-includes/classes/admin/LogView.php
 msgid "Reported"
 msgstr ""
 
@@ -13572,6 +13661,10 @@ msgstr ""
 msgid "Save changes"
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Save failed"
+msgstr ""
+
 #: oc-includes/classes/listing/ListingCounters.php
 msgid "Save listing views"
 msgstr ""
@@ -13667,6 +13760,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/data/sample-shop.php
 msgid "Scented candle"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Scheduled jobs"
 msgstr ""
 
 #: oc-admin/themes/modern/settings/api.php
@@ -15043,6 +15140,10 @@ msgstr ""
 msgid "Spam"
 msgstr ""
 
+#: oc-includes/classes/admin/LogView.php
+msgid "Spam and bans"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/keywordBlock.php
 #: oc-includes/osclass/classes/AdminMenu.php
 msgid "Spam filter"
@@ -15050,6 +15151,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/Cleanup.php
 msgid "Spam listings"
+msgstr ""
+
+#: oc-includes/classes/admin/LogView.php
+msgid "Spam mark removed"
 msgstr ""
 
 #: oc-includes/osclass/installer/data/fields-shop.php
@@ -17165,6 +17270,7 @@ msgid "Titles can be 1 to %d characters."
 msgstr ""
 
 #: oc-admin/themes/modern/billing/documents.php
+#: oc-admin/themes/modern/tools/logs.php
 #: oc-includes/osclass/classes/form/FieldForm.php
 msgid "To"
 msgstr ""
@@ -17975,6 +18081,7 @@ msgstr ""
 #: oc-admin/themes/modern/media/index.php
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/index.php
+#: oc-includes/classes/admin/LogView.php
 #: oc-includes/osclass/classes/datatables/ItemsDataTable.php
 #: oc-includes/osclass/classes/form/UserForm.php
 msgid "User"

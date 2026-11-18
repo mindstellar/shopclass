@@ -679,3 +679,19 @@
   font-size: .8125rem;
   min-block-size: 1.75rem;
 }
+
+// Activity log: the steps one action wrote, folded under its row.
+.osc-log-more {
+  margin-block-start: .25rem;
+
+  > summary {
+    color: var(--osc-ink-muted, var(--bs-secondary-color));
+    cursor: pointer;
+    font-size: .8125rem;
+  }
+
+  > ul {
+    margin: .25rem 0 0;
+    padding-inline-start: 1rem;
+  }
+}
