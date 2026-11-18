@@ -215,13 +215,16 @@ if (!function_exists('osc_package_row')) {
                 <?php ob_start();
                 osc_package_mode_badge($pkg['modes'] ?? null);
                 $badge = (string) ob_get_clean(); ?>
+                <?php $extra = (string) ($pkg['extra_html'] ?? ''); ?>
+                <?php if ($extra !== '') : ?><div class="osc-pkg-notes"><?php endif; ?>
                 <?php if (!empty($pkg['note']) || $badge !== '') : ?>
                     <p class="osc-pkg-note osc-pkg-note--<?php
                         echo osc_esc_html(isset($pkg['note_variant']) && !empty($pkg['note']) ? $pkg['note_variant'] : 'info'); ?>">
                         <?php echo $pkg['note'] ?? ''; ?> <?php echo $badge; ?>
                     </p>
                 <?php endif; ?>
-                <?php echo $pkg['extra_html'] ?? ''; ?>
+                <?php echo $extra; ?>
+                <?php if ($extra !== '') : ?></div><?php endif; ?>
             </div>
             <?php osc_package_actions(isset($pkg['actions']) ? $pkg['actions'] : array()); ?>
         </li>

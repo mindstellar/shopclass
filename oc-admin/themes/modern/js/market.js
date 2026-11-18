@@ -315,11 +315,13 @@
                 } else {
                     setButtonBusy(btn, false);
                     flash('error', (res && res.message) || i18n.ajaxError);
-                    throw new Error((res && res.message) || 'market action failed');
+                    var failure = new Error((res && res.message) || 'market action failed');
+                    failure.flashed = true;
+                    throw failure;
                 }
             }).catch(function (err) {
                 setButtonBusy(btn, false);
-                if (!(err && err.message === 'market action failed')) {
+                if (!(err && err.flashed)) {
                     flash('error', i18n.ajaxError);
                 }
                 throw err;

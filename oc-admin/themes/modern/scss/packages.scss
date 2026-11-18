@@ -177,6 +177,12 @@
   grid-area: note;
 }
 
+// A note followed by more (the pending-update line) shares the one note cell.
+.osc-pkg-notes {
+  align-self: start;
+  grid-area: note;
+}
+
 // The live theme leads its screen: it spans the grid, screenshot on the start side at a
 // size worth looking at, details beside it.
 .osc-pkg-list--themes .osc-pkg--wide {
