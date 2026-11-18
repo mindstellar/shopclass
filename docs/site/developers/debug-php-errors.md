@@ -9,7 +9,7 @@ By default ShopClass keeps PHP quiet: notices and strict warnings are suppressed
 so a visitor never sees them. That is right for production and unhelpful the
 moment something breaks.
 
-Two constants in `config.php` change it.
+Two constants in `config.php` change it. They can also come from the environment (`OSC_DEBUG=1`, `OSC_DEBUG_LOG=1`), which is how a Docker site sets them. `OSC_DEBUG_LOG` alone turns debug on too. On Apache, `oc-content/.htaccess` denies `*.log` files so `debug.log` cannot be downloaded; the nginx image blocks it in its config.
 
 ## Show errors on screen
 
