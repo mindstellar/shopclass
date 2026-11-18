@@ -21,12 +21,6 @@ do, a link to the right screen.
 
 The panel shows the first 30 notices. **See all** opens the Notices screen.
 
-## Dots in the sidebar
-
-A dot next to a menu item shows where a notice belongs. A filled red dot means action is
-needed. A hollow amber ring means heads-up. Open the section and the sub-item with the dot is
-the place to go.
-
 ## Hide for 7 days
 
 **Hide for 7 days** on a row puts it away for you only. Other admins still see it. After 7

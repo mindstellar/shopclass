@@ -10,7 +10,7 @@
 
 /**
  * The admin notices API without a database: id, type, text and link rules, callable text,
- * failures that must not break a page, standing checks outside the admin, and marks().
+ * failures that must not break a page, and standing checks outside the admin.
  *
  * Usage: php tests/admin-notice-api.php
  */
@@ -373,24 +373,13 @@ namespace {
     osc_clear_admin_notice('h.one');
     pin('clear removes it', [], KeyValue::$rows);
 
-    harness_section('view order and marks');
+    harness_section('view order');
     $n = static fn (string $id, string $type, int $since, string $menu = 'tools', string $sub = ''): AdminNotice => new AdminNotice($id, $type, 'x', menu: $menu, submenu: $sub, since: $since);
     $view = new AdminNoticeView([$n('old-info', 'info', 1), $n('new-warn', 'warning', 9), $n('old-err', 'error', 2), $n('new-err', 'error', 8)], [$n('hid-w', 'warning', 9), $n('hid-e', 'error', 1)]);
     pin('active: action first, then newest', ['new-err', 'old-err', 'new-warn', 'old-info'], array_map(static fn (AdminNotice $x): string => $x->id, $view->active));
     pin('hidden sorted the same way', ['hid-e', 'hid-w'], array_map(static fn (AdminNotice $x): string => $x->id, $view->hidden));
     pin('count is every active row', 4, $view->count());
     pin('actionCount is errors only', 2, $view->actionCount());
-
-    $marks = (new AdminNoticeView(
-        [$n('a', 'error', 1, 'tools', 'tools_backup'), $n('b', 'warning', 2, 'tools', 'tools_system'), $n('c', 'info', 3, 'users'), $n('d', 'warning', 4, 'tools', 'tools_backup')],
-        [$n('e', 'error', 5, 'stats'), $n('f', 'error', 5, 'users')]
-    ))->marks();
-    pin('a section adds up its rows', ['group' => 'action', 'count' => 3, 'action' => 1], $marks['tools']);
-    pin('a sub key carries its own group', ['group' => 'action', 'count' => 2, 'action' => 1], $marks['tools/tools_backup']);
-    pin('a heads-up sub key', ['group' => 'headsup', 'count' => 1, 'action' => 0], $marks['tools/tools_system']);
-    pin('active wins over hidden', ['group' => 'headsup', 'count' => 1, 'action' => 0], $marks['users']);
-    pin('hidden-only: group is empty', ['group' => '', 'count' => 0, 'action' => 0], $marks['stats']);
-    pin('no sub key without a submenu', false, isset($marks['users/']));
 
     pin('actionCount leaves out heads-up rows', 1, (new AdminNoticeView([$n('a', 'error', 1), $n('b', 'warning', 1), $n('c', 'info', 1)]))->actionCount());
 

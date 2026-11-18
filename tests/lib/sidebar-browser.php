@@ -47,7 +47,7 @@ require_once ABS_PATH . 'oc-includes/osclass/classes/AdminMenu.php';
 
 /**
  * A menu shaped like the real one: leaves, sections with submenus, a count, a plugin section
- * with its own icon class and one with none (the bi-app fallback), and notice dots on Tools.
+ * with its own icon class and one with none (the bi-app fallback).
  *
  * @return array<string,array<mixed>>
  */
@@ -84,11 +84,6 @@ function sidebar_fixture_menu(): array
 function sidebar_menu_html(string $menu, string $sub): string
 {
     $admin = new AdminMenu();
-    $marks = new ReflectionProperty($admin, 'noticeMarks');
-    $marks->setValue($admin, array(
-        'tools'        => array('group' => 'action', 'count' => 2, 'action' => 1),
-        'tools/tools_0' => array('group' => 'headsup', 'count' => 1, 'action' => 0),
-    ));
     $render = new ReflectionMethod($admin, 'renderMenu');
     $html   = '<div class="px-1 pt-2"><ul id="dashboard-menu" class="oscmenu col-md-12 nav nav-pills flex-column">';
     foreach (sidebar_fixture_menu() as $id => $value) {

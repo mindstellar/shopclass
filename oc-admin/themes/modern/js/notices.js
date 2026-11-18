@@ -86,21 +86,6 @@
         chip.textContent = reply.count;
     }
 
-    function updateMarks(marks) {
-        document.querySelectorAll('[data-osc-mark]').forEach((dot) => {
-            const mark = marks[dot.dataset.oscMark];
-            const group = mark ? mark.group : '';
-            dot.hidden = group === '';
-            dot.classList.toggle('is-action', group === 'action');
-            dot.classList.toggle('is-headsup', group === 'headsup');
-            dot.title = group === '' ? '' : mark.name;
-            const name = document.querySelector('[data-osc-mark-name="' + CSS.escape(dot.dataset.oscMark) + '"]');
-            if (name) {
-                name.textContent = group === '' ? '' : ', ' + mark.name;
-            }
-        });
-    }
-
     function applyReply(reply) {
         const body = panel.querySelector('.osc-notice-body');
         const top = body ? body.scrollTop : 0;
@@ -111,7 +96,6 @@
         }
         syncHiddenList();
         updateBell(reply);
-        updateMarks(reply.marks || {});
     }
 
     // The screen's tabs, counts and empty state come from the server, the same as the panel's.

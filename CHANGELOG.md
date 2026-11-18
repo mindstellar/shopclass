@@ -17,7 +17,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - **Location field** in Listings → Settings picks one box, separate country, region and city boxes, or dropdown lists on the post and edit forms. `osc_place_field()` takes `style` and `part_class`.
 - **Only places from the list** in Listings → Settings refuses a place typed by hand, on the web form, admin, API and imports.
 - `GET /api/v1/cities?q=` finds cities in any region by the start of their name, in any language.
-- A bell in the top bar lists site problems and plugin warnings, with sidebar dots, Hide for 7 days and a Notices screen.
+- A bell in the top bar lists site problems and plugin warnings, with Hide for 7 days and a Notices screen.
 - Price, photos and location can each be Required or Optional, and price and photos Off, on the Listings settings screen; photos can require a minimum count.
 - A custom field can be hidden from visitors: the poster and admins still see it, the listing page and the public API do not. A hidden field cannot be searchable.
 - Invoices and credit notes show tax per line, and a refund of units takes those units' own tax. Tax plugins report it with `CartTaxLines::setLineTax()`.
@@ -120,6 +120,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
+- The admin sidebar no longer shows notice dots; the bell lists every notice.
 - Admin sidebar: sections open on their own and stay under the pointer, one pill marks the current page, and the rail collapses with the icons still.
 - Admin messages say what happened and what to do next, without "successfully", "correctly" or "Ajax". Reworded messages lose their old translations until retranslated.
 - Admin results share one path: `osc.notify()` behind `setJsMessage` and `osc.toast`, a sticky stack with "and N more", ok and info hide after 7 s, and one screen-reader region.

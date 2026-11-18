@@ -211,8 +211,7 @@ namespace {
     pin('the bell name is rebuilt', 'Notices, 2 notices', $reply['name'] ?? null);
     check('the panel has the hidden list', str_contains((string) ($reply['panel'] ?? ''), 'data-osc-notice-show="backups_open"'));
     check('the row left the active list', !str_contains((string) ($reply['panel'] ?? ''), 'data-osc-notice-hide="backups_open"'));
-    pin('the mark keeps its keys with no group', ['group' => '', 'name' => ''], $reply['marks']['tools'] ?? null);
-    pin('the sub key too', ['group' => '', 'name' => ''], $reply['marks']['tools/tools_backup'] ?? null);
+    pin('the reply carries no sidebar marks', false, isset($reply['marks']));
     check('the snooze is keyed by the session admin', isset(KeyValue::$rows['snooze:5:backups_open']));
 
     notice_service();
@@ -223,7 +222,6 @@ namespace {
     notice_service();
     $shown = json_decode(notice_drive('notice_show', ['id' => 'backups_open', 'CSRFToken' => 'good']), true);
     pin('show works', 1, $shown['ok'] ?? null);
-    pin('the mark is live again', ['group' => 'action', 'name' => '1 notice, 1 needs action'], $shown['marks']['tools'] ?? null);
     check('the snooze is gone', !isset(KeyValue::$rows['snooze:5:backups_open']));
 
     harness_section('rows that are not there');

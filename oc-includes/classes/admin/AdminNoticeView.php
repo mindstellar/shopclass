@@ -44,33 +44,6 @@ final readonly class AdminNoticeView
     }
 
     /**
-     * Where the sidebar prints a dot, by 'menu' and by 'menu/submenu'.
-     *
-     * @return array<string,array{group:string, count:int, action:int}> group is '' when only hidden rows are there
-     */
-    public function marks(): array
-    {
-        $marks = [];
-        foreach ($this->hidden as $n) {
-            foreach (self::markKeys($n) as $key) {
-                $marks[$key] ??= ['group' => '', 'count' => 0, 'action' => 0];
-            }
-        }
-        foreach ($this->active as $n) {
-            foreach (self::markKeys($n) as $key) {
-                $mark          = $marks[$key] ?? ['group' => '', 'count' => 0, 'action' => 0];
-                $mark['count']++;
-                $mark['action'] += $n->group() === 'action' ? 1 : 0;
-                $mark['group']  = $mark['action'] > 0 ? 'action' : 'headsup';
-                $marks[$key]    = $mark;
-            }
-        }
-        ksort($marks);
-
-        return $marks;
-    }
-
-    /**
      * The link and the Hide or Show button of one notice, the same on the panel and the screen.
      */
     public static function actions(AdminNotice $n, bool $hidden, bool $withLink = true): string
@@ -89,14 +62,6 @@ final readonly class AdminNoticeView
 
         return $link . '<button type="button" class="osc-notice-btn" ' . $attr . '="' . osc_esc_html($n->id) . '"'
             . ' aria-label="' . osc_esc_html(sprintf($name, $n->text)) . '">' . osc_esc_html($word) . '</button>';
-    }
-
-    /**
-     * @return string[]
-     */
-    private static function markKeys(AdminNotice $n): array
-    {
-        return $n->submenu === '' ? [$n->menu] : [$n->menu, $n->menu . '/' . $n->submenu];
     }
 
     /**

@@ -188,14 +188,13 @@ osc_admin_toolbar_update_languages();
 pin('an admin sees all four', array('update_core', 'update_plugin', 'update_theme', 'update_language'), AdminToolbar::$added);
 
 harness_section('the bell in a browser');
-$reply = static fn (array $active, array $hidden, array $marks = array()): array => array(
+$reply = static fn (array $active, array $hidden): array => array(
     'ok'     => 1,
     'count'  => count($active),
     'action' => count(array_filter($active, static fn (AdminNotice $n): bool => $n->type === 'error')),
     'hidden' => count($hidden),
     'name'   => 'name-' . count($active),
     'panel'  => render_view('notices-panel.php', new AdminNoticeView($active, $hidden)),
-    'marks'  => $marks,
 );
 $a      = notice_row('a', 'error', 300);
 $b      = notice_row('b', 'warning', 200);
@@ -204,7 +203,7 @@ $aGone  = $a->withHiddenUntil(1893456000);
 $bGone  = $b->withHiddenUntil(1893456000);
 $cGone  = $c->withHiddenUntil(1893456000);
 $fixture = array(
-    'a'   => $reply(array($b, $c), array($aGone), array('tools' => array('group' => '', 'name' => ''))),
+    'a'   => $reply(array($b, $c), array($aGone)),
     'b'   => $reply(array($c), array($aGone, $bGone)),
     'c'   => $reply(array(), array($aGone, $bGone, $cGone)),
     'all' => $reply(array($a, $b, $c), array()),
@@ -214,8 +213,7 @@ $bellHtml = (string) preg_replace('~<script.*?</script>~s', '', $bellHtml);
 
 $page = '<main><header id="header" class="admin-topbar navbar"><ul class="navbar-nav admin-topbar-tools ms-auto">' . $bellHtml . '</ul></header>'
     . '<div id="osc-live"><div data-osc-live="polite"></div></div>'
-    . '<div id="content-page" class="row"><span class="osc-dot is-action" data-osc-mark="tools" title="x"></span>'
-    . '<span data-osc-mark-name="tools">, x</span><p id="outside">Page</p></div></main>';
+    . '<div id="content-page" class="row"><p id="outside">Page</p></div></main>';
 
 function bell_run(string $page, string $driver, int $width): ?array
 {
@@ -326,7 +324,6 @@ r.rowGone = !panel.querySelector('[data-osc-notice-hide="a"]');
 r.name = bell.getAttribute('aria-label');
 r.chip = [bell.querySelector('.circle').textContent, bell.querySelector('.circle').className];
 r.live = document.querySelector('[data-osc-live="polite"]').textContent;
-r.mark = [document.querySelector('[data-osc-mark="tools"]').hidden, document.querySelector('[data-osc-mark-name="tools"]').textContent];
 
 r.toggleLabel0 = panel.querySelector('[data-osc-notice-toggle]').textContent;
 panel.querySelector('[data-osc-notice-toggle]').click();
@@ -366,7 +363,6 @@ if ($r !== null) {
     pin('the bell name updates', 'name-2', $r['name'] ?? null);
     pin('the chip updates and turns grey', array('2', 'circle circle-gray'), $r['chip'] ?? null);
     pin('Hide is spoken once, politely', 'Hidden for 7 days.', $r['live'] ?? null);
-    pin('the dot goes out and its name empties', array(true, ''), $r['mark'] ?? null);
     pin('the hidden list opens', array(false, 'true', 'Close list'), $r['listOpen'] ?? null);
     pin('with no next row, focus on the toggle', true, $r['afterLast'] ?? null);
     pin('the list stays open across a Hide', false, $r['keepOpen'] ?? null);

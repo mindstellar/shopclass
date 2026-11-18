@@ -174,9 +174,6 @@ r.finalDrift = drift(start);
 const icon = t.row('Dashboard').querySelector('a > i');
 r.iconCentre = t.box(icon).cx;
 
-const tools = t.row('Tools');
-const dot = t.box(tools.querySelector('.osc-dot')), ti = t.box(tools.querySelector('a > i'));
-r.railDot = [Math.round(dot.x - (ti.x + ti.w)), Math.round(dot.y - ti.y), Math.round(dot.w * 100) / 100, t.css(tools.querySelector('.osc-dot'), 'background-color') !== 'rgba(0, 0, 0, 0)'];
 r.pills = t.$$('#dashboard-menu div.nav-link').filter((el) => t.css(el, 'background-color') !== 'rgba(0, 0, 0, 0)').map((el) => el.textContent.trim());
 
 // Flyouts: moving to the next row hides the last one at once.
@@ -201,8 +198,6 @@ for (const ms of [0, 50, 100, 150]) { t.seek(ms); seen.push(drift(start)); }
 r.expandDrift = Math.max(...seen);
 await t.finish();
 r.back = [document.documentElement.getAttribute('data-osc-sidebar'), Math.round(t.box(listings).h) === Math.round(full)];
-const dotE = t.box(t.row('Tools').querySelector('.osc-dot')), rowE = t.box(t.row('Tools')), chevE = t.box(t.chevron('Tools'));
-r.rowDot = [Math.abs(dotE.cy - rowE.cy) <= 1, dotE.x + dotE.w <= chevE.x + .5, Math.round(dotE.w * 100) / 100];
 JS);
 if ($r !== null) {
     pin('no script errors', array(), $r['errors'] ?? null);
@@ -215,7 +210,6 @@ if ($r !== null) {
     check('the icon column is on the rail centre', abs(($r['iconCentre'] ?? 0) - 28) <= 1, (string) ($r['iconCentre'] ?? ''));
     check('an open panel shrinks with the width, not at once', isset($r['midPanel']) && $r['midPanel'][0] > 0 && $r['midPanel'][0] < $r['midPanel'][1], json_encode($r['midPanel'] ?? null));
     check('rows below it move with it', isset($r['midRow']) && $r['midRow'][0] < $r['midRow'][1] && $r['midRow'][0] > $r['midRow'][1] - ($r['midPanel'][1] ?? 0), json_encode($r['midRow'] ?? null));
-    pin('the notice dot keeps its place on the icon corner', array(-4, -10, 8.75, true), $r['railDot'] ?? null);
     pin('on the rail the section row carries the pill', array('Listings'), $r['pills'] ?? null);
     pin('a flyout opens on hover', '1', $r['flyOpen'] ?? null);
     pin('the last flyout is gone the moment the next row is entered', array('0', 'hidden'), $r['flyPrev'] ?? null);
@@ -224,7 +218,6 @@ if ($r !== null) {
     pin('it ends collapsed', 'collapsed', $r['turnedEnd'] ?? null);
     check('no icon moves while the rail expands', ($r['expandDrift'] ?? 99) <= 1, 'moved ' . ($r['expandDrift'] ?? '?') . 'px');
     pin('expanded again, with the open panel back at full height', array('expanded', true), $r['back'] ?? null);
-    pin('on a row the dot sits centred before the chevron', array(true, true, 8.75), $r['rowDot'] ?? null);
 }
 
 harness_section('reduced motion');

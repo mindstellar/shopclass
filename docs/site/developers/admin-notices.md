@@ -6,7 +6,7 @@ sidebar:
 ---
 
 The bell in the admin top bar lists what needs the owner's attention. A plugin adds a
-notice with one call, and the bell, the sidebar dot and the Notices screen do the rest.
+notice with one call, and the bell and the Notices screen do the rest.
 
 ## The shortest complete example
 
@@ -46,7 +46,7 @@ logged and skipped. The call never throws on a page.
 | `detail` | The rest of the message. The panel shows only `$text`; the Notices screen shows both. |
 | `link` | Empty, `?page=…`, or an http(s) address under the site URL. Anything else is dropped. |
 | `link_label` | The link's words. |
-| `menu`, `submenu` | Where the sidebar dot goes, as admin menu ids such as `plugins` or `tools` and `tools_backup`. Default `dash`. |
+| `menu`, `submenu` | The admin menu area the notice belongs to, such as `plugins` or `tools` and `tools_backup`. Default `dash`. |
 | `source` | The area name on the Notices screen. |
 | `moderator` | `true` to show it to moderators too. Default `false`. |
 | `ttl` | Seconds a one-off notice lives. Default 30 days. |

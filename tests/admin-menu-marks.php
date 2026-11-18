@@ -9,8 +9,7 @@
  */
 
 /**
- * The sidebar notice dots: on a section and a sub-item, none when nothing is marked, a hidden dot
- * for hidden-only rows, the spoken name inside the link, and no change to the rest of the menu.
+ * The sidebar prints no notice dot beside a section or a sub-item; the bell carries every notice.
  *
  * Usage: php tests/admin-menu-marks.php
  */
@@ -63,48 +62,12 @@ $tools = ['Tools', 'https://example.test/oc-admin/?page=tools', 'tools', 'admini
 ]];
 $users = ['Users', 'https://example.test/oc-admin/?page=users', 'users', 'moderator', 'bi bi-people'];
 
-/** One section's menu markup with the given marks. */
-function menu_html(string $id, array $section, ?array $marks, string $current = ''): string
-{
-    $menu = new AdminMenu();
-    $prop = new ReflectionProperty($menu, 'noticeMarks');
-    $prop->setValue($menu, $marks);
-    $call = new ReflectionMethod($menu, 'renderMenu');
+$menu = new AdminMenu();
+$call = new ReflectionMethod($menu, 'renderMenu');
+$html = $call->invoke($menu, 'tools', $tools, '', '') . $call->invoke($menu, 'users', $users, '', '');
 
-    return $call->invoke($menu, $id, $section, $current, '');
-}
-
-$action = ['group' => 'action', 'count' => 2, 'action' => 1];
-
-harness_section('no notices');
-$plain = menu_html('tools', $tools, []);
-check('no dot is printed', strpos($plain, 'osc-dot') === false && strpos($plain, 'data-osc-mark') === false);
-pin('marks for other sections change nothing', $plain, menu_html('tools', $tools, ['users' => $action, 'tools/other' => $action]));
-
-harness_section('a dot on the section and on the sub-item');
-$html = menu_html('tools', $tools, ['tools' => $action, 'tools/tools_backup' => $action]);
-check('the section has a red dot', (bool) preg_match('~Tools.*?<span class="osc-dot is-action" data-osc-mark="tools" title="2 notices, 1 needs action"></span>~s', $html));
-check('the backup item has a dot, maintenance has none', substr_count($html, 'osc-dot') === 2 && strpos($html, 'data-osc-mark="tools/tools_backup"') !== false);
-check('the name is in the link text', strpos($html, '<span class="visually-hidden" data-osc-mark-name="tools">, 2 notices, 1 needs action</span></a>') !== false);
-check('the dot comes after the label, inside the link', (bool) preg_match('~<a class="nav-link py-1\s*" id="tools_backup"[^>]*>Backup <span class="osc-dot is-action"~', $html));
-check('without the dot the rest of the markup is as before', str_replace(
-    [' <span class="osc-dot is-action" data-osc-mark="tools" title="2 notices, 1 needs action"></span><span class="visually-hidden" data-osc-mark-name="tools">, 2 notices, 1 needs action</span>',
-     ' <span class="osc-dot is-action" data-osc-mark="tools/tools_backup" title="2 notices, 1 needs action"></span><span class="visually-hidden" data-osc-mark-name="tools/tools_backup">, 2 notices, 1 needs action</span>'],
-    '',
-    $html
-) === $plain);
-
-harness_section('heads-up and hidden-only');
-$head = menu_html('tools', $tools, ['tools' => ['group' => 'headsup', 'count' => 1, 'action' => 0]]);
-check('a heads-up dot', strpos($head, 'osc-dot is-headsup') !== false && strpos($head, ', 1 notice<') !== false);
-$only = menu_html('tools', $tools, ['tools' => ['group' => '', 'count' => 0, 'action' => 0]]);
-check('hidden-only prints a hidden dot with no name', strpos($only, '<span class="osc-dot" data-osc-mark="tools" hidden></span>') !== false
-    && strpos($only, 'data-osc-mark-name="tools"></span>') !== false);
-
-harness_section('moderator');
-$GLOBALS['moderator'] = true;
-check('a moderator gets no tools row, so no dot', menu_html('tools', $tools, ['tools' => $action]) === '');
-check('a moderator keeps the dot on a section they can open', strpos(menu_html('users', $users, ['users' => $action]), 'osc-dot is-action') !== false);
-$GLOBALS['moderator'] = false;
+harness_section('no sidebar dot');
+check('the menu renders its rows', strpos($html, 'Backup') !== false && strpos($html, 'Users') !== false);
+check('no notice dot is printed', strpos($html, 'osc-dot') === false && strpos($html, 'data-osc-mark') === false);
 
 exit(harness_result());

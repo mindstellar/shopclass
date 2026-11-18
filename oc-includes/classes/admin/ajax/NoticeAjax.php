@@ -49,10 +49,6 @@ final class NoticeAjax extends AjaxHandler
         ob_start();
         $this->controller->doView('parts/notices-panel.php');
         $view  = osc_admin_notices();
-        $marks = array();
-        foreach ($view->marks() as $key => $mark) {
-            $marks[$key] = array('group' => $mark['group'], 'name' => osc_admin_notice_name($mark['count'], $mark['action']));
-        }
 
         AjaxResponse::json(array(
             'ok'     => $ok ? 1 : 0,
@@ -61,7 +57,6 @@ final class NoticeAjax extends AjaxHandler
             'hidden' => count($view->hidden),
             'name'   => osc_admin_bell_name($view->count(), $view->actionCount()),
             'panel'  => (string) ob_get_clean(),
-            'marks'  => $marks,
         ));
     }
 }
