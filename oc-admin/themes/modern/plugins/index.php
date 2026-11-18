@@ -68,6 +68,7 @@ if (!is_array($aMarketMeta)) {
 osc_register_script('admin-market', osc_asset_url_versioned(osc_current_admin_theme_js_url('market.js')), array('admin-osc', 'admin-ui-osc'));
 osc_enqueue_script('admin-market');
 
+$updatesBySlug    = array_column($aMarketUpdates, null, 'slug');
 $marketCsrf       = osc_csrf_token_url();
 $marketInstallUrl = osc_admin_base_url(true) . '?page=ajax&action=market_install&type=plugin&' . $marketCsrf;
 $marketUpdateUrl  = osc_admin_base_url(true) . '?page=ajax&action=market_update&type=plugin&' . $marketCsrf;
@@ -153,19 +154,20 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
                     'data-market-item' => json_encode($detail, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT),
                 );
             },
-            'cell'      => static function ($column, $value, $key) use ($aRawRows) {
+            'cell'      => static function ($column, $value, $key) use ($aRawRows, $updatesBySlug, $aMarketMeta) {
+                $pkg = $aRawRows[$key];
+                if ($column === 'name' && isset($updatesBySlug[$pkg['slug']])) {
+                    ob_start();
+                    osc_market_render_update_note($updatesBySlug[$pkg['slug']], $aMarketMeta);
+
+                    $note = (string) ob_get_clean();
+
+                    return preg_replace_callback('#<p class="osc-pkg-note[^>]*>.*?</p>#s', static fn () => $note, (string) $value, 1);
+                }
                 if ($column !== 'status') {
                     return null;
                 }
-                $pkg = $aRawRows[$key];
-                // The table hands over the plain state; the badges are the theme's.
-                ob_start();
-                osc_package_state($pkg['state']);
-                $state = (string) ob_get_clean();
-                ob_start();
-                osc_package_mode_badge($pkg['modes']);
-
-                return $state . ' ' . ob_get_clean();
+                return osc_package_status_badges($pkg['state'], $pkg['modes']);
             },
             'empty'     => $status !== '' || $search !== ''
                 ? array(

@@ -120,6 +120,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
+- A pending plugin or theme update shows an "Update to version X" button where it is listed; the Plugins Status column stacks its badges.
 - The admin sidebar no longer shows notice dots; the bell lists every notice.
 - Admin sidebar: sections open on their own and stay under the pointer, one pill marks the current page, and the rail collapses with the icons still.
 - Admin messages say what happened and what to do next, without "successfully", "correctly" or "Ajax". Reworded messages lose their old translations until retranslated.

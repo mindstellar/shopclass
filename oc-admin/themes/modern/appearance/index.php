@@ -92,8 +92,15 @@ osc_current_admin_theme_path('parts/header.php'); ?>
         $csrf_token      = osc_csrf_token_url();
         $aThemesToUpdate = osc_update_check_state('themes')['to_update'];
         $bThemesToUpdate = is_array($aThemesToUpdate);
+        $updatesBySlug   = array_column($aMarketUpdates, null, 'slug');
+        $updateNote      = static function ($theme) use ($updatesBySlug, $aMarketMeta) {
+            ob_start();
+            osc_market_render_update_note($updatesBySlug[$theme], $aMarketMeta);
+
+            return (string) ob_get_clean();
+        };
         $themeMeta       = static function ($info) {
-            $meta = array(sprintf(__('Version %s'), osc_esc_html($info['version'])));
+            $meta = array(sprintf(__('Version %s'), '<span data-installed-version>' . osc_esc_html($info['version']) . '</span>'));
             $meta[] = !empty($info['author_url'])
                 ? sprintf(__('by %s'), '<a target="_blank" rel="noopener" href="'
                     . osc_esc_html(osc_sanitize_url($info['author_url'])) . '">'
@@ -262,11 +269,12 @@ osc_current_admin_theme_path('parts/header.php'); ?>
                         : ($isParent
                             ? osc_esc_html(__('The active theme extends this one. Deleting it would leave '
                                               . 'your site rendering on the default theme.'))
-                            : ($update
+                            : ($update && !isset($updatesBySlug[$theme])
                                 ? osc_esc_html(__('An update is ready for this theme. '
                                                   . 'Open the Updates tab to apply it.'))
                                 : '')),
                     'note_variant' => ($clashes !== array() || $isParent) ? 'warning' : 'update',
+                    'extra_html'   => $update && isset($updatesBySlug[$theme]) ? $updateNote($theme) : '',
                     'modes'        => (array) ($tInfo['modes'] ?? array()),
                     'actions'     => array(
                         // A theme that clashes with its parent cannot run, so it offers no Activate.

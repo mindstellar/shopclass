@@ -444,3 +444,24 @@
     }
   }
 }
+
+// State and site-mode badges in the plugins Status cell: one per line.
+.osc-pkg-badges {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+}
+
+// The pending-update button sits right under the name.
+.osc-pkg-note[data-market-update-note] {
+  margin-block: .35rem;
+
+  .market-card-action {
+    margin: 0;
+  }
+
+  .market-card-reason {
+    margin: .25rem 0 0;
+  }
+}

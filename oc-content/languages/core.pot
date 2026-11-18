@@ -3501,6 +3501,10 @@ msgstr ""
 msgid "Can't update"
 msgstr ""
 
+#: oc-admin/themes/modern/parts/market.php
+msgid "Can't update to version %1$s: %2$s"
+msgstr ""
+
 #: oc-includes/osclass/install-functions.php
 msgid "Can't write in config.php file. Check if the file is writable."
 msgstr ""
@@ -17751,6 +17755,10 @@ msgstr ""
 
 #: oc-admin/themes/modern/parts/market.php
 msgid "Update to %s"
+msgstr ""
+
+#: oc-admin/themes/modern/parts/market.php
+msgid "Update to version %s"
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php

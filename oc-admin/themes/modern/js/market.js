@@ -254,6 +254,19 @@
             });
         }
 
+        // An update applied from anywhere drops the "Update to version X" line under the
+        // package and shows the new version in its row or card.
+        function clearInlineUpdate(slug, version) {
+            document.querySelectorAll('[data-market-update-note][data-market-slug="' + cssEscape(slug) + '"]').forEach(function (note) {
+                note.parentNode.removeChild(note);
+            });
+            var row = document.getElementById('pkg-' + slug.replace(/[^A-Za-z0-9_-]+/g, '-'));
+            var shown = row && (row.querySelector('[data-installed-version]') || row.querySelector('.col-version'));
+            if (shown && version) {
+                shown.textContent = version;
+            }
+        }
+
         function cssEscape(value) {
             return window.CSS && CSS.escape ? CSS.escape(value) : value.replace(/["\\]/g, '\\$&');
         }
@@ -296,6 +309,7 @@
                     installedStale = true;
                     flash('ok', res.message);
                     if (action === 'update') {
+                        clearInlineUpdate(slug, version);
                         removeUpdateItem(slug);
                     }
                 } else {

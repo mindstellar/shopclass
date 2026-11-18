@@ -67,6 +67,29 @@ if (!function_exists('osc_package_mode_badge')) {
     }
 }
 
+if (!function_exists('osc_package_status_badges')) {
+    /**
+     * The state badge and the site-mode badge, each on its own line.
+     *
+     * @param string     $state
+     * @param array|null $modes
+     *
+     * @return string
+     */
+    function osc_package_status_badges($state, $modes)
+    {
+        ob_start();
+        osc_package_state($state);
+        $stateHtml = (string) ob_get_clean();
+        ob_start();
+        osc_package_mode_badge($modes);
+        $modeHtml = (string) ob_get_clean();
+
+        return '<div class="osc-pkg-badges"><span class="osc-pkg-badge">' . $stateHtml . '</span>'
+            . ($modeHtml !== '' ? '<span class="osc-pkg-badge">' . $modeHtml . '</span>' : '') . '</div>';
+    }
+}
+
 if (!function_exists('osc_package_art')) {
     /**
      * The artwork box: a plugin's square icon or a theme's screenshot.
@@ -155,7 +178,7 @@ if (!function_exists('osc_package_row')) {
      *
      * @param array $pkg {art:array, slug:string, name:string, state:string, state_word?:string,
      *                    meta?:array<int,string>, description?:string, note?:string,
-     *                    note_variant?:string, modes?:array<int,string>, actions?:array, size?:string, class?:string,
+     *                    note_variant?:string, extra_html?:string, modes?:array<int,string>, actions?:array, size?:string, class?:string,
      *                    detail?:array} detail: what the market detail dialog shows before it
      *                    loads the rest -- name, author, version, short_description, tags.
      *                    With it, the art and a Details link open that dialog.
@@ -198,6 +221,7 @@ if (!function_exists('osc_package_row')) {
                         <?php echo $pkg['note'] ?? ''; ?> <?php echo $badge; ?>
                     </p>
                 <?php endif; ?>
+                <?php echo $pkg['extra_html'] ?? ''; ?>
             </div>
             <?php osc_package_actions(isset($pkg['actions']) ? $pkg['actions'] : array()); ?>
         </li>

@@ -300,6 +300,30 @@ function osc_market_render_action($row, $meta, $mode, $label)
 }
 
 /**
+ * The pending-update line under an installed plugin or theme: an "Update to version X"
+ * button wired like the Updates tab's, or the reason the update is blocked.
+ *
+ * @param array<string,mixed> $row  Update row from the Updates tab data
+ * @param array<string,mixed> $meta $aMarketMeta
+ *
+ * @return void
+ */
+function osc_market_render_update_note($row, $meta)
+{
+    $reason = osc_market_blocked_reason($meta, $row['compat']);
+    ?>
+    <div class="osc-pkg-note osc-pkg-note--update" data-market-update-note
+         data-market-slug="<?php echo osc_esc_html($row['slug']); ?>">
+        <?php if ($reason !== '') : ?>
+            <?php echo osc_esc_html(sprintf(__("Can't update to version %1\$s: %2\$s"), $row['new_version'], $reason)); ?>
+        <?php else : ?>
+            <?php osc_market_render_action($row, $meta, 'update', sprintf(__('Update to version %s'), $row['new_version'])); ?>
+        <?php endif; ?>
+    </div>
+    <?php
+}
+
+/**
  * The .callout banner for catalog state: never fetched, fetch failed, not writable,
  * or in-app installs disabled. Several can be true at once; each gets its own line.
  *
