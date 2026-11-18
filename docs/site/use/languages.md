@@ -36,7 +36,7 @@ see before they choose, and what content falls back to.
 
 **Settings › Languages** marks the **Site default** and the **Admin default**.
 Use **Make site default** or **Make admin default** on a language's row to
-change them. The admin default is the language the admin login offers first.
+change them. The admin default is the language the admin login offers first. You can also set it in **Settings → General** under **Default admin language**. The title and description of the site can be set per language there too.
 
 Content language tabs list the site default first and open on it. Pages,
 e-mail templates and custom fields get a tab for each language that is on for

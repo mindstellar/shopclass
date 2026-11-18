@@ -9,7 +9,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ### New
 - `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
 - With `OSC_DEBUG_LOG` on, `oc-content/.htaccess` gets a rule that blocks `*.log` files on Apache.
-- Widget and section text fields can be set per language with `'translate' => true`, and Customise edits a theme's per-language settings, one box per language.
+- Widget and section text fields can be set per language with `'translate' => true`.
 - The site title and description in Settings → General are set per language; the API exposes them as `site_title_translations` and `site_description_translations`.
 - `osc_settings_text_value()` reads a per-language setting with the default-language fallback; `osc_sendMail()` takes a `locale` key.
 - The admin bell warns when a payment method is on but has no keys.
@@ -109,7 +109,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Categories has a **⋯** actions sheet on phones.
 - `osc.sortable(el, {tree: {…}})`, `osc.flatTree`, `osc.toast(text, {undo, ms})` and `osc.announce(el, text)` are documented for plugin screens.
 - The admin reads right to left for a right-to-left admin language: the page mirrors, and arrows, selects and joined buttons turn with it.
-- Settings > General has a Default admin language.
+- Settings > General has a Default admin language, and the admin login offers it.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
@@ -122,7 +122,6 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 ### Changed
 - The Activity log shows plain section and action names, folds the rows one action wrote into one, has a date filter, and Clear log sits in the table toolbar.
 - A pending plugin or theme update shows an "Update to version X" button where it is listed; the Plugins Status column stacks its badges.
-- The admin sidebar no longer shows notice dots; the bell lists every notice.
 - Admin sidebar: sections open on their own and stay under the pointer, one pill marks the current page, and the rail collapses with the icons still.
 - Admin messages say what happened and what to do next, without "successfully", "correctly" or "Ajax". Reworded messages lose their old translations until retranslated.
 - Admin results share one path: `osc.notify()` behind `setJsMessage` and `osc.toast`, a sticky stack with "and N more", ok and info hide after 7 s, and one screen-reader region.
@@ -208,7 +207,6 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - The language import list is in alphabetical order.
 - The Edit language screen has a Save changes button again.
 - Installing or updating a language keeps e-mail templates the admin edited, names them in a notice, and only writes to e-mail pages.
-- The admin login offers the Default admin language.
 - Language bulk actions with nothing ticked say "No language selected." before asking to confirm.
 - Uploading a language that is already installed says it was updated.
 - The Edit language message names the full language, such as English (Australia).

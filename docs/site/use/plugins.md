@@ -79,7 +79,7 @@ panel down with it: see
 
 ## Updating
 
-Updates appear in the plugins list when the catalog offers a newer version.
+Updates appear in the plugins list when the catalog offers a newer version. A plugin with an update shows an **Update to version X** button under its name, which does the same as the **Updates** tab.
 
 ```bash
 php oc-cli.php market:update --all

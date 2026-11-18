@@ -30,7 +30,7 @@ palette and their own hero copy, which is a settings change, not a theme change.
 
 Each theme is a card carrying its version, its author, a short description and a
 state badge (*Live*, *Installed*), with the buttons that apply to it:
-**Activate**, **Preview**, **Delete**.
+**Activate**, **Preview**, **Delete**. A theme with an update shows an **Update to version X** button.
 
 **Plugins → Manage plugins** works the same way, with **Installed**, **Browse**
 and **Updates** tabs and the same card layout.

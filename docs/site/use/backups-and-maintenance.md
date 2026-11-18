@@ -182,8 +182,7 @@ default), and how many days of daily view history to keep.
 originating IP, searchable by *details, action or IP*.
 
 This is what answers "who disabled that category" and "when did this setting
-change" on a site with more than one admin. It can be filtered, and cleared
-entirely.
+change" on a site with more than one admin. Rows use plain action names, and an action's extra steps are folded into one row. Filter by date, or use **Clear log** in the table toolbar to empty it.
 
 Two settings on that page control it:
 

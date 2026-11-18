@@ -14,7 +14,7 @@ Everything below lives in the admin panel at `https://example.com/oc-admin/`.
 
 **Settings → General.**
 
-Set the site title, contact e-mail and default language. You can also change the default on **Settings › Languages**. **Site is a** says whether the site
+Set the site title, contact e-mail and default language. **Default admin language** sets the language the admin panel and its login open in. In each language tab you can also give the site its own title and description. You can also change the default on **Settings › Languages**. **Site is a** says whether the site
 is a classifieds site or a shop (only admins add products); your theme and plugins say which
 of these they work for, and the screen warns when one does not. Setting up a shop? Read
 [running a shop](/docs/use/shop/) after these steps. The title appears in
