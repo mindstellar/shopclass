@@ -62,6 +62,9 @@ class AdminMenu
     /** Submenu keys a plugin placed inside a group heading, per section. */
     private $aPlaced = array();
 
+    /** @var array<string,array<string,string>> plugin folder that added each entry, per section */
+    private $aOwner = array();
+
     /**
      * Start with an empty menu tree.
      */
@@ -579,6 +582,7 @@ class AdminMenu
             error_log(sprintf('Admin menu: entry "%s" was not shown, its parent menu "%s" does not exist.', $submenu_id, $menu_id));
         }
 
+        $this->setOwner($menu_id, $submenu_id, (string) $url);
         $sub = $this->aMenu[$menu_id]['sub'] ?? array();
         unset($sub[$submenu_id]);
         $at = null;
@@ -907,6 +911,149 @@ class AdminMenu
     }
 
     /**
+     * Record the plugin that adds an entry: the plugin whose code is running, else the
+     * plugin a renderplugin link points into.
+     */
+    private function setOwner(string $menuId, string $submenuId, string $url): void
+    {
+        $owner = Plugins::currentOwner();
+        $slug  = $owner !== null && $owner[0] === 'plugin' ? $owner[1] : self::pluginInUrl($url);
+        if ($slug === null || $slug === '') {
+            unset($this->aOwner[$menuId][$submenuId]);
+
+            return;
+        }
+        $this->aOwner[$menuId][$submenuId] = $slug;
+    }
+
+    /**
+     * The plugin folder a renderplugin link names through its file, or its route's file.
+     */
+    private static function pluginInUrl(string $url): ?string
+    {
+        if (strpos($url, 'action=renderplugin') === false) {
+            return null;
+        }
+        parse_str((string) parse_url($url, PHP_URL_QUERY), $query);
+        $file = $query['file'] ?? null;
+        if (!is_string($file) && is_string($query['route'] ?? null) && class_exists('Rewrite', false)) {
+            $file = Rewrite::getInstance()->getRoutes()[$query['route']]['file'] ?? null;
+        }
+
+        return is_string($file) && $file !== '' ? Plugins::slug($file) : null;
+    }
+
+    /**
+     * One group per plugin with admin screens, sorted by name: its links in the Plugins
+     * section, or one link to its settings page, else its first screen elsewhere.
+     *
+     * @param array<string,string> $names    active plugin folder => plugin name
+     * @param array<string,string> $settings plugin folder => its settings page url
+     *
+     * @return array<int,array{plugin:string,title:string,entries:array<int,array{title:string,url:string,id:string}>}>
+     */
+    public function pluginGroups(array $names, array $settings = array(), bool $isModerator = false): array
+    {
+        $groups = array();
+        foreach (array('plugins' => $this->aMenu['plugins'] ?? array()) + $this->aMenu as $menuId => $section) {
+            foreach ($section['sub'] ?? array() as $key => $entry) {
+                $slug = $this->aOwner[$menuId][$key] ?? null;
+                if ($slug === null || !isset($names[$slug]) || strpos($entry[1], 'divider_') === 0) {
+                    continue;
+                }
+                if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
+                    continue;
+                }
+                if ($menuId === 'plugins') {
+                    $groups[$slug]['entries'][] = array('title' => $entry[0], 'url' => $entry[1], 'id' => $entry[2]);
+                } elseif (!isset($groups[$slug])) {
+                    $groups[$slug]['entries'][] = isset($settings[$slug])
+                        ? array('title' => __('Settings'), 'url' => $settings[$slug], 'id' => 'plugin-link-' . $slug)
+                        : array('title' => $entry[0], 'url' => $entry[1], 'id' => 'plugin-link-' . $slug);
+                }
+            }
+        }
+        $out = array();
+        foreach ($groups as $slug => $group) {
+            $out[] = array('plugin' => (string) $slug, 'title' => $names[$slug], 'entries' => $group['entries']);
+        }
+        usort($out, static fn ($a, $b) => strnatcasecmp($a['title'], $b['title']));
+
+        return $out;
+    }
+
+    /**
+     * The sidebar list for Plugins: the links no plugin owns, then each plugin's group
+     * under a heading with its name. A plugin's own headings give way to that one.
+     *
+     * @param array<string,string> $names
+     * @param array<string,string> $settings
+     */
+    private function renderPluginList(array $names, array $settings, $activeMenu, $activeSubmenu): string
+    {
+        $isModerator = osc_is_moderator();
+        $sub         = array();
+        foreach ($this->aMenu['plugins']['sub'] ?? array() as $key => $entry) {
+            if (!isset($names[$this->aOwner['plugins'][$key] ?? ''])) {
+                $sub[$key] = $entry;
+            }
+        }
+        foreach ($this->pluginGroups($names, $settings, $isModerator) as $group) {
+            $sub['divider_plugin_' . $group['plugin']] = array(osc_esc_html($group['title']), 'divider_plugin_' . $group['plugin'], 'plugins');
+            foreach ($group['entries'] as $entry) {
+                $sub['plugin_entry_' . $entry['id']] = array($entry['title'], $entry['url'], $entry['id'], 'plugins');
+            }
+        }
+
+        return $this->renderSubMenu('plugins', $sub, $isModerator, $activeMenu, $activeSubmenu, true);
+    }
+
+    /**
+     * Names of the active plugins that added a menu entry, by folder.
+     *
+     * @param array<string,array<string,string>> $owners
+     *
+     * @return array<string,string>
+     */
+    private static function activePluginNames(array $owners): array
+    {
+        $owning = array();
+        foreach ($owners as $entries) {
+            $owning += array_flip($entries);
+        }
+        if ($owning === array()) {
+            return array();
+        }
+        $names = array();
+        foreach (Plugins::listEnabled() as $path) {
+            $slug = Plugins::slug($path);
+            if (isset($owning[$slug]) && is_file(osc_plugins_path() . $path)) {
+                $names[$slug] = Plugins::getInfo($path)['plugin_name'] ?? $slug;
+            }
+        }
+
+        return $names;
+    }
+
+    /**
+     * The first declared settings page of each plugin, by folder.
+     *
+     * @return array<string,string>
+     */
+    private static function pluginSettingsUrls(): array
+    {
+        $urls = array();
+        foreach (function_exists('osc_settings_pages') ? osc_settings_pages() : array() as $id => $page) {
+            $slug = $page['plugin'] ?? '';
+            if ($slug !== '' && !isset($urls[$slug])) {
+                $urls[$slug] = osc_settings_page_url($id);
+            }
+        }
+
+        return $urls;
+    }
+
+    /**
      * The section and entry ids to highlight for a query string, as [menu, submenu].
      * The longest matching link wins; on a tie, the entry in the page's own section.
      *
@@ -1138,13 +1285,17 @@ class AdminMenu
      * @param bool                       $is_moderator
      * @param string                     $activeMenu
      * @param string                     $activeSubmenu
+     * @param bool                       $grouped      Plugins only: the entries are already grouped by plugin
      *
      * @return string
      */
-    private function renderSubMenu($parentMenuId, $subMenu, $is_moderator, $activeMenu, $activeSubmenu)
+    private function renderSubMenu($parentMenuId, $subMenu, $is_moderator, $activeMenu, $activeSubmenu, bool $grouped = false)
     {
         if ($parentMenuId === 'settings') {
             return $this->renderGroupList($parentMenuId, $activeMenu, $activeSubmenu);
+        }
+        if ($parentMenuId === 'plugins' && !$grouped) {
+            return $this->renderPluginList(self::activePluginNames($this->aOwner), self::pluginSettingsUrls(), $activeMenu, $activeSubmenu);
         }
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
@@ -1224,7 +1375,7 @@ class AdminMenu
      */
     public function remove_submenu($menu_id, $submenu_id)
     {
-        unset($this->aMenu[$menu_id]['sub'][$submenu_id]);
+        unset($this->aMenu[$menu_id]['sub'][$submenu_id], $this->aOwner[$menu_id][$submenu_id]);
     }
 
     // common functions
@@ -1253,6 +1404,7 @@ class AdminMenu
             $capability
         );
         $this->aMenu[$menu_id]['sub']['divider_' . $submenu_id] = $array;
+        $this->setOwner($menu_id, 'divider_' . $submenu_id, '');
     }
 
     /**

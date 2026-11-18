@@ -120,6 +120,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
+- The Plugins menu groups each plugin's links under its name, and lists plugins whose links sit in another section.
 - The Activity log shows plain section and action names, folds the rows one action wrote into one, has a date filter, and Clear log sits in the table toolbar.
 - A pending plugin or theme update shows an "Update to version X" button where it is listed; the Plugins Status column stacks its badges.
 - Admin sidebar: sections open on their own and stay under the pointer, one pill marks the current page, and the rail collapses with the icons still.

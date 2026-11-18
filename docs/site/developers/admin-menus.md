@@ -170,8 +170,7 @@ The top bar shows the path to the screen: the section your entry sits under, lin
 main screen, then the header title. `osc_admin_breadcrumb()` draws it; a theme that replaces
 the top bar calls it in the same place.
 
-Group a plugin's entries under Plugins with a divider, as core groups its own:
-
-```php
-osc_add_admin_submenu_divider('plugins', __('My plugin', 'myplugin'), 'myplugin', 'administrator');
-```
+Core groups the Plugins section by plugin: each active plugin's entries sit under a heading
+with its name, so a divider of your own there is not drawn. A plugin whose entries are all in
+another section also gets one link in its group: its settings page if it declares one, else
+its first screen.

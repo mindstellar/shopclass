@@ -959,7 +959,7 @@ if (!function_exists('osc_settings_menu_init')) {
             }
             // While billing is off, add_submenu() moves a Billing page under its heading in Settings.
             $menu = $page['menu'];
-            osc_add_admin_submenu_page(
+            $add  = static fn () => osc_add_admin_submenu_page(
                 $menu,
                 $page['menu_title'],
                 osc_settings_page_url($id),
@@ -967,6 +967,12 @@ if (!function_exists('osc_settings_menu_init')) {
                 $page['capability'],
                 $menu === 'settings' && $page['group'] !== '' ? 'settings_group_' . $page['group'] : null
             );
+            // Added as the declaring plugin's own entry, so the Plugins menu groups it there.
+            if (($page['plugin'] ?? '') !== '') {
+                Plugins::runAs('plugin', $page['plugin'], $add);
+            } else {
+                $add();
+            }
         }
         SettingsPageRegistry::getInstance()->menuReady(true);
     }
