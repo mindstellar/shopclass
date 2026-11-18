@@ -137,6 +137,13 @@ function toggleBulkActionsModal() {
         return false;
     }
     var opt = bulkSelect.options[bulkSelect.selectedIndex];
+    // A dialog with data-empty-message warns instead of confirming when no row is ticked.
+    var empty = modal.getAttribute('data-empty-message');
+    var form = document.getElementById('datatablesForm');
+    if (opt.value !== '' && empty && form && !form.querySelector('input[type="checkbox"][name$="[]"]:checked')) {
+        setJsMessage('warning', empty);
+        return false;
+    }
     if (opt.value !== '') {
         // Content target works for a native .osc-dialog or a legacy .modal.
         var body = modal.querySelector('.osc-dialog-text, .modal-body p');

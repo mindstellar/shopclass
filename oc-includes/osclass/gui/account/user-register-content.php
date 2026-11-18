@@ -45,10 +45,10 @@ if (!defined('ABS_PATH')) {
             <?php UserForm::check_password_text(); ?>
         </div>
 
+        <?php osc_run_hook('user_register_form'); ?>
         <?php if (osc_captcha_enabled()) {
             osc_show_captcha('register');
         } ?>
-        <?php osc_run_hook('user_register_form'); ?>
 
         <div class="oe-actions">
             <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Create account')); ?></button>

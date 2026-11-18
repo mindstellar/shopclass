@@ -96,12 +96,12 @@ $cfMax    = \mindstellar\security\MessageGuard::maxLength();
         </div>
     <?php } ?>
 
-    <?php if (osc_captcha_enabled()) { ?>
-        <div class="oe-field"><?php osc_show_captcha((string) $cf['captcha']); ?></div>
-    <?php }
-    if (isset($cf['hooks'])) {
+    <?php if (isset($cf['hooks'])) {
         ($cf['hooks'])();
-    } ?>
+    }
+    if (osc_captcha_enabled()) { ?>
+        <div class="oe-field"><?php osc_show_captcha((string) $cf['captcha']); ?></div>
+    <?php } ?>
 
     <div class="oe-actions">
         <button class="oe-btn" type="submit"><?php echo osc_esc_html(_m('Send message')); ?></button>

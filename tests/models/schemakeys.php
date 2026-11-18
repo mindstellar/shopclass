@@ -203,6 +203,24 @@ pin('the four tables are dropped', 0, $count(
 ));
 $admin->query("DELETE FROM {$p}t_key_value WHERE s_group IN ('cron', 'alerts_sent', 'email_change', 'upload." . sha1('tok') . "')");
 
+harness_section('migration 0094');
+
+// Installs before it carry the old unique key, some under its auto-name as well.
+$admin->query("ALTER TABLE {$p}t_locale ADD UNIQUE KEY uk_locale_short_name (s_short_name), ADD UNIQUE KEY s_short_name (s_short_name)");
+$migrate('0094_locale_short_name_not_unique.php');
+$migrate('0094_locale_short_name_not_unique.php');
+pin('no unique key is left on s_short_name, and a re-run is a no-op', array(), array_keys(array_filter(
+    $indexes('t_locale'),
+    static fn (string $cols, string $name): bool => $cols === 's_short_name',
+    ARRAY_FILTER_USE_BOTH
+)));
+foreach (array('xa_XA', 'xb_XB') as $code) {
+    $admin->query("INSERT INTO {$p}t_locale (pk_c_code, s_name, s_short_name, s_description, s_version, s_author_name, s_author_url, s_currency_format, s_date_format)"
+        . " VALUES ('$code', '$code', 'English', '', '1', '', '', '', '')");
+}
+pin('two languages can share a short name', 2, $count("SELECT COUNT(*) FROM {$p}t_locale WHERE s_short_name = 'English'"));
+$admin->query("DELETE FROM {$p}t_locale WHERE pk_c_code IN ('xa_XA', 'xb_XB')");
+
 // Back to struct.sql for the model tests that follow.
 $admin->query("ALTER TABLE {$p}t_log DROP INDEX idx_oc_t_log_dt_date, ADD INDEX idx_date (dt_date)");
 $admin->query("ALTER TABLE {$p}t_user DROP INDEX site_reg_date, ADD INDEX idx_reg_date (dt_reg_date)");

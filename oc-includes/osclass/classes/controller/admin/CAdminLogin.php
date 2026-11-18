@@ -343,7 +343,9 @@ class CAdminLogin extends AdminBaseModel
         if (osc_admin_cookie_path() !== Cookie::options(0)['path']) {
             osc_write_signed_redirect_cookie('oc_admin_login_redirect', '', time() - 3600);
         }
-        $is_valid_locale = osc_validate_locale($locale, true);
+        if (osc_validate_locale($locale, true) !== true) {
+            $locale = \mindstellar\language\LanguageService::adminLoginLocale();
+        }
         if ($remember) {
             Cookie::getInstance()->set_expires(osc_time_cookie());
             Cookie::getInstance()->push('oc_adminId', $admin['pk_i_id']);
@@ -357,11 +359,7 @@ class CAdminLogin extends AdminBaseModel
                     \mindstellar\auth\AuthStamp::of($admin)
                 )
             );
-            if ($is_valid_locale === true) {
-                Cookie::getInstance()->push('oc_adminLocale', $locale);
-            } else {
-                Cookie::getInstance()->push('oc_adminLocale', osc_admin_language());
-            }
+            Cookie::getInstance()->push('oc_adminLocale', $locale);
             Cookie::getInstance()->set();
         }
 
@@ -371,11 +369,7 @@ class CAdminLogin extends AdminBaseModel
         Session::getInstance()->_set('adminName', $admin['s_name']);
         Session::getInstance()->_set('adminEmail', $admin['s_email']);
         Session::getInstance()->_set('adminStamp', \mindstellar\auth\AuthStamp::of($admin));
-        if ($is_valid_locale === true) {
-            Session::getInstance()->_set('adminLocale', $locale);
-        } else {
-            Session::getInstance()->_set('adminLocale', osc_admin_language());
-        }
+        Session::getInstance()->_set('adminLocale', $locale);
         osc_run_hook('login_admin', $admin);
     }
 
@@ -414,6 +408,14 @@ class CAdminLogin extends AdminBaseModel
             time() + \mindstellar\security\AdminTwoFactor::PENDING_TTL,
             osc_admin_cookie_path()
         );
+    }
+
+    /**
+     * The language the login form offers first: the admin default, when it is on for oc-admin.
+     */
+    public static function loginLocale(): string
+    {
+        return \mindstellar\language\LanguageService::adminLoginLocale();
     }
 
     /**

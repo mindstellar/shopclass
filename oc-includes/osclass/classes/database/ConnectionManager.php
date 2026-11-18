@@ -569,13 +569,27 @@ class ConnectionManager
 
         if (OSC_DEBUG_DB_LOG) {
             $log->writeMessages();
-        } elseif ($printFrontend) {
+        } elseif ($printFrontend && self::answersHtml()) {
             $log->printMessages();
         } else {
             return false;
         }
 
         unset($log);
+
+        return true;
+    }
+
+    /**
+     * Whether this response is an HTML page, so the query panel can be printed after it.
+     */
+    private static function answersHtml(): bool
+    {
+        foreach (headers_list() as $header) {
+            if (stripos($header, 'Content-Type:') === 0) {
+                return stripos($header, 'text/html') !== false;
+            }
+        }
 
         return true;
     }

@@ -24,7 +24,7 @@
  * defaults.
  *
  * Recognised variables: DB_HOST (accepts "host:port"), DB_PORT, DB_NAME,
- * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, OSC_DB_STRICT_MODE, optionally
+ * DB_USER, DB_PASSWORD, DB_TABLE_PREFIX, OSC_DB_STRICT_MODE, OSC_DEBUG, OSC_DEBUG_LOG, optionally
  * REL_WEB_URL / WEB_PATH (or OSC_CLI_URL, the address for the command line
  * only), and the object cache — OSC_CACHE (driver name) plus
  * OSC_CACHE_HOST / OSC_CACHE_PORT for the memcached or redis server, and
@@ -119,6 +119,17 @@ if (!defined('OSC_ADMIN_IP_ALLOW') && $oscEnv('OSC_ADMIN_IP_ALLOW') !== null) {
 // environment serves several apps, set it per-app rather than globally.
 if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_MODE'), FILTER_VALIDATE_BOOLEAN)) {
     define('OSC_DB_STRICT_MODE', true);
+}
+
+// Debug mode and the debug log (optional). OSC_DEBUG_LOG writes notices, warnings and
+// deprecations to oc-content/debug.log and keeps them off the page. It turns OSC_DEBUG on too.
+foreach (array('OSC_DEBUG', 'OSC_DEBUG_LOG') as $oscDebugName) {
+    if (!defined($oscDebugName) && filter_var((string)getenv($oscDebugName), FILTER_VALIDATE_BOOLEAN)) {
+        define($oscDebugName, true);
+    }
+}
+if (defined('OSC_DEBUG_LOG') && OSC_DEBUG_LOG && !defined('OSC_DEBUG')) {
+    define('OSC_DEBUG', true);
 }
 
 // Persistent database connections (optional): each PHP worker keeps its connection for

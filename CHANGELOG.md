@@ -2,6 +2,50 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.20
+
+### New
+- `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
+- Settings > General has a Default admin language.
+
+### Fixed
+- With the debug log on, Apache sites deny web access to `.log` files under oc-content.
+- The admin login offers the Default admin language.
+- Language bulk actions with nothing ticked say "No language selected." before asking to confirm.
+- Uploading a language that is already installed says it was updated.
+- The Edit language message names the full language, such as English (Australia).
+- Debug mode no longer adds a timing comment or the query panel after a JSON reply.
+
+## Shopclass 7.0.19
+
+### Fixed
+- A language that shares its short name with another, such as English (Australia), can be installed again.
+- A language that cannot be saved now shows an error on import and upload, with the reason in the activity log.
+- The languages table no longer says "filtered from 9 total results".
+- Language e-mail imports can no longer overwrite a static page.
+- The language import list is in alphabetical order.
+- The Edit language screen has a Save changes button again.
+
+## Shopclass 7.0.18
+
+### Fixed
+- A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
+
+## Shopclass 7.0.17
+
+### Fixed
+- Fields a plugin adds to the register, login, comment and contact forms now sit above the captcha.
+
+## Shopclass 7.0.16
+
+### Fixed
+- With GD, a PNG photo keeps its see-through parts instead of turning them solid black.
+
+## Shopclass 7.0.15
+
+### Fixed
+- With GD, photos saved as JPEG no longer get black bars at the sides of their preview and thumbnail.
+
 ## Shopclass 7.0.14
 
 ### Fixed

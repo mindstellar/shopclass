@@ -144,6 +144,18 @@ class WebThemes extends Themes
     }
 
     /**
+     * Why a theme needs a newer Shopclass or PHP than this site runs, or null when it fits.
+     *
+     * @param string $theme Theme directory name.
+     */
+    public function incompatibility($theme): ?string
+    {
+        $info = $this->loadThemeInfo($theme);
+
+        return is_array($info) ? \mindstellar\market\Compatibility::reason($info) : null;
+    }
+
+    /**
      * Header fields read out of a theme's index.php, falling back to the legacy
      * <theme>_theme_info() function. False when the theme has neither.
      *

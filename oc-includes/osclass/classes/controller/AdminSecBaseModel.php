@@ -111,14 +111,12 @@ class AdminSecBaseModel extends SecBaseModel
     }
 
     /**
-     * Ends the admin session, expires its cookie and drops the remember-me cookies. A chosen
-     * admin locale is kept in a new session under a new id.
+     * Ends the admin session, expires its cookie and drops the remember-me cookies.
      *
      * @return void
      */
     public function logout()
     {
-        $locale = Session::getInstance()->_get('oc_adminLocale');
         Session::getInstance()->_drop('adminId');
         Session::getInstance()->_drop('adminUserName');
         Session::getInstance()->_drop('adminName');
@@ -126,9 +124,6 @@ class AdminSecBaseModel extends SecBaseModel
         Session::getInstance()->_drop('adminStamp');
         Session::getInstance()->_drop('adminLocale');
         Session::getInstance()->session_end();
-        if ($locale !== '') {
-            Session::getInstance()->_set('oc_adminLocale', $locale);
-        }
 
         Cookie::getInstance()->pop('oc_adminId');
         Cookie::getInstance()->pop('oc_adminSecret');

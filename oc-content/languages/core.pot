@@ -2330,6 +2330,7 @@ msgstr ""
 #: oc-admin/themes/modern/fields/iframe.php
 #: oc-admin/themes/modern/fields/index.php
 #: oc-admin/themes/modern/fields/submissions.php
+#: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
 #: oc-admin/themes/modern/parts/media-picker.php
 #: oc-admin/themes/modern/parts/ui.php
@@ -3579,6 +3580,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/form/LanguageForm.php
 msgid "Decimal point: this field is required"
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "Default admin language"
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/CommentSettingsScreen.php
@@ -7502,6 +7507,10 @@ msgid "No keys yet."
 msgstr ""
 
 #: oc-admin/themes/modern/languages/index.php
+msgid "No language selected."
+msgstr ""
+
+#: oc-admin/themes/modern/languages/index.php
 msgid "No languages yet"
 msgstr ""
 
@@ -9600,6 +9609,7 @@ msgstr ""
 #: oc-admin/themes/modern/emails/frm.php
 #: oc-admin/themes/modern/fields/group_iframe.php
 #: oc-admin/themes/modern/fields/iframe.php
+#: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/settings/locations/form.php
@@ -11364,6 +11374,10 @@ msgstr ""
 
 #: oc-includes/osclass/install-functions.php
 msgid "The language %s is not installed."
+msgstr ""
+
+#: oc-includes/osclass/classes/admin/form/MainSettingsScreen.php
+msgid "The language the admin login offers when the browser has not chosen one."
 msgstr ""
 
 #: oc-includes/osclass/classes/admin/form/MediaSettingsScreen.php

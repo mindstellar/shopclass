@@ -29,6 +29,7 @@ if (!function_exists('osc_plugins_path')) {
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hHttpCache.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/utils.php';
 require_once dirname(__DIR__, 2) . '/oc-includes/osclass/helpers/hKv.php';
+require_once dirname(__DIR__, 2) . '/oc-includes/osclass/locales.php';
 
 use mindstellar\exception\ConflictException;
 use mindstellar\language\LanguageService;
@@ -50,6 +51,15 @@ if (!function_exists('osc_translations_path')) {
     }
 }
 $table = DB_TABLE_PREFIX . 't_locale';
+$clearFolders = static function (): void {
+    foreach (array('dd_DD', 'ee_EE', 'ff_FF', 'gg_GG', 'hh_HH', 'ii_II', 'jj_JJ', 'kk_KK') as $code) {
+        $path = osc_translations_path() . $code;
+        is_dir($path) ? osc_deleteDir($path) : @unlink($path);
+    }
+    @rmdir(osc_translations_path());
+};
+$clearFolders();
+register_shutdown_function($clearFolders);
 
 foreach (array('aa_AA', 'bb_BB', 'cc_CC', 'ee_EE') as $code) {
     seed_exec(
@@ -135,6 +145,70 @@ pin('...with no failed query', '', (string) file_get_contents($log));
 ini_set('error_log', (string) $logged);
 @unlink($log);
 
+$pages = DB_TABLE_PREFIX . 't_pages';
+$admin->query("INSERT INTO $pages (pk_i_id, s_internal_name, b_indelible, dt_pub_date) VALUES (9023, 'about-us', 0, NOW()), (9040, 'email_test_import', 1, NOW())");
+$texts = static function () use ($admin): array {
+    $res = $admin->query('SELECT fk_i_pages_id, s_title FROM ' . DB_TABLE_PREFIX . "t_pages_description WHERE fk_c_locale_code = 'dd_DD' AND fk_i_pages_id IN (9023, 9040)");
+
+    return array_column($res->fetch_all(MYSQLI_ASSOC), 's_title', 'fk_i_pages_id');
+};
+$service->install($manifest, 'dd_DD', json_encode(array('language' => 'dd_DD', 'template' => array(
+    array('fk_i_page_id' => 9023, 's_internal_name' => 'email_listing_unpaid_reminder', 's_title' => 'Newer e-mail', 's_description' => 'x'),
+    array('fk_i_page_id' => 9023, 's_title' => 'Id only', 's_description' => 'x'),
+    array('fk_i_page_id' => 1, 's_internal_name' => 'email_test_import', 's_title' => 'By name', 's_description' => 'x'),
+    array('fk_i_page_id' => 1, 's_internal_name' => 'about-us', 's_title' => 'Named static page', 's_description' => 'x'),
+))));
+pin('an e-mail template is matched by name, to e-mail pages only; with only an id it writes to an e-mail page only, never a static page', array(9040 => 'By name'), $texts());
+$service->install($manifest, 'dd_DD', json_encode(array('language' => 'dd_DD', 'template' => array(
+    array('fk_i_page_id' => 9040, 's_title' => 'Id of an e-mail page', 's_description' => 'x'),
+))));
+pin('...and an id alone still reaches an e-mail page', array(9040 => 'Id of an e-mail page'), $texts());
+$admin->query("DELETE FROM $pages WHERE pk_i_id IN (9023, 9040)");
+
+harness_section('Saving the row');
+
+$logRows = static function (string $code) use ($admin): array {
+    $like = $code . ':%';
+    $stmt = $admin->prepare('SELECT s_data FROM ' . DB_TABLE_PREFIX . "t_log WHERE s_section = 'language' AND s_action = 'save_failed' AND s_data LIKE ?");
+    $stmt->bind_param('s', $like);
+    $stmt->execute();
+    $found = array_column($stmt->get_result()->fetch_all(MYSQLI_ASSOC), 's_data');
+    $stmt->close();
+
+    return $found;
+};
+check('a language whose short name another language has gets its row', $service->install(array('locale_code' => 'hh_HH') + $manifest, 'hh_HH', false));
+pin('...beside the first one', array('Dee', 'Dee'), array($row('dd_DD')['s_short_name'] ?? null, $row('hh_HH')['s_short_name'] ?? null));
+$broken = array('locale_code' => 'ii_II', 'name' => null) + $manifest;
+check('a row the database refuses fails the install', !$service->install($broken, 'ii_II', false));
+check('...and the activity log has the database error', ($logRows('ii_II')[0] ?? '') !== '' && str_contains($logRows('ii_II')[0], 's_name'));
+pin('an import whose row the database refuses says so and downloads nothing', array(array('saved' => false, 'mail' => false, 'failed' => 0), false), array(
+    $service->importPublished('ii_II', $broken, static fn () => 'x'), is_dir(osc_translations_path() . 'ii_II'),
+));
+pin('...and has no row', null, $row('ii_II'));
+
+harness_section('Uploaded package');
+
+$admin->query("DELETE FROM " . DB_TABLE_PREFIX . "t_log WHERE s_section = 'language'");
+@mkdir(osc_translations_path() . 'jj_JJ', 0755, true);
+file_put_contents(osc_translations_path() . 'jj_JJ/locale.json', json_encode(array('locale_code' => 'jj_JJ') + $manifest));
+if (\mindstellar\security\Demo::active()) {
+    // Another file in the suite defines DEMO, where osc_checkLocales() imports nothing, so these checks run in a process of their own.
+    exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(__FILE__) . ' 2>&1', $standalone, $exitCode);
+    check('uploaded packages are saved or reported (run standalone, without DEMO)', $exitCode === 0);
+    foreach (preg_grep('/^FAIL/', $standalone) as $line) {
+        echo '  standalone: ', $line, "\n";
+    }
+} else {
+    check('an uploaded language whose short name another language has is saved', osc_checkLocales() && $row('jj_JJ') !== null);
+    @mkdir(osc_translations_path() . 'kk_KK', 0755, true);
+    file_put_contents(osc_translations_path() . 'kk_KK/locale.json', json_encode(array('locale_code' => 'kk_KK', 'name' => null) + $manifest));
+    check('an uploaded language the database refuses is reported', !osc_checkLocales());
+    check('...with the database error in the activity log', str_contains($logRows('kk_KK')[0] ?? '', 's_name'));
+}
+osc_deleteDir(osc_translations_path() . 'jj_JJ');
+osc_deleteDir(osc_translations_path() . 'kk_KK');
+
 $controller = (string) file_get_contents(ABS_PATH . 'oc-includes/osclass/classes/controller/admin/CAdminLanguages.php');
 check(
     'the languages screen writes t_locale only through LanguageService',
@@ -155,6 +229,16 @@ $fetch = static function (string $url) use (&$asked) {
 };
 pin('the published list is keyed by code, entries without one dropped', array('ff_FF'), array_keys(LanguageService::published($fetch)));
 pin('an unreadable list is null', null, LanguageService::published(static fn () => false));
+$names = static fn (array $list): array => array_column($list, 'name');
+pin('the import dialog lists languages by name, ignoring case', array('dansk', 'Deutsch', 'English (Australia)', 'English (US)', 'Français'), $names(LanguageService::sortedByName(array(
+    'fr_FR' => array('name' => 'Français'), 'en_US' => array('name' => 'English (US)'), 'de_DE' => array('name' => 'Deutsch'),
+    'en_AU' => array('name' => 'English (Australia)'), 'da_DK' => array('name' => 'dansk'),
+))));
+if (class_exists(Collator::class)) {
+    pin('...and with intl an accented letter sorts beside its base letter', array('Castellano', 'Čeština', 'Deutsch'), $names(LanguageService::sortedByName(array(
+        'de_DE' => array('name' => 'Deutsch'), 'cs_CZ' => array('name' => 'Čeština'), 'es_ES' => array('name' => 'Castellano'),
+    ))));
+}
 
 $asked = array();
 pin('one file that will not download is counted', 1, LanguageService::downloadFiles('ff_FF', $fetch));
@@ -170,7 +254,7 @@ pin('a code that is not a locale code is refused before any folder or fetch', ar
 osc_update_check_save('languages', array('checked' => 1, 'count' => 2, 'to_update' => array('ff_FF', 'hh_HH'), 'downloaded' => array()));
 $asked  = array();
 $import = $service->importPublished('ff_FF', array('locale_code' => 'ff_FF') + $manifest, $fetch);
-pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('mail' => false, 'failed' => 1), true), array(
+pin('importPublished reads its mail.json (not JSON here, so reported) and counts the files that failed', array(array('saved' => true, 'mail' => false, 'failed' => 1), true), array(
     $import, in_array(osc_get_i18n_repository_url('src/translations/ff_FF/mail.json'), $asked, true),
 ));
 pin('...and takes it off the pending-update list', array(array('hh_HH'), 1), array(osc_update_check_state('languages')['to_update'], osc_update_check_state('languages')['count']));
@@ -178,8 +262,7 @@ osc_deleteDir(osc_translations_path() . 'ff_FF');
 $asked = array();
 touch(osc_translations_path() . 'gg_GG');
 pin('a folder that cannot be made is null, with nothing fetched', array(null, array()), array(LanguageService::downloadFiles('gg_GG', $fetch), $asked));
-@unlink(osc_translations_path() . 'gg_GG');
-@rmdir(osc_translations_path());
+$clearFolders();
 
 if (!defined('MODELS_RUNNER')) {
     exit(harness_result());

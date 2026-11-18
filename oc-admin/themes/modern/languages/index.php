@@ -140,10 +140,10 @@ osc_current_admin_theme_path('parts/header.php');
     'confirm'    => __('Delete'),
     'confirm_id' => 'deleteSubmit',
 )); ?>
-<?php osc_admin_bulk_confirm_dialog(); ?>
+<?php osc_admin_bulk_confirm_dialog(array('empty' => __('No language selected.'))); ?>
 <script>
     var aExistingLanguages = <?php echo json_encode(OSCLocale::getInstance()->listAll(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT); ?>;
-    var localeImportUrl = '<?php echo osc_esc_js(osc_get_i18n_repository_url()) ?>';
+    var localeImportUrl = '<?php echo osc_esc_js(osc_admin_base_url(true) . '?page=languages&action=published') ?>';
     let languageOptionsSet = false;
     // shift locale code as array key
     for (let i = 0; i < aExistingLanguages.length; i++) {
@@ -181,9 +181,9 @@ osc_current_admin_theme_path('parts/header.php');
                     if (aExistingLanguages[locale.locale_code] === undefined || (isUpdated = compareVersion(locale.version, aExistingLanguages[locale.locale_code].s_version) > 0)) {
                         opt = document.createElement('option');
                         opt.value = locale.locale_code;
-                        opt.innerHTML = locale.name;
+                        opt.textContent = locale.name;
                         if(isUpdated) {
-                            opt.innerHTML += ' (<?php _e('Updated');?>)';
+                            opt.textContent += ' (<?php echo osc_esc_js(__('Updated')); ?>)';
                         }
                         importSelect.appendChild(opt);
                     }

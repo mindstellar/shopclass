@@ -24,6 +24,7 @@ use mindstellar\admin\ListPaging;
 use mindstellar\exception\ConflictException;
 use mindstellar\language\LanguageService;
 use mindstellar\language\LocaleStore;
+use mindstellar\utility\AjaxResponse;
 
 class CAdminLanguages extends AdminSecBaseModel
 {
@@ -34,6 +35,7 @@ class CAdminLanguages extends AdminSecBaseModel
         'add'                 => 'addForm',
         'add_post'            => 'addPost',
         'import_locations'    => 'importLocations',
+        'published'           => 'publishedList',
         'edit'                => 'editForm',
         'edit_post'           => 'editPost',
         'enable_selected'     => 'enableSelected',
@@ -94,10 +96,12 @@ class CAdminLanguages extends AdminSecBaseModel
         }
         osc_csrf_check();
         $filePackage = Params::getFiles('package');
+        $installed   = false;
 
         if (isset($filePackage['size']) && $filePackage['size'] !== 0) {
-            $path   = osc_translations_path();
-            $status = osc_unzip_file($filePackage['tmp_name'], $path);
+            $path      = osc_translations_path();
+            $installed = \mindstellar\language\LanguageService::make()->packageInstalled($filePackage['tmp_name']);
+            $status    = osc_unzip_file($filePackage['tmp_name'], $path);
             @unlink($filePackage['tmp_name']);
         } else {
             $status = 3;
@@ -110,7 +114,8 @@ class CAdminLanguages extends AdminSecBaseModel
                 break;
             case (1):
                 if (osc_checkLocales()) {
-                    $msg = _m('The language has been installed correctly');
+                    $msg = $installed ? _m('This language was already installed. It has been updated.')
+                        : _m('The language has been installed correctly');
                     osc_add_flash_ok_message($msg, 'admin');
                 } else {
                     $msg = _m('File uploaded but unable to activate the language');
@@ -135,6 +140,16 @@ class CAdminLanguages extends AdminSecBaseModel
 
         osc_invalidate_locale_cache();
         $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * The languages the translation repository publishes, as JSON in name order, for the import dialog.
+     */
+    private function publishedList(): void
+    {
+        $published = LanguageService::published();
+        AjaxResponse::json($published === null ? array() : LanguageService::sortedByName($published), $published === null ? 502 : 200);
+        exit;
     }
 
     /**
@@ -165,6 +180,10 @@ class CAdminLanguages extends AdminSecBaseModel
 
             if (isset($published[$languageToImport])) {
                 $result = $this->languages->importPublished($languageToImport, $published[$languageToImport]);
+                if (!$result['saved']) {
+                    osc_add_flash_error_message(_m('There was a problem adding the language'), 'admin');
+                    $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+                }
                 if (!$result['mail']) {
                     osc_add_flash_error_message(_m('There was a problem importing email templates'), 'admin');
                 }
@@ -304,9 +323,34 @@ class CAdminLanguages extends AdminSecBaseModel
         osc_invalidate_locale_cache();
         if ($iUpdated > 0) {
             osc_purge_page_cache('language');
-            osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageShortName), 'admin');
+            osc_add_flash_ok_message(sprintf(_m('%s has been updated'), $languageName), 'admin');
         }
         $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+    }
+
+    /**
+     * The ticked language codes. With none ticked, or ids in the wrong shape, it says so and goes
+     * back to the list.
+     *
+     * @return array<int,string>
+     */
+    private function selectedIds(): array
+    {
+        $id = Params::getParam('id');
+        if ($id === '' || $id === array()) {
+            osc_add_flash_warning_message(_m('No language selected.'), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+
+            return array();
+        }
+        if (!is_array($id)) {
+            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
+
+            return array();
+        }
+
+        return array_values(array_filter($id, 'is_string'));
     }
 
     /**
@@ -318,15 +362,8 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg      = _m('Selected languages have been enabled for the website');
         $iUpdated = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
-            $iUpdated += $this->languages->enable((string) $i);
+        foreach ($this->selectedIds() as $i) {
+            $iUpdated += $this->languages->enable($i);
         }
         osc_invalidate_locale_cache();
 
@@ -348,16 +385,9 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg_warning = '';
         $iUpdated    = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
+        foreach ($this->selectedIds() as $i) {
             try {
-                $iUpdated += $this->languages->disable((string) $i);
+                $iUpdated += $this->languages->disable($i);
             } catch (ConflictException $e) {
                 $msg_warning = $e->getMessage();
             }
@@ -389,15 +419,8 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg      = _m('Selected languages have been enabled for the backoffice (oc-admin)');
         $iUpdated = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
-            $iUpdated += $this->languages->enable((string) $i, true);
+        foreach ($this->selectedIds() as $i) {
+            $iUpdated += $this->languages->enable($i, true);
         }
         osc_invalidate_locale_cache();
 
@@ -418,16 +441,9 @@ class CAdminLanguages extends AdminSecBaseModel
         $msg_warning = '';
         $iUpdated    = 0;
 
-        $id = Params::getParam('id');
-
-        if (!is_array($id)) {
-            osc_add_flash_warning_message(_m("The language ids aren't in the correct format"), 'admin');
-            $this->redirectTo(osc_admin_base_url(true) . '?page=languages');
-        }
-
-        foreach ($id as $i) {
+        foreach ($this->selectedIds() as $i) {
             try {
-                $iUpdated += $this->languages->disable((string) $i, true);
+                $iUpdated += $this->languages->disable($i, true);
             } catch (ConflictException $e) {
                 $msg_warning = $e->getMessage();
             }
@@ -453,10 +469,10 @@ class CAdminLanguages extends AdminSecBaseModel
     private function deleteSelected(): void
     {
         osc_csrf_check();
-        if (is_array(Params::getParam('id'))) {
+        $ids = $this->selectedIds();
+        if ($ids !== array()) {
             $adminLocale = (string) osc_current_admin_locale();
-            foreach (Params::getParam('id') as $code) {
-                $code = (string) $code;
+            foreach ($ids as $code) {
                 switch ($this->languages->delete($code, $adminLocale)) {
                     case LanguageService::IS_CURRENT:
                         osc_add_flash_warning_message(
@@ -501,6 +517,24 @@ class CAdminLanguages extends AdminSecBaseModel
     }
 
     /**
+     * One page of the languages table and its counts. Nothing filters this list, so both totals
+     * are the number of languages.
+     *
+     * @param array<int,array<string,mixed>> $locales every t_locale row
+     *
+     * @return array{iTotalRecords:int,iTotalDisplayRecords:int,iDisplayLength:int,aaData:array<int,array<string,mixed>>}
+     */
+    public static function tablePage(array $locales, int $start, int $limit): array
+    {
+        return array(
+            'iTotalRecords'        => count($locales),
+            'iTotalDisplayRecords' => count($locales),
+            'iDisplayLength'       => $limit,
+            'aaData'               => array_slice(array_values($locales), $start, $limit),
+        );
+    }
+
+    /**
      * The languages table.
      */
     private function languages(): void
@@ -520,27 +554,13 @@ class CAdminLanguages extends AdminSecBaseModel
 
         $p_iPage = ListPaging::page();
 
-        $aLanguages = OSCLocale::getInstance()->listAll();
-
-        // pagination
-        $start = ListPaging::start($p_iPage, $limit);
-        $count = count($aLanguages);
-
-        $displayRecords = $limit;
-        if (($start + $limit) > $count) {
-            $displayRecords = ($start + $limit) - $count;
-        }
+        $array = self::tablePage(OSCLocale::getInstance()->listAll(), ListPaging::start($p_iPage, $limit), $limit);
         // ----
         $aLanguagesToUpdate = osc_update_check_state('languages')['to_update'];
         $bLanguagesToUpdate = is_array($aLanguagesToUpdate);
         // ----
         $aData = array();
-        $max   = ($start + $limit);
-        if ($max > $count) {
-            $max = $count;
-        }
-        for ($i = $start; $i < $max; $i++) {
-            $l     = $aLanguages[$i];
+        foreach ($array['aaData'] as $l) {
             $row   = array();
             $row[] = '<input type="checkbox" name="id[]" value="' . $l['pk_c_code'] . '" />';
 
@@ -588,10 +608,7 @@ class CAdminLanguages extends AdminSecBaseModel
             $aData[] = $row;
         }
         // ----
-        $array['iTotalRecords']        = $displayRecords;
-        $array['iTotalDisplayRecords'] = count($aLanguages);
-        $array['iDisplayLength']       = $limit;
-        $array['aaData']               = $aData;
+        $array['aaData'] = $aData;
 
         $pastEnd = ListPaging::pastEnd($array, $p_iPage);
         if ($pastEnd !== null) {

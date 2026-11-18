@@ -14,7 +14,7 @@ Everything below lives in the admin panel at `https://example.com/oc-admin/`.
 
 **Settings → General.**
 
-Set the site title, contact e-mail and default language. The title appears in
+Set the site title, contact e-mail and default language. **Default admin language** sets the language the admin panel and its login open in. In each language tab you can also give the site its own title and description. The title appears in
 page titles, in e-mail and in the browser tab. Get it right before search
 engines see the site.
 

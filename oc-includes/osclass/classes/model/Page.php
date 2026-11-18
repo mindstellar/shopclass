@@ -750,20 +750,39 @@ class Page extends DAO
             return false;
         }
 
-        // A translation can still carry a template for a page this version no longer has.
-        $pages = array_map('strval', array_column(Db::table($this->getTableName())->select('pk_i_id')->get(), 'pk_i_id'));
+        // A template names its page; the id is only a fallback, and then only for an e-mail page,
+        // since the same id can be another page on another version. A page not found is skipped.
+        $rows   = Db::table($this->getTableName())->select('pk_i_id', 's_internal_name', 'b_indelible')->get();
+        $byName = array_column($rows, 'pk_i_id', 's_internal_name');
+        $byId   = array_column($rows, null, 'pk_i_id');
         foreach ($templates as $template) {
-            if (!in_array((string) $template['fk_i_page_id'], $pages, true)) {
-                continue;
+            if (!empty($template['s_internal_name'])) {
+                $id   = $byName[$template['s_internal_name']] ?? null;
+                $page = $id === null ? null : ($byId[$id] ?? null);
+                $id   = $page !== null && self::isEmailPage($page) ? $id : null;
+            } else {
+                $page = $byId[$template['fk_i_page_id'] ?? ''] ?? null;
+                $id   = $page !== null && self::isEmailPage($page) ? $page['pk_i_id'] : null;
             }
-            $result = $this->updateDescription($template['fk_i_page_id'], $language, $template['s_title'], $template['s_description']);
-            if (!$result) {
-                $errorPageIds [] = $template['fk_i_page_id'];
+            if ($id !== null) {
+                $this->updateDescription((int) $id, $language, $template['s_title'] ?? '', $template['s_description'] ?? '');
             }
         }
         return true;
     }
 
+    /**
+     * Whether a page row is a core e-mail template: a protected page named email_* or alert_email_*.
+     *
+     * @param array<string,mixed> $page
+     */
+    private static function isEmailPage(array $page): bool
+    {
+        $name = (string) ($page['s_internal_name'] ?? '');
+
+        return (int) ($page['b_indelible'] ?? 0) === 1
+            && (str_starts_with($name, 'email_') || str_starts_with($name, 'alert_email_'));
+    }
 }
 
 /* file end: ./oc-includes/osclass/model/Page.php */

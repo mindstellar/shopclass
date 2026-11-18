@@ -429,6 +429,12 @@ class CAdminAppearance extends AdminSecBaseModel
             $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
             return;
         }
+        $incompatible = WebThemes::getInstance()->incompatibility($theme);
+        if ($incompatible !== null) {
+            osc_add_flash_error_message(osc_esc_html($incompatible), 'admin');
+            $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
+            return;
+        }
         osc_set_preference('theme', $theme);
         // Clear opcache so the new theme's code runs at once even with
         // opcache.validate_timestamps=Off (see Plugins::resetOpcache).

@@ -11,7 +11,8 @@
 /**
  * The admin login cookies over real HTTP: a `php -S` server runs oc-admin on an installed
  * scratch site. The redirect cookie lives on the admin path, so public pages never get it, and
- * the two-step code waits in a signed cookie there, so a password alone starts no session.
+ * the two-step code waits in a signed cookie there, so a password alone starts no session. The
+ * login offers the admin default language, and no language cookie is kept.
  * Usage: php tests/models/admin-login-cookies.php
  */
 
@@ -76,20 +77,33 @@ register_shutdown_function(static function () use (&$servers, $dir): void {
             proc_close($server);
         }
     }
-    array_map('unlink', glob($dir . '*') ?: []);
+    if (is_dir($dir)) {
+        foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir, FilesystemIterator::SKIP_DOTS), RecursiveIteratorIterator::CHILD_FIRST) as $file) {
+            $file->isDir() ? @rmdir($file->getPathname()) : @unlink($file->getPathname());
+        }
+    }
     @rmdir($dir);
 });
 $root = rtrim(ABS_PATH, '/');
+// Language uploads land in a copy of the translations folder, not in the checkout.
+$languages = $dir . 'languages/';
+@mkdir($languages . 'en_US', 0700, true);
+copy(ABS_PATH . 'oc-content/languages/index.php', $languages . 'index.php');
+foreach (glob(ABS_PATH . 'oc-content/languages/en_US/*') ?: [] as $file) {
+    copy($file, $languages . 'en_US/' . basename($file));
+}
 /** Serve the site on a free port under $prefix ('' or e.g. '/sub'); returns its base URL, or '' when it did not start. */
-$serve = static function (string $prefix) use (&$servers, $dir, $root, $p): string {
+$serve = static function (string $prefix, array $env = [], string $defines = '') use (&$servers, $dir, $root, $p): string {
     $port  = 0;
     $probe = @stream_socket_server('tcp://127.0.0.1:0');
     if ($probe !== false) {
         $port = (int) substr((string) strrchr((string) stream_socket_get_name($probe, false), ':'), 1);
         fclose($probe);
     }
-    $router = $dir . 'router' . md5($prefix) . '.php';
+    $router = $dir . 'router' . md5($prefix . $defines) . '.php';
     file_put_contents($router, '<?php
+define("TRANSLATIONS_PATH", ' . var_export($dir . 'languages/', true) . ');
+' . $defines . '
 $prefix = ' . var_export($prefix, true) . ';
 $path = (string) parse_url($_SERVER["REQUEST_URI"], PHP_URL_PATH);
 if ($prefix !== "" && strpos($path, $prefix . "/") === 0) {
@@ -127,7 +141,7 @@ require ' . var_export($root . '/index.php', true) . ';
             'DB_TABLE_PREFIX'        => $p,
             'WEB_PATH'               => $base . $prefix . '/',
             'REL_WEB_URL'            => $prefix . '/',
-        ]
+        ] + $env
     );
     for ($i = 0; $i < 100 && $port > 0; $i++) {
         usleep(30000);
@@ -165,7 +179,7 @@ $call = static function (string $path, array $cookies = [], array $post = [], ar
         CURLOPT_HEADER         => true,
         CURLOPT_HTTPHEADER     => $headers,
         CURLOPT_TIMEOUT        => 15,
-    ] + ($post === [] ? [] : [CURLOPT_POSTFIELDS => http_build_query($post)]));
+    ] + ($post === [] ? [] : [CURLOPT_POSTFIELDS => array_filter($post, static fn ($v) => $v instanceof CURLFile) !== [] ? $post : http_build_query($post)]));
     $raw  = (string) curl_exec($ch);
     $code = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
     $size = (int) curl_getinfo($ch, CURLINFO_HEADER_SIZE);
@@ -319,6 +333,111 @@ $r = $post2fa($fresh, $codes[3]);
 check('a password changed after the password step ends the code step', $refused($r), $r[0] . ' ' . $r[1]);
 $db->query("UPDATE {$p}t_admin SET s_password = '$livePass' WHERE pk_i_id = $twoId");
 
+harness_section('the login offers the admin default language');
+
+seed_locale($db, 'es_ES', 'Espanol');
+seed_locale($db, 'fr_FR', 'Francais');
+$db->query("UPDATE {$p}t_locale SET b_enabled_bo = 0 WHERE pk_c_code = 'fr_FR'");
+$oldLocaleCookie = 'oc_admin_locale';
+/** The language the login form has selected, or '' when none is. */
+$offered = static function (array $cookies = []) use ($call): string {
+    [, , , $body] = $call('/oc-admin/index.php?page=login', $cookies);
+
+    return preg_match('/<option value="([A-Za-z_]+)"\s+selected/', $body, $m) === 1 ? $m[1] : '';
+};
+pin('the admin default setting is offered', 'en_US', $offered());
+pin('...even when an old language cookie names another', 'en_US', $offered([$oldLocaleCookie => 'es_ES']));
+$db->query("UPDATE {$p}t_preference SET s_value = 'es_ES' WHERE s_section = 'osclass' AND s_name = 'admin_language'");
+pin('a changed admin default is offered', 'es_ES', $offered());
+$db->query("UPDATE {$p}t_preference SET s_value = 'fr_FR' WHERE s_section = 'osclass' AND s_name = 'admin_language'");
+pin('an admin default that is off for oc-admin gives way to the first language on', 'en_US', $offered());
+$db->query("UPDATE {$p}t_preference SET s_value = 'en_US' WHERE s_section = 'osclass' AND s_name = 'admin_language'");
+
+harness_section('the language chosen at login lasts for that session only');
+
+$clearTries();
+$signIn = static function (array $extra) use ($call, $csrf): array {
+    return $call('/oc-admin/index.php', [], ['page' => 'login', 'action' => 'login_post', 'user' => 'plain', 'password' => 'secret-pass'] + $extra + $csrf);
+};
+[$code, , $set] = $signIn(['locale' => 'es_ES', 'remember' => '1']);
+check('signing in with a language works', $code === 302);
+pin('...and sets no language cookie', [], $set[$oldLocaleCookie] ?? []);
+$session      = $valueOf($set, 'osclass');
+[, , , $body] = $call('/oc-admin/index.php?page=items', ['osclass' => $session]);
+check('...the admin screens use that language', str_contains($body, '<html lang="es"'), substr($body, 0, 300));
+$bag       = [md5($base . '/') => (string) strtok(substr((string) ($set[md5($base . '/')][0] ?? ''), 33), ';')];
+[, , $set] = $call('/oc-admin/index.php?page=main&action=logout', ['osclass' => $session] + $bag);
+pin('logging out sets no language cookie', [], $set[$oldLocaleCookie] ?? []);
+pin('...and starts no new session', '', $valueOf($set, 'osclass'));
+pin('the login then offers the admin default again', 'en_US', $offered());
+
+harness_section('a bulk language action with nothing ticked');
+
+$clearTries();
+[, , $set]    = $signIn(['locale' => 'en_US']);
+$session      = $valueOf($set, 'osclass');
+[, , , $body] = $call('/oc-admin/index.php?page=languages', ['osclass' => $session]);
+$token        = preg_match('/CSRFName=([^&"\']+)&(?:amp;)?CSRFToken=([^&"\']+)/', $body, $m) === 1 ? '&CSRFName=' . $m[1] . '&CSRFToken=' . $m[2] : '';
+check('the languages screen carries a CSRF token', $token !== '');
+foreach (['enable_selected', 'disable_selected', 'enable_bo_selected', 'disable_bo_selected', 'delete'] as $action) {
+    [$code, , $set] = $call('/oc-admin/index.php?page=languages&action=' . $action . html_entity_decode($token), ['osclass' => $session]);
+    $flash          = [];
+    foreach ($set as $name => $lines) {
+        if ($valueOf($set, (string) $name) !== '') {
+            $flash[(string) $name] = rawurlencode($valueOf($set, (string) $name));
+        }
+    }
+    [, , , $body] = $call('/oc-admin/index.php?page=languages', ['osclass' => $session] + $flash);
+    check($action . ' says no language was selected', $code === 302 && str_contains($body, 'No language selected.') && !str_contains($body, 'correct format'), (string) $code);
+}
+
+harness_section('uploading and editing a language');
+
+/** The languages screen after a redirect, with the flash cookies the redirect set. */
+$afterRedirect = static function (array $set, string $session) use ($call, $valueOf): string {
+    $flash = [];
+    foreach ($set as $name => $lines) {
+        if ($valueOf($set, (string) $name) !== '') {
+            $flash[(string) $name] = rawurlencode($valueOf($set, (string) $name));
+        }
+    }
+    [, , , $body] = $call('/oc-admin/index.php?page=languages', ['osclass' => $session] + $flash);
+
+    return $body;
+};
+[, , , $body] = $call('/oc-admin/index.php?page=languages&action=add', ['osclass' => $session]);
+$formCsrf     = [];
+foreach (['CSRFName', 'CSRFToken'] as $field) {
+    if (preg_match('/name=[\'"]' . $field . '[\'"] value=[\'"]([^\'"]*)/', $body, $m) === 1) {
+        $formCsrf[$field] = html_entity_decode($m[1]);
+    }
+}
+check('the upload form carries a CSRF token', count($formCsrf) === 2);
+$zipPath = $dir . 'en_AU.zip';
+$zip     = new ZipArchive();
+$zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE);
+$usInfo  = (array) json_decode((string) file_get_contents(ABS_PATH . 'oc-content/languages/en_US/locale.json'), true);
+$zip->addFromString('en_AU/locale.json', (string) json_encode(['locale_code' => 'en_AU', 'name' => 'English (Australia)', 'short_name' => 'English'] + $usInfo));
+$zip->addFile(ABS_PATH . 'oc-content/languages/en_US/core.po', 'en_AU/core.po');
+$zip->close();
+$upload = static function () use ($call, $session, $formCsrf, $zipPath): array {
+    return $call('/oc-admin/index.php', ['osclass' => $session], ['page' => 'languages', 'action' => 'add_post', 'package' => new CURLFile($zipPath, 'application/zip', 'en_AU.zip')] + $formCsrf);
+};
+[$code, , $set] = $upload();
+$body           = $afterRedirect($set, $session);
+check('a new language says it was installed', $code === 302 && str_contains($body, 'The language has been installed correctly') && !str_contains($body, 'already installed'), (string) $code);
+[$code, , $set] = $upload();
+$body           = $afterRedirect($set, $session);
+check('the same language again says it was already installed and is updated', $code === 302 && str_contains($body, 'This language was already installed. It has been updated.'), (string) $code);
+
+[$code, , $set] = $call('/oc-admin/index.php', ['osclass' => $session], [
+    'page' => 'languages', 'action' => 'edit_post', 'pk_c_code' => 'en_AU', 's_name' => 'English (Australia)',
+    's_short_name' => 'English', 's_description' => 'Australian English', 's_direction' => 'ltr', 's_currency_format' => '{CURRENCY} {NUMBER}',
+    's_dec_point' => '.', 'i_num_dec' => '2', 's_thousands_sep' => ',', 's_date_format' => 'd/m/Y', 's_stop_words' => '', 'b_enabled' => '1', 'b_enabled_bo' => '1',
+] + $formCsrf);
+$body = $afterRedirect($set, $session);
+check('the edit flash names the full language', $code === 302 && str_contains($body, 'English (Australia) has been updated'), (string) $code);
+
 harness_section('a site in a subfolder');
 
 $sub = $serve('/sub');
@@ -336,6 +455,27 @@ $clearTries();
 [$code, $location, $set] = $call($sub . '/sub/oc-admin/index.php', [], ['page' => 'login', 'action' => 'login_post', 'user' => 'twofa', 'password' => 'secret-pass', 'locale' => 'en_US'] + $subCsrf);
 check('the password step asks for the code', $code === 302 && str_contains($location, 'action=2fa'), $code . ' ' . $location);
 pin('...with the code-step cookie on the subfolder admin path', ['/sub/oc-admin/'], $paths($set, $twoCookie));
+
+harness_section('debug mode adds nothing after a JSON answer');
+
+$debug = $serve('', ['OSC_DEBUG' => '1', 'http_proxy' => 'http://127.0.0.1:1', 'https_proxy' => 'http://127.0.0.1:1'], 'define("OSC_DEBUG_DB", true);');
+check('the debug server started', $debug !== '');
+$clearTries();
+[, , , $body] = $call($debug . '/oc-admin/index.php?page=login');
+$debugCsrf    = [];
+foreach (['CSRFName', 'CSRFToken'] as $field) {
+    if (preg_match('/name=[\'"]' . $field . '[\'"] value=[\'"]([^\'"]*)/', $body, $m) === 1) {
+        $debugCsrf[$field] = html_entity_decode($m[1]);
+    }
+}
+check('...and the login page has no timing comment', !str_contains($body, 'seg. -->'));
+[, , $set] = $call($debug . '/oc-admin/index.php', [], ['page' => 'login', 'action' => 'login_post', 'user' => 'plain', 'password' => 'secret-pass', 'locale' => 'en_US'] + $debugCsrf);
+$debugSession = $valueOf($set, 'osclass');
+check('an admin signs in on it', $debugSession !== '');
+[$code, , , $body] = $call($debug . '/oc-admin/index.php?page=languages&action=published', ['osclass' => $debugSession]);
+check('the language list answers plain JSON, without the query panel', is_array(json_decode($body, true)), $code . ' ' . substr($body, 0, 200));
+[, , , $body] = $call($debug . '/oc-admin/index.php?page=languages', ['osclass' => $debugSession]);
+check('an admin page still shows the query panel', str_contains($body, 'osc-qdbg'));
 
 $log = (string) @file_get_contents($dir . 'server.log');
 check('the server logged no PHP error', preg_match('/PHP (Warning|Notice|Deprecated|Fatal|Parse)/', $log) !== 1, $log);
