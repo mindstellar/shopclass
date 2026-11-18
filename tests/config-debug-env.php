@@ -29,6 +29,7 @@ $probe = static function (array $env) use ($repo): string {
 pin('with nothing set, debug and the debug log are off', '00', $probe(array()));
 pin('OSC_DEBUG=1 turns debug on', '10', $probe(array('OSC_DEBUG' => '1')));
 pin('OSC_DEBUG=1 and OSC_DEBUG_LOG=1 turn both on', '11', $probe(array('OSC_DEBUG' => '1', 'OSC_DEBUG_LOG' => '1')));
+pin('OSC_DEBUG_LOG=1 alone turns debug on too', '11', $probe(array('OSC_DEBUG_LOG' => '1')));
 pin('a false value leaves debug off', '00', $probe(array('OSC_DEBUG' => '0')));
 
 exit(harness_result());

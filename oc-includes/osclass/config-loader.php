@@ -122,11 +122,14 @@ if (!defined('OSC_DB_STRICT_MODE') && filter_var((string)getenv('OSC_DB_STRICT_M
 }
 
 // Debug mode and the debug log (optional). OSC_DEBUG_LOG writes notices, warnings and
-// deprecations to oc-content/debug.log and keeps them off the page.
+// deprecations to oc-content/debug.log and keeps them off the page. It turns OSC_DEBUG on too.
 foreach (array('OSC_DEBUG', 'OSC_DEBUG_LOG') as $oscDebugName) {
     if (!defined($oscDebugName) && filter_var((string)getenv($oscDebugName), FILTER_VALIDATE_BOOLEAN)) {
         define($oscDebugName, true);
     }
+}
+if (defined('OSC_DEBUG_LOG') && OSC_DEBUG_LOG && !defined('OSC_DEBUG')) {
+    define('OSC_DEBUG', true);
 }
 
 // Persistent database connections (optional): each PHP worker keeps its connection for

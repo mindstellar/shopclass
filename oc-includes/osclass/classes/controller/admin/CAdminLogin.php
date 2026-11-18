@@ -412,14 +412,6 @@ class CAdminLogin extends AdminBaseModel
     }
 
     /**
-     * The language the login form offers first: the admin default, when it is on for oc-admin.
-     */
-    public static function loginLocale(): string
-    {
-        return \mindstellar\language\LanguageService::adminLoginLocale();
-    }
-
-    /**
      * Clear the code-step cookie, when the browser has one; also called at logout.
      *
      * @return void

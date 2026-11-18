@@ -79,7 +79,7 @@ async function walkPhp(dir, out = []) {
 // Keyed by context and msgid together: the whole point of a context is that the same
 // msgid appears more than once, so keying on msgid alone would collapse them.
 const domains = new Map();
-function record(domain, msgid, msgidPlural, ref, msgctxt = '') {
+function record(domain, msgid, msgidPlural, ref, msgctxt = '', note = '') {
     if (!domains.has(domain)) {
         domains.set(domain, new Map());
     }
@@ -88,6 +88,9 @@ function record(domain, msgid, msgidPlural, ref, msgctxt = '') {
     const existing = bucket.get(key);
     if (existing) {
         existing.refs.add(ref);
+        if (note && !existing.note) {
+            existing.note = note;
+        }
         if (msgidPlural && !existing.msgid_plural) {
             existing.msgid_plural = msgidPlural;
         }
@@ -97,8 +100,16 @@ function record(domain, msgid, msgidPlural, ref, msgctxt = '') {
             msgctxt,
             ...(msgidPlural ? { msgid_plural: msgidPlural } : {}),
             refs: new Set([ref]),
+            note,
         });
     }
+}
+
+// A `/* translators: ... */` comment right before the call becomes a note for translators.
+const NOTE_RE = /\/\*\s*translators:\s*((?:(?!\*\/)[\s\S])*?)\s*\*\/\s*(?:['"][^'"\n]*['"]\s*=>\s*)?$/;
+function noteBefore(content, index) {
+    const m = NOTE_RE.exec(content.slice(Math.max(0, index - 400), index));
+    return m ? m[1].replace(/\s*\n\s*\*?\s*/g, ' ') : '';
 }
 
 async function extract() {
@@ -118,7 +129,7 @@ async function extract() {
             }
             const explicitDomain = decode(sDom, dDom);
             const domain = fn === '_m' ? 'messages' : (explicitDomain || DEFAULT_DOMAIN);
-            record(domain, msgid, null, file.replace(/\\/g, '/'));
+            record(domain, msgid, null, file.replace(/\\/g, '/'), '', noteBefore(content, m.index));
         }
 
         for (const m of content.matchAll(CONTEXT_RE)) {
@@ -187,7 +198,7 @@ async function writePot(domain, entries) {
             ...(ctx ? { msgctxt: ctx } : {}),
             ...(e.msgid_plural ? { msgid_plural: e.msgid_plural } : {}),
             msgstr: e.msgid_plural ? ['', ''] : [''],
-            comments: { reference: [...e.refs].sort().join('\n') },
+            comments: { reference: [...e.refs].sort().join('\n'), ...(e.note ? { extracted: e.note } : {}) },
         };
     }
     const data = { charset: 'utf-8', headers: potHeaders(), translations };

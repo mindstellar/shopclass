@@ -353,7 +353,7 @@ final class SeoResolver
             return $text;
         }
 
-        return (string) ($text[$locale] ?? $text[$this->defaultLocale] ?? '');
+        return \_osc_locale_text(static fn (string $code) => $text[$code] ?? null, $locale);
     }
 
     private function plain(string $text): string

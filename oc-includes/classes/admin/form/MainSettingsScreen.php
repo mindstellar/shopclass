@@ -303,7 +303,7 @@ final class MainSettingsScreen extends SettingsScreen
     private static function adminLocales(): array
     {
         $options = array();
-        foreach (\OSCLocale::getInstance()->listAllEnabled(true) as $locale) {
+        foreach (osc_get_admin_locales() as $locale) {
             $options[$locale['pk_c_code']] = $locale['s_name'];
         }
 

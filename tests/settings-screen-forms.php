@@ -115,6 +115,13 @@ if (!function_exists('osc_add_admin_submenu_page')) {
     }
 }
 
+if (!function_exists('osc_get_admin_locales')) {
+    function osc_get_admin_locales()
+    {
+        return \OSCLocale::getInstance()->listAllEnabled(true);
+    }
+}
+
 // The shop form reads money the way an English admin types it.
 if (!function_exists('osc_locale_dec_point')) {
     function osc_locale_dec_point()

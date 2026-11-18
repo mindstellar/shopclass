@@ -48,27 +48,41 @@ final class LogView
     public static function actionLabel(string $code): string
     {
         $labels = array(
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'add'                       => __('Added'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'edit'                      => __('Edited'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'delete'                    => __('Deleted'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'register'                  => __('Registered'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'activate'                  => __('Activated'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'deactivate'                => __('Deactivated'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'enable'                    => __('Enabled'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'disable'                   => __('Disabled'),
             'spam'                      => __('Marked as spam'),
             'unspam'                    => __('Spam mark removed'),
             'premium'                   => __('Made premium'),
             'unpremium'                 => __('Premium removed'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'publish'                   => __('Published'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'bump'                      => __('Bumped'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'run'                       => __('Ran'),
             'backup'                    => __('Backed up'),
             'cleanup'                   => __('Cleaned up'),
             'gave_up'                   => __('Gave up'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'paid'                      => __('Paid'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'refunded'                  => __('Refunded'),
             'refund_gateway'            => __('Refunded at the gateway'),
+            /* translators: Activity log action label, as in "Deleted" a category. */
             'report'                    => __('Reported'),
             'deleteimage'               => __('Deleted photo'),
             'deleteResource'            => __('Deleted photo'),

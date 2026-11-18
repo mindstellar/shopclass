@@ -185,6 +185,7 @@ msgstr ""
 
 #: oc-includes/classes/admin/SystemChecks.php
 #: oc-includes/osclass/installer/gui/install.php
+#. 1: units finished, 2: all units in the task
 msgid "%1$s of %2$s"
 msgstr ""
 
@@ -195,10 +196,12 @@ msgstr[0] ""
 msgstr[1] ""
 
 #: oc-includes/osclass/installer/gui/install.php
+#. 1: units added, 2: all units
 msgid "%1$s of %2$s added"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
+#. 1: tasks finished, 2: all tasks
 msgid "%1$s of %2$s done"
 msgstr ""
 
@@ -272,6 +275,7 @@ msgid "%1$s, until %2$s"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
+#. 1: the setup task, 2: what could not be added and why
 msgid "%1$s. %2$s"
 msgstr ""
 
@@ -780,6 +784,7 @@ msgid "%s could not be uploaded"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
+#. %s: what could not be added
 msgid "%s couldn't be added. You can add it later."
 msgstr ""
 
@@ -805,6 +810,7 @@ msgid "%s does not exist!"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
+#. %s: the setup task that finished
 msgid "%s done"
 msgstr ""
 
@@ -1714,6 +1720,7 @@ msgid ""
 msgstr ""
 
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Activated"
 msgstr ""
 
@@ -2047,6 +2054,7 @@ msgstr ""
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-admin/themes/modern/settings/locations/preview.php
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Added"
 msgstr ""
 
@@ -3437,6 +3445,7 @@ msgid "Bump to top"
 msgstr ""
 
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Bumped"
 msgstr ""
 
@@ -5142,6 +5151,7 @@ msgid "Deactivate"
 msgstr ""
 
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Deactivated"
 msgstr ""
 
@@ -5477,6 +5487,7 @@ msgid "Delete your account"
 msgstr ""
 
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Deleted"
 msgstr ""
 
@@ -5677,6 +5688,7 @@ msgstr ""
 #: oc-admin/themes/modern/settings/api.php
 #: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/core/utility/SystemInfo.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Disabled"
 msgstr ""
 
@@ -5787,6 +5799,7 @@ msgid "Download now"
 msgstr ""
 
 #: oc-includes/classes/core/install/InstallPlan.php
+#. %s: theme name
 msgid "Download the %s shop theme"
 msgstr ""
 
@@ -6118,6 +6131,7 @@ msgid "Edit your listing"
 msgstr ""
 
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Edited"
 msgstr ""
 
@@ -6242,6 +6256,7 @@ msgstr ""
 #: oc-admin/themes/modern/categories/index.php
 #: oc-includes/classes/admin/LogView.php
 #: oc-includes/classes/core/utility/SystemInfo.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Enabled"
 msgstr ""
 
@@ -11777,6 +11792,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/index.php
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Paid"
 msgstr ""
 
@@ -12545,6 +12561,7 @@ msgstr ""
 #: oc-admin/themes/modern/items/frm.php
 #: oc-admin/themes/modern/pages/frm.php
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Published"
 msgstr ""
 
@@ -12667,6 +12684,7 @@ msgid "Raise memory without touching php.ini"
 msgstr ""
 
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Ran"
 msgstr ""
 
@@ -12889,6 +12907,7 @@ msgstr ""
 #: oc-admin/themes/modern/billing/order.php
 #: oc-includes/classes/admin/LogView.php
 #: oc-includes/osclass/gui/billing/receipt.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Refunded"
 msgstr ""
 
@@ -13001,6 +13020,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/users/frm.php
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Registered"
 msgstr ""
 
@@ -13237,6 +13257,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/messages/tabs.php
 #: oc-includes/classes/admin/LogView.php
+#. Activity log action label, as in "Deleted" a category.
 msgid "Reported"
 msgstr ""
 
@@ -15275,6 +15296,7 @@ msgid "Step"
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install.php
+#. 1: current step number, 2: total steps
 msgid "Step %1$s of %2$s"
 msgstr ""
 
@@ -15743,6 +15765,7 @@ msgid "The API is served at %s."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
+#. 1: why the theme failed, 2: what happens next
 msgid "The Aisle theme could not be installed: %1$s %2$s"
 msgstr ""
 
@@ -15751,6 +15774,7 @@ msgid "The Aisle theme is not installed, so the site stays a classifieds site."
 msgstr ""
 
 #: oc-includes/osclass/install-functions.php
+#. 1: why shop mode is off, 2: what happens next
 msgid ""
 "The Aisle theme was installed, but shop mode could not be turned on: %1$s "
 "%2$s"
@@ -19404,6 +19428,7 @@ msgid "at most"
 msgstr ""
 
 #: oc-includes/classes/core/install/InstallPlan.php
+#. 1: batch number, 2: number of batches
 msgid "batch %1$s of %2$s"
 msgstr ""
 

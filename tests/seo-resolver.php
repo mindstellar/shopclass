@@ -27,6 +27,24 @@ if (!function_exists('__')) {
     }
 }
 
+if (!class_exists('Preference', false)) {
+    class Preference
+    {
+        public static function getInstance()
+        {
+            return new self();
+        }
+
+        public function get($key, $section = 'osclass')
+        {
+            return $key === 'language' ? 'en_US' : '';
+        }
+    }
+}
+if (!function_exists('osc_language')) {
+    require_once ABS_PATH . 'oc-includes/osclass/helpers/hPreference.php';
+}
+
 $url = static function (string $kind, array $args, string $locale): string {
     $lang = $locale !== '' ? $locale . '/' : '';
 
@@ -98,6 +116,10 @@ pin('meta description wins over the text', 'Who we are', $p['description']);
 pin('breadcrumbs', ['Home', 'About us'], array_column($p['breadcrumbs'], 'label'));
 pin('hreflang', ['en-US', 'de-DE', 'x-default'], array_column($p['hreflang'], 'locale'));
 pin('without a meta description the text is used', 'We sell things.', $seo->page(['meta' => []] + $pageDoc, $texts)['description']);
+
+harness_section('per-language site text');
+$blank = new SeoResolver('en_US', ['en_US', 'de_DE'], ['en_US' => 'Shop', 'de_DE' => ' '], '', $url);
+pin('a blank translation falls back to the default language', 'Shop', $blank->home('de_DE')['title']);
 
 harness_section('search');
 $s = $seo->search('en_US', 'red van');
