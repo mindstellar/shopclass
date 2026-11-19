@@ -393,15 +393,16 @@ thead:has(~ tbody > .osc-table-empty-row),
 }
 
 // ---- Filter chips -------------------------------------------------------------
-// Status filters for a list (osc_admin_filter_chips()): rounded buttons with the count
-// inside, the selected one filled, so they never read as the page tabs above them.
+// Status filters for a list (osc_admin_filter_chips()): one joined box of buttons with the
+// same height, hairline and corners as the toolbar's select and search, the selected one
+// filled like Apply. Boxed, so they never read as the underlined page tabs above them.
 .osc-chips {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: .375rem;
+  align-items: stretch;
+  display: inline-flex;
   margin-block-end: 1rem;
+  max-inline-size: 100%;
   min-inline-size: 0;
+  vertical-align: middle;
 
   .osc-toolbar > & {
     margin-block-end: 0;
@@ -419,33 +420,72 @@ thead:has(~ tbody > .osc-table-empty-row),
 
 .osc-chip {
   align-items: center;
-  background-color: var(--osc-bench);
+  background-color: var(--bs-body-bg);
   border: 1px solid var(--osc-rule-strong);
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--osc-ink);
   display: inline-flex;
-  font-size: .8125rem;
+  flex: 0 0 auto;
+  font-size: .875rem;
   font-weight: 500;
-  line-height: 1.3;
-  min-block-size: 2rem;
-  padding: .25rem .75rem;
+  gap: .375rem;
+  line-height: 1.5;
+  padding: .25rem .625rem;
+  position: relative;
   text-decoration: none;
-  transition: background-color .15s ease-in-out, border-color .15s ease-in-out;
+  transition: background-color .15s ease-in-out, border-color .15s ease-in-out, color .15s ease-in-out;
   white-space: nowrap;
+
+  & + & {
+    margin-inline-start: -1px;
+  }
+
+  &:first-child {
+    border-end-start-radius: var(--bs-border-radius-sm);
+    border-start-start-radius: var(--bs-border-radius-sm);
+  }
+
+  &:last-child {
+    border-end-end-radius: var(--bs-border-radius-sm);
+    border-start-end-radius: var(--bs-border-radius-sm);
+  }
 
   &:hover {
     background-color: var(--osc-bench-sunk);
     color: var(--osc-ink);
+    z-index: 1;
+  }
+
+  &:active {
+    background-color: var(--osc-chrome);
   }
 
   &:focus-visible {
     outline: 2px solid var(--osc-bronze);
-    outline-offset: 2px;
+    outline-offset: 1px;
+    z-index: 3;
   }
 
+  // The number is part of the label, not a badge: small, plain and quieter than the word.
   .osc-count {
+    background-color: transparent;
+    border: 0;
+    color: var(--osc-ink-muted);
     font-size: .75rem;
-    margin-inline-start: .4rem;
+    font-weight: 500;
+    margin-inline-start: 0;
+    min-inline-size: 0;
+    padding: 0;
+  }
+
+  // Nothing to filter to: the button stays usable but steps back.
+  &:not(.is-active):has(> .osc-count.is-zero),
+  &[aria-disabled="true"] {
+    color: var(--osc-ink-muted);
+  }
+
+  &[aria-disabled="true"] {
+    pointer-events: none;
   }
 
   &.is-active {
@@ -453,6 +493,7 @@ thead:has(~ tbody > .osc-table-empty-row),
     border-color: var(--osc-bronze);
     color: var(--osc-ink-inverse);
     font-weight: 600;
+    z-index: 2;
 
     &:hover {
       background-color: var(--osc-bronze-deep);
@@ -460,17 +501,31 @@ thead:has(~ tbody > .osc-table-empty-row),
     }
 
     .osc-count {
-      background-color: var(--osc-count-on-fill-bg);
-      border-color: transparent;
-      color: var(--osc-count-on-fill-ink);
+      color: var(--osc-ink-inverse);
+      font-weight: 400;
     }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
   }
 }
 
-// On a phone the chips take their own row and wrap inside it.
+// On a phone the group takes its own row and scrolls inside it rather than wrapping.
 @media (max-width: 575.98px) {
+  .osc-chips {
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
   .osc-toolbar > .osc-chips {
     flex-basis: 100%;
+  }
+
+  // The scroll box would clip a ring drawn outside the button.
+  .osc-chip:focus-visible {
+    outline-offset: -2px;
   }
 }
 
