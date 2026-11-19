@@ -99,7 +99,7 @@ pin('its links, in the order added', array('booking-bookings', 'settings-page-bo
 pin('two Settings links sit in two groups', array('search-index' => 'Search index', 'search-settings' => 'Settings'), array_column($byPlugin['search']['entries'] ?? array(), 'title', 'id'));
 
 harness_section('A link a plugin put in another section moves into its group');
-pin('a Billing link', array(array('title' => 'Tax', 'url' => $base . '?page=settings&action=custom&id=tax', 'id' => 'settings-page-tax')), $byPlugin['tax']['entries'] ?? null);
+pin('a Billing link; its settings page is labelled Settings', array(array('title' => 'Settings', 'url' => $base . '?page=settings&action=custom&id=tax', 'id' => 'settings-page-tax')), $byPlugin['tax']['entries'] ?? null);
 pin('a Tools link', array(array('title' => 'Translator', 'url' => $base . '?page=plugins&action=renderplugin&route=translator', 'id' => 'translator')), $byPlugin['translator']['entries'] ?? null);
 $sections = static function (AdminMenu $m, array $names): array {
     $html = array();

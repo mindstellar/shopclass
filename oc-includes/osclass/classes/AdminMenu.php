@@ -1006,7 +1006,9 @@ class AdminMenu
                 if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
                     continue;
                 }
-                $groups[$slug]['entries'][] = array('title' => $entry[0], 'url' => $entry[1], 'id' => $entry[2]);
+                $title = strpos((string) $key, 'settings-page-') === 0 ? __('Settings') : $entry[0];
+
+                $groups[$slug]['entries'][] = array('title' => $title, 'url' => $entry[1], 'id' => $entry[2]);
             }
         }
         $out = array();
