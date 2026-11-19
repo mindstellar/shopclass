@@ -477,7 +477,8 @@ class Picker
             $labelId  = $id . '-cat-' . $catId;
             $choices  = self::subChoices($modes);
             // A saved mode no longer offered reads as following the parent, as it saves.
-            $current  = isset($choices[$saved[$catId] ?? '']) ? $saved[$catId] : '';
+            $current  = $saved[$catId] ?? '';
+            $current  = isset($choices[$current]) ? $current : '';
 
             echo '<li class="osc-catmatrix-row" role="radiogroup" data-depth="' . (int)$depth . '" aria-labelledby="' . osc_esc_html($labelId) . '">'
                 . '<span class="osc-catcard-subname" id="' . osc_esc_html($labelId) . '">'
