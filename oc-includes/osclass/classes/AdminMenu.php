@@ -721,6 +721,30 @@ class AdminMenu
     }
 
     /**
+     * The plugin whose screen the request shows, for the breadcrumb: its name, and the title of
+     * its lit link ("Settings" for its settings page). Null on a screen that is not a plugin's.
+     *
+     * @return array{name:string,page:string}|null
+     */
+    public function pluginCrumb(): ?array
+    {
+        [$menuId, $key] = $this->litIds();
+        $slug           = $menuId === 'plugins' ? ($this->aOwner['plugins'][$key] ?? null) : $this->movedTo($menuId, $key);
+        if ($slug === null && $menuId === 'plugins' && Params::getParam('action') === 'renderplugin') {
+            $slug = Plugins::currentPluginSlug();
+        }
+        $this->activeNames ??= self::activePluginNames($this->aOwner);
+        $name                = $slug === null ? null : ($this->activeNames[$slug] ?? self::activePluginNames(array('' => array('' => $slug)))[$slug] ?? null);
+        if ($name === null) {
+            return null;
+        }
+        $entry = ($this->aOwner[$menuId][$key] ?? null) === $slug ? ($this->aMenu[$menuId]['sub'][$key] ?? null) : null;
+        $page  = $entry === null ? '' : (strpos($key, 'settings-page-') === 0 ? __('Settings') : (string) $entry[0]);
+
+        return array('name' => $name, 'page' => $page);
+    }
+
+    /**
      * Whether the entry shows in its plugin's group under Plugins instead of in $menuId.
      * Returns the plugin folder, or null when the entry stays where it is.
      */
@@ -767,7 +791,7 @@ class AdminMenu
             if ($declared !== null && $declared['menu'] === '') {
                 // A page reached only through tabs lights the screen its tabs belong to.
                 $lit = self::current($this->get_array_menu(), $actual_url, $actual_page, osc_is_moderator(), array(osc_admin_base_url(true) . '?', osc_admin_base_url()));
-                if ($lit[0] === 'plugins' && $lit[1] !== '' || $this->movedTo($lit[0], $lit[1]) !== null) {
+                if (($lit[0] === 'plugins' && $lit[1] !== '') || $this->movedTo($lit[0], $lit[1]) !== null) {
                     return $lit;
                 }
                 $tabs = is_callable($declared['tabs']) ? ($declared['tabs'])() : $declared['tabs'];
@@ -959,14 +983,13 @@ class AdminMenu
     private function setOwner(string $menuId, string $submenuId, string $url): void
     {
         $slug = Plugins::currentPluginSlug() ?? self::pluginInUrl($url);
+        $this->activeNames = null;
         if ($slug === null || $slug === '') {
             unset($this->aOwner[$menuId][$submenuId]);
-            $this->activeNames = null;
 
             return;
         }
         $this->aOwner[$menuId][$submenuId] = $slug;
-        $this->activeNames                 = null;
     }
 
     /**
@@ -992,7 +1015,7 @@ class AdminMenu
      *
      * @param array<string,string> $names active plugin folder => plugin name
      *
-     * @return array<int,array{plugin:string,title:string,entries:array<int,array{title:string,url:string,id:string}>}>
+     * @return array<int,array{plugin:string,title:string,entries:array<int,array{title:string,url:string,id:string,capability:string}>}>
      */
     public function pluginGroups(array $names, bool $isModerator = false): array
     {
@@ -1008,7 +1031,7 @@ class AdminMenu
                 }
                 $title = strpos((string) $key, 'settings-page-') === 0 ? __('Settings') : $entry[0];
 
-                $groups[$slug]['entries'][] = array('title' => $title, 'url' => $entry[1], 'id' => $entry[2]);
+                $groups[$slug]['entries'][] = array('title' => $title, 'url' => $entry[1], 'id' => $entry[2], 'capability' => (string) ($entry[4] ?? $entry[3]));
             }
         }
         $out = array();
@@ -1038,7 +1061,7 @@ class AdminMenu
         foreach ($this->pluginGroups($names, $isModerator) as $group) {
             $sub['divider_plugin_' . $group['plugin']] = array(osc_esc_html($group['title']), 'divider_plugin_' . $group['plugin'], 'plugins');
             foreach ($group['entries'] as $entry) {
-                $sub['plugin_entry_' . $entry['id']] = array($entry['title'], $entry['url'], $entry['id'], 'plugins');
+                $sub['plugin_entry_' . $entry['id']] = array($entry['title'], $entry['url'], $entry['id'], 'plugins', $entry['capability']);
             }
         }
 
@@ -1255,6 +1278,15 @@ class AdminMenu
 
         $is_moderator = osc_is_moderator();
         $str          = '';
+        // A moderator sees Plugins only for plugin links marked for moderators; its heading opens the first.
+        if ($is_moderator && $menuId === 'plugins' && $value[3] !== 'moderator') {
+            $groups = $this->pluginGroups($this->activeNames ??= self::activePluginNames($this->aOwner), true);
+            if ($groups === array()) {
+                return '';
+            }
+            $value[1] = $groups[0]['entries'][0]['url'];
+            $value[3] = 'moderator';
+        }
         //If user is moderator and menu access is not available don't print menu
         if (!$is_moderator || ($value[3] === 'moderator')) {
             if (!$value[4] || strpos($value[4], "http") === 0) {

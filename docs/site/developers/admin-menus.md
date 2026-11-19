@@ -50,10 +50,10 @@ A page with `'menu' => ''` that is reached only through its tabs lights the entr
 first tab whose link is in the menu.
 
 A section keeps its own settings: Listings, Users, Media and Billing each end with a
-Settings entry, and those screens draw no group tabs. Pages for selling (shipping, tax, offers,
-digital goods) go into Billing with `'menu' => 'billing'` and no group; they sit before
-Billing's own Settings entry. With billing switched off there is no Billing section, and such
-a page goes to the "Other" group of Settings.
+Settings entry, and those screens draw no group tabs. Core's selling pages go into Billing with
+`'menu' => 'billing'` and no group. With billing switched off there is no Billing section, and
+such a page goes to the "Other" group of Settings. A plugin's page placed in Billing, Settings or
+any other section moves to the plugin's group under Plugins (see below).
 
 The Settings sidebar lists the groups, not the entries. Each Settings screen draws a tab
 row of its group's entries, so a plugin entry placed by `$group` appears as a tab. An entry
@@ -63,7 +63,7 @@ and set `'return_url'` on the page so a save comes back to that screen.
 
 ## Add your page to a settings tab
 
-A page in a group appears as a tab of that group on every screen of the group, with no further code. Group names are `general`, `content`, `email`, `security` and `system`. A page for the shop belongs in Billing instead: `'menu' => 'billing'`.
+A page in a group appears as a tab of that group on every screen of the group, with no further code. Group names are `general`, `content`, `email`, `security` and `system`. This is for core screens: a plugin's page here moves to its group under Plugins, so a plugin registers with `'menu' => 'plugins'`.
 
 ```php
 osc_register_settings_page('reports', array(
@@ -167,16 +167,24 @@ as core screens have; it may be a callable that prints the help. `actions` are t
 beside it.
 
 The top bar shows the path to the screen: the section your entry sits under, linked to its
-main screen, then the header title. `osc_admin_breadcrumb()` draws it; a theme that replaces
-the top bar calls it in the same place.
+main screen, then the header title. On a plugin's screen it reads Plugins › plugin name › page,
+where the page is the header title or, with none, the entry's label. `osc_admin_breadcrumb()`
+draws it; a theme that replaces the top bar calls it in the same place.
 
 Core groups the Plugins section by plugin: each active plugin's entries sit under a heading
-with its name, so a divider of your own there is not drawn. An entry you add to another
-section, such as Billing or Tools, shows in your group instead, with the same URL, id and label.
-The menu data keeps it under the section you chose.
+with its name. That heading replaces plugin dividers: one you add with
+`osc_add_admin_submenu_divider()` is not drawn. An entry you add to another section, such as
+Billing or Tools, shows in your group instead, with the same URL and id. Its label stays, except
+a declared settings page's entry, which is labelled Settings. The menu data keeps it under the
+section you chose.
+
+:::note[For plugin authors]
+Register your links under Plugins (`osc_admin_menu_plugins()`, or `'menu' => 'plugins'` for a
+settings page). Links in other sections are moved there anyway. On Shopclass 7.0 there are no
+groups, so the same links show as a flat list under Plugins.
+:::
 
 Core tells which plugin an entry belongs to by the plugin code that is running when it is added.
 A `renderplugin` link is also matched to its plugin by its `file` or by the file of its `route`.
-A divider a plugin adds to Plugins is dropped and replaced by the plugin's name heading.
-The sidebar and the top bar then show Plugins as the section of a moved entry.
+An entry keeps its capability, so a link marked `moderator` shows to moderators in its group.
 

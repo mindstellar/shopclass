@@ -123,7 +123,7 @@ function drive(string $action, array $query = array(), bool $token = true): arra
         $threw = $e;
     }
 
-    return array('flashes' => $GLOBALS['flashes'], 'threw' => $threw, 'aData' => __get('aData'), 'filterChips' => __get('filterChips'));
+    return array('flashes' => $GLOBALS['flashes'], 'threw' => $threw, 'aData' => __get('aData'), 'filterChips' => __get('filterChips'), 'statusUrls' => __get('statusUrls'));
 }
 
 $GLOBALS['adminId'] = $adminId;
@@ -198,6 +198,11 @@ check('removing a chip keeps the tab, the page length and the other filter', str
 pin('no filters, no chips', array(), drive('', array('status' => 'unpaid'))['filterChips']);
 $loc = ItemsDataTable::filterChips(array('countryId' => 'US', 'region' => 'Texas', 'regionId' => '4', 'city' => 'Austin', 'cityId' => '9'));
 check('dropping the country drops its region and city', !str_contains($loc[0]['url'], 'region') && !str_contains($loc[0]['url'], 'city'));
+
+$urls = drive('', array('sSearch' => 'bike', 'catId' => (string) $cat, 'iDisplayLength' => '25'))['statusUrls'];
+check('the Waiting for payment chip keeps the search and filters', is_array($urls) && str_contains($urls['unpaid'], 'status=unpaid')
+    && str_contains($urls['unpaid'], 'sSearch=bike') && str_contains($urls['unpaid'], 'catId=' . $cat) && str_contains($urls['unpaid'], 'iDisplayLength=25'));
+check('the All chip keeps them and drops the status', is_array($urls) && str_contains($urls[''], 'sSearch=bike') && !str_contains(drive('', array('status' => 'unpaid', 'sSearch' => 'bike'))['statusUrls'][''] ?? 'status=', 'status='));
 
 harness_section('Publish without payment');
 $bank = \mindstellar\billing\OrderStore::create($tom, 'offline', 2000000, 'USD', 5, array('_kind' => \mindstellar\billing\Order::KIND_LISTING, '_item' => $held));

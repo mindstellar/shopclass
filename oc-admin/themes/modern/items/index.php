@@ -108,10 +108,10 @@ $unpaidTab   = Params::getParamString('status') === 'unpaid';
 $statusChips = array();
 // Shown while pay-at-post is on, or while a bookmarked link still asks for it.
 if (osc_billing_pay_at_post() || $unpaidTab) {
-    $tabBase     = osc_admin_base_url(true) . '?page=items&iDisplayLength=' . (int) $iDisplayLength;
+    $statusUrls  = (array) __get('statusUrls');
     $statusChips = array(
-        array('label' => __('All'), 'url' => $tabBase, 'active' => !$unpaidTab),
-        array('label' => __('Waiting for payment'), 'url' => $tabBase . '&status=unpaid', 'active' => $unpaidTab),
+        array('label' => __('All'), 'url' => $statusUrls[''] ?? '', 'active' => !$unpaidTab),
+        array('label' => __('Waiting for payment'), 'url' => $statusUrls['unpaid'] ?? '', 'active' => $unpaidTab),
     );
 }
 ?>

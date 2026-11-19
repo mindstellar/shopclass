@@ -67,19 +67,7 @@ class ItemsDataTable extends DataTable
             array(__('Block'), $text('b_enabled') === '' ? '' : $flag('b_enabled', false), array('b_enabled')),
             array(__('Spam'), $text('b_spam') === '' ? '' : $flag('b_spam', true), array('b_spam')),
         );
-        $keep = array('page' => 'items');
-        foreach (array('status', 'iDisplayLength', 'sort', 'direction', 'shortcut-filter') as $key) {
-            if ($text($key) !== '') {
-                $keep[$key] = $text($key);
-            }
-        }
-        foreach ($filters as $filter) {
-            foreach ($filter[2] as $key) {
-                if ($text($key) !== '') {
-                    $keep[$key] = $text($key);
-                }
-            }
-        }
+        $keep = self::keptParams($params);
 
         $chips = array();
         foreach ($filters as [$label, $value, $keys]) {
@@ -94,6 +82,38 @@ class ItemsDataTable extends DataTable
         }
 
         return $chips;
+    }
+
+    /**
+     * The list's link for a status chip ('' is All), keeping the search, the filters and the order.
+     *
+     * @param array<string,mixed> $params
+     */
+    public static function statusUrl(array $params, string $status): string
+    {
+        $keep = self::keptParams($params);
+        unset($keep['status']);
+
+        return osc_admin_base_url(true) . '?' . http_build_query($keep + ($status !== '' ? array('status' => $status) : array()));
+    }
+
+    /**
+     * The request parameters that make up the current list: the page, its length and order, and every filter.
+     *
+     * @param array<string,mixed> $params
+     *
+     * @return array<string,string>
+     */
+    private static function keptParams(array $params): array
+    {
+        $keep = array('page' => 'items');
+        foreach (array('status', 'iDisplayLength', 'sort', 'direction', 'shortcut-filter', 'sSearch', 'catId', 'country', 'countryId', 'region', 'regionId', 'city', 'cityId', 'user', 'userId', 'itemId', 'b_premium', 'b_active', 'b_enabled', 'b_spam') as $key) {
+            if (isset($params[$key]) && is_scalar($params[$key]) && trim((string) $params[$key]) !== '') {
+                $keep[$key] = trim((string) $params[$key]);
+            }
+        }
+
+        return $keep;
     }
 
     /**

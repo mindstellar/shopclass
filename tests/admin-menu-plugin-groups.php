@@ -99,8 +99,8 @@ pin('its links, in the order added', array('booking-bookings', 'settings-page-bo
 pin('two Settings links sit in two groups', array('search-index' => 'Search index', 'search-settings' => 'Settings'), array_column($byPlugin['search']['entries'] ?? array(), 'title', 'id'));
 
 harness_section('A link a plugin put in another section moves into its group');
-pin('a Billing link; its settings page is labelled Settings', array(array('title' => 'Settings', 'url' => $base . '?page=settings&action=custom&id=tax', 'id' => 'settings-page-tax')), $byPlugin['tax']['entries'] ?? null);
-pin('a Tools link', array(array('title' => 'Translator', 'url' => $base . '?page=plugins&action=renderplugin&route=translator', 'id' => 'translator')), $byPlugin['translator']['entries'] ?? null);
+pin('a Billing link; its settings page is labelled Settings', array(array('title' => 'Settings', 'url' => $base . '?page=settings&action=custom&id=tax', 'id' => 'settings-page-tax', 'capability' => 'administrator')), $byPlugin['tax']['entries'] ?? null);
+pin('a Tools link', array(array('title' => 'Translator', 'url' => $base . '?page=plugins&action=renderplugin&route=translator', 'id' => 'translator', 'capability' => 'administrator')), $byPlugin['translator']['entries'] ?? null);
 $sections = static function (AdminMenu $m, array $names): array {
     $html = array();
     foreach (array('billing', 'tools') as $id) {
@@ -156,6 +156,40 @@ pin('a renderplugin link lights itself', array('plugins', 'booking-bookings'), $
 pin('a core Billing link still lights Billing', array('billing', 'billing_core'), $lit('page=billing&action=core', 'billing'));
 $html = $render->invoke($m, $names, 'plugins', 'settings-page-tax');
 check('the group link is the one marked', strpos($html, 'id="settings-page-tax" href="' . $base . '?page=settings&action=custom&id=tax" aria-current="page"') !== false);
+
+harness_section('The breadcrumb names the plugin');
+define('OC_ADMIN', true);
+require_once ABS_PATH . 'oc-admin/themes/modern/parts/ui.php';
+$crumb = static function (string $query, string $page, array $declared) use ($lit): string {
+    $lit($query, $page);
+    osc_admin_page_declared($declared);
+    ob_start();
+    osc_admin_breadcrumb();
+
+    return strip_tags(str_replace('</li>', ' / ', (string) ob_get_clean()));
+};
+pin('a renderplugin file page with no heading takes its link title', 'Plugins / Legacy / Legacy screen / ', $crumb('page=plugins&action=renderplugin&file=legacy/admin.php', 'plugins', array('section' => 'Plugins', 'title' => 'Plugins')));
+pin('a moved settings page is the plugin’s Settings', 'Plugins / Tax / Settings / ', $crumb('page=settings&action=custom&id=tax', 'settings', array('section' => 'Settings', 'heading' => 'Tax')));
+pin('a moved route page named like its plugin is not repeated', 'Plugins / Translator / ', $crumb('page=plugins&action=renderplugin&route=translator', 'plugins', array('section' => 'Plugins', 'heading' => 'Translator')));
+pin('a declared heading wins over the link title', 'Plugins / Booking / Edit booking / ', $crumb('page=plugins&action=renderplugin&route=booking-admin', 'plugins', array('section' => 'Plugins', 'heading' => 'Edit booking')));
+pin('a core page has no plugin step', 'Billing / Core billing / ', $crumb('page=billing&action=core', 'billing', array('section' => 'Billing', 'heading' => 'Core billing')));
+
+harness_section('A moderator sees a plugin link marked for moderators');
+Plugins::runAs('plugin', 'booking', static function () use ($m, $base): void {
+    $m->add_submenu('plugins', 'Calendar', $base . '?page=plugins&action=renderplugin&route=booking-calendar', 'booking-calendar', 'moderator');
+});
+$names_prop->setValue($m, $names);
+$GLOBALS['moderator'] = true;
+$html = $render->invoke($m, $names, 'plugins', '');
+$GLOBALS['moderator'] = false;
+check('the moderator link is in its group', strpos($html, 'id="booking-calendar"') !== false, $html);
+check('an administrator-only link is not', strpos($html, 'id="booking-bookings"') === false);
+$section = new ReflectionMethod($m, 'renderMenu');
+$GLOBALS['moderator'] = true;
+$nav = $section->invoke($m, 'plugins', $m->get_array_menu()['plugins'], '', '');
+$GLOBALS['moderator'] = false;
+check('a moderator gets the Plugins section for it', strpos($nav, 'id="booking-calendar"') !== false, $nav);
+check('...and its heading opens that link, not the admin-only plugin list', strpos($nav, 'href="' . $base . '?page=plugins&action=renderplugin&route=booking-calendar"><i') !== false);
 
 harness_section('A declared settings page records its plugin');
 Plugins::runAs('plugin', 'tax', static function (): void {

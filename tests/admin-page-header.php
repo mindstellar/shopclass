@@ -76,6 +76,11 @@ class AdminMenu
         return array('pages' => array('Pages', 'https://example.test/oc-admin/index.php?page=pages', 'pages'));
     }
 
+    public function pluginCrumb(): ?array
+    {
+        return null;
+    }
+
     public function settingsGroupTabs($entry, $moderator): array
     {
         return array();

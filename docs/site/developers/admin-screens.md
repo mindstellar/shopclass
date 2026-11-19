@@ -76,6 +76,7 @@ osc_admin_body_close();
 | A table with a bulk column, filters and paging | `osc_admin_data_table()` | `($aData, $opts)` |
 | A row of filters or buttons above a table | `osc_admin_toolbar_open()` / `osc_admin_toolbar_close()` | `($opts)` |
 | Tabs | `osc_admin_tab_nav()` | `($links, $class, $opts)` |
+| Status filters for a list, as chips with counts (All, Active, …) | `osc_admin_filter_chips()`, or `'chips'` on `osc_admin_list_filter()` to put them in the table toolbar. Links take the same keys as tabs. | `($links, $class, $opts)` |
 | A state next to a record | `osc_admin_status()` | `($state, $word, $title)` |
 | A warning or a note | `osc_admin_callout()` | `($tone, $text, $opts)` |
 | Nothing to show | `osc_admin_empty()` or a table's `'empty'` option | `($opts)` |

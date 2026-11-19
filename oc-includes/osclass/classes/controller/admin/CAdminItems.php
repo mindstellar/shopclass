@@ -609,6 +609,7 @@ class CAdminItems extends AdminSecBaseModel
         $this->_exportVariableToView('countries', Country::getInstance()->listAll());
         $this->_exportVariableToView('withFilters', $itemsDataTable->withFilters());
         $this->_exportVariableToView('filterChips', ItemsDataTable::filterChips($params));
+        $this->_exportVariableToView('statusUrls', array('' => ItemsDataTable::statusUrl($params, ''), 'unpaid' => ItemsDataTable::statusUrl($params, 'unpaid')));
         $this->_exportVariableToView('aRawRows', $itemsDataTable->rawRows());
         $sample        = new SampleData();
         $samplePresent = !osc_is_moderator() && $sample->present();

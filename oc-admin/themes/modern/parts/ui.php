@@ -191,16 +191,27 @@ if (!function_exists('osc_admin_breadcrumb')) {
         if ($section === '') {
             return;
         }
-        $url = '';
+        $url    = '';
+        $plugin = null;
         if (function_exists('osc_is_moderator')) {
             $menu  = AdminMenu::getInstance();
             [$lit] = $menu->currentIds();
             $url   = (string) ($menu->get_array_menu()[$lit][1] ?? '');
+            // A plugin's screen reads Plugins > plugin name > page, whatever the plugin declared.
+            $plugin = $lit === 'plugins' ? $menu->pluginCrumb() : null;
+            if ($plugin !== null) {
+                $section = (string) ($menu->get_array_menu()['plugins'][0] ?? $section);
+                $heading = $heading !== '' && strcasecmp($heading, $plugin['name']) !== 0 ? $heading : $plugin['page'];
+                $heading = strcasecmp($heading, $plugin['name']) === 0 ? '' : $heading;
+            }
         }
         echo '<nav class="admin-breadcrumb" aria-label="' . osc_esc_html(__('Breadcrumb')) . '"><ol>';
         echo '<li class="admin-breadcrumb-section">'
             . ($url !== '' ? '<a href="' . osc_esc_html($url) . '">' . osc_esc_html($section) . '</a>' : osc_esc_html($section))
             . '</li>';
+        if ($plugin !== null) {
+            echo '<li class="admin-breadcrumb-section">' . osc_esc_html($plugin['name']) . '</li>';
+        }
         if ($heading !== '' && $heading !== $section) {
             echo '<li class="admin-breadcrumb-page" aria-current="page">' . osc_esc_html($heading) . '</li>';
         }
