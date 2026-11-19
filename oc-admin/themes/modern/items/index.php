@@ -105,20 +105,21 @@ osc_current_admin_theme_path('parts/header.php'); ?>
 <?php
 $filterChips = is_array(__get('filterChips')) ? __get('filterChips') : array();
 $unpaidTab   = Params::getParamString('status') === 'unpaid';
-// "Waiting for payment" is a state, not a filter, so it is a tab: shown while pay-at-post is
-// on, or while a bookmarked link still asks for it.
+$statusChips = array();
+// Shown while pay-at-post is on, or while a bookmarked link still asks for it.
 if (osc_billing_pay_at_post() || $unpaidTab) {
-    $tabBase = osc_admin_base_url(true) . '?page=items&iDisplayLength=' . (int) $iDisplayLength;
-    osc_admin_tab_nav(array(
+    $tabBase     = osc_admin_base_url(true) . '?page=items&iDisplayLength=' . (int) $iDisplayLength;
+    $statusChips = array(
         array('label' => __('All'), 'url' => $tabBase, 'active' => !$unpaidTab),
         array('label' => __('Waiting for payment'), 'url' => $tabBase . '&status=unpaid', 'active' => $unpaidTab),
-    ));
+    );
 }
 ?>
 <?php osc_admin_body_open(array('class' => 'relative')); ?>
     <?php osc_admin_list_filter(array(
             'page'     => 'items',
             'id'       => 'shortcut-filters',
+            'chips'    => $statusChips,
             'hidden'   => array('iDisplayLength' => $iDisplayLength),
             'active'   => $withFilters,
             'advanced' => '#display-filters',

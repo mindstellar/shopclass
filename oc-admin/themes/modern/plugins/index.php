@@ -109,9 +109,9 @@ $marketRefreshUrl = osc_admin_base_url(true) . '?page=ajax&action=market_refresh
             $tabs[] = array('label' => $label, 'url' => $tabBase . '&status=' . $key, 'active' => $status === $key, 'count' => (int) ($aCounts[$key] ?? 0));
         }
     }
-    osc_admin_tab_nav($tabs);
     osc_admin_list_filter(array(
         'page'     => 'plugins',
+        'chips'    => $tabs,
         'hidden'   => $status !== '' ? array('status' => $status) : array(),
         'active'   => $search !== '',
         'reset'    => osc_admin_base_url(true) . '?page=plugins' . ($status !== '' ? '&status=' . urlencode($status) : ''),

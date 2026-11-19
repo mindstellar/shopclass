@@ -379,11 +379,46 @@ if (!function_exists('osc_admin_tab_nav')) {
     }
 }
 
+if (!function_exists('osc_admin_filter_chips')) {
+    /**
+     * Status filters for a list: a row of chips, each a link with its count, the selected one filled.
+     * Links take the same keys as osc_admin_tab_nav(); page tabs stay on that helper.
+     *
+     * $opts: aria_label (the group's name, default "Filter").
+     *
+     * @param array<int,array<string,mixed>> $links
+     * @param string                         $class an extra class on the group
+     * @param array<string,mixed>            $opts
+     *
+     * @return void
+     */
+    function osc_admin_filter_chips(array $links, $class = '', array $opts = array())
+    {
+        echo '<div class="osc-chips' . ($class !== '' ? ' ' . osc_esc_html($class) : '') . '" role="group" aria-label="'
+            . osc_esc_html((string)($opts['aria_label'] ?? __('Filter'))) . '">';
+
+        foreach ($links as $link) {
+            $active = !empty($link['active']);
+            $attrs  = $link['attrs'] ?? array();
+            $attrs  = array(
+                'class'        => trim('osc-chip' . ($active ? ' is-active' : '') . ' ' . ($attrs['class'] ?? '')),
+                'role'         => 'button',
+                'aria-pressed' => $active ? 'true' : 'false',
+            ) + $attrs;
+            echo '<a href="' . osc_esc_html($link['url'] ?? '#') . '"' . \mindstellar\admin\ui\Field::attrsString($attrs) . '>'
+                . osc_esc_html($link['label'] ?? '')
+                . (isset($link['count']) ? osc_admin_count((int)$link['count'], (string)($link['count_id'] ?? '')) : '') . '</a>';
+        }
+
+        echo '</div>';
+    }
+}
+
 if (!function_exists('osc_admin_link_group')) {
     /**
      * A segmented group of links where exactly one is current -- a range switch, a view
      * switch. Each link: label, url, active (bool), and optionally count, drawn as a badge;
-     * a group with counts is drawn as a tab strip.
+     * a group with counts is drawn as filter chips.
      *
      * The four statistics screens each rebuilt this loop verbatim, inside their own
      * hand-written two-column grid. The grid is `osc_admin_page_head()`'s job; this is the
@@ -395,10 +430,8 @@ if (!function_exists('osc_admin_link_group')) {
      */
     function osc_admin_link_group(array $links)
     {
-        // Links with counts are status filters: an underline strip that scrolls on a phone
-        // rather than a button group that cannot wrap.
         if (array_filter($links, static fn ($link) => isset($link['count'])) !== array()) {
-            osc_admin_tab_nav($links);
+            osc_admin_filter_chips($links);
 
             return;
         }
@@ -730,7 +763,8 @@ if (!function_exists('osc_admin_list_filter')) {
      *
      * Keys: 'page' (the screen's page parameter), 'fields', 'hidden' => name => value,
      *       'advanced' => a dialog selector, 'active' => bool, 'reset' => url,
-     *       'id' => form id, 'submit' => the find button's title, 'class' => extra form class.
+     *       'id' => form id, 'submit' => the find button's title, 'class' => extra form class,
+     *       'chips' => status filter links for osc_admin_filter_chips(), drawn first in the row.
      *
      * A field is one of:
      *   search  name, value, placeholder, id
@@ -748,10 +782,14 @@ if (!function_exists('osc_admin_list_filter')) {
     {
         $fields = $opts['fields'] ?? array();
         $active = !empty($opts['active']);
-        $row    = isset($opts['bulk']) || isset($opts['per_page']);
+        $chips  = $opts['chips'] ?? array();
+        $row    = isset($opts['bulk']) || isset($opts['per_page']) || $chips !== array();
 
         if ($row) {
-            osc_admin_toolbar_open(array('align' => isset($opts['bulk']) ? 'between' : 'end'));
+            osc_admin_toolbar_open(array('align' => isset($opts['bulk']) || $chips !== array() ? 'between' : 'end'));
+            if ($chips !== array()) {
+                osc_admin_filter_chips($chips);
+            }
             if (isset($opts['bulk'])) {
                 osc_admin_bulk_actions($opts['bulk']);
             }

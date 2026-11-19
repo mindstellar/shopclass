@@ -636,6 +636,12 @@ document.addEventListener('keydown', function (e) {
     var close = e.target.closest ? e.target.closest('.flashmessage .ico-close') : null;
     if (close) { e.preventDefault(); oscCloseFlash(close); }
 });
+// A filter chip is a link drawn as a button, so Space presses it as well as Enter.
+document.addEventListener('keydown', function (e) {
+    if (e.key !== ' ' || !e.target.matches || !e.target.matches('a.osc-chip[role="button"]')) { return; }
+    e.preventDefault();
+    e.target.click();
+});
 
 document.addEventListener('DOMContentLoaded', function () {
     // Flash messages: announce them to assistive tech and wire up dismissal. (The
