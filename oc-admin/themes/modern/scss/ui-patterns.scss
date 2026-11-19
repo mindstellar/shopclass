@@ -409,7 +409,7 @@ thead:has(~ tbody > .osc-table-empty-row),
   }
 }
 
-// Chips lead the toolbar with the bulk actions beside them; the search group keeps the far end.
+// Bulk actions lead the toolbar with the chips beside them; the search group keeps the far end.
 .osc-toolbar:has(> .osc-chips) {
   justify-content: flex-start;
 
