@@ -7,6 +7,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
+- `listing_row_price` filter changes the price text of a listing row in account lists.
 - `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
 - With `OSC_DEBUG_LOG` on, `oc-content/.htaccess` gets a rule that blocks `*.log` files on Apache.
 - Widget and section text fields can be set per language with `'translate' => true`.
@@ -120,7 +121,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
 
 ### Changed
-- The Plugins menu groups each plugin's links under its name, and lists plugins whose links sit in another section.
+- The Plugins menu groups each plugin's links under its name; links a plugin adds to Billing, Tools or another section move there too.
 - The Activity log shows plain section and action names, folds the rows one action wrote into one, has a date filter, and Clear log sits in the table toolbar.
 - A pending plugin or theme update shows an "Update to version X" button where it is listed; the Plugins Status column stacks its badges.
 - Admin sidebar: sections open on their own and stay under the pointer, one pill marks the current page, and the rail collapses with the icons still.
@@ -202,7 +203,8 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Faster shop search by price, rare options and `on_sale` (migration 0093).
 
 ### Fixed
-- Showing a hidden widget again leaves its settings as they were. The theme plugins screen says when a theme is made for the other kind of site.
+- Showing a hidden widget again leaves its settings as they were.
+- The theme plugins screen says when a theme is made for the other kind of site.
 - A language that shares its short name with another, such as English (Australia), can be installed again.
 - A language that cannot be saved now shows an error on import and upload, with the reason in the activity log.
 - The languages table no longer says "filtered from 9 total results".

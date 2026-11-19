@@ -48,6 +48,7 @@ $m->add_menu('Plugins', $base . '?page=plugins', 'plugins', 'administrator');
 $m->add_submenu('plugins', 'Manage plugins', $base . '?page=plugins', 'plugins_manage', 'administrator');
 $m->add_menu('Billing', $base . '?page=billing', 'billing', 'administrator');
 $m->add_menu('Tools', $base . '?page=tools', 'tools', 'administrator');
+$m->add_submenu('billing', 'Core billing', $base . '?page=billing&action=core', 'billing_core', 'administrator');
 
 Plugins::runAs('plugin', 'booking', static function () use ($m, $base): void {
     $m->add_submenu('plugins', 'Bookings', $base . '?page=plugins&action=renderplugin&route=booking-admin', 'booking-bookings', 'administrator');
@@ -86,8 +87,9 @@ $names = array(
     'legacy'     => 'Legacy',
     'quiet'      => 'Quiet',
 );
-$settings = array('tax' => $base . '?page=settings&action=custom&id=tax');
-$groups   = $m->pluginGroups($names, $settings);
+$names_prop = new ReflectionProperty($m, 'activeNames');
+$names_prop->setValue($m, $names);
+$groups   = $m->pluginGroups($names);
 $byPlugin = array_column($groups, null, 'plugin');
 
 harness_section('Grouped by the plugin that added them');
@@ -96,10 +98,22 @@ pin('the heading is the plugin name', 'Booking', $byPlugin['booking']['title'] ?
 pin('its links, in the order added', array('booking-bookings', 'settings-page-booking'), array_column($byPlugin['booking']['entries'] ?? array(), 'id'));
 pin('two Settings links sit in two groups', array('search-index' => 'Search index', 'search-settings' => 'Settings'), array_column($byPlugin['search']['entries'] ?? array(), 'title', 'id'));
 
-harness_section('A plugin whose links live elsewhere');
-pin('gets its settings page', array(array('title' => 'Settings', 'url' => $base . '?page=settings&action=custom&id=tax', 'id' => 'plugin-link-tax')), $byPlugin['tax']['entries'] ?? null);
-pin('...or its first screen', array(array('title' => 'Translator', 'url' => $base . '?page=plugins&action=renderplugin&route=translator', 'id' => 'plugin-link-translator')), $byPlugin['translator']['entries'] ?? null);
-check('...and keeps the link where it was', isset($m->get_array_menu()['billing']['sub']['settings-page-tax'], $m->get_array_menu()['tools']['sub']['translator']));
+harness_section('A link a plugin put in another section moves into its group');
+pin('a Billing link', array(array('title' => 'Tax', 'url' => $base . '?page=settings&action=custom&id=tax', 'id' => 'settings-page-tax')), $byPlugin['tax']['entries'] ?? null);
+pin('a Tools link', array(array('title' => 'Translator', 'url' => $base . '?page=plugins&action=renderplugin&route=translator', 'id' => 'translator')), $byPlugin['translator']['entries'] ?? null);
+$sections = static function (AdminMenu $m, array $names): array {
+    $html = array();
+    foreach (array('billing', 'tools') as $id) {
+        $r = new ReflectionMethod($m, 'renderSubMenu');
+        $html[$id] = $r->invoke($m, $id, $m->get_array_menu()[$id]['sub'], false, 'plugins', '');
+    }
+
+    return $html;
+};
+$other = $sections($m, $names);
+check('Billing no longer shows it', strpos($other['billing'], 'settings-page-tax') === false);
+check('Tools no longer shows it', strpos($other['tools'], 'id="translator"') === false);
+check('the menu data keeps the entry for search and breadcrumbs', isset($m->get_array_menu()['billing']['sub']['settings-page-tax'], $m->get_array_menu()['tools']['sub']['translator']));
 
 harness_section('Old-style and ownerless registrations');
 pin('a plugin calling the helpers from its entry file is grouped', array('oldie-screen'), array_column($byPlugin['oldie']['entries'] ?? array(), 'id'));
@@ -108,7 +122,7 @@ check('a plugin with no screens gets no group', !isset($byPlugin['quiet']));
 
 harness_section('The sidebar list');
 $render = new ReflectionMethod($m, 'renderPluginList');
-$html   = $render->invoke($m, $names, $settings, 'plugins', 'booking-bookings');
+$html   = $render->invoke($m, $names, 'plugins', 'booking-bookings');
 $at     = static fn (string $needle): int => (int) strpos($html, $needle);
 check('Manage plugins and core links come first', $at('id="plugins_manage"') < $at('submenu-divide') && $at('id="plugins_market"') < $at('submenu-divide'));
 check('each heading is a group heading', substr_count($html, '<li class="submenu-divide">') === 6);
@@ -116,6 +130,32 @@ check('the plugin’s own heading is not drawn twice', substr_count($html, 'Old 
 check('a link sits under its plugin heading', $at('>Booking<') < $at('id="settings-page-booking"') && $at('id="settings-page-booking"') < $at('>Legacy<'));
 check('the current link is marked', strpos($html, 'id="booking-bookings" href="' . $base . '?page=plugins&action=renderplugin&route=booking-admin" aria-current="page"') !== false);
 check('ids stay unique', count(array_unique($ids = (preg_match_all('/ id="([^"]+)"/', $html, $mm) ? $mm[1] : array()))) === count($ids));
+
+harness_section('Attribution');
+$ownerProp = new ReflectionProperty($m, 'aOwner');
+$owners    = $ownerProp->getValue($m);
+pin('a link added by a running plugin is that plugin’s', 'booking', $owners['plugins']['booking-bookings'] ?? null);
+pin('a renderplugin route link is its route file’s plugin', 'legacy', $owners['plugins']['legacy-screen'] ?? null);
+pin('a core link has no plugin', null, $owners['plugins']['plugins_market'] ?? null);
+
+harness_section('Which entry the sidebar lights');
+function osc_admin_base_url($full = false)
+{
+    return $full ? 'https://example.test/oc-admin/index.php' : 'https://example.test/oc-admin/';
+}
+$lit = static function (string $query, string $page) use ($m): array {
+    $_SERVER['QUERY_STRING'] = $query;
+    Params::init();
+    Params::setParam('page', $page);
+
+    return $m->currentIds();
+};
+pin('a plugin link in Billing lights its group link and Plugins', array('plugins', 'settings-page-tax'), $lit('page=settings&action=custom&id=tax', 'settings'));
+pin('a plugin link in Tools lights its group link and Plugins', array('plugins', 'translator'), $lit('page=plugins&action=renderplugin&route=translator', 'plugins'));
+pin('a renderplugin link lights itself', array('plugins', 'booking-bookings'), $lit('page=plugins&action=renderplugin&route=booking-admin', 'plugins'));
+pin('a core Billing link still lights Billing', array('billing', 'billing_core'), $lit('page=billing&action=core', 'billing'));
+$html = $render->invoke($m, $names, 'plugins', 'settings-page-tax');
+check('the group link is the one marked', strpos($html, 'id="settings-page-tax" href="' . $base . '?page=settings&action=custom&id=tax" aria-current="page"') !== false);
 
 harness_section('A declared settings page records its plugin');
 Plugins::runAs('plugin', 'tax', static function (): void {

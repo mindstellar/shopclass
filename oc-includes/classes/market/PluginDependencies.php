@@ -122,13 +122,12 @@ final class PluginDependencies
         if (SiteMode::declares($mode, $modes)) {
             return null;
         }
-        $name = is_array($info) && ($info['name'] ?? '') !== '' ? ucfirst((string) $info['name']) : __('This theme');
+        $name = is_array($info) && ($info['name'] ?? '') !== '' ? ucfirst((string) $info['name']) : __('The active theme');
+        $name = osc_esc_html($name);
 
-        return sprintf(
-            __('%1$s is installed but made for %2$s.'),
-            $name,
-            SiteMode::noun((string) ($modes[0] ?? ''))
-        );
+        return SiteMode::normalize((string) ($modes[0] ?? '')) === SiteMode::SHOP
+            ? sprintf(__('%s is installed but made for shop sites.'), $name)
+            : sprintf(__('%s is installed but made for classifieds sites.'), $name);
     }
 
     /**

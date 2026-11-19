@@ -288,6 +288,8 @@ $shopOnly = (new WebThemes())->loadThemeInfo('aisle');
 pin('a shop-only theme on a classifieds site is installed but made for shop sites', 'Aisle is installed but made for shop sites.', Deps::themeModeProblem($shopOnly));
 $GLOBALS['siteMode'] = 'shop';
 pin('...and is fine on a shop site', null, Deps::themeModeProblem($shopOnly));
+pin('a classifieds-only theme on a shop site says classifieds sites', 'Aisle is installed but made for classifieds sites.', Deps::themeModeProblem(array('name' => 'aisle', 'modes' => array('classifieds'))));
+pin('the theme name is escaped', '&lt;b&gt; is installed but made for classifieds sites.', Deps::themeModeProblem(array('name' => '<b>', 'modes' => array('classifieds'))));
 unset($GLOBALS['siteMode']);
 
 $ajax = (new ReflectionClass(MarketAjax::class))->newInstanceWithoutConstructor();

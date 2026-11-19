@@ -615,6 +615,16 @@ class Plugins
     }
 
     /**
+     * The folder name of the plugin whose code is running; null for core or a theme.
+     */
+    public static function currentPluginSlug(): ?string
+    {
+        $owner = self::currentOwner();
+
+        return $owner !== null && $owner[0] === 'plugin' ? $owner[1] : null;
+    }
+
+    /**
      * Run $fn as code of the plugin or theme $slug. Nests: the previous owner is back afterwards.
      *
      * @return mixed what $fn returns

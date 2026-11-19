@@ -151,11 +151,24 @@ if (!function_exists('osc_admin_section_label')) {
      */
     function osc_admin_section_label($section)
     {
-        if (!in_array($section, array(__('Settings'), __('Plugins')), true) || !function_exists('osc_is_moderator')) {
+        if ($section === '' || !function_exists('osc_is_moderator')) {
             return $section;
         }
         $menu = AdminMenu::getInstance();
         [$lit] = $menu->currentIds();
+        // A link a plugin added to another section shows under Plugins, so the path says so.
+        if ($lit === 'plugins') {
+            $titles = array();
+            foreach ($menu->get_array_menu() as $id => $item) {
+                $titles[$id] = is_array($item) ? ($item[0] ?? '') : '';
+            }
+            unset($titles['plugins']);
+
+            return in_array($section, $titles, true) ? (string) ($menu->get_array_menu()['plugins'][0] ?? $section) : $section;
+        }
+        if (!in_array($section, array(__('Settings'), __('Plugins')), true)) {
+            return $section;
+        }
 
         return in_array($lit, array('items', 'users', 'media', 'billing'), true)
             ? (string) ($menu->get_array_menu()[$lit][0] ?? $section)

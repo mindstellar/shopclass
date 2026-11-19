@@ -311,12 +311,13 @@ JavaScript it shows in place and the button jumps to it.
 ## Changing the listing rows
 
 Listing lists pass a context: `dashboard`, `user_items`, `public_profile` or
-`alert`. Three filters change a row; each gets the list, the item and the context. `listing_row_price` takes the price text and returns another.
+`alert`. Four filters change a row. Badges, meta and actions get the list, the item and the context; the price gets the text, the item and the context.
 
 | Filter | Entries |
 |---|---|
 | `listing_row_badges` | `['label' => …, 'class' => …]`; the class is an `.oe-badge` modifier. Core's keys: `status`, `premium`, `highlight`, `urgent`. A listing waiting for payment gets the `status` "Waiting for payment" on `user_items` |
 | `listing_row_meta` | `['text' => …]`, plus `'url'` for a link or `'datetime'` for a `<time>`. Core's keys: `category`, `date`, `views` |
+| `listing_row_price` | The price text as a string; return another. Plain text, core escapes it. Gets the item and the context |
 | `listing_row_actions` | `['label' => …, 'url' => …, 'class' => …, 'confirm' => …]`. Add `'method' => 'post'` and `'fields' => [name => value]` for a button in a form with the CSRF token. `'group' => 'promote'` puts it on the paid-upgrades line. Core's keys: `edit`, `delete`, and on `user_items` only `upgrade_<feature>` for each upgrade the owner can buy, or `publish` for a listing waiting for payment |
 
 The My listings tabs are All, Published, Awaiting validation and Expired, plus Waiting for payment (`itemType=unpaid`) when pay-at-post is on or the seller has one. Core escapes every value. Add a Renew link on expired listings:

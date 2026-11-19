@@ -171,6 +171,12 @@ main screen, then the header title. `osc_admin_breadcrumb()` draws it; a theme t
 the top bar calls it in the same place.
 
 Core groups the Plugins section by plugin: each active plugin's entries sit under a heading
-with its name, so a divider of your own there is not drawn. A plugin whose entries are all in
-another section also gets one link in its group: its settings page if it declares one, else
-its first screen.
+with its name, so a divider of your own there is not drawn. An entry you add to another
+section, such as Billing or Tools, shows in your group instead, with the same URL, id and label.
+The menu data keeps it under the section you chose.
+
+Core tells which plugin an entry belongs to by the plugin code that is running when it is added.
+A `renderplugin` link is also matched to its plugin by its `file` or by the file of its `route`.
+A divider a plugin adds to Plugins is dropped and replaced by the plugin's name heading.
+The sidebar and the top bar then show Plugins as the section of a moved entry.
+

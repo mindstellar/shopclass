@@ -297,11 +297,10 @@ final class SettingsPageRegistry extends Registry
         }
 
         $store = $this->normaliseStore($id, $spec['store'] ?? 'preference');
-        $owner = \Plugins::currentOwner();
 
         $this->entries[$id] = array(
             'id'         => $id,
-            'plugin'     => $owner !== null && $owner[0] === 'plugin' ? $owner[1] : '',
+            'plugin'     => \Plugins::currentPluginSlug() ?? '',
             'title'      => $spec['title'],
             'menu'       => $menu,
             'group'      => isset($spec['group']) && is_string($spec['group']) && preg_match(self::IDENTIFIER, $spec['group'])

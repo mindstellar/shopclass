@@ -65,6 +65,9 @@ class AdminMenu
     /** @var array<string,array<string,string>> plugin folder that added each entry, per section */
     private $aOwner = array();
 
+    /** @var array<string,string>|null active plugin folder => name, for entries that move into Plugins */
+    private $activeNames = null;
+
     /**
      * Start with an empty menu tree.
      */
@@ -711,6 +714,34 @@ class AdminMenu
      */
     public function currentIds(): array
     {
+        $ids  = $this->litIds();
+        $slug = $this->movedTo($ids[0], $ids[1]);
+
+        return $slug === null ? $ids : array('plugins', $ids[1]);
+    }
+
+    /**
+     * Whether the entry shows in its plugin's group under Plugins instead of in $menuId.
+     * Returns the plugin folder, or null when the entry stays where it is.
+     */
+    private function movedTo(string $menuId, string $key): ?string
+    {
+        $slug = $menuId === 'plugins' ? null : ($this->aOwner[$menuId][$key] ?? null);
+        if ($slug === null) {
+            return null;
+        }
+        $this->activeNames ??= self::activePluginNames($this->aOwner);
+
+        return isset($this->activeNames[$slug]) ? $slug : null;
+    }
+
+    /**
+     * The section and entry ids the request lights, before an entry is moved into Plugins.
+     *
+     * @return array{0:string,1:string}
+     */
+    private function litIds(): array
+    {
         $actual_url  = urldecode(Params::getServerParam('QUERY_STRING', false, false));
         $actual_page = Params::getParam('page');
         // A refused save redraws its form from a POST, which has no query string.
@@ -735,6 +766,10 @@ class AdminMenu
             $declared = osc_settings_page(Params::getParamString('id'));
             if ($declared !== null && $declared['menu'] === '') {
                 // A page reached only through tabs lights the screen its tabs belong to.
+                $lit = self::current($this->get_array_menu(), $actual_url, $actual_page, osc_is_moderator(), array(osc_admin_base_url(true) . '?', osc_admin_base_url()));
+                if ($lit[0] === 'plugins' && $lit[1] !== '' || $this->movedTo($lit[0], $lit[1]) !== null) {
+                    return $lit;
+                }
                 $tabs = is_callable($declared['tabs']) ? ($declared['tabs'])() : $declared['tabs'];
 
                 return self::forTabs($this->get_array_menu(), is_array($tabs) ? $tabs : array(), osc_is_moderator(), array(osc_admin_base_url(true) . '?', osc_admin_base_url()))
@@ -806,7 +841,7 @@ class AdminMenu
                 $groups[$cur]   = array('id' => $cur, 'title' => $entry[0], 'entries' => array());
                 continue;
             }
-            if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
+            if (($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') || $this->movedTo('settings', (string) $key) !== null) {
                 continue;
             }
             $row = array('title' => $entry[0], 'url' => $entry[1], 'id' => $entry[2]);
@@ -839,6 +874,12 @@ class AdminMenu
                 $out[$entry['id']] = array('path' => array($this->aMenu['settings'][0] ?? 'Settings', $group['title'], $entry['title']), 'url' => $entry['url']);
             }
         }
+        foreach ($this->aMenu['settings']['sub'] ?? array() as $key => $entry) {
+            $slug = $this->movedTo('settings', (string) $key);
+            if ($slug !== null && strpos($entry[1], 'divider_') !== 0 && (!$isModerator || ($entry[4] ?? $entry[3]) === 'moderator')) {
+                $out[$key] = array('path' => array($this->aMenu['plugins'][0] ?? 'Plugins', $this->activeNames[$slug], $entry[0]), 'url' => $entry[1]);
+            }
+        }
         $own = array('items_settings', 'users_settings', 'media_settings', 'billing_settings');
         foreach ($this->aMenu as $menuId => $menu) {
             if ($menuId === 'settings' || !self::isSection($menu)) {
@@ -854,7 +895,8 @@ class AdminMenu
                 if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
                     continue;
                 }
-                $out[$key] = array('path' => array($menu[0], $entry[0]), 'url' => $entry[1]);
+                $slug      = $this->movedTo($menuId, (string) $key);
+                $out[$key] = array('path' => $slug === null ? array($menu[0], $entry[0]) : array($this->aMenu['plugins'][0] ?? 'Plugins', $this->activeNames[$slug], $entry[0]), 'url' => $entry[1]);
             }
         }
 
@@ -916,14 +958,15 @@ class AdminMenu
      */
     private function setOwner(string $menuId, string $submenuId, string $url): void
     {
-        $owner = Plugins::currentOwner();
-        $slug  = $owner !== null && $owner[0] === 'plugin' ? $owner[1] : self::pluginInUrl($url);
+        $slug = Plugins::currentPluginSlug() ?? self::pluginInUrl($url);
         if ($slug === null || $slug === '') {
             unset($this->aOwner[$menuId][$submenuId]);
+            $this->activeNames = null;
 
             return;
         }
         $this->aOwner[$menuId][$submenuId] = $slug;
+        $this->activeNames                 = null;
     }
 
     /**
@@ -944,18 +987,17 @@ class AdminMenu
     }
 
     /**
-     * One group per plugin with admin screens, sorted by name: its links in the Plugins
-     * section, or one link to its settings page, else its first screen elsewhere.
+     * One group per plugin with admin screens, sorted by name: every link the plugin added,
+     * whichever section it registered it in.
      *
-     * @param array<string,string> $names    active plugin folder => plugin name
-     * @param array<string,string> $settings plugin folder => its settings page url
+     * @param array<string,string> $names active plugin folder => plugin name
      *
      * @return array<int,array{plugin:string,title:string,entries:array<int,array{title:string,url:string,id:string}>}>
      */
-    public function pluginGroups(array $names, array $settings = array(), bool $isModerator = false): array
+    public function pluginGroups(array $names, bool $isModerator = false): array
     {
         $groups = array();
-        foreach (array('plugins' => $this->aMenu['plugins'] ?? array()) + $this->aMenu as $menuId => $section) {
+        foreach ($this->aMenu as $menuId => $section) {
             foreach ($section['sub'] ?? array() as $key => $entry) {
                 $slug = $this->aOwner[$menuId][$key] ?? null;
                 if ($slug === null || !isset($names[$slug]) || strpos($entry[1], 'divider_') === 0) {
@@ -964,13 +1006,7 @@ class AdminMenu
                 if ($isModerator && ($entry[4] ?? $entry[3]) !== 'moderator') {
                     continue;
                 }
-                if ($menuId === 'plugins') {
-                    $groups[$slug]['entries'][] = array('title' => $entry[0], 'url' => $entry[1], 'id' => $entry[2]);
-                } elseif (!isset($groups[$slug])) {
-                    $groups[$slug]['entries'][] = isset($settings[$slug])
-                        ? array('title' => __('Settings'), 'url' => $settings[$slug], 'id' => 'plugin-link-' . $slug)
-                        : array('title' => $entry[0], 'url' => $entry[1], 'id' => 'plugin-link-' . $slug);
-                }
+                $groups[$slug]['entries'][] = array('title' => $entry[0], 'url' => $entry[1], 'id' => $entry[2]);
             }
         }
         $out = array();
@@ -987,9 +1023,8 @@ class AdminMenu
      * under a heading with its name. A plugin's own headings give way to that one.
      *
      * @param array<string,string> $names
-     * @param array<string,string> $settings
      */
-    private function renderPluginList(array $names, array $settings, $activeMenu, $activeSubmenu): string
+    private function renderPluginList(array $names, $activeMenu, $activeSubmenu): string
     {
         $isModerator = osc_is_moderator();
         $sub         = array();
@@ -998,7 +1033,7 @@ class AdminMenu
                 $sub[$key] = $entry;
             }
         }
-        foreach ($this->pluginGroups($names, $settings, $isModerator) as $group) {
+        foreach ($this->pluginGroups($names, $isModerator) as $group) {
             $sub['divider_plugin_' . $group['plugin']] = array(osc_esc_html($group['title']), 'divider_plugin_' . $group['plugin'], 'plugins');
             foreach ($group['entries'] as $entry) {
                 $sub['plugin_entry_' . $entry['id']] = array($entry['title'], $entry['url'], $entry['id'], 'plugins');
@@ -1033,24 +1068,6 @@ class AdminMenu
         }
 
         return $names;
-    }
-
-    /**
-     * The first declared settings page of each plugin, by folder.
-     *
-     * @return array<string,string>
-     */
-    private static function pluginSettingsUrls(): array
-    {
-        $urls = array();
-        foreach (function_exists('osc_settings_pages') ? osc_settings_pages() : array() as $id => $page) {
-            $slug = $page['plugin'] ?? '';
-            if ($slug !== '' && !isset($urls[$slug])) {
-                $urls[$slug] = osc_settings_page_url($id);
-            }
-        }
-
-        return $urls;
     }
 
     /**
@@ -1295,7 +1312,7 @@ class AdminMenu
             return $this->renderGroupList($parentMenuId, $activeMenu, $activeSubmenu);
         }
         if ($parentMenuId === 'plugins' && !$grouped) {
-            return $this->renderPluginList(self::activePluginNames($this->aOwner), self::pluginSettingsUrls(), $activeMenu, $activeSubmenu);
+            return $this->renderPluginList($this->activeNames ??= self::activePluginNames($this->aOwner), $activeMenu, $activeSubmenu);
         }
         $str =
             '<ul class="sidebar-submenu collapse list-unstyled ' . ($activeMenu === $parentMenuId ? 'show' : '') . '" id="' . $parentMenuId
@@ -1311,6 +1328,9 @@ class AdminMenu
         $visible = array();
         foreach ($subMenu as $key => $arrSubMenu) {
             $isDivider = strpos($arrSubMenu[1], 'divider_') === 0;
+            if (!$isDivider && $this->movedTo((string) $parentMenuId, (string) $key) !== null) {
+                continue;
+            }
             if (!$isDivider) {
                 $capability = $arrSubMenu[4] ?? $arrSubMenu[3];
                 if ($is_moderator && $capability !== 'moderator') {
