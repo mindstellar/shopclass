@@ -7,276 +7,85 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
 ### New
-- `listing_row_price` filter changes the price text of a listing row in account lists.
-- `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
-- With `OSC_DEBUG_LOG` on, `oc-content/.htaccess` gets a rule that blocks `*.log` files on Apache.
-- Widget and section text fields can be set per language with `'translate' => true`.
-- The site title and description in Settings → General are set per language; the API exposes them as `site_title_translations` and `site_description_translations`.
-- `osc_settings_text_value()` reads a per-language setting with the default-language fallback; `osc_sendMail()` takes a `locale` key.
-- The admin bell warns when a payment method is on but has no keys.
-- The admin listing form's Location is one box that suggests cities with their region. Themes can print it on the posting form with `osc_place_field()`.
-- **Location field** in Listings → Settings picks one box, separate country, region and city boxes, or dropdown lists on the post and edit forms. `osc_place_field()` takes `style` and `part_class`.
-- **Only places from the list** in Listings → Settings refuses a place typed by hand, on the web form, admin, API and imports.
-- `GET /api/v1/cities?q=` finds cities in any region by the start of their name, in any language.
-- A bell in the top bar lists site problems and plugin warnings, with Hide for 7 days and a Notices screen.
-- Price, photos and location can each be Required or Optional, and price and photos Off, on the Listings settings screen; photos can require a minimum count.
-- A custom field can be hidden from visitors: the poster and admins still see it, the listing page and the public API do not. A hidden field cannot be searchable.
-- Invoices and credit notes show tax per line, and a refund of units takes those units' own tax. Tax plugins report it with `CartTaxLines::setLineTax()`.
-- Checkout fields: a plugin can ask the buyer for a tax number or other details with the `checkout_fields` event; they print on the invoice and in the Invoices CSV.
-- The API quote has `checkout_fields` and the order takes their answers in `fields`; quote and order lines carry their own `tax`.
-- `osc_item_saved_count()` shows how many wishlists hold a listing.
-- `AvatarUpload::store()` saves an image file on disk as a user's avatar.
-- `osc_sitemap_url()` returns the sitemap URL.
-- A theme can declare `osc_add_theme_support('comments', false)`; Comments settings then notes the theme shows no comments.
-- `AccountService::registerVerified()` makes an active account for an e-mail a sign-in provider already verified, for social login.
-- **Settings → General → Site is a** sets classifieds or shop. In shop mode only admins post and shoppers see buyer pages only. `osc_site_mode()` reads it.
-- The installer asks for the site type and offers sample data; the CLI takes `--site-type` and `--sample-data`. **Listings** offers to remove the sample data later.
-- New category trees for classifieds and shop sites, on new installs only.
-- The web installer is redesigned: admin colours in light and dark, one fixed-height card, a short server check, and an install step that lists each task and moves its bar only when a task finishes. Anything that could not be done is listed under To finish later.
-- Listings can be products with option rows (Colour x Size and so on), each with its own SKU, price, stock, weight and shipping class.
-- A variant can have an old price shown crossed out, and says how many are left when stock is low.
-- **Goods orders**: a cart is priced on the server and paid by a card plugin, bank transfer or cash on delivery. Stock is taken when the order is placed and given back on refund or cancel.
-- Cash on delivery orders ship before payment, are marked paid on delivery, and are never cancelled once shipped.
-- An unpaid card order is cancelled after the stock hold time, and its stock goes back.
-- **Billing → Orders** shows a goods order's items, address and buyer, and marks it shipped (with tracking), delivered or cancelled. A **To ship** list and count show what waits to ship.
-- Orders have a **Processing** status, set by hand or by the first partial shipment.
-- An order can ship in parcels: pick the quantities, add tracking per parcel, and the buyer gets a mail for each. Mark an order packed as an admin note.
-- Each order keeps a history of its status changes, shown on the admin order page.
-- **Billing → Orders** can be searched by order number, name or e-mail, marks partly refunded orders, and lists refunds in the order history.
-- **Settings → Billing → Shop** sets the delivery charge, free delivery, cash on delivery and where it is offered, the stock hold time, open unpaid orders per buyer and the order number prefix.
-- Shoppers keep up to 10 delivery addresses and pick one at checkout.
-- Buyers get an e-mail when an order is placed, paid, shipped, delivered, cancelled or refunded; the owner gets one for each new order.
-- Signed-in users keep a wishlist and back-in-stock or price-drop alerts.
-- Comments can carry a 1 to 5 star rating (Settings → Comments).
-- A refund the provider is still processing shows as sent, and the order becomes refunded when it finishes. Gateways return `CallbackResult::refundPending()`.
-- Digital Goods 2.4.0 adds a buyer Downloads page.
-- **Pay at the end of posting**: over the limit, the listing is saved and paid for on the last step. Switch: `Settings → Billing → Pricing → Take payment at the end of posting`.
-- A listing waiting for payment takes no slot and shows as "Waiting for payment" on My listings and in the admin; an admin can publish it without payment.
-- A seller gets a reminder e-mail a day before an unpaid listing is deleted.
-- On-site messaging between buyers and sellers, with an inbox in the account and admin review under Listings → Messages. Switch: Users → Settings, off by default.
-- Messages arrive without a reload, with Seen marks and a typing indicator; the Docker image streams them through nchan (`OSC_LIVE`).
-- Browser notifications for new messages, switched on by the admin and then by each user.
-- Search can keep results to a map area (`bbox=west,south,east,north`) when distance search is on. Themes read it with `osc_search_bbox()`.
-- Country, region and city names can be set per language in their edit drawers; the site and the API show the visitor's language.
-- Option and custom-field filters read a filter index (`t_item_facet`), built in the background after the update. `search:reindex` or System info → Database rebuilds it.
-- **Listings → Settings → Search count limit** stops search counts at a number and shows "1,000+" past it. Themes use `osc_search_total_text()` and `osc_search_total_capped()`.
-- **Appearance → Menus** builds the main, footer and extra menus from categories, pages and links. Themes read them with `osc_menu()` and name their menu places with `osc_add_theme_support('menus', …)`.
-- A theme menu place can declare a `default` menu that the owner edits in Appearance → Menus, and menus can hold built-in pages (Home, Browse, Contact, Publish a listing, Log in, Register) whose links follow the permalink setting.
-- The **Page builder** has layout blocks: **Image and text**, **Columns**, **Heading** and **Button**. They stack on phones and appear only on pages, not in Appearance → Widgets.
-- Page builder pages are edited with **Edit blocks**: the block list beside a live preview of the page, saved as a draft until **Publish**. Types are picked from labelled tiles and Custom Code sits apart with a warning.
-- **Page settings → Hide the page title** hides a page's title on screen; screen readers and search engines still get it. Themes read it with `osc_static_page_title_hidden()`.
-- **Appearance → Customise** edits a theme's sections and look beside a live preview, saved as a draft until Publish.
-- The Widgets screen can hide a widget without deleting it.
-- Activating a theme that needs plugins installs and activates them from one screen.
-- A theme or plugin can declare `modes` and the plugins it needs, in `shopclass.json` or the `Modes:` and `Requires Plugins:` headers. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
-- A widget type can set `locations` in `osc_register_widget()` to the sections it fits.
-- A theme can drop core's styles for its fallback pages with `osc_add_theme_support('core-styles', false)`.
-- The shop hooks and `translation_load_after` (`TranslationLoaded`) are typed events; old callbacks work as before. See [Hooks](https://shopclass.org/docs/developers/hooks/).
-- The cart hooks (`cart_shipping_methods`, `cart_shipping_lines`, `cart_tax_lines`, `cart_discount_lines`, `cart_totals`, `cart_free_over`, `cart_problems`, `cart_needs_shipping`, `cart_item_add_after`, `cart_checkout_before`) let shipping, tax and promotion plugins price a cart.
-- `billing_order_failed`, `billing_tracking_url`, `billing_receipt_details`, `billing_order_return_url` and the `email_order_<kind>_title` and `_description` filters for gateway and order plugins; `OrderStore::pendingBefore()` lists a gateway's old pending orders.
-- `osc_api_get()` and `osc_api_call()` call the API from PHP inside the site, with no key. `osc_admin_is_browsing()` tells the site's own API calls that an admin is browsing.
-- `osc_kv_list()`, `osc_kv_increment()`, `osc_billing_user_order_count()` and `osc_plugin_data_path()` (a private folder per plugin).
-- Shop API: `GET /cart/quote`, `account/cart`, `account/orders`, `account/addresses`, `account/wishlist` and `account/alerts`.
-- The REST order has `shipments[]` (one per parcel) and `packed_at`.
-- New hooks `billing_order_processing` and `billing_shipment_add_after`. One parcel that ships a whole paid order fires `billing_order_shipped`, not `billing_order_processing`.
-- Messaging API: `/account/conversations`, `/admin/conversations`, `/admin/messages`, and the webhooks `message.created` and `conversation.reported`.
-- `POST /listings/{id}/publish` and `POST /admin/listings/{id}/publish` publish a listing waiting for payment.
-- The API serves `GET /pages`, `/pages/{id|name}`, `/menus` and `/seo`, and the site document carries `mode` and `features.shop`.
-- `GET /listings` takes `page`, `ids`, `option[name][]`, `bbox`, `in_stock=true` and `on_sale=true`, and answers `compare_at`, `on_sale`, `low_stock` and `meta.total_capped`.
-- `GET /categories` takes `roots=true` and `include=cover`. `PATCH /admin/regions|cities` takes `names`.
-- Every bundled theme reads Appearance → Menus, and a child theme takes its parent's menu places, widget sections and route files.
-- The pay step shows the amount, bank details with Copy buttons and the deletion date; the post form says Save and pay when a listing will wait for payment.
-- Shop admin: one test-mode notice for all payment methods, filter chips, a Waiting for payment tab, and courier suggestions on the order page (`admin_billing_carriers`).
-- Tests also run as a shop site in CI.
-- **Listings → Settings** can make a name required when a guest posts a listing; it is off by default.
-- Addresses follow the country: the account form and checkout ask for a state or county only where people write one, label the postcode as that country does, and check its shape. `osc_address_formats()` and `osc_address_form_script()` let a theme use the same rules, and `osc_address_text()` writes an address in the country's order.
-- The State box in an address form lists the shop's own regions for the chosen country, and the Country box is hidden when the shop has one country. A theme can listen for `osc:address-country`.
-- Each currency has a **Decimals** setting (JPY 0, KWD 3, most 2) that every price, order, receipt and e-mail follows; the API shows it as `decimals`.
-- `GET /countries` lists each country's `address_format`.
-- **Settings → Billing → Shop** sets product weights in grams and kilograms or ounces and pounds. Weights stay stored in grams, and the API always uses grams. `osc_weight_unit()`, `osc_weight_display()`, `osc_weight_input()` and `osc_weight_parse()` read and convert them.
-- The installer offers Stripe and PayPal beside Razorpay.
-- **Invoices and credit notes**: every paid order gets a numbered invoice (`INV-2026-00042`), and every refund a credit note (`CN-2026-00003`) with its tax shown in proportion. Numbers restart each year. **Settings → Billing → Receipts** turns them off and sets the prefixes; **Billing → Invoices** lists them with a CSV download. Orders paid before 7.1 get none.
-- Buyers see the invoice and credit notes in their account and in the receipt mail; the REST order has `documents[]` and `refunded_total`.
-- **Partial refunds**: **Refund part** on a shop order refunds an amount or some units, with a reason and an option to return them to stock. The order shows **Partly refunded** until the credit notes add up to what was paid, then becomes refunded. Only orders with an invoice can be refunded in part.
-- Stripe, PayPal and Razorpay refund part of an order through the provider. A gateway adds this with `PartialRefundableGateway::refundPart()`; other gateways record the refund only.
-- Hooks `billing_document_compose` and `billing_document_issued`; the buyer gets a mail when a partial refund is made (`email_order_part_refunded`).
-- Shoppers see the products they follow on the Alerts page, each with its product and a Stop button.
-- A theme names its buyer order page as `order_url` in `shopclass.json`, and order e-mails link to it.
-- A plugin installs or turns on only once the plugins it requires are on; a theme's "Install and activate all" gives a plugin a second try when its own requirement came later in the list.
-- **Categories** is a tree table with status tabs, search, bulk actions, **Add subcategory**, **Move to…** and Undo.
-- Deleting a category shows its real subcategory and listing counts, offers **Disable instead**, and the button states the cost.
-- **Set expiry…** can keep listings' end dates or give them new ones, and shows how many would end at once.
-- A theme can declare `osc_add_theme_support('category-depth', N)` to limit how deep categories nest; the admin and the API both enforce it.
-- Categories has a **⋯** actions sheet on phones.
-- `osc.sortable(el, {tree: {…}})`, `osc.flatTree`, `osc.toast(text, {undo, ms})` and `osc.announce(el, text)` are documented for plugin screens.
-- The admin reads right to left for a right-to-left admin language: the page mirrors, and arrows, selects and joined buttons turn with it.
-- Settings > General has a Default admin language, and the admin login offers it.
+- **Shop mode**: Settings → General → Site is a sets classifieds or shop. In a shop only admins post, and visitors see buyer pages only. The installer asks for the site type and can add sample data.
+- **Products with options**: Colour × Size and so on, each with its own SKU, price, stock, weight and shipping class, an old price shown crossed out, and a low-stock note.
+- **Cart and checkout**: pay by card (Stripe, PayPal, Razorpay), bank transfer or cash on delivery. Stock is taken on order and given back on refund or cancel; unpaid card orders are cancelled after the stock hold time.
+- **Orders**: Billing → Orders shows a To ship list, ships in parcels with tracking, and marks orders processing, delivered or cancelled, with a history of each change.
+- **Invoices, credit notes and partial refunds**: every paid order gets a numbered invoice and every refund a credit note, with tax per line. Refund part of an order by amount or units; card refunds go through the provider.
+- **Shop settings** (Settings → Billing → Shop): delivery charge, free delivery, cash on delivery, stock hold time, order number prefix and weight units.
+- **Buyer account**: up to 10 saved addresses, a wishlist, back-in-stock and price-drop alerts, and order e-mails for every step (placed, paid, shipped, delivered, cancelled, refunded).
+- **Star ratings** on comments (Settings → Comments).
+- **Addresses and money for any country**: address forms follow the country, and each currency has its own number of decimals.
+- **Pay at the end of posting**: a listing over the free limit is saved and paid for on the last step, with a reminder before an unpaid listing is deleted.
+- **Messaging** between buyers and sellers, with an inbox, live delivery, Seen marks, typing and browser notifications. Admins review messages under Listings → Messages.
+- **Map area search**, and the free **Map search** plugin to use it.
+- **Place names in each language** for countries, regions and cities.
+- **Location field**: one box with city suggestions, separate boxes, or dropdowns; Only places from the list refuses a place typed by hand.
+- **Faster option and custom-field filters**, and a search count limit that shows "1,000+".
+- **Appearance → Menus** builds the main, footer and extra menus from categories, pages and links.
+- **Appearance → Customise** edits a theme beside a live preview, saved as a draft until Publish.
+- **Page builder** layout blocks (Image and text, Columns, Heading, Button) and an Edit blocks screen with a live preview.
+- **Per-language text**: site title and description, theme settings, Customise fields and widget texts can differ per language.
+- **Notices bell** in the admin top bar lists site problems and plugin warnings.
+- **Plugins**: each plugin's pages are grouped under its name in the Plugins menu, a pending update has an "Update to version X" button, and a theme installs the plugins it needs from one screen.
+- **Categories** screen rebuilt: a tree table with search, bulk actions, Add subcategory, Move to… and Undo.
+- **Installer** redesigned, with Stripe and PayPal beside Razorpay.
+- **Activity log** with plain names, a date filter and one row per action.
+- **Right-to-left admin** for right-to-left languages, and a Default admin language setting.
 
 ### Breaking
 - Shopclass now needs PHP 8.2 or newer; the updater refuses a release the server's PHP cannot run.
 - Sites update to 7.1 from 7.0.12; an older 7.0 site is offered 7.0.12 first.
 - Releases ship only `shopclass_v*.zip`; `osclass_v*.zip` is no longer built.
-- Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`, grouped by feature. Class names do not change; code that loads a class file by path must use the new path.
-- `Category::updateByPrimaryKey()` no longer changes listing end dates when `i_expiration_days` is saved; use `CategoryService::setExpiry()`.
-- `Item::updateExpirationDate()` with `0` or `'0'` now sets the listing to never end; before it did nothing.
-
-### Changed
-- Status filters on list screens (Plugins, Listings, Categories, Media, Notices) are now chips in the table toolbar, apart from the page tabs. Plugins can draw them with the new `osc_admin_filter_chips()`.
-- The Plugins menu groups each plugin's links under its name; links a plugin adds to Billing, Tools or another section move there too. A plugin screen's top-bar path reads Plugins › plugin › page.
-- The Activity log shows plain section and action names, folds the rows one action wrote into one, has a date filter, and Clear log sits in the table toolbar.
-- A pending plugin or theme update shows an "Update to version X" button where it is listed; the Plugins Status column stacks its badges.
-- Admin sidebar: sections open on their own and stay under the pointer, one pill marks the current page, and the rail collapses with the icons still.
-- Admin messages say what happened and what to do next, without "successfully", "correctly" or "Ajax". Reworded messages lose their old translations until retranslated.
-- Admin results share one path: `osc.notify()` behind `setJsMessage` and `osc.toast`, a sticky stack with "and N more", ok and info hide after 7 s, and one screen-reader region.
-- Admin screens share one body, sections and panels with gap spacing; Statistics, the dashboard, Locations and the order screens use them.
-- Settings → Security has one tab row: Sign-in, Captcha, Spam filter (Akismet and keywords) and Limits; Ban rules moved to Users and message rules to Listings → Messages → Settings. Old links still work.
-- A plugin page's heading names the sidebar section it sits in; with billing off, Billing pages sit under a Billing heading in Settings.
-- Widgets and Menus show a dashed drop slot while dragging, and empty sections show a quiet one-row slot.
-- Fields a plugin adds to the register, login, comment and contact forms sit above the captcha.
-- Categories and Menus: drag left or right to change nesting, or use the arrow keys on the handle.
-- Saving a category no longer re-dates its listings unless you choose new end dates.
-- Disabling a category now disables every subcategory below it, at any depth.
-- `Field::findByItem()` is deprecated; use `FieldQuery::forItem()`. It still returns hidden fields, so a theme or plugin that prints its values should switch. `Item::metaFields()` now leaves out hidden fields.
-- Plugins and themes no longer show a "Tested up to" warning. Only "Requires Shopclass" and "Requires PHP" are checked.
-- An admin screen's title, its buttons and its icon actions share one header row, and the top bar shows the path ("Settings › Comments"). The phone menu button matches the top bar.
-- With **Automatic cron process** on, due background jobs such as order e-mails run within a minute of a visit, not five.
-- Order e-mails link the buyer's order through `osc_billing_order_url()`; a theme sets its own order page with the `billing_order_url` event.
-- A paid order's e-mail says "Your order #12 is paid", greets the buyer by name and links the order page.
-- A Page builder page's **Edit** opens its block editor, where the **Page text** block edits the page text per language; **Page settings** opens the page form.
-- One image picker: upload or drop a file, pick from the library, or add a link. The page editor has one image button.
-- Pictures in text have buttons to wrap text left or right, centre them or clear it. Text blocks choose reading or full width and a left or centred position, and **Expand** opens a text field's editor large. Saving a page keeps it open.
-- Listing settings: "Users have to validate their listings" is now **Posters confirm new listings by e-mail**, and "Logged in users don't need to validate their listings" is now **Signed-in posters skip the e-mail confirmation**.
-- `billing_order_shipped` fires only when the last item ships; every parcel fires `billing_shipment_add_after`. A paid order may now be `processing`, so test `Order::isPaid()` rather than `'paid'`.
-- Money uses the currency's decimals, not the language's: `Money::format()`, `osc_format_price()` and `osc_prepare_price()` now print JPY with none and KWD with three.
-- An address no longer needs a state or postcode everywhere, and a phone may start with `+` and a country code; the fixed 8-digit phone and 6-digit PIN rules are gone. Money no longer follows the language's decimal setting.
-- Core now bundles symfony/http-client 7.4 (was 5.4) with async-aws/s3 3.5; a plugin that implements Symfony's HTTP client interfaces needs the 7.x signatures.
-- `ImageProcessing` and `ImageResizer` are deprecated; use `mindstellar\image\Processor`.
-- A listing photo upload is turned upright and saved once.
-- Prices in Indian locales (en_IN, hi_IN) show Indian digit grouping, e.g. ₹12,34,567.
-- An update to a new X.Y release replaces `oc-admin` and `oc-includes` whole, so files the release dropped are removed. The database step then runs on its own page.
-- In shop mode there is no public user profile; the page and `GET /users/{id}` answer 404.
-- In shop mode credit packages are hidden: the Packages and Credits menus, the buy-credits and pay-to-publish pages, and `POST /listings/{id}/publish`.
-- In shop mode a listing can be posted in a parent category, and its location is optional (the store address is used).
-- The admin listing form is grouped into sections.
-- Settings is grouped by area (General, Content, Email, Security, System), with a "Find a setting" box in the top bar. Ban rules are under Users; URLs are unchanged.
-- Settings › Languages marks the site and admin default languages and can change either one.
-- When the default language is empty or missing, core uses en_US, else the first language that is on.
-- Searches ignore anything past 191 characters of a filter value, and match a NUMBER or DATE range only on numeric values.
-- Option names that differ only by case or accent count as one filter.
-- Core works with MariaDB 11.6+ snapshot isolation. Plugin writes should follow the [Write transactions](https://shopclass.org/docs/developers/database/) rule.
-- A subclass of `Search` that overrides `addCondition()`, `addFieldFilter()` or `countMatches()` must accept the new optional last argument.
-- `sql_search_conditions` runs twice per search, once for the page list and once for the count.
-- Raw SQL writes to `t_item_meta` need Rebuild filter index under System info → Database.
-- `GET /listings` reads at most 3 `option[name][]` names.
-- `item_increase_stat` and `item_decrease_stat` fire after the commit, so they now come after `posted_item` and `edited_item`.
+- Namespaced core classes moved from `oc-includes/osclass/classes/` to `oc-includes/classes/`. Class names do not change; code that loads a class file by path must use the new path.
+- Plugin admin links are shown only under Plugins → the plugin's name, also when the plugin adds them to Billing, Users or Tools.
+- In shop mode there is no public user profile, and credit packages are hidden.
+- Money uses the currency's decimals, not the language's: JPY prints with none and KWD with three.
+- `billing_order_shipped` fires only when the last item ships; a paid order may now be `processing`, so test `Order::isPaid()` rather than `'paid'`.
 - `posted_item` and the `listing.created` webhook fire when a held listing is published, not when it is saved.
-- Core's front pages use shared `.oe-*` classes and the `osc_gui_*()` helpers; the old `.oe-bill-*` names still work.
-- `osc_admin_panel_open()` prints a light `osc-panel` block instead of `widget-box`; `widget-box` stays for dashboard and stats widgets.
-- Cart discounts are worked out before tax, so a tax plugin taxes the discounted price.
-- A cart stays in the site currency; an item in another currency is refused with a reason.
-- When the chosen delivery method is not offered, the quote uses the first offered one instead of free delivery.
-- Cash on delivery and bank transfer take any currency, and the COD fee follows the cart currency.
-- Amounts read in one style everywhere ("₹1,234", "−₹150"), including the API's display strings.
-- Once a listing waiting for payment goes live, its other open orders are cancelled.
-- A language package can set its thousands separator and decimal point.
-- Themes that turn off core's styles should style the new pay step classes (`oe-bill-*`, `oe-callout`, `oe-copy*`).
-- Appearance → Themes says when you have unpublished Customise changes.
-- Unused admin actions are gone: ajax `bulk_actions`, `reinstall_osclass`, `location`, `location_impact`, `fields_order`; Appearance `add_widget`; Tools `import_post`, `backup_post`, `backup-sql*`, `backup-zip*`, `system_info`.
-- 21 unused helpers, methods and classes are deprecated and go in 8.0, each naming its replacement where one exists, among them `osc_auto_update()`, `osc_csrf_name()`, `osc_mod_rewrite_loaded()`, `osc_dbdump()`, `SystemInfo` and `FormBuilder` (use `osc_register_settings_page()`).
-- The PclZip fallback and the `pclzip/pclzip` package are removed; zip files use PHP's zip extension, which was already required.
-- Core escapes and strips tags only through `Escape` and `Sanitize` (new `Escape::text()`, `Escape::htmlEntities()`, `Escape::htmlKeepEntities()`, `Sanitize::stripTags()`); `osc_esc_html()` and `osc_esc_js()` call them, with the same output. A test blocks direct calls.
-- Under the header's title, section headings are h2 and sub-sections h3, so the outline skips no level; they look the same.
-- A plugin screen's title from `osc_admin_plugin_page()` is its header title row; `heading` sets a different one.
-- Admin notices and the owner's new-order mail go to the first administrator when the site has no contact e-mail.
-- Every admin form ends in one sticky, right-aligned Save bar labelled Save changes.
-- Admin lists and report tables share `osc_admin_data_table()` and `osc_admin_table()`, with Status first after the checkbox.
+- Core bundles symfony/http-client 7.4 (was 5.4); a plugin that implements its interfaces needs the 7.x signatures.
+- Unused admin actions are removed, and 21 unused helpers, methods and classes are deprecated for removal in 8.0.
 
 ### Security
-- Code acting as an admin with no admin signed in gets admin rights only in the admin area, cron, jobs and the CLI. Plugin code that needs them elsewhere wraps the call in `Actor::runAsSystem()`.
+- Code acting as an admin with no admin signed in gets admin rights only in the admin area, cron, jobs and the CLI.
 - A plugin download link from the catalogue is shown only when it is an https address.
-- An IP ban rule can be an IPv6 address or a CIDR range (`203.0.113.0/24`, `2001:db8::/32`); before, IPv6 visitors could not be banned by IP.
+- An IP ban rule can be an IPv6 address or a CIDR range.
+
+### Changed
+- The admin is easier to scan: Settings is grouped by area with a "Find a setting" box, every form ends in one Save bar under its fields, and list screens share one table with Bulk actions first.
+- Admin messages say what happened and what to do next. Reworded messages lose their old translations until retranslated.
+- With Automatic cron on, background jobs such as order e-mails run within a minute of a visit, not five.
+- An update to a new X.Y release replaces `oc-admin` and `oc-includes` whole, so files the release dropped are removed.
+- Listing photos are turned upright and saved once.
+- Disabling a category disables every subcategory below it, and saving a category no longer changes its listings' end dates.
 
 ### Performance
-- Option filter counts on 232,000 listings: 446 to 53 ms on MariaDB, 526 to 208 ms on MySQL; number and date ranges under 5 ms.
-- API calls a theme makes on one page share their work, and API listing searches are cached, so a home page runs about half the queries.
-- Deep admin order pages use a deferred join (page 500 of 100,000 orders: about 100 ms to 2 ms).
-- Product alerts find their listing through an indexed column (migration 0089).
-- Faster shop search by price, rare options and `on_sale` (migration 0093).
+- Option filter counts on 232,000 listings: 446 to 53 ms on MariaDB, 526 to 208 ms on MySQL.
+- A theme's API calls on one page share their work, so a home page runs about half the queries.
+- Deep admin order pages load in about 2 ms instead of 100 ms.
 
 ### Fixed
-- Showing a hidden widget again leaves its settings as they were.
-- The theme plugins screen says when a theme is made for the other kind of site.
+- A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated.
 - A language that shares its short name with another, such as English (Australia), can be installed again.
-- A language that cannot be saved now shows an error on import and upload, with the reason in the activity log.
-- The languages table no longer says "filtered from 9 total results".
-- The language import list is in alphabetical order.
-- The Edit language screen has a Save changes button again.
-- Installing or updating a language keeps e-mail templates the admin edited, names them in a notice, and only writes to e-mail pages.
-- Language bulk actions with nothing ticked say "No language selected." before asking to confirm.
-- Uploading a language that is already installed says it was updated.
-- The Edit language message names the full language, such as English (Australia).
-- Debug mode no longer adds a timing comment or the query panel after a JSON reply, so Customise saves work.
-- The Plugins table shows "Update available" under the plugin's name, not in the Status column.
-- `GET` and `PATCH /api/v1/admin/settings` no longer fail with a server error.
-- A part refund of a unit with tax in its price refunds that price, not a cent more.
-- The place picker suggests place names in the language picked on the site.
-- Tracking added with **Edit tracking** and no link gets the carrier's tracking link, as at shipping.
-- Order e-mails use the theme's `order_url_friendly` link when friendly URLs are on.
-- The account Addresses page has a friendly URL, `user/addresses`.
-- **Billing → Orders** shows the buyer's name kept on the order, marked deleted, when the account is gone.
-- The plugin Details window lists the plugins a package needs.
-- Shop mode: the sample-data note says products.
-- Shop mode hides the posting and e-mail confirmation settings.
-- The installer's done page no longer prints the raw mail error.
-- Sample listings use ordinary city names instead of the first by name.
-- The Dependencies screen wraps its Installed line on narrow screens.
-- Admin Add user marks Username as required.
-- Making an API key shows its copy-it-now note once.
-- A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated from the admin or the command line.
-- Refunds no longer put shipped units back in stock, and an amount-only credit note carries its share of tax.
-- Refund History shows who made each credit note, and the last refund says the order is refunded.
-- The installer shows the real error when its e-mail fails, sorts countries by name, sets the time zone from the chosen country and places the example listings there.
-- Editing a category no longer warns about empty titles when one title is set.
-- The installer's Documentation link opens the Shopclass docs.
-- Admin messages: closing a JS message no longer breaks the next one, JS errors scroll into view, the toast sits above the Save bar, text and links in a message stay together on a phone, and the login message uses the shared look.
-- The owner's new-order e-mail goes to the first administrator when the site has no contact address, instead of being dropped.
-- Block fields in the Customise screen can be changed again; only rich text worked. In dark mode a field with an error shows its red border, and the collapsed admin menu shows counts as a dot.
-- Custom date fields no longer save or show the day before when the visitor's time zone differs from the site's. The REST API now reads a custom-field date sent as a day, `2026-11-01`, on the site's clock, and a range ends at the end of its last day.
-- A Page builder page on a child theme uses the parent theme's full-width block layout, not a narrow text column.
-- The Rich text block keeps headings, bold text, lists and links from its editor; they were removed on save. The editor offers only the headings that are kept.
-- Photo processing: JPEGs open without the exif extension, small images keep their size under Imagick, GIF and upper-case formats save correctly, and GD refuses photos too large for the memory limit.
-- Portrait phone photos no longer get white bars on the sides when Imagick resizes them.
-- Mail Settings no longer takes the browser's saved admin login as an unsaved change, so the test email runs after saving.
-- Static pages, custom fields and e-mail templates get a language tab for every website language, not only the admin ones.
-- Any pending order can be cancelled.
-- A refused listing, contact or send-to-friend form marks each wrong field with its own message.
-- Listings with no price sort last by price.
-- Listing save errors name languages and no longer ask for optional titles.
-- Add category, Add field and Add form create the row on Save, not before.
-- New installs show currency symbols ($, £, €) next to listing prices.
-- Admin forms, list checkboxes, toolbar search, listing thumbnails and photo upload work with screen readers and the keyboard.
-- A settings page core refuses is left out with an admin notice instead of taking the site down.
-- After-commit callbacks queued behind one that ends the request now run at shutdown.
-- Two first upgrade grants for one listing no longer deadlock and lose one.
-- A mail template with no text uses the bundled English text instead of stopping the request.
-- The buy-credits page lists only the payment methods that take the billing currency.
-- `osc_user_login_url()` and `osc_register_account_url()` take an optional same-site `return` path.
+- Installing or updating a language keeps e-mail templates the admin edited.
+- The Edit language screen has its Save changes button again.
+- Custom date fields no longer save the day before when the visitor's time zone differs from the site's.
+- Portrait phone photos no longer get white bars, and GIF and upper-case image formats save correctly.
+- Static pages, custom fields and e-mail templates get a language tab for every site language.
 - A title or description with "&", "<" or ">" is no longer refused as too long.
-- Search keeps option filters through redirects and pages past the count limit.
-- API: page numbers work over HTTP, and Accept-Language picks the site language.
-- The filter index rebuilds itself when it is empty.
-- Titles keep their punctuation, and mail subjects no longer show `&amp;`.
-- The order number keeps the prefix it was placed with.
+- Listings with no price sort last by price.
+- New installs show currency symbols next to listing prices.
 - Sign-up no longer says an activation mail was sent when mail is blocked.
-- The memory limit at start-up is only raised, never cut; a host's 1G or unlimited setting stays.
-- An admin can edit a rated comment down to no text, on the screen and in the API.
-- Options passed to `Sanitize` string, float, email and encoded methods now reach the filter.
-- Saving General Settings with an address lookup set up queues map positions for older listings.
-- S3 storage errors and skipped mail attachments are written to the error log.
-- Checkout no longer pulls focus back to a postcode that does not fit the country, so the next field gets what you type.
-- Custom fields show in one order on the listing page, the post form and search, also with several categories.
-- A theme's plugin screen calls a newer plugin version newer, not too old, and offers no older version.
-- Admin dialogs placed in a page are centred again, menu rows fit a phone, and `search:reindex` prints why it stopped.
-- The plugin and theme catalogs build again: the package-ci bundle ships `Escape.php`, which its README renderer needs.
-- A settings page reached only through tabs lights the sidebar entry of its first tab that is in the menu, not Settings.
-- The Widgets screen no longer lists Page builder pages as sections; their blocks are edited on the page. Blocks of a deleted page still show there so they can be removed.
+- The memory limit at start-up is only raised, never cut.
+- Two first upgrade grants for one listing no longer deadlock.
+- Admin forms, list checkboxes, search and photo upload work with screen readers and the keyboard.
+
+### For developers
+- Shop, messaging, pages, menus and SEO API endpoints; `GET /listings` filters by option, map area, stock and sale.
+- `osc_api_get()` and `osc_api_call()` call the API from PHP with no key.
+- Typed cart and order hooks for shipping, tax, promotion and payment plugins. See [Hooks](https://shopclass.org/docs/developers/hooks/).
+- `shopclass.json` and the `Modes:` and `Requires Plugins:` headers declare site modes and required plugins. See [Package spec](https://shopclass.org/docs/developers/package-spec/).
+- New helpers: `osc_site_mode()`, `osc_menu()`, `osc_place_field()`, `osc_settings_text_value()`, `osc_admin_filter_chips()`, `osc_search_bbox()`, `osc_address_formats()`, `osc_weight_display()` and more. See [Helpers](https://shopclass.org/docs/developers/helpers/).
+- `OSC_DEBUG` and `OSC_DEBUG_LOG` can be set as environment variables.
+- `ImageProcessing` and `ImageResizer` are deprecated; use `mindstellar\image\Processor`. `Field::findByItem()` is deprecated; use `FieldQuery::forItem()`.
+- The full list of hook, API and helper changes is in the developer docs.
