@@ -788,7 +788,7 @@ if (!function_exists('osc_admin_list_filter')) {
      * Keys: 'page' (the screen's page parameter), 'fields', 'hidden' => name => value,
      *       'advanced' => a dialog selector, 'active' => bool, 'reset' => url,
      *       'id' => form id, 'submit' => the find button's title, 'class' => extra form class,
-     *       'chips' => status filter links for osc_admin_filter_chips(), drawn first in the row.
+     *       'chips' => status filter links for osc_admin_filter_chips(), drawn after the bulk actions.
      *
      * A field is one of:
      *   search  name, value, placeholder, id
@@ -811,11 +811,11 @@ if (!function_exists('osc_admin_list_filter')) {
 
         if ($row) {
             osc_admin_toolbar_open(array('align' => isset($opts['bulk']) || $chips !== array() ? 'between' : 'end'));
-            if ($chips !== array()) {
-                osc_admin_filter_chips($chips);
-            }
             if (isset($opts['bulk'])) {
                 osc_admin_bulk_actions($opts['bulk']);
+            }
+            if ($chips !== array()) {
+                osc_admin_filter_chips($chips);
             }
             echo '<div class="osc-toolbar-group">';
         } ?>

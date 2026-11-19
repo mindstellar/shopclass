@@ -278,7 +278,6 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
     }
 
     osc_admin_toolbar_open();
-    osc_admin_filter_chips($filterLinks);
     if (count($mediaRows) > 0) {
         osc_admin_bulk_actions(array(
             'name'    => 'bulk_actions',
@@ -289,6 +288,7 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
             ),
         ));
     }
+    osc_admin_filter_chips($filterLinks);
 
     echo '<div class="osc-toolbar-group">'; ?>
     <?php osc_admin_list_filter(array(

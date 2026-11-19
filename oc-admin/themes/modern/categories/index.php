@@ -233,6 +233,18 @@ $i18n = array(
         <p class="cat-intro"><?php _e('Sellers file each listing under one of these. Drag a row by its handle, or focus the handle and use the arrow keys, to change the order.'); ?></p>
 
         <?php osc_admin_toolbar_open(); ?>
+            <?php osc_admin_bulk_actions(array(
+                'id'      => 'cat-bulk',
+                'form'    => 'cat-bulk-form',
+                'options' => array(
+                    array('value' => '', 'label' => osc_esc_html(__('Bulk actions'))),
+                    array('value' => 'enable', 'label' => osc_esc_html(__('Enable'))),
+                    array('value' => 'disable', 'label' => osc_esc_html(__('Disable'))),
+                    array('value' => 'move', 'label' => osc_esc_html(__('Move to…'))),
+                    array('value' => 'expiry', 'label' => osc_esc_html(__('Set expiry…'))),
+                    array('value' => 'delete', 'label' => osc_esc_html(__('Delete'))),
+                ),
+            )); ?>
             <?php osc_admin_filter_chips(array(
                 array(
                     'label'  => __('All'),
@@ -253,18 +265,6 @@ $i18n = array(
                     'count'  => $counts['off'],
                 ),
             ), 'cat-tabs'); ?>
-            <?php osc_admin_bulk_actions(array(
-                'id'      => 'cat-bulk',
-                'form'    => 'cat-bulk-form',
-                'options' => array(
-                    array('value' => '', 'label' => osc_esc_html(__('Bulk actions'))),
-                    array('value' => 'enable', 'label' => osc_esc_html(__('Enable'))),
-                    array('value' => 'disable', 'label' => osc_esc_html(__('Disable'))),
-                    array('value' => 'move', 'label' => osc_esc_html(__('Move to…'))),
-                    array('value' => 'expiry', 'label' => osc_esc_html(__('Set expiry…'))),
-                    array('value' => 'delete', 'label' => osc_esc_html(__('Delete'))),
-                ),
-            )); ?>
             <form id="cat-bulk-form" hidden></form>
             <p class="cat-selnote" hidden>
                 <span><strong data-cat-selcount>0</strong> <?php _e('selected'); ?></span>
