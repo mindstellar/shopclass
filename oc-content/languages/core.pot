@@ -145,6 +145,10 @@ msgstr ""
 msgid "%1$s is inside %2$s, so it is counted once."
 msgstr ""
 
+#: oc-includes/classes/market/PluginDependencies.php
+msgid "%1$s is installed but made for %2$s."
+msgstr ""
+
 #: oc-admin/themes/modern/categories/index.php
 msgid "%1$s is now under %2$s, last of %3$d."
 msgstr ""
@@ -17120,6 +17124,10 @@ msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-target.php
 msgid "This takes a minute or two. Keep this tab open."
+msgstr ""
+
+#: oc-includes/classes/market/PluginDependencies.php
+msgid "This theme"
 msgstr ""
 
 #: oc-admin/themes/modern/appearance/index.php

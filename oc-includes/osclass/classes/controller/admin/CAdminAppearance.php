@@ -742,14 +742,17 @@ class CAdminAppearance extends AdminSecBaseModel
     {
         $theme    = Params::getParamString('theme');
         $requires = PluginDependencies::themeRequirements($theme);
-        if ($requires === null) {
-            osc_add_flash_error_message(_m('That theme is not installed.'), 'admin');
+        $info     = $requires === null ? false : WebThemes::getInstance()->loadThemeInfo($theme);
+        $problem  = $requires === null
+            ? _m('That theme is not installed.')
+            : PluginDependencies::themeModeProblem($info);
+        if ($problem !== null) {
+            osc_add_flash_error_message($problem, 'admin');
             $this->redirectTo(osc_admin_base_url(true) . '?page=appearance');
             return;
         }
         Catalog::forPlugins()->refreshIfDue();
 
-        $info = WebThemes::getInstance()->loadThemeInfo($theme);
         $this->_exportVariableToView('theme', $theme);
         $this->_exportVariableToView('themeName', is_array($info) && $info['name'] !== '' ? ucfirst((string) $info['name']) : $theme);
         $this->_exportVariableToView('isActiveTheme', $theme === osc_theme());

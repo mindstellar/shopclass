@@ -748,6 +748,7 @@ Core fires 653 names. Generated from the source; do not edit by hand.
 | `listing_row_actions` | filter | `$rowActions, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `listing_row_badges` | filter | `$rowBadges, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `listing_row_meta` | filter | `$rowMeta, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
+| `listing_row_price` | filter | `$rowPrice, $rowItem, $rowContext` | `oc-includes/osclass/gui/account/parts/item-row.php` |
 | `locations_json_url` | filter | `text` | `oc-includes/osclass/helpers/hUtils.php` |
 | `login_admin` | action | `$admin` | `oc-includes/osclass/classes/controller/admin/CAdminLogin.php` |
 | `login_admin_form` | action | none | `oc-admin/gui/login.php` |

@@ -311,7 +311,7 @@ JavaScript it shows in place and the button jumps to it.
 ## Changing the listing rows
 
 Listing lists pass a context: `dashboard`, `user_items`, `public_profile` or
-`alert`. Three filters change a row; each gets the list, the item and the context.
+`alert`. Three filters change a row; each gets the list, the item and the context. `listing_row_price` takes the price text and returns another.
 
 | Filter | Entries |
 |---|---|

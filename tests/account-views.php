@@ -201,7 +201,7 @@ foreach ($slotPages as $slug => $file) {
 }
 
 $row = (string) file_get_contents($accountIn . 'parts/item-row.php');
-foreach (array('listing_row_badges', 'listing_row_meta', 'listing_row_actions') as $filter) {
+foreach (array('listing_row_badges', 'listing_row_meta', 'listing_row_actions', 'listing_row_price') as $filter) {
     check("the row applies {$filter}", strpos($row, "osc_apply_filter('{$filter}'") !== false);
 }
 // A blocked listing read "Published" when the row never asked whether it was enabled.

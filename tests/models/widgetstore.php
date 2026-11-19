@@ -170,6 +170,7 @@ $t1 = WidgetStore::add($row(array('s_location' => 'toggle', 's_type' => 'core.ht
 pin('a row with no switch is shown, so the first toggle hides it', false, WidgetStore::toggleEnabled($t1));
 pin('the hidden state is stored beside the config', array('title' => 'T', '_enabled' => false), json_decode(WidgetStore::find($t1)['s_config'], true));
 pin('a second toggle shows it again', true, WidgetStore::toggleEnabled($t1));
+pin('showing it leaves the config as it was before hiding', array('title' => 'T'), json_decode(WidgetStore::find($t1)['s_config'], true));
 WidgetStore::toggleEnabled($t1);
 pin('keepEnabled carries a hidden row\'s switch into a new config', array('title' => 'New', '_enabled' => false), WidgetStore::keepEnabled($t1, array('title' => 'New')));
 $t2 = WidgetStore::add($row(array('s_location' => 'toggle', 's_type' => 'core.html', 's_config' => '{"title":"U"}')));

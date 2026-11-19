@@ -27,16 +27,19 @@ $GLOBALS['themesDir'] = sys_get_temp_dir() . '/osc-theme-info-' . bin2hex(random
 mkdir($GLOBALS['themesDir'] . 'demo', 0777, true);
 $index = $GLOBALS['themesDir'] . 'demo/index.php';
 file_put_contents($index, "<?php\n/*\nTheme Name: Demo\nVersion: 1.0\n*/\n");
+// A fixed mtime, so a clock tick between the two writes cannot change the cache key.
+$mtime = 1700000000;
+touch($index, $mtime);
 
 $themes = new WebThemes();
 harness_section('WebThemes::loadThemeInfo');
 pin('the header is read', array('Demo', '1.0'), array_values(array_intersect_key($themes->loadThemeInfo('demo'), array('name' => 1, 'version' => 1))));
 
 file_put_contents($index, "<?php\n/*\nTheme Name: Demo\nVersion: 2.0\n*/\n");
-touch($index, filemtime($index));
+touch($index, $mtime);
 pin('a second read in the same second keeps the first answer', '1.0', $themes->loadThemeInfo('demo')['version']);
 
-touch($index, filemtime($index) + 5);
+touch($index, $mtime + 5);
 clearstatcache();
 pin('a replaced file is read again', '2.0', $themes->loadThemeInfo('demo')['version']);
 pin('a missing theme is false', false, $themes->loadThemeInfo('nope'));

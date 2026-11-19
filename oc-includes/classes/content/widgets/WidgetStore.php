@@ -241,7 +241,7 @@ final class WidgetStore extends Model
     }
 
     /**
-     * Flip a row's hide switch (WidgetConfig::ENABLED) and store it.
+     * Flip a row's hide switch (WidgetConfig::ENABLED) and store it. Showing removes the key.
      *
      * @return bool the row's new state: true when shown
      * @throws \mindstellar\database\DbException
@@ -252,7 +252,11 @@ final class WidgetStore extends Model
         $config  = $row === null ? array() : json_decode((string) $row['s_config'], true);
         $config  = is_array($config) ? $config : array();
         $enabled = !WidgetConfig::enabled($config);
-        $config[WidgetConfig::ENABLED] = $enabled;
+        if ($enabled) {
+            unset($config[WidgetConfig::ENABLED]);
+        } else {
+            $config[WidgetConfig::ENABLED] = false;
+        }
         self::update($id, array('s_config' => json_encode($config)));
 
         return $enabled;

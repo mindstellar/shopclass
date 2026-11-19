@@ -119,7 +119,7 @@ pin('...the CSRF check ran', array('widget_toggle_post'), $r['csrf']);
 pin('...and the page cache was purged', array('widget'), $r['purges']);
 $r = drive('widget_toggle_post', array('id' => (string) $id));
 pin('a second toggle shows it again', true, $r['json']['enabled'] ?? null);
-pin('...and persists', '{"text":"a","_enabled":true}', $cfg($id));
+pin('...and the config is as before hiding', '{"text":"a"}', $cfg($id));
 check('...and renders', $render($id) !== '');
 
 $legacy = WidgetStore::add(array('s_location' => 'home', 'e_kind' => 'html', 's_description' => 'Raw', 's_content' => '<p>x</p>', 'i_order' => 1));

@@ -40,6 +40,11 @@ $GLOBALS['fired']       = array();
 $GLOBALS['pluginPrefs'] = array('installed_plugins' => serialize(array('off/index.php')), 'active_plugins' => serialize(array()));
 $GLOBALS['installsOff'] = false;
 
+function osc_site_mode(): string
+{
+    return $GLOBALS['siteMode'] ?? 'classifieds';
+}
+
 function osc_set_preference($key, $value)
 {
     $GLOBALS['prefs'][]          = array($key, $value);
@@ -276,6 +281,14 @@ pin('a theme with no Requires line is allowed', null, Deps::refuseTheme('aisle')
 unlink($GLOBALS['themesDir'] . 'toonew/index.php');
 rmdir($GLOBALS['themesDir'] . 'toonew');
 pin('a theme that is not installed is null', null, Deps::themeRequirements('../aisle'));
+$shopOnly = (new WebThemes())->loadThemeInfo('aisle');
+pin('a classifieds theme has no mode problem on a classifieds site', null, Deps::themeModeProblem($shopOnly));
+file_put_contents($GLOBALS['themesDir'] . 'aisle/shopclass.json', '{"modes":["shop"]}');
+$shopOnly = (new WebThemes())->loadThemeInfo('aisle');
+pin('a shop-only theme on a classifieds site is installed but made for shop sites', 'Aisle is installed but made for shop sites.', Deps::themeModeProblem($shopOnly));
+$GLOBALS['siteMode'] = 'shop';
+pin('...and is fine on a shop site', null, Deps::themeModeProblem($shopOnly));
+unset($GLOBALS['siteMode']);
 
 $ajax = (new ReflectionClass(MarketAjax::class))->newInstanceWithoutConstructor();
 $send = static function (string $theme, string $slug) use ($ajax): array {

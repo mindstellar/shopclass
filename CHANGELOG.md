@@ -202,6 +202,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Faster shop search by price, rare options and `on_sale` (migration 0093).
 
 ### Fixed
+- Showing a hidden widget again leaves its settings as they were. The theme plugins screen says when a theme is made for the other kind of site.
 - A language that shares its short name with another, such as English (Australia), can be installed again.
 - A language that cannot be saved now shows an error on import and upload, with the reason in the activity log.
 - The languages table no longer says "filtered from 9 total results".

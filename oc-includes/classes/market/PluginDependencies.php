@@ -14,6 +14,7 @@ declare(strict_types=1);
 namespace mindstellar\market;
 
 use mindstellar\security\Demo;
+use mindstellar\site\SiteMode;
 
 /**
  * The plugins a theme needs: what state each one is in, installing one at a time from the
@@ -107,6 +108,27 @@ final class PluginDependencies
             'required'    => (array) ($needs['required'] ?? []),
             'recommended' => (array) ($needs['recommended'] ?? []),
         ];
+    }
+
+    /**
+     * Why an installed theme is not for this site's mode, as a sentence; null when it is.
+     *
+     * @param array<string,mixed>|false $info the theme's header, from WebThemes::loadThemeInfo()
+     */
+    public static function themeModeProblem($info): ?string
+    {
+        $modes = is_array($info) && is_array($info['modes'] ?? null) ? array_values($info['modes']) : [];
+        $mode  = osc_site_mode();
+        if (SiteMode::declares($mode, $modes)) {
+            return null;
+        }
+        $name = is_array($info) && ($info['name'] ?? '') !== '' ? ucfirst((string) $info['name']) : __('This theme');
+
+        return sprintf(
+            __('%1$s is installed but made for %2$s.'),
+            $name,
+            SiteMode::noun((string) ($modes[0] ?? ''))
+        );
     }
 
     /**

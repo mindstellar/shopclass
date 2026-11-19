@@ -28,7 +28,7 @@ $rowOwned   = isset($rowOwned) ? (bool) $rowOwned : true;
 $rowContext = isset($rowContext) ? (string) $rowContext : ($rowOwned ? 'user_items' : 'public_profile');
 $rowItem    = osc_item();
 $rowAlert   = $rowContext === 'alert' ? \mindstellar\search\AlertEnvelope::productOf((string) osc_alert_field('s_search')) : null;
-$rowPrice   = osc_item_formatted_variant_price($rowAlert['variant'] ?? null);
+$rowPrice   = (string) osc_apply_filter('listing_row_price', osc_item_formatted_variant_price($rowAlert['variant'] ?? null), $rowItem, $rowContext);
 
 $rowBadges = array();
 if ($rowOwned) {
