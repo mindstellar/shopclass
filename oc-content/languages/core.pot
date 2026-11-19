@@ -6768,6 +6768,7 @@ msgstr ""
 
 #: oc-admin/themes/modern/billing/documents.php
 #: oc-admin/themes/modern/billing/index.php
+#: oc-admin/themes/modern/parts/ui.php
 #: oc-admin/themes/modern/settings/locations/data.php
 msgid "Filter"
 msgstr ""

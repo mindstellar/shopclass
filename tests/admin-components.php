@@ -113,6 +113,43 @@ check(
     str_starts_with(html_of(static fn () => osc_admin_tab_nav(array(), 'mt-3', array('panels' => true))), '<div class="ui-osc-tabs osc-tab mt-3"><ul>')
 );
 
+harness_section('filter chips');
+check(
+    'chips carry their counts, and the selected one is pressed and filled',
+    ($chips = html_of(static fn () => osc_admin_filter_chips(array(
+        array('label' => 'All', 'url' => '/all', 'active' => true, 'count' => 22),
+        array('label' => 'Active', 'url' => '/a', 'count' => 0, 'count_id' => 'c2'),
+    ), 'cat-tabs', array('aria_label' => 'Status')))) === '<div class="osc-chips cat-tabs" role="group" aria-label="Status">'
+        . '<a href="/all" class="osc-chip is-active" role="button" aria-pressed="true">All <span class="osc-count">22</span></a>'
+        . '<a href="/a" class="osc-chip" role="button" aria-pressed="false">Active <span class="osc-count is-zero" id="c2">0</span></a></div>',
+    $chips
+);
+check('chips are not tabs', !str_contains($chips, 'osc-tabnav') && !str_contains($chips, 'aria-current') && !str_contains($chips, 'role="tab'));
+check(
+    'a hostile label, url, attr and aria_label are escaped',
+    !str_contains($h = html_of(static fn () => osc_admin_filter_chips(
+        array(array('label' => $hostile, 'url' => $hostile, 'attrs' => array('title' => $hostile))),
+        '',
+        array('aria_label' => $hostile)
+    )), '<script>') && substr_count($h, $escaped) === 4,
+    $h
+);
+check(
+    'a link group with counts draws chips',
+    str_contains(html_of(static fn () => osc_admin_link_group(array(array('label' => 'All', 'url' => '/', 'active' => true, 'count' => 1)))), '<div class="osc-chips"')
+);
+check(
+    'the list filter puts chips in its toolbar beside the search',
+    (bool) preg_match(
+        '~^<div class="osc-toolbar osc-toolbar-between"><div class="osc-chips" role="group" aria-label="Filter">.*</div>\s*<div class="osc-toolbar-group">\s*<form ~s',
+        $lf = html_of(static fn () => osc_admin_list_filter(array(
+            'page'  => 'plugins',
+            'chips' => array(array('label' => 'All', 'url' => '/', 'active' => true, 'count' => 3)),
+        )))
+    ),
+    $lf
+);
+
 harness_section('locale strip');
 $li = '<li><a href="#en">English</a></li>';
 check('the default wrapper', Field::localeStrip(array($li)) === '<div class="ui-osc-tabs osc-tab"><ul>' . $li . '</ul></div>');

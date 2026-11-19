@@ -95,7 +95,8 @@ harness_section('Active tab');
 $out = screen('active', [$action, $head], [$snoozed]);
 check('both tabs show their counts', strpos($out, 'Active <span class="osc-count">2</span>') !== false || (bool) preg_match('~Active\s*<span class="osc-count">2</span>~', $out));
 check('the hidden count is on the Hidden tab', (bool) preg_match('~Hidden\s*<span class="osc-count">1</span>~', $out));
-check('the Active tab is current', (bool) preg_match('~class="is-active"[^>]*aria-current="page"[^>]*>Active~', $out));
+check('the Active chip is pressed', (bool) preg_match('~class="osc-chip is-active" role="button" aria-pressed="true">Active~', $out), $out);
+check('the filters are chips, not tabs', strpos($out, 'class="osc-chips"') !== false && strpos($out, 'osc-tabnav') === false);
 check('the action row has a Needs action badge', strpos($out, 'status-notice-action') !== false && strpos($out, 'Needs action') !== false);
 check('the warning row has a Heads-up badge', strpos($out, 'status-notice-headsup') !== false);
 check('the detail is shown', strpos($out, 'Anyone can download them.') !== false);
@@ -122,7 +123,7 @@ check('the hidden row shows with its return date', strpos($out, 'Jobs stopped.')
 check('the column is Comes back', strpos($out, '>Comes back<') !== false);
 check('Show again replaces Hide', strpos($out, 'data-osc-notice-show="jobs_failed"') !== false && strpos($out, 'data-osc-notice-hide') === false);
 check('the badge says Hidden', strpos($out, 'status-notice-hidden') !== false);
-check('the Hidden tab is current', (bool) preg_match('~class="is-active"[^>]*aria-current="page"[^>]*>Hidden~', $out));
+check('the Hidden chip is pressed', (bool) preg_match('~class="osc-chip is-active" role="button" aria-pressed="true">Hidden~', $out));
 
 harness_section('empty');
 check('nothing active says so quietly', strpos(screen('active', [], []), 'Nothing needs attention.') !== false);

@@ -27,7 +27,7 @@ check('renders the table from the datatable columns', substr_count($src, 'osc_ad
     && strpos($src, "'class'     => 'plugins-table'") !== false && strpos($src, '<thead') === false);
 check('one row per plugin, with its id, state class and detail data', strpos($src, "'plugin-' . ") !== false
     && strpos($src, "'id'               => 'pkg-'") !== false && strpos($src, "'data-market-item' =>") !== false);
-check('status tabs and a search box', strpos($src, 'osc_admin_tab_nav($tabs)') !== false && strpos($src, "'name'        => 'sSearch'") !== false);
+check('status chips and a search box', strpos($src, "'chips'    => $tabs") !== false && strpos($src, "'name'        => 'sSearch'") !== false);
 check('row actions sit in the table', strpos($src, 'osc_admin_data_table(') !== false && strpos($dt, '<div class="actions"><ul>') !== false);
 check('paged like the other tables', strpos($src, 'osc_admin_pagination($aData)') !== false);
 check('no longer a card list', strpos($src, 'osc_package_list_open') === false && strpos($src, 'osc_package_row(') === false);

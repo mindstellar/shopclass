@@ -548,11 +548,7 @@
             tabs.forEach(function (a) {
                 const on = tabOf(a) === tab;
                 a.classList.toggle('is-active', on);
-                if (on) {
-                    a.setAttribute('aria-current', 'page');
-                } else {
-                    a.removeAttribute('aria-current');
-                }
+                a.setAttribute('aria-pressed', on ? 'true' : 'false');
             });
             try {
                 const u = new URL(window.location.href);

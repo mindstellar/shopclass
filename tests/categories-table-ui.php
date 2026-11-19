@@ -180,7 +180,7 @@ r.hits = hits.length;
 r.hitsOff = hits.every(function (tr) { return tr.classList.contains('is-disabled'); });
 r.context = shown.filter(function (tr) { return tr.classList.contains('is-context'); }).map(name);
 r.badge = t.tab('Disabled').querySelector('.osc-count').textContent;
-r.active = t.tab('Disabled').classList.contains('is-active') && t.tab('Disabled').getAttribute('aria-current') === 'page';
+r.active = t.tab('Disabled').classList.contains('is-active') && t.tab('Disabled').getAttribute('aria-pressed') === 'true' && t.tab('All').getAttribute('aria-pressed') === 'false';
 r.line = t.$('#cat-filter-line span').textContent;
 await t.click(t.tab('All'));
 r.urlAll = location.search;

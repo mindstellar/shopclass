@@ -232,28 +232,27 @@ $i18n = array(
 <?php } else { ?>
         <p class="cat-intro"><?php _e('Sellers file each listing under one of these. Drag a row by its handle, or focus the handle and use the arrow keys, to change the order.'); ?></p>
 
-        <?php osc_admin_tab_nav(array(
-            array(
-                'label'  => __('All'),
-                'url'    => $base . '?page=categories',
-                'active' => $status === '',
-                'count'  => $counts['all'],
-            ),
-            array(
-                'label'  => __('Enabled'),
-                'url'    => $base . '?page=categories&status=on',
-                'active' => $status === 'on',
-                'count'  => $counts['on'],
-            ),
-            array(
-                'label'  => __('Disabled'),
-                'url'    => $base . '?page=categories&status=off',
-                'active' => $status === 'off',
-                'count'  => $counts['off'],
-            ),
-        ), 'cat-tabs'); ?>
-
         <?php osc_admin_toolbar_open(); ?>
+            <?php osc_admin_filter_chips(array(
+                array(
+                    'label'  => __('All'),
+                    'url'    => $base . '?page=categories',
+                    'active' => $status === '',
+                    'count'  => $counts['all'],
+                ),
+                array(
+                    'label'  => __('Enabled'),
+                    'url'    => $base . '?page=categories&status=on',
+                    'active' => $status === 'on',
+                    'count'  => $counts['on'],
+                ),
+                array(
+                    'label'  => __('Disabled'),
+                    'url'    => $base . '?page=categories&status=off',
+                    'active' => $status === 'off',
+                    'count'  => $counts['off'],
+                ),
+            ), 'cat-tabs'); ?>
             <?php osc_admin_bulk_actions(array(
                 'id'      => 'cat-bulk',
                 'form'    => 'cat-bulk-form',

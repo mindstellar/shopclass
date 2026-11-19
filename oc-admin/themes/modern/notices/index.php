@@ -37,10 +37,10 @@ osc_admin_page(array(
 <?php osc_current_admin_theme_path('parts/header.php'); ?>
 <?php osc_admin_body_open(); ?>
 
-    <?php osc_admin_tab_nav(array(
+    <?php osc_admin_filter_chips(array(
         array('label' => __('Active'), 'url' => $base, 'active' => !$isHidden, 'count' => count($active)),
         array('label' => __('Hidden'), 'url' => $base . '&tab=hidden', 'active' => $isHidden, 'count' => count($hidden)),
-    ), '', array('aria_label' => __('Notices'))); ?>
+    )); ?>
 
     <?php if ($rows === array()) {
         osc_admin_empty(array('title' => $isHidden ? __('No hidden notices.') : __('Nothing needs attention.')));

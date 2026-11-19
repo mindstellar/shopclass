@@ -75,13 +75,13 @@ check('row actions use the Plugins pattern', $xp->query('//tr[@id="cat-1"]//div[
 
 harness_section('tabs and bulk bar');
 $tabs = [];
-foreach ($xp->query('//ul[contains(@class,"cat-tabs")]/li/a') as $a) {
+foreach ($xp->query('//div[contains(@class,"cat-tabs")]/a') as $a) {
     $tabs[] = preg_replace('/\s+/', ' ', trim($a->textContent));
 }
 pin('tab counts', ['All 5', 'Enabled 4', 'Disabled 1'], $tabs);
-pin('no tab active on all', 'All 5', preg_replace('/\s+/', ' ', trim($xp->query('//ul[contains(@class,"cat-tabs")]/li/a[@aria-current]')->item(0)->textContent)));
+pin('no tab active on all', 'All 5', preg_replace('/\s+/', ' ', trim($xp->query('//div[contains(@class,"cat-tabs")]/a[@aria-pressed="true"]')->item(0)->textContent)));
 $offHtml = categories_page_html($tree, ['status' => 'off']);
-check('status=off marks Disabled active', (bool) preg_match('~class="is-active" aria-current="page">Disabled~', $offHtml));
+check('status=off marks Disabled active', (bool) preg_match('~class="osc-chip is-active" role="button" aria-pressed="true">Disabled~', $offHtml));
 check('data-status carries the tab', str_contains($offHtml, 'data-status="off"'));
 $bulk = [];
 foreach ($xp->query('//select[@id="cat-bulk"]/option') as $o) {

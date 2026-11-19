@@ -268,7 +268,6 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
            data-url="<?php echo osc_esc_html(adminLibraryUploadUrl()); ?>"/>
     <?php
 
-    // The filters are page tabs, as on the other list screens.
     $filterLinks = array();
     foreach ($mediaFilters as $filter) {
         $filterLinks[] = array(
@@ -277,9 +276,9 @@ $ownerLabels = array('item' => __('Listing'), 'user' => __('User'), 'page' => __
             'active' => $filter['type'] === $mediaType,
         ) + (isset($filter['count']) ? array('count' => (int) $filter['count']) : array());
     }
-    osc_admin_tab_nav($filterLinks);
 
-    osc_admin_toolbar_open(array('align' => count($mediaRows) > 0 ? 'between' : 'end'));
+    osc_admin_toolbar_open();
+    osc_admin_filter_chips($filterLinks);
     if (count($mediaRows) > 0) {
         osc_admin_bulk_actions(array(
             'name'    => 'bulk_actions',
