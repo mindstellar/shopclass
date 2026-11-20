@@ -25,9 +25,7 @@ register_shutdown_function(static function (): void {
     }
     $queries = 0;
     if (class_exists('mindstellar\\database\\ConnectionManager', false)) {
-        $shared = new ReflectionProperty(\mindstellar\database\ConnectionManager::class, 'instance');
-        $shared->setAccessible(true);
-        $manager = $shared->getValue();
+        $manager = (new ReflectionProperty(\mindstellar\database\ConnectionManager::class, 'instance'))->getValue();
         $handle  = $manager === null ? false : $manager->getHandle();
         if ($handle instanceof mysqli) {
             $row     = $handle->query("SHOW SESSION STATUS LIKE 'Questions'")->fetch_assoc();
@@ -37,7 +35,9 @@ register_shutdown_function(static function (): void {
     $trips = 0;
     if (class_exists('mindstellar\\cache\\CacheManager', false)) {
         $cache = \mindstellar\cache\CacheManager::getInstance();
-        $trips = $cache instanceof \mindstellar\cache\RedisCache ? $cache->trips : 0;
+        if ($cache instanceof \mindstellar\cache\RedisCache) {
+            $trips = $cache->trips;
+        }
     }
     // Polyfills load or not by PHP version, so they are left out and every PHP counts the same.
     $files = array_values(array_filter(
