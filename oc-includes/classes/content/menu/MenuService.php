@@ -38,10 +38,10 @@ final class MenuService
 
     private static ?self $instance = null;
 
-    /** @var array<string,array{label:string,url:string}>|null */
-    private ?array $coreBuiltins = null;
+    /** @var array<string,array<string,array{label:string,url:string}>> core's built-in pages by locale */
+    private array $coreBuiltins = [];
 
-    /** @var array<string,array{label:string,url:string}|null> */
+    /** @var array<string,array<string,array{label:string,url:string}|null>> one built-in page by locale and ref */
     private array $coreLinks = [];
 
     /**
@@ -174,7 +174,7 @@ final class MenuService
         }
 
         // Every menu on the page shares one build; the settings behind it do not change mid-request.
-        return $this->coreBuiltins ??= self::coreBuiltins();
+        return $this->coreBuiltins[self::uiLocale()] ??= self::coreBuiltins();
     }
 
     /**
@@ -468,11 +468,18 @@ final class MenuService
 
             return $builtins[$ref] ?? null;
         }
-        if (!array_key_exists($ref, $this->coreLinks)) {
-            $this->coreLinks[$ref] = self::coreBuiltin($ref);
+        $locale = self::uiLocale();
+        if (!array_key_exists($ref, $this->coreLinks[$locale] ?? [])) {
+            $this->coreLinks[$locale][$ref] = self::coreBuiltin($ref);
         }
 
-        return $this->coreLinks[$ref];
+        return $this->coreLinks[$locale][$ref];
+    }
+
+    /** The language labels are drawn in, so a switch mid-request does not reuse another's. */
+    private static function uiLocale(): string
+    {
+        return function_exists('osc_current_ui_locale') ? osc_current_ui_locale() : '';
     }
 
     /**

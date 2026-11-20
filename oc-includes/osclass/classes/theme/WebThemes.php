@@ -149,8 +149,8 @@ class WebThemes extends Themes
         $key = $path . '|' . filemtime($path);
         if (!isset($this->parents[$key])) {
             $head = (string) file_get_contents($path);
-            if (preg_match('|Theme Name:([^\\r\\t\\n]*)|i', $head, $name) && trim($name[1]) !== '') {
-                $this->parents[$key] = preg_match('|Parent Theme:([^\\r\\t\\n]*)|i', $head, $match) ? trim($match[1]) : '';
+            if (self::headerField($head, 'Theme Name') !== '') {
+                $this->parents[$key] = self::headerField($head, 'Parent Theme');
             } else {
                 $info                = $this->loadThemeInfo($theme);
                 $this->parents[$key] = is_array($info) ? (string) ($info['template'] ?? '') : '';
@@ -159,6 +159,12 @@ class WebThemes extends Themes
         $parent = $this->parents[$key];
 
         return $parent !== $theme && \mindstellar\utility\Validate::packageName($parent) ? $parent : '';
+    }
+
+    /** One "Field: value" line of a theme's header, trimmed; '' when it is missing. */
+    private static function headerField(string $head, string $field): string
+    {
+        return preg_match('|' . $field . ':([^\\r\\t\\n]*)|i', $head, $match) ? trim($match[1]) : '';
     }
 
     /**
@@ -185,88 +191,27 @@ class WebThemes extends Themes
      */
     private function readThemeInfo(string $theme, string $path)
     {
-        // NEW CODE FOR THEME INFO
-        $s_info = file_get_contents($path);
+        $s_info = (string) file_get_contents($path);
         $info   = array();
 
-        //For compatibility use theme_name
-        if (preg_match('|Theme Name:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['name'] = trim($match[1]);
-        } else {
-            $info['name'] = '';
-        }
-
-        if (preg_match('|Theme Name:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['theme_name'] = trim($match[1]);
-        } else {
-            $info['theme_name'] = '';
-        }
-
-        if (preg_match('|Parent Theme:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['template'] = trim($match[1]);
-        } else {
-            $info['template'] = '';
-        }
-
-        if (preg_match('|Theme URI:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['theme_uri'] = trim($match[1]);
-        } else {
-            $info['theme_uri'] = '';
-        }
-
-        if (preg_match('|Theme update URI:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['theme_update_uri'] = trim($match[1]);
-        } else {
-            $info['theme_update_uri'] = '';
-        }
-
-        if (preg_match('|Description:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['description'] = trim($match[1]);
-        } else {
-            $info['description'] = '';
-        }
-
-        if (preg_match('|Version:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['version'] = trim($match[1]);
-        } else {
-            $info['version'] = '';
-        }
-
-        if (preg_match('|Author:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['author_name'] = trim($match[1]);
-        } else {
-            $info['author_name'] = '';
-        }
-
-        if (preg_match('|Author URI:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['author_url'] = trim($match[1]);
-        } else {
-            $info['author_url'] = '';
-        }
+        $info['name'] = self::headerField($s_info, 'Theme Name');
+        $info['theme_name'] = self::headerField($s_info, 'Theme Name');
+        $info['template'] = self::headerField($s_info, 'Parent Theme');
+        $info['theme_uri'] = self::headerField($s_info, 'Theme URI');
+        $info['theme_update_uri'] = self::headerField($s_info, 'Theme update URI');
+        $info['description'] = self::headerField($s_info, 'Description');
+        $info['version'] = self::headerField($s_info, 'Version');
+        $info['author_name'] = self::headerField($s_info, 'Author');
+        $info['author_url'] = self::headerField($s_info, 'Author URI');
 
         if (preg_match('|Widgets:([^\\r\\t\\n]*)|i', $s_info, $match)) {
             $info['locations'] = explode(',', str_replace(' ', '', $match[1]));
         } else {
             $info['locations'] = array();
         }
-
-        if (preg_match('|Requires Shopclass:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['requires'] = trim($match[1]);
-        } else {
-            $info['requires'] = '';
-        }
-
-        if (preg_match('|Tested up to:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['tested_up_to'] = trim($match[1]);
-        } else {
-            $info['tested_up_to'] = '';
-        }
-
-        if (preg_match('|Requires PHP:([^\\r\\t\\n]*)|i', $s_info, $match)) {
-            $info['requires_php'] = trim($match[1]);
-        } else {
-            $info['requires_php'] = '';
-        }
+        $info['requires'] = self::headerField($s_info, 'Requires Shopclass');
+        $info['tested_up_to'] = self::headerField($s_info, 'Tested up to');
+        $info['requires_php'] = self::headerField($s_info, 'Requires PHP');
 
         $manifest                 = \mindstellar\market\PackageManifest::read(dirname($path), $s_info);
         $info['modes']            = $manifest['modes'];

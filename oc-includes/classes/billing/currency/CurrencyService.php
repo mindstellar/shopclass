@@ -30,8 +30,8 @@ final class CurrencyService
     /** MySQL's ER_DUP_ENTRY. */
     private const DUPLICATE_KEY = 1062;
 
-    /** @var array{0:string,1:array<string,array<string,mixed>>}|null the source and `currency` generation, and the enabled rows */
-    private static ?array $enabled = null;
+    /** @var \WeakMap<Currency,array{0:int,1:array<string,array<string,mixed>>}>|null each table's `currency` generation and enabled rows */
+    private static ?\WeakMap $enabled = null;
 
     public function __construct(private Currency $currencies)
     {
@@ -125,8 +125,10 @@ final class CurrencyService
      */
     private function enabledByCode(): array
     {
-        $source = spl_object_id($this->currencies) . '|' . CacheGroup::generation('currency');
-        if (self::$enabled === null || self::$enabled[0] !== $source) {
+        self::$enabled ??= new \WeakMap();
+        $generation = CacheGroup::generation('currency');
+        $known      = self::$enabled[$this->currencies] ?? null;
+        if ($known === null || $known[0] !== $generation) {
             $rows = [];
             foreach ($this->currencies->listAll() as $row) {
                 if ((int) ($row['b_enabled'] ?? 0) === 1) {
@@ -134,10 +136,10 @@ final class CurrencyService
                 }
             }
             ksort($rows);
-            self::$enabled = [$source, $rows];
+            $known = self::$enabled[$this->currencies] = [$generation, $rows];
         }
 
-        return self::$enabled[1];
+        return $known[1];
     }
 
     /**

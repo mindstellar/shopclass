@@ -131,7 +131,14 @@ function budget_measure(array $env, int $webPort, array $paths): array
             file_put_contents($out, '');
             @file_get_contents('http://127.0.0.1:' . $webPort . $path, false, stream_context_create(array('http' => array('ignore_errors' => true, 'timeout' => 30))));
         }
-        $row           = json_decode((string) strtok((string) file_get_contents($out), "\n"), true) ?: array();
+        // The page's own record: the request for its path, not one the page set off.
+        $row = array();
+        foreach (explode("\n", trim((string) file_get_contents($out))) as $line) {
+            $record = json_decode($line, true);
+            if (is_array($record) && ($record['uri'] ?? null) === $path) {
+                $row = $record;
+            }
+        }
         $result[$name] = array(
             'files'   => count($row['files'] ?? array()),
             'queries' => (int) ($row['queries'] ?? -1),
@@ -157,6 +164,8 @@ if ($redis !== '') {
 
 $budget = is_file(BUDGET_FILE) ? (array) json_decode((string) file_get_contents(BUDGET_FILE), true) : array();
 $fresh  = $budget;
+$overBudget  = array();
+$underBudget = array();
 foreach ($runs as $run => $extra) {
     harness_section('pages, ' . ($run === 'plain' ? 'no object cache' : 'Valkey object cache'));
     $measured = budget_measure($extra + $env, budget_port(), $paths);
@@ -179,13 +188,22 @@ foreach ($runs as $run => $extra) {
                 $what === 'files' ? "included files:\n    " . implode("\n    ", $got['list']) . "\n" : ''
             );
             if ($over > $slack) {
-                echo "        A page costs more than its budget. Find what was added, or, when the cost is wanted,\n"
-                    . "        run php tests/page-budget.php --update and commit tests/page-budget.json with the change.\n";
+                $overBudget[] = sprintf('%s %s: %d %s over a budget of %d', $run, $page, $got[$what] - (int) $want[$what], $what, $want[$what]);
             } elseif ($over < -$slack) {
-                echo "        NOTE  $run $page now costs less ($what); run php tests/page-budget.php --update to keep the gain.\n";
+                $underBudget[] = sprintf('%s %s: %d %s under a budget of %d', $run, $page, (int) $want[$what] - $got[$what], $what, $want[$what]);
             }
         }
     }
+}
+
+if ($overBudget !== array()) {
+    echo "\nOver budget:\n  " . implode("\n  ", $overBudget) . "\n"
+        . "Find what was added. When the cost is wanted, run php tests/page-budget.php --update\n"
+        . "and commit tests/page-budget.json with the change.\n";
+}
+if ($underBudget !== array()) {
+    echo "\nNOTE  now cheaper:\n  " . implode("\n  ", $underBudget) . "\n"
+        . "Run php tests/page-budget.php --update and commit tests/page-budget.json to keep the gain.\n";
 }
 
 if ($update) {
