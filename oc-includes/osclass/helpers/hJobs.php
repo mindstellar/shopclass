@@ -350,6 +350,19 @@ function _osc_auto_cron_due(string $name, int $window): bool
 }
 
 /**
+ * Reads both auto-cron throttles from a shared cache in one round trip, so the checks after it are local.
+ *
+ * @internal
+ */
+function _osc_auto_cron_prefetch(): void
+{
+    $cache = \mindstellar\cache\CacheManager::getInstance();
+    if (!($cache instanceof \mindstellar\cache\MemoryCache) && method_exists($cache, 'getMany')) {
+        $cache->getMany(array('osclass_autocron_tick', 'osclass_autocron_jobs'));
+    }
+}
+
+/**
  * Runs scheduled tasks after the response when auto-cron is on, at most once per five minutes, and
  * due background jobs at most once a minute. Web pages queue the work to run at shutdown; an API response is already sent, so it runs now.
  *
@@ -367,6 +380,7 @@ function osc_auto_cron_dispatch(bool $responseSent = false): void
     // a page does not load the worker class.
     $window = 300;
     $jobsOnly = false;
+    _osc_auto_cron_prefetch();
     if (!_osc_auto_cron_due('tick', $window)) {
         if (!_osc_auto_cron_due('jobs', 60)) {
             return;

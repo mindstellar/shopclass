@@ -68,6 +68,98 @@ if (is_writable($uploads)) {
 chmod($uploads, 0755);
 rmdir($uploads);
 
+harness_section('auto-cron throttles on a shared cache');
+
+/** A shared cache that keeps a request copy of what it read, and counts trips to the server. */
+final class AutocronSharedCache implements \mindstellar\cache\CacheDriver
+{
+    public array $server = array();
+    public array $copy   = array();
+    public int $trips    = 0;
+
+    public function add($key, $data, $expire = 0)
+    {
+        return false;
+    }
+    public function set($key, $data, $expire = 0)
+    {
+        ++$this->trips;
+        $this->server[$key] = $this->copy[$key] = $data;
+
+        return true;
+    }
+    public function get($key, &$found = null)
+    {
+        if (array_key_exists($key, $this->copy)) {
+            $found = true;
+
+            return $this->copy[$key];
+        }
+        ++$this->trips;
+        $found = array_key_exists($key, $this->server);
+        if ($found) {
+            $this->copy[$key] = $this->server[$key];
+        }
+
+        return $found ? $this->server[$key] : false;
+    }
+    public function getMany(array $keys): array
+    {
+        ++$this->trips;
+        $out = array();
+        foreach ($keys as $key) {
+            if (array_key_exists($key, $this->server)) {
+                $out[$key] = $this->copy[$key] = $this->server[$key];
+            }
+        }
+
+        return $out;
+    }
+    public function delete($key)
+    {
+        unset($this->server[$key], $this->copy[$key]);
+
+        return true;
+    }
+    public function flush()
+    {
+        $this->server = $this->copy = array();
+
+        return true;
+    }
+    public function stats()
+    {
+    }
+    public function _get_cache()
+    {
+        return 'test';
+    }
+    public static function is_supported()
+    {
+        return true;
+    }
+    public function __destruct()
+    {
+    }
+}
+
+require_once __DIR__ . '/lib/cache-swap.php';
+$shared = new AutocronSharedCache();
+test_cache_swap($shared);
+$page = static function () use ($shared): array {
+    $shared->copy  = array();
+    $shared->trips = 0;
+    _osc_auto_cron_prefetch();
+    $due = array(_osc_auto_cron_due('tick', 300), _osc_auto_cron_due('jobs', 60));
+
+    return array($due, $shared->trips);
+};
+pin('the first page takes both slots', array(true, true), $page()[0]);
+pin('a page inside both windows reads them in one trip and runs nothing', array(array(false, false), 1), $page());
+unset($shared->server['osclass_autocron_jobs']);
+pin('a minute on, jobs may run while the full run still waits', array(false, true), $page()[0]);
+test_cache_swap(null);
+
 exit(harness_result());
 
 /* file end: ./tests/autocron-stamp.php */

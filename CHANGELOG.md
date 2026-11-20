@@ -63,6 +63,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Option filter counts on 232,000 listings: 446 to 53 ms on MariaDB, 526 to 208 ms on MySQL.
 - A theme's API calls on one page share their work, so a home page runs about half the queries.
 - Deep admin order pages load in about 2 ms instead of 100 ms.
+- Public pages win back most of the time lost since 7.1.0.beta3: prices read the currency list once, and auto-cron, menus and site texts do less per page.
 
 ### Fixed
 - A shop install no longer stops at "install theme Aisle" on a slow link: the zip now ships Aisle, and package steps get more time.

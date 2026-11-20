@@ -870,7 +870,7 @@ function _osc_locale_text(callable $read, ?string $locale = null): string
     if ($locale === null && function_exists('osc_current_ui_locale')) {
         $locale = osc_current_ui_locale();
     }
-    foreach (array((string) $locale, osc_language()) as $code) {
+    foreach (array_unique(array((string) $locale, osc_language())) as $code) {
         if ($code === '') {
             continue;
         }

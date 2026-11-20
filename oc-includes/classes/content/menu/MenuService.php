@@ -38,6 +38,9 @@ final class MenuService
 
     private static ?self $instance = null;
 
+    /** @var array<string,array{label:string,url:string}>|null */
+    private ?array $coreBuiltins = null;
+
     /**
      * @param \Closure(int):string                    $categoryUrl a category's search URL
      * @param \Closure(int,string,string,string):string $pageUrl   a page's URL from id, slug, title and locale ('' for the default)
@@ -156,14 +159,19 @@ final class MenuService
     }
 
     /**
-     * The built-in pages the site offers now, ref => label and URL. Built on each call from
-     * core's URL helpers, so the links follow the permalink setting.
+     * The built-in pages the site offers now, ref => label and URL. Core's are built once per
+     * request from its URL helpers, so the links follow the permalink setting.
      *
      * @return array<string,array{label:string,url:string}>
      */
     public function builtins(): array
     {
-        return $this->builtins !== null ? ($this->builtins)() : self::coreBuiltins();
+        if ($this->builtins !== null) {
+            return ($this->builtins)();
+        }
+
+        // Every menu on the page shares one build; the settings behind it do not change mid-request.
+        return $this->coreBuiltins ??= self::coreBuiltins();
     }
 
     /**

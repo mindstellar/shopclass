@@ -114,9 +114,9 @@ class Escape
         if ($str === '') {
             return '';
         }
-        // With no "&" there is no entity to keep, so the four passes below would change nothing.
+        // With no "&" there is no entity to keep, and ENT_QUOTES already escapes both quotes.
         if (is_string($str) && strpos($str, '&') === false) {
-            return str_replace(array("'", '"'), array('&#39;', '&quot;'), self::text($str));
+            return htmlspecialchars($str, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401);
         }
 
         $temp = '__TEMP_AMPERSANDS__';

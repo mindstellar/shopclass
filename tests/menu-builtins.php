@@ -12,6 +12,7 @@
  * MenuService::coreBuiltins(): the built-in menu pages come from core's URL helpers on each
  * call, so they follow the friendly-URL setting; login and register go when users are off,
  * register when sign-up is off, and post when guests may not post or the site is a shop.
+ * A MenuService builds them once and every menu on the page shares that build.
  * Usage: php tests/menu-builtins.php
  */
 
@@ -41,6 +42,8 @@ function osc_rewrite_enabled()
 }
 function osc_users_enabled()
 {
+    $GLOBALS['__built'] = ($GLOBALS['__built'] ?? 0) + 1;
+
     return $GLOBALS['__site']['users'];
 }
 function osc_user_registration_enabled()
@@ -113,5 +116,11 @@ $GLOBALS['__site']['regPost'] = false;
 pin('users off but guests post: post stays', array('home', 'search', 'contact', 'post'), array_keys($urls()));
 $GLOBALS['__site']['shop'] = true;
 pin('a shop has no post link', array('home', 'search', 'contact'), array_keys($urls()));
+
+harness_section('one build per request');
+$service = new MenuService((new ReflectionClass(Preference::class))->newInstanceWithoutConstructor(), 'en_US', array('en_US'), static fn (int $id): string => '', static fn (int $id, string $slug, string $title, string $locale): string => '');
+$GLOBALS['__built'] = 0;
+$first = $service->builtins();
+pin('every menu on a page shares core\'s links, built once', array(true, 1), array($service->builtins() === $first, $GLOBALS['__built']));
 
 exit(harness_result());
