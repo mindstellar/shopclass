@@ -20,7 +20,7 @@ use mindstellar\utility\Utils;
 final class CacheGroup
 {
     /** Groups most pages read; with a driver that reads many keys at once they come in one round trip. */
-    private const COMMON = array('preference', 'locale', 'category', 'currency', 'widget', 'page', 'search');
+    private const COMMON = array('preference', 'locale', 'category', 'currency', 'widget', 'page', 'search', 'menu');
 
     /** 30 days, the longest relative expiry memcached accepts. */
     private const GENERATION_TTL = 2592000;

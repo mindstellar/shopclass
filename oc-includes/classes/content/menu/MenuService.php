@@ -35,6 +35,7 @@ final class MenuService
 
     /** Preference that keeps the theme's declared menu places for requests that never load the theme. */
     public const PLACES_PREFERENCE = 'menu_theme_places';
+    private const CACHE_GROUP      = 'menu';
 
     private static ?self $instance = null;
 
@@ -339,6 +340,7 @@ final class MenuService
         if ($value === false || !$this->preferences->replace($id, $value, self::SECTION, 'STRING')) {
             return [__('The menu could not be saved.')];
         }
+        CacheGroup::changed(self::CACHE_GROUP);
         osc_purge_page_cache('menu');
 
         return [];
@@ -366,6 +368,7 @@ final class MenuService
         $deleted = $this->preferences->delete(['s_name' => $id, 's_section' => self::SECTION]);
         // The in-request map keeps deleted keys, so blank it here.
         $this->preferences->set($id, '', self::SECTION);
+        CacheGroup::changed(self::CACHE_GROUP);
         osc_purge_page_cache('menu');
 
         return $deleted !== false;
@@ -409,37 +412,29 @@ final class MenuService
             return [];
         }
         $spec = $this->themeSpec($id);
-        // A theme default of built-in pages and plain links reads nothing stored, so it skips the cache trip.
-        if (is_array($spec) && self::onlyBuiltinsAndLinks($spec) && $this->load($id) === null) {
-            $default = $this->themeDefault($id);
-            if ($default !== null) {
-                $builtins = null;
-
-                return $this->withBuiltins($this->links($default, $locale), $builtins);
-            }
-        }
-        $key  = implode('|', ['menu', $id, $locale, CacheGroup::generation('category'), CacheGroup::generation('page'), $spec === null ? '' : md5(serialize($spec))]);
-
-        // Built-in pages stay placeholders in the cache; their URLs are built per request.
-        $tree = CacheGroup::remember('preference', $key, function () use ($id, $locale): array {
-            $saved = $this->load($id);
-            if ($saved !== null) {
-                return $this->links($saved['items'], $locale);
-            }
-            $default = $this->themeDefault($id);
-            if ($default !== null) {
-                return $this->links($default, $locale);
-            }
-
-            return match ($id) {
-                'main'   => $this->topCategories($locale),
-                'footer' => $this->linkedPages($locale),
-                default  => [],
+        // The built links, URLs included, are kept per menu and language. A saved menu, a setting
+        // such as permalinks or the theme, and a category or page change each start a new key.
+        $key = implode('|', [
+            'links', $id, $locale, self::uiLocale(), $this->builtins === null ? 'core' : 'own',
+            CacheGroup::generation('preference'), CacheGroup::generation('category'), CacheGroup::generation('page'),
+            $spec === null ? '' : md5(serialize($spec)),
+        ]);
+        $tree = CacheGroup::remember(self::CACHE_GROUP, $key, function () use ($id, $locale): array {
+            $saved   = $this->load($id);
+            $default = $saved === null ? $this->themeDefault($id) : null;
+            $items   = match (true) {
+                $saved !== null   => $this->links($saved['items'], $locale),
+                $default !== null => $this->links($default, $locale),
+                $id === 'main'    => $this->topCategories($locale),
+                $id === 'footer'  => $this->linkedPages($locale),
+                default           => [],
             };
-        });
-        $builtins = null;
+            $builtins = null;
 
-        return is_array($tree) ? $this->withBuiltins($tree, $builtins) : [];
+            return $this->withBuiltins($items, $builtins);
+        });
+
+        return is_array($tree) ? $tree : [];
     }
 
     /**
@@ -527,6 +522,7 @@ final class MenuService
         $value = is_array($raw) ? (string) json_encode($raw) : '';
         if ((string) \osc_get_preference(self::PLACES_PREFERENCE) !== $value) {
             \osc_set_preference(self::PLACES_PREFERENCE, $value);
+            CacheGroup::changed(self::CACHE_GROUP);
         }
     }
 
@@ -536,6 +532,7 @@ final class MenuService
     public static function placesCleared(): void
     {
         \osc_set_preference(self::PLACES_PREFERENCE, '');
+        CacheGroup::changed(self::CACHE_GROUP);
     }
 
     /**
@@ -568,21 +565,6 @@ final class MenuService
             }
         }
         self::syncPlaces();
-    }
-
-    /**
-     * @param array<mixed> $items
-     */
-    private static function onlyBuiltinsAndLinks(array $items): bool
-    {
-        foreach ($items as $item) {
-            if (!is_array($item) || !in_array($item['type'] ?? '', ['builtin', 'link'], true)
-                || (is_array($item['children'] ?? null) && !self::onlyBuiltinsAndLinks($item['children']))) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**
