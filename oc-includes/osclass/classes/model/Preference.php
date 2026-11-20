@@ -39,6 +39,8 @@ class Preference extends DAO
      */
     private $pref;
 
+    private static int $revision = 0;
+
     /**
      * Set data related to t_preference table and load the cached preference map.
      */
@@ -109,6 +111,7 @@ class Preference extends DAO
                 $this->pref[$section][$name] = $value;
             }
         }
+        ++self::$revision;
     }
 
     /**
@@ -296,6 +299,15 @@ class Preference extends DAO
     public function set($key, $value, $section = 'osclass')
     {
         $this->pref[$section][$key] = $value;
+        ++self::$revision;
+    }
+
+    /**
+     * Counts changes to the loaded map, so a reader can keep what it worked out from it until one lands.
+     */
+    public static function revision(): int
+    {
+        return self::$revision;
     }
 
     /**

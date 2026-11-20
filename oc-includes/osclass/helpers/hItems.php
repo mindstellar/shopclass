@@ -1787,16 +1787,19 @@ function osc_format_price($price, $symbol = null, $currency = null)
         return osc_apply_filter('item_price_zero', __('Free'));
     }
 
+    $itemCode = osc_item_currency();
+    $code     = $currency !== null && $currency !== '' ? (string) $currency : $itemCode;
+    $row      = null;
     if ($symbol == null) {
-        $symbol = osc_item_currency_symbol();
+        $row    = Currency::getInstance()->findByPrimaryKey($itemCode);
+        $symbol = is_array($row) ? $row['s_description'] : '';
     }
+    // The item's currency row already holds its decimals, so a listing price needs no second lookup.
+    $decimals = $code === $itemCode && isset($row['i_decimals'])
+        ? (int) $row['i_decimals']
+        : \mindstellar\currency\Money::decimals($code === '' ? null : $code);
 
-    $code           = $currency !== null && $currency !== '' ? (string) $currency : osc_item_currency();
-    $currencyFormat = \mindstellar\currency\Money::display(
-        (int) round((float) $price),
-        (string) $symbol,
-        \mindstellar\currency\Money::decimals($code === '' ? null : $code)
-    );
+    $currencyFormat = \mindstellar\currency\Money::display((int) round((float) $price), (string) $symbol, $decimals);
 
     return osc_apply_filter('item_price', $currencyFormat);
 }

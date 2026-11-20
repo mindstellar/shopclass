@@ -825,7 +825,15 @@ function osc_page_title()
  */
 function _osc_site_text(string $key, ?string $locale = null): string
 {
-    return osc_settings_text_value($key, 'osclass', $locale);
+    // A page prints the title and description several times, so each is kept until a preference changes.
+    static $known = array(), $revision = -1;
+    if ($revision !== Preference::revision()) {
+        $known    = array();
+        $revision = Preference::revision();
+    }
+    $locale ??= function_exists('osc_current_ui_locale') ? osc_current_ui_locale() : '';
+
+    return $known[$key . '|' . $locale] ??= osc_settings_text_value($key, 'osclass', $locale);
 }
 
 /**
@@ -891,7 +899,13 @@ function _osc_locale_text(callable $read, ?string $locale = null): string
  */
 function osc_language()
 {
-    return _osc_enabled_locale((string) getPreference('language'), false);
+    // Asked many times a page, so the answer is kept until a preference changes or is reloaded.
+    static $known = array(-1, '');
+    if ($known[0] !== Preference::revision()) {
+        $known = array(Preference::revision(), _osc_enabled_locale((string) getPreference('language'), false));
+    }
+
+    return $known[1];
 }
 
 /**

@@ -42,4 +42,24 @@ Preference::getInstance()->set('pageTitle', 'Single');
 Preference::getInstance()->set('pageTitlede_DE', 'Titel');
 pin('a stored language wins, others fall back', array('Titel', 'Single'), array(osc_settings_text_value('pageTitle', 'osclass', 'de_DE'), osc_settings_text_value('pageTitle', 'osclass', 'en_US')));
 
+harness_section('site title');
+$titles = new ReflectionProperty(Preference::class, 'pref');
+pin('the title in the visitor\'s language', 'Titel', _osc_site_text('pageTitle', 'de_DE'));
+$map = $titles->getValue(Preference::getInstance());
+$map['osclass']['pageTitlede_DE'] = 'Unseen';
+$titles->setValue(Preference::getInstance(), $map);
+pin('read once a page, not again on the next call', 'Titel', _osc_site_text('pageTitle', 'de_DE'));
+Preference::getInstance()->set('pageTitlede_DE', 'Neu');
+pin('a title set in the request shows at once', 'Neu', _osc_site_text('pageTitle', 'de_DE'));
+
+harness_section('default language');
+pin('the default language', 'en_US', osc_language());
+$map = $titles->getValue(Preference::getInstance());
+$map['osclass']['language'] = 'de_DE';
+$titles->setValue(Preference::getInstance(), $map);
+pin('read once, not on every call', 'en_US', osc_language());
+osc_reset_preferences();
+Preference::getInstance()->set('language', 'de_DE');
+pin('a change in the request shows at once', 'de_DE', osc_language());
+
 exit(harness_result());
