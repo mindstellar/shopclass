@@ -70,6 +70,9 @@ final class ShopSetup
     /** @var array<string, array<string,mixed>>|null */
     private ?array $installed;
 
+    /** @var callable(): array<string,mixed> */
+    private $themeInfo;
+
     /**
      * The callables and $installed are test seams; the installer leaves them null.
      *
@@ -81,6 +84,7 @@ final class ShopSetup
      * @param callable|null $requirements () => Aisle's plugin list, null while Aisle is not on disk
      * @param callable|null $switcher     (slug) => null when the plugin is on, else an error message
      * @param array<string, array<string,mixed>>|null $installed plugins on disk; read from the site when null
+     * @param callable|null $themeInfo    () => the header of the Aisle copy on disk
      */
     public function __construct(
         array $themeVersions,
@@ -90,7 +94,8 @@ final class ShopSetup
         ?callable $fetcher = null,
         ?callable $requirements = null,
         ?callable $switcher = null,
-        ?array $installed = null
+        ?array $installed = null,
+        ?callable $themeInfo = null
     ) {
         $this->themeVersions  = $themeVersions;
         $this->themeIndex     = $themeIndex;
@@ -102,6 +107,7 @@ final class ShopSetup
         $this->requirements = $requirements ?? static fn (): ?array => PluginDependencies::themeRequirements(self::THEME);
         $this->switcher     = $switcher;
         $this->installed    = $installed;
+        $this->themeInfo    = $themeInfo ?? static fn (): array => (array) \WebThemes::getInstance()->loadThemeInfo(self::THEME);
     }
 
     /**
@@ -213,17 +219,17 @@ final class ShopSetup
     }
 
     /**
-     * Download Aisle, unless it is on disk already.
+     * Use the Aisle copy on disk (the release zip ships one) when this core can run it, else download Aisle.
      *
      * @return array{ok:bool, message:string}
      */
     public function installTheme(): array
     {
+        if (($this->requirements)() !== null && Compatibility::reason(($this->themeInfo)()) === null) {
+            return self::answer(true, __('Theme installed.'));
+        }
         if (osc_market_changes_blocked()) {
             return self::answer(false, __('Package installs are disabled on this deployment.'));
-        }
-        if (($this->requirements)() !== null) {
-            return self::answer(true, __('Theme installed.'));
         }
         $entry = $this->themeEntry();
         if ($entry === null) {

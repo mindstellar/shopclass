@@ -1672,12 +1672,14 @@ function install_run_unit(string $action): array
         return install_account_unit();
     }
     if ($action === 'install_package' || $action === 'activate_theme') {
+        install_allow_long_unit(true);
         install_load_app_helpers();
         $result = install_shop_step($action, Params::getParamString('type'), Params::getParamString('slug'));
 
         return array('status' => $result['ok'], 'message' => $result['message']);
     }
     if ($action === 'sample_photos' || $action === 'sample_batch') {
+        install_allow_long_unit(false);
         install_load_seed_helpers();
         $ok = install_sample_step($action, Params::getParamInt('batch'))['ok'];
 
@@ -1707,6 +1709,44 @@ function install_run_unit(string $action): array
     install_sync_menu_places();
 
     return $result;
+}
+
+/**
+ * Seconds a package or sample unit may run: a whole download, then unpacking it.
+ *
+ * @return int
+ */
+function install_unit_time_limit(): int
+{
+    return \mindstellar\utility\FileSystem::DOWNLOAD_TIMEOUT_SECONDS + 120;
+}
+
+/**
+ * Milliseconds the browser waits for one unit, longer than the server may run it.
+ *
+ * @return int
+ */
+function install_unit_browser_timeout(): int
+{
+    return (install_unit_time_limit() + 60) * 1000;
+}
+
+/**
+ * Let a unit that downloads run past the host's default time limit. A package unit also
+ * finishes when the browser goes away, so no half-installed package is left.
+ *
+ * @param bool $finishOnAbort
+ *
+ * @return void
+ */
+function install_allow_long_unit(bool $finishOnAbort): void
+{
+    if (function_exists('set_time_limit')) {
+        @set_time_limit(install_unit_time_limit());
+    }
+    if ($finishOnAbort && function_exists('ignore_user_abort')) {
+        ignore_user_abort(true);
+    }
 }
 
 /**

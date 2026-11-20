@@ -525,7 +525,8 @@
        Steps 4 and 5: the site + admin form runs the install plan one request per unit, then a
        synthetic POST to install.php carries the result to the done step.
        ------------------------------------------------------------- */
-    var UNIT_TIMEOUT = 180000;
+    // The page sets data-unit-timeout longer than the server's own limit for a unit.
+    var UNIT_TIMEOUT = 480000;
     var SLOW_AFTER = 8000;
     var FINISH_PAUSE = 700;
 
@@ -598,7 +599,7 @@
         var controller = new AbortController();
         var timer = window.setTimeout(function () {
             controller.abort();
-        }, UNIT_TIMEOUT);
+        }, parseInt(form.getAttribute('data-unit-timeout'), 10) || UNIT_TIMEOUT);
         return fetch('install-location.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },

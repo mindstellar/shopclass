@@ -43,6 +43,11 @@ namespace {
         echo $text;
     }
 
+    function install_unit_browser_timeout()
+    {
+        return 480000;
+    }
+
     function install_site_choice()
     {
         return array('type' => 'classifieds', 'sample' => !empty($GLOBALS['ins_test_sample']), 'plugins' => array());
@@ -88,6 +93,7 @@ namespace {
         $plan = json_decode(html_entity_decode($m[1], ENT_QUOTES), true);
     }
     check('install plan decodes to a list starting with the account task', is_array($plan) && ($plan[0]['id'] ?? '') === 'account' && !empty($plan[0]['stop']));
+    check('the form tells the browser how long to wait for a unit', str_contains($html, 'data-unit-timeout="480000"'));
     check('plan has starter and places, no examples by default', is_array($plan) && array_column($plan, 'id') === array('account', 'starter', 'locations', 'storefront'));
     $GLOBALS['ins_test_sample'] = true;
     ob_start();

@@ -65,6 +65,7 @@ async function boot(answers, opts = {}) {
   const add = (tag, id) => (byId[id] = new El(tag, id));
   const form = add('form', 'ins-target-form');
   form.setAttribute('data-install-plan', JSON.stringify(plan()));
+  if (opts.unitTimeout) form.setAttribute('data-unit-timeout', String(opts.unitTimeout));
   form.elements = { install_nonce: { value: 'N1' } };
   form.fields = [];
   const field = (id, value) => { const el = add('input', id); el.value = value; el.name = id; form.fields.push(el); return el; };
@@ -126,7 +127,8 @@ async function boot(answers, opts = {}) {
     forEach(cb) { this.f.fields.forEach((el) => cb(el.value, el.name)); }
   }
   const win = {
-    setTimeout: (fn, ms) => (ms <= 1000 ? (queueMicrotask(fn), 1) : 2),
+    timers: [],
+    setTimeout: (fn, ms) => (win.timers.push(ms), ms <= 1000 ? (queueMicrotask(fn), 1) : 2),
     clearTimeout: () => {},
     location: { assign: (u) => { win.assigned = u; } },
     leave: new Set(),
@@ -290,6 +292,13 @@ const all = ['account', 'starter', 'locations', 'sample_batch:0', 'sample_batch:
   assert.equal(r.byId['ins-progress-error'].hidden, true, 'the old danger panel is hidden');
   assert.equal(r.byId['ins-progress-reload'].hidden, true, 'Reload is hidden');
   assert.equal(r.byId['ins-track'].getAttribute('aria-valuetext'), null, 'the old spoken count is cleared');
+}
+
+// Each request waits as long as the page says, which is longer than the server may run a unit.
+{
+  const r = await boot((a) => (a === 'account' ? { status: true } : ok), { unitTimeout: 543000 });
+  assert.ok(r.win.timers.includes(543000), 'the request timer uses data-unit-timeout');
+  assert.ok(!r.win.timers.includes(180000), 'not the old three minutes');
 }
 
 console.log('install runner: all checks passed');

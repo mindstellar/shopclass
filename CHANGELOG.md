@@ -65,6 +65,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Deep admin order pages load in about 2 ms instead of 100 ms.
 
 ### Fixed
+- A shop install no longer stops at "install theme Aisle" on a slow link: the zip now ships Aisle, and package steps get more time.
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated.
 - A language that shares its short name with another, such as English (Australia), can be installed again.
 - Installing or updating a language keeps e-mail templates the admin edited.

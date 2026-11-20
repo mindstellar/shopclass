@@ -160,6 +160,24 @@ check('a sample batch that was not chosen answers false with a message', $res['s
 $res = install_run_unit('sample_photos');
 check('so do example photos', $res['status'] === false && $res['message'] !== '');
 
+harness_section('time limits');
+check('a unit may run longer than a whole download', install_unit_time_limit() > \mindstellar\utility\FileSystem::DOWNLOAD_TIMEOUT_SECONDS);
+check('the browser waits longer than the server may run', install_unit_browser_timeout() > install_unit_time_limit() * 1000);
+set_time_limit(30);
+ignore_user_abort(false);
+install_run_unit('sample_photos');
+check('a sample unit raises the time limit', (int) ini_get('max_execution_time') === install_unit_time_limit());
+check('and stops when the browser goes', ignore_user_abort() === 0);
+set_time_limit(0);
+// The package unit loads the whole app, which clashes with this script's stubs, so it runs in its own process.
+$child = 'define("ABS_PATH", ' . var_export(ABS_PATH, true) . '); define("LIB_PATH", ABS_PATH . "oc-includes/");'
+    . ' require LIB_PATH . "vendor/autoload.php"; require LIB_PATH . "osclass/install-functions.php";'
+    . ' register_shutdown_function(static function (): void { echo "LIMITS:", ini_get("max_execution_time"), ":", ignore_user_abort(); });'
+    . ' set_time_limit(30); install_run_unit("install_package");';
+preg_match('/LIMITS:(\d+):(\d+)/', (string) shell_exec(escapeshellarg(PHP_BINARY) . ' -r ' . escapeshellarg($child) . ' 2>/dev/null'), $limits);
+check('a package unit raises the time limit', (int) ($limits[1] ?? 0) === install_unit_time_limit());
+check('and finishes when the browser goes', ($limits[2] ?? '') === '1');
+
 harness_section('requests the browser got no answer to');
 $choose('classifieds');
 install_record_lost_steps(array('locations', 'starter', 'storefront', 'plugin:evil', 'theme:aisle'));

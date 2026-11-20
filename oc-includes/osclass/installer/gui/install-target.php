@@ -69,7 +69,7 @@ $ins_plan   = mindstellar\install\InstallPlan::build(
 );
 ?>
 <div id="ins-target-wrap" class="ins-target-wrap">
-    <form id="ins-target-form" class="ins-stage" action="#" method="post" novalidate data-install-plan="<?php echo osc_esc_html((string) json_encode($ins_plan)); ?>">
+    <form id="ins-target-form" class="ins-stage" action="#" method="post" novalidate data-install-plan="<?php echo osc_esc_html((string) json_encode($ins_plan)); ?>" data-unit-timeout="<?php echo (int) install_unit_browser_timeout(); ?>">
         <input type="hidden" name="install_nonce" value="<?php echo osc_esc_html($install_nonce); ?>" />
 
         <div class="ins-stage-body">

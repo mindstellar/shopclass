@@ -7,8 +7,8 @@
 #   docker run -p 8080:80 --env-file prod.env shopclass
 #
 # Build before `docker build`: composer install --no-dev && npm ci && npm run build.
-# The storefront default theme lives in its own repo and is bundled below
-# (STOREFRONT_VERSION defaults to its latest release).
+# The storefront and aisle themes live in their own repos and are bundled below
+# (STOREFRONT_VERSION and AISLE_VERSION default to their latest release).
 
 # nchan, the module behind live messages, is not packaged by Alpine. It is built here
 # against the source of the exact nginx that apk installs, and the final stage refuses
@@ -83,21 +83,25 @@ RUN test -f oc-includes/vendor/autoload.php && test -f oc-admin/themes/modern/cs
   && test -d oc-includes/assets/bootstrap \
   || { echo "Build first: composer install --no-dev && npm ci && npm run build"; exit 1; }
 
-# Bundle the storefront default theme from its own repository (themes are not
-# tracked in this repo). Pin with --build-arg STOREFRONT_VERSION=vX.Y.Z if needed.
+# Bundle the storefront and aisle themes from their own repositories (themes are not
+# tracked in this repo). Pin with --build-arg STOREFRONT_VERSION=vX.Y.Z / AISLE_VERSION=vX.Y.Z.
 ARG STOREFRONT_VERSION=latest
+ARG AISLE_VERSION=latest
 RUN set -eu; \
-    if [ "$STOREFRONT_VERSION" = "latest" ]; then \
-        THEME_URL=$(curl -fsSL https://api.github.com/repos/mindstellar/theme-storefront/releases/latest \
-            | grep 'browser_download_url' | grep -o 'https://[^"]*\.zip' | head -1); \
-    else \
-        THEME_URL="https://github.com/mindstellar/theme-storefront/releases/download/${STOREFRONT_VERSION}/storefront_${STOREFRONT_VERSION#v}.zip"; \
-    fi; \
-    [ -n "$THEME_URL" ] || { echo "could not resolve storefront theme download url" >&2; exit 1; }; \
-    rm -rf /application/oc-content/themes/storefront; \
-    curl -fsSL -o /tmp/storefront.zip "$THEME_URL"; \
-    unzip -qq /tmp/storefront.zip -d /application/oc-content/themes/; \
-    rm -f /tmp/storefront.zip
+    for PAIR in "storefront:$STOREFRONT_VERSION" "aisle:$AISLE_VERSION"; do \
+        THEME="${PAIR%%:*}"; TAG="${PAIR#*:}"; \
+        if [ "$TAG" = "latest" ]; then \
+            THEME_URL=$(curl -fsSL "https://api.github.com/repos/mindstellar/theme-$THEME/releases/latest" \
+                | grep 'browser_download_url' | grep -o 'https://[^"]*\.zip' | head -1); \
+        else \
+            THEME_URL="https://github.com/mindstellar/theme-$THEME/releases/download/${TAG}/${THEME}_${TAG#v}.zip"; \
+        fi; \
+        [ -n "$THEME_URL" ] || { echo "could not resolve $THEME theme download url" >&2; exit 1; }; \
+        rm -rf "/application/oc-content/themes/$THEME"; \
+        curl -fsSL -o "/tmp/$THEME.zip" "$THEME_URL"; \
+        unzip -qq "/tmp/$THEME.zip" -d /application/oc-content/themes/; \
+        rm -f "/tmp/$THEME.zip"; \
+    done
 
 # Pristine copy of the bundled plugins, themes and languages, kept outside oc-content so it always
 # reflects this image regardless of what a persistent volume mounted over

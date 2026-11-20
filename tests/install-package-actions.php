@@ -205,6 +205,37 @@ $keys = array_column($GLOBALS['prefs'], 0);
 check('site_mode is set after the theme', array_search('theme', $keys, true) < array_search('site_mode', $keys, true));
 check('no failures are left for the finish page', $session->_get('install_shop_failed') === array());
 
+harness_section('Aisle ships in the zip');
+$bundled = static function (string $requires) use ($release): array {
+    $log   = new ArrayObject(array('fetched' => array()));
+    $setup = new ShopSetup(
+        array('aisle' => array($release('1.0.0'))),
+        array('aisle' => array('slug' => 'aisle')),
+        array(),
+        array(),
+        static function (string $type, string $slug, array $entry) use ($log): array {
+            $log['fetched'] = array_merge($log['fetched'], array($type . ':' . $slug));
+
+            return array('ok' => false, 'message' => 'The server did not answer in time.');
+        },
+        static fn (): ?array => array('required' => array(), 'recommended' => array()),
+        null,
+        array(),
+        static fn (): array => array('name' => 'Aisle', 'requires' => $requires)
+    );
+
+    return array($setup, $log);
+};
+[$setup, $log] = $bundled('7.1.0');
+check('a copy this core runs is used', $setup->installTheme()['ok'] === true);
+check('without a download', $log['fetched'] === array());
+$GLOBALS['installsOff'] = true;
+check('even when package installs are off', $setup->installTheme()['ok'] === true && $log['fetched'] === array());
+$GLOBALS['installsOff'] = false;
+[$setup, $log] = $bundled('99.0.0');
+check('a copy that needs a newer core is not used', $setup->installTheme()['ok'] === false);
+check('a release that fits is downloaded instead', $log['fetched'] === array('theme:aisle'));
+
 harness_section('package installs turned off');
 [$setup, $log] = $make();
 $GLOBALS['installsOff'] = true;
