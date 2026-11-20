@@ -227,14 +227,32 @@ $bundled = static function (string $requires) use ($release): array {
     return array($setup, $log);
 };
 [$setup, $log] = $bundled('7.1.0');
-check('a copy this core runs is used', $setup->installTheme()['ok'] === true);
-check('without a download', $log['fetched'] === array());
 $GLOBALS['installsOff'] = true;
-check('even when package installs are off', $setup->installTheme()['ok'] === true && $log['fetched'] === array());
+check('a copy this core runs is used without a download, even with package installs off', $setup->installTheme()['ok'] === true && $log['fetched'] === array());
 $GLOBALS['installsOff'] = false;
 [$setup, $log] = $bundled('99.0.0');
-check('a copy that needs a newer core is not used', $setup->installTheme()['ok'] === false);
+$res = $setup->installTheme();
+check('a copy that needs a newer core is not used', $res['ok'] === false);
 check('a release that fits is downloaded instead', $log['fetched'] === array('theme:aisle'));
+check('the failure says why the copy on disk was passed over', strpos($res['message'], 'Requires Shopclass 99.0.0') === 0 && strpos($res['message'], 'did not answer') !== false);
+
+harness_section('time limits');
+set_time_limit(30);
+ignore_user_abort(false);
+[$setup] = $make();
+$choose('shop', array('shipping'));
+install_shop_step('install_package', 'plugin', 'razorpay', $setup);
+check('a step that was not chosen keeps the time limit', (int) ini_get('max_execution_time') === 30 && ignore_user_abort() === 0);
+install_shop_step('install_package', 'theme', 'aisle', $setup);
+check('a chosen step raises it', (int) ini_get('max_execution_time') === install_unit_time_limit());
+check('and finishes when the browser goes', ignore_user_abort() === 1);
+set_time_limit(0);
+ignore_user_abort(false);
+$child = 'define("ABS_PATH", ' . var_export(ABS_PATH, true) . '); define("LIB_PATH", ABS_PATH . "oc-includes/");'
+    . ' require LIB_PATH . "vendor/autoload.php"; require LIB_PATH . "osclass/install-functions.php"; echo install_unit_browser_timeout();';
+$hostLimit = static fn (string $ini): string => trim((string) shell_exec(escapeshellarg(PHP_BINARY) . ' ' . $ini . ' -r ' . escapeshellarg($child) . ' 2>/dev/null'));
+check('the browser waits a minute past the raised limit', $hostLimit('') === (string) ((install_unit_time_limit() + 60) * 1000));
+check('or past the host limit when it cannot be raised', $hostLimit('-d disable_functions=set_time_limit -d max_execution_time=30') === '90000');
 
 harness_section('package installs turned off');
 [$setup, $log] = $make();

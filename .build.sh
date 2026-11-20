@@ -9,7 +9,7 @@
 ## BEFORE this runs; this script does not build.
 ## It layers the freshly built runtime output onto a clean `git archive` base
 ## (so .gitattributes export-ignore applies to the sources) and
-## bundles the storefront and aisle themes.
+## bundles the themes listed in scripts/bundled-themes.
 ##
 ## Environment:
 ##   OSCLASS_VERSION  version label + zip names (e.g. 5.3.0 or 5.3.0.dev)  [required]
@@ -74,7 +74,7 @@ rm -rf "$DIR/osclass/oc-includes/vendor/bin" \
   "$DIR/osclass/oc-includes/vendor/symfony/service-contracts/Test"
 
 # Bundle the newest release of each theme this core supports (the Docker builds use the same picker).
-for THEME in storefront aisle; do
+for THEME in $(cat scripts/bundled-themes); do
   THEME_URL=$(bash scripts/theme-release.sh "$THEME" "$VERSION" | cut -f2)
   curl -fsSL -o "$DIR/$THEME.zip" "$THEME_URL"
   rm -rf "$DIR/osclass/oc-content/themes/$THEME"

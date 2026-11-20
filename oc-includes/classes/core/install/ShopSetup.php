@@ -225,19 +225,26 @@ final class ShopSetup
      */
     public function installTheme(): array
     {
-        if (($this->requirements)() !== null && Compatibility::reason(($this->themeInfo)()) === null) {
+        $onDisk  = ($this->requirements)() !== null;
+        $problem = $onDisk ? Compatibility::reason(($this->themeInfo)()) : null;
+        if ($onDisk && $problem === null) {
             return self::answer(true, __('Theme installed.'));
         }
+        if ($problem !== null) {
+            error_log('Shopclass install: the Aisle copy on disk is not used: ' . $problem);
+        }
+        // Says why the copy on disk was passed over when the download fails as well.
+        $fail = static fn (string $message): array => self::answer(false, trim(($problem ?? '') . ' ' . $message));
         if (osc_market_changes_blocked()) {
-            return self::answer(false, __('Package installs are disabled on this deployment.'));
+            return $fail(__('Package installs are disabled on this deployment.'));
         }
         $entry = $this->themeEntry();
         if ($entry === null) {
-            return self::answer(false, __('No release of this theme runs on this version of Shopclass.'));
+            return $fail(__('No release of this theme runs on this version of Shopclass.'));
         }
         $result = ($this->fetcher)('theme', self::THEME, $entry);
 
-        return self::answer(!empty($result['ok']), (string) ($result['message'] ?? ''));
+        return !empty($result['ok']) ? self::answer(true, (string) ($result['message'] ?? '')) : $fail((string) ($result['message'] ?? ''));
     }
 
     /**

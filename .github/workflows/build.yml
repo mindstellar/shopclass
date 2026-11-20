@@ -354,19 +354,6 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # The same picker as the release zip, authenticated so the GitHub API does not refuse it.
-      - name: Pick the theme releases
-        id: themes
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          for THEME in storefront aisle; do
-            TAG=$(bash scripts/theme-release.sh "$THEME" "${OSCLASS_VERSION}" | cut -f1)
-            echo "${THEME}=${TAG}" >> "$GITHUB_OUTPUT"
-          done
-
       - name: Build and push image
         uses: docker/build-push-action@v7
         with:
@@ -374,9 +361,9 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           provenance: false
-          build-args: |
-            STOREFRONT_VERSION=${{ steps.themes.outputs.storefront }}
-            AISLE_VERSION=${{ steps.themes.outputs.aisle }}
+          # The image picks its themes with the release zip's script; the token avoids the API rate limit.
+          secrets: |
+            "gh_token=${{ github.token }}"
           labels: |
             org.opencontainers.image.version=${{ env.OSCLASS_VERSION }}
             org.opencontainers.image.revision=${{ github.sha }}

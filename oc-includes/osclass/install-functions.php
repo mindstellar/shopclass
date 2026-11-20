@@ -1632,6 +1632,7 @@ function install_shop_step(string $action, string $type, string $slug, ?\mindste
         if ($step === null) {
             return $refused;
         }
+        install_allow_long_unit(true);
         $result = $setup->run($step);
     } catch (\Throwable $e) {
         error_log('Shopclass install: setting up ' . $slug . ' failed: ' . $e->getMessage());
@@ -1672,7 +1673,6 @@ function install_run_unit(string $action): array
         return install_account_unit();
     }
     if ($action === 'install_package' || $action === 'activate_theme') {
-        install_allow_long_unit(true);
         install_load_app_helpers();
         $result = install_shop_step($action, Params::getParamString('type'), Params::getParamString('slug'));
 
@@ -1722,13 +1722,30 @@ function install_unit_time_limit(): int
 }
 
 /**
- * Milliseconds the browser waits for one unit, longer than the server may run it.
+ * Raise the time limit for a unit and say how many seconds it may now run; the host's limit
+ * when it does not allow raising it.
+ *
+ * @return int
+ */
+function install_raise_time_limit(): int
+{
+    $want = install_unit_time_limit();
+    if (function_exists('set_time_limit') && @set_time_limit($want)) {
+        return $want;
+    }
+    $limit = (int) ini_get('max_execution_time');
+
+    return $limit > 0 ? min($limit, $want) : $want;
+}
+
+/**
+ * Milliseconds the browser waits for one unit: a minute longer than this server lets it run.
  *
  * @return int
  */
 function install_unit_browser_timeout(): int
 {
-    return (install_unit_time_limit() + 60) * 1000;
+    return (install_raise_time_limit() + 60) * 1000;
 }
 
 /**
@@ -1741,9 +1758,7 @@ function install_unit_browser_timeout(): int
  */
 function install_allow_long_unit(bool $finishOnAbort): void
 {
-    if (function_exists('set_time_limit')) {
-        @set_time_limit(install_unit_time_limit());
-    }
+    install_raise_time_limit();
     if ($finishOnAbort && function_exists('ignore_user_abort')) {
         ignore_user_abort(true);
     }

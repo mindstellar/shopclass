@@ -10,6 +10,8 @@ tools
 # Test and build scripts never run in the image; nginx would run any .php under them.
 tests
 scripts
+!scripts/theme-release.sh
+!scripts/bundled-themes
 .editorconfig
 .php-cs-fixer.dist.php
 .php-cs-fixer.cache
@@ -18,6 +20,7 @@ scripts
 # storefront theme fresh from its release; never bake the dev symlinks or a
 # private theme into the context.
 oc-content/themes/storefront
+oc-content/themes/aisle
 oc-content/themes/bender
 oc-content/themes/shopclass
 *.log

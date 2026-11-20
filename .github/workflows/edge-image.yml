@@ -69,20 +69,6 @@ jobs:
           } >> "$GITHUB_OUTPUT"
           echo "Edge ${BASE}.${STAMP} from ${REVISION} -> ${TAGS}"
 
-      # The same picker as the release zip, authenticated so the GitHub API does not refuse it.
-      - name: Pick the theme releases
-        id: themes
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CORE_VERSION: ${{ steps.meta.outputs.version }}
-        run: |
-          set -euo pipefail
-          for THEME in storefront aisle; do
-            TAG=$(bash scripts/theme-release.sh "$THEME" "${CORE_VERSION}" | cut -f1)
-            echo "${THEME}=${TAG}" >> "$GITHUB_OUTPUT"
-          done
-
       # The image copies the working tree, so the built output has to exist first.
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
@@ -131,8 +117,9 @@ jobs:
           build-args: |
             EDGE_STAMP=${{ steps.meta.outputs.stamp }}
             EDGE_REVISION=${{ steps.meta.outputs.revision }}
-            STOREFRONT_VERSION=${{ steps.themes.outputs.storefront }}
-            AISLE_VERSION=${{ steps.themes.outputs.aisle }}
+          # The image picks its themes with the release zip's script; the token avoids the API rate limit.
+          secrets: |
+            "gh_token=${{ github.token }}"
           labels: |
             org.opencontainers.image.version=${{ steps.meta.outputs.version }}
             org.opencontainers.image.revision=${{ steps.meta.outputs.revision }}
