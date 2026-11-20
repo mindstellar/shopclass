@@ -107,6 +107,14 @@ class WebThemes
 
         return array('template' => self::$parents[$theme] ?? '');
     }
+
+    public function parentOf(string $theme): string
+    {
+        $info   = $this->loadThemeInfo($theme);
+        $parent = is_array($info) ? (string) ($info['template'] ?? '') : '';
+
+        return $parent !== $theme && \mindstellar\utility\Validate::packageName($parent) ? $parent : '';
+    }
 }
 
 /** Stands in for the hook registry: only whose code is running matters here. */
