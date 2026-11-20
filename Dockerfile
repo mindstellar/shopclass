@@ -7,8 +7,8 @@
 #   docker run -p 8080:80 --env-file prod.env shopclass
 #
 # Build before `docker build`: composer install --no-dev && npm ci && npm run build.
-# The storefront default theme lives in its own repo and is bundled below
-# (STOREFRONT_VERSION defaults to its latest release).
+# The themes in scripts/bundled-themes live in their own repos; the themes stage below
+# bundles the newest release of each that this core supports.
 
 # nchan, the module behind live messages, is not packaged by Alpine. It is built here
 # against the source of the exact nginx that apk installs, and the final stage refuses
@@ -32,6 +32,29 @@ RUN set -eu; \
     make modules >/dev/null; \
     cp objs/ngx_nchan_module.so /out/; \
     printf '%s\n' "$V" > /out/nchan-built-for
+
+# The bundled themes, picked by the same script as the release zip. Pin one with
+# --build-arg THEME_TAGS="aisle=v1.4.1"; a gh_token build secret avoids the GitHub API rate limit.
+FROM alpine:3.22 AS themes
+RUN apk add --no-cache bash coreutils curl jq unzip
+COPY scripts/theme-release.sh scripts/bundled-themes oc-includes/osclass/default-constants.php /pick/
+ARG THEME_TAGS=
+RUN --mount=type=secret,id=gh_token,required=false set -euo pipefail; \
+    CORE=$(sed -nE "s/.*define\('OSCLASS_VERSION', '([^']+)'\).*/\1/p" /pick/default-constants.php); \
+    [ -n "$CORE" ] || { echo "could not read OSCLASS_VERSION" >&2; exit 1; }; \
+    GH_TOKEN=$(cat /run/secrets/gh_token 2>/dev/null || true); export GH_TOKEN; \
+    mkdir -p /themes; \
+    for THEME in $(cat /pick/bundled-themes); do \
+        TAG=$(printf '%s\n' $THEME_TAGS | sed -n "s/^$THEME=//p"); \
+        if [ -n "$TAG" ]; then \
+            URL="https://github.com/mindstellar/theme-$THEME/releases/download/$TAG/${THEME}_${TAG#v}.zip"; \
+        else \
+            URL=$(bash /pick/theme-release.sh "$THEME" "$CORE" | cut -f2); \
+        fi; \
+        curl -fsSL -o "/tmp/$THEME.zip" "$URL"; \
+        unzip -qq "/tmp/$THEME.zip" -d /themes/; \
+        rm -f "/tmp/$THEME.zip"; \
+    done
 
 FROM php:8.5-fpm-alpine
 
@@ -82,22 +105,10 @@ COPY . /application
 RUN test -f oc-includes/vendor/autoload.php && test -f oc-admin/themes/modern/css/main.css \
   && test -d oc-includes/assets/bootstrap \
   || { echo "Build first: composer install --no-dev && npm ci && npm run build"; exit 1; }
+# The themes stage needed these two scripts; the image does not.
+RUN rm -rf /application/scripts
 
-# Bundle the storefront default theme from its own repository (themes are not
-# tracked in this repo). Pin with --build-arg STOREFRONT_VERSION=vX.Y.Z if needed.
-ARG STOREFRONT_VERSION=latest
-RUN set -eu; \
-    if [ "$STOREFRONT_VERSION" = "latest" ]; then \
-        THEME_URL=$(curl -fsSL https://api.github.com/repos/mindstellar/theme-storefront/releases/latest \
-            | grep 'browser_download_url' | grep -o 'https://[^"]*\.zip' | head -1); \
-    else \
-        THEME_URL="https://github.com/mindstellar/theme-storefront/releases/download/${STOREFRONT_VERSION}/storefront_${STOREFRONT_VERSION#v}.zip"; \
-    fi; \
-    [ -n "$THEME_URL" ] || { echo "could not resolve storefront theme download url" >&2; exit 1; }; \
-    rm -rf /application/oc-content/themes/storefront; \
-    curl -fsSL -o /tmp/storefront.zip "$THEME_URL"; \
-    unzip -qq /tmp/storefront.zip -d /application/oc-content/themes/; \
-    rm -f /tmp/storefront.zip
+COPY --from=themes /themes/ /application/oc-content/themes/
 
 # Pristine copy of the bundled plugins, themes and languages, kept outside oc-content so it always
 # reflects this image regardless of what a persistent volume mounted over

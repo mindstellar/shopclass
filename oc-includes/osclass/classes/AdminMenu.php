@@ -581,11 +581,15 @@ class AdminMenu
             $group    = 'settings_group_billing';
             $array[3] = $menu_id;
         }
-        if (defined('OSC_DEBUG') && OSC_DEBUG && !self::isSection($this->aMenu[$menu_id] ?? null)) {
+        // A public page never draws the admin menu, so it skips the owner bookkeeping and the notice.
+        $drawn = (defined('OC_ADMIN') && OC_ADMIN) || !\mindstellar\utility\Utils::isWebRequest();
+        if ($drawn && defined('OSC_DEBUG') && OSC_DEBUG && !self::isSection($this->aMenu[$menu_id] ?? null)) {
             error_log(sprintf('Admin menu: entry "%s" was not shown, its parent menu "%s" does not exist.', $submenu_id, $menu_id));
         }
 
-        $this->setOwner($menu_id, $submenu_id, (string) $url);
+        if ($drawn) {
+            $this->setOwner($menu_id, $submenu_id, (string) $url);
+        }
         $sub = $this->aMenu[$menu_id]['sub'] ?? array();
         unset($sub[$submenu_id]);
         $at = null;

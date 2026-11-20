@@ -2,7 +2,7 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.rc1
+## Shopclass 7.1.0.rc2
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
@@ -65,6 +65,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Deep admin order pages load in about 2 ms instead of 100 ms.
 
 ### Fixed
+- A shop install no longer stops at "install theme Aisle" on a slow link: the zip now ships Aisle, and package steps get more time.
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated.
 - A language that shares its short name with another, such as English (Australia), can be installed again.
 - Installing or updating a language keeps e-mail templates the admin edited.
@@ -81,6 +82,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Admin forms, list checkboxes, search and photo upload work with screen readers and the keyboard.
 
 ### For developers
+- `tests/page-budget.php` fails when a public page includes more files, or sends more queries or cache commands, than `tests/page-budget.json` allows.
 - Shop, messaging, pages, menus and SEO API endpoints; `GET /listings` filters by option, map area, stock and sale.
 - `osc_api_get()` and `osc_api_call()` call the API from PHP with no key.
 - Typed cart and order hooks for shipping, tax, promotion and payment plugins. See [Hooks](https://shopclass.org/docs/developers/hooks/).

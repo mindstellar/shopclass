@@ -30,6 +30,9 @@ final class CurrencyService
     /** MySQL's ER_DUP_ENTRY. */
     private const DUPLICATE_KEY = 1062;
 
+    /** @var \WeakMap<Currency,array{0:int,1:array<string,array<string,mixed>>}>|null each table's `currency` generation and enabled rows */
+    private static ?\WeakMap $enabled = null;
+
     public function __construct(private Currency $currencies)
     {
     }
@@ -67,7 +70,7 @@ final class CurrencyService
      */
     public function decimals(string $code): int
     {
-        $row = $this->findMany(array($code))[strtoupper($code)] ?? null;
+        $row = $this->enabledByCode()[strtoupper($code)] ?? $this->find($code);
 
         return isset($row['i_decimals']) ? (int) $row['i_decimals'] : CurrencyCode::decimals($code);
     }
@@ -91,10 +94,7 @@ final class CurrencyService
      */
     public function findMany(array $codes): array
     {
-        $known = [];
-        foreach ($this->enabled() as $row) {
-            $known[strtoupper((string) $row['pk_c_code'])] = $row;
-        }
+        $known = $this->enabledByCode();
         $found = [];
         foreach ($codes as $code) {
             $key = strtoupper($code);
@@ -108,15 +108,38 @@ final class CurrencyService
     }
 
     /**
-     * The enabled currencies by code, cached in the `currency` group.
+     * The enabled currencies in code order.
      *
      * @return array<int,array<string,mixed>>
      */
     public function enabled(): array
     {
-        return CacheGroup::remember('currency', 'enabled', static function (): array {
-            return Db::stringifyRows(CurrencyStore::enabled());
-        }) ?? [];
+        return array_values($this->enabledByCode());
+    }
+
+    /**
+     * The enabled rows by upper-cased code, from the cached currency table the page already reads.
+     * Kept for the request until the `currency` group changes.
+     *
+     * @return array<string,array<string,mixed>>
+     */
+    private function enabledByCode(): array
+    {
+        self::$enabled ??= new \WeakMap();
+        $generation = CacheGroup::generation('currency');
+        $known      = self::$enabled[$this->currencies] ?? null;
+        if ($known === null || $known[0] !== $generation) {
+            $rows = [];
+            foreach ($this->currencies->listAll() as $row) {
+                if ((int) ($row['b_enabled'] ?? 0) === 1) {
+                    $rows[strtoupper((string) $row['pk_c_code'])] = $row;
+                }
+            }
+            ksort($rows);
+            $known = self::$enabled[$this->currencies] = [$generation, $rows];
+        }
+
+        return $known[1];
     }
 
     /**

@@ -9,7 +9,7 @@
 ## BEFORE this runs; this script does not build.
 ## It layers the freshly built runtime output onto a clean `git archive` base
 ## (so .gitattributes export-ignore applies to the sources) and
-## bundles the storefront theme.
+## bundles the themes listed in scripts/bundled-themes.
 ##
 ## Environment:
 ##   OSCLASS_VERSION  version label + zip names (e.g. 5.3.0 or 5.3.0.dev)  [required]
@@ -73,11 +73,14 @@ rm -rf "$DIR/osclass/oc-includes/vendor/bin" \
   "$DIR/osclass/oc-includes/vendor/symfony/http-client-contracts/Test" \
   "$DIR/osclass/oc-includes/vendor/symfony/service-contracts/Test"
 
-# Bundle the newest storefront release this core supports (the Docker builds use the same picker).
-THEME_URL=$(bash scripts/storefront-release.sh "$VERSION" | cut -f2)
-curl -fsSL -o "$DIR/storefront.zip" "$THEME_URL"
-unzip -qq "$DIR/storefront.zip" -d "$DIR/osclass/oc-content/themes/"
-rm -f "$DIR/storefront.zip"
+# Bundle the newest release of each theme this core supports (the Docker builds use the same picker).
+for THEME in $(cat scripts/bundled-themes); do
+  THEME_URL=$(bash scripts/theme-release.sh "$THEME" "$VERSION" | cut -f2)
+  curl -fsSL -o "$DIR/$THEME.zip" "$THEME_URL"
+  rm -rf "$DIR/osclass/oc-content/themes/$THEME"
+  unzip -qq "$DIR/$THEME.zip" -d "$DIR/osclass/oc-content/themes/"
+  rm -f "$DIR/$THEME.zip"
+done
 
 # 7.1 and later ship only shopclass_v*.zip; sites update to 7.1 from 7.0.12, whose updater takes it.
 mv "$DIR/osclass" "$DIR/shopclass"

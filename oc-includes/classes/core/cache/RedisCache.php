@@ -36,6 +36,9 @@ class RedisCache extends Cache
      */
     private $down = false;
 
+    /** Commands sent to the server in this request, for stats and tests/page-budget.php. */
+    public int $trips = 0;
+
     /** A second connection for waitSignal(), whose reads may block for a while. */
     private ?RedisClient $waiter = null;
 
@@ -441,6 +444,7 @@ class RedisCache extends Cache
         if ($this->down) {
             return null;
         }
+        ++$this->trips;
         try {
             return $this->client->command(...$args);
         } catch (\UnexpectedValueException $e) {

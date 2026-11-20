@@ -940,7 +940,7 @@ class FileSystem
      * timeout — without it a peer that connects and then stalls mid-transfer can hold the
      * download open indefinitely.
      */
-    private const DOWNLOAD_TIMEOUT_SECONDS = 300;
+    public const DOWNLOAD_TIMEOUT_SECONDS = 300;
 
     /**
      * Whether a package download URL is https on an allowed package host.

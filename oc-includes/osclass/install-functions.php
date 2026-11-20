@@ -1632,6 +1632,7 @@ function install_shop_step(string $action, string $type, string $slug, ?\mindste
         if ($step === null) {
             return $refused;
         }
+        install_allow_long_unit(true);
         $result = $setup->run($step);
     } catch (\Throwable $e) {
         error_log('Shopclass install: setting up ' . $slug . ' failed: ' . $e->getMessage());
@@ -1678,6 +1679,7 @@ function install_run_unit(string $action): array
         return array('status' => $result['ok'], 'message' => $result['message']);
     }
     if ($action === 'sample_photos' || $action === 'sample_batch') {
+        install_allow_long_unit(false);
         install_load_seed_helpers();
         $ok = install_sample_step($action, Params::getParamInt('batch'))['ok'];
 
@@ -1707,6 +1709,59 @@ function install_run_unit(string $action): array
     install_sync_menu_places();
 
     return $result;
+}
+
+/**
+ * Seconds a package or sample unit may run: a whole download, then unpacking it.
+ *
+ * @return int
+ */
+function install_unit_time_limit(): int
+{
+    return \mindstellar\utility\FileSystem::DOWNLOAD_TIMEOUT_SECONDS + 120;
+}
+
+/**
+ * Raise the time limit for a unit and say how many seconds it may now run; the host's limit
+ * when it does not allow raising it.
+ *
+ * @return int
+ */
+function install_raise_time_limit(): int
+{
+    $want = install_unit_time_limit();
+    if (function_exists('set_time_limit') && @set_time_limit($want)) {
+        return $want;
+    }
+    $limit = (int) ini_get('max_execution_time');
+
+    return $limit > 0 ? min($limit, $want) : $want;
+}
+
+/**
+ * Milliseconds the browser waits for one unit: a minute longer than this server lets it run.
+ *
+ * @return int
+ */
+function install_unit_browser_timeout(): int
+{
+    return (install_raise_time_limit() + 60) * 1000;
+}
+
+/**
+ * Let a unit that downloads run past the host's default time limit. A package unit also
+ * finishes when the browser goes away, so no half-installed package is left.
+ *
+ * @param bool $finishOnAbort
+ *
+ * @return void
+ */
+function install_allow_long_unit(bool $finishOnAbort): void
+{
+    install_raise_time_limit();
+    if ($finishOnAbort && function_exists('ignore_user_abort')) {
+        ignore_user_abort(true);
+    }
 }
 
 /**

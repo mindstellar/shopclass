@@ -160,6 +160,14 @@ check('a sample batch that was not chosen answers false with a message', $res['s
 $res = install_run_unit('sample_photos');
 check('so do example photos', $res['status'] === false && $res['message'] !== '');
 
+harness_section('time limits');
+check('a unit may run longer than a whole download', install_unit_time_limit() > \mindstellar\utility\FileSystem::DOWNLOAD_TIMEOUT_SECONDS);
+check('the browser waits longer than the server may run', install_unit_browser_timeout() > install_unit_time_limit() * 1000);
+set_time_limit(30);
+install_run_unit('sample_photos');
+check('a sample unit raises the time limit', (int) ini_get('max_execution_time') === install_unit_time_limit());
+set_time_limit(0);
+
 harness_section('requests the browser got no answer to');
 $choose('classifieds');
 install_record_lost_steps(array('locations', 'starter', 'storefront', 'plugin:evil', 'theme:aisle'));

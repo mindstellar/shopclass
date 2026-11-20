@@ -70,6 +70,9 @@ final class ShopSetup
     /** @var array<string, array<string,mixed>>|null */
     private ?array $installed;
 
+    /** @var callable(): array<string,mixed> */
+    private $themeInfo;
+
     /**
      * The callables and $installed are test seams; the installer leaves them null.
      *
@@ -81,6 +84,7 @@ final class ShopSetup
      * @param callable|null $requirements () => Aisle's plugin list, null while Aisle is not on disk
      * @param callable|null $switcher     (slug) => null when the plugin is on, else an error message
      * @param array<string, array<string,mixed>>|null $installed plugins on disk; read from the site when null
+     * @param callable|null $themeInfo    () => the header of the Aisle copy on disk
      */
     public function __construct(
         array $themeVersions,
@@ -90,7 +94,8 @@ final class ShopSetup
         ?callable $fetcher = null,
         ?callable $requirements = null,
         ?callable $switcher = null,
-        ?array $installed = null
+        ?array $installed = null,
+        ?callable $themeInfo = null
     ) {
         $this->themeVersions  = $themeVersions;
         $this->themeIndex     = $themeIndex;
@@ -102,6 +107,7 @@ final class ShopSetup
         $this->requirements = $requirements ?? static fn (): ?array => PluginDependencies::themeRequirements(self::THEME);
         $this->switcher     = $switcher;
         $this->installed    = $installed;
+        $this->themeInfo    = $themeInfo ?? static fn (): array => (array) \WebThemes::getInstance()->loadThemeInfo(self::THEME);
     }
 
     /**
@@ -213,25 +219,32 @@ final class ShopSetup
     }
 
     /**
-     * Download Aisle, unless it is on disk already.
+     * Use the Aisle copy on disk (the release zip ships one) when this core can run it, else download Aisle.
      *
      * @return array{ok:bool, message:string}
      */
     public function installTheme(): array
     {
-        if (osc_market_changes_blocked()) {
-            return self::answer(false, __('Package installs are disabled on this deployment.'));
-        }
-        if (($this->requirements)() !== null) {
+        $onDisk  = ($this->requirements)() !== null;
+        $problem = $onDisk ? Compatibility::reason(($this->themeInfo)()) : null;
+        if ($onDisk && $problem === null) {
             return self::answer(true, __('Theme installed.'));
+        }
+        if ($problem !== null) {
+            error_log('Shopclass install: the Aisle copy on disk is not used: ' . $problem);
+        }
+        // Says why the copy on disk was passed over when the download fails as well.
+        $fail = static fn (string $message): array => self::answer(false, trim(($problem ?? '') . ' ' . $message));
+        if (osc_market_changes_blocked()) {
+            return $fail(__('Package installs are disabled on this deployment.'));
         }
         $entry = $this->themeEntry();
         if ($entry === null) {
-            return self::answer(false, __('No release of this theme runs on this version of Shopclass.'));
+            return $fail(__('No release of this theme runs on this version of Shopclass.'));
         }
         $result = ($this->fetcher)('theme', self::THEME, $entry);
 
-        return self::answer(!empty($result['ok']), (string) ($result['message'] ?? ''));
+        return !empty($result['ok']) ? self::answer(true, (string) ($result['message'] ?? '')) : $fail((string) ($result['message'] ?? ''));
     }
 
     /**
