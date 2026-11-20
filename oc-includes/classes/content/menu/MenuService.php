@@ -41,6 +41,9 @@ final class MenuService
     /** @var array<string,array{label:string,url:string}>|null */
     private ?array $coreBuiltins = null;
 
+    /** @var array<string,array{label:string,url:string}|null> */
+    private array $coreLinks = [];
+
     /**
      * @param \Closure(int):string                    $categoryUrl a category's search URL
      * @param \Closure(int,string,string,string):string $pageUrl   a page's URL from id, slug, title and locale ('' for the default)
@@ -181,28 +184,44 @@ final class MenuService
      */
     public static function coreBuiltins(): array
     {
-        $labels = self::builtinLabels();
-        $users  = (bool) osc_users_enabled();
-        $urls   = [
-            'home'    => osc_base_url(),
-            'search'  => osc_search_url(['page' => 'search']),
-            'contact' => osc_contact_url(),
-        ];
-        if (!osc_is_shop_mode() && ($users || !osc_reg_user_post())) {
-            $urls['post'] = osc_item_post_url_in_category();
-        }
-        if ($users) {
-            $urls['login'] = osc_user_login_url();
-            if (osc_user_registration_enabled()) {
-                $urls['register'] = osc_register_account_url();
-            }
-        }
         $out = [];
-        foreach ($urls as $ref => $url) {
-            $out[$ref] = ['label' => $labels[$ref], 'url' => (string) $url];
+        foreach (['home', 'search', 'contact', 'post', 'login', 'register'] as $ref) {
+            $link = self::coreBuiltin($ref);
+            if ($link !== null) {
+                $out[$ref] = $link;
+            }
         }
 
         return $out;
+    }
+
+    /**
+     * One of core's built-in pages, or null when the site has it switched off or there is no such page.
+     *
+     * @return array{label:string,url:string}|null
+     */
+    public static function coreBuiltin(string $ref): ?array
+    {
+        $on = match ($ref) {
+            'home', 'search', 'contact' => true,
+            'post'     => !osc_is_shop_mode() && (osc_users_enabled() || !osc_reg_user_post()),
+            'login'    => (bool) osc_users_enabled(),
+            'register' => osc_users_enabled() && osc_user_registration_enabled(),
+            default    => false,
+        };
+        if (!$on) {
+            return null;
+        }
+        $url = match ($ref) {
+            'home'     => osc_base_url(),
+            'search'   => osc_search_url(['page' => 'search']),
+            'contact'  => osc_contact_url(),
+            'post'     => osc_item_post_url_in_category(),
+            'login'    => osc_user_login_url(),
+            'register' => osc_register_account_url(),
+        };
+
+        return ['label' => self::builtinLabels()[$ref], 'url' => (string) $url];
     }
 
     /**
@@ -418,8 +437,7 @@ final class MenuService
             $link = $item;
             unset($link['children']);
             if (isset($item['builtin'])) {
-                $builtins ??= $this->builtins();
-                $found = $builtins[(string) $item['builtin']] ?? null;
+                $found = $this->builtin((string) $item['builtin'], $builtins);
                 if ($found === null) {
                     continue;
                 }
@@ -434,6 +452,27 @@ final class MenuService
         }
 
         return $out;
+    }
+
+    /**
+     * One built-in page for a menu link. Core's are built only for the pages a menu uses, once a request.
+     *
+     * @param array<string,array{label:string,url:string}>|null $builtins an injected list, filled on first use
+     *
+     * @return array{label:string,url:string}|null
+     */
+    private function builtin(string $ref, ?array &$builtins): ?array
+    {
+        if ($this->builtins !== null) {
+            $builtins ??= ($this->builtins)();
+
+            return $builtins[$ref] ?? null;
+        }
+        if (!array_key_exists($ref, $this->coreLinks)) {
+            $this->coreLinks[$ref] = self::coreBuiltin($ref);
+        }
+
+        return $this->coreLinks[$ref];
     }
 
     /**

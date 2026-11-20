@@ -126,7 +126,7 @@ class Escape
         $str = preg_replace("/&#(\d+);/", "$temp\\1;", $str);
         $str = preg_replace("/&(\w+);/", "$temp\\1;", $str);
 
-        $str = self::text($str);
+        $str = htmlspecialchars($str, ENT_QUOTES | ENT_SUBSTITUTE | ENT_HTML401);
 
         // In case htmlspecialchars misses these.
         $str = str_replace(array("'", '"'), array('&#39;', '&quot;'), $str);

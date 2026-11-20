@@ -26,6 +26,9 @@ class WebThemes extends Themes
     /** @var array<string,array<string,mixed>|false> theme info by index.php path and mtime */
     private array $themeInfo = array();
 
+    /** @var array<string,string> the "Parent Theme:" header by index.php path and mtime */
+    private array $parents = array();
+
     /**
      * Starts out looking for themes in oc-content/themes/.
      */
@@ -138,8 +141,22 @@ class WebThemes extends Themes
      */
     public function parentOf(string $theme): string
     {
-        $info   = $this->loadThemeInfo($theme);
-        $parent = is_array($info) ? (string) ($info['template'] ?? '') : '';
+        $path = $this->path . $theme . '/index.php';
+        if (!file_exists($path)) {
+            return '';
+        }
+        // Every page asks, so a theme with a header gives only that line, not its whole info.
+        $key = $path . '|' . filemtime($path);
+        if (!isset($this->parents[$key])) {
+            $head = (string) file_get_contents($path);
+            if (preg_match('|Theme Name:([^\\r\\t\\n]*)|i', $head, $name) && trim($name[1]) !== '') {
+                $this->parents[$key] = preg_match('|Parent Theme:([^\\r\\t\\n]*)|i', $head, $match) ? trim($match[1]) : '';
+            } else {
+                $info                = $this->loadThemeInfo($theme);
+                $this->parents[$key] = is_array($info) ? (string) ($info['template'] ?? '') : '';
+            }
+        }
+        $parent = $this->parents[$key];
 
         return $parent !== $theme && \mindstellar\utility\Validate::packageName($parent) ? $parent : '';
     }

@@ -31,7 +31,14 @@ final class Money
             return CurrencyCode::decimals($code);
         }
 
-        return CurrencyService::make()->decimals($code);
+        // A page formats many prices, so each code's answer is kept until the currencies change.
+        static $known = array();
+        $generation = \mindstellar\cache\CacheGroup::generation('currency');
+        if (($known[$code][0] ?? null) !== $generation) {
+            $known[$code] = array($generation, CurrencyService::make()->decimals($code));
+        }
+
+        return $known[$code][1];
     }
 
     /**
