@@ -83,6 +83,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Admin forms, list checkboxes, search and photo upload work with screen readers and the keyboard.
 
 ### For developers
+- `tests/page-budget.php` fails when a public page includes more files, or sends more queries or cache commands, than `tests/page-budget.json` allows.
 - Shop, messaging, pages, menus and SEO API endpoints; `GET /listings` filters by option, map area, stock and sale.
 - `osc_api_get()` and `osc_api_call()` call the API from PHP with no key.
 - Typed cart and order hooks for shipping, tax, promotion and payment plugins. See [Hooks](https://shopclass.org/docs/developers/hooks/).

@@ -1,0 +1,46 @@
+{
+    "plain": {
+        "home": {
+            "files": 184,
+            "queries": 14,
+            "trips": 0
+        },
+        "search": {
+            "files": 196,
+            "queries": 12,
+            "trips": 0
+        },
+        "category": {
+            "files": 196,
+            "queries": 12,
+            "trips": 0
+        },
+        "listing": {
+            "files": 173,
+            "queries": 11,
+            "trips": 0
+        }
+    },
+    "redis": {
+        "home": {
+            "files": 182,
+            "queries": 4,
+            "trips": 9
+        },
+        "search": {
+            "files": 182,
+            "queries": 0,
+            "trips": 8
+        },
+        "category": {
+            "files": 186,
+            "queries": 2,
+            "trips": 9
+        },
+        "listing": {
+            "files": 172,
+            "queries": 5,
+            "trips": 8
+        }
+    }
+}
