@@ -29,15 +29,4 @@ final class CurrencyStore extends Model
     {
         return self::table()->where('pk_c_code', $code)->first();
     }
-
-    /**
-     * Enabled currencies by code.
-     *
-     * @return array<int,array<string,mixed>>
-     * @throws \mindstellar\database\DbException
-     */
-    public static function enabled(): array
-    {
-        return self::table()->where('b_enabled', 1)->orderBy('pk_c_code')->get();
-    }
 }
