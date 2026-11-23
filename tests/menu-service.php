@@ -136,25 +136,6 @@ $admin->query('DELETE FROM ' . DB_TABLE_PREFIX . 't_pages WHERE pk_i_id = ' . $a
 \mindstellar\cache\CacheGroup::changed('page');
 pin('a deleted page is skipped', ['Cars'], array_column($menus->resolve('top', 'en_US')[0]['children'], 'label'));
 
-harness_section('cached links');
-check('no cache server: the per-request cache answers', \mindstellar\cache\CacheManager::getInstance() instanceof \mindstellar\cache\MemoryCache);
-$contact = seed_page($admin, 'contact-us', 'Contact us', 0);
-$menus->save('cached', [['type' => 'category', 'ref' => $cars], ['type' => 'page', 'ref' => $contact], $link('First', '/first')]);
-$names = static fn (string $locale): array => array_column($menus->resolve('cached', $locale), 'label');
-pin('the built menu', ['Cars', 'Contact us', 'First'], $names('en_US'));
-pin('another language gets its own labels', ['Autos', 'Contact us', 'First'], $names('de_DE'));
-$menus->save('cached', [['type' => 'category', 'ref' => $cars], ['type' => 'page', 'ref' => $contact], $link('Second', '/second')]);
-\mindstellar\cache\CacheGroup::forgetGenerations();
-pin('a saved change shows on the next page', ['Cars', 'Contact us', 'Second'], $names('en_US'));
-$admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_category_description SET s_name = 'Autos and vans' WHERE fk_c_locale_code = 'de_DE' AND fk_i_category_id = " . $cars);
-$admin->query('UPDATE ' . DB_TABLE_PREFIX . "t_pages_description SET s_title = 'Reach us' WHERE fk_i_pages_id = " . $contact);
-\mindstellar\cache\CacheGroup::changed('category');
-\mindstellar\cache\CacheGroup::changed('page');
-\mindstellar\cache\CacheGroup::forgetGenerations();
-pin('a renamed category and page show their new names', ['Autos and vans', 'Reach us', 'Second'], $names('de_DE'));
-pin('...and English keeps its own', ['Cars', 'Reach us', 'Second'], $names('en_US'));
-$menus->delete('cached');
-
 harness_section('theme places');
 $support = \mindstellar\theme\ThemeSupports::getInstance();
 $support->reset();
@@ -193,12 +174,9 @@ $support->reset();
 
 harness_section('built-in pages');
 $searchUrl = '/index.php?page=search';
-$bi = new MenuService(Preference::getInstance(), 'en_US', ['en_US', 'de_DE'], static fn (int $id): string => '/c/' . $id, static fn (int $id, string $slug, string $title, string $locale): string => '/' . $locale . '/' . $slug, static function () use (&$searchUrl, &$built): array {
-    ++$built;
-
+$bi = new MenuService(Preference::getInstance(), 'en_US', ['en_US', 'de_DE'], static fn (int $id): string => '/c/' . $id, static fn (int $id, string $slug, string $title, string $locale): string => '/' . $locale . '/' . $slug, static function () use (&$searchUrl): array {
     return ['home' => ['label' => 'Home', 'url' => '/'], 'search' => ['label' => 'Browse', 'url' => $searchUrl]];
 });
-$built = 0;
 check('an unknown built-in page is refused', $fails($bi->save('top', [['type' => 'builtin', 'ref' => 'admin']]), 'built-in page'));
 check('a built-in page twice is refused', $fails($bi->save('top', [['type' => 'builtin', 'ref' => 'home'], ['type' => 'builtin', 'ref' => 'home']]), 'more than once'));
 pin('built-in pages save in the stored shape', [[], [
@@ -215,18 +193,8 @@ pin('resolved: own label wins, default label else, a switched-off page goes with
     ['label' => 'Shop', 'url' => '/index.php?page=search'],
 ], $bi->resolve('top', 'en_US'));
 pin('German: no German label, so the default label', 'Browse', $bi->resolve('top', 'de_DE')[1]['label']);
-$nextPage = static function (): void {
-    \mindstellar\cache\CacheGroup::forgetGenerations();
-};
-$nextPage();
-$built = 0;
-$bi->resolve('top', 'en_US');
-pin('the next page reads the built links from the cache, URLs included', 0, $built);
 $searchUrl = '/search';
-osc_set_preference('rewriteEnabled', '1');
-$nextPage();
-pin('a permalink change builds the URLs again', '/search', $bi->resolve('top', 'en_US')[1]['url']);
-osc_set_preference('rewriteEnabled', '0');
+pin('the URL is built on each call, never cached', '/search', $bi->resolve('top', 'en_US')[1]['url']);
 $bi->delete('top');
 
 harness_section('theme default');
@@ -249,6 +217,21 @@ pin('resolve: nothing saved shows the theme default', [
     ['label' => 'Browse all', 'url' => '/search'],
     ['label' => 'Help', 'url' => 'https://elsewhere.test/help'],
 ], $bi->resolve('main', 'en_US'));
+$counting = new class () extends \mindstellar\cache\MemoryCache {
+    public int $reads = 0;
+
+    public function get($key, &$found = null)
+    {
+        ++$this->reads;
+
+        return parent::get($key, $found);
+    }
+};
+require_once __DIR__ . '/lib/cache-swap.php';
+$before = test_cache_swap($counting);
+$bi->resolve('main', 'en_US');
+pin('a default of built-in pages and links is resolved with no cache read', 0, $counting->reads);
+test_cache_swap($before);
 pin('no default: footer keeps the linked pages', [], $bi->automaticItems('footer'));
 pin('a default that fails the checks is ignored', null, $bi->themeDefault('side'));
 pin('a saved menu wins over the default', [], $bi->save('main', [$link('Mine')]));
