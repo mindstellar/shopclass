@@ -62,4 +62,28 @@ osc_reset_preferences();
 Preference::getInstance()->set('language', 'de_DE');
 pin('a change in the request shows at once', 'de_DE', osc_language());
 
+harness_section('a language switched in the request');
+if (!function_exists('osc_translations_path')) {
+    function osc_translations_path()
+    {
+        return sys_get_temp_dir() . '/osc-no-translations/';
+    }
+}
+$locales = OSCLocale::getInstance();
+foreach (array('xx_XX', 'en_US') as $code) {
+    if (!$locales->findByCode($code)) {
+        $locales->insertLocaleInfo(array('locale_code' => $code, 'name' => $code, 'short_name' => $code, 'description' => $code, 'version' => '1', 'direction' => 'ltr', 'author_name' => '', 'author_url' => '', 'currency_format' => '{NUMBER}', 'date_format' => 'Y-m-d'), $code);
+    }
+    \mindstellar\language\LocaleStore::update($code, array('b_enabled' => 1, 'b_enabled_bo' => 1));
+}
+osc_reset_preferences();
+Preference::getInstance()->set('language', 'xx_XX');
+pin('an enabled default language is kept', 'xx_XX', osc_language());
+\mindstellar\language\LocaleStore::update('xx_XX', array('b_enabled' => 0));
+pin('a language turned off shows at once', 'en_US', osc_language());
+\mindstellar\language\LocaleStore::update('xx_XX', array('b_enabled' => 1));
+pin('and turned on again', 'xx_XX', osc_language());
+
+\OSCLocale::getInstance()->deleteLocale('xx_XX');
+
 exit(harness_result());

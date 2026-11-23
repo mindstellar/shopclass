@@ -826,10 +826,11 @@ function osc_page_title()
 function _osc_site_text(string $key, ?string $locale = null): string
 {
     // A page prints the title and description several times, so each is kept until a preference changes.
-    static $known = array(), $revision = -1;
-    if ($revision !== Preference::revision()) {
+    static $known = array(), $revision = array(-1, -1);
+    $now = array(Preference::revision(), \mindstellar\cache\CacheGroup::generation('locale'));
+    if ($revision !== $now) {
         $known    = array();
-        $revision = Preference::revision();
+        $revision = $now;
     }
     $locale ??= function_exists('osc_current_ui_locale') ? osc_current_ui_locale() : '';
 
@@ -900,9 +901,10 @@ function _osc_locale_text(callable $read, ?string $locale = null): string
 function osc_language()
 {
     // Asked many times a page, so the answer is kept until a preference changes or is reloaded.
-    static $known = array(-1, '');
-    if ($known[0] !== Preference::revision()) {
-        $known = array(Preference::revision(), _osc_enabled_locale((string) getPreference('language'), false));
+    static $known = array(array(-1, -1), '');
+    $now = array(Preference::revision(), \mindstellar\cache\CacheGroup::generation('locale'));
+    if ($known[0] !== $now) {
+        $known = array($now, _osc_enabled_locale((string) getPreference('language'), false));
     }
 
     return $known[1];
@@ -929,6 +931,12 @@ function _osc_enabled_locale(string $code, bool $admin, bool $reset = false): st
 {
     static $memo = array();
     static $dirs = array();
+    static $generation = -1;
+    $now = \mindstellar\cache\CacheGroup::generation('locale');
+    if ($generation !== $now) {
+        $generation = $now;
+        $memo       = array();
+    }
     if ($reset) {
         $memo = array();
         $dirs = array();
