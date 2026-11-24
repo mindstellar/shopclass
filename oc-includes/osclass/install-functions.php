@@ -1509,17 +1509,12 @@ function install_locations_step(string $location, int $batch, ?callable $import 
  */
 function install_location_batch(string $location, int $batch): array
 {
-    $entry = null;
-    foreach ((new \mindstellar\location\LocationCatalog())->status() as $row) {
-        if ($row['file'] === $location || strcasecmp($row['code'], $location) === 0) {
-            $entry = $row;
-            break;
-        }
+    if (function_exists('set_time_limit')) {
+        @set_time_limit(420); // a whole download, then the first batch
     }
-    if ($entry === null) {
-        return array('ok' => false, 'done' => true, 'progress' => 0.0);
-    }
-    $job = new \mindstellar\location\LocationImportJob();
+    $entry = (new \mindstellar\location\LocationCatalog())->entry($location);
 
-    return $batch === 0 ? $job->start($entry) : $job->step((string) $entry['code']);
+    return $entry === null
+        ? array('ok' => false, 'done' => true, 'progress' => 0.0)
+        : (new \mindstellar\location\LocationImportJob())->run($entry, $batch);
 }

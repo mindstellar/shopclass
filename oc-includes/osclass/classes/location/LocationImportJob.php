@@ -12,6 +12,7 @@ declare(strict_types=1);
 
 namespace mindstellar\location;
 
+use mindstellar\database\Connection;
 use mindstellar\model\KeyValue;
 
 /**
@@ -28,6 +29,12 @@ final class LocationImportJob
     /** An abandoned job is forgotten after a day. */
     private const KEEP = 86400;
 
+    /** How long a finished job still answers a repeated last batch. */
+    private const KEEP_FINISHED = 600;
+
+    /** Seconds a batch waits for one already running for the same country. */
+    private const LOCK_WAIT = 5;
+
     /** @var callable(array<string,mixed>, string): bool writes the country's ndjson to a path */
     private $fetch;
 
@@ -43,67 +50,138 @@ final class LocationImportJob
     }
 
     /**
-     * Download the country and store a fresh job, replacing any earlier one for it.
+     * Start (batch 0) or continue (later batches) the import of one catalog country.
+     *
+     * @param array<string,mixed> $entry a row from LocationCatalog::status()
+     * @param int                 $batch 0 to start
+     *
+     * @return array<string,mixed> see start() and step()
+     */
+    public function run(array $entry, int $batch): array
+    {
+        return $batch === 0 ? $this->start($entry) : $this->step((string) $entry['code']);
+    }
+
+    /**
+     * Download the country and store a fresh job. A job still running for the country is
+     * carried on instead, so a second admin or tab does not throw its work away.
      *
      * @param array<string,mixed> $entry a row from LocationCatalog::status()
      *
-     * @return array{ok:bool, done:bool, progress:float, error?:string}
+     * @return array{ok:bool, done:bool, progress:float, busy?:bool, error?:string}
      */
     public function start(array $entry): array
     {
         $code = strtoupper((string) $entry['code']);
-        $this->forget($code);
-        $path = osc_uploads_path() . 'locations-' . bin2hex(random_bytes(8)) . '.ndjson';
-        if (!($this->fetch)($entry, $path)) {
-            @unlink($path);
 
-            return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => 'could not download ' . (string) $entry['file']);
-        }
-        $this->save($code, array('entry' => $entry, 'path' => $path, 'batch' => array()));
+        return $this->locked($code, function () use ($code, $entry): array {
+            $job = $this->load($code);
+            if ($job !== null && empty($job['finished'])) {
+                return array('ok' => true, 'done' => false, 'progress' => (float) ($job['batch']['progress'] ?? 0.0));
+            }
+            $this->forget($code);
+            self::purgeOldFiles();
+            $path = osc_uploads_path() . 'locations-' . bin2hex(random_bytes(8)) . '.ndjson';
+            if (!($this->fetch)($entry, $path)) {
+                @unlink($path);
 
-        return array('ok' => true, 'done' => false, 'progress' => 0.0);
+                return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => 'could not download ' . (string) $entry['file']);
+            }
+            $this->save($code, array('entry' => $entry, 'path' => $path, 'batch' => array()), self::KEEP);
+
+            return array('ok' => true, 'done' => false, 'progress' => 0.0);
+        });
     }
 
     /**
-     * Import the next batch of a started country.
+     * Import the next batch of a started country. A batch asked for again after the last one
+     * finished answers done, and one asked for while another runs answers busy.
      *
      * @param string $code    ISO2 code the job was started for
      * @param float  $seconds how long this batch may work
      *
-     * @return array{ok:bool, done:bool, progress:float, report?:array<string,mixed>, entry?:array<string,mixed>, error?:string}
+     * @return array{ok:bool, done:bool, progress:float, busy?:bool, report?:array<string,mixed>, entry?:array<string,mixed>, error?:string}
      */
     public function step(string $code, float $seconds = self::BATCH_SECONDS): array
     {
         $code = strtoupper($code);
-        $job  = $this->load($code);
-        if ($job === null) {
-            return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => 'no import was started for ' . $code);
-        }
-        // A cleaned-out upload folder only costs the download again.
-        if (!is_file((string) $job['path']) && !($this->fetch)($job['entry'], (string) $job['path'])) {
-            return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => 'could not download ' . (string) $job['entry']['file']);
-        }
 
-        $batch = (new LocationImporter($this->dryRun))->importNdjsonBatch(
-            (string) $job['path'],
-            (array) $job['batch'],
-            microtime(true) + $seconds,
-            function (array $batch) use ($code, $job): void {
-                $this->save($code, array('batch' => $batch) + $job);
+        return $this->locked($code, function () use ($code, $seconds): array {
+            $job = $this->load($code);
+            if ($job === null) {
+                return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => 'no import was started for ' . $code);
             }
-        );
-        $report = (array) $batch['report'];
-        if (isset($report['error']) || $batch['done']) {
-            $this->forget($code);
-        }
-        if (isset($report['error'])) {
-            return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => (string) $report['error']);
-        }
-        if ($batch['done'] && !$this->dryRun && (string) ($job['entry']['sha'] ?? '') !== '') {
-            (new LocationCatalog())->markInstalled($code, (string) $job['entry']['sha']);
-        }
+            if (!empty($job['finished'])) {
+                return array('ok' => true, 'done' => true, 'progress' => 1.0, 'report' => (array) $job['report'], 'entry' => (array) $job['entry']);
+            }
+            // A cleaned-out upload folder only costs the download again.
+            if (!is_file((string) $job['path']) && !($this->fetch)($job['entry'], (string) $job['path'])) {
+                return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => 'could not download ' . (string) $job['entry']['file']);
+            }
 
-        return array('ok' => true, 'done' => (bool) $batch['done'], 'progress' => (float) $batch['progress'], 'report' => $report, 'entry' => (array) $job['entry']);
+            $batch = (new LocationImporter($this->dryRun))->importNdjsonBatch(
+                (string) $job['path'],
+                (array) $job['batch'],
+                microtime(true) + $seconds,
+                function (array $batch) use ($code, $job): void {
+                    $this->save($code, array('batch' => $batch) + $job, self::KEEP);
+                }
+            );
+            $report = (array) $batch['report'];
+            if (isset($report['error'])) {
+                $this->forget($code);
+
+                return array('ok' => false, 'done' => true, 'progress' => 0.0, 'error' => (string) $report['error']);
+            }
+            if ($batch['done']) {
+                $this->forget($code);
+                $this->save($code, array('finished' => true, 'entry' => $job['entry'], 'report' => $report, 'path' => ''), self::KEEP_FINISHED);
+                if (!$this->dryRun && (string) ($job['entry']['sha'] ?? '') !== '') {
+                    (new LocationCatalog())->markInstalled($code, (string) $job['entry']['sha']);
+                }
+            }
+
+            return array('ok' => true, 'done' => (bool) $batch['done'], 'progress' => (float) $batch['progress'], 'report' => $report, 'entry' => (array) $job['entry']);
+        });
+    }
+
+    /**
+     * Run $work holding this country's lock. When another request holds it past LOCK_WAIT,
+     * answer busy so the caller asks again, rather than import the same rows twice.
+     *
+     * @param callable(): array<string,mixed> $work
+     *
+     * @return array<string,mixed>
+     */
+    private function locked(string $code, callable $work): array
+    {
+        return Connection::getInstance()->withNamedLock($this->lockName($code), self::LOCK_WAIT, $work, function () use ($code): array {
+            $job = $this->load($code);
+
+            return array('ok' => true, 'done' => false, 'busy' => true, 'progress' => (float) ($job['batch']['progress'] ?? 0.0));
+        });
+    }
+
+    /**
+     * The lock's name, scoped to this database since lock names are server-wide.
+     */
+    public function lockName(string $code): string
+    {
+        $site = (defined('DB_NAME') ? DB_NAME : '') . '|' . DB_TABLE_PREFIX;
+
+        return 'osc_location_import_' . substr(md5($site), 0, 12) . '_' . $this->key(strtoupper($code));
+    }
+
+    /**
+     * Delete country files an abandoned job left behind.
+     */
+    private static function purgeOldFiles(): void
+    {
+        foreach (glob(osc_uploads_path() . 'locations-*.ndjson') ?: array() as $file) {
+            if (@filemtime($file) < time() - self::KEEP) {
+                @unlink($file);
+            }
+        }
     }
 
     /**
@@ -148,16 +226,18 @@ final class LocationImportJob
     /**
      * @param array<string,mixed> $job
      */
-    private function save(string $code, array $job): void
+    private function save(string $code, array $job, int $keep): void
     {
-        $this->kv->set(self::GROUP, $this->key($code), (string) json_encode($job, JSON_INVALID_UTF8_SUBSTITUTE), time() + self::KEEP);
+        $this->kv->set(self::GROUP, $this->key($code), (string) json_encode($job, JSON_INVALID_UTF8_SUBSTITUTE), time() + $keep);
     }
 
     private function forget(string $code): void
     {
-        $job = $this->load($code);
-        if ($job !== null) {
-            @unlink((string) $job['path']);
+        $job  = $this->load($code);
+        $path = $job === null ? '' : (string) $job['path'];
+        // Only a file this class wrote in the upload folder is deleted.
+        if ($path !== '' && dirname((string) realpath($path)) === rtrim((string) realpath(osc_uploads_path()), '/')) {
+            @unlink($path);
         }
         $this->kv->delete(self::GROUP, $this->key($code));
     }

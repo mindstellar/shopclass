@@ -396,6 +396,9 @@
             nextForm.submit();
         }
 
+        // A batch runs about 8 s on the server; the browser gives up on one after this long.
+        var PLACES_TIMEOUT = 300000;
+
         // Places import a batch per request until the answer stops saying more; a batch with no answer is asked again.
         function addPlaces(done) {
             var country = form.elements['location-json'];
@@ -413,15 +416,21 @@
                 params.set('batch', String(batch));
                 params.set('location-json', country.value);
                 params.set('install_nonce', form.elements.install_nonce ? form.elements.install_nonce.value : '');
+                var controller = new AbortController();
+                var timer = window.setTimeout(function () {
+                    controller.abort();
+                }, PLACES_TIMEOUT);
                 fetch('install-location.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: params.toString(),
+                    signal: controller.signal,
                 }).then(function (response) {
                     return response.json();
                 }).catch(function () {
                     return null;
                 }).then(function (answer) {
+                    window.clearTimeout(timer);
                     if (answer && answer.status && answer.more) {
                         batch++;
                         retries = 0;
@@ -431,7 +440,7 @@
                             progress.hidden = false;
                         }
                         send();
-                    } else if (!answer && batch > 0 && retries < 2) {
+                    } else if (!answer && retries < 2) {
                         retries++;
                         send();
                     } else {

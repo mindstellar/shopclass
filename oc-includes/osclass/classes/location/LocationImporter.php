@@ -258,7 +258,9 @@ final class LocationImporter
 
             // Deciding whether a stored region is about to be claimed by an incoming id needs
             // every incoming region id, so the region lines are read on their own first.
-            $this->noteIncomingRegions($this->scanRegions($path));
+            // Kept in the state, so later batches skip the pass.
+            $state['scan'] ??= $this->scanRegions($path);
+            $this->noteIncomingRegions((array) $state['scan']);
 
             $run = function () use ($handle, $path, $country, $countryCode, $afterCountry, $deadline, $save, &$state): void {
                 if ((int) $state['offset'] === 0) {
