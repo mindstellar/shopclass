@@ -219,29 +219,45 @@ curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install-locat
   -d "install_nonce=${NONCE}" \
   -d "s_name=${ADMIN_USER}" -d "s_passwd=first-try-pass" \
   -d "webtitle=Install Smoke Test" -d "email=${ADMIN_MAIL}" \
-  -d "location-json=XX-No-Such-Country.json" \
   -o "$WORK/finish-1.json" || fail "the finish endpoint did not respond"
-grep -q '"status":true' "$WORK/finish-1.json" && grep -q '"location_error":true' "$WORK/finish-1.json" \
-  || { cat "$WORK/finish-1.json" >&2; fail "a failed location import stopped the install"; }
+grep -q '"status":true' "$WORK/finish-1.json" \
+  || { cat "$WORK/finish-1.json" >&2; fail "the account step did not report success"; }
+curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install-location.php" \
+  -d "install_nonce=${NONCE}" -d "action=locations" -d "batch=0" \
+  -d "location-json=XX-No-Such-Country.json" \
+  -o "$WORK/places-bad.json" || fail "the location batch endpoint did not respond"
+grep -q '"status":true' "$WORK/places-bad.json" \
+  && { cat "$WORK/places-bad.json" >&2; fail "an unknown country was reported as imported"; }
 ok "a failed location import does not stop the install"
 
 # A second click finds the admin account the first one made. Sign-in below uses the
 # second password, so it also proves the account was updated. It sends what the form
 # sends: a small country when the catalog is reachable, else "Skip for now".
-if [ -n "${CATALOG_OK:-}" ]; then LOCATION_ARGS=(-d "skip-location-input=0" -d "location-json=MT"); \
-else LOCATION_ARGS=(-d "skip-location-input=1" -d "location-json=skip"); fi
 curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install-location.php" \
   -d "install_nonce=${NONCE}" \
   -d "s_name=${ADMIN_USER}" -d "s_passwd=${ADMIN_PASS}" \
   -d "webtitle=Install Smoke Test" -d "email=${ADMIN_MAIL}" \
-  "${LOCATION_ARGS[@]}" \
   -o "$WORK/finish.json" || fail "the finish endpoint did not respond"
 
 grep -q '"status":true' "$WORK/finish.json" \
   || { cat "$WORK/finish.json" >&2; fail "the finish endpoint did not report success"; }
-grep -q '"location_error"' "$WORK/finish.json" \
-  && { cat "$WORK/finish.json" >&2; fail "the location step failed (${LOCATION_ARGS[*]})"; }
 ok "admin account created"
+
+# Places import one batch per request, the way the form calls them, until none is left.
+if [ -n "${CATALOG_OK:-}" ]; then
+  BATCH=0
+  while :; do
+    curl -fsS -b "$JAR" -c "$JAR" -X POST "${BASE}/oc-includes/osclass/install-location.php" \
+      -d "install_nonce=${NONCE}" -d "action=locations" -d "batch=${BATCH}" -d "location-json=MT" \
+      -o "$WORK/places.json" || fail "the location batch endpoint did not respond"
+    grep -q '"status":true' "$WORK/places.json" \
+      || { cat "$WORK/places.json" >&2; fail "location batch ${BATCH} failed (MT)"; }
+    grep -q '"more":true' "$WORK/places.json" || break
+    BATCH=$((BATCH + 1))
+    [ "$BATCH" -lt 200 ] || fail "the location import did not finish in 200 batches"
+  done
+  ok "places imported in $((BATCH + 1)) batch(es)"
+fi
 
 # ---------------------------------------------------------------------------
 # Only this step writes the osclass_installed sentinel, and until it is written
