@@ -1700,9 +1700,12 @@ function install_run_unit(string $action): array
         $location = Params::getParamString('location-json');
 
         $location = Params::getParam('skip-location-input') === 'skip' ? 'skip' : $location;
-        Preference::getInstance()->replace('timezone', \mindstellar\install\SiteDetails::timezoneForCountry($location));
+        $batch    = max(0, Params::getParamInt('batch'));
+        if ($batch === 0) {
+            Preference::getInstance()->replace('timezone', \mindstellar\install\SiteDetails::timezoneForCountry($location));
+        }
 
-        return install_locations_unit($location);
+        return install_locations_unit($location, $batch);
     }
 
     $result = install_storefront_unit();
@@ -1840,15 +1843,17 @@ function install_starter_unit(?callable $seed = null): array
 }
 
 /**
- * Import the places of the country picked on the form. 'skip' or '' imports nothing.
- * A failure keeps the country code in the session for the done step.
+ * Import one batch of the places of the country picked on the form. Batch 0 downloads the
+ * country; the browser asks for the next batch while the answer says more. 'skip' or '' imports nothing.
+ * Until the last batch is done the country code stays in the session for the done step.
  *
- * @param string                      $location a country code or catalogue file name, or 'skip'
- * @param callable(string): bool|null $import   osc_install_json_locations() when null
+ * @param string                                                        $location a country code or catalogue file name, or 'skip'
+ * @param int                                                           $batch    0 to start, then 1, 2, ...
+ * @param callable(string, int): array{ok:bool, done:bool, progress:float}|null $import install_location_batch() when null
  *
- * @return array{status:bool, message:string}
+ * @return array{status:bool, message:string, more?:bool, progress?:float}
  */
-function install_locations_unit(string $location, ?callable $import = null): array
+function install_locations_unit(string $location, int $batch = 0, ?callable $import = null): array
 {
     $session = Session::getInstance();
     if ($location === '' || $location === 'skip') {
@@ -1857,20 +1862,52 @@ function install_locations_unit(string $location, ?callable $import = null): arr
         return array('status' => true, 'message' => '');
     }
     // Only a code or a file name reaches the catalogue download, never a path.
-    $ok = false;
+    $result = array('ok' => false, 'done' => true, 'progress' => 0.0);
     if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/', $location) === 1) {
         try {
-            $ok = (bool) ($import ?? 'osc_install_json_locations')($location);
+            $result = ($import ?? 'install_location_batch')($location, $batch);
         } catch (\Throwable $e) {
             error_log('Shopclass install: importing locations failed: ' . $e->getMessage());
         }
     } else {
         $location = 'lost';
     }
+    $ok = (bool) $result['ok'];
+    if ($ok && !$result['done']) {
+        $session->_set('install_location_failed', $location);
+
+        return array('status' => true, 'message' => '', 'more' => true, 'progress' => (float) $result['progress']);
+    }
     $session->_set('install_location_failed', $ok ? '' : $location);
     $session->_set('install_country', $ok ? (\mindstellar\install\SiteDetails::countryCode($location) ?? '') : '');
 
     return array('status' => $ok, 'message' => $ok ? '' : __("We couldn't download the places for this country."));
+}
+
+/**
+ * Start or continue the import of one catalogue country, a batch per request.
+ *
+ * @param string $location a country code or catalogue file name
+ * @param int    $batch    0 downloads the country, later batches import it
+ *
+ * @return array{ok:bool, done:bool, progress:float}
+ */
+function install_location_batch(string $location, int $batch): array
+{
+    install_raise_time_limit();
+    $entry = null;
+    foreach ((new \mindstellar\location\LocationCatalog())->status() as $row) {
+        if ($row['file'] === $location || strcasecmp($row['code'], $location) === 0) {
+            $entry = $row;
+            break;
+        }
+    }
+    if ($entry === null) {
+        return array('ok' => false, 'done' => true, 'progress' => 0.0);
+    }
+    $job = new \mindstellar\location\LocationImportJob();
+
+    return $batch === 0 ? $job->start($entry) : $job->step((string) $entry['code']);
 }
 
 /**
