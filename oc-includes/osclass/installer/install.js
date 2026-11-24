@@ -396,6 +396,52 @@
             nextForm.submit();
         }
 
+        // Places import a batch per request until the answer stops saying more; a batch with no answer is asked again.
+        function addPlaces(done) {
+            var country = form.elements['location-json'];
+            var skip = form.elements['skip-location-input'];
+            if (!country || country.value === '' || country.value === 'skip' || (skip && skip.value === 'skip')) {
+                done(false);
+                return;
+            }
+            var progress = document.getElementById('ins-setup-progress');
+            var batch = 0;
+            var retries = 0;
+            function send() {
+                var params = new URLSearchParams();
+                params.set('action', 'locations');
+                params.set('batch', String(batch));
+                params.set('location-json', country.value);
+                params.set('install_nonce', form.elements.install_nonce ? form.elements.install_nonce.value : '');
+                fetch('install-location.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: params.toString(),
+                }).then(function (response) {
+                    return response.json();
+                }).catch(function () {
+                    return null;
+                }).then(function (answer) {
+                    if (answer && answer.status && answer.more) {
+                        batch++;
+                        retries = 0;
+                        if (progress) {
+                            progress.textContent = text('placesProgress', 'Adding places: %s%%')
+                                .replace('%s', String(Math.floor((Number(answer.progress) || 0) * 100))).replace('%%', '%');
+                            progress.hidden = false;
+                        }
+                        send();
+                    } else if (!answer && batch > 0 && retries < 2) {
+                        retries++;
+                        send();
+                    } else {
+                        done(!(answer && answer.status));
+                    }
+                });
+            }
+            send();
+        }
+
         form.addEventListener('submit', function (event) {
             event.preventDefault();
 
@@ -429,7 +475,9 @@
                 })
                 .then(function (data) {
                     if (data && data.status) {
-                        submitStepFour(data.email_status, data.password, data.location_error);
+                        addPlaces(function (placesFailed) {
+                            submitStepFour(data.email_status, data.password, placesFailed);
+                        });
                         return;
                     }
                     hideOverlay();

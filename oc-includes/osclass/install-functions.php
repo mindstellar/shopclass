@@ -1458,3 +1458,68 @@ function basic_info()
         );
     }
 }
+
+/**
+ * Whether the admin row is saved; places wait for it.
+ *
+ * @return bool
+ */
+function install_admin_exists(): bool
+{
+    return \mindstellar\database\Db::table(DB_TABLE_PREFIX . 't_admin')->where('pk_i_id', 1)->first() !== null;
+}
+
+/**
+ * Import one batch of the places of the country picked on the form. Batch 0 downloads the
+ * country; the browser asks for the next batch while the answer says more.
+ *
+ * @param string                                                             $location a country code or catalogue file name
+ * @param int                                                                $batch    0 to start, then 1, 2, ...
+ * @param callable(string, int): array{ok:bool, done:bool, progress:float}|null $import   install_location_batch() when null
+ *
+ * @return array{status:bool, more?:bool, progress?:float}
+ */
+function install_locations_step(string $location, int $batch, ?callable $import = null): array
+{
+    // Only a code or a file name reaches the catalogue download, never a path.
+    if (preg_match('/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/', $location) !== 1) {
+        return array('status' => false);
+    }
+    try {
+        $result = ($import ?? 'install_location_batch')($location, $batch);
+    } catch (\Throwable $e) {
+        error_log('Shopclass install: importing locations failed: ' . $e->getMessage());
+
+        return array('status' => false);
+    }
+    if (!$result['ok']) {
+        return array('status' => false);
+    }
+
+    return $result['done'] ? array('status' => true) : array('status' => true, 'more' => true, 'progress' => (float) $result['progress']);
+}
+
+/**
+ * Start or continue the import of one catalogue country, a batch per request.
+ *
+ * @param string $location a country code or catalogue file name
+ * @param int    $batch    0 downloads the country, later batches import it
+ *
+ * @return array{ok:bool, done:bool, progress:float}
+ */
+function install_location_batch(string $location, int $batch): array
+{
+    $entry = null;
+    foreach ((new \mindstellar\location\LocationCatalog())->status() as $row) {
+        if ($row['file'] === $location || strcasecmp($row['code'], $location) === 0) {
+            $entry = $row;
+            break;
+        }
+    }
+    if ($entry === null) {
+        return array('ok' => false, 'done' => true, 'progress' => 0.0);
+    }
+    $job = new \mindstellar\location\LocationImportJob();
+
+    return $batch === 0 ? $job->start($entry) : $job->step((string) $entry['code']);
+}

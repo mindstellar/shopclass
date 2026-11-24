@@ -118,5 +118,6 @@ if ($country_list === array()) {
     <div id="ins-setup-overlay" class="ins-overlay" role="status" aria-live="polite" hidden>
         <span class="ins-overlay-spinner" aria-hidden="true"></span>
         <p><?php _e("Setting up your site… this can take a minute on shared hosting — don't close this tab."); ?></p>
+        <p id="ins-setup-progress" hidden></p>
     </div>
 </div>

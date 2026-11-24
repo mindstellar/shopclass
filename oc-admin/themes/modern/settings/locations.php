@@ -78,6 +78,7 @@ osc_current_admin_theme_path('parts/header.php'); ?>
              'installBusy'   => __('Installing…'),
              'updateBusy'    => __('Updating…'),
              'longRun'       => __('Reading %s from the catalog. A large country can take a minute or two; keep this page open.'),
+             'importStep'    => __('Working through %1$s: %2$s%% done. Keep this page open.'),
              'recalcBusy'    => __('Counting…'),
              'recalcDone'    => __('Listing counts are up to date.'),
              'recalcError'   => __('Counting stopped. Your connection may have dropped; continue to pick up where it stopped.'),

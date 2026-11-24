@@ -63,6 +63,14 @@ if (!install_nonce_check() || !Session::getInstance()->_get('install_db_done')) 
     exit;
 }
 
+// Places import a batch per request once the admin account exists, so no request runs into a gateway timeout.
+if (Params::getParamString('action') === 'locations') {
+    echo json_encode(install_admin_exists()
+        ? install_locations_step(Params::getParamString('location-json'), max(0, Params::getParamInt('batch')))
+        : array('status' => false));
+    exit;
+}
+
 // Re-validate on the server. The browser validates too, but never trust it.
 $adminUser = (string)Params::getParam('s_name');
 $email     = (string)Params::getParam('email');
@@ -97,20 +105,5 @@ try {
 
 $json_message['email_status'] = $result['email_status'];
 $json_message['password']     = $result['s_password'];
-
-// The admin account is saved by now, so a failed location download must not stop the
-// install. The finish step writes osclass_installed and tells the owner to add locations later.
-$location = Params::getParamString('location-json');
-if (Params::getParam('skip-location-input') !== 'skip' && $location !== '' && $location !== 'skip') {
-    try {
-        $locationsSaved = osc_install_json_locations($location);
-    } catch (\Throwable $e) {
-        error_log('Shopclass install: importing locations failed: ' . $e->getMessage());
-        $locationsSaved = false;
-    }
-    if (!$locationsSaved) {
-        $json_message['location_error'] = true;
-    }
-}
 
 echo json_encode($json_message);
