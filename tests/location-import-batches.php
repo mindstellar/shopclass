@@ -124,9 +124,36 @@ do {
 } while ($step['ok'] && !$step['done'] && $steps < 50);
 check('steps run until done', $step['ok'] && $step['done'] && $steps >= 4, (string) $steps);
 pin('every city is there once', array(2800, 0), array($cities('ZX'), $dupes('ZX')));
-check('the finished job is forgotten', $count("SELECT COUNT(*) FROM {$prefix}t_key_value WHERE s_group = 'location_import'") === 0);
-check('a step after the end fails cleanly', (new LocationImportJob(false, $fetch))->step('ZX')['ok'] === false);
+check('the finished job keeps only a short done marker', $count("SELECT COUNT(*) FROM {$prefix}t_key_value WHERE s_group = 'location_import' AND s_value LIKE '%\"finished\":true%'") === 1);
+check('a step for a country never started fails cleanly', (new LocationImportJob(false, $fetch))->step('ZV')['ok'] === false);
 check('a failed download fails the start', (new LocationImportJob(false, static fn (): bool => false))->start($entry)['ok'] === false);
+
+harness_section('two requests for one country');
+$entryW = array('code' => 'ZW', 'file' => 'ZW.json', 'sha' => '', 'ndjson' => 'ZW.ndjson');
+$sourceW = $file($fixture('ZW', 700000));
+$fetchW  = static fn (array $entry, string $to): bool => copy($sourceW, $to);
+$jobW    = static fn (): LocationImportJob => new LocationImportJob(false, $fetchW);
+$filesBefore = glob(osc_uploads_path() . 'locations-*.ndjson') ?: array();
+$jobW()->start($entryW);
+$jobW()->step('ZW', 0.0);
+$before = $cities('ZW');
+$name   = $jobW()->lockName('ZW');
+// A second connection holds the lock, as a batch still running in another request would.
+$other  = new mysqli(getenv('DRIFT_DB_HOST') ?: '127.0.0.1', getenv('DRIFT_DB_USER') ?: 'root', getenv('DRIFT_DB_PASS') === false ? 'root' : getenv('DRIFT_DB_PASS'), '', (int) (getenv('DRIFT_DB_PORT') ?: 33061));
+$other->query("SELECT GET_LOCK('" . $other->real_escape_string($name) . "', 0)");
+$busy = $jobW()->step('ZW', 0.0);
+check('a batch asked for while another runs answers busy and imports nothing', !empty($busy['busy']) && $busy['ok'] && !$busy['done'] && $cities('ZW') === $before, json_encode($busy));
+$other->query("SELECT RELEASE_LOCK('" . $other->real_escape_string($name) . "')");
+$again = $jobW()->start($entryW);
+check('a second start carries on the running job', $again['ok'] && $again['progress'] > 0 && $cities('ZW') === $before, json_encode($again));
+do {
+    $step = $jobW()->step('ZW', 0.0);
+} while ($step['ok'] && !$step['done']);
+pin('the carried-on job ends with every city once', array(2800, 0), array($cities('ZW'), $dupes('ZW')));
+$repeat = $jobW()->step('ZW', 0.0);
+check('the last batch asked for again answers done', $repeat['ok'] && $repeat['done'], json_encode($repeat));
+check('no country file is left in the upload folder', array_diff(glob(osc_uploads_path() . 'locations-*.ndjson') ?: array(), $filesBefore) === array());
+@unlink($sourceW);
 @unlink($source);
 
 harness_section('a failed batch leaves the install finishable');

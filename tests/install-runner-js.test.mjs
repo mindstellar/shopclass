@@ -316,6 +316,18 @@ const all = ['account', 'starter', 'locations:0', 'sample_batch:0', 'sample_batc
   assert.equal(r.byId['ins-meter-count'].textContent, '8 of 8 done', 'the batches count as one unit');
 }
 
+// A dropped download (batch 0) is asked for again too.
+{
+  let dropped = 0;
+  const r = await boot((a, p) => {
+    if (a !== 'locations') return a === 'account' ? { status: true } : ok;
+    if (p.get('batch') === '0' && dropped++ === 0) return 'abort';
+    return p.get('batch') === '0' ? { status: true, more: true, progress: 0 } : ok;
+  });
+  assert.deepEqual(actions(r).filter((x) => x.startsWith('locations')), ['locations:0', 'locations:0', 'locations:1']);
+  assert.equal(r.rows[2].s, 'ok');
+}
+
 // A batch that keeps getting no answer is lost, and the install still finishes.
 {
   const r = await boot((a, p) => {

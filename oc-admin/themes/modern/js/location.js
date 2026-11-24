@@ -97,16 +97,26 @@
         }
 
         // A catalog import runs a batch per request; onStep gets each answer that says more.
+        // A batch that timed out or dropped is asked for twice more.
         function postImport(url, body, onStep) {
             let batch = 0;
+            let retries = 0;
             function next() {
                 body.set('batch', String(batch));
-                return postForm(url, body).then(function (result) {
+                return postForm(url, body).catch(function () {
+                    return { error: i18n.saveError, dropped: true };
+                }).then(function (result) {
                     if (result && result.ok && result.more) {
                         batch++;
+                        retries = 0;
                         if (onStep) {
                             onStep(result);
                         }
+                        return next();
+                    }
+                    const dropped = result && (result.dropped || result.error === i18n.serverTimeout);
+                    if (dropped && retries < 2) {
+                        retries++;
                         return next();
                     }
                     return result;

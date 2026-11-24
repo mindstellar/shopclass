@@ -811,7 +811,7 @@
                         send();
                         return;
                     }
-                    if (!isAccount && !data && batch > 0 && retries < BATCH_RETRIES) {
+                    if (!isAccount && unit.action === 'locations' && !data && retries < BATCH_RETRIES) {
                         retries++;
                         send();
                         return;

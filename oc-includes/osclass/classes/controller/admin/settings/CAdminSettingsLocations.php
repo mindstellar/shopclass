@@ -853,7 +853,7 @@ class CAdminSettingsLocations extends AdminSecBaseModel
     {
         $job = new LocationImportJob($dryRun);
         $this->releaseSession();
-        $result = Params::getParamInt('batch') === 0 ? $job->start($entry) : $job->step((string) $entry['code']);
+        $result = $job->run($entry, Params::getParamInt('batch'));
         $this->resumeSession();
         if (!$result['ok']) {
             $this->respond('error', $dryRun
