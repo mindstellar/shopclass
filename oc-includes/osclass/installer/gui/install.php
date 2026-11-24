@@ -53,6 +53,7 @@ $ins_i18n = array(
     'showPassword' => __('Show password'),
     'hidePassword' => __('Hide password'),
     'networkError' => __('Something went wrong. Check your connection and try again.'),
+    'placesProgress' => __('Adding places: %s%%'),
 );
 ?>
 <!doctype html>

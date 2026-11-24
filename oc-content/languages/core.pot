@@ -1212,6 +1212,10 @@ msgstr ""
 msgid "Added on top of the category's own expiration ceiling."
 msgstr ""
 
+#: oc-includes/osclass/installer/gui/install.php
+msgid "Adding places: %s%%"
+msgstr ""
+
 #: oc-admin/themes/modern/settings/api.php
 #: oc-admin/themes/modern/users/frm.php
 msgid "Address"
@@ -13425,6 +13429,10 @@ msgstr ""
 
 #: oc-includes/osclass/classes/admin/SystemChecks.php
 msgid "Working"
+msgstr ""
+
+#: oc-admin/themes/modern/settings/locations.php
+msgid "Working through %1$s: %2$s%% done. Keep this page open."
 msgstr ""
 
 #: oc-includes/osclass/classes/market/Compatibility.php

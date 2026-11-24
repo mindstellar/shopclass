@@ -95,6 +95,35 @@
             });
         }
 
+        // A catalog import runs a batch per request; onStep gets each answer that says more.
+        // A batch that timed out or dropped is asked for twice more.
+        function postImport(url, body, onStep) {
+            let batch = 0;
+            let retries = 0;
+            function next() {
+                body.set('batch', String(batch));
+                return postForm(url, body).catch(function () {
+                    return { error: i18n.saveError, dropped: true };
+                }).then(function (result) {
+                    if (result && result.ok && result.more) {
+                        batch++;
+                        retries = 0;
+                        if (onStep) {
+                            onStep(result);
+                        }
+                        return next();
+                    }
+                    const dropped = result && (result.dropped || result.error === i18n.serverTimeout);
+                    if (dropped && retries < 2) {
+                        retries++;
+                        return next();
+                    }
+                    return result;
+                });
+            }
+            return next();
+        }
+
         function formBody(form, submitter) {
             const body = new URLSearchParams(new FormData(form));
             if (submitter && submitter.name) {
@@ -935,7 +964,8 @@
             const idField = form.querySelector('[name="country_code"], [name="region_id"], [name="city_id"]');
             const editedId = type.indexOf('edit_') === 0 && idField ? idField.value : '';
 
-            postForm(form.getAttribute('action'), formBody(form, submitter)).then(function (result) {
+            const post = type === 'locations_import' ? postImport : postForm;
+            post(form.getAttribute('action'), formBody(form, submitter)).then(function (result) {
                 if (result === null) {
                     // A login page or an error page: post the form normally and let the server answer.
                     if (submitter && submitter.name) {
@@ -1255,7 +1285,11 @@
             catalogJob = job;
             paintCatalogJob();
 
-            postForm(form.getAttribute('action'), body).then(function (result) {
+            postImport(form.getAttribute('action'), body, function (step) {
+                const percent = Math.floor(Math.max(0, Math.min(1, Number(step.progress) || 0)) * 100);
+                job.note = formatN(i18n.importStep, [name, percent]);
+                paintCatalogJob();
+            }).then(function (result) {
                 catalogJob = null;
                 if (result === null) {
                     const current = dataRegion.querySelector('#' + job.form) || form;

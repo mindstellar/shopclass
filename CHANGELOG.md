@@ -2,6 +2,11 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
+## Shopclass 7.0.21
+
+### Fixed
+- Adding a large country's places at install or under Settings → Locations no longer times out on shared hosting; it now runs in short batches (#605).
+
 ## Shopclass 7.0.20
 
 ### New
