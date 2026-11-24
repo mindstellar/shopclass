@@ -529,6 +529,8 @@
     var UNIT_TIMEOUT = 480000;
     var SLOW_AFTER = 8000;
     var FINISH_PAUSE = 700;
+    // A batch of places that got no answer is asked for again this many times.
+    var BATCH_RETRIES = 2;
 
     function format(template, a, b) {
         return template.replace('%1$s', String(a)).replace('%2$s', String(b)).replace('%s', String(a));
@@ -583,7 +585,7 @@
     }
 
     // One request for one unit. Resolves to the parsed JSON, or null when nothing usable came back.
-    function unitRequest(form, country, unit, isAccount) {
+    function unitRequest(form, country, unit, isAccount, batch) {
         var nonceField = form.elements.install_nonce;
         var params;
         if (isAccount) {
@@ -594,6 +596,7 @@
             params.set('install_nonce', nonceField ? nonceField.value : '');
             if (unit.action === 'locations' && country) {
                 params.set('location-json', country.value);
+                params.set('batch', String(batch || 0));
             }
         }
         var controller = new AbortController();
@@ -708,12 +711,16 @@
         var account = { password: '', emailStatus: '' };
         var slowTimer = 0;
 
-        // The only place the bar moves, and it runs only when a unit has settled.
-        function settleUnit() {
-            done++;
-            var pct = total ? done / total : 0;
+        // The bar moves when a unit settles, and inside a unit that runs in batches.
+        function moveBar(part) {
+            var pct = total ? (done + part) / total : 0;
             ui.fill.style.transform = 'scaleX(' + pct + ')';
             ui.track.setAttribute('aria-valuenow', String(Math.round(pct * 100)));
+        }
+
+        function settleUnit() {
+            done++;
+            moveBar(0);
             var count = format(text('doneCount', '%1$s of %2$s done'), done, total);
             ui.countLine.textContent = count;
             ui.track.setAttribute('aria-valuetext', count);
@@ -779,15 +786,36 @@
                 if (task.units.length > 1) {
                     row.state.textContent = format(text('unitCount', '%1$s of %2$s'), unitIndex + 1, task.units.length);
                 }
-                window.clearTimeout(slowTimer);
-                slowTimer = window.setTimeout(function () {
-                    ui.slow.classList.add('is-on');
-                }, SLOW_AFTER);
+                var batch = 0;
+                var retries = 0;
 
-                unitRequest(ui.form, ui.country, unit, isAccount).then(function (data) {
+                function send() {
+                    window.clearTimeout(slowTimer);
+                    slowTimer = window.setTimeout(function () {
+                        ui.slow.classList.add('is-on');
+                    }, SLOW_AFTER);
+                    unitRequest(ui.form, ui.country, unit, isAccount, batch).then(settle);
+                }
+
+                function settle(data) {
                     window.clearTimeout(slowTimer);
                     ui.slow.classList.remove('is-on');
 
+                    if (!isAccount && data && data.status && data.more) {
+                        // The server did one batch and has more: ask for the next one.
+                        batch++;
+                        retries = 0;
+                        var part = Math.max(0, Math.min(1, Number(data.progress) || 0));
+                        moveBar(part);
+                        row.state.textContent = Math.floor(part * 100) + '%';
+                        send();
+                        return;
+                    }
+                    if (!isAccount && unit.action === 'locations' && !data && retries < BATCH_RETRIES) {
+                        retries++;
+                        send();
+                        return;
+                    }
                     if (isAccount) {
                         if (data && data.status) {
                             account.password = data.password || '';
@@ -809,7 +837,9 @@
                     }
                     settleUnit();
                     runUnit(unitIndex + 1);
-                });
+                }
+
+                send();
             }
 
             runUnit(0);

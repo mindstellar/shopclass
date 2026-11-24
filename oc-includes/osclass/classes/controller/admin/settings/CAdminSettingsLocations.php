@@ -25,6 +25,7 @@ use mindstellar\location\LocationAdminQuery;
 use mindstellar\location\LocationAdminView;
 use mindstellar\location\LocationCatalog;
 use mindstellar\location\LocationImporter;
+use mindstellar\location\LocationImportJob;
 use mindstellar\location\LocationNameStore;
 use mindstellar\location\LocationQuery;
 use mindstellar\location\LocationService;
@@ -642,10 +643,16 @@ class CAdminSettingsLocations extends AdminSecBaseModel
                 : _m('The catalog has no such country'), $back);
         }
 
-        $this->allowLongRun();
-        $this->releaseSession();
-        $imported = osc_install_json_locations((string) $entry['code']) === true;
-        $this->resumeSession();
+        if ($this->batched()) {
+            $result   = $this->importBatch($entry, false, $back);
+            $entry    = $result['entry'] ?? $entry;
+            $imported = true;
+        } else {
+            $this->allowLongRun();
+            $this->releaseSession();
+            $imported = osc_install_json_locations((string) $entry['code']) === true;
+            $this->resumeSession();
+        }
         if (!$imported) {
             $this->respond('error', _m('There was a problem importing the selected location'), $back);
         }
@@ -687,10 +694,14 @@ class CAdminSettingsLocations extends AdminSecBaseModel
             }
         }
 
-        $this->allowLongRun();
-        $this->releaseSession();
-        $report  = (new LocationImporter(true))->importCountry(new LocationCatalog(), $entry);
-        $this->resumeSession();
+        if ($this->batched()) {
+            $report = (array) $this->importBatch($entry, true, $this->dataUrl())['report'];
+        } else {
+            $this->allowLongRun();
+            $this->releaseSession();
+            $report = (new LocationImporter(true))->importCountry(new LocationCatalog(), $entry);
+            $this->resumeSession();
+        }
         $preview = LocationAdminView::previewReport($report, $this->renamedNames($report['renames'] ?? array())) + $offer;
 
         if (isset($preview['error'])) {
@@ -816,6 +827,44 @@ class CAdminSettingsLocations extends AdminSecBaseModel
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_write_close();
         }
+    }
+
+    /**
+     * Whether the script asks for the import a batch per request, so no request runs into a gateway timeout.
+     *
+     * @return bool
+     */
+    private function batched(): bool
+    {
+        return $this->isXhrRequest() && Params::existParam('batch');
+    }
+
+    /**
+     * Run one batch of a catalog import. Answers "more" and stops while batches remain, and
+     * answers the error when one fails; returns the finished job otherwise.
+     *
+     * @param array<string,mixed> $entry  the catalog row
+     * @param bool                $dryRun a preview
+     * @param string              $back   where the answer sends the admin
+     *
+     * @return array<string,mixed> the last step's answer: report and entry
+     */
+    private function importBatch(array $entry, bool $dryRun, string $back): array
+    {
+        $job = new LocationImportJob($dryRun);
+        $this->releaseSession();
+        $result = $job->run($entry, Params::getParamInt('batch'));
+        $this->resumeSession();
+        if (!$result['ok']) {
+            $this->respond('error', $dryRun
+                ? sprintf(_m('%s could not be read from the catalog'), (string) $entry['name'])
+                : _m('There was a problem importing the selected location'), $back);
+        }
+        if (!$result['done']) {
+            $this->respond('ok', '', $back, array('more' => true, 'progress' => $result['progress']));
+        }
+
+        return $result;
     }
 
     /**

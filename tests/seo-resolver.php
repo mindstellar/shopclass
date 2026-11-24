@@ -39,6 +39,11 @@ if (!class_exists('Preference', false)) {
         {
             return $key === 'language' ? 'en_US' : '';
         }
+
+        public static function revision(): int
+        {
+            return 0;
+        }
     }
 }
 if (!function_exists('osc_language')) {

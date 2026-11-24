@@ -111,24 +111,26 @@ Params::setParam('skip-location-input', '');
 Params::setParam('location-json', '');
 check('no country passes', install_run_unit('locations')['status'] === true);
 $asked = array();
-$res   = install_locations_unit('XX-No-Such', static function (string $code) use (&$asked): bool {
+$fail  = array('ok' => false, 'done' => true, 'progress' => 0.0);
+$done  = array('ok' => true, 'done' => true, 'progress' => 1.0);
+$res   = install_locations_unit('XX-No-Such', 0, static function (string $code) use (&$asked, $fail): array {
     $asked[] = $code;
 
-    return false;
+    return $fail;
 });
 check('a failed import answers false with a message', $res['status'] === false && $res['message'] !== '');
 check('and keeps the code for the done step', $session->_get('install_location_failed') === 'XX-No-Such' && $asked === array('XX-No-Such'));
-$res = install_locations_unit('XX', static function (): bool {
+$res = install_locations_unit('XX', 0, static function (): array {
     throw new RuntimeException('down');
 });
 check('an import that throws is a failure too', $res['status'] === false && $session->_get('install_location_failed') === 'XX');
-check('an import that works clears the flag', install_locations_unit('MT', static fn (): bool => true)['status'] === true
+check('an import that works clears the flag', install_locations_unit('MT', 0, static fn (): array => $done)['status'] === true
     && $session->_get('install_location_failed') === '');
 $asked = array();
-$res   = install_locations_unit('../../etc/passwd', static function (string $code) use (&$asked): bool {
+$res   = install_locations_unit('../../etc/passwd', 0, static function (string $code) use (&$asked, $done): array {
     $asked[] = $code;
 
-    return true;
+    return $done;
 });
 check('a path never reaches the download', $res['status'] === false && $asked === array() && $session->_get('install_location_failed') === 'lost');
 Params::setParam('location-json', '../x.json');

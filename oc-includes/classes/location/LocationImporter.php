@@ -39,6 +39,9 @@ final class LocationImporter
     /** Rows per multi-row INSERT. Large enough to matter, small enough for max_allowed_packet. */
     private const INSERT_CHUNK = 500;
 
+    /** Cities written between two looks at the clock. */
+    private const CITY_SLICE = 1000;
+
     /** Placeholders per IN () lookup. */
     private const SELECT_CHUNK = 500;
 
@@ -94,24 +97,48 @@ final class LocationImporter
             return $this->report;
         }
 
-        $this->noteIncomingRegions(array_map(
-            function ($region) {
-                return $this->normalizeRow($region, 'region');
-            },
-            $data['regions']
-        ));
+        $path = tempnam(sys_get_temp_dir(), 'locations-');
+        if ($path === false || !self::writeNdjson($data, $path)) {
+            $this->report['error'] = 'could not write the country file';
 
-        $regions = (function () use ($data) {
-            foreach ($data['regions'] as $region) {
-                $cities = array();
-                foreach ($region['settlements'] ?? $region['cities'] ?? array() as $city) {
-                    $cities[] = $this->normalizeRow($city, 'city');
-                }
-                yield array($this->normalizeRow($region, 'region'), $cities);
+            return $this->report;
+        }
+        try {
+            return $this->importNdjson($path);
+        } finally {
+            @unlink($path);
+        }
+    }
+
+    /**
+     * Write a decoded country file as ndjson, so both published forms import through one reader.
+     *
+     * @param array<string,mixed> $data as import() takes it
+     * @param string              $path where to write it
+     *
+     * @return bool false when the file could not be written
+     */
+    public static function writeNdjson(array $data, string $path): bool
+    {
+        $handle = @fopen($path, 'wb');
+        if ($handle === false) {
+            return false;
+        }
+        $line    = static fn (array $row): string => json_encode($row, JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE) . "\n";
+        $country = $data;
+        unset($country['regions']);
+        $ok = fwrite($handle, $line(array('type' => 'country') + $country)) !== false;
+        foreach ((array) ($data['regions'] ?? array()) as $region) {
+            $cities = (array) ($region['settlements'] ?? $region['cities'] ?? array());
+            unset($region['settlements'], $region['cities'], $region['type']);
+            $ok = $ok && fwrite($handle, $line(array('type' => 'region') + (array) $region)) !== false;
+            foreach ($cities as $city) {
+                unset($city['type']);
+                $ok = $ok && fwrite($handle, $line(array('type' => 'settlement') + (array) $city)) !== false;
             }
-        })();
+        }
 
-        return $this->runImport($data, $regions);
+        return fclose($handle) && $ok;
     }
 
     /**
@@ -169,8 +196,7 @@ final class LocationImporter
      * each region followed by its own cities.
      *
      * Read a line at a time so memory stays flat whatever the country's size — the whole
-     * reason this format is published. Only one region's cities are held at once, since
-     * a region's cities arrive together and are written when the next region begins.
+     * reason this format is published. Only one region's cities are held at once.
      *
      * @param string $path a local file, as written by LocationCatalog::countryNdjsonFile()
      *
@@ -178,80 +204,179 @@ final class LocationImporter
      */
     public function importNdjson(string $path): array
     {
+        return $this->importNdjsonBatch($path, array(), null)['report'];
+    }
+
+    /**
+     * Import the next part of an ndjson country file, in one transaction that ends at the first
+     * slice after $deadline. Running a call again with the same state adds no rows, since rows match on their source id.
+     *
+     * @param string                              $path     a local ndjson country file
+     * @param array<string,mixed>                 $state    what the previous call returned; empty to start
+     * @param float|null                          $deadline microtime(true) after which no new slice
+     *                                                      starts; null imports to the end
+     * @param callable(array<string,mixed>): void $save     stores the new state before the commit
+     *
+     * @return array<string,mixed> the state: done, progress (0-1), report, and where to resume
+     */
+    public function importNdjsonBatch(string $path, array $state, ?float $deadline, ?callable $save = null): array
+    {
         $handle = @fopen($path, 'rb');
         if ($handle === false) {
             $this->resetReport('');
             $this->report['error'] = 'could not read the downloaded country file';
 
-            return $this->report;
+            return array('done' => true, 'progress' => 1.0, 'report' => $this->report);
         }
-
-        // The country is the first line, and everything after it needs it, so it is read
-        // before the transaction opens rather than streamed with the rest.
-        $country = null;
-        while (($line = fgets($handle)) !== false) {
-            $row = json_decode(trim($line), true);
-            if (is_array($row) && ($row['type'] ?? '') === 'country') {
-                $country = $row;
-                break;
-            }
-        }
-
-        if ($country === null) {
-            fclose($handle);
-            $this->resetReport('');
-            $this->report['error'] = 'malformed country file';
-
-            return $this->report;
-        }
-
-        // The regions are read once on their own before the import starts. Deciding whether
-        // a stored row is about to be claimed by an incoming id, or is an orphan from a
-        // source this catalog no longer speaks, needs the whole set of incoming ids — and
-        // the first region is imported long before the last one has been streamed. Only
-        // region lines are decoded, so this costs a pass over the file and no memory worth
-        // counting: a country has tens of regions and hundreds of thousands of settlements.
-        $this->noteIncomingRegions($this->scanRegions($path));
-
-        $regions = (function () use ($handle) {
-            $region = null;
-            $cities = array();
-
-            while (($line = fgets($handle)) !== false) {
-                $row = json_decode(trim($line), true);
-                if (!is_array($row)) {
-                    continue; // a blank or unreadable line is skipped, not fatal
-                }
-
-                if (($row['type'] ?? '') === 'region') {
-                    if ($region !== null) {
-                        yield array($region, $cities);
-                    }
-                    $region = $this->normalizeRow($row, 'region');
-                    $cities = array();
-                    continue;
-                }
-
-                // 'settlement' in the published catalog, 'city' in the older one.
-                $type = $row['type'] ?? '';
-                if (($type === 'settlement' || $type === 'city') && $region !== null) {
-                    // Reduced here rather than after the region is complete: the published
-                    // rows carry some twenty fields apiece — alternative names, sitelinks,
-                    // elevation — and a large region holds tens of thousands of them, so
-                    // buffering them whole is what the streaming format exists to avoid.
-                    $cities[] = $this->normalizeRow($row, 'city');
-                }
-            }
-
-            if ($region !== null) {
-                yield array($region, $cities); // the last region has no successor to flush it
-            }
-        })();
 
         try {
-            return $this->runImport($country, $regions);
+            // The country is the first line, and everything after it needs it.
+            $country = null;
+            while (($line = fgets($handle)) !== false) {
+                $row = json_decode(trim($line), true);
+                if (is_array($row) && ($row['type'] ?? '') === 'country') {
+                    $country = $row;
+                    break;
+                }
+            }
+            // `code` in the published catalog, `s_country_code` in the older one.
+            $countryCode = (string) ($country['code'] ?? $country['s_country_code'] ?? '');
+            if ($country === null || $countryCode === '') {
+                $this->resetReport('');
+                $this->report['error'] = 'malformed country file';
+
+                return array('done' => true, 'progress' => 1.0, 'report' => $this->report);
+            }
+
+            $state += array('offset' => 0, 'slice' => 0, 'region' => 0, 'city_max' => 0, 'claimed' => '', 'regions_claimed' => array());
+            $this->resetReport($countryCode);
+            if (isset($state['report']) && is_array($state['report'])) {
+                $this->report = $state['report'];
+            }
+            $this->regionClaimed = array_fill_keys(array_map('intval', (array) $state['regions_claimed']), true);
+            $afterCountry        = (int) ftell($handle);
+
+            // Deciding whether a stored region is about to be claimed by an incoming id needs
+            // every incoming region id, so the region lines are read on their own first.
+            // Kept in the state, so later batches skip the pass.
+            $state['scan'] ??= $this->scanRegions($path);
+            $this->noteIncomingRegions((array) $state['scan']);
+
+            $run = function () use ($handle, $path, $country, $countryCode, $afterCountry, $deadline, $save, &$state): void {
+                if ((int) $state['offset'] === 0) {
+                    $this->importCountryRow($country);
+                    $state['offset'] = $afterCountry;
+                }
+                $state['done'] = false;
+                $position      = (int) $state['offset'];
+                while (true) {
+                    fseek($handle, (int) $state['offset']);
+                    $block = $this->readRegionBlock($handle);
+                    if ($block === null) {
+                        $this->deactivateVanishedRegions($countryCode);
+                        $state['done'] = true;
+                        break;
+                    }
+                    [$region, $cities, $next] = $block;
+                    if ((int) $state['slice'] === 0) {
+                        // A region with no cities offers an empty list, and a region skipped for
+                        // its name takes its cities with it; both are left for the retire pass.
+                        if ($cities === array() || self::nameTooLong((string) $region['s_region_name'])) {
+                            $this->report['regions'][$cities === array() ? 'skipped_empty' : 'skipped_long']++;
+                            $state['offset'] = $next;
+                            continue;
+                        }
+                        $regionId          = $this->importRegion($countryCode, $region);
+                        $state['city_max'] = LocationStore::maxCityId();
+                        $state['claimed']  = '';
+                    } else {
+                        // A region carried on from an earlier call is matched again without counting it twice.
+                        unset($this->regionClaimed[(int) $state['region']]);
+                        $report   = $this->report;
+                        $regionId = $this->importRegion($countryCode, $region);
+                        $this->report = $report;
+                    }
+                    $state['region']                = $regionId;
+                    $this->regionClaimed[$regionId] = true;
+                    if ($this->importCities($regionId, $cities, $countryCode, $state, $deadline)) {
+                        $state['offset']  = $next;
+                        $state['slice']   = 0;
+                        $state['claimed'] = '';
+                        $position         = $next;
+                    } else {
+                        $position = (int) $state['offset'] + intdiv(($next - (int) $state['offset']) * (int) $state['slice'], max(1, count($cities)));
+                    }
+                    if ($deadline !== null && microtime(true) >= $deadline) {
+                        break;
+                    }
+                }
+                $size                     = (int) filesize($path);
+                $state['regions_claimed'] = array_keys($this->regionClaimed);
+                $state['report']          = $this->report;
+                $state['progress']        = $state['done'] ? 1.0 : min(0.99, $size > 0 ? $position / $size : 0.0);
+                if ($save !== null && !$this->dryRun) {
+                    $save($state);
+                }
+            };
+
+            if ($this->dryRun) {
+                // A dry run executes every statement for real and then rolls it back, so its
+                // counts are exact and a constraint a real run would break breaks here too.
+                Db::beginTransaction();
+                try {
+                    $run();
+                } finally {
+                    Db::rollBack();
+                }
+                if ($save !== null) {
+                    $save($state);
+                }
+            } else {
+                Db::transaction($run);
+                if ($state['done']) {
+                    // New city and region centres reach the listings that use them.
+                    \mindstellar\listing\ListingPointJobs::queue();
+                }
+            }
+
+            return $state;
         } finally {
             fclose($handle);
+        }
+    }
+
+    /**
+     * Read the region that starts at the handle's position, with its cities.
+     *
+     * @param resource $handle an ndjson file positioned at a region line
+     *
+     * @return array{0:array<string,mixed>,1:array<int,array<string,mixed>>,2:int}|null
+     *         region, cities and the offset of the next region; null at the end of the file
+     */
+    private function readRegionBlock($handle): ?array
+    {
+        $region = null;
+        $cities = array();
+        while (true) {
+            $at   = (int) ftell($handle);
+            $line = fgets($handle);
+            if ($line === false) {
+                return $region === null ? null : array($region, $cities, $at);
+            }
+            $row = json_decode(trim($line), true);
+            if (!is_array($row)) {
+                continue; // a blank or unreadable line is skipped, not fatal
+            }
+            $type = $row['type'] ?? '';
+            if ($type === 'region') {
+                if ($region !== null) {
+                    return array($region, $cities, $at);
+                }
+                $region = $this->normalizeRow($row, 'region');
+            } elseif (($type === 'settlement' || $type === 'city') && $region !== null) {
+                // Reduced at once: a published row carries some twenty fields.
+                $cities[] = $this->normalizeRow($row, 'city');
+            }
         }
     }
 
@@ -371,80 +496,6 @@ final class LocationImporter
             'd_coord_long' => $row['longitude'] ?? $row['d_coord_long'] ?? null,
             's_source'     => (string) ($row['source'] ?? ''),
         );
-    }
-
-    /**
-     * The body both entry points share: one country, then regions with their cities.
-     *
-     * @param array<string,mixed>                                        $country the country row,
-     *                                                                              in either format's field names
-     * @param iterable<array{0:array<string,mixed>,1:array<int,array<string,mixed>>}> $regions
-     *                                                                              yields [regionRow, citiesRows]
-     *
-     * @return array<string,mixed> the report
-     */
-    private function runImport(array $country, iterable $regions): array
-    {
-        // `code` in the published catalog, `s_country_code` in the older one.
-        $countryCode = (string) ($country['code'] ?? $country['s_country_code'] ?? '');
-        if ($countryCode === '') {
-            $this->resetReport('');
-            $this->report['error'] = 'malformed country file';
-
-            return $this->report;
-        }
-
-        // Reset here rather than only in the callers, so the counts belong to this run
-        // whichever entry point started it.
-        $this->resetReport($countryCode);
-
-        // One transaction for the whole country. A half-imported country is worse than a
-        // long transaction: it leaves regions whose cities never arrived, and the admin
-        // has no way to tell how far it got.
-        $run = function () use ($country, $regions, $countryCode) {
-            $this->importCountryRow($country);
-            foreach ($regions as [$region, $cities]) {
-                // A region with nothing in it is a dead end: picking it offers an empty
-                // list of cities. They are not places the catalog forgot to fill — they
-                // are abolished councils and overlapping tiers of the hierarchy, whose
-                // settlements sit correctly under the units that replaced them. Skipped
-                // rather than imported, and any already stored is left unclaimed, so it
-                // is retired by the same pass that retires anything else upstream dropped.
-                if ($cities === array()) {
-                    $this->report['regions']['skipped_empty']++;
-                    continue;
-                }
-                // A region skipped for its name takes its cities with it, so it is decided
-                // before they are imported rather than leaving them without a parent.
-                if (self::nameTooLong((string) $region['s_region_name'])) {
-                    $this->report['regions']['skipped_long']++;
-                    continue;
-                }
-                $regionId = $this->importRegion($countryCode, $region);
-                $this->importCities($regionId, $cities, $countryCode);
-            }
-            $this->deactivateVanishedRegions($countryCode);
-        };
-
-        if ($this->dryRun) {
-            // A dry run executes every statement for real and then rolls the whole thing
-            // back, rather than estimating alongside a separate code path. It is the same
-            // code, so the counts are exact, ids of newly inserted regions are real enough
-            // to hang their cities off, and a constraint a real run would violate is
-            // violated here too — where it is harmless.
-            Db::beginTransaction();
-            try {
-                $run();
-            } finally {
-                Db::rollBack();
-            }
-        } else {
-            Db::transaction($run);
-            // New city and region centres reach the listings that use them.
-            \mindstellar\listing\ListingPointJobs::queue();
-        }
-
-        return $this->report;
     }
 
     /* ------------------------------------------------------------------ *
@@ -641,30 +692,28 @@ final class LocationImporter
      * ------------------------------------------------------------------ */
 
     /**
-     * Match, update, insert and retire one region's cities.
+     * Match, update, insert and retire one region's cities, from $state['slice'] on, a
+     * slice at a time until $deadline. Rows this run inserted (past city_max) are never
+     * matched or retired, and $state carries the claimed rows to the next call.
      *
      * @param int                             $regionId
      * @param array<int, array<string,mixed>> $incomingCities
      * @param string                          $countryCode
+     * @param array<string,mixed>             $state    slice, city_max and claimed, updated here
+     * @param float|null                      $deadline see importNdjsonBatch()
      *
-     * @return void
+     * @return bool true once the region is finished
      */
-    private function importCities(int $regionId, array $incomingCities, string $countryCode): void
+    private function importCities(int $regionId, array $incomingCities, string $countryCode, array &$state, ?float $deadline): bool
     {
-        if ($incomingCities === array()) {
-            return;
-        }
+        $from     = (int) $state['slice'];
+        $storedTo = (int) $state['city_max'];
 
-        // Looked up by source id across this country rather than just this region:
-        // upstream re-parents cities between regions, and finding the row wherever it
-        // currently sits turns that into an UPDATE of fk_i_region_id instead of a
-        // duplicate. Country-wide and not table-wide — see citiesBySourceId().
-        $bySource = $this->citiesBySourceId($incomingCities, $countryCode);
-
-        $rows     = LocationStore::citiesOf($regionId);
         $inRegion = $bySlug = $byName = $indexed = array();
-        foreach ($rows as $row) {
-            $this->indexRow($row, $indexed, $inRegion, $bySlug, $byName);
+        foreach (LocationStore::citiesOf($regionId) as $row) {
+            if ((int) $row['pk_i_id'] <= $storedTo) {
+                $this->indexRow($row, $indexed, $inRegion, $bySlug, $byName);
+            }
         }
 
         // Names too long to be picked out of a list are dropped before anything else, so
@@ -683,10 +732,11 @@ final class LocationImporter
                 return true;
             }
         ));
-        $this->report['cities']['skipped_long'] += $tooLong;
-
+        if ($from === 0) {
+            $this->report['cities']['skipped_long'] += $tooLong;
+        }
         if ($incomingCities === array()) {
-            return;
+            return true;
         }
 
         // Which ids this import is bringing, and which names it brings more than once.
@@ -705,56 +755,73 @@ final class LocationImporter
             }
         }
 
-        $claimed = array();
-        $pending = array();
-        foreach ($incomingCities as $incoming) {
-            $sourceId = isset($incoming['i_source_id']) ? (int) $incoming['i_source_id'] : null;
-            $name     = (string) $incoming['s_city_name'];
-            $slug     = (string) $incoming['s_city_slug'];
+        $claimed = $state['claimed'] === '' ? array() : array_fill_keys(array_map('intval', explode(',', (string) $state['claimed'])), true);
+        $total   = count($incomingCities);
+        for ($start = $from; $start < $total; $start += self::CITY_SLICE) {
+            $slice = array_slice($incomingCities, $start, self::CITY_SLICE);
+            // Looked up by source id across this country rather than just this region:
+            // upstream re-parents cities between regions, and finding the row wherever it
+            // currently sits turns that into an UPDATE of fk_i_region_id instead of a
+            // duplicate. Country-wide and not table-wide — see citiesBySourceId().
+            $bySource = $this->citiesBySourceId($slice, $countryCode);
+            $pending  = array();
+            foreach ($slice as $incoming) {
+                $sourceId = isset($incoming['i_source_id']) ? (int) $incoming['i_source_id'] : null;
+                $name     = (string) $incoming['s_city_name'];
+                $slug     = (string) $incoming['s_city_slug'];
 
-            $match = $this->matchRow(
-                $sourceId,
-                $slug,
-                $name,
-                $bySource,
-                $bySlug,
-                $byName,
-                $indexed,
-                $claimed,
-                $incomingIds,
-                $ambiguous
-            );
-            if ($match === null) {
-                $this->report['cities']['inserted']++;
-                $pending[] = array(
-                    $regionId,
-                    $countryCode,
+                $match = $this->matchRow(
+                    $sourceId,
+                    $slug,
+                    $name,
+                    $bySource,
+                    $bySlug,
+                    $byName,
+                    $indexed,
+                    $claimed,
+                    $incomingIds,
+                    $ambiguous
+                );
+                if ($match === null) {
+                    $this->report['cities']['inserted']++;
+                    $pending[] = array(
+                        $regionId,
+                        $countryCode,
+                        $sourceId,
+                        $name,
+                        $slug,
+                        $incoming['d_coord_lat'] ?? null,
+                        $incoming['d_coord_long'] ?? null,
+                    );
+                    continue;
+                }
+
+                [$row, $how] = $match;
+                $claimed[(int) $row['pk_i_id']] = true;
+                $this->countMatch('cities', $how);
+                $this->updateRow(
+                    'CITY',
+                    $row,
                     $sourceId,
                     $name,
                     $slug,
-                    $incoming['d_coord_lat'] ?? null,
-                    $incoming['d_coord_long'] ?? null,
+                    $incoming,
+                    $regionId,
+                    $how
                 );
-                continue;
             }
+            $this->insertCities($pending);
 
-            [$row, $how] = $match;
-            $claimed[(int) $row['pk_i_id']] = true;
-            $this->countMatch('cities', $how);
-            $this->updateRow(
-                'CITY',
-                $row,
-                $sourceId,
-                $name,
-                $slug,
-                $incoming,
-                $regionId,
-                $how
-            );
+            $state['slice']   = $start + count($slice);
+            $state['claimed'] = implode(',', array_keys($claimed));
+            if ($state['slice'] < $total && $deadline !== null && microtime(true) >= $deadline) {
+                return false;
+            }
         }
 
-        $this->insertCities($pending);
         $this->deactivateVanishedCities($indexed, $claimed);
+
+        return true;
     }
 
     /**

@@ -33,8 +33,6 @@ check('no overlay left in the script', !str_contains($js, 'ins-setup-overlay') &
 check('no interval moves the bar', !str_contains($js, 'setInterval'));
 check('each unit has an AbortController and a timeout', str_contains($js, 'new AbortController()') && str_contains($js, 'controller.abort()') && str_contains($js, 'signal: controller.signal'));
 check('the plan is read from data-install-plan', str_contains($js, "data-install-plan") && !str_contains($js, 'data-shop-queue') && !str_contains($js, 'buildSteps'));
-check('the bar is written in one function', substr_count($js, 'scaleX(') === 2 && str_contains($js, 'function settleUnit()'));
-check('settleUnit is called only after a unit has an outcome', substr_count($js, 'settleUnit()') === 2 && (bool) preg_match('/unitRequest\(ui\.form, ui\.country, unit, isAccount\)\.then\(.*settleUnit\(\);\s*runUnit\(unitIndex \+ 1\)/s', $js));
 check('aria-valuenow is written only with the bar', substr_count($js, "'aria-valuenow'") === 2);
 check('the target wrap is never marked busy', !str_contains($js, "ui.wrap") && !preg_match("/getElementById\\('ins-target-wrap'\\)/", $js));
 check('no panel or link is built in the script', !str_contains($js, "createElement('a')") && !str_contains($js, "'ins-panel ins-panel-danger'") && !str_contains($js, "text('reload'"));

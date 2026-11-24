@@ -156,7 +156,7 @@ async function boot(answers, opts = {}) {
 
 const ok = { status: true };
 const actions = (r) => r.calls.map((p) => p.get('action') + (p.get('batch') ? ':' + p.get('batch') : '') + (p.get('slug') ? ':' + p.get('slug') : ''));
-const all = ['account', 'starter', 'locations', 'sample_batch:0', 'sample_batch:1', 'sample_batch:2', 'install_package:a', 'install_package:b'];
+const all = ['account', 'starter', 'locations:0', 'sample_batch:0', 'sample_batch:1', 'sample_batch:2', 'install_package:a', 'install_package:b'];
 
 // Every unit succeeds.
 {
@@ -299,6 +299,45 @@ const all = ['account', 'starter', 'locations', 'sample_batch:0', 'sample_batch:
   const r = await boot((a) => (a === 'account' ? { status: true } : ok), { unitTimeout: 543000 });
   assert.ok(r.win.timers.includes(543000), 'the request timer uses data-unit-timeout');
   assert.ok(!r.win.timers.includes(180000), 'not the old three minutes');
+}
+
+// Places run in batches until the answer stops saying more; a batch with no answer is asked again.
+{
+  let dropped = 0;
+  const r = await boot((a, p) => {
+    if (a !== 'locations') return a === 'account' ? { status: true } : ok;
+    const b = Number(p.get('batch'));
+    if (b === 1 && dropped++ === 0) return 'abort';
+    return b < 3 ? { status: true, more: true, progress: b / 3 } : ok;
+  });
+  assert.deepEqual(actions(r).filter((x) => x.startsWith('locations')), ['locations:0', 'locations:1', 'locations:1', 'locations:2', 'locations:3']);
+  assert.equal(r.rows[2].s, 'ok', 'the places row ends ok');
+  assert.deepEqual(r.lost, []);
+  assert.equal(r.byId['ins-meter-count'].textContent, '8 of 8 done', 'the batches count as one unit');
+}
+
+// A dropped download (batch 0) is asked for again too.
+{
+  let dropped = 0;
+  const r = await boot((a, p) => {
+    if (a !== 'locations') return a === 'account' ? { status: true } : ok;
+    if (p.get('batch') === '0' && dropped++ === 0) return 'abort';
+    return p.get('batch') === '0' ? { status: true, more: true, progress: 0 } : ok;
+  });
+  assert.deepEqual(actions(r).filter((x) => x.startsWith('locations')), ['locations:0', 'locations:0', 'locations:1']);
+  assert.equal(r.rows[2].s, 'ok');
+}
+
+// A batch that keeps getting no answer is lost, and the install still finishes.
+{
+  const r = await boot((a, p) => {
+    if (a !== 'locations') return a === 'account' ? { status: true } : ok;
+    return p.get('batch') === '0' ? { status: true, more: true, progress: 0 } : 'abort';
+  });
+  assert.equal(actions(r).filter((x) => x === 'locations:1').length, 3, 'tried three times');
+  assert.equal(r.rows[2].s, 'skip');
+  assert.deepEqual(r.lost, ['locations']);
+  assert.ok(r.sent && r.sent.submitted, 'the finish form is still posted');
 }
 
 console.log('install runner: all checks passed');

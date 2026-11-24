@@ -1,22 +1,22 @@
 {
     "plain": {
         "home": {
-            "files": 184,
+            "files": 183,
             "queries": 14,
             "trips": 0
         },
         "search": {
-            "files": 196,
+            "files": 194,
             "queries": 12,
             "trips": 0
         },
         "category": {
-            "files": 196,
+            "files": 194,
             "queries": 12,
             "trips": 0
         },
         "listing": {
-            "files": 173,
+            "files": 171,
             "queries": 11,
             "trips": 0
         }

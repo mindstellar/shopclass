@@ -76,6 +76,7 @@ final class AutocronSharedCache implements \mindstellar\cache\CacheDriver
     public array $server = array();
     public array $copy   = array();
     public int $trips    = 0;
+    public array $read   = array();
 
     public function add($key, $data, $expire = 0)
     {
@@ -96,6 +97,7 @@ final class AutocronSharedCache implements \mindstellar\cache\CacheDriver
             return $this->copy[$key];
         }
         ++$this->trips;
+        $this->read[] = $key;
         $found = array_key_exists($key, $this->server);
         if ($found) {
             $this->copy[$key] = $this->server[$key];
@@ -106,6 +108,7 @@ final class AutocronSharedCache implements \mindstellar\cache\CacheDriver
     public function getMany(array $keys): array
     {
         ++$this->trips;
+        array_push($this->read, ...$keys);
         $out = array();
         foreach ($keys as $key) {
             if (array_key_exists($key, $this->server)) {
@@ -146,18 +149,30 @@ final class AutocronSharedCache implements \mindstellar\cache\CacheDriver
 require_once __DIR__ . '/lib/cache-swap.php';
 $shared = new AutocronSharedCache();
 test_cache_swap($shared);
+function osc_auto_cron()
+{
+    return true;
+}
+function osc_maintenance_is_restoring($path)
+{
+    return false;
+}
+define('ABS_PATH', $uploads);
+// The CLI has no fastcgi_finish_request(), so a jobs-only page returns without running anything.
 $page = static function () use ($shared): array {
-    $shared->copy  = array();
+    $shared->copy  = $shared->read = array();
     $shared->trips = 0;
-    _osc_auto_cron_prefetch();
-    $due = array(_osc_auto_cron_due('tick', 300), _osc_auto_cron_due('jobs', 60));
+    osc_auto_cron_dispatch();
 
-    return array($due, $shared->trips);
+    return array($shared->trips, $shared->read);
 };
-pin('the first page takes both slots', array(true, true), $page()[0]);
-pin('a page inside both windows reads them in one trip and runs nothing', array(array(false, false), 1), $page());
+$shared->server = array('osclass_autocron_tick' => 1, 'osclass_autocron_jobs' => 1);
+pin('a page inside both windows reads only the jobs throttle, in one trip', array(1, array('osclass_autocron_jobs')), $page());
+pin('...and takes no slot', array('osclass_autocron_tick' => 1, 'osclass_autocron_jobs' => 1), $shared->server);
 unset($shared->server['osclass_autocron_jobs']);
-pin('a minute on, jobs may run while the full run still waits', array(false, true), $page()[0]);
+$page();
+pin('a minute on, the page takes the jobs slot while the full run still waits', array('osclass_autocron_tick' => 1, 'osclass_autocron_jobs' => 1), $shared->server);
+pin('...and the next page is back to one read', array(1, array('osclass_autocron_jobs')), $page());
 test_cache_swap(null);
 
 exit(harness_result());

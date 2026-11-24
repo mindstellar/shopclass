@@ -217,6 +217,21 @@ pin('resolve: nothing saved shows the theme default', [
     ['label' => 'Browse all', 'url' => '/search'],
     ['label' => 'Help', 'url' => 'https://elsewhere.test/help'],
 ], $bi->resolve('main', 'en_US'));
+$counting = new class () extends \mindstellar\cache\MemoryCache {
+    public int $reads = 0;
+
+    public function get($key, &$found = null)
+    {
+        ++$this->reads;
+
+        return parent::get($key, $found);
+    }
+};
+require_once __DIR__ . '/lib/cache-swap.php';
+$before = test_cache_swap($counting);
+$bi->resolve('main', 'en_US');
+pin('a default of built-in pages and links is resolved with no cache read', 0, $counting->reads);
+test_cache_swap($before);
 pin('no default: footer keeps the linked pages', [], $bi->automaticItems('footer'));
 pin('a default that fails the checks is ignored', null, $bi->themeDefault('side'));
 pin('a saved menu wins over the default', [], $bi->save('main', [$link('Mine')]));

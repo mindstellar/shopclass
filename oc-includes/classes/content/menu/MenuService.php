@@ -151,14 +151,26 @@ final class MenuService
      */
     public static function builtinLabels(): array
     {
-        return [
+        $out = [];
+        foreach (MenuItems::BUILTINS as $ref) {
+            $out[$ref] = self::builtinLabel($ref);
+        }
+
+        return $out;
+    }
+
+    /** One built-in page's label, translated alone, since a menu link needs only its own. */
+    private static function builtinLabel(string $ref): string
+    {
+        return match ($ref) {
             'home'     => __('Home'),
             'search'   => __('Browse'),
             'contact'  => __('Contact'),
             'post'     => __('Publish a listing'),
             'login'    => __('Log in'),
             'register' => __('Register'),
-        ];
+            default    => '',
+        };
     }
 
     /**
@@ -221,7 +233,7 @@ final class MenuService
             'register' => osc_register_account_url(),
         };
 
-        return ['label' => self::builtinLabels()[$ref], 'url' => (string) $url];
+        return ['label' => self::builtinLabel($ref), 'url' => (string) $url];
     }
 
     /**
@@ -397,6 +409,15 @@ final class MenuService
             return [];
         }
         $spec = $this->themeSpec($id);
+        // A theme default of built-in pages and plain links reads nothing stored, so it skips the cache trip.
+        if (is_array($spec) && self::onlyBuiltinsAndLinks($spec) && $this->load($id) === null) {
+            $default = $this->themeDefault($id);
+            if ($default !== null) {
+                $builtins = null;
+
+                return $this->withBuiltins($this->links($default, $locale), $builtins);
+            }
+        }
         $key  = implode('|', ['menu', $id, $locale, CacheGroup::generation('category'), CacheGroup::generation('page'), $spec === null ? '' : md5(serialize($spec))]);
 
         // Built-in pages stay placeholders in the cache; their URLs are built per request.
@@ -547,6 +568,21 @@ final class MenuService
             }
         }
         self::syncPlaces();
+    }
+
+    /**
+     * @param array<mixed> $items
+     */
+    private static function onlyBuiltinsAndLinks(array $items): bool
+    {
+        foreach ($items as $item) {
+            if (!is_array($item) || !in_array($item['type'] ?? '', ['builtin', 'link'], true)
+                || (is_array($item['children'] ?? null) && !self::onlyBuiltinsAndLinks($item['children']))) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

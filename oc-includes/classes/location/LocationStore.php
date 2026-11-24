@@ -101,6 +101,17 @@ final class LocationStore
     }
 
     /**
+     * The highest city id so far, 0 when there are none.
+     *
+     * @return int
+     * @throws \mindstellar\database\DbException
+     */
+    public static function maxCityId(): int
+    {
+        return (int) (Db::select('SELECT MAX(pk_i_id) AS n FROM ' . DB_TABLE_PREFIX . 't_city')[0]['n'] ?? 0);
+    }
+
+    /**
      * A region's cities with the columns the importer matches on.
      *
      * @return array<int,array<string,mixed>>

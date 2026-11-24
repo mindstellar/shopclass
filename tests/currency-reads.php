@@ -23,7 +23,9 @@ use mindstellar\currency\Money;
 
 $admin = api_admin_boot('osc_currency_reads');
 $p     = DB_TABLE_PREFIX;
+require_once ABS_PATH . 'oc-includes/osclass/helpers/hItems.php';
 
+seed_locale($admin, 'en_US', 'English');
 seed_currency($admin, 'USD', 'US Dollar');
 seed_currency($admin, 'JPY', 'Yen');
 seed_currency($admin, 'XAU', 'Gold');
@@ -50,10 +52,13 @@ pin('enabled currencies only, in code order', array('JPY', 'USD'), array_column(
 pin('each row as stored, values as strings', array('pk_c_code' => 'JPY', 's_name' => 'Yen', 's_description' => '&yen;', 'b_enabled' => '1', 'i_decimals' => '0'), CurrencyService::make()->enabled()[0]);
 pin('decimals and symbol per currency', array(0, 2, '¥'), array(Money::decimals('JPY'), Money::decimals('USD'), CurrencyService::make()->symbol('jpy')));
 pin('a disabled currency is still found by code', 'Gold', CurrencyService::make()->find('XAU')['s_name'] ?? null);
+View::newInstance()->_exportVariableToView('item', array('fk_c_currency_code' => 'JPY'));
+pin('a listing price takes its currency\'s symbol and decimals', '1235 &yen;', osc_format_price(1234500000));
 
 harness_section('a change in the same request');
 CurrencyService::make()->update('JPY', null, null, 3);
 pin('new decimals show at once', 3, Money::decimals('JPY'));
+pin('...and a listing price shows them and the new symbol', '1234.500 ¥', osc_format_price(1234500000));
 CurrencyService::make()->create('CHF', 'Swiss Franc', 'Fr');
 pin('a new currency joins the enabled list', array('CHF', 'JPY', 'USD'), array_column(CurrencyService::make()->enabled(), 'pk_c_code'));
 

@@ -133,11 +133,10 @@ function osc_theme_template_paths(): array
         $paths[] = $active;
     }
 
-    $info = $themes->loadThemeInfo($themes->getCurrentTheme());
-    if (is_array($info) && isset($info['template']) && $info['template'] !== ''
-        && \mindstellar\utility\Validate::packageName($info['template'])
-    ) {
-        $parent = osc_themes_path() . $info['template'] . '/';
+    // parentOf() reads only the header line and is shared with the theme loader for the request.
+    $template = $themes->parentOf((string) $themes->getCurrentTheme());
+    if ($template !== '') {
+        $parent = osc_themes_path() . $template . '/';
         if (is_dir($parent)) {
             $paths[] = $parent;
         }

@@ -28,6 +28,8 @@ class Currency extends DAO
 
     private static $_currencies;
 
+    private static ?int $_generation = null;
+
     /**
      * Set data related to t_currency table
      */
@@ -56,6 +58,12 @@ class Currency extends DAO
      */
     public function findByPrimaryKey($value)
     {
+        // Kept per cache generation, so a currency changed earlier in the request is read again.
+        $generation = \mindstellar\cache\CacheGroup::generation('currency');
+        if (self::$_generation !== $generation) {
+            self::$_currencies = array();
+            self::$_generation = $generation;
+        }
         if (isset(self::$_currencies[$value])) {
             return self::$_currencies[$value];
         }
