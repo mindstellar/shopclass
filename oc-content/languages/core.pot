@@ -14719,6 +14719,10 @@ msgstr ""
 msgid "Shopclass version"
 msgstr ""
 
+#: oc-includes/classes/admin/form/BillingSettingsScreen.php
+msgid "Shops always take payments."
+msgstr ""
+
 #: oc-admin/themes/modern/languages/frm.php
 #: oc-admin/themes/modern/languages/index.php
 msgid "Short name"
@@ -15548,9 +15552,7 @@ msgid "Take payment at the end of posting"
 msgstr ""
 
 #: oc-includes/classes/admin/form/BillingSettingsScreen.php
-msgid ""
-"Take payment for shop orders and plugin extras. While off, the Billing menu "
-"is hidden."
+msgid "Take payment for shop orders and plugin extras."
 msgstr ""
 
 #: oc-includes/osclass/installer/gui/install-site-type.php

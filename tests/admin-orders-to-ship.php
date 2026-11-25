@@ -215,4 +215,24 @@ foreach ([$third, $first, $second] as $i => $o) {
 }
 pin('the oldest come first, each with its buyer', [[$third->getId(), 'tom'], [$first->getId(), 'tom'], [$second->getId(), 'tom']], array_map(static fn (array $row): array => [$row['order']->getId(), $row['buyer']], OrderStore::oldestToShip(5)));
 pin('and the list is capped', 2, count(OrderStore::oldestToShip(2)));
+
+harness_section('billing stored off');
+osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
+scratchdb_forget_cache();
+osc_reset_preferences();
+$entries = static function (): array {
+    $m = new AdminMenu();
+    $m->init();
+    $all = $m->get_array_menu();
+
+    return [isset($all['billing']), isset($all['billing']['sub']['billing_orders'])];
+};
+pin('a shop still shows Billing and Orders', [true, true, true], [osc_billing_enabled(), ...$entries()]);
+osc_set_preference('site_mode', 'classifieds');
+scratchdb_forget_cache();
+osc_reset_preferences();
+pin('a classifieds site hides them', [false, false, false], [osc_billing_enabled(), ...$entries()]);
+osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+scratchdb_forget_cache();
+osc_reset_preferences();
 exit(harness_result());

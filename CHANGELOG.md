@@ -2,7 +2,7 @@
 
 Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 
-## Shopclass 7.1.0.rc3
+## Shopclass 7.1.0.rc4
 
 **Shopclass 7.1 brings Shop mode: your site can now be a real online shop.** Add products with sizes and colours, take orders through a cart and checkout, and ship them with tracking, all on your own hosting. Classifieds sites get pay at the end of posting, messaging between buyers and sellers, map area search, place names in each language and faster filters. Shopclass now needs PHP 8.2 or newer.
 
@@ -65,6 +65,7 @@ Older releases are archived in [ChangelogHistory.txt](ChangelogHistory.txt).
 - Deep admin order pages load in about 2 ms instead of 100 ms.
 
 ### Fixed
+- A shop always takes payments, even when billing was stored off; Settings → Billing shows the switch on and locked.
 - A shop install no longer stops at "install theme Aisle" on a slow link: the zip now ships Aisle, and package steps get more time.
 - Adding a large country's places at install or under Settings → Locations no longer times out on shared hosting; it now runs in short batches (#605).
 - A plugin or theme that needs a newer Shopclass or PHP can no longer be installed, enabled or activated.
