@@ -1382,6 +1382,21 @@ check('the cash on delivery areas script is not loaded on another tab', !in_arra
 $run = drive('CAdminSettingsBilling', 'billing_post', array('billing_enabled' => '1'));
 pin('the billing switch is a boolean', array('1', 'BOOLEAN'), pref($admin, 'billing_enabled'));
 pin('and reports itself', array('ok:Billing settings have been updated'), flashed($run));
+$forgetSwitchPage = static fn () => $forgetPage(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SWITCH);
+seed_pref($admin, 'site_mode', 'shop');
+osc_reset_preferences();
+$forgetSwitchPage();
+drive('CAdminSettingsBilling', 'billing_post', array());
+pin('a shop cannot untick billing', array(array('1', 'BOOLEAN'), true), array(pref($admin, 'billing_enabled'), osc_billing_enabled()));
+seed_pref($admin, 'billing_enabled', '0', 'BOOLEAN');
+osc_reset_preferences();
+drive('CAdminSettingsBilling', 'billing_post', array());
+$switch = SettingsPageRegistry::getInstance()->fields(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SWITCH)['billing_enabled'] ?? array();
+pin('and stored off it is still on, the box drawn ticked and locked', array(true, true, true), array(osc_billing_enabled(), !empty($switch['disabled']), !empty($switch['default'])));
+seed_pref($admin, 'billing_enabled', '1', 'BOOLEAN');
+seed_pref($admin, 'site_mode', 'classifieds');
+osc_reset_preferences();
+$forgetSwitchPage();
 
 $forgetShopPage = static fn () => $forgetPage(\mindstellar\admin\form\BillingSettingsScreen::PAGE_SHOP);
 seed_pref($admin, 'site_mode', 'shop');

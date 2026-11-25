@@ -1870,14 +1870,17 @@ function getBoolPreference($key)
 /**
  * Whether the billing section is switched on.
  *
- * Off unless an admin has turned it on, so an existing install that upgrades sees no new
- * menu, no new behaviour, and no new obligations. Everything billing does is gated on
- * this one answer.
+ * Always on for a shop, whatever is stored. A classifieds site is off until an admin
+ * turns it on. Everything billing does is gated on this one answer.
  *
  * @return bool
  */
 function osc_billing_enabled()
 {
+    if (osc_is_shop_mode()) {
+        return true;
+    }
+
     return (bool)(int)osc_get_preference(
         \mindstellar\billing\Billing::PREF_ENABLED,
         \mindstellar\billing\Billing::PREF_GROUP

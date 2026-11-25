@@ -353,10 +353,17 @@ try {
 $admin->query("RENAME TABLE {$p}t_billing_order_line_off TO {$p}t_billing_order_line");
 pin('lines that cannot be written roll the order back too', [true, $before], [$threw, $orders()]);
 
+$mode = osc_site_mode();
 Preference::getInstance()->set('billing_enabled', '0');
+osc_set_preference('site_mode', 'classifieds');
 scratchdb_forget_cache();
 osc_reset_preferences();
 pin('billing off refuses', ['/gateway unavailable'], $refused(static fn () => $checkout->place($tom, [['variant' => $mugV, 'qty' => 1]], $address, 'standard', 'fake')));
+osc_set_preference('site_mode', 'shop');
+scratchdb_forget_cache();
+osc_reset_preferences();
+pin('a shop with billing stored off still checks out', ['/lines empty'], $refused(static fn () => $checkout->place($tom, [], $address, 'standard', 'fake')));
+osc_set_preference('site_mode', $mode);
 Preference::getInstance()->set('billing_enabled', '1');
 scratchdb_forget_cache();
 osc_reset_preferences();

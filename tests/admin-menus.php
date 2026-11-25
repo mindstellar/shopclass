@@ -46,6 +46,7 @@ foreach (array(
     'osc_reg_user_post'             => 'return true;',
     'osc_user_registration_enabled' => 'return false;',
     'osc_is_shop_mode'              => 'return false;',
+    'osc_billing_credits_enabled'   => 'return false;',
 ) as $fn => $body) {
     if (!function_exists($fn)) {
         eval('function ' . $fn . '(...$args) { ' . $body . ' }');

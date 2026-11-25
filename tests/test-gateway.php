@@ -163,11 +163,14 @@ pin('the order stays pending', Order::STATUS_PENDING, $status($order));
 
 $setting('enabled', '1', 'BOOLEAN');
 check('switching test mode on offers the gateway', isset(PaymentGatewayRegistry::getInstance()->available('USD')[TestGateway::ID]));
-check('billing off takes it away again', (static function () {
+check('on a classifieds site, billing off takes it away again', (static function () {
+    $mode = osc_site_mode();
+    osc_set_preference('site_mode', 'classifieds');
     osc_set_preference(Billing::PREF_ENABLED, '0', Billing::PREF_GROUP, 'BOOLEAN');
     osc_reset_preferences();
     $off = !TestGateway::enabled();
     osc_set_preference(Billing::PREF_ENABLED, '1', Billing::PREF_GROUP, 'BOOLEAN');
+    osc_set_preference('site_mode', $mode);
     osc_reset_preferences();
 
     return $off;

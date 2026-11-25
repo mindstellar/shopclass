@@ -62,22 +62,26 @@ final class BillingSettingsScreen
             return self::PAGE_SWITCH;
         }
 
+        $shop = osc_is_shop_mode();
         CoreSettings::page(self::PAGE_SWITCH, __('Billing settings'), Billing::PREF_GROUP)
             ->onAfterSave(static function () {
                 osc_reset_preferences();
             })
             ->group(
                 __('Billing'),
-                osc_is_shop_mode()
-                    ? __('Take payment for shop orders and plugin extras. While off, the Billing menu is hidden.')
+                $shop
+                    ? __('Take payment for shop orders and plugin extras.')
                     : __('Sell featured listings, posting credits or plugin extras. While off, posting stays free and the Billing menu is hidden.')
             )
             ->checkbox(
                 Billing::PREF_ENABLED,
                 __('Enable billing'),
-                __('Turning it off later keeps every order and balance.')
+                $shop ? __('Shops always take payments.') : __('Turning it off later keeps every order and balance.')
             )
                 ->rowLabel(__('Selling on this site'))
+                ->disabled($shop)
+                ->writeOnly($shop)
+                ->default($shop)
             ->register();
 
         return self::PAGE_SWITCH;
